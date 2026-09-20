@@ -213,6 +213,9 @@ describe("clientes no painel", () => {
     // casaria com as três.
     await userEvent.click(await screen.findByRole("button", { name: "João Silva" }));
 
+    // Sem `?novo=1`: quem abre a linha de um cadastro antigo não pode
+    // ver a confirmação de "cliente cadastrado". Só o CadastroDeCliente
+    // escreve esse parâmetro.
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/clientes/c1");
   });
 
@@ -281,7 +284,7 @@ describe("clientes no painel", () => {
     await userEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
 
     await waitFor(() =>
-      expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/clientes/c1")
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/clientes/c1?novo=1")
     );
   });
 
@@ -355,9 +358,252 @@ describe("clientes no painel", () => {
     await userEvent.type(screen.getByLabelText(/telefone/i), "11988887777");
     await userEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
 
+    // O 409 é o único erro desta tela com conserto de um clique, e o
+    // conserto é o link: a frase sozinha ("procure por ele na lista")
+    // devolvia o trabalho pro barbeiro, que teria de copiar o número e
+    // digitar de novo na busca. Os dígitos no `?busca=` são o formato
+    // que a busca compara — a API tira a pontuação dos dois lados.
+    const link = await screen.findByRole("link", { name: /abrir o cadastro existente/i });
+    expect(link).toHaveAttribute("href", "/painel/clientes?busca=11988887777");
+  });
+
+  it("mexer num campo apaga o aviso que falava do envio anterior", async () => {
+    // Um aviso de telefone repetido pendurado sobre um telefone já
+    // trocado manda procurar um cadastro que não existe.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    const falso = criarApiClientFalso({ clientes: [] });
+    falso.barbeiro.criarCliente = async () => {
+      throw new ErroDaApi(409, "conflito", "");
+    };
+    montarPainel(<CadastroDeCliente />, falso);
+
+    await userEvent.type(await screen.findByLabelText(/nome/i), "Ana Souza");
+    await userEvent.type(screen.getByLabelText(/telefone/i), "11988887777");
+    await userEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
     expect(
-      await screen.findByText("Esse telefone já tem cadastro. Procure por ele na lista.")
+      await screen.findByRole("link", { name: /abrir o cadastro existente/i })
     ).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText(/telefone/i), "8");
+
+    expect(
+      screen.queryByRole("link", { name: /abrir o cadastro existente/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("nome em branco para no campo, sem ir à API", async () => {
+    // A API exige minLength 2 e responde 400 com uma frase de ajv que o
+    // barbeiro não tem como agir. O limite daqui espelha o de lá.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    const falso = criarApiClientFalso({ clientes: [] });
+    let chamou = false;
+    falso.barbeiro.criarCliente = async () => {
+      chamou = true;
+      throw new ErroDaApi(400, "requisicao_invalida", "");
+    };
+    montarPainel(<CadastroDeCliente />, falso);
+
+    await userEvent.type(await screen.findByLabelText(/telefone/i), "11988887777");
+    await userEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
+
+    expect(await screen.findByText(/escreva o nome do cliente/i)).toBeInTheDocument();
+    expect(chamou).toBe(false);
+  });
+
+  it("e-mail torto para no campo, sem ir à API", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    const falso = criarApiClientFalso({ clientes: [] });
+    let chamou = false;
+    falso.barbeiro.criarCliente = async () => {
+      chamou = true;
+      throw new ErroDaApi(400, "requisicao_invalida", "");
+    };
+    montarPainel(<CadastroDeCliente />, falso);
+
+    await userEvent.type(await screen.findByLabelText(/nome/i), "Ana Souza");
+    await userEvent.type(screen.getByLabelText(/telefone/i), "11988887777");
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "ana@exemplo");
+    await userEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
+
+    expect(await screen.findByText(/use um endereço como/i)).toBeInTheDocument();
+    expect(chamou).toBe(false);
+  });
+
+  it("revela os erros dos três campos de uma vez", async () => {
+    // Parar no primeiro faria o formulário revelar um erro por
+    // tentativa: quem errou nome e e-mail descobriria o segundo só
+    // depois de consertar o primeiro.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    montarPainel(<CadastroDeCliente />, criarApiClientFalso({ clientes: [] }));
+
+    await userEvent.type(await screen.findByLabelText(/e-mail/i), "ana@exemplo");
+    await userEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
+
+    expect(await screen.findByText(/escreva o nome do cliente/i)).toBeInTheDocument();
+    expect(screen.getByText(/informe o DDD/i)).toBeInTheDocument();
+    expect(screen.getByText(/use um endereço como/i)).toBeInTheDocument();
+  });
+
+  it("Enter no campo envia o cadastro", async () => {
+    // Sem um <form> de verdade o botão era só um onClick, e o Enter não
+    // fazia nada — num formulário de três campos que o barbeiro repete
+    // o dia inteiro.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    montarPainel(<CadastroDeCliente />, criarApiClientFalso({ clientes: [] }));
+
+    await userEvent.type(await screen.findByLabelText(/nome/i), "Ana Souza");
+    await userEvent.type(screen.getByLabelText(/telefone/i), "11988887777{Enter}");
+
+    await waitFor(() =>
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/clientes/c1?novo=1")
+    );
+  });
+
+  it("o erro aparece ao sair do campo, sem esperar o envio", async () => {
+    // Submit-only faz a pessoa descobrir o telefone torto três campos
+    // depois de ter digitado — e depois de já ter apertado Cadastrar.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    montarPainel(<CadastroDeCliente />, criarApiClientFalso({ clientes: [] }));
+
+    await userEvent.type(await screen.findByLabelText(/telefone/i), "98888");
+    await userEvent.tab();
+
+    expect(await screen.findByText(/informe o DDD/i)).toBeInTheDocument();
+
+    // E some na primeira tecla da correção: sem isto, a mensagem fica
+    // pendurada embaixo de um campo que a pessoa já está consertando,
+    // dizendo algo que deixou de ser verdade. Quem apaga é o `onChange`
+    // — um refactor que o tirasse passaria no resto deste teste.
+    await userEvent.type(screen.getByLabelText(/telefone/i), "7");
+
+    expect(screen.queryByText(/informe o DDD/i)).not.toBeInTheDocument();
+  });
+
+  it("o detalhe barra nome apagado antes de ir à API", async () => {
+    // `corpoPatchCliente` tem o mesmo minLength: 2 do POST. Sem guarda,
+    // salvar com o nome apagado voltava 400 com frase de ajv — quem
+    // edita não deve receber pior do que quem cria.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c1", params: { id: "c1" } });
+    const falso = semear();
+    let chamou = false;
+    falso.barbeiro.atualizarCliente = async () => {
+      chamou = true;
+      throw new ErroDaApi(400, "requisicao_invalida", "");
+    };
+    montarPainel(<DetalheDoCliente />, falso);
+
+    const campo = await screen.findByLabelText(/nome/i);
+    await userEvent.clear(campo);
+    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+
+    expect(await screen.findByText(/escreva o nome do cliente/i)).toBeInTheDocument();
+    expect(chamou).toBe(false);
+  });
+
+  it("o detalhe também aponta pro cadastro existente no conflito", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c1", params: { id: "c1" } });
+    const falso = semear();
+    falso.barbeiro.atualizarCliente = async () => {
+      throw new ErroDaApi(409, "conflito", "");
+    };
+    montarPainel(<DetalheDoCliente />, falso);
+
+    const campo = await screen.findByLabelText(/telefone/i);
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "11988887777");
+    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+
+    const link = await screen.findByRole("link", { name: /abrir o cadastro existente/i });
+    expect(link).toHaveAttribute("href", "/painel/clientes?busca=11988887777");
+  });
+
+  it("sair de um campo vazio não acusa nada", async () => {
+    // Passear pelo formulário com Tab acusaria "escreva o nome" antes de
+    // a pessoa ter tido chance de escrever qualquer coisa. Vazio é
+    // assunto do envio.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    montarPainel(<CadastroDeCliente />, criarApiClientFalso({ clientes: [] }));
+
+    (await screen.findByLabelText(/nome/i)).focus();
+    await userEvent.tab();
+    await userEvent.tab();
+
+    expect(screen.queryByText(/escreva o nome do cliente/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/informe o DDD/i)).not.toBeInTheDocument();
+  });
+
+  it("envio recusado leva o foco pro primeiro campo inválido", async () => {
+    // Sem isso, as mensagens apareciam numa parte da tela que quem usa
+    // teclado não está olhando — e o leitor de tela não anunciava
+    // nenhuma delas, porque `aria-describedby` só é lido no foco.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    montarPainel(<CadastroDeCliente />, criarApiClientFalso({ clientes: [] }));
+
+    await userEvent.type(await screen.findByLabelText(/e-mail/i), "ana@exemplo");
+    await userEvent.click(screen.getByRole("button", { name: /cadastrar/i }));
+
+    // O nome é o primeiro inválido na ordem do documento, e não o e-mail
+    // em que a pessoa estava.
+    await waitFor(() =>
+      expect(screen.getByLabelText(/nome/i)).toHaveFocus()
+    );
+  });
+
+  it("a regra do telefone fica na tela depois da primeira tecla", async () => {
+    // No placeholder ela some justamente quando a pessoa quer conferir o
+    // que digitou contra o exemplo.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    montarPainel(<CadastroDeCliente />, criarApiClientFalso({ clientes: [] }));
+
+    const apoio = await screen.findByText(/com DDD/i);
+    expect(apoio).toBeInTheDocument();
+
+    const telefone = screen.getByLabelText(/telefone/i);
+    await userEvent.type(telefone, "11988887777");
+
+    expect(apoio).toBeInTheDocument();
+    // E o leitor de tela alcança a regra pelo próprio campo.
+    expect(telefone.getAttribute("aria-describedby")).toContain(apoio.id);
+  });
+
+  it("o detalhe confirma quando o cliente acabou de ser cadastrado", async () => {
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/clientes/c1",
+      params: { id: "c1" },
+      query: { novo: "1" },
+    });
+    montarPainel(<DetalheDoCliente />, semear());
+
+    expect(await screen.findByText(/cliente cadastrado/i)).toBeInTheDocument();
+  });
+
+  it("o detalhe aberto pela lista não inventa confirmação", async () => {
+    // Sem esta, um aviso de sucesso fixo passaria: quem abre um cadastro
+    // antigo leria "cliente cadastrado" toda vez.
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c1", params: { id: "c1" } });
+    montarPainel(<DetalheDoCliente />, semear());
+
+    expect(await screen.findByDisplayValue("João Silva")).toBeInTheDocument();
+    expect(screen.queryByText(/cliente cadastrado/i)).not.toBeInTheDocument();
+  });
+
+  it("Cancelar volta pra lista sem cadastrar nada", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
+    const falso = criarApiClientFalso({ clientes: [] });
+    let chamou = false;
+    falso.barbeiro.criarCliente = async () => {
+      chamou = true;
+      throw new ErroDaApi(400, "requisicao_invalida", "");
+    };
+    montarPainel(<CadastroDeCliente />, falso);
+
+    await userEvent.type(await screen.findByLabelText(/nome/i), "Ana Souza");
+    await userEvent.click(await screen.findByRole("button", { name: /cancelar/i }));
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/clientes");
+    // O botão vive fora do <form> justamente pra isto: dentro dele um
+    // <button> sem `type` é submit, e "Cancelar" cadastraria o cliente.
+    expect(chamou).toBe(false);
   });
 
   it("cliente inexistente vira aviso, não tela em branco", async () => {
@@ -488,7 +734,15 @@ describe("clientes no painel", () => {
   // que só o branch `codigo === "conflito"` pode produzir a cópia
   // esperada; sem ele, o teste veria o fallback genérico, não o texto
   // cru da API (que também é "").
-  it("editar um cliente com telefone repetido usa a mesma cópia do cadastro, não o fallback genérico", async () => {
+  it("editar um cliente com telefone repetido usa a cópia do conflito, não o fallback genérico", async () => {
+    // A `mensagem` vazia é de propósito: se a asserção casasse com o
+    // texto padrão do dublê, ela passaria mesmo sem o branch de
+    // `conflito` — teria vindo do `erro.mensagem || "..."`.
+    //
+    // A cópia mudou junto com a do cadastro: a frase "procure por ele na
+    // lista" devolvia o trabalho pro barbeiro. Aqui ela diz "de outro
+    // cliente" porque quem está na tela JÁ é um cadastro — "já tem
+    // cadastro" leria como se fosse o próprio.
     navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c1", params: { id: "c1" } });
     const falso = semear();
     falso.barbeiro.atualizarCliente = async () => {
@@ -499,8 +753,9 @@ describe("clientes no painel", () => {
     await screen.findByDisplayValue("João Silva");
     await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
+    expect(await screen.findByText(/já é de outro cliente/i)).toBeInTheDocument();
     expect(
-      await screen.findByText("Esse telefone já tem cadastro. Procure por ele na lista.")
+      screen.getByRole("link", { name: /abrir o cadastro existente/i })
     ).toBeInTheDocument();
   });
 

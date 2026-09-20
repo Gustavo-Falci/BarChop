@@ -1,1 +1,51 @@
-.aviso { padding: var(--espaco-md); border: var(--borda-padrao) solid #b3261e; border-radius: var(--raio-md); background: var(--cor-surface); color: #b3261e; font-size: var(--texto-sm); }
+.aviso {
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid;
+  border-radius: var(--raio-md);
+  font-size: var(--texto-sm);
+}
+
+/* A cor vinha escrita à mão como #b3261e. Sobre a --cor-surface do tema
+   escuro isso dava 2,20:1 — o texto que diz o que consertar era o mais
+   apagado da tela. O token tem valor por tema: 6,54:1 no claro e
+   5,16:1 no escuro. */
+.erro {
+  border-color: var(--cor-erro);
+  background: var(--cor-surface);
+  color: var(--cor-erro);
+}
+
+/* O link dentro do aviso NÃO herda a cor dele. O --cor-erro sobre a
+   própria surface do aviso serve pra texto (5,16:1 no pior tema), mas
+   este link é o conserto de um clique do 409 — o controle mais
+   importante da mensagem. Com --cor-ink são 12,64:1 no escuro e
+   16,29:1 no claro.
+
+   Mora aqui, e não no CSS de cada tela, porque quem sabe a cor do
+   fundo é este componente: o cadastro e o detalhe do cliente tinham a
+   mesma regra copiada, e a segunda cópia nasceu errada.
+
+   O sublinhado fica: sem a cor separando o link do texto, é ele que
+   anuncia que aquilo se clica — e sobrevive a quem não distingue as
+   duas cores. */
+.aviso a {
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.sucesso a {
+  color: var(--cor-dark);
+}
+
+/* Confirmação vai no amarelo da casa, e não num verde novo: o accent é
+   o único token que não muda entre os temas, então o par --cor-dark
+   sobre --cor-accent dá os mesmos 12,58:1 nos dois. Um verde precisaria
+   de dois valores e de mais uma cor no sistema pra dizer o que o
+   amarelo já diz. */
+.sucesso {
+  border-color: var(--cor-ink);
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+  font-weight: 600;
+}

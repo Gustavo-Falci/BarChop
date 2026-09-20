@@ -20,11 +20,25 @@
   font-size: var(--texto-md);
 }
 
+/* O placeholder não tinha cor: caía no #757575 do navegador, que
+   reprova nos dois temas (4,04:1 sobre o paper claro, 3,13:1 no
+   escuro). O token tem valor por tema e passa nos dois. */
+.entrada::placeholder {
+  color: var(--cor-placeholder);
+}
+
 .entrada[aria-invalid="true"] {
-  border-color: #b3261e;
+  border-color: var(--cor-erro);
+}
+
+/* Texto de apoio que fica: a dica de formato no placeholder some na
+   primeira tecla, que é justamente quando ela é necessária. */
+.apoio {
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
 }
 
 .erro {
   font-size: var(--texto-xs);
-  color: #b3261e;
+  color: var(--cor-erro);
 }

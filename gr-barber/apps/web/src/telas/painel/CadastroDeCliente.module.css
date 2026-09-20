@@ -4,3 +4,24 @@
   align-content: start;
   max-width: 560px;
 }
+
+.formulario {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+/* O botão fica do tamanho do texto: solto no grid da página ele herdaria
+   o `stretch` e ocuparia os 560px inteiros — largura que nenhuma outra
+   ação do painel tem. */
+.acoes {
+  display: flex;
+  gap: var(--espaco-sm);
+}
+
+/* Onde a coluna já é estreita, o alvo largo vale mais que a proporção. */
+@media (max-width: 560px) {
+  .acoes button {
+    flex: 1;
+  }
+}
+

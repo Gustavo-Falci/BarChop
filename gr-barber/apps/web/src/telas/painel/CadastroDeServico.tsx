@@ -230,14 +230,43 @@ export function CadastroDeServico() {
 
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
-      <Botao carregando={salvando} onClick={salvar}>
-        Salvar
-      </Botao>
+      {/* As duas saídas do formulário na mesma linha: sem o Cancelar, a
+          única forma de desistir era a barra lateral, que leva pra
+          outro lugar qualquer do painel em vez de voltar pra lista de
+          onde a pessoa veio.
 
-      {atual ? (
-        <Botao variante="contorno" carregando={salvando} onClick={alternarAtivo}>
-          {atual.ativo ? "Desativar" : "Reativar"}
+          `type="button"` porque esta tela ainda não tem <form>, e vai
+          ter: no dia em que tiver, um <button> sem type é submit, e
+          "Cancelar" salvaria o serviço. */}
+      <div className={estilos.acoes}>
+        <Botao type="button" carregando={salvando} onClick={salvar}>
+          Salvar
         </Botao>
+        {/* Sem `carregando`: desistir tem que funcionar inclusive
+            enquanto o salvamento pendura. */}
+        <Botao
+          type="button"
+          variante="contorno"
+          onClick={() => router.push("/painel/servicos")}
+        >
+          Cancelar
+        </Botao>
+      </div>
+
+      {/* Fora do grupo acima de propósito: desativar não é uma saída do
+          formulário, é uma mudança de estado do serviço — e fica longe
+          do Cancelar pra ninguém acertar uma querendo a outra. */}
+      {atual ? (
+        <div className={estilos.acaoDoEstado}>
+          <Botao
+            type="button"
+            variante="contorno"
+            carregando={salvando}
+            onClick={alternarAtivo}
+          >
+            {atual.ativo ? "Desativar" : "Reativar"}
+          </Botao>
+        </div>
       ) : null}
     </div>
   );

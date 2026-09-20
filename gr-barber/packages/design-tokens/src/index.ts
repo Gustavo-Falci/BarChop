@@ -18,6 +18,18 @@ export const colors = {
     paleBlue: "#EFF8FA",
     dark: "#1A1A1A",
     shadow: "#000000",
+    // O vermelho de erro era escrito à mão em Campo.module.css e
+    // Aviso.module.css. Vira token porque precisa de valor POR TEMA:
+    // nenhum vermelho passa 4,5:1 nos dois fundos ao mesmo tempo —
+    // foram testados sete. Aqui ele dá 5,74:1 sobre o paper e 6,54:1
+    // sobre a surface.
+    erro: "#b3261e",
+    // O placeholder não tinha cor nenhuma: caía no #757575 do
+    // navegador, que dá 4,04:1 sobre o paper claro e 3,13:1 no escuro.
+    // Este fica em 5,78:1 sobre a surface e 5,08:1 sobre o paper, e
+    // ainda é bem mais fraco que o --cor-ink-soft (8,53:1) — um
+    // placeholder que passa por conteúdo preenchido é outro problema.
+    placeholder: "#6b6559",
   },
   dark: {
     paper: "#17160F",
@@ -33,6 +45,11 @@ export const colors = {
     paleBlue: "#152329",
     dark: "#1A1A1A",
     shadow: "#F3F0E7", // sombra clara no escuro, senão some contra o fundo
+    // O #b3261e do claro dava 2,77:1 sobre este paper e 2,20:1 sobre
+    // esta surface — o texto mais apagado da tela era justamente o que
+    // dizia o que consertar. Este sobe pra 6,49:1 e 5,16:1.
+    erro: "#FF6B5E",
+    placeholder: "#9e9681", // 4,89:1 sobre a surface, 6,16:1 sobre o paper
   },
 } as const;
 

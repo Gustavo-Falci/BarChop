@@ -4,3 +4,26 @@
   align-content: start;
   max-width: 560px;
 }
+
+/* Os botões ficam do tamanho do texto: soltos no grid da página eles
+   herdariam o `stretch` e ocupariam os 560px inteiros — largura que
+   nenhuma outra ação do painel tem. Mesma regra de CadastroDeCliente.
+
+   O `.acaoDoEstado` recebe a mesma regra por um motivo específico:
+   antes deste grupo existir, Salvar e Desativar eram os dois filhos
+   diretos do grid e esticavam IGUAL. Encolher só o primeiro par deixava
+   o Desativar como o botão mais largo da tela — peso visual de ação
+   principal numa ação que não é. */
+.acoes,
+.acaoDoEstado {
+  display: flex;
+  gap: var(--espaco-sm);
+}
+
+/* Onde a coluna já é estreita, o alvo largo vale mais que a proporção. */
+@media (max-width: 560px) {
+  .acoes button,
+  .acaoDoEstado button {
+    flex: 1;
+  }
+}

@@ -123,6 +123,82 @@ describe("serviços no painel", () => {
   // Adicional: "20,00" não distingue trocar vírgula por ponto de
   // normalizar pra duas casas — os dois caminhos produzem "20.00" pra
   // essa entrada. "20,5" separa os dois: o normalizado vira "20.50", um
+  it("Cancelar volta pra lista sem salvar nada", async () => {
+    // Sem ele, a única forma de desistir era a barra lateral — que leva
+    // pra outro lugar qualquer do painel, não de volta pra lista de
+    // onde a pessoa veio.
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
+    const falso = semear();
+    let chamou = false;
+    falso.barbeiro.criarServico = async () => {
+      chamou = true;
+      throw new ErroDaApi(400, "requisicao_invalida", "");
+    };
+
+    montarPainel(<CadastroDeServico />, falso);
+
+    // Com o formulário preenchido: desistir de um rascunho em branco não
+    // prova nada — o que não pode é o clique salvar o que foi digitado.
+    await userEvent.type(await screen.findByLabelText(/nome/i), "Sobrancelha");
+    await userEvent.type(screen.getByLabelText(/duração/i), "15");
+    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/servicos");
+    expect(chamou).toBe(false);
+  });
+
+  it("na edição o Cancelar também volta pra lista", async () => {
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/servicos/s1",
+      params: { id: "s1" },
+    });
+    const falso = semear();
+    let chamou = false;
+    falso.barbeiro.atualizarServico = async () => {
+      chamou = true;
+      throw new ErroDaApi(400, "requisicao_invalida", "");
+    };
+
+    montarPainel(<CadastroDeServico />, falso);
+
+    // Espera o formulário sincronizar com o serviço carregado: clicar
+    // antes disso testaria uma tela que ainda não é a de edição.
+    await screen.findByDisplayValue("Corte");
+    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/servicos");
+    expect(chamou).toBe(false);
+  });
+
+  it("Cancelar e Desativar não se confundem na edição", async () => {
+    // Os dois são `contorno` e vizinhos na tela. O Cancelar sai sem
+    // tocar no serviço; o Desativar muda o estado dele. Um clique no
+    // primeiro não pode fazer o segundo.
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/servicos/s1",
+      params: { id: "s1" },
+    });
+    const falso = semear();
+    let desativou = false;
+    // Delega pro original em vez de devolver void: `desativarServico`
+    // responde o serviço serializado, e um dublê com a assinatura errada
+    // passaria nos testes e só quebraria no `tsc`.
+    const original = falso.barbeiro.desativarServico;
+    falso.barbeiro.desativarServico = async (servicoId: string) => {
+      desativou = true;
+      return original(servicoId);
+    };
+
+    montarPainel(<CadastroDeServico />, falso);
+
+    await screen.findByDisplayValue("Corte");
+    expect(screen.getByRole("button", { name: /desativar/i })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
+
+    expect(desativou).toBe(false);
+  });
+
   // replace sem o toFixed(2) ficaria em "20.5".
   it("preço com uma casa decimal ainda vira duas ao salvar", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });

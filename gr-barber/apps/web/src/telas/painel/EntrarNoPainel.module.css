@@ -4,7 +4,21 @@
 .pagina {
   display: grid;
   gap: var(--espaco-lg);
-  align-content: start;
+  /* Centrado na janela, e não colado no topo: a tela tem um assunto
+     só, e a 1440x900 o conteúdo do login ocupava 439px — metade da
+     dobra ficava vazia embaixo dele.
+
+     `safe center` e NÃO `center`: no modo criar barbearia o conteúdo
+     mede 763px, e numa janela de 640 de altura o center puro empurra
+     61px pra cima da borda — o h1 e o topo do primeiro campo ficam
+     inalcançáveis, porque não existe scroll acima do começo da página.
+     Com `safe`, o navegador desiste de centrar quando não cabe e
+     alinha no início. Medido em 2026-09-26, a 1440x640. */
+  align-content: safe center;
+  /* `dvh` e não `vh`: no celular a barra do navegador entra e sai, e
+     com `vh` a conta usa sempre a janela maior — o conteúdo centraria
+     contra uma altura que naquele momento não existe. */
+  min-height: 100dvh;
   width: 100%;
   max-width: 420px;
   margin-inline: auto;
@@ -27,12 +41,42 @@
   gap: var(--espaco-sm);
 }
 
-/* Prévia do link, não instrução: menor que o corpo e em cinza. O
-   --cor-ink-soft e não --cor-muted, que reprova contraste no tema
-   claro. O break-all porque um slug longo não tem onde quebrar. */
-.previa {
+/* A troca de modo não é uma segunda submissão. Antes ela era um Botao
+   de contorno do mesmo tamanho do "Entrar" — dois blocos de 372x44
+   empilhados, mesma borda, mesma sombra —, e o olho lia os dois como
+   alternativas de envio. Aqui ela vira o que é: uma frase com um link,
+   abaixo da ação principal. */
+.troca {
   margin: 0;
+  text-align: center;
   font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
-  word-break: break-all;
+}
+
+/* <button> com cara de link: o controle troca o modo da tela, não
+   navega, então <a href> mentiria pro teclado e pro leitor de tela. O
+   sublinhado fica, e não só a cor, porque é ele que anuncia que aquilo
+   se clica pra quem não distingue as duas cores — mesma regra do link
+   dentro do Aviso.
+
+   O padding não é decorativo: ele dá altura de alvo ao que é um texto
+   no meio de uma frase. */
+.link {
+  padding: var(--espaco-xs) 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* `:focus-visible` e não `:focus`: com `:focus` o anel apareceria
+   depois de um clique de mouse, que é justamente quem não precisa
+   dele. O par 3px/2px é o mesmo do campo de texto. */
+.link:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
 }

@@ -211,6 +211,35 @@ describe("entrar no painel", () => {
     expect(chamou).toBe(false);
   });
 
+  it("trocar de modo leva o foco pro primeiro campo do modo novo", async () => {
+    // Indo pro "criar", três campos nascem ACIMA de onde o foco está —
+    // sem mover, quem usa teclado tem que voltar de shift+tab. Voltando
+    // pro "entrar", o campo focado é um dos que desmontaram, e o foco
+    // cairia no <body>.
+    montar();
+
+    await userEvent.click(screen.getByRole("button", { name: /criar barbearia/i }));
+    expect(screen.getByLabelText(/nome da barbearia/i)).toHaveFocus();
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    expect(screen.getByLabelText(/e-mail/i)).toHaveFocus();
+  });
+
+  it("a prévia do link pertence ao campo, e não à tela", async () => {
+    // Como <p> solto ela ficava a 24px do campo que descreve e a 24px
+    // do seguinte, grudando no errado. No `apoio` do Campo ela é
+    // descrita junto do rótulo pra quem usa leitor de tela.
+    montar();
+
+    await userEvent.click(screen.getByRole("button", { name: /criar barbearia/i }));
+    const campoDoLink = screen.getByLabelText(/endereço do link/i);
+
+    expect(campoDoLink).toHaveAccessibleDescription(/sua-barbearia/);
+
+    await userEvent.type(campoDoLink, "barbearia-do-ze");
+    expect(campoDoLink).toHaveAccessibleDescription(/\/barbearia-do-ze/);
+  });
+
   it("anuncia os tokens que o gerenciador de senhas usa", async () => {
     // Sem o par username/current-password o navegador trata o e-mail
     // como contato solto e não oferece a credencial salva.

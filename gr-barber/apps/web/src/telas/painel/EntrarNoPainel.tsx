@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ErroDaApi } from "@gr-barber/api-client";
 import type { SessaoBarbeiro } from "@gr-barber/types";
@@ -45,6 +45,41 @@ export function EntrarNoPainel() {
   const [erroSenha, setErroSenha] = useState<string | undefined>();
   const [aviso, setAviso] = useState<string | undefined>();
   const [enviando, setEnviando] = useState(false);
+
+  const formulario = useRef<HTMLFormElement>(null);
+  // Só as trocas de modo movem o foco; a primeira montagem é do
+  // `autoFocus` do e-mail. Sem esta trava, o efeito abaixo roda na
+  // montagem e briga com ele.
+  const trocouDeModo = useRef(false);
+
+  function trocarModo() {
+    trocouDeModo.current = true;
+    setCriando((atual) => !atual);
+    setAviso(undefined);
+    setErroSlug(undefined);
+    setErroEmail(undefined);
+    setErroSenha(undefined);
+  }
+
+  // Trocar de modo troca os campos da tela, e o foco não acompanha
+  // sozinho: indo pro "criar", três campos novos nascem ACIMA de onde o
+  // foco está, e quem usa teclado precisa voltar de shift+tab. Voltando
+  // pro "entrar", o campo focado pode ser um dos que acabaram de
+  // desmontar — e aí o foco cai no <body>, que é a versão silenciosa do
+  // mesmo problema.
+  //
+  // Busca por `name` no formulário, e não por ref no Campo: o Campo
+  // gera o próprio `id` com useId e não encaminha ref, então passar um
+  // `id` de fora quebraria o `htmlFor` do rótulo.
+  useEffect(() => {
+    if (!trocouDeModo.current) return;
+    trocouDeModo.current = false;
+
+    const alvo = formulario.current?.querySelector<HTMLInputElement>(
+      criando ? '[name="nomeDaBarbearia"]' : '[name="email"]'
+    );
+    alvo?.focus();
+  }, [criando]);
 
   async function submeter() {
     setAviso(undefined);
@@ -142,6 +177,7 @@ export function EntrarNoPainel() {
           mostraria a bolha dela, na língua dela, em vez das mensagens
           que esta tela escolheu. */}
       <form
+        ref={formulario}
         className={estilos.formulario}
         noValidate
         onSubmit={(evento) => {
@@ -153,16 +189,29 @@ export function EntrarNoPainel() {
           <>
             <Campo
               rotulo="Nome da barbearia"
+              name="nomeDaBarbearia"
               autoComplete="organization"
               maxLength={NOME_MAX}
               valor={nomeDaBarbearia}
               onChange={setNomeDaBarbearia}
             />
-            {/* `autoComplete="off"`: o slug não é dado que o navegador
+            {/* A prévia do link entra no `apoio`, e não num <p> solto
+                embaixo: solta, ela ficava a 24px do campo que descreve e
+                a 24px do campo seguinte, então grudava visualmente no
+                errado. No `apoio` ela pertence ao campo — e ganha de
+                graça o `aria-describedby`, que faz o leitor de tela
+                anunciar o endereço junto do rótulo.
+
+                É este endereço que vai no WhatsApp; mostrar o resultado
+                evita descobrir depois que ficou errado.
+
+                `autoComplete="off"`: o slug não é dado que o navegador
                 guarde, e oferecer o histórico de outro campo aqui só
                 atrapalharia. */}
             <Campo
               rotulo="Endereço do link"
+              apoio={`O link dos seus clientes: /${slug || "sua-barbearia"}`}
+              name="slug"
               autoComplete="off"
               maxLength={SLUG_MAX}
               valor={slug}
@@ -172,11 +221,9 @@ export function EntrarNoPainel() {
               }}
               erro={erroSlug}
             />
-            {/* É este endereço que vai no WhatsApp; mostrar o resultado
-                evita descobrir depois que ficou errado. */}
-            <p className={estilos.previa}>O link dos seus clientes: /{slug || "sua-barbearia"}</p>
             <Campo
               rotulo="Seu nome"
+              name="nome"
               autoComplete="name"
               maxLength={NOME_MAX}
               valor={nome}
@@ -192,6 +239,7 @@ export function EntrarNoPainel() {
         <Campo
           rotulo="E-mail"
           type="email"
+          name="email"
           inputMode="email"
           autoComplete="username"
           maxLength={EMAIL_MAX}
@@ -212,6 +260,7 @@ export function EntrarNoPainel() {
         <Campo
           rotulo="Senha"
           type="password"
+          name="senha"
           autoComplete={criando ? "new-password" : "current-password"}
           maxLength={SENHA_MAX}
           valor={senha}
@@ -228,23 +277,23 @@ export function EntrarNoPainel() {
           <Botao type="submit" carregando={enviando}>
             {criando ? "Criar e entrar" : "Entrar"}
           </Botao>
-          {/* `type="button"` porque agora ele está DENTRO do form, e um
-              <button> sem type é submit — trocar de modo enviaria o
-              formulário. */}
-          <Botao
-            type="button"
-            variante="contorno"
-            onClick={() => {
-              setCriando((atual) => !atual);
-              setAviso(undefined);
-              setErroSlug(undefined);
-              setErroEmail(undefined);
-              setErroSenha(undefined);
-            }}
-          >
-            {criando ? "Já tenho conta" : "Criar barbearia"}
-          </Botao>
         </div>
+
+        {/* A troca de modo saiu de dentro do bloco de ações. Como Botao
+            de contorno ela tinha exatamente o tamanho, a borda e a
+            sombra do "Entrar" logo acima — dois blocos iguais
+            empilhados, e o olho lia os dois como formas de enviar o
+            formulário. Só que ela não envia nada: troca o que a tela
+            pede. Como frase com link, a hierarquia passa a dizer isso.
+
+            `type="button"` porque está DENTRO do <form>, e um <button>
+            sem type é submit — trocar de modo enviaria o formulário. */}
+        <p className={estilos.troca}>
+          {criando ? "Já tem conta?" : "Ainda não tem uma barbearia aqui?"}{" "}
+          <button type="button" className={estilos.link} onClick={trocarModo}>
+            {criando ? "Entrar" : "Criar barbearia"}
+          </button>
+        </p>
       </form>
     </main>
   );

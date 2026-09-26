@@ -1,7 +1,9 @@
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
 import { prisma } from "@gr-barber/database";
+import { limitesDeAuth } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
 import { autenticar, autenticarCliente, registrarAuth } from "./plugins/auth";
 import { registrarRotasAuth } from "./routers/auth";
@@ -54,8 +56,24 @@ export function buildApp(opts: { logger?: boolean } = {}): App {
   );
 
   registrarAuth(app);
-  registrarRotasAuth(app);
-  registrarRotasAuthCliente(app);
+
+  // Escopo só pras quatro rotas que recebem senha — as duas de login e
+  // as duas de signup. Existe por causa do `await`: os contadores são
+  // construídos com `escopo.rateLimit(...)`, que só passa a existir
+  // depois do plugin carregar, e `register` é diferido pelo avvio.
+  // Registrar na raiz e chamar `limitesDeAuth` na linha seguinte pegaria
+  // `rateLimit` undefined — e esse silêncio seria pior que um erro,
+  // porque as rotas subiriam sem limite nenhum e nada apontaria pra
+  // isso. `global: false` porque os limites são explícitos, rota a rota:
+  // um teto global valeria também pra agenda, que o barbeiro recarrega o
+  // dia inteiro.
+  app.register(async (comLimite: App) => {
+    await comLimite.register(rateLimit, { global: false });
+    const limites = limitesDeAuth(comLimite);
+    registrarRotasAuth(comLimite, limites);
+    registrarRotasAuthCliente(comLimite, limites);
+  });
+
   registrarRotasBarbeariasPublicas(app);
   registrarRotasServicosPublicas(app);
   registrarRotasAgendamentosPublicas(app);

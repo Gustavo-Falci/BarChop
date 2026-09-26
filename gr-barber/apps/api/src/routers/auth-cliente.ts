@@ -1,5 +1,6 @@
 import { prisma } from "@gr-barber/database";
 import { conflito } from "../lib/erro-http";
+import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_TELEFONE } from "../lib/padroes";
 import {
   conferirSenha,
@@ -40,10 +41,18 @@ const corpoLogin = {
 
 // Públicas: são as telas de criar conta e entrar, abertas pelo link do
 // WhatsApp. Ficam fora dos dois escopos protegidos do app.ts.
-export function registrarRotasAuthCliente(app: App): void {
+export function registrarRotasAuthCliente(
+  app: App,
+  limites: LimitesDeAuth
+): void {
   app.post(
     "/barbearias/:slug/auth/cliente/signup",
-    { schema: { params: paramsSlug, body: corpoSignup } },
+    {
+      schema: { params: paramsSlug, body: corpoSignup },
+      // Por telefone antes de por IP: quem tenta reivindicar cadastros
+      // em série varia o número, não o endereço. Ver lib/limites.ts.
+      preHandler: limites.signupDoCliente,
+    },
     async (request, reply) => {
       const { nome, senha } = request.body;
       // Normalizado antes da busca E da gravação: é o mesmo valor dos
@@ -98,7 +107,9 @@ export function registrarRotasAuthCliente(app: App): void {
 
   app.post(
     "/barbearias/:slug/auth/cliente/login",
-    { schema: { params: paramsSlug, body: corpoLogin } },
+    // A chave por conta leva o slug junto: o mesmo telefone em duas
+    // barbearias são duas contas, e uma não gasta o limite da outra.
+    { schema: { params: paramsSlug, body: corpoLogin }, preHandler: limites.loginDoCliente },
     async (request, reply) => {
       const { senha } = request.body;
       // Mesma normalização da gravação. Sem ela, quem se cadastrou por

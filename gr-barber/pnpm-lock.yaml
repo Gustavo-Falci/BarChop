@@ -23,6 +23,9 @@ importers:
       '@fastify/jwt':
         specifier: ^9.0.0
         version: 9.1.0
+      '@fastify/rate-limit':
+        specifier: ^11.2.0
+        version: 11.2.0
       '@fastify/type-provider-json-schema-to-ts':
         specifier: ^4.0.0
         version: 4.0.1
@@ -1130,6 +1133,9 @@ packages:
 
   '@fastify/proxy-addr@5.1.0':
     resolution: {integrity: sha512-INS+6gh91cLUjB+PVHfu1UqcB76Sqtpyp7bnL+FYojhjygvOPA9ctiD/JDKsyD9Xgu4hUhCSJBPig/w7duNajw==}
+
+  '@fastify/rate-limit@11.2.0':
+    resolution: {integrity: sha512-X7osJd4XSvMoejYrnJkSZYYjY1eNYoBqhjlzf1RakC2204qExFqZFTKj5+T7VuzA/iUI9Z3UoSqQRkB2HpG0oQ==}
 
   '@fastify/type-provider-json-schema-to-ts@4.0.1':
     resolution: {integrity: sha512-+QS1iiRZMAqCcWX7Ck8zAVXb1WbjpffC2gOYxDGvF1wtLviblz7HtnjAX04bW6ZsgreZP0RktRPlEAzmEafEQw==}
@@ -2451,6 +2457,9 @@ packages:
   fastify-plugin@5.1.0:
     resolution: {integrity: sha512-FAIDA8eovSt5qcDgcBvDuX/v0Cjz0ohGhENZ/wpc3y+oZCY2afZ9Baqql3g/lC+OHRnciQol4ww7tuthOb9idw==}
 
+  fastify-plugin@6.0.0:
+    resolution: {integrity: sha512-fZOty7z3O7vOliF6d8bHE3wiEh1KcNnKEQensSgTk9C1DvN6nRLS++XVd86v33Hw/8u9Un8A1zDrQ8ujcQDHEg==}
+
   fastify@5.12.1:
     resolution: {integrity: sha512-FWi+tQvwxR/PeRX7Z2mhfEF5ozJ3jn9asiiclzKXNSzJRHAYcU924aIOKAdHFJ+YIKieh3cqr1IwCOvTr41B3Q==}
 
@@ -2597,6 +2606,10 @@ packages:
 
   invariant@2.2.4:
     resolution: {integrity: sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==}
+
+  ip-address@10.7.2:
+    resolution: {integrity: sha512-7H/2gFSIitxc0hG3nOI1glS8QLo/EHBFFLk8vEUjXY/xu0AdL8jZ9U1IzO2PUm0d2D/ofQcAifb0g6OBkt8U7w==}
+    engines: {node: '>= 12'}
 
   ipaddr.js@2.5.0:
     resolution: {integrity: sha512-aq+t5NAc+cS6rZQQVWC2x98CPqGtKKTMDd4Gaodv0wShnItdKg/51djkGJ1hqH+Oy0ivDftCbSLCQob8zso01w==}
@@ -4965,6 +4978,13 @@ snapshots:
       '@fastify/forwarded': 3.0.2
       ipaddr.js: 2.5.0
 
+  '@fastify/rate-limit@11.2.0':
+    dependencies:
+      '@lukeed/ms': 2.0.2
+      fastify-plugin: 6.0.0
+      ip-address: 10.7.2
+      toad-cache: 3.7.4
+
   '@fastify/type-provider-json-schema-to-ts@4.0.1':
     dependencies:
       json-schema-to-ts: 3.1.1
@@ -6194,6 +6214,8 @@ snapshots:
 
   fastify-plugin@5.1.0: {}
 
+  fastify-plugin@6.0.0: {}
+
   fastify@5.12.1:
     dependencies:
       '@fastify/ajv-compiler': 4.0.6
@@ -6353,6 +6375,8 @@ snapshots:
   invariant@2.2.4:
     dependencies:
       loose-envify: 1.4.0
+
+  ip-address@10.7.2: {}
 
   ipaddr.js@2.5.0: {}
 

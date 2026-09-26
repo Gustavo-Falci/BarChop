@@ -15,6 +15,11 @@ const CODIGO_POR_STATUS: Record<number, string> = {
   413: "requisicao_invalida",
   415: "requisicao_invalida",
   422: "regra_de_negocio",
+  // Os limites de lib/limites.ts já lançam ErroHttp, que sai pelo
+  // branch de cima com este mesmo código. A entrada aqui é a rede: um
+  // 429 que venha de outro lugar viraria `requisicao_invalida`, e as
+  // telas ramificariam errado num erro que pede espera, não correção.
+  429: "tentativas_excedidas",
 };
 
 // Um lugar só traduzindo erro de domínio e de banco pra HTTP. Sem isso,

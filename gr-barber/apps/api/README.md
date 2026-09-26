@@ -93,14 +93,22 @@ Prisma sai no contrato.
 | Rota, registro inexistente ou recurso de outra barbearia | 404 | `nao_encontrado` |
 | Unique violada | 409 | `conflito` |
 | Horário já ocupado (trava do banco) | 409 | `horario_ocupado` |
+| Regra de negócio | 422 | código do domínio |
+| Login ou signup acima do limite de tentativas | 429 | `tentativas_excedidas` |
+| Bug nosso | 500 | `erro_interno` |
 
 Dois pedidos simultâneos no mesmo horário podem terminar em impasse no
 Postgres (SQLSTATE `40P01`) em vez de violação da constraint. As rotas de
 criação repetem a transação uma vez nesse caso (`src/lib/transacao.ts`):
 na segunda tentativa a concorrente já terminou, e a resposta é o `201` ou
 o `409` — nunca um `500`.
-| Regra de negócio | 422 | código do domínio |
-| Bug nosso | 500 | `erro_interno` |
+
+O `429` vem dos contadores de `src/lib/limites.ts`, nas quatro rotas que
+recebem senha: os dois logins e os dois signups. A resposta traz
+`Retry-After` em segundos, e a `mensagem` já diz quanto esperar. São dois
+contadores por rota — um pela conta (email, ou telefone mais slug) e um
+pelo IP —, e a contagem vive na memória do processo: subir uma segunda
+instância da API dobra o limite efetivo até que a contagem mude de lugar.
 
 Quem lança escolhe o par status/código com `ErroHttp`
 (`src/lib/erro-http.ts`) ou com `ErroDeNegocio` (`src/lib/erro-negocio.ts`,

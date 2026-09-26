@@ -83,10 +83,44 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
-  qualquer, e o código de resposta responde. Fechar isso de verdade
-  precisa de verificação de email ou de rate limiting, os dois fora do
-  escopo da spec atual — fica pro passo de infra, junto com o que mais
-  proteger o fluxo público.
+  qualquer, e o código de resposta responde. O rate limiting que esta
+  dívida esperava chegou (`apps/api/src/lib/limites.ts`): sondar em
+  série custa, porque o signup de barbearia aceita 5 por hora por IP. O
+  buraco em si continua aberto — cada tentativa, dentro do orçamento,
+  ainda responde se aquele email existe. Fechar de verdade é verificação
+  de email, que só faz sentido junto do canal de mensagem do passo 4.
+- **A mesma situação tem dois códigos de erro.** Credenciais erradas
+  respondem `credenciais_invalidas` no login do barbeiro
+  (`routers/auth.ts`) e `nao_autenticado` no do cliente
+  (`routers/auth-cliente.ts`); o README documenta os dois. Isso já
+  custou um bug: a tela do painel ramificava só em `nao_autenticado`, e
+  senha errada caía no aviso genérico "não foi possível continuar
+  agora" — e o teste não pegava, porque o dublê lançava o código do
+  cliente. As duas telas hoje aceitam os dois códigos, o que conserta o
+  sintoma. Fechar é escolher um: `credenciais_invalidas` nas duas rotas,
+  com o README e os dois testes de login acompanhando. É mudança de
+  contrato, então vale fazer antes de o app do barbeiro no Expo começar
+  a consumir isso.
+- **Não existe recuperação de senha.** Quem esquecer a senha fica
+  trancado do lado de fora, sem caminho nenhum no produto — vale pro
+  barbeiro (`POST /auth/login`) e pro cliente. No piloto com um barbeiro
+  isso se resolve por `psql`; no primeiro cliente de fora, não. É também
+  a razão de os limites de `lib/limites.ts` serem janela que passa, e
+  não bloqueio de conta: sem rota de recuperação, um bloqueio de verdade
+  seria definitivo. O fechamento depende de canal de saída — email
+  (provedor de envio que não está nas dependências) ou WhatsApp, junto
+  do passo 4 — e é decisão de escopo, não item já na fila.
+- **Os limites por IP viram limite global atrás de proxy reverso.** O
+  `request.ip` do Fastify vem do socket, então quando a API subir atrás
+  de proxy (passo 5, a VM da OCI) toda requisição chega com o endereço
+  do proxy, e os contadores por IP de `lib/limites.ts` — o do login e os
+  dos dois signups — passam a somar o tráfego de todo mundo num
+  orçamento só. Fecha com `trustProxy` no `Fastify()` do `app.ts`, e
+  isso não pode ser ligado antes: sem proxy confiável na frente,
+  `trustProxy` faz a API acreditar num `X-Forwarded-For` que qualquer um
+  escreve, e daí o limite por IP deixa de limitar. Os limites por conta
+  (email, telefone) não dependem do IP e continuam valendo nos dois
+  casos.
 - **Quem definir a senha primeiro assume o cadastro de um telefone.**
   Os cadastros de `Cliente` são criados por outra pessoa — pelo upsert
   do agendamento público, ou pelo barbeiro no walk-in. Sem verificar

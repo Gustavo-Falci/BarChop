@@ -10,3 +10,29 @@
   margin-inline: auto;
   padding: var(--espaco-xxl) var(--espaco-lg);
 }
+
+/* Repete o grid da página porque o <form> virou um item só dela: sem
+   isto, os campos que eram filhos diretos de .pagina perderiam o gap e
+   encostariam um no outro. */
+.formulario {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+/* Nem .acoes nem .previa existiam aqui — a tela referenciava as duas e
+   recebia `undefined`, então os dois botões ficavam encostados (o
+   .botao é inline-flex, e o JSX não deixa espaço entre eles). */
+.acoes {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+/* Prévia do link, não instrução: menor que o corpo e em cinza. O
+   --cor-ink-soft e não --cor-muted, que reprova contraste no tema
+   claro. O break-all porque um slug longo não tem onde quebrar. */
+.previa {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+  word-break: break-all;
+}

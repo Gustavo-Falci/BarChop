@@ -1,5 +1,6 @@
 import { prisma } from "@gr-barber/database";
 import { normalizarEmail } from "@gr-barber/formato";
+import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_EMAIL } from "../lib/padroes";
 import {
   conferirSenha,
@@ -36,10 +37,10 @@ const corpoSignup = {
   },
 } as const;
 
-export function registrarRotasAuth(app: App): void {
+export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
   app.post(
     "/auth/signup",
-    { schema: { body: corpoSignup } },
+    { schema: { body: corpoSignup }, preHandler: limites.signupDoBarbeiro },
     async (request, reply) => {
       const { barbearia, barbeiro } = request.body;
       // `!`: o schema exige `email` como string obrigatória e não vazia
@@ -105,7 +106,9 @@ export function registrarRotasAuth(app: App): void {
 
   app.post(
     "/auth/login",
-    { schema: { body: corpoLogin } },
+    // Dois contadores: um por e-mail, que é o alvo de quem adivinha
+    // senha, e um por IP, que é a rede de arrasto. Ver lib/limites.ts.
+    { schema: { body: corpoLogin }, preHandler: limites.loginDoBarbeiro },
     async (request, reply) => {
       const { email, senha } = request.body;
 

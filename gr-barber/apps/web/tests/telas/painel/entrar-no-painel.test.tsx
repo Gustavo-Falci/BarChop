@@ -39,7 +39,24 @@ describe("entrar no painel", () => {
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
   });
 
-  it("traduz nao_autenticado em email ou senha incorretos", async () => {
+  // O código que a API MANDA de verdade em POST /auth/login. O teste
+  // antigo usava `nao_autenticado`, que é o do login do cliente, e por
+  // isso passava enquanto a tela mostrava o aviso genérico em produção.
+  it("traduz credenciais_invalidas em email ou senha incorretos", async () => {
+    const falso = criarApiClientFalso();
+    falso.barbeiro.login = async () => {
+      throw new ErroDaApi(401, "credenciais_invalidas", "");
+    };
+    montar(falso);
+
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
+    await userEvent.type(screen.getByLabelText(/^senha/i), "errada12");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByText(/e-mail ou senha incorretos/i)).toBeInTheDocument();
+  });
+
+  it("traduz nao_autenticado igual, enquanto os dois códigos existirem", async () => {
     const falso = criarApiClientFalso();
     falso.barbeiro.login = async () => {
       throw new ErroDaApi(401, "nao_autenticado", "");
@@ -111,5 +128,110 @@ describe("entrar no painel", () => {
     expect(
       await screen.findByText(/e-mail ou esse endereço já está em uso/i)
     ).toBeInTheDocument();
+  });
+
+  it("traduz tentativas_excedidas em espere, e não em senha incorreta", async () => {
+    // O limite da API é por e-mail e por IP. Mostrar "senha incorreta"
+    // aqui mandaria a pessoa certa trocar uma senha que estava certa.
+    const falso = criarApiClientFalso();
+    falso.barbeiro.login = async () => {
+      throw new ErroDaApi(
+        429,
+        "tentativas_excedidas",
+        "Muitas tentativas. Tente de novo em 1 minuto."
+      );
+    };
+    montar(falso);
+
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
+    await userEvent.type(screen.getByLabelText(/^senha/i), "errada12");
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByText(/tente de novo em 1 minuto/i)).toBeInTheDocument();
+    expect(screen.queryByText(/senha incorretos/i)).not.toBeInTheDocument();
+  });
+
+  it("o Enter no campo de senha entra, sem passar pelo botão", async () => {
+    // É como quase todo mundo entra num formulário de dois campos.
+    montar();
+
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
+    await userEvent.type(screen.getByLabelText(/^senha/i), "segredo123{Enter}");
+
+    await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("jwt-falso-barbeiro"));
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
+  });
+
+  it("trocar pra criar barbearia não envia o formulário", async () => {
+    // O botão está dentro do <form>, e um <button> sem type é submit:
+    // sem type="button" ele tentaria o login com os campos vazios.
+    const falso = criarApiClientFalso();
+    let chamou = false;
+    falso.barbeiro.login = async () => {
+      chamou = true;
+      throw new ErroDaApi(401, "nao_autenticado", "");
+    };
+    montar(falso);
+
+    await userEvent.click(screen.getByRole("button", { name: /criar barbearia/i }));
+
+    expect(chamou).toBe(false);
+    expect(screen.getByRole("heading")).toHaveTextContent(/criar barbearia/i);
+  });
+
+  it("e-mail em branco acusa o campo, e não tenta a API", async () => {
+    // Sem isto o vazio ia até a API e voltava 400 do AJV em inglês, no
+    // lugar reservado pra "e-mail ou senha incorretos".
+    const falso = criarApiClientFalso();
+    let chamou = false;
+    falso.barbeiro.login = async () => {
+      chamou = true;
+      throw new ErroDaApi(400, "requisicao_invalida", "");
+    };
+    montar(falso);
+
+    await userEvent.type(screen.getByLabelText(/^senha/i), "segredo123{Enter}");
+
+    expect(await screen.findByText(/informe seu e-mail/i)).toBeInTheDocument();
+    expect(chamou).toBe(false);
+  });
+
+  it("senha em branco acusa o campo, e não tenta a API", async () => {
+    const falso = criarApiClientFalso();
+    let chamou = false;
+    falso.barbeiro.login = async () => {
+      chamou = true;
+      throw new ErroDaApi(400, "requisicao_invalida", "");
+    };
+    montar(falso);
+
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com{Enter}");
+
+    expect(await screen.findByText(/informe sua senha/i)).toBeInTheDocument();
+    expect(chamou).toBe(false);
+  });
+
+  it("anuncia os tokens que o gerenciador de senhas usa", async () => {
+    // Sem o par username/current-password o navegador trata o e-mail
+    // como contato solto e não oferece a credencial salva.
+    montar();
+
+    expect(screen.getByLabelText(/e-mail/i)).toHaveAttribute(
+      "autocomplete",
+      "username"
+    );
+    expect(screen.getByLabelText(/^senha/i)).toHaveAttribute(
+      "autocomplete",
+      "current-password"
+    );
+
+    // Na criação o token vira new-password: é o que faz o navegador
+    // oferecer uma senha forte e salvar a nova, em vez de preencher a
+    // que já está guardada.
+    await userEvent.click(screen.getByRole("button", { name: /criar barbearia/i }));
+    expect(screen.getByLabelText(/^senha/i)).toHaveAttribute(
+      "autocomplete",
+      "new-password"
+    );
   });
 });

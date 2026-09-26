@@ -216,4 +216,58 @@ describe("entrar", () => {
     );
     expect(screen.queryByText(/informe seu nome/i)).toBeNull();
   });
+
+  it("o Enter entra, e não dispara o primeiro acesso", async () => {
+    // Das duas ações da tela, o Enter tem que ser a de quem já tem
+    // conta: o primeiro acesso acontece uma vez só.
+    const falso = criarApiClientFalso();
+    let tentouPrimeiroAcesso = false;
+    falso.publico.signupCliente = async () => {
+      tentouPrimeiroAcesso = true;
+      throw new ErroDaApi(409, "conflito", "");
+    };
+    montar(falso);
+
+    await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
+    await userEvent.type(screen.getByLabelText(/senha/i), "segredo123{Enter}");
+
+    await waitFor(() =>
+      expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
+    );
+    expect(tentouPrimeiroAcesso).toBe(false);
+  });
+
+  it("traduz tentativas_excedidas em espere, e não em senha incorreta", async () => {
+    const falso = criarApiClientFalso();
+    falso.publico.loginCliente = async () => {
+      throw new ErroDaApi(
+        429,
+        "tentativas_excedidas",
+        "Muitas tentativas. Tente de novo em 1 minuto."
+      );
+    };
+    montar(falso);
+    await preencher();
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    expect(await screen.findByText(/tente de novo em 1 minuto/i)).toBeInTheDocument();
+    expect(screen.queryByText(/senha incorretos/i)).not.toBeInTheDocument();
+  });
+
+  it("anuncia os tokens que o gerenciador de senhas do celular usa", async () => {
+    // Este fluxo chega por link de WhatsApp, quase sempre no celular:
+    // sem o par tel/current-password ninguém preenche nem salva.
+    montar();
+
+    const telefone = screen.getByLabelText(/telefone/i);
+    expect(telefone).toHaveAttribute("autocomplete", "tel");
+    // `inputMode` e não `type="tel"`: o teclado numérico abre do mesmo
+    // jeito, e o campo continua a string que o formatador reescreve.
+    expect(telefone).toHaveAttribute("inputmode", "tel");
+    expect(screen.getByLabelText(/senha/i)).toHaveAttribute(
+      "autocomplete",
+      "current-password"
+    );
+  });
 });

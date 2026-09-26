@@ -12,6 +12,13 @@ import { Campo } from "../componentes/Campo";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./Entrar.module.css";
 
+// Os mesmos limites dos schemas de apps/api/src/routers/auth-cliente.ts.
+// Cortar na digitação evita o 400 que voltaria sem dizer qual campo
+// passou do tamanho.
+const NOME_MAX = 120;
+const TELEFONE_MAX = 20;
+const SENHA_MAX = 200;
+
 export function Entrar() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
@@ -111,10 +118,26 @@ export function Entrar() {
     } catch (causa) {
       const erro = causa as ErroDaApi;
 
-      if (erro.codigo === "nao_autenticado") {
+      // Os dois códigos: esta rota responde `nao_autenticado`, mas o
+      // login do barbeiro responde `credenciais_invalidas` pra mesma
+      // situação, e unificar os dois é dívida registrada no roadmap.
+      // Aceitar ambos aqui é o que faz essa unificação não quebrar a
+      // tela no dia em que acontecer.
+      if (
+        erro.codigo === "nao_autenticado" ||
+        erro.codigo === "credenciais_invalidas"
+      ) {
         setAviso("Telefone ou senha incorretos.");
       } else if (erro.codigo === "conflito") {
         setAviso("Esse telefone já tem senha. Use Entrar.");
+      } else if (erro.codigo === "tentativas_excedidas") {
+        // Dizer que foi o limite, e não "senha incorreta", é o que evita
+        // a pessoa certa duvidar de uma senha que estava certa. A
+        // mensagem da API já diz quanto esperar.
+        setAviso(
+          erro.mensagem ||
+            "Muitas tentativas. Espere um pouco antes de tentar de novo."
+        );
       } else {
         setAviso(erro.mensagem || "Não foi possível continuar agora.");
       }
@@ -135,50 +158,84 @@ export function Entrar() {
     <main className={estilos.pagina}>
       <h1>Minha conta</h1>
 
-      <Campo
-        rotulo="Nome (só no primeiro acesso)"
-        valor={nome}
-        onChange={(proximo) => {
-          setNome(proximo);
-          setErroNome(undefined);
+      {/* <form> e não um <div> com onClick: sem ele o Enter não envia, e
+          o gerenciador de senhas do celular não reconhece o par
+          telefone/senha pra preencher nem pra salvar — e este fluxo
+          chega por link de WhatsApp, quase sempre no celular. O Enter
+          envia "entrar", que é a ação de quem já tem conta; o primeiro
+          acesso acontece uma vez só e continua sendo um clique. */}
+      <form
+        className={estilos.formulario}
+        noValidate
+        onSubmit={(evento) => {
+          evento.preventDefault();
+          void submeter("entrar");
         }}
-        erro={erroNome}
-      />
-      <Campo
-        rotulo="Telefone"
-        formato="telefone"
-        valor={telefone}
-        onChange={(proximo) => {
-          setTelefone(proximo);
-          setErroTelefone(undefined);
-        }}
-        erro={erroTelefone}
-      />
-      <Campo
-        rotulo="Senha"
-        type="password"
-        valor={senha}
-        onChange={(proximo) => {
-          setSenha(proximo);
-          setErroSenha(undefined);
-        }}
-        erro={erroSenha}
-      />
+      >
+        <Campo
+          rotulo="Nome (só no primeiro acesso)"
+          autoComplete="name"
+          maxLength={NOME_MAX}
+          valor={nome}
+          onChange={(proximo) => {
+            setNome(proximo);
+            setErroNome(undefined);
+          }}
+          erro={erroNome}
+        />
+        {/* `inputMode="tel"` e não `type="tel"`: o teclado do celular
+            abre numérico do mesmo jeito, e o campo continua uma string
+            comum — que é o que o formatarTelefoneParcial do Campo
+            reescreve a cada tecla. Mesmo motivo do CadastroDeCliente. */}
+        <Campo
+          rotulo="Telefone"
+          formato="telefone"
+          inputMode="tel"
+          autoComplete="tel"
+          maxLength={TELEFONE_MAX}
+          valor={telefone}
+          onChange={(proximo) => {
+            setTelefone(proximo);
+            setErroTelefone(undefined);
+          }}
+          erro={erroTelefone}
+        />
+        {/* "current-password" e não "new-password" porque o Enter e o
+            botão principal são o login; no primeiro acesso o navegador
+            ainda oferece salvar a senha que acabou de ser digitada. */}
+        <Campo
+          rotulo="Senha"
+          type="password"
+          autoComplete="current-password"
+          maxLength={SENHA_MAX}
+          valor={senha}
+          onChange={(proximo) => {
+            setSenha(proximo);
+            setErroSenha(undefined);
+          }}
+          erro={erroSenha}
+        />
 
-      {aviso ? <Aviso>{aviso}</Aviso> : null}
+        {aviso ? <Aviso>{aviso}</Aviso> : null}
 
-      <div className={estilos.acoes}>
-        <Botao carregando={enviando} onClick={() => submeter("entrar")}>
-          Entrar
-        </Botao>
-        <Botao
-          variante="contorno"
-          carregando={enviando}
-          onClick={() => submeter("primeiro-acesso")}
-        >
-          Primeiro acesso
-        </Botao>
-      </div>
+        <div className={estilos.acoes}>
+          <Botao type="submit" carregando={enviando}>
+            Entrar
+          </Botao>
+          {/* `type="button"` porque agora ele está DENTRO do form, e um
+              <button> sem type é submit — o primeiro acesso viraria
+              login, que é justamente o que falha pra quem ainda não tem
+              senha. */}
+          <Botao
+            type="button"
+            variante="contorno"
+            carregando={enviando}
+            onClick={() => submeter("primeiro-acesso")}
+          >
+            Primeiro acesso
+          </Botao>
+        </div>
+      </form>
     </main>
   );
 }

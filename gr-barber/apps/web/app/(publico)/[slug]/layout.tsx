@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ProvedorDaApi } from "../../../src/api/ProvedorDaApi";
 import { BarraDaBarbearia } from "../../../src/fluxo/BarraDaBarbearia";
+import estilos from "./layout.module.css";
 
 // Server component: quem lê o slug é o provider, do lado do cliente,
 // com useParams. Assim o `params` (que aqui seria uma Promise) não
@@ -20,7 +21,11 @@ export default function LayoutDaBarbearia({
   return (
     <ProvedorDaApi>
       <BarraDaBarbearia />
-      {children}
+      {/* A coluna sai das telas e vem pra cá: as oito declaravam a
+          largura e nenhuma a margem, então o fluxo inteiro encostava na
+          esquerda no desktop. Aqui ela também fica na mesma vertical da
+          barra acima, em vez de os dois combinarem por acaso. */}
+      <div className={estilos.conteudo}>{children}</div>
     </ProvedorDaApi>
   );
 }

@@ -1,0 +1,17 @@
+/* A coluna do fluxo do cliente. Mora aqui, e não em cada tela, porque
+   é o layout que sabe onde o conteúdo começa — a barra da barbearia
+   está logo acima, e as duas precisam cair na mesma vertical.
+
+   Antes disto o fluxo inteiro encostava na esquerda no desktop: as oito
+   telas de `src/telas/` declaram `max-width: 480px` sem margem nenhuma.
+   No celular ninguém via, porque a janela é mais estreita que o teto; a
+   1440px de largura o formulário ficava numa faixa estreita grudada na
+   borda, com quase mil pixels de vazio ao lado.
+
+   O `max-width` repetido nas telas continua lá e não faz mal — elas
+   ficam com a largura desta coluna, que é a mesma. Se um dia esta
+   coluna mudar de 480, é nas telas que o valor velho vai sobreviver. */
+.conteudo {
+  max-width: 480px;
+  margin-inline: auto;
+}

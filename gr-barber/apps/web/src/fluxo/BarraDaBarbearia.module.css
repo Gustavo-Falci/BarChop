@@ -13,18 +13,14 @@
      aqui ele empurraria a tela inteira pra baixo no momento em que
      chegasse — quando a pessoa já começou a ler, ou a mirar um toque. */
   min-height: 56px;
-  /* O mesmo teto e o mesmo recuo das telas do fluxo (480px de largura,
-     24px de padding), pra o nome cair na mesma coluna dos campos
-     embaixo dele.
-
-     Sem `margin-inline: auto`, de propósito — e isto foi medido, não
-     suposto: as telas públicas têm `max-width: 480px` com
-     `margin-left: 0`, ou seja, encostam na esquerda. Centrar só a
-     barra punha o nome a 480px do começo enquanto o formulário
-     começava no 0. Que o fluxo inteiro devia ser centrado no desktop é
-     outra conversa: mexe nos oito CSS das telas públicas, e a barra
-     não é o lugar de decidir isso sozinha. */
+  /* O mesmo teto e o mesmo recuo da coluna do conteúdo (480px de
+     largura, 24px de padding), pra o nome cair na mesma vertical dos
+     campos embaixo dele. Quem define a coluna é
+     `app/(publico)/[slug]/layout.module.css`; se ela mudar, este par
+     tem que mudar junto — a régua embaixo atravessa a janela inteira,
+     então a barra não pode viver DENTRO da coluna. */
   max-width: 480px;
+  margin-inline: auto;
   padding: var(--espaco-sm) var(--espaco-lg);
 }
 

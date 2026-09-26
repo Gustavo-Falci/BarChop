@@ -31,6 +31,55 @@
   border-color: var(--cor-erro);
 }
 
+/* O botão de revelar fica DENTRO da moldura do campo, não ao lado: ao
+   lado ele empurraria a largura do input e desalinharia a senha dos
+   outros campos da coluna. */
+.caixaDeSenha {
+  position: relative;
+  display: grid;
+}
+
+/* Espaço pro botão não deitar em cima do que foi digitado. 52px = os
+   44 do alvo mais a folga da borda. */
+.caixaDeSenha .entrada {
+  padding-right: 52px;
+}
+
+/* 44x44 mesmo sendo um ícone de 20: é o alvo mínimo de toque, e este
+   botão vive num formulário que se preenche no celular. A cor parte do
+   --cor-ink-soft pra não competir com o texto da senha, e fecha em
+   --cor-ink no hover e no foco. */
+.revelar {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: none;
+  color: var(--cor-ink-soft);
+  cursor: pointer;
+}
+
+.revelar:hover {
+  color: var(--cor-ink);
+}
+
+/* `outline-offset` NEGATIVO: o botão encosta na borda do campo, e um
+   offset positivo desenharia o anel por cima dela — duas molduras
+   concêntricas brigando. Pra dentro, o anel fica legível e não encosta
+   em nada. `:focus-visible` e não `:focus` pra o anel não aparecer
+   depois de um clique de mouse. */
+.revelar:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: -3px;
+  color: var(--cor-ink);
+}
+
 /* Texto de apoio que fica: a dica de formato no placeholder some na
    primeira tecla, que é justamente quando ela é necessária. */
 .apoio {

@@ -18,7 +18,7 @@ function montar(falso = criarApiClientFalso()) {
 
 async function preencher() {
   await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
-  await userEvent.type(screen.getByLabelText(/senha/i), "segredo123");
+  await userEvent.type(screen.getByLabelText(/^senha$/i), "segredo123");
 }
 
 describe("entrar", () => {
@@ -98,7 +98,7 @@ describe("entrar", () => {
     montar(falso);
 
     await userEvent.type(screen.getByLabelText(/telefone/i), "99999");
-    await userEvent.type(screen.getByLabelText(/senha/i), "segredo123");
+    await userEvent.type(screen.getByLabelText(/^senha$/i), "segredo123");
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(await screen.findByText(/informe o ddd/i)).toBeInTheDocument();
@@ -153,7 +153,7 @@ describe("entrar", () => {
 
     await userEvent.clear(screen.getByLabelText(/telefone/i));
     await userEvent.type(screen.getByLabelText(/telefone/i), "99999");
-    await userEvent.type(screen.getByLabelText(/senha/i), "segredo123");
+    await userEvent.type(screen.getByLabelText(/^senha$/i), "segredo123");
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
     expect(await screen.findByText(/informe o ddd/i)).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe("entrar", () => {
     montar(falso);
     await userEvent.type(screen.getByLabelText(/nome/i), "Maria");
     await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
-    await userEvent.type(screen.getByLabelText(/senha/i), "abc123");
+    await userEvent.type(screen.getByLabelText(/^senha$/i), "abc123");
 
     await userEvent.click(screen.getByRole("button", { name: /primeiro acesso/i }));
 
@@ -229,7 +229,7 @@ describe("entrar", () => {
     montar(falso);
 
     await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
-    await userEvent.type(screen.getByLabelText(/senha/i), "segredo123{Enter}");
+    await userEvent.type(screen.getByLabelText(/^senha$/i), "segredo123{Enter}");
 
     await waitFor(() =>
       expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
@@ -265,7 +265,7 @@ describe("entrar", () => {
     // `inputMode` e não `type="tel"`: o teclado numérico abre do mesmo
     // jeito, e o campo continua a string que o formatador reescreve.
     expect(telefone).toHaveAttribute("inputmode", "tel");
-    expect(screen.getByLabelText(/senha/i)).toHaveAttribute(
+    expect(screen.getByLabelText(/^senha$/i)).toHaveAttribute(
       "autocomplete",
       "current-password"
     );

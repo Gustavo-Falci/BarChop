@@ -1,0 +1,52 @@
+/* Régua embaixo, não caixa em volta: a barra separa a identidade do
+   conteúdo sem virar mais um retângulo numa tela que já é feita deles.
+   A --borda-padrao é a mesma espessura dos campos e dos botões. */
+.barra {
+  border-bottom: var(--borda-padrao) solid var(--cor-ink);
+  background: var(--cor-surface);
+}
+
+.interno {
+  display: flex;
+  align-items: center;
+  /* Altura reservada: o nome chega depois da requisição, e sem um piso
+     aqui ele empurraria a tela inteira pra baixo no momento em que
+     chegasse — quando a pessoa já começou a ler, ou a mirar um toque. */
+  min-height: 56px;
+  /* O mesmo teto e o mesmo recuo das telas do fluxo (480px de largura,
+     24px de padding), pra o nome cair na mesma coluna dos campos
+     embaixo dele.
+
+     Sem `margin-inline: auto`, de propósito — e isto foi medido, não
+     suposto: as telas públicas têm `max-width: 480px` com
+     `margin-left: 0`, ou seja, encostam na esquerda. Centrar só a
+     barra punha o nome a 480px do começo enquanto o formulário
+     começava no 0. Que o fluxo inteiro devia ser centrado no desktop é
+     outra conversa: mexe nos oito CSS das telas públicas, e a barra
+     não é o lugar de decidir isso sozinha. */
+  max-width: 480px;
+  padding: var(--espaco-sm) var(--espaco-lg);
+}
+
+.marca {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  color: var(--cor-ink);
+  text-decoration: none;
+}
+
+/* Sublinhado só no hover: parado, este é o nome do lugar — sublinhá-lo
+   sempre o faria parecer um link entre outros, quando é o título da
+   casa. No hover ele se anuncia como clicável. */
+.marca:hover {
+  text-decoration: underline;
+}
+
+/* `:focus-visible` e não `:focus`, pra o anel não aparecer depois de um
+   clique de mouse. O par 3px/2px é o mesmo dos campos. */
+.marca:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

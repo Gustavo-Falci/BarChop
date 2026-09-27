@@ -39,27 +39,15 @@ describe("entrar no painel", () => {
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
   });
 
-  // O código que a API MANDA de verdade em POST /auth/login. O teste
-  // antigo usava `nao_autenticado`, que é o do login do cliente, e por
-  // isso passava enquanto a tela mostrava o aviso genérico em produção.
+  // O código que a API MANDA de verdade em POST /auth/login — e hoje
+  // também no login do cliente, que era o desvio. O teste antigo usava
+  // `nao_autenticado` e por isso passava enquanto a tela mostrava o
+  // aviso genérico em produção: confira o código no router, não no
+  // falso.ts.
   it("traduz credenciais_invalidas em email ou senha incorretos", async () => {
     const falso = criarApiClientFalso();
     falso.barbeiro.login = async () => {
       throw new ErroDaApi(401, "credenciais_invalidas", "");
-    };
-    montar(falso);
-
-    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
-    await userEvent.type(screen.getByLabelText(/^senha/i), "errada12");
-    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
-
-    expect(await screen.findByText(/e-mail ou senha incorretos/i)).toBeInTheDocument();
-  });
-
-  it("traduz nao_autenticado igual, enquanto os dois códigos existirem", async () => {
-    const falso = criarApiClientFalso();
-    falso.barbeiro.login = async () => {
-      throw new ErroDaApi(401, "nao_autenticado", "");
     };
     montar(falso);
 
@@ -169,7 +157,7 @@ describe("entrar no painel", () => {
     let chamou = false;
     falso.barbeiro.login = async () => {
       chamou = true;
-      throw new ErroDaApi(401, "nao_autenticado", "");
+      throw new ErroDaApi(401, "credenciais_invalidas", "");
     };
     montar(falso);
 

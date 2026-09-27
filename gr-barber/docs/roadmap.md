@@ -89,18 +89,6 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
   buraco em si continua aberto — cada tentativa, dentro do orçamento,
   ainda responde se aquele email existe. Fechar de verdade é verificação
   de email, que só faz sentido junto do canal de mensagem do passo 4.
-- **A mesma situação tem dois códigos de erro.** Credenciais erradas
-  respondem `credenciais_invalidas` no login do barbeiro
-  (`routers/auth.ts`) e `nao_autenticado` no do cliente
-  (`routers/auth-cliente.ts`); o README documenta os dois. Isso já
-  custou um bug: a tela do painel ramificava só em `nao_autenticado`, e
-  senha errada caía no aviso genérico "não foi possível continuar
-  agora" — e o teste não pegava, porque o dublê lançava o código do
-  cliente. As duas telas hoje aceitam os dois códigos, o que conserta o
-  sintoma. Fechar é escolher um: `credenciais_invalidas` nas duas rotas,
-  com o README e os dois testes de login acompanhando. É mudança de
-  contrato, então vale fazer antes de o app do barbeiro no Expo começar
-  a consumir isso.
 - **Não existe recuperação de senha.** Quem esquecer a senha fica
   trancado do lado de fora, sem caminho nenhum no produto — vale pro
   barbeiro (`POST /auth/login`) e pro cliente. No piloto com um barbeiro

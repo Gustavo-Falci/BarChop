@@ -92,6 +92,14 @@ describe("POST /barbearias/:slug/auth/cliente/login", () => {
     expect(senhaErrada.statusCode).toBe(401);
     expect(telefoneInexistente.statusCode).toBe(401);
     expect(senhaErrada.json()).toEqual(telefoneInexistente.json());
+
+    // O CÓDIGO concreto, e não só "os dois são iguais": era esta
+    // afirmação que faltava. Sem ela a rota pôde responder
+    // `nao_autenticado` — o código de token inválido — enquanto o login
+    // do barbeiro respondia `credenciais_invalidas`, e a divergência
+    // sobreviveu até quebrar uma tela. Comparar as duas respostas entre
+    // si não pega isso: elas eram iguais, e iguais no valor errado.
+    expect(senhaErrada.json()).toEqual({ erro: "credenciais_invalidas" });
   });
 
   it("recusa cadastro que ainda não tem senha", async () => {

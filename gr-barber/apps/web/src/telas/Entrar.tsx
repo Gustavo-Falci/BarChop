@@ -118,15 +118,12 @@ export function Entrar() {
     } catch (causa) {
       const erro = causa as ErroDaApi;
 
-      // Os dois códigos: esta rota responde `nao_autenticado`, mas o
-      // login do barbeiro responde `credenciais_invalidas` pra mesma
-      // situação, e unificar os dois é dívida registrada no roadmap.
-      // Aceitar ambos aqui é o que faz essa unificação não quebrar a
-      // tela no dia em que acontecer.
-      if (
-        erro.codigo === "nao_autenticado" ||
-        erro.codigo === "credenciais_invalidas"
-      ) {
+      // Um código só: as duas rotas de login respondem
+      // `credenciais_invalidas`. O `nao_autenticado` que esta tela
+      // também aceitava era o desvio desta rota, já corrigido — e ele
+      // continua existindo na API, mas significando outra coisa (token
+      // ausente ou expirado), que num login sem token não acontece.
+      if (erro.codigo === "credenciais_invalidas") {
         setAviso("Telefone ou senha incorretos.");
       } else if (erro.codigo === "conflito") {
         setAviso("Esse telefone já tem senha. Use Entrar.");

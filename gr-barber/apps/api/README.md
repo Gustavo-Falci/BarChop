@@ -88,7 +88,7 @@ Prisma sai no contrato.
 |---|---|---|
 | Body ou parâmetro fora do schema, id fora do formato UUID | 400 | `requisicao_invalida` |
 | Token ausente, inválido, expirado ou de barbeiro inativo | 401 | `nao_autenticado` |
-| Credenciais erradas no login | 401 | `credenciais_invalidas` |
+| Credenciais erradas — nos dois logins, o do barbeiro e o do cliente | 401 | `credenciais_invalidas` |
 | Acesso negado | 403 | `acesso_negado` |
 | Rota, registro inexistente ou recurso de outra barbearia | 404 | `nao_encontrado` |
 | Unique violada | 409 | `conflito` |

@@ -124,17 +124,14 @@ export function EntrarNoPainel() {
         : await api.barbeiro.login({ email, senha });
     } catch (causa) {
       const erro = causa as ErroDaApi;
-      // Os dois códigos, e não só um: `POST /auth/login` responde
-      // `credenciais_invalidas` (ver apps/api/src/routers/auth.ts e o
-      // README da API), enquanto o login do cliente responde
-      // `nao_autenticado`. Esta tela só chama o primeiro — e antes
-      // ramificava só no segundo, então senha errada caía no aviso
-      // genérico "não foi possível continuar agora". O teste não pegava
-      // porque o dublê lançava o código do cliente.
-      if (
-        erro.codigo === "credenciais_invalidas" ||
-        erro.codigo === "nao_autenticado"
-      ) {
+      // `credenciais_invalidas` é o código das DUAS rotas de login desde
+      // que o do cliente foi alinhado. Esta tela já ramificou só em
+      // `nao_autenticado`, que é o código de token, e por isso senha
+      // errada caía no aviso genérico "não foi possível continuar
+      // agora" — o teste não pegava porque o dublê lançava o código do
+      // cliente. Ao escrever teste de erro, confira o código no router
+      // da API, não no falso.ts.
+      if (erro.codigo === "credenciais_invalidas") {
         setAviso("E-mail ou senha incorretos.");
       } else if (erro.codigo === "conflito") {
         // Sem dizer qual dos dois: a sondagem que o 409 já permite é

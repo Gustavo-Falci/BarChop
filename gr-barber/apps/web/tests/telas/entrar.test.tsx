@@ -39,10 +39,10 @@ describe("entrar", () => {
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/minha-conta");
   });
 
-  it("traduz nao_autenticado em telefone ou senha incorretos", async () => {
+  it("traduz credenciais_invalidas em telefone ou senha incorretos", async () => {
     const falso = criarApiClientFalso();
     falso.publico.loginCliente = async () => {
-      throw new ErroDaApi(401, "nao_autenticado", "");
+      throw new ErroDaApi(401, "credenciais_invalidas", "");
     };
     montar(falso);
     await preencher();
@@ -93,7 +93,7 @@ describe("entrar", () => {
     let tentou = false;
     falso.publico.loginCliente = async () => {
       tentou = true;
-      throw new ErroDaApi(401, "nao_autenticado", "");
+      throw new ErroDaApi(401, "credenciais_invalidas", "");
     };
     montar(falso);
 
@@ -130,7 +130,7 @@ describe("entrar", () => {
     let tentou = false;
     falso.publico.loginCliente = async () => {
       tentou = true;
-      throw new ErroDaApi(401, "nao_autenticado", "");
+      throw new ErroDaApi(401, "credenciais_invalidas", "");
     };
     montar(falso);
     await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");

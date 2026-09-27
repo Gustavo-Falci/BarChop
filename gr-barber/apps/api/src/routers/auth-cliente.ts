@@ -143,8 +143,18 @@ export function registrarRotasAuthCliente(
         autorizado?.senhaHash ?? (await obterHashDescartavel());
       const senhaConfere = await conferirSenha(senha, hashParaConferir);
 
+      // `credenciais_invalidas`, o mesmo do login do barbeiro. Esta rota
+      // respondia `nao_autenticado`, que é o código de PROBLEMA COM O
+      // TOKEN — é nele que o tratador central normaliza todo 401 que
+      // passa por ele (plugins/erros.ts). Usar o mesmo código pras duas
+      // coisas apagava a diferença entre "sua senha está errada" e "seu
+      // token expirou", que pedem reações opostas de quem consome: uma
+      // é digitar de novo, a outra é entrar de novo.
+      //
+      // Isso já custou um bug: a tela do painel ramificava só em
+      // `nao_autenticado`, e senha errada caía no aviso genérico.
       if (!autorizado || !senhaConfere) {
-        return reply.code(401).send({ erro: "nao_autenticado" });
+        return reply.code(401).send({ erro: "credenciais_invalidas" });
       }
 
       const token = app.jwt.sign({

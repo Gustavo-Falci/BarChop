@@ -20,19 +20,89 @@ describe("perfil da barbearia", () => {
 
   it("mostra nome e endereço da barbearia", async () => {
     montar();
+    // `level: 1` porque a página passou a ter os títulos de Serviços e
+    // Horário de funcionamento: sem qualificar, `getByRole("heading")`
+    // acha três e estoura.
     await waitFor(() =>
-      expect(screen.getByRole("heading")).toHaveTextContent("GR Barber")
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+        "GR Barber"
+      )
     );
     expect(screen.getByText("Rua das Tesouras, 123")).toBeInTheDocument();
   });
 
   it("leva pro primeiro passo do agendamento", async () => {
     montar();
-    await waitFor(() => screen.getByRole("heading"));
+    await waitFor(() => screen.getByRole("heading", { level: 1 }));
 
     await userEvent.click(screen.getByRole("button", { name: /agendar/i }));
 
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/agendar");
+  });
+
+  it("mostra a apresentação, os serviços com preço e o horário", async () => {
+    // É o que a home existe pra dizer: quem chega pelo link do WhatsApp
+    // decide aqui se vale agendar.
+    montar();
+
+    expect(
+      await screen.findByText(/barbearia de bairro desde 2012/i)
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole("heading", { name: /serviços/i })).toBeInTheDocument();
+    expect(screen.getByText("Corte")).toBeInTheDocument();
+    expect(screen.getByText("R$ 40,00")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("heading", { name: /horário de funcionamento/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Segunda")).toBeInTheDocument();
+    expect(screen.getAllByText("09:00 às 18:00").length).toBeGreaterThan(0);
+  });
+
+  it("não lista o dia fechado", async () => {
+    // Domingo é `fechado: true` na semente. Listar "Domingo —" seria
+    // dizer que abre e não informar o horário.
+    montar();
+    await screen.findByRole("heading", { name: /horário de funcionamento/i });
+
+    expect(screen.queryByText("Domingo")).toBeNull();
+  });
+
+  it("esconde as seções vazias em vez de anunciar que não tem nada", async () => {
+    // Barbearia recém-criada não tem serviço nem horário. "Serviços
+    // (nenhum)" na página pública lê-se como barbearia fechada por quem
+    // chegou pelo link, e como produto quebrado por quem acabou de criar
+    // a conta. Quem cobra o cadastro é o painel, não a vitrine.
+    const falso = criarApiClientFalso();
+    falso.publico.servicos = async () => [];
+    falso.publico.perfilDaBarbearia = async () => ({
+      id: "b1",
+      nome: "Barbearia Nova",
+      slug: "gr-barber",
+      telefone: null,
+      endereco: null,
+      logoUrl: null,
+      sobre: null,
+      horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+        diaSemana,
+        horaAbertura: null,
+        horaFechamento: null,
+        fechado: true,
+      })),
+      barbeiros: [{ id: "barbeiro-1", nome: "Gu" }],
+    });
+    montar(falso);
+
+    await screen.findByRole("heading", { name: "Barbearia Nova" });
+
+    expect(screen.queryByRole("heading", { name: /serviços/i })).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: /horário de funcionamento/i })
+    ).toBeNull();
+    // E o caminho principal continua ali: sem cadastro nenhum, a home
+    // ainda é um convite pra agendar.
+    expect(screen.getByRole("button", { name: /agendar/i })).toBeInTheDocument();
   });
 
   it("dá tela própria pra barbearia que não existe", async () => {

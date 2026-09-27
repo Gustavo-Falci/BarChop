@@ -1,3 +1,59 @@
 .pagina { display: grid; gap: var(--espaco-lg); padding: var(--espaco-lg); }
 .faixa { height: 120px; border: var(--borda-padrao) solid var(--cor-ink); border-radius: var(--raio-lg); background: var(--cor-accent); }
 .endereco { color: var(--cor-muted); font-size: var(--texto-sm); }
+
+/* `pre-line` é o que preserva as quebras de linha que o barbeiro
+   digitou no painel, sem interpretar HTML: o texto continua sendo
+   texto, escapado pelo React. Interpretar HTML aqui transformaria um
+   campo que qualquer barbeiro edita num XSS armazenado, servido na
+   página mais pública do produto.
+
+   `max-width` em ch, e não em px: o limite de leitura confortável é
+   contado em caracteres, e aqui o texto pode ter parágrafos. */
+.sobre {
+  margin: 0;
+  max-width: 60ch;
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+.secao {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+
+/* Nome de um lado, preço ou horário do outro, com a divisória fina
+   entre as linhas — a mesma `--borda-hairline` que a Confirmacao usa
+   pra listar itens. Com 2px viraria grade. */
+.linha {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  padding: var(--espaco-sm) 0;
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.linha:last-child {
+  border-bottom: 0;
+}
+
+/* `tabular-nums` pra os preços e as horas alinharem na vertical: sem
+   isso os dígitos têm larguras diferentes e a coluna da direita fica
+   trêmula de uma linha pra outra. */
+.valor {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

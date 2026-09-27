@@ -1,4 +1,4 @@
-.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); max-width: 480px; }
+.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
 /* Repete o grid da página porque o <form> virou um item só dela: sem
    isto os campos perderiam o gap e encostariam um no outro. */
 .formulario { display: grid; gap: var(--espaco-md); }

@@ -1,2 +1,2 @@
-.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); max-width: 480px; }
+.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
 .lista { display: grid; gap: var(--espaco-sm); }

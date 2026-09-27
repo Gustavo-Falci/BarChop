@@ -1,2 +1,2 @@
-.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); max-width: 480px; }
+.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
 .linha { display: flex; justify-content: space-between; gap: var(--espaco-md); padding: var(--espaco-sm) 0; border-bottom: var(--borda-hairline) solid var(--cor-line); }

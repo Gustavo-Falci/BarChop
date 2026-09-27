@@ -8,9 +8,14 @@
    1440px de largura o formulário ficava numa faixa estreita grudada na
    borda, com quase mil pixels de vazio ao lado.
 
-   O `max-width` repetido nas telas continua lá e não faz mal — elas
-   ficam com a largura desta coluna, que é a mesma. Se um dia esta
-   coluna mudar de 480, é nas telas que o valor velho vai sobreviver. */
+   Este é o ÚNICO lugar que decide a largura do fluxo. As oito telas
+   declaravam `max-width: 480px` cada uma; enquanto a coluna repetisse o
+   mesmo valor, as cópias não faziam mal — mas mudar esta coluna pra 640
+   deixaria as oito cortando em 480, sem nada à vista explicando por
+   quê. Elas perderam o `max-width` e ficaram só com o `padding`, que é
+   delas mesmo. A barra da barbearia é a exceção, e por um motivo: a
+   régua dela atravessa a janela inteira, então ela vive fora desta
+   coluna e repete o par 480px/24px no próprio CSS. */
 .conteudo {
   max-width: 480px;
   margin-inline: auto;

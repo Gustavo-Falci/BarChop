@@ -1,4 +1,4 @@
-.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); max-width: 480px; }
+.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
 .item { display: grid; gap: var(--espaco-sm); }
 .linha { display: flex; align-items: center; gap: var(--espaco-sm); }
 .acoes { display: flex; gap: var(--espaco-sm); }

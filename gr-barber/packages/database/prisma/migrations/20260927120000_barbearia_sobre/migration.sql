@@ -1,0 +1,13 @@
+-- Texto de apresentação da barbearia, exibido na home pública.
+--
+-- Escrita à mão, e não gerada por `prisma migrate dev`: o banco tem a
+-- coluna `periodo` (tsrange gerada) e a constraint EXCLUDE
+-- `sem_conflito_horario`, que não têm representação no schema
+-- declarativo. O `migrate dev` lê isso como divergência e propõe
+-- DERRUBAR a coluna — com dados dentro. Ver o aviso no fim de
+-- 20260829120000_init/migration.sql.
+--
+-- Anulável e sem default: toda barbearia já cadastrada nasce sem
+-- apresentação, e a home precisa funcionar sem ela — quem acabou de
+-- criar a conta ainda não escreveu nada.
+ALTER TABLE "barbearia" ADD COLUMN "sobre" VARCHAR(1000);

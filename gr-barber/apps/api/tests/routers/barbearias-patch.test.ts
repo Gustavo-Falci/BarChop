@@ -17,6 +17,7 @@ describe("PATCH /barbearias/me", () => {
         telefone: "1133334444",
         endereco: "Rua das Tesouras, 100",
         logoUrl: "https://exemplo.com/logo.png",
+        sobre: "Corte na tesoura e barba na navalha.",
       },
     });
 
@@ -28,6 +29,7 @@ describe("PATCH /barbearias/me", () => {
       telefone: "(11) 3333-4444",
       endereco: "Rua das Tesouras, 100",
       logoUrl: "https://exemplo.com/logo.png",
+      sobre: "Corte na tesoura e barba na navalha.",
     });
 
     await app.close();

@@ -56,6 +56,7 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
   telefone: "(11) 3333-4444",
   endereco: "Rua das Tesouras, 123",
   logoUrl: null,
+  sobre: "Barbearia de bairro desde 2012. Corte na tesoura e barba na navalha.",
   horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
     diaSemana,
     horaAbertura: diaSemana === 0 ? null : "09:00",

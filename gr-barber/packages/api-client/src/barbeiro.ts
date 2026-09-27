@@ -32,6 +32,8 @@ export interface EdicaoDaBarbearia {
   telefone?: string | null;
   endereco?: string | null;
   logoUrl?: string | null;
+  // Texto de apresentação da home pública; `null` limpa.
+  sobre?: string | null;
 }
 
 export interface NovoServico {

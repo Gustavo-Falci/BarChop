@@ -128,6 +128,7 @@ describe("serializarBarbearia", () => {
         telefone: null,
         endereco: null,
         logoUrl: null,
+        sobre: "Corte na tesoura e barba na navalha.",
       })
     ).toEqual({
       id: "b1",
@@ -136,6 +137,7 @@ describe("serializarBarbearia", () => {
       telefone: null,
       endereco: null,
       logoUrl: null,
+      sobre: "Corte na tesoura e barba na navalha.",
     });
   });
 });

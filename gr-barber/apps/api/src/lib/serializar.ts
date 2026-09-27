@@ -38,6 +38,7 @@ export function serializarBarbearia(barbearia: {
   telefone: string | null;
   endereco: string | null;
   logoUrl: string | null;
+  sobre: string | null;
 }): BarbeariaSerializada {
   return {
     id: barbearia.id,
@@ -46,6 +47,7 @@ export function serializarBarbearia(barbearia: {
     telefone: barbearia.telefone,
     endereco: barbearia.endereco,
     logoUrl: barbearia.logoUrl,
+    sobre: barbearia.sobre,
   };
 }
 

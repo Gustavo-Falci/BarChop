@@ -23,6 +23,16 @@ const corpoPatchBarbearia = {
       maxLength: 20,
     },
     endereco: { type: ["string", "null"], maxLength: 255 },
+    // O texto que a home pública mostra. `null` limpa; o limite é o
+    // mesmo da coluna, senão o banco recusaria com 500 o que o schema
+    // deixou passar.
+    //
+    // Texto puro, nunca HTML: ele é renderizado como filho de um
+    // elemento React, que escapa por padrão. Quem for dar formatação a
+    // isso um dia resolve com `white-space: pre-line` no CSS — jamais
+    // com dangerouslySetInnerHTML, que transformaria este campo num
+    // XSS armazenado servido na página mais pública do produto.
+    sobre: { type: ["string", "null"], maxLength: 1000 },
     // Só http(s): o campo vai direto pro `src` de uma imagem nas telas,
     // e um "javascript:" ali seria XSS servido pela nossa API.
     logoUrl: {

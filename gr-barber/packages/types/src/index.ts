@@ -54,6 +54,9 @@ export interface BarbeariaSerializada {
   telefone: string | null;
   endereco: string | null;
   logoUrl: string | null;
+  // Texto de apresentação da home pública. Anulável porque toda
+  // barbearia nasce sem ele — a home tem que funcionar assim.
+  sobre: string | null;
 }
 
 export interface HorarioSerializado {

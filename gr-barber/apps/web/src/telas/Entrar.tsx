@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@gr-barber/api-client";
 import { normalizarTelefoneObrigatorio, TelefoneInvalido } from "@gr-barber/formato";
 import type { SessaoCliente } from "@gr-barber/types";
@@ -9,6 +9,7 @@ import { useApi } from "../api/ProvedorDaApi";
 import { Aviso } from "../componentes/Aviso";
 import { Botao } from "../componentes/Botao";
 import { Campo } from "../componentes/Campo";
+import { caminhoDoPasso, ehPasso, lerEscolhas } from "../fluxo/passos";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./Entrar.module.css";
 
@@ -22,7 +23,22 @@ const SENHA_MAX = 200;
 export function Entrar() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
+  const query = useSearchParams();
   const api = useApi();
+
+  // Pra onde ir depois de entrar. Quem chega pelo passo "quem é você"
+  // do agendamento tem que voltar exatamente pra lá, com os serviços,
+  // a data e a hora que já escolheu — senão entrar custa refazer o
+  // fluxo, e ninguém faz isso.
+  //
+  // O `voltar` é o NOME de um passo, não uma URL: o caminho é
+  // reconstruído aqui pelo `caminhoDoPasso`, a partir do slug da rota.
+  // Um valor que não seja passo conhecido cai no destino padrão — ver
+  // o comentário do `caminhoDoLogin` em fluxo/passos.ts.
+  const voltar = query.get("voltar");
+  const destino = ehPasso(voltar)
+    ? caminhoDoPasso(slug, voltar, lerEscolhas(query))
+    : `/${slug}/minha-conta`;
 
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -147,7 +163,7 @@ export function Entrar() {
     // certa.
     if (sessao) {
       sessaoDoCliente(slug).gravar(sessao.token);
-      router.push(`/${slug}/minha-conta`);
+      router.push(destino);
     }
   }
 

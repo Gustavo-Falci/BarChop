@@ -60,3 +60,36 @@ export function caminhoDoPasso(
 ): string {
   return `/${slug}${CAMINHO_DO_PASSO[passo]}${montarQuery(escolhas)}`;
 }
+
+// `Object.hasOwn` e NÃO o operador `in`: o `in` percorre a cadeia de
+// protótipos, então `"toString"`, `"constructor"` e companhia passariam
+// por passos válidos — e o valor vem da query, ou seja, de fora.
+export function ehPasso(valor: unknown): valor is Passo {
+  return typeof valor === "string" && Object.hasOwn(CAMINHO_DO_PASSO, valor);
+}
+
+// Caminho pra tela de entrar carregando de onde o fluxo saiu.
+//
+// O destino NÃO viaja como URL pronta. Vai como o nome do passo, mais
+// as escolhas que já estavam na query — e quem reconstrói o caminho do
+// outro lado é o `caminhoDoPasso`, a partir do slug da própria rota.
+// Assim nenhuma string vinda de fora chega no `router.push`: um
+// `?voltar=https://outro-site` não casa com passo conhecido nenhum (ver
+// `ehPasso`) e cai no destino padrão.
+//
+// Guardar a URL inteira num parâmetro seria o formato clássico do
+// redirecionamento aberto, e validá-la por prefixo não bastaria:
+// `//outro-site` é tratado como absoluto pelo navegador,
+// `/<slug>/../../outro` é normalizado, e `/<slug>outro-site.com` passa
+// por um `startsWith` sem a barra final.
+export function caminhoDoLogin(
+  slug: string,
+  voltar: Passo,
+  escolhas: Escolhas
+): string {
+  // `.slice(1)` tira o "?" que o montarQuery devolve; com a query
+  // vazia ele devolve "", e o slice de "" continua "".
+  const params = new URLSearchParams(montarQuery(escolhas).slice(1));
+  params.set("voltar", voltar);
+  return `/${slug}/entrar?${params.toString()}`;
+}

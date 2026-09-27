@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { caminhoDoPasso, lerEscolhas, montarQuery } from "../../src/fluxo/passos";
+import {
+  caminhoDoLogin,
+  caminhoDoPasso,
+  ehPasso,
+  lerEscolhas,
+  montarQuery,
+} from "../../src/fluxo/passos";
 
 describe("escolhas na query", () => {
   it("lê a lista de serviços separada por vírgula", () => {
@@ -61,5 +67,43 @@ describe("escolhas na query", () => {
     expect(caminhoDoPasso("gr-barber", "servicos", escolhas)).toBe(
       "/gr-barber/agendar?servicos=s1&data=2026-09-09"
     );
+  });
+});
+
+describe("volta pro fluxo depois de entrar", () => {
+  it("leva o passo e as escolhas na query", () => {
+    expect(
+      caminhoDoLogin("gr-barber", "dados", {
+        servicoIds: ["s1"],
+        data: "2026-09-09",
+        hora: "09:00",
+      })
+    ).toBe("/gr-barber/entrar?servicos=s1&data=2026-09-09&hora=09%3A00&voltar=dados");
+  });
+
+  it("funciona sem escolha nenhuma na query", () => {
+    expect(caminhoDoLogin("gr-barber", "servicos", { servicoIds: [] })).toBe(
+      "/gr-barber/entrar?voltar=servicos"
+    );
+  });
+
+  it("reconhece só os passos que existem", () => {
+    expect(ehPasso("dados")).toBe(true);
+    expect(ehPasso("confirmar")).toBe(true);
+
+    // O ponto do `ehPasso`: é ele que impede um destino vindo de fora
+    // de virar navegação. Guardar a URL inteira num parâmetro seria
+    // redirecionamento aberto, e validá-la por prefixo não bastaria —
+    // estas três passam por quase toda checagem ingênua.
+    expect(ehPasso("https://outro-site.com")).toBe(false);
+    expect(ehPasso("//outro-site.com")).toBe(false);
+    expect(ehPasso("/gr-barber/../../outro")).toBe(false);
+
+    expect(ehPasso("")).toBe(false);
+    expect(ehPasso(null)).toBe(false);
+    expect(ehPasso(undefined)).toBe(false);
+    // Não pode casar com o que vem do Object.prototype.
+    expect(ehPasso("toString")).toBe(false);
+    expect(ehPasso("constructor")).toBe(false);
   });
 });

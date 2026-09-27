@@ -255,6 +255,46 @@ describe("entrar", () => {
     expect(screen.queryByText(/senha incorretos/i)).not.toBeInTheDocument();
   });
 
+  it("volta pro passo do agendamento de onde veio", async () => {
+    // Quem chegou aqui pelo "já tenho conta" do passo de dados precisa
+    // cair de volta no mesmo ponto, com serviços, data e hora — senão
+    // entrar custa refazer o fluxo, e ninguém faz isso.
+    navegacaoFalsa.redefinir({
+      query: {
+        voltar: "dados",
+        servicos: "s1",
+        data: "2026-09-10",
+        hora: "09:00",
+      },
+    });
+    montar();
+    await preencher();
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() =>
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith(
+        "/gr-barber/agendar/dados?servicos=s1&data=2026-09-10&hora=09%3A00"
+      )
+    );
+  });
+
+  it("um voltar que não é passo nenhum cai no destino padrão", async () => {
+    // O destino viaja como NOME de passo justamente pra isto: uma URL
+    // vinda de fora nunca chega no router. Se chegasse, seria
+    // redirecionamento aberto — o link do WhatsApp é público, e
+    // qualquer um monta a query.
+    navegacaoFalsa.redefinir({ query: { voltar: "https://outro-site.com" } });
+    montar();
+    await preencher();
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+
+    await waitFor(() =>
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/minha-conta")
+    );
+  });
+
   it("anuncia os tokens que o gerenciador de senhas do celular usa", async () => {
     // Este fluxo chega por link de WhatsApp, quase sempre no celular:
     // sem o par tel/current-password ninguém preenche nem salva.

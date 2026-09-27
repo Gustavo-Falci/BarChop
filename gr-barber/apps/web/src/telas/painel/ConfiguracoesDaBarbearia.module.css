@@ -4,6 +4,48 @@
   align-content: start;
 }
 
+/* O campo de texto longo. Repete a aparência do Campo em vez de usá-lo
+   porque o Campo é um <input> — ver o comentário na tela. Os tokens são
+   os mesmos, então os dois continuam parecendo a mesma família. */
+.campoLongo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+}
+
+.rotulo {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
+.apoio {
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+}
+
+.area {
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-family: var(--fonte-corpo), system-ui, sans-serif;
+  font-size: var(--texto-md);
+  /* Só na vertical: `resize` livre deixa arrastar a caixa pra fora da
+     coluna do painel, e aí o layout quebra por gesto do usuário. */
+  resize: vertical;
+}
+
+/* À direita porque é medida, não instrução: quem está escrevendo olha
+   pra cá só quando quer saber quanto falta. */
+.contador {
+  align-self: flex-end;
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Duas colunas: os dois formulários curtos de um lado, o horário de
    funcionamento do outro. A proporção 5/7 não é decorativa — a coluna
    do horário precisa caber nome do dia (7rem) + "fechado" (8rem) +

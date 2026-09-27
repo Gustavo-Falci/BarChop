@@ -17,6 +17,11 @@ import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./ConfiguracoesDaBarbearia.module.css";
 
+// O mesmo limite da coluna `sobre` e do schema do PATCH. Cortar na
+// digitação evita o 400 que voltaria depois de a pessoa ter escrito o
+// texto inteiro.
+const SOBRE_MAX = 1000;
+
 const DIAS = [
   "domingo",
   "segunda",
@@ -42,6 +47,7 @@ export function ConfiguracoesDaBarbearia() {
   const [nomeDaBarbearia, setNomeDaBarbearia] = useState("");
   const [telefoneDaBarbearia, setTelefoneDaBarbearia] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [sobre, setSobre] = useState("");
   const [semana, setSemana] = useState<HorarioSerializado[]>([]);
   const [nome, setNome] = useState(perfil.nome);
   const [telefone, setTelefone] = useState(perfil.telefone ?? "");
@@ -88,6 +94,7 @@ export function ConfiguracoesDaBarbearia() {
     setNomeDaBarbearia(barbearia.dados.nome);
     setTelefoneDaBarbearia(barbearia.dados.telefone ?? "");
     setEndereco(barbearia.dados.endereco ?? "");
+    setSobre(barbearia.dados.sobre ?? "");
   }
 
   // Mesmo motivo do bloco acima, aplicado à semana: sincronizar depois
@@ -113,6 +120,11 @@ export function ConfiguracoesDaBarbearia() {
         nome: nomeDaBarbearia.trim(),
         telefone: telefoneOuNulo(telefoneDaBarbearia),
         endereco: endereco.trim() || null,
+        // Vazio vira `null`, não string vazia: é `null` que a home lê
+        // como "esta barbearia ainda não escreveu apresentação" e
+        // esconde a seção. Uma string vazia desenharia um bloco em
+        // branco.
+        sobre: sobre.trim() || null,
       });
     } catch (causa) {
       if (causa instanceof TelefoneInvalido) {
@@ -246,6 +258,36 @@ export function ConfiguracoesDaBarbearia() {
               erro={erro.telefoneDaBarbearia}
             />
             <Campo rotulo="Endereço" valor={endereco} onChange={setEndereco} />
+
+            {/* <textarea> à mão, e não o Campo: ele é um <input>, e este
+                texto tem parágrafos. Dar um modo multilinha ao Campo
+                significaria mais um ramo dentro de um componente que dez
+                telas usam — e o que se reaproveitaria seria o rótulo e o
+                erro, não o input. Aqui é uma tela só. */}
+            <div className={estilos.campoLongo}>
+              <label className={estilos.rotulo} htmlFor="sobre">
+                Sobre a barbearia
+              </label>
+              <span className={estilos.apoio} id="sobre-apoio">
+                Aparece na sua página pública, embaixo do nome. Conte o que a
+                barbearia tem de diferente.
+              </span>
+              <textarea
+                id="sobre"
+                className={estilos.area}
+                aria-describedby="sobre-apoio"
+                rows={5}
+                maxLength={SOBRE_MAX}
+                value={sobre}
+                onChange={(evento) => setSobre(evento.target.value)}
+              />
+              {/* O contador existe porque o limite é do banco: passar
+                  dele viraria 400, e sem aviso a pessoa só descobriria
+                  ao salvar um texto que levou minutos escrevendo. */}
+              <span className={estilos.contador}>
+                {sobre.length} de {SOBRE_MAX}
+              </span>
+            </div>
           </Secao>
           <Secao
             titulo="Seu perfil"

@@ -47,8 +47,13 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
   const faixa = Array.from({ length: DIAS_NA_FAIXA }, (_, i) =>
     somarDias(hoje, i)
   );
-  // `null` é o calendário fechado. Aberto, é o mês que ele mostra.
-  const [mesDoCalendario, setMesDoCalendario] = useState<string | null>(null);
+  // Dois estados, e não um só: o mês que o calendário mostra, e se ele
+  // está aberto — o que só importa no celular, onde ele fica atrás do
+  // "Outra data". No desktop o calendário está sempre à vista (o CSS
+  // decide), e fechar ao escolher não pode levá-lo de volta pro mês
+  // atual.
+  const [mes, setMes] = useState(() => hoje.slice(0, 7));
+  const [calendarioAbertoNoCelular, setCalendarioAberto] = useState(false);
 
   // O perfil uma vez só, e não a cada troca de dia: dele sai só o
   // barbeiroId, e a barbearia do MVP tem um barbeiro só.
@@ -65,7 +70,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     ...new Set([
       hoje.slice(0, 7),
       faixa[faixa.length - 1].slice(0, 7),
-      ...(mesDoCalendario ? [mesDoCalendario] : []),
+      mes,
     ]),
   ];
 
@@ -150,7 +155,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
 
   const semVagaNaFaixa = !faixa.some((dia) => dias[dia]);
   const calendarioAberto =
-    mesDoCalendario !== null || (semVagaNaFaixa && !dataValida);
+    calendarioAbertoNoCelular || (semVagaNaFaixa && !dataValida);
 
   const listaDoDia =
     horarios.dados && horarios.dados.data === dataEfetiva
@@ -166,97 +171,115 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     : undefined;
 
   return (
-    <main className={estilos.pagina}>
-      <h1>Escolha o dia e o horário</h1>
+    <main className={`${estilos.pagina} ${estilos.duasColunas}`}>
+      <h1 className={estilos.titulo}>Escolha o dia e o horário</h1>
 
-      <FaixaDeDias
-        dias={faixa}
-        disponiveis={dias}
-        selecionada={dataEfetiva}
-        aoEscolher={escolherDia}
-      />
-
-      {calendarioAberto ? (
-        <Calendario
-          mes={mesDoCalendario ?? hoje.slice(0, 7)}
-          dias={dias}
-          agora={agora}
-          selecionada={dataEfetiva}
-          aoTrocarMes={setMesDoCalendario}
-          aoEscolher={(dia) => {
-            escolherDia(dia);
-            setMesDoCalendario(null);
-          }}
-        />
-      ) : (
-        // A saída pra além dos 14 dias. Sem ela a faixa teria tirado a
-        // possibilidade de agendar mais longe, que o calendário dava.
-        <p className={estilos.outraData}>
-          <button
-            type="button"
-            className={estilos.link}
-            onClick={() => setMesDoCalendario(hoje.slice(0, 7))}
-          >
-            Outra data
-          </button>
-        </p>
-      )}
-
-      {/* Recado que veio pela URL da confirmação: ela montou do zero, e
-          o estado local de lá não atravessa a navegação. */}
-      {aviso === "horario_ocupado" ? (
-        <Aviso>Esse horário acabou de ser ocupado. Escolha outro.</Aviso>
-      ) : null}
-      {aviso === "horario_expirou" ? (
-        <Aviso>Esse horário já passou. Escolha outro.</Aviso>
-      ) : null}
-
-      {!dataEfetiva ? (
-        <p>Nenhum horário livre nos próximos 14 dias. Veja outra data no calendário.</p>
-      ) : (
-        <div className={estilos.horarios}>
-          <Resumo itens={[formatarDataComSemana(dataEfetiva)]} />
-
-          {horarios.erro ? (
-            // Sem isto, um 500 na busca do dia deixava "Carregando
-            // horários…" pra sempre: `listaDoDia` nunca sai de null.
-            <>
-              <p role="alert">Não foi possível carregar os horários.</p>
-              <Botao variante="contorno" onClick={horarios.recarregar}>
-                Tentar de novo
-              </Botao>
-            </>
-          ) : listaDoDia === null ? (
-            <p role="status">Carregando horários…</p>
-          ) : listaDoDia.length === 0 ? (
-            // Ainda aparece: a última vaga ocupada entre um toque e
-            // outro, ou uma data escolhida no calendário. O botão é o que
-            // impede de virar beco.
-            <>
-              <p>Nenhum horário livre nesse dia.</p>
-              {proximoComVaga ? (
-                <Botao variante="contorno" onClick={() => escolherDia(proximoComVaga)}>
-                  {`Ver ${formatarDataComSemana(proximoComVaga)}`}
-                </Botao>
-              ) : null}
-            </>
-          ) : (
-            <ListaDeHorarios
-              horarios={listaDoDia}
-              aoEscolher={(hora) =>
-                router.push(
-                  caminhoDoPasso(slug, "confirmar", {
-                    servicoIds,
-                    data: dataEfetiva,
-                    hora,
-                    remarcar,
-                  })
-                )
-              }
-            />
-          )}
+      {/* Dois blocos que só existem como caixa a partir de 900px: o dia à
+          esquerda, os horários à direita. No celular são `display:
+          contents` e os filhos seguem em fila, como antes. */}
+      <div className={estilos.escolhaDoDia}>
+        {/* A faixa é jeito de celular (rolar de lado com o dedo); no
+            desktop o CSS a esconde e quem escolhe o dia é o calendário. */}
+        <div className={estilos.faixa}>
+          <FaixaDeDias
+            dias={faixa}
+            disponiveis={dias}
+            selecionada={dataEfetiva}
+            aoEscolher={escolherDia}
+          />
         </div>
-      )}
+
+        {/* Sempre no DOM; no celular o CSS o esconde enquanto não for
+            aberto pelo "Outra data" (ou por não haver vaga na faixa). */}
+        <div
+          className={estilos.calendario}
+          data-aberto={calendarioAberto ? "true" : undefined}
+        >
+          <Calendario
+            mes={mes}
+            dias={dias}
+            agora={agora}
+            selecionada={dataEfetiva}
+            aoTrocarMes={setMes}
+            aoEscolher={(dia) => {
+              escolherDia(dia);
+              setCalendarioAberto(false);
+            }}
+          />
+        </div>
+
+        {calendarioAberto ? null : (
+          // A saída pra além dos 14 dias no celular. Sem ela a faixa
+          // teria tirado a possibilidade de agendar mais longe.
+          <p className={estilos.outraData}>
+            <button
+              type="button"
+              className={estilos.link}
+              onClick={() => setCalendarioAberto(true)}
+            >
+              Outra data
+            </button>
+          </p>
+        )}
+      </div>
+
+      <div className={estilos.escolhaDoHorario}>
+        {/* Recado que veio pela URL da confirmação: ela montou do zero, e
+            o estado local de lá não atravessa a navegação. */}
+        {aviso === "horario_ocupado" ? (
+          <Aviso>Esse horário acabou de ser ocupado. Escolha outro.</Aviso>
+        ) : null}
+        {aviso === "horario_expirou" ? (
+          <Aviso>Esse horário já passou. Escolha outro.</Aviso>
+        ) : null}
+
+        {!dataEfetiva ? (
+          <p>Nenhum horário livre nos próximos 14 dias. Veja outra data no calendário.</p>
+        ) : (
+          <div className={estilos.horarios}>
+            <Resumo itens={[formatarDataComSemana(dataEfetiva)]} />
+
+            {horarios.erro ? (
+              // Sem isto, um 500 na busca do dia deixava "Carregando
+              // horários…" pra sempre: `listaDoDia` nunca sai de null.
+              <>
+                <p role="alert">Não foi possível carregar os horários.</p>
+                <Botao variante="contorno" onClick={horarios.recarregar}>
+                  Tentar de novo
+                </Botao>
+              </>
+            ) : listaDoDia === null ? (
+              <p role="status">Carregando horários…</p>
+            ) : listaDoDia.length === 0 ? (
+              // Ainda aparece: a última vaga ocupada entre um toque e
+              // outro, ou uma data escolhida no calendário. O botão é o que
+              // impede de virar beco.
+              <>
+                <p>Nenhum horário livre nesse dia.</p>
+                {proximoComVaga ? (
+                  <Botao variante="contorno" onClick={() => escolherDia(proximoComVaga)}>
+                    {`Ver ${formatarDataComSemana(proximoComVaga)}`}
+                  </Botao>
+                ) : null}
+              </>
+            ) : (
+              <ListaDeHorarios
+                horarios={listaDoDia}
+                aoEscolher={(hora) =>
+                  router.push(
+                    caminhoDoPasso(slug, "confirmar", {
+                      servicoIds,
+                      data: dataEfetiva,
+                      hora,
+                      remarcar,
+                    })
+                  )
+                }
+              />
+            )}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

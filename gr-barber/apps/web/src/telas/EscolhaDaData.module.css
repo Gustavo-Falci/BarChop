@@ -41,3 +41,55 @@
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
+
+.titulo { margin: 0; }
+
+/* No celular os dois blocos não são caixa: os filhos seguem em fila no
+   grid da página, como antes do desktop existir. */
+.escolhaDoDia,
+.escolhaDoHorario {
+  display: contents;
+}
+
+/* O calendário fica no DOM sempre; no celular só aparece aberto. */
+.calendario:not([data-aberto]) {
+  display: none;
+}
+
+/* 900px: o mesmo corte das larguras do fluxo, declaradas em
+   app/(publico)/[slug]/layout.module.css. Calendário à esquerda,
+   acompanhando a rolagem; horários à direita. A faixa de 14 dias e o
+   "Outra data" são jeito de celular e saem. */
+@media (min-width: 900px) {
+  .duasColunas {
+    max-width: var(--fluxo-largura);
+    /* 26rem é o teto que o próprio Calendario já tem. */
+    grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+    column-gap: var(--espaco-xxl);
+    align-items: start;
+  }
+
+  .titulo { grid-column: 1 / -1; }
+
+  .escolhaDoDia {
+    display: grid;
+    gap: var(--espaco-md);
+    position: sticky;
+    top: var(--espaco-lg);
+  }
+
+  .escolhaDoHorario {
+    display: grid;
+    gap: var(--espaco-md);
+  }
+
+  .faixa,
+  .outraData {
+    display: none;
+  }
+
+  .calendario,
+  .calendario:not([data-aberto]) {
+    display: block;
+  }
+}

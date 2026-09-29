@@ -278,22 +278,26 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
   }
 
   return (
-    <main className={estilos.pagina}>
-      <h1>Confirmar</h1>
+    <main className={`${estilos.pagina} ${estilos.duasColunas}`}>
+      <h1 className={estilos.titulo}>Confirmar</h1>
 
-      <div className={estilos.linha}>
-        <span>Serviços</span>
-        <b>{escolhidos.map((s) => s.nome).join(", ")}</b>
-      </div>
-      <div className={estilos.linha}>
-        <span>Quando</span>
-        <b>
-          <span>{hora}</span> · <span>{formatarDataLonga(data)}</span>
-        </b>
-      </div>
-      <div className={estilos.linha}>
-        <span>Total</span>
-        <b>{formatarPreco((totalEmCentavos / 100).toFixed(2))}</b>
+      {/* O que vai ser agendado. No desktop é a coluna da esquerda, ao
+          lado de quem vai ser atendido; no celular vem em cima. */}
+      <div className={estilos.resumo}>
+        <div className={estilos.linha}>
+          <span>Serviços</span>
+          <b>{escolhidos.map((s) => s.nome).join(", ")}</b>
+        </div>
+        <div className={estilos.linha}>
+          <span>Quando</span>
+          <b>
+            <span>{hora}</span> · <span>{formatarDataLonga(data)}</span>
+          </b>
+        </div>
+        <div className={estilos.linha}>
+          <span>Total</span>
+          <b>{formatarPreco((totalEmCentavos / 100).toFixed(2))}</b>
+        </div>
       </div>
 
       {/* <form> de verdade: o Enter do teclado do celular confirma, o

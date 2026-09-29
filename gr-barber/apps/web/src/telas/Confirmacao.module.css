@@ -99,3 +99,37 @@
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
+
+.titulo { margin: 0; }
+
+/* No celular as linhas do resumo são itens do grid da página, como
+   sempre foram. */
+.resumo { display: contents; }
+
+/* 900px: o mesmo corte das larguras do fluxo, declaradas em
+   app/(publico)/[slug]/layout.module.css. Resumo à esquerda, num
+   cartão; identificação e botão à direita. */
+@media (min-width: 900px) {
+  .duasColunas {
+    max-width: var(--fluxo-largura);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+    column-gap: var(--espaco-xxl);
+    align-items: start;
+  }
+
+  .titulo { grid-column: 1 / -1; }
+
+  .resumo {
+    display: grid;
+    padding: var(--espaco-sm) var(--espaco-lg);
+    border: var(--borda-padrao) solid var(--cor-ink);
+    border-radius: var(--raio-md);
+    background: var(--cor-surface);
+  }
+
+  .resumo > .linha:last-child { border-bottom: 0; }
+
+  /* O respiro de cima era pra separar do resumo empilhado acima; lado
+     a lado, ele só desalinharia o topo das duas colunas. */
+  .formulario { margin-top: 0; }
+}

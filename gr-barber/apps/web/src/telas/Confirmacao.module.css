@@ -74,3 +74,19 @@
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
+
+/* "Ver meus agendamentos": navega de verdade, então é <a> — e com cara
+   de link, abaixo do botão principal, pra não competir com ele. */
+.linkDeTexto {
+  justify-self: center;
+  padding: var(--espaco-xs) 0;
+  color: var(--cor-ink);
+  font-weight: 700;
+  font-size: var(--texto-sm);
+}
+
+.linkDeTexto:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErroDaApi } from "@gr-barber/api-client";
 import type { AgendamentoSerializado } from "@gr-barber/types";
@@ -17,9 +18,15 @@ import {
   limparDadosDoCliente,
   type DadosDoCliente,
 } from "../fluxo/dadosDoCliente";
+import { gerarIcs } from "../fluxo/ics";
 import { useContaDoCliente, validarDados } from "../fluxo/identificacao";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
-import { ehPassado, formatarDataLonga, horaJaPassou } from "../formato/datas";
+import {
+  ehPassado,
+  formatarDataComSemana,
+  formatarDataLonga,
+  horaJaPassou,
+} from "../formato/datas";
 import estilos from "./Confirmacao.module.css";
 
 // O último passo, e também onde a pessoa diz quem é. Eram duas telas —
@@ -67,6 +74,10 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     () => api.publico.servicos(slug),
     [slug]
   );
+  // Do perfil saem o barbeiroId do envio e o endereço da tela de
+  // sucesso. Falhar aqui não bloqueia nada: o envio busca de novo, e o
+  // sucesso só deixa de mostrar o endereço.
+  const perfil = useRequisicao(() => api.publico.perfilDaBarbearia(slug), [slug]);
 
   if (!pronto || !data || !hora) return null;
 
@@ -147,8 +158,8 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     try {
       const agendamento = cliente
         ? await api.publico.agendar(slug, {
-            barbeiroId: (await api.publico.perfilDaBarbearia(slug)).barbeiros[0]
-              .id,
+            barbeiroId: (perfil.dados ?? (await api.publico.perfilDaBarbearia(slug)))
+              .barbeiros[0].id,
             servicoIds,
             data: diaConfirmado,
             horaInicio: horaConfirmada,
@@ -194,15 +205,71 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
   }
 
   if (criado) {
+    const nomes = escolhidos.map((s) => s.nome).join(", ");
+    const endereco = perfil.dados?.endereco ?? null;
+
+    function adicionarAAgenda(agendamento: AgendamentoSerializado) {
+      const ics = gerarIcs({
+        uid: agendamento.id,
+        titulo: [nomes, perfil.dados?.nome].filter(Boolean).join(" · "),
+        data: agendamento.data,
+        horaInicio: agendamento.horaInicio,
+        horaFim: agendamento.horaFim,
+        local: endereco,
+      });
+      // Arquivo baixado, e não link pra um serviço de calendário: o
+      // .ics abre no calendário que a pessoa já usa, seja qual for.
+      const url = URL.createObjectURL(
+        new Blob([ics], { type: "text/calendar;charset=utf-8" })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "agendamento.ics";
+      link.click();
+      // Com folga: revogar logo depois do click cancela o download em
+      // navegador que ainda não começou a ler o arquivo.
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    }
+
+    // Tudo o que a pessoa precisa pra aparecer na hora certa, no lugar
+    // certo. Antes era só "Quando": quem voltava pra esta tela depois
+    // (print, aba esquecida) não sabia o que tinha marcado nem pra onde
+    // ir.
     return (
       <main className={estilos.pagina}>
         <h1>Agendamento confirmado</h1>
         <div className={estilos.linha}>
           <span>Quando</span>
           <b>
-            {criado.horaInicio} · {formatarDataLonga(criado.data)}
+            {criado.horaInicio} · {formatarDataComSemana(criado.data)}
           </b>
         </div>
+        <div className={estilos.linha}>
+          <span>Serviços</span>
+          <b>{nomes}</b>
+        </div>
+        <div className={estilos.linha}>
+          <span>Total</span>
+          <b>{formatarPreco((totalEmCentavos / 100).toFixed(2))}</b>
+        </div>
+        {endereco ? (
+          <div className={estilos.linha}>
+            <span>Onde</span>
+            <b>{endereco}</b>
+          </div>
+        ) : null}
+
+        <Botao onClick={() => adicionarAAgenda(criado)}>Adicionar à agenda</Botao>
+
+        {/* Só pra quem tem conta: sem ela, "meus agendamentos" abriria
+            uma tela de login no lugar da lista. Quem remarcou está
+            logado por definição. */}
+        {conta || remarcar ? (
+          <Link className={estilos.linkDeTexto} href={`/${slug}/minha-conta`}>
+            Ver meus agendamentos
+          </Link>
+        ) : null}
+
         <Botao variante="contorno" onClick={() => router.push(`/${slug}`)}>
           Voltar ao início
         </Botao>

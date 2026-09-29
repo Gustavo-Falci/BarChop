@@ -214,6 +214,59 @@ describe("confirmação", () => {
     });
   });
 
+  describe("tela de sucesso", () => {
+    async function confirmarComRascunho(falso = criarApiClientFalso()) {
+      gravarDadosDoCliente({ nome: "João", telefone: "(11) 99999-8888" });
+      montar(falso);
+      await userEvent.click(await botaoConfirmar());
+      await screen.findByText(/agendamento confirmado/i);
+      return falso;
+    }
+
+    it("diz o que, quando, quanto e onde", async () => {
+      // Antes era só "Quando": quem abria a tela depois (print, aba
+      // esquecida) não sabia o que tinha marcado nem pra onde ir.
+      await confirmarComRascunho();
+
+      expect(screen.getByText("Corte, Barba")).toBeInTheDocument();
+      expect(screen.getByText("09:00 · quinta, 10 de setembro")).toBeInTheDocument();
+      expect(screen.getByText("R$ 65,00")).toBeInTheDocument();
+      expect(screen.getByText("Rua das Tesouras, 123")).toBeInTheDocument();
+    });
+
+    it("oferece pôr o horário no calendário do celular", async () => {
+      const criarUrl = vi.fn((_blob: Blob) => "blob:agendamento");
+      const revogar = vi.fn();
+      Object.assign(URL, { createObjectURL: criarUrl, revokeObjectURL: revogar });
+      await confirmarComRascunho();
+
+      await userEvent.click(screen.getByRole("button", { name: /adicionar à agenda/i }));
+
+      expect(criarUrl).toHaveBeenCalledTimes(1);
+      const arquivo = criarUrl.mock.calls[0][0];
+      expect(arquivo.type).toBe("text/calendar;charset=utf-8");
+      expect(await arquivo.text()).toContain("DTSTART:20260910T090000");
+    });
+
+    it("sem conta, não aponta pra 'meus agendamentos', que pediria login", async () => {
+      await confirmarComRascunho();
+
+      expect(screen.queryByRole("link", { name: /meus agendamentos/i })).toBeNull();
+    });
+
+    it("logada, aponta pra 'meus agendamentos'", async () => {
+      sessaoDoCliente("gr-barber").gravar("jwt-do-cliente");
+      montar();
+      await screen.findByText("João Silva");
+      await userEvent.click(await botaoConfirmar());
+      await screen.findByText(/agendamento confirmado/i);
+
+      expect(
+        screen.getByRole("link", { name: /ver meus agendamentos/i })
+      ).toHaveAttribute("href", "/gr-barber/minha-conta");
+    });
+  });
+
   it("no horario_ocupado volta pro passo de dia e horário", async () => {
     // A trava do banco pega a corrida depois de a disponibilidade já ter
     // dito que cabia. Repetir o envio daria o mesmo 409.

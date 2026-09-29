@@ -236,7 +236,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
               horarios={listaDoDia}
               aoEscolher={(hora) =>
                 router.push(
-                  caminhoDoPasso(slug, remarcar ? "confirmar" : "dados", {
+                  caminhoDoPasso(slug, "confirmar", {
                     servicoIds,
                     data: dataEfetiva,
                     hora,

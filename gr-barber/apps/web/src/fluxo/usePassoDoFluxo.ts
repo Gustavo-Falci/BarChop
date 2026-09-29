@@ -5,8 +5,8 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { caminhoDoPasso, lerEscolhas, type Escolhas, type Passo } from "./passos";
 import { ehPassado } from "../formato/datas";
 
-// Pré-requisitos são cumulativos, não por campo: "dados" e "confirmar"
-// precisam de serviço, dia e hora — tudo o que o passo "data" (que
+// Pré-requisitos são cumulativos, não por campo: "confirmar" precisa
+// de serviço, dia e hora — tudo o que o passo "data" (que
 // escolhe dia e horário na mesma tela) produz, mais o que ele próprio
 // precisa. Checar cada campo isolado deixava combinação quebrada
 // passar — .../dados?hora=09:00 sem serviço nem data renderizava um
@@ -30,22 +30,22 @@ interface Checagem {
 
 const CHECAGENS: Checagem[] = [
   {
-    aplicaA: ["data", "dados", "confirmar"],
+    aplicaA: ["data", "confirmar"],
     falta: (e) => e.servicoIds.length === 0,
     volta: "servicos",
   },
   {
-    aplicaA: ["dados", "confirmar"],
+    aplicaA: ["confirmar"],
     falta: (e) => !e.data,
     volta: "data",
   },
   {
-    aplicaA: ["dados", "confirmar"],
+    aplicaA: ["confirmar"],
     falta: (e, agora) => e.data !== undefined && ehPassado(e.data, agora),
     volta: "data",
   },
   {
-    aplicaA: ["dados", "confirmar"],
+    aplicaA: ["confirmar"],
     falta: (e) => !e.hora,
     volta: "data",
   },

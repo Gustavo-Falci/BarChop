@@ -21,7 +21,7 @@
 }
 
 /* <button> com cara de link: abre o calendário na própria tela, não
-   navega. Mesmas regras do link de troca em DadosDoCliente. */
+   navega. Mesmas regras do link de troca na Confirmacao. */
 .link {
   padding: var(--espaco-xs) 0;
   border: 0;

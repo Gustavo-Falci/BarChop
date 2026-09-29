@@ -1,2 +1,76 @@
 .pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
 .linha { display: flex; justify-content: space-between; gap: var(--espaco-md); padding: var(--espaco-sm) 0; border-bottom: var(--borda-hairline) solid var(--cor-line); }
+
+/* Identificação e botão juntos, com um respiro a mais que as linhas do
+   resumo acima: o resumo é o que se confere, o formulário é o que se
+   faz. */
+.formulario {
+  display: grid;
+  gap: var(--espaco-md);
+  margin-top: var(--espaco-sm);
+}
+
+.apurando {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+/* O cartão de quem está logado. Moldura da casa — a mesma borda e o
+   mesmo raio dos campos —, porque ele afirma um dado, não pede um. */
+.identidade {
+  display: grid;
+  gap: var(--espaco-xs);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+}
+
+.identidadeNome {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+}
+
+/* O telefone em segundo plano, mas legível: é ele que distingue duas
+   pessoas de mesmo nome, então não pode virar decoração. O
+   --cor-ink-soft e não --cor-muted, que reprova contraste no claro. */
+.identidadeTelefone {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+/* Dentro do cartão o "Não é você?" alinha com o nome, à esquerda; solto
+   embaixo do botão ("Já tem conta?"), centraliza com ele. */
+.troca {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.formulario > .troca {
+  text-align: center;
+}
+
+/* <button> com cara de link: estes controles trocam o estado da tela ou
+   levam ao login sem enviar o formulário — `type="button"` em todos,
+   senão o botão dentro do <form> viraria submit. Mesmas regras do link
+   de troca de modo em EntrarNoPainel. */
+.link {
+  padding: var(--espaco-xs) 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

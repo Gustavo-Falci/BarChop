@@ -118,19 +118,17 @@ describe("escolha do dia e do horário", () => {
     expect(await screen.findByText("quinta, 10 de setembro")).toBeInTheDocument();
   });
 
-  it("escolher o horário leva pro passo de dados com o dia e a hora", async () => {
+  it("escolher o horário leva pra confirmação com o dia e a hora", async () => {
     montar({ "2026-09-10": true });
 
     await userEvent.click(await screen.findByRole("button", { name: "15:00" }));
 
     expect(navegacaoFalsa.push).toHaveBeenCalledWith(
-      "/gr-barber/agendar/dados?servicos=s1&data=2026-09-10&hora=15%3A00"
+      "/gr-barber/agendar/confirmar?servicos=s1&data=2026-09-10&hora=15%3A00"
     );
   });
 
-  it("no remarcar vai direto pra confirmação, sem passar por dados", async () => {
-    // Quem remarca já está autenticado, e a API tira o cliente do token:
-    // pedir nome e telefone de novo seria pedir o que ela ignora.
+  it("no remarcar leva o id do agendamento até a confirmação", async () => {
     navegacaoFalsa.redefinir({ query: { servicos: "s1", remarcar: "a1" } });
     montar({ "2026-09-10": true });
 

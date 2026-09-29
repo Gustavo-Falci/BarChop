@@ -4,6 +4,7 @@ import {
   caminhoDoPasso,
   ehPasso,
   lerEscolhas,
+  passoDoVoltar,
   montarQuery,
 } from "../../src/fluxo/passos";
 
@@ -70,15 +71,30 @@ describe("escolhas na query", () => {
   });
 });
 
+describe("passo de volta depois do login", () => {
+  it("aceita os passos que existem e recusa o resto", () => {
+    expect(passoDoVoltar("confirmar")).toBe("confirmar");
+    expect(passoDoVoltar("//outro-site.com")).toBeNull();
+    expect(passoDoVoltar(null)).toBeNull();
+  });
+
+  it("'dados' legado vira 'confirmar', em vez de cair no destino padrão", () => {
+    // Quem estava no meio do login quando a identificação entrou na
+    // confirmação chega com voltar=dados; o destino padrão jogaria fora
+    // o agendamento que a pessoa estava fazendo.
+    expect(passoDoVoltar("dados")).toBe("confirmar");
+  });
+});
+
 describe("volta pro fluxo depois de entrar", () => {
   it("leva o passo e as escolhas na query", () => {
     expect(
-      caminhoDoLogin("gr-barber", "dados", {
+      caminhoDoLogin("gr-barber", "confirmar", {
         servicoIds: ["s1"],
         data: "2026-09-09",
         hora: "09:00",
       })
-    ).toBe("/gr-barber/entrar?servicos=s1&data=2026-09-09&hora=09%3A00&voltar=dados");
+    ).toBe("/gr-barber/entrar?servicos=s1&data=2026-09-09&hora=09%3A00&voltar=confirmar");
   });
 
   it("funciona sem escolha nenhuma na query", () => {
@@ -88,8 +104,11 @@ describe("volta pro fluxo depois de entrar", () => {
   });
 
   it("reconhece só os passos que existem", () => {
-    expect(ehPasso("dados")).toBe(true);
+    expect(ehPasso("data")).toBe(true);
     expect(ehPasso("confirmar")).toBe(true);
+    // Viraram parte de outras telas.
+    expect(ehPasso("horario")).toBe(false);
+    expect(ehPasso("dados")).toBe(false);
 
     // O ponto do `ehPasso`: é ele que impede um destino vindo de fora
     // de virar navegação. Guardar a URL inteira num parâmetro seria

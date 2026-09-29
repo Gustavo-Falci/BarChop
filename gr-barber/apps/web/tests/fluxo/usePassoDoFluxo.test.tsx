@@ -18,7 +18,7 @@ function ProvaDoFluxo({
   passo,
   agora,
 }: {
-  passo: "servicos" | "data" | "dados" | "confirmar";
+  passo: "servicos" | "data" | "confirmar";
   agora?: Date;
 }) {
   const resultado = usePassoDoFluxo(passo, agora);
@@ -36,7 +36,7 @@ function ProvaDoFluxo({
 // Componente de prova com estado local que força re-renders.
 function ProvaComEstado() {
   const [contador, setContador] = useState(0);
-  const resultado = usePassoDoFluxo("dados");
+  const resultado = usePassoDoFluxo("confirmar");
   return (
     <div>
       <p>pronto: {resultado.pronto ? "sim" : "não"}</p>
@@ -50,7 +50,7 @@ describe("usePassoDoFluxo", () => {
   beforeEach(() => navegacaoFalsa.redefinir());
 
   it("retorna pronto=true quando o passo tem tudo que precisa", async () => {
-    // Passo "dados" precisa de serviço, data e hora. A query tem os três,
+    // Passo "confirmar" precisa de serviço, data e hora. A query tem os três,
     // então está pronto. `agora` fixo: sem ele este caso passa hoje e falha
     // sozinho no dia seguinte, quando "2026-09-09" vira passado de
     // verdade pro relógio real da máquina que roda o teste.
@@ -58,7 +58,7 @@ describe("usePassoDoFluxo", () => {
       query: { servicos: "s1", data: "2026-09-09", hora: "09:30" },
     });
 
-    render(<ProvaDoFluxo passo="dados" agora={HOJE} />);
+    render(<ProvaDoFluxo passo="confirmar" agora={HOJE} />);
 
     await waitFor(() => {
       expect(screen.getByText("pronto: sim")).toBeInTheDocument();
@@ -67,13 +67,13 @@ describe("usePassoDoFluxo", () => {
   });
 
   it("redireciona quando falta pré-requisito", async () => {
-    // Passo "dados" precisa de data. A query só tem servicos, então
+    // Passo "confirmar" precisa de data. A query só tem servicos, então
     // falta a data e deve redirecionar pra "data".
     navegacaoFalsa.redefinir({
       query: { servicos: "s1" },
     });
 
-    render(<ProvaDoFluxo passo="dados" />);
+    render(<ProvaDoFluxo passo="confirmar" />);
 
     await waitFor(() => {
       expect(screen.getByText("pronto: não")).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe("usePassoDoFluxo", () => {
       query: { servicos: "s1", data: "2026-09-08" },
     });
 
-    render(<ProvaDoFluxo passo="dados" agora={HOJE} />);
+    render(<ProvaDoFluxo passo="confirmar" agora={HOJE} />);
 
     await waitFor(() => {
       expect(screen.getByText("pronto: não")).toBeInTheDocument();
@@ -159,12 +159,12 @@ describe("usePassoDoFluxo", () => {
     expect(navegacaoFalsa.replace).not.toHaveBeenCalled();
   });
 
-  it("amanhã continua um passo válido nos dados", async () => {
+  it("amanhã continua um passo válido na confirmação", async () => {
     navegacaoFalsa.redefinir({
       query: { servicos: "s1", data: "2026-09-10", hora: "09:00" },
     });
 
-    render(<ProvaDoFluxo passo="dados" agora={HOJE} />);
+    render(<ProvaDoFluxo passo="confirmar" agora={HOJE} />);
 
     await waitFor(() => {
       expect(screen.getByText("pronto: sim")).toBeInTheDocument();

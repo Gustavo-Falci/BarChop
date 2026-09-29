@@ -61,8 +61,8 @@ describe("escolhas na query", () => {
 
   it("monta o caminho de cada passo com o que já foi escolhido", () => {
     const escolhas = { servicoIds: ["s1"], data: "2026-09-09" };
-    expect(caminhoDoPasso("gr-barber", "horario", escolhas)).toBe(
-      "/gr-barber/agendar/horario?servicos=s1&data=2026-09-09"
+    expect(caminhoDoPasso("gr-barber", "data", escolhas)).toBe(
+      "/gr-barber/agendar/data?servicos=s1&data=2026-09-09"
     );
     expect(caminhoDoPasso("gr-barber", "servicos", escolhas)).toBe(
       "/gr-barber/agendar?servicos=s1&data=2026-09-09"

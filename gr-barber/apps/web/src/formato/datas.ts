@@ -64,6 +64,15 @@ export function horaJaPassou(
   return hora <= atual;
 }
 
+// Em UTC pelo mesmo motivo da formatarDataLonga: a data é um dia do
+// calendário, não um instante, e somar no fuso local pularia ou
+// repetiria um dia na virada do horário de verão.
+export function somarDias(data: string, dias: number): string {
+  const referencia = new Date(`${data}T00:00:00Z`);
+  referencia.setUTCDate(referencia.getUTCDate() + dias);
+  return referencia.toISOString().slice(0, 10);
+}
+
 // A grade do calendário começa no domingo, como no design system. Os
 // `null` são as casas vazias antes do dia 1.
 export function diasDoMes(mes: string): (string | null)[] {

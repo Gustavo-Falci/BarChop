@@ -110,7 +110,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
       horaJaPassou(diaConfirmado, horaConfirmada, instanteDoEnvio)
     ) {
       router.push(
-        caminhoDoPasso(slug, "horario", {
+        caminhoDoPasso(slug, "data", {
           servicoIds,
           data,
           remarcar,
@@ -147,7 +147,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
       // do zero, e o estado local desta tela morre com ela.
       if (erro.codigo === "horario_ocupado") {
         router.push(
-          caminhoDoPasso(slug, "horario", {
+          caminhoDoPasso(slug, "data", {
             servicoIds,
             data,
             remarcar,

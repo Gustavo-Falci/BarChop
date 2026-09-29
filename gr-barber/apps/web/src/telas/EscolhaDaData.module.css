@@ -1,1 +1,40 @@
-.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
+/* `minmax(0, 1fr)`, e não a coluna automática: item de grid tem
+   `min-width: auto`, e a faixa de dias — que rola de lado — alargaria
+   a coluna até caber inteira, empurrando a página pra fora da tela no
+   celular. Com o piso zero a coluna fica na largura da tela e quem rola
+   é só a faixa. */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+}
+
+.horarios {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.outraData {
+  margin: 0;
+  font-size: var(--texto-sm);
+}
+
+/* <button> com cara de link: abre o calendário na própria tela, não
+   navega. Mesmas regras do link de troca em DadosDoCliente. */
+.link {
+  padding: var(--espaco-xs) 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

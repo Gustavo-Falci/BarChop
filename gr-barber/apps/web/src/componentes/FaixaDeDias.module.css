@@ -1,0 +1,65 @@
+/* Rola de lado dentro da coluna, sem empurrar a página: `overflow-x`
+   aqui e nunca no body. O `padding-block` dá espaço pro anel de foco e
+   pra sombra do dia escolhido, que o overflow cortaria. */
+.faixa {
+  display: flex;
+  gap: var(--espaco-sm);
+  overflow-x: auto;
+  padding-block: 4px 8px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+/* Mesma linguagem do dia do Calendario (borda forte quando aceita
+   toque, fundo apagado quando não), pra as duas formas de escolher o
+   dia parecerem a mesma coisa. */
+.dia {
+  flex: 0 0 3.5rem;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: var(--espaco-sm) 0;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  scroll-snap-align: start;
+  cursor: pointer;
+}
+
+.dia:hover:enabled {
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+}
+
+.dia:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.dia:disabled {
+  border-color: transparent;
+  background: var(--cor-paper-soft);
+  color: var(--cor-muted);
+  cursor: not-allowed;
+}
+
+.dia[aria-current="date"] {
+  background: var(--cor-accent);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+  color: var(--cor-dark);
+}
+
+.semana {
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.numero {
+  font-size: var(--texto-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

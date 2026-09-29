@@ -78,7 +78,7 @@ describe("confirmação", () => {
       // O aviso vai na URL, não em estado local: a tela de horário
       // monta do zero, e o `setAviso` desta tela morreria com ela.
       expect(navegacaoFalsa.push).toHaveBeenCalledWith(
-        "/gr-barber/agendar/horario?servicos=s1%2Cs2&data=2026-09-10&aviso=horario_ocupado"
+        "/gr-barber/agendar/data?servicos=s1%2Cs2&data=2026-09-10&aviso=horario_ocupado"
       )
     );
   });
@@ -114,7 +114,7 @@ describe("confirmação", () => {
 
     await waitFor(() =>
       expect(navegacaoFalsa.push).toHaveBeenCalledWith(
-        "/gr-barber/agendar/horario?servicos=s1%2Cs2&data=2026-09-10&aviso=horario_expirou"
+        "/gr-barber/agendar/data?servicos=s1%2Cs2&data=2026-09-10&aviso=horario_expirou"
       )
     );
     // Não chegou a criar nada: a checagem barra antes da chamada à API.

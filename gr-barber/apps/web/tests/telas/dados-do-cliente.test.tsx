@@ -114,13 +114,13 @@ describe("dados do cliente", () => {
     expect(screen.queryByText(/informe o ddd/i)).not.toBeInTheDocument();
   });
 
-  it("volta pro passo de horário quando a URL não traz hora", async () => {
+  it("volta pro passo de dia e horário quando a URL não traz hora", async () => {
     navegacaoFalsa.redefinir({ query: { servicos: "s1", data: "2026-09-10" } });
     montar();
 
     await waitFor(() =>
       expect(navegacaoFalsa.replace).toHaveBeenCalledWith(
-        "/gr-barber/agendar/horario?servicos=s1&data=2026-09-10"
+        "/gr-barber/agendar/data?servicos=s1&data=2026-09-10"
       )
     );
   });

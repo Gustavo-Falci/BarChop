@@ -11,12 +11,14 @@ export interface Escolhas {
   aviso?: string;
 }
 
-export type Passo = "servicos" | "data" | "horario" | "dados" | "confirmar";
+// Dia e horário são um passo só ("data"): a tela escolhe os dois. A
+// rota antiga /agendar/horario ainda existe, só como redirect pra
+// cá — ver app/(publico)/[slug]/agendar/horario/page.tsx.
+export type Passo = "servicos" | "data" | "dados" | "confirmar";
 
 const CAMINHO_DO_PASSO: Record<Passo, string> = {
   servicos: "/agendar",
   data: "/agendar/data",
-  horario: "/agendar/horario",
   dados: "/agendar/dados",
   confirmar: "/agendar/confirmar",
 };

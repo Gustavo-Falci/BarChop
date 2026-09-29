@@ -142,3 +142,54 @@
   padding-block: var(--espaco-md) var(--espaco-sm);
   background: linear-gradient(to bottom, transparent, var(--cor-paper) var(--espaco-md));
 }
+
+/* No celular os dois wrappers não existem como caixa: os filhos são
+   itens do grid da página, e o "Agendar agora" gruda no rodapé da tela
+   (o sticky gruda dentro do pai — com o wrapper como pai, só grudaria
+   enquanto o horário estivesse à vista). */
+.principal,
+.lateral {
+  display: contents;
+}
+
+/* 900px: o mesmo corte das larguras do fluxo, declaradas em
+   app/(publico)/[slug]/layout.module.css. */
+@media (min-width: 900px) {
+  .duasColunas {
+    max-width: var(--fluxo-largura);
+    /* `minmax(0, …)` pra nenhuma coluna alargar além da sua fração por
+       causa de um conteúdo comprido (endereço, apresentação). */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+    column-gap: var(--espaco-xxl);
+    align-items: start;
+  }
+
+  .principal {
+    display: grid;
+    gap: var(--espaco-lg);
+  }
+
+  /* Cartão lateral que acompanha a rolagem: quando abre e o botão de
+     agendar ficam à vista enquanto se lê a apresentação e os serviços.
+     `align-self: start` (herdado do align-items) é o que dá espaço pro
+     sticky andar — esticado até a altura da linha, ele não teria pra
+     onde. */
+  .lateral {
+    display: grid;
+    gap: var(--espaco-md);
+    position: sticky;
+    top: var(--espaco-lg);
+    padding: var(--espaco-lg);
+    border: var(--borda-padrao) solid var(--cor-ink);
+    border-radius: var(--raio-md);
+    background: var(--cor-surface);
+  }
+
+  /* Dentro do cartão o botão não precisa grudar em nada: o cartão
+     inteiro já acompanha a rolagem. */
+  .acao {
+    position: static;
+    padding: 0;
+    background: none;
+  }
+}

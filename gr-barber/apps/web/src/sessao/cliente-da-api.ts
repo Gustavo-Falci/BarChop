@@ -20,6 +20,13 @@ export function apiDoBarbeiro(fetchInjetado?: typeof globalThis.fetch) {
   }).barbeiro;
 }
 
+// Só o escopo público, sem sessão nenhuma: é o que o servidor do Next
+// usa pra montar título e prévia do link, e lá não existe token — nem
+// o do barbeiro nem o do cliente — pra mandar.
+export function apiPublica(fetchInjetado?: typeof globalThis.fetch) {
+  return criarApiClient({ baseUrl: BASE_URL, fetch: fetchInjetado }).publico;
+}
+
 // Devolve o client inteiro, e não só `.cliente` como o de cima: o fluxo
 // público usa `publico` antes de existir conta, e a mesma tela precisa
 // de `cliente` depois do login. Separar em duas fábricas obrigaria a

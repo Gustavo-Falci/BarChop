@@ -1,7 +1,21 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ProvedorDaApi } from "../../../src/api/ProvedorDaApi";
 import { BarraDaBarbearia } from "../../../src/fluxo/BarraDaBarbearia";
+import { metadataDaBarbearia } from "../../../src/fluxo/metadataDaBarbearia";
 import estilos from "./layout.module.css";
+
+// No layout, e não em cada página: todas as telas do fluxo são da mesma
+// barbearia, e a aba de qualquer passo deve dizer de qual. As telas são
+// client components e não podem exportar metadata; o layout é server.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  return metadataDaBarbearia(slug);
+}
 
 // Server component: quem lê o slug é o provider, do lado do cliente,
 // com useParams. Assim o `params` (que aqui seria uma Promise) não

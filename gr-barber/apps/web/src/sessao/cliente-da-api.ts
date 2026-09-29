@@ -5,8 +5,10 @@ import {
   sessaoDoCliente,
 } from "./armazenamento";
 
-// A URL da API muda por ambiente e é lida no navegador, então precisa
-// do prefixo NEXT_PUBLIC_. O padrão é o dev local da API.
+// A URL da API muda por ambiente. O navegador a lê (daí o prefixo
+// NEXT_PUBLIC_), e o servidor do Next também, pelo `apiPublica` do
+// título da barbearia — então precisa ser absoluta e alcançável dos
+// dois lados. O padrão é o dev local da API.
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
 
 export function apiDoBarbeiro(fetchInjetado?: typeof globalThis.fetch) {

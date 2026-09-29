@@ -6,10 +6,14 @@ import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../src/telas/PerfilDaBarbearia";
 import { navegacaoFalsa } from "../ajudantes/navegacao";
 
-function montar(falso = criarApiClientFalso()) {
+// Terça, dez da manhã: dentro do horário da semente (seg a sáb, 9 às
+// 18). O instante é prop, como nas telas do fluxo.
+const TERCA_10H = new Date("2026-09-29T10:00:00-03:00");
+
+function montar(falso = criarApiClientFalso(), agora = TERCA_10H) {
   render(
     <ProvedorDaApi valor={falso}>
-      <PerfilDaBarbearia />
+      <PerfilDaBarbearia agora={agora} />
     </ProvedorDaApi>
   );
   return falso;
@@ -56,17 +60,37 @@ describe("perfil da barbearia", () => {
     expect(
       screen.getByRole("heading", { name: /horário de funcionamento/i })
     ).toBeInTheDocument();
-    expect(screen.getByText("Segunda")).toBeInTheDocument();
-    expect(screen.getAllByText("09:00 às 18:00").length).toBeGreaterThan(0);
+    expect(screen.getByText("Segunda a sábado")).toBeInTheDocument();
+    expect(screen.getByText("09:00 às 18:00")).toBeInTheDocument();
   });
 
-  it("não lista o dia fechado", async () => {
-    // Domingo é `fechado: true` na semente. Listar "Domingo —" seria
-    // dizer que abre e não informar o horário.
+  it("diz que o domingo está fechado, em vez de sumir com ele", async () => {
+    // Antes o dia fechado era omitido, pra não mostrar "Domingo —" sem
+    // horário. Mas omitir deixava sem resposta quem queria saber se abre
+    // domingo; "Fechado" é a resposta.
     montar();
     await screen.findByRole("heading", { name: /horário de funcionamento/i });
 
-    expect(screen.queryByText("Domingo")).toBeNull();
+    expect(screen.getByText("Domingo")).toBeInTheDocument();
+    expect(screen.getByText("Fechado")).toBeInTheDocument();
+  });
+
+  it("diz se está aberto agora e até quando", async () => {
+    montar();
+
+    expect(
+      await screen.findByText("Aberto agora · fecha às 18:00")
+    ).toBeInTheDocument();
+  });
+
+  it("cada serviço leva pro agendamento com ele já marcado, e mostra quanto dura", async () => {
+    // Quem chega querendo "só um corte" não precisa achar o corte de
+    // novo na tela seguinte.
+    montar();
+
+    const corte = await screen.findByRole("link", { name: /corte/i });
+    expect(corte).toHaveAttribute("href", "/gr-barber/agendar?servicos=s1");
+    expect(corte).toHaveTextContent("30 min");
   });
 
   it("esconde as seções vazias em vez de anunciar que não tem nada", async () => {
@@ -100,6 +124,8 @@ describe("perfil da barbearia", () => {
     expect(
       screen.queryByRole("heading", { name: /horário de funcionamento/i })
     ).toBeNull();
+    // Sem horário cadastrado, nada de "fechado" pra sempre.
+    expect(screen.queryByText(/aberto agora|fechado agora/i)).toBeNull();
     // E o caminho principal continua ali: sem cadastro nenhum, a home
     // ainda é um convite pra agendar.
     expect(screen.getByRole("button", { name: /agendar/i })).toBeInTheDocument();

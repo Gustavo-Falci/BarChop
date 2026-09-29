@@ -217,7 +217,16 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
         <div className={estilos.horarios}>
           <Resumo itens={[formatarDataComSemana(dataEfetiva)]} />
 
-          {listaDoDia === null ? (
+          {horarios.erro ? (
+            // Sem isto, um 500 na busca do dia deixava "Carregando
+            // horários…" pra sempre: `listaDoDia` nunca sai de null.
+            <>
+              <p role="alert">Não foi possível carregar os horários.</p>
+              <Botao variante="contorno" onClick={horarios.recarregar}>
+                Tentar de novo
+              </Botao>
+            </>
+          ) : listaDoDia === null ? (
             <p role="status">Carregando horários…</p>
           ) : listaDoDia.length === 0 ? (
             // Ainda aparece: a última vaga ocupada entre um toque e

@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { criarApiClientFalso } from "@gr-barber/api-client";
+import { criarApiClientFalso, ErroDaApi } from "@gr-barber/api-client";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { EscolhaDaData } from "../../src/telas/EscolhaDaData";
 import { navegacaoFalsa } from "../ajudantes/navegacao";
@@ -211,6 +211,37 @@ describe("escolha do dia e do horário", () => {
       await screen.findByText(/nenhum horário livre nos próximos 14 dias/i)
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Próximo mês" })).toBeInTheDocument();
+  });
+
+  it("falha ao buscar os horários do dia avisa e deixa tentar de novo, em vez de carregar pra sempre", async () => {
+    // A tela de horário antiga tinha esta mensagem; na fusão, a lista
+    // do dia só olhava os dados, e um 500 deixava "Carregando horários…"
+    // na tela sem saída nenhuma.
+    const cliente = criarApiClientFalso({
+      diasComVaga: { "2026-09-10": true },
+      horariosLivres: ["15:00"],
+    });
+    const original = cliente.publico.disponibilidadeDoDia;
+    let falhar = true;
+    cliente.publico.disponibilidadeDoDia = async (slug, filtro) => {
+      if (falhar) throw new ErroDaApi(500, "erro_interno", "");
+      return original(slug, filtro);
+    };
+    render(
+      <ProvedorDaApi valor={cliente}>
+        <EscolhaDaData agora={MANHA} />
+      </ProvedorDaApi>
+    );
+
+    expect(
+      await screen.findByText(/não foi possível carregar os horários/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/carregando horários/i)).toBeNull();
+
+    falhar = false;
+    await userEvent.click(screen.getByRole("button", { name: /tentar de novo/i }));
+
+    expect(await screen.findByRole("button", { name: "15:00" })).toBeInTheDocument();
   });
 
   it("volta pro passo de serviços quando a URL não traz nenhum", async () => {

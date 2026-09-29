@@ -9,3 +9,29 @@
   margin-inline: auto;
 }
 .lista { display: grid; gap: var(--espaco-sm); }
+
+.titulo { margin: 0; }
+
+/* No celular o resumo e o botão ficam em fila embaixo da lista, como
+   sempre estiveram. */
+.lateral { display: grid; gap: var(--espaco-md); }
+
+/* 900px: o mesmo corte das larguras do fluxo, declaradas em
+   app/(publico)/[slug]/layout.module.css. Lista à esquerda; o que foi
+   escolhido e o "Continuar" à direita, acompanhando a rolagem — com dez
+   serviços na lista, o botão não fica lá embaixo, fora da tela. */
+@media (min-width: 900px) {
+  .duasColunas {
+    max-width: var(--fluxo-largura);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+    column-gap: var(--espaco-xxl);
+    align-items: start;
+  }
+
+  .titulo { grid-column: 1 / -1; }
+
+  .lateral {
+    position: sticky;
+    top: var(--espaco-lg);
+  }
+}

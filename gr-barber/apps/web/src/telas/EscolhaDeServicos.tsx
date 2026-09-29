@@ -50,8 +50,8 @@ export function EscolhaDeServicos() {
   }
 
   return (
-    <main className={estilos.pagina}>
-      <h1>Serviços</h1>
+    <main className={`${estilos.pagina} ${estilos.duasColunas}`}>
+      <h1 className={estilos.titulo}>Serviços</h1>
 
       <div className={estilos.lista}>
         {servicos.map((servico) => (
@@ -64,31 +64,35 @@ export function EscolhaDeServicos() {
         ))}
       </div>
 
-      {selecionados.length > 0 ? (
-        <Resumo
-          itens={[
-            `${selecionados.length} ${
-              selecionados.length === 1 ? "serviço" : "serviços"
-            }`,
-            `${duracao} min`,
-            formatarPreco((totalEmCentavos / 100).toFixed(2)),
-          ]}
-        />
-      ) : null}
+      {/* O que foi escolhido e o botão de seguir, juntos: no desktop
+          viram a coluna da direita e acompanham a rolagem da lista. */}
+      <div className={estilos.lateral}>
+        {selecionados.length > 0 ? (
+          <Resumo
+            itens={[
+              `${selecionados.length} ${
+                selecionados.length === 1 ? "serviço" : "serviços"
+              }`,
+              `${duracao} min`,
+              formatarPreco((totalEmCentavos / 100).toFixed(2)),
+            ]}
+          />
+        ) : null}
 
-      <Botao
-        disabled={escolhidos.length === 0}
-        onClick={() =>
-          router.push(
-            caminhoDoPasso(slug, "data", {
-              servicoIds: selecionados.map((s) => s.id),
-              remarcar,
-            })
-          )
-        }
-      >
-        Continuar
-      </Botao>
+        <Botao
+          disabled={escolhidos.length === 0}
+          onClick={() =>
+            router.push(
+              caminhoDoPasso(slug, "data", {
+                servicoIds: selecionados.map((s) => s.id),
+                remarcar,
+              })
+            )
+          }
+        >
+          Continuar
+        </Botao>
+      </div>
     </main>
   );
 }

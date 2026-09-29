@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
 import { Aviso } from "../componentes/Aviso";
+import { Botao } from "../componentes/Botao";
 import { ListaDeHorarios } from "../componentes/ListaDeHorarios";
 import { Resumo } from "../componentes/Resumo";
 import { caminhoDoPasso } from "../fluxo/passos";
@@ -67,7 +68,21 @@ export function EscolhaDoHorario({ agora = new Date() }: { agora?: Date }) {
       ) : null}
 
       {horarios.length === 0 ? (
-        <p>Nenhum horário disponível nesse dia. Escolha outra data.</p>
+        // O calendário já esconde o "hoje" sem sobra, mas este estado
+        // ainda aparece: link antigo, ou a última vaga ocupada entre um
+        // passo e outro. O botão é o que impede de virar beco — antes o
+        // único caminho era o voltar do navegador.
+        <>
+          <p>Nenhum horário disponível nesse dia.</p>
+          <Botao
+            variante="contorno"
+            onClick={() =>
+              router.push(caminhoDoPasso(slug, "data", { servicoIds, remarcar }))
+            }
+          >
+            Escolher outra data
+          </Botao>
+        </>
       ) : (
         <ListaDeHorarios
           horarios={horarios}

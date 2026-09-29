@@ -10,10 +10,16 @@ import { navegacaoFalsa } from "../ajudantes/navegacao";
 // trava sob fake timers, e estes testes clicam.
 const MANHA = new Date("2026-09-09T10:00:00-03:00");
 
-function montar(diasComVaga: Record<string, boolean>) {
+// Os horários do dublê valem pra qualquer dia. O padrão dele (09:00 a
+// 10:00) já passou na MANHA fixada, então quem testa "hoje" diz quais
+// horários sobram.
+function montar(
+  diasComVaga: Record<string, boolean>,
+  { agora = MANHA, horariosLivres = ["15:00"] } = {}
+) {
   render(
-    <ProvedorDaApi valor={criarApiClientFalso({ diasComVaga })}>
-      <EscolhaDaData agora={MANHA} />
+    <ProvedorDaApi valor={criarApiClientFalso({ diasComVaga, horariosLivres })}>
+      <EscolhaDaData agora={agora} />
     </ProvedorDaApi>
   );
 }
@@ -49,6 +55,35 @@ describe("escolha da data", () => {
     await waitFor(() => screen.getByRole("button", { name: "9 de setembro" }));
 
     expect(screen.getByRole("button", { name: "9 de setembro" })).toBeEnabled();
+  });
+
+  it("desabilita hoje quando todos os horários do dia já passaram", async () => {
+    // Visto no app rodando: às 22h, com a barbearia fechando às 18h, o
+    // mês dizia que hoje tinha vaga (a API não sabe que horas são) e o
+    // passo seguinte abria em "nenhum horário" — um beco sem saída.
+    const NOITE = new Date("2026-09-09T20:00:00-03:00");
+    montar(
+      { "2026-09-09": true, "2026-09-10": true },
+      { agora: NOITE, horariosLivres: ["09:00", "17:00"] }
+    );
+    await waitFor(() => screen.getByRole("button", { name: "10 de setembro" }));
+
+    expect(screen.getByRole("button", { name: "9 de setembro" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "10 de setembro" })).toBeEnabled();
+  });
+
+  it("não pede os horários de hoje quando o mês já diz que não tem vaga", async () => {
+    const cliente = criarApiClientFalso({ diasComVaga: { "2026-09-09": false } });
+    const doDia = vi.spyOn(cliente.publico, "disponibilidadeDoDia");
+
+    render(
+      <ProvedorDaApi valor={cliente}>
+        <EscolhaDaData agora={MANHA} />
+      </ProvedorDaApi>
+    );
+    await waitFor(() => screen.getByRole("button", { name: "9 de setembro" }));
+
+    expect(doDia).not.toHaveBeenCalled();
   });
 
   it("leva pro passo de horário com a data escolhida", async () => {

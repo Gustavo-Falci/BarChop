@@ -48,6 +48,21 @@ describe("escolha do horário", () => {
     );
   });
 
+  it("dia sem horário oferece voltar pra escolha da data, com os serviços", async () => {
+    // Sem o botão a tela era um beco: o texto mandava escolher outra
+    // data e o único caminho era o voltar do navegador.
+    navegacaoFalsa.redefinir({ query: { servicos: "s1", data: "2026-09-09" } });
+    montar(["09:00"]);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Escolher outra data" })
+    );
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith(
+      "/gr-barber/agendar/data?servicos=s1"
+    );
+  });
+
   it("leva pro passo de dados com a hora escolhida", async () => {
     navegacaoFalsa.redefinir({ query: { servicos: "s1", data: "2026-09-10" } });
     montar(["09:00"]);

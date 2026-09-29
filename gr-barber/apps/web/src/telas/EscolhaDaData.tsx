@@ -7,7 +7,7 @@ import { useRequisicao } from "../api/useRequisicao";
 import { Calendario } from "../componentes/Calendario";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
-import { hojeIso } from "../formato/datas";
+import { hojeIso, horaJaPassou } from "../formato/datas";
 import estilos from "./EscolhaDaData.module.css";
 
 // `agora` é prop com padrão, do mesmo jeito que o agoraNaBarbearia da
@@ -24,11 +24,35 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     const perfil = await api.publico.perfilDaBarbearia(slug);
     // O barbeiroId sai do perfil, e não da URL: é a única rota pública
     // que o entrega, e a barbearia do MVP tem um barbeiro só.
-    return api.publico.disponibilidadeDoMes(slug, {
-      barbeiroId: perfil.barbeiros[0].id,
+    const barbeiroId = perfil.barbeiros[0].id;
+    const dias = await api.publico.disponibilidadeDoMes(slug, {
+      barbeiroId,
       mes,
       servicoIds,
     });
+
+    // A rota do mês não sabe que horas são (de propósito — ver o
+    // comentário dela), então "hoje" chega `true` mesmo depois do
+    // último horário. Sem esta checagem o dia ficava tocável e o passo
+    // seguinte abria em "nenhum horário": um beco sem saída. O filtro é
+    // o mesmo `horaJaPassou` que a tela de horário aplica, pra as duas
+    // telas nunca discordarem sobre o mesmo dia.
+    //
+    // Só uma chamada a mais, e só quando hoje está no mês mostrado e a
+    // API diz que tem vaga — nos outros casos não há o que corrigir.
+    const hoje = hojeIso(agora);
+    if (dias[hoje]) {
+      const horarios = await api.publico.disponibilidadeDoDia(slug, {
+        barbeiroId,
+        data: hoje,
+        servicoIds,
+      });
+      if (horarios.every((hora) => horaJaPassou(hoje, hora, agora))) {
+        return { ...dias, [hoje]: false };
+      }
+    }
+
+    return dias;
   }, [slug, mes, servicoIds.join(","), pronto]);
 
   if (!pronto) return null;

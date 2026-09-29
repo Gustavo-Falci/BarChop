@@ -14,6 +14,28 @@ export function formatarDataLonga(data: string): string {
   return FORMATADOR_LONGO.format(new Date(`${data}T00:00:00Z`));
 }
 
+// O Intl diz "terça-feira", e numa linha de resumo o "-feira" é peso
+// sem informação — daí a tabela própria, na ordem do getUTCDay.
+const DIAS_DA_SEMANA = [
+  "domingo",
+  "segunda",
+  "terça",
+  "quarta",
+  "quinta",
+  "sexta",
+  "sábado",
+];
+
+// "terça, 29 de setembro". Separada da formatarDataLonga, e não uma
+// opção dela: aquela é o nome acessível dos dias do Calendario e das
+// grades do painel, e mudá-la mudaria o que o leitor de tela anuncia em
+// todas. Esta é pra quem está conferindo a escolha, onde "29 de
+// setembro" sozinho obriga a pessoa a contar no calendário que dia é.
+export function formatarDataComSemana(data: string): string {
+  const dia = DIAS_DA_SEMANA[new Date(`${data}T00:00:00Z`).getUTCDay()];
+  return `${dia}, ${formatarDataLonga(data)}`;
+}
+
 // O instante entra por parâmetro, com `new Date()` como padrão — mesma
 // forma do agoraNaBarbearia da API, e o que permite testar sem fake
 // timers. O relógio é o do aparelho do cliente, não o da barbearia:

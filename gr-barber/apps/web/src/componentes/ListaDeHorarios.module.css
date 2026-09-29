@@ -1,3 +1,43 @@
-.lista { display: flex; flex-wrap: wrap; gap: var(--espaco-sm); }
-.horario { padding: var(--espaco-sm) var(--espaco-md); border: var(--borda-padrao) solid var(--cor-ink); border-radius: var(--raio-pill); background: var(--cor-surface); font-size: var(--texto-sm); font-weight: 600; cursor: pointer; }
+.periodos { display: grid; gap: var(--espaco-md); }
+.periodo { display: grid; gap: var(--espaco-sm); }
+
+.nomeDoPeriodo {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink-soft);
+}
+
+/* Grade, e não `flex-wrap`: com flex cada botão tinha a largura do
+   próprio texto, e "11:00" saía mais estreito que "10:00" — a grade
+   ficava torta, visto no app a 390px. Colunas iguais põem os horários
+   em fila; o mínimo de 4.5rem dá quatro colunas no celular e mais no
+   painel, sem media query. */
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+  gap: var(--espaco-sm);
+}
+
+.horario {
+  /* 44px: o alvo de toque mínimo; o padding sozinho dava menos. */
+  min-height: 44px;
+  padding: var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  /* Mesmo motivo do `.valor` da home: sem isto os dígitos têm larguras
+     diferentes e as colunas tremem de uma linha pra outra. */
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.horario:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
 .horario[aria-current="true"] { background: var(--cor-ink); color: var(--cor-paper); }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   diasDoMes,
   ehPassado,
+  formatarDataComSemana,
   formatarDataLonga,
   hojeIso,
   horaJaPassou,
@@ -18,6 +19,13 @@ describe("datas do fluxo", () => {
     // Paulo mostraria 8 de setembro. É o bug clássico deste projeto,
     // onde toda data trafega como "YYYY-MM-DD".
     expect(formatarDataLonga("2026-09-09")).toBe("9 de setembro");
+  });
+
+  it("formata com o dia da semana, também sem deslocar pelo fuso", () => {
+    // Função separada, e não um campo a mais na formatarDataLonga: aquela
+    // é o nome acessível de cada dia do Calendario e das grades do
+    // painel, e mudá-la mudaria o que o leitor de tela anuncia.
+    expect(formatarDataComSemana("2026-09-29")).toBe("terça, 29 de setembro");
   });
 
   it("diz qual é o dia de hoje no formato da API", () => {

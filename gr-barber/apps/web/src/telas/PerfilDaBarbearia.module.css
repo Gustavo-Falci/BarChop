@@ -1,4 +1,13 @@
-.pagina { display: grid; gap: var(--espaco-lg); padding: var(--espaco-lg); }
+/* Estreita e centralizada até a tela ganhar duas colunas: a largura
+   vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  padding: var(--espaco-lg);
+  width: 100%;
+  max-width: var(--fluxo-estreita);
+  margin-inline: auto;
+}
 
 .cabecalho {
   display: grid;

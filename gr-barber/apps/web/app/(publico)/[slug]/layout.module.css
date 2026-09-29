@@ -1,22 +1,35 @@
-/* A coluna do fluxo do cliente. Mora aqui, e não em cada tela, porque
-   é o layout que sabe onde o conteúdo começa — a barra da barbearia
-   está logo acima, e as duas precisam cair na mesma vertical.
+/* As larguras do fluxo do cliente, declaradas UMA vez. São duas:
 
-   Antes disto o fluxo inteiro encostava na esquerda no desktop: as oito
-   telas de `src/telas/` declaram `max-width: 480px` sem margem nenhuma.
-   No celular ninguém via, porque a janela é mais estreita que o teto; a
-   1440px de largura o formulário ficava numa faixa estreita grudada na
-   borda, com quase mil pixels de vazio ao lado.
+   --fluxo-largura é a coluna do fluxo: 480px no celular e 1040px a
+   partir de 900px, onde as telas passam a ter duas colunas (lista de um
+   lado, resumo e ação do outro). Antes era 480px em qualquer tela, e a
+   1440px o fluxo inteiro vivia numa faixa estreita com quase mil pixels
+   vazios dos lados.
 
-   Este é o ÚNICO lugar que decide a largura do fluxo. As oito telas
-   declaravam `max-width: 480px` cada uma; enquanto a coluna repetisse o
-   mesmo valor, as cópias não faziam mal — mas mudar esta coluna pra 640
-   deixaria as oito cortando em 480, sem nada à vista explicando por
-   quê. Elas perderam o `max-width` e ficaram só com o `padding`, que é
-   delas mesmo. A barra da barbearia é a exceção, e por um motivo: a
-   régua dela atravessa a janela inteira, então ela vive fora desta
-   coluna e repete o par 480px/24px no próprio CSS. */
+   --fluxo-estreita é pra o que continua sendo uma coluna só no desktop
+   — formulário de entrar, minha conta, a tela de sucesso, estados de
+   erro. Um formulário de dois campos esticado a 1040px fica pior, não
+   melhor.
+
+   Propriedade customizada herda: a barra da barbearia (fora da coluna,
+   porque a régua dela atravessa a janela) e cada tela leem daqui, sem
+   repetir número nenhum.
+
+   900px é o mesmo corte que o painel já usa pras suas duas colunas.
+   Media query não lê variável, então quem precisar do corte (as telas
+   de duas colunas) repete o 900px, apontando pra cá. */
+.fluxo {
+  --fluxo-largura: 480px;
+  --fluxo-estreita: 480px;
+}
+
+@media (min-width: 900px) {
+  .fluxo {
+    --fluxo-largura: 1040px;
+  }
+}
+
 .conteudo {
-  max-width: 480px;
+  max-width: var(--fluxo-largura);
   margin-inline: auto;
 }

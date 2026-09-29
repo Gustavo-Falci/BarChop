@@ -34,12 +34,16 @@ export default function LayoutDaBarbearia({
 }) {
   return (
     <ProvedorDaApi>
-      <BarraDaBarbearia />
-      {/* A coluna sai das telas e vem pra cá: as oito declaravam a
-          largura e nenhuma a margem, então o fluxo inteiro encostava na
-          esquerda no desktop. Aqui ela também fica na mesma vertical da
-          barra acima, em vez de os dois combinarem por acaso. */}
-      <div className={estilos.conteudo}>{children}</div>
+      {/* O wrapper só existe pra declarar as larguras do fluxo (ver o
+          CSS): a barra e a coluna leem a mesma variável daqui. */}
+      <div className={estilos.fluxo}>
+        <BarraDaBarbearia />
+        {/* A coluna sai das telas e vem pra cá: as oito declaravam a
+            largura e nenhuma a margem, então o fluxo inteiro encostava
+            na esquerda no desktop. Aqui ela também fica na mesma vertical
+            da barra acima, em vez de os dois combinarem por acaso. */}
+        <div className={estilos.conteudo}>{children}</div>
+      </div>
     </ProvedorDaApi>
   );
 }

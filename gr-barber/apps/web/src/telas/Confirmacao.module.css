@@ -1,4 +1,13 @@
-.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
+/* Estreita e centralizada até a tela ganhar duas colunas: a largura
+   vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
+.pagina {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  width: 100%;
+  max-width: var(--fluxo-estreita);
+  margin-inline: auto;
+}
 .linha { display: flex; justify-content: space-between; gap: var(--espaco-md); padding: var(--espaco-sm) 0; border-bottom: var(--borda-hairline) solid var(--cor-line); }
 
 /* Identificação e botão juntos, com um respiro a mais que as linhas do

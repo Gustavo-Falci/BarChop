@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@gr-barber/api-client";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../src/telas/PerfilDaBarbearia";
+import { sessaoDoCliente } from "../../src/sessao/armazenamento";
 import { navegacaoFalsa } from "../ajudantes/navegacao";
 
 function montar(falso = criarApiClientFalso()) {
@@ -130,5 +131,29 @@ describe("perfil da barbearia", () => {
     await waitFor(() =>
       expect(screen.getByText(/não foi possível abrir esta página/i)).toBeInTheDocument()
     );
+  });
+
+  it("sem sessão, a página da barbearia oferece entrar", async () => {
+    // Na home a barra não aparece (o nome já é o título), então o
+    // caminho pra conta mora aqui.
+    localStorage.clear();
+    montar();
+    await waitFor(() => screen.getByRole("heading", { level: 1 }));
+
+    expect(await screen.findByRole("link", { name: "Entrar" })).toHaveAttribute(
+      "href",
+      "/gr-barber/entrar"
+    );
+  });
+
+  it("com sessão, a página da barbearia leva aos agendamentos", async () => {
+    localStorage.clear();
+    sessaoDoCliente("gr-barber").gravar("token");
+    montar();
+    await waitFor(() => screen.getByRole("heading", { level: 1 }));
+
+    expect(
+      await screen.findByRole("link", { name: "Meus agendamentos" })
+    ).toHaveAttribute("href", "/gr-barber/minha-conta");
   });
 });

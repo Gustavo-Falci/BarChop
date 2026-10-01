@@ -5,6 +5,7 @@ import { criarApiClientFalso } from "@gr-barber/api-client";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { Confirmacao } from "../../src/telas/Confirmacao";
 import { gravarDadosDoCliente, lerDadosDoCliente } from "../../src/fluxo/dadosDoCliente";
+import { sessaoDoCliente } from "../../src/sessao/armazenamento";
 import { navegacaoFalsa } from "../ajudantes/navegacao";
 
 // Oito da manhã do dia 10 — antes das 09:00 que o `beforeEach` escolhe
@@ -187,5 +188,33 @@ describe("confirmação", () => {
     );
     const cancelado = falso.estado.agendamentos.find((a) => a.id === original.id);
     expect(cancelado?.status).toBe("cancelado");
+  });
+
+  it("com sessão, a tela de sucesso leva aos agendamentos", async () => {
+    // Quem acabou de agendar logado quer conferir, cancelar ou remarcar
+    // — e a confirmação era um beco: só voltava pra página inicial.
+    localStorage.clear();
+    sessaoDoCliente("gr-barber").gravar("token");
+    montar();
+    await waitFor(() => screen.getByRole("button", { name: /confirmar/i }));
+
+    await userEvent.click(screen.getByRole("button", { name: /confirmar/i }));
+
+    expect(
+      await screen.findByRole("link", { name: "Ver meus agendamentos" })
+    ).toHaveAttribute("href", "/gr-barber/minha-conta");
+  });
+
+  it("sem sessão, a tela de sucesso não promete uma conta que não existe", async () => {
+    localStorage.clear();
+    montar();
+    await waitFor(() => screen.getByRole("button", { name: /confirmar/i }));
+
+    await userEvent.click(screen.getByRole("button", { name: /confirmar/i }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/agendamento confirmado/i)).toBeInTheDocument()
+    );
+    expect(screen.queryByRole("link", { name: "Ver meus agendamentos" })).toBeNull();
   });
 });

@@ -9,6 +9,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
 import { diasDaSemana, gradeDeTempo, gradeDoMes } from "../../painel/grade";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { useAgora } from "../../painel/useAgora";
 import estilos from "./Agenda.module.css";
 
 const VISTAS: Vista[] = ["dia", "semana", "mes"];
@@ -39,10 +40,12 @@ function somarMeses(data: string, meses: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-// `agora` por parâmetro, como toda tela que olhe relógio: fake timers
-// não entram nesta suíte, e teste que compara data fixa com o relógio
-// real falha sozinho depois.
-export function Agenda({ agora = new Date() }: { agora?: Date }) {
+// `agora` por parâmetro, como toda tela que olhe relógio: teste que
+// compara data fixa com o relógio real falha sozinho depois. Sem ele, o
+// instante vem do `useAgora`, que vira a cada minuto — a régua tem que
+// andar com a aba aberta.
+export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
+  const agora = useAgora(agoraFixo);
   const router = useRouter();
   const query = useSearchParams();
   const api = useApiDoPainel();

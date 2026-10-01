@@ -250,7 +250,12 @@ export function GradeDeTempo({
                 <span
                   data-testid="regua-do-agora"
                   className={estilos.agora}
-                  style={{ "--linha": grade.agora.linha } as CSSProperties}
+                  style={
+                    {
+                      "--linha": grade.agora.linha,
+                      "--fracao": grade.agora.fracao,
+                    } as CSSProperties
+                  }
                 />
               ) : null}
             </div>

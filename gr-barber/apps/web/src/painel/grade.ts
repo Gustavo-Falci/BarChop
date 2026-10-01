@@ -41,8 +41,10 @@ export interface GradeDeTempo {
   totalLinhas: number;
   colunas: ColunaDeDia[];
   // Onde desenhar a régua do agora, ou null quando o instante não cai
-  // em nenhum dos dias mostrados.
-  agora: { data: string; linha: number } | null;
+  // em nenhum dos dias mostrados. `linha` é sempre inteira, porque vai
+  // em grid-row; o que sobra do minuto dentro dela vai em `fracao`
+  // (0 ≤ fracao < 1), que o CSS converte em deslocamento.
+  agora: { data: string; linha: number; fracao: number } | null;
 }
 
 function emMinutos(hora: string): number {
@@ -217,6 +219,14 @@ export function gradeDeTempo(entrada: {
   const dentroDaJanela =
     minutoAgora >= minutoInicial && minutoAgora < minutoFinal;
 
+  // O agora é a única posição desta grade que não cai em múltiplo de 5
+  // — e a exceção ao "nenhum cálculo aqui arredonda" do topo. A linha
+  // vai para baixo até o múltiplo de 5 anterior, e o resto do minuto vira
+  // `fracao`. Passar a linha fracionária (13.4) direto ao grid-row a
+  // invalida, e a régua aparece depois do fechamento.
+  const passados = minutoAgora - minutoInicial;
+  const resto = passados % MINUTOS_POR_LINHA;
+
   return {
     minutoInicial,
     minutoFinal,
@@ -224,7 +234,11 @@ export function gradeDeTempo(entrada: {
     colunas,
     agora:
       mostrandoHoje && dentroDaJanela
-        ? { data: hoje, linha: linhaDe(minutoAgora) }
+        ? {
+            data: hoje,
+            linha: linhaDe(minutoAgora - resto),
+            fracao: resto / MINUTOS_POR_LINHA,
+          }
         : null,
   };
 }

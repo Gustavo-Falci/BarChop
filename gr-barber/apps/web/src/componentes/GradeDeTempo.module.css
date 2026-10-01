@@ -253,6 +253,10 @@ button.diaDoCabecalho:hover .numeroDoDia {
   grid-column: 1;
   z-index: 2;
   align-self: start;
+  /* O minuto que não cai em múltiplo de 5 desce dentro da linha. A linha
+     em si tem que ser inteira: grid-row com 13.4 é descartado, e a régua
+     vai parar depois do fechamento. */
+  margin-block-start: calc(var(--fracao, 0) * var(--altura-da-linha));
   height: 0;
   border-block-start: var(--borda-padrao) solid var(--cor-ink);
   pointer-events: none;

@@ -44,8 +44,8 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
      existe porque "Meus agendamentos" exige token e nenhuma tela do
      mapa fazia login. Ela cobre também o primeiro acesso, sem o qual
      ninguém jamais teria senha.
-   - **C — painel web do barbeiro: pronto.** PR *(pendente — ainda não
-     aberto)*, merge *(pendente)*, em 2026-09-08. Doze rotas sob
+   - **C — painel web do barbeiro: pronto.** PR #10, merge `9cb7760`,
+     em 2026-09-09. Doze rotas sob
      `/painel`, não seis: quatro são telas que o mapa deu ao app do
      barbeiro pra mesma função (detalhe e criação de agendamento,
      cadastro de cliente, cadastro de serviço), e a décima segunda —
@@ -54,6 +54,61 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
      painel chegou primeiro. Fecha também o quarto critério da spec da
      fundação: a vitrine `/primitivos` sai, substituída pelas telas de
      verdade. A suíte foi de 463 pra 571 testes.
+   - **Depois do C — acabamento das telas web, de 2026-09-10 a
+     2026-09-27.** Não é sub-projeto: nenhuma tela nova do mapa, só as
+     que já existiam ficando de pé de verdade. Fora o PR #11, tudo foi
+     direto na `main`, sem PR.
+     - *Casca do painel* (PR #11, merge `033994a`, 2026-09-10): o
+       painel ganha moldura de dashboard, e saem o aviso de hidratação
+       do `<html>` e a `busca` vazia que o `api-client` mandava na
+       query. Em 2026-09-13 a barra lateral passa a recolher.
+     - *Agenda como calendário* (2026-09-12, spec e plano
+       `2026-09-12-agenda-calendario`): vistas de dia, semana e mês, com
+       eixo de tempo e eventos de altura proporcional à duração, e
+       sobreposições em faixas lado a lado. Cobre o "visão
+       semanal/mensal" que o mapa pedia e o C tinha adiado, e conserta a
+       grade antiga, que só olhava `horaInicio`: um corte de 09:00–10:00
+       deixava 09:15, 09:30 e 09:45 como "livre", com botão pra agendar
+       por cima.
+     - *Novo agendamento* (2026-09-13 a 16): passos que abrem um por
+       vez, com resumo do que já foi escolhido; o cliente chega
+       pré-preenchido pela URL quando a tela é aberta a partir dele.
+     - *Clientes e serviços* (2026-09-16 a 20): a lista de clientes
+       ganha busca com atalho de teclado, filtro por frequência de
+       visita, linha clicável, cabeçalho fixo e paginação por cursor —
+       esta última muda a API: `GET /clientes` passa a devolver o total
+       e o próximo cursor. O cadastro de cliente valida nome, telefone e
+       email como a API valida, e telefone repetido aponta pro cadastro
+       que já existe. Em serviços, os validadores espelham o schema da
+       rota (duração 5..480 e múltipla de 5), a lista não pisca "nenhum
+       serviço" enquanto carrega, e serviço inativo aparece atenuado.
+     - *Login* (2026-09-26 e 27): rate limiting na API
+       (`apps/api/src/lib/limites.ts`) pro login e os dois signups; os
+       dois logins viram `<form>` (Enter envia); o `Campo` anuncia o
+       erro com `role="alert"` e ganha mostrar/ocultar senha; o login do
+       painel ganha acabamento; e os dois logins respondem o mesmo
+       `credenciais_invalidas` pra senha errada — o login do cliente
+       respondia `nao_autenticado`, o código de token vencido. Fechou a
+       dívida dos dois códigos antes de o app no Expo consumir o
+       contrato.
+     - *Fluxo do cliente* (2026-09-26 e 27): o nome da barbearia
+       aparece em todas as telas públicas, numa barra no layout; a
+       coluna de 480px centra no desktop, onde antes encostava na
+       esquerda; o passo de dados vira "quem é você" — quem está logado
+       vê o próprio cadastro num cartão, e quem não está escolhe entre
+       seguir sem conta ou entrar e voltar pro mesmo passo; e a home da
+       barbearia mostra apresentação, serviços com preço e horário de
+       funcionamento. A apresentação é a coluna nova `barbearia.sobre`
+       (texto puro, até 1000 caracteres), editada em Configurações. A
+       migration dela foi escrita à mão: `prisma migrate dev` propõe
+       derrubar `agendamento.periodo`, a coluna gerada que sustenta a
+       constraint `EXCLUDE` e que o schema do Prisma não enxerga. Toda
+       migration daqui pra frente segue esse caminho, aplicada com
+       `migrate deploy`.
+
+     A suíte da web está em 399 testes. A da API não foi recontada:
+     ela exige o Postgres de teste do `apps/api/.env.test`, que não
+     estava configurado nesta máquina.
    - **D — app do barbeiro no Expo (10 telas)**.
 
    Duas decisões do sub-projeto A que mudam o resto do roteiro: o

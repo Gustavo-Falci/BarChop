@@ -57,3 +57,7 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* No canto, fora do caminho do "Agendar": é atalho pra quem já tem
+   conta, não a ação da página. */
+.conta { justify-self: end; }

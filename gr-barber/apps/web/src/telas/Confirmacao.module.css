@@ -1,2 +1,18 @@
 .pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
 .linha { display: flex; justify-content: space-between; gap: var(--espaco-md); padding: var(--espaco-sm) 0; border-bottom: var(--borda-hairline) solid var(--cor-line); }
+
+/* Link de texto, não Botao: a ação principal desta tela já aconteceu,
+   e dois botões empilhados se leriam como duas formas de confirmar. */
+.link {
+  justify-self: start;
+  padding: var(--espaco-xs) 0;
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

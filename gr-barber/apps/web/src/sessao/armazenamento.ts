@@ -12,6 +12,16 @@ export interface Sessao {
   limpar(): void;
 }
 
+// Avisado a cada gravar e limpar. O evento `storage` do navegador só
+// dispara nas OUTRAS abas, e quem mostra a sessão na mesma aba — a barra
+// da barbearia, que mora no layout e não remonta — precisa saber do
+// login e do "Não é você?" que acabaram de acontecer aqui.
+export const EVENTO_DE_SESSAO = "gr-barber:sessao";
+
+function avisar() {
+  window.dispatchEvent(new Event(EVENTO_DE_SESSAO));
+}
+
 function sessaoNaChave(chave: string): Sessao {
   return {
     ler() {
@@ -23,10 +33,12 @@ function sessaoNaChave(chave: string): Sessao {
     gravar(token: string) {
       if (typeof window === "undefined") return;
       window.localStorage.setItem(chave, token);
+      avisar();
     },
     limpar() {
       if (typeof window === "undefined") return;
       window.localStorage.removeItem(chave);
+      avisar();
     },
   };
 }

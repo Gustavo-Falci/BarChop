@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
+import { LinkDaConta } from "./LinkDaConta";
 import estilos from "./BarraDaBarbearia.module.css";
 
 // De quem é esta página. O fluxo do cliente chega por um link de
@@ -57,9 +58,15 @@ function Marca({ slug }: { slug: string }) {
   // não tinha. Um <a> de verdade, e não um onClick, porque abrir em
   // outra aba é coisa que se faz com o link do lugar onde se vai cortar
   // o cabelo.
+  //
+  // O acesso à conta mora junto do nome, e só depois de ele chegar: num
+  // slug que não existe, "Entrar" levaria ao login de barbearia nenhuma.
   return (
-    <Link href={`/${slug}`} className={estilos.marca}>
-      {dados.nome}
-    </Link>
+    <>
+      <Link href={`/${slug}`} className={estilos.marca}>
+        {dados.nome}
+      </Link>
+      <LinkDaConta slug={slug} />
+    </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErroDaApi } from "@gr-barber/api-client";
 import type { AgendamentoSerializado } from "@gr-barber/types";
@@ -13,6 +14,7 @@ import { caminhoDoPasso } from "../fluxo/passos";
 import { lerDadosDoCliente, limparDadosDoCliente } from "../fluxo/dadosDoCliente";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
 import { ehPassado, formatarDataLonga, horaJaPassou } from "../formato/datas";
+import { useTemSessaoDoCliente } from "../sessao/useSessaoDoCliente";
 import estilos from "./Confirmacao.module.css";
 
 // `agora` fica opcional e sem valor padrão fixado aqui, ao contrário
@@ -27,6 +29,8 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     "confirmar",
     agora ?? new Date()
   );
+  // Antes de qualquer return: hook não pode ficar atrás de um.
+  const temSessao = useTemSessaoDoCliente(slug);
   const router = useRouter();
   const api = useApi();
 
@@ -175,6 +179,13 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
             {criado.horaInicio} · {formatarDataLonga(criado.data)}
           </b>
         </div>
+        {/* Quem agendou logado quer conferir, cancelar ou remarcar.
+            Sem sessão o link prometeria uma conta que não existe. */}
+        {temSessao ? (
+          <Link href={`/${slug}/minha-conta`} className={estilos.link}>
+            Ver meus agendamentos
+          </Link>
+        ) : null}
         <Botao variante="contorno" onClick={() => router.push(`/${slug}`)}>
           Voltar ao início
         </Botao>

@@ -7,6 +7,7 @@ import { useRequisicao } from "../api/useRequisicao";
 import { Botao } from "../componentes/Botao";
 import { formatarPreco } from "../componentes/ItemDeServico";
 import { caminhoDoPasso } from "../fluxo/passos";
+import { LinkDaConta } from "../fluxo/LinkDaConta";
 import estilos from "./PerfilDaBarbearia.module.css";
 
 // Domingo a sábado, na ordem em que `diaSemana` vem da API (0 = domingo).
@@ -56,6 +57,14 @@ export function PerfilDaBarbearia() {
 
   return (
     <main className={estilos.pagina}>
+      {/* Aqui a barra da barbearia não aparece (o nome já é o título),
+          então o caminho até a conta precisa morar na própria página —
+          e só depois de ela existir, pelo mesmo motivo da barra. */}
+      {dados ? (
+        <nav className={estilos.conta} aria-label="Sua conta">
+          <LinkDaConta slug={slug} />
+        </nav>
+      ) : null}
       <div className={estilos.faixa} />
       <div>
         <h1>{dados?.nome}</h1>

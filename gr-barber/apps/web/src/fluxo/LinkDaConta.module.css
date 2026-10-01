@@ -1,0 +1,16 @@
+/* O mesmo link de texto do "Já tenho conta" no passo de dados: negrito
+   e sublinhado, sem caixa. Botão aqui competiria com o "Agendar", que é
+   a ação da página. */
+.link {
+  padding: var(--espaco-xs) 0;
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

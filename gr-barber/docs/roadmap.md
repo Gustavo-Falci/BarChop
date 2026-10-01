@@ -109,6 +109,34 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
      A suíte da web está em 399 testes. A da API não foi recontada:
      ela exige o Postgres de teste do `apps/api/.env.test`, que não
      estava configurado nesta máquina.
+   - **Acesso à conta do cliente — Fases 1 a 3 prontas, Fase 4
+     pendente.** Plano de 2026-10-01, feito com TDD, direto na `main`.
+     Saiu de três buracos: nenhuma tela levava à conta, ninguém
+     recuperava senha, e quem definisse a senha primeiro assumia o
+     cadastro de um telefone.
+     - *Fase 1 — links* (`44c2efe`): "Entrar" ou "Meus agendamentos"
+       (`fluxo/LinkDaConta.tsx`, conforme a sessão) na barra da
+       barbearia e na home, e "Ver meus agendamentos" na confirmação.
+       `gravar`/`limpar` da sessão disparam `gr-barber:sessao`, e o
+       `useTemSessaoDoCliente` acompanha sem remontar a barra.
+     - *Fase 2 — códigos* (`757dabe`): tabela `codigo_verificacao`
+       (HMAC do código, nunca o código), `lib/codigos.ts` (6 dígitos, 10
+       minutos, uso único, 5 tentativas, à prova de corrida) e
+       `lib/canal.ts` (memória nos testes, log em desenvolvimento,
+       recusa de subir em produção sem provedor).
+     - *Fase 3 — senha do cliente com código* (`19d6ab0`, `77c7d83`):
+       sai o signup do cliente; `POST .../auth/cliente/codigo` e
+       `.../senha` juntam primeiro acesso e esqueci a senha. O pedido
+       responde igual tendo ou não conta, e o nome é obrigatório
+       sempre, pra nenhuma diferença de resposta dizer quem tem
+       cadastro. A tela `/[slug]/entrar` ganha o caminho do código.
+     - *Fase 4 — pendente*: derrubar as sessões abertas ao trocar a
+       senha, e o esqueci a senha do barbeiro por e-mail. Ver as
+       dívidas abaixo.
+
+     Suítes ao fim da Fase 3: web 415, api-client 50, API 339 — a da
+     API agora roda nesta máquina, com o Postgres de teste
+     (`gr_barber_test`) e o `apps/api/.env.test` configurados.
    - **D — app do barbeiro no Expo (10 telas)**.
 
    Duas decisões do sub-projeto A que mudam o resto do roteiro: o
@@ -144,48 +172,41 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
   buraco em si continua aberto — cada tentativa, dentro do orçamento,
   ainda responde se aquele email existe. Fechar de verdade é verificação
   de email, que só faz sentido junto do canal de mensagem do passo 4.
-- **Não existe recuperação de senha.** Quem esquecer a senha fica
-  trancado do lado de fora, sem caminho nenhum no produto — vale pro
-  barbeiro (`POST /auth/login`) e pro cliente. No piloto com um barbeiro
-  isso se resolve por `psql`; no primeiro cliente de fora, não. É também
-  a razão de os limites de `lib/limites.ts` serem janela que passa, e
-  não bloqueio de conta: sem rota de recuperação, um bloqueio de verdade
-  seria definitivo. O fechamento depende de canal de saída — email
-  (provedor de envio que não está nas dependências) ou WhatsApp, junto
-  do passo 4 — e é decisão de escopo, não item já na fila.
+- **O barbeiro não tem recuperação de senha.** O cliente já tem (ver o
+  acesso à conta no passo 3): o código no telefone serve pro primeiro
+  acesso e pro esqueci a senha. O barbeiro (`POST /auth/login`, por
+  e-mail) continua trancado do lado de fora se esquecer — no piloto
+  isso se resolve por `psql`; no primeiro cliente de fora, não. É a
+  Fase 4 do plano de contas: o mesmo `lib/codigos.ts` com a finalidade
+  `senha_barbeiro`, mandado pro e-mail. É também a razão de os limites
+  de `lib/limites.ts` serem janela que passa, e não bloqueio de conta:
+  sem rota de recuperação, um bloqueio de verdade seria definitivo.
+- **Trocar a senha não derruba as sessões abertas.** O "esqueci a
+  senha" do cliente troca a senha, mas um token emitido antes continua
+  valendo até expirar (7 dias) — quem roubou a sessão segue dentro
+  depois de a vítima trocar a senha. Fecha na Fase 4: `senha_alterada_em`
+  no cliente e no barbeiro, e o hook de `plugins/auth.ts`, que já lê o
+  banco a cada requisição, recusando token com `iat` anterior a ela.
+- **Os códigos de verificação só saem pelo log.** O provedor real
+  (WhatsApp ou SMS pro cliente, e-mail pro barbeiro) não foi escolhido,
+  e `lib/canal.ts` só tem o canal de log (desenvolvimento) e o de
+  memória (testes). Em produção, sem `CANAL_DE_MENSAGEM` apontando um
+  provedor real, a API se recusa a subir — de propósito, porque código
+  no log é conta de quem lê o log. Ou seja: o primeiro acesso do
+  cliente bloqueia o deploy do passo 5 até um provedor existir. A
+  escolha pode ser a mesma dos lembretes do passo 4.
 - **Os limites por IP viram limite global atrás de proxy reverso.** O
   `request.ip` do Fastify vem do socket, então quando a API subir atrás
   de proxy (passo 5, a VM da OCI) toda requisição chega com o endereço
-  do proxy, e os contadores por IP de `lib/limites.ts` — o do login e os
-  dos dois signups — passam a somar o tráfego de todo mundo num
+  do proxy, e os contadores por IP de `lib/limites.ts` — o do login, o
+  do signup do barbeiro e o do pedido de código do cliente — passam a
+  somar o tráfego de todo mundo num
   orçamento só. Fecha com `trustProxy` no `Fastify()` do `app.ts`, e
   isso não pode ser ligado antes: sem proxy confiável na frente,
   `trustProxy` faz a API acreditar num `X-Forwarded-For` que qualquer um
   escreve, e daí o limite por IP deixa de limitar. Os limites por conta
   (email, telefone) não dependem do IP e continuam valendo nos dois
   casos.
-- **Quem definir a senha primeiro assume o cadastro de um telefone.**
-  Os cadastros de `Cliente` são criados por outra pessoa — pelo upsert
-  do agendamento público, ou pelo barbeiro no walk-in. Sem verificar
-  posse do número, a API não distingue o dono do telefone de quem só o
-  conhece, e quem chegar primeiro passa a ver o histórico daquela
-  pessoa naquela barbearia. A mitigação é que definir senha só é
-  permitido em cadastro que ainda não tem uma, e ela hoje vale de
-  verdade: desde a normalização de telefone (`lib/telefone.ts`), o
-  número é gravado num formato único — `(11) 99999-8888` — pelos quatro
-  escritores e pelas buscas, então a mesma pessoa ocupa uma linha só e
-  o `409` não se contorna reformatando o número. Fica de pé o buraco
-  original, que só o OTP fecha: quem conhece o número de outra pessoa e
-  chega antes dela ainda reivindica o cadastro. Fecha junto com o canal
-  de mensagem do passo 4, que traz o código de verificação.
-  Sobra um detalhe menor: dois signups concorrentes no mesmo cadastro
-  sem senha passam os dois — ambos leem `senhaHash` nulo, ambos gravam,
-  o último grava por cima, e os dois chamadores saem com token válido.
-  Fechar isso é um `updateMany` com predicado de status, do mesmo
-  formato do que o remarcar já usa.
-- **O `409` do signup de cliente diz que aquele telefone já tem conta**,
-  exatamente como o do barbeiro diz do email. Mesma dívida, mesmo
-  fechamento.
 - **Nenhuma das duas rotas que criam ou movem um agendamento recusa uma
   data no passado.** `POST /barbearias/:slug/agendamentos` e
   `POST /clientes/me/agendamentos/:id/remarcar` passam pelo mesmo

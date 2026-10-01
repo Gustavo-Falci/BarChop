@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { criarApiClientFalso, ErroDaApi } from "../src/index";
+import { CODIGO_DO_CLIENTE_FALSO, criarApiClientFalso, ErroDaApi } from "../src/index";
 
 describe("criarApiClientFalso", () => {
   it("devolve o perfil semeado, no formato do client real", async () => {
@@ -211,5 +211,30 @@ describe("dublê — escopo do barbeiro", () => {
     });
 
     expect(criado.cliente.nome).toBe("Marcos Reis");
+  });
+
+  it("define a senha do cliente só com o código do dublê", async () => {
+    // As telas testam o caminho do código contra o dublê: ele precisa
+    // recusar código errado do mesmo jeito que a API, com o mesmo código
+    // de erro, senão o ramo de erro das telas nunca roda.
+    const falso = criarApiClientFalso();
+    await falso.publico.pedirCodigoDoCliente("gr-barber", "(11) 98888-7777");
+
+    await expect(
+      falso.publico.definirSenhaDoCliente("gr-barber", {
+        telefone: "(11) 98888-7777",
+        codigo: "000000",
+        senha: "segredo123",
+        nome: "Maria",
+      })
+    ).rejects.toMatchObject({ status: 422, codigo: "codigo_invalido" });
+
+    const sessao = await falso.publico.definirSenhaDoCliente("gr-barber", {
+      telefone: "(11) 98888-7777",
+      codigo: CODIGO_DO_CLIENTE_FALSO,
+      senha: "segredo123",
+      nome: "Maria",
+    });
+    expect(sessao.cliente.temConta).toBe(true);
   });
 });

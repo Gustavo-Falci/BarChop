@@ -164,7 +164,25 @@ describe("api pública", () => {
     expect(sessao.token).toBe("jwt-cliente");
   });
 
-  it("cria a conta do cliente naquela barbearia", async () => {
+  it("pede o código de verificação pro telefone", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
+      respostaJson({ enviado: true }, 202)
+    );
+
+    await clientComFetch(fetchFalso).publico.pedirCodigoDoCliente(
+      "gr-barber",
+      "(11) 98888-7777"
+    );
+
+    expect(fetchFalso.mock.calls[0][0]).toBe(
+      "https://api.exemplo.br/barbearias/gr-barber/auth/cliente/codigo"
+    );
+    expect(JSON.parse(String(fetchFalso.mock.calls[0][1]?.body))).toEqual({
+      telefone: "(11) 98888-7777",
+    });
+  });
+
+  it("define a senha com o código e devolve a sessão", async () => {
     const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
       respostaJson(
         {
@@ -181,14 +199,15 @@ describe("api pública", () => {
       )
     );
 
-    const sessao = await clientComFetch(fetchFalso).publico.signupCliente(
+    const sessao = await clientComFetch(fetchFalso).publico.definirSenhaDoCliente(
       "gr-barber",
-      { nome: "Maria", telefone: "(11) 98888-7777", senha: "segredo123" }
+      { telefone: "(11) 98888-7777", codigo: "123456", senha: "segredo123", nome: "Maria" }
     );
 
     expect(fetchFalso.mock.calls[0][0]).toBe(
-      "https://api.exemplo.br/barbearias/gr-barber/auth/cliente/signup"
+      "https://api.exemplo.br/barbearias/gr-barber/auth/cliente/senha"
     );
     expect(sessao.cliente.temConta).toBe(true);
   });
+
 });

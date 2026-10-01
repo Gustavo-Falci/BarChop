@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { criarApiClientFalso, ErroDaApi } from "@gr-barber/api-client";
+import { CODIGO_DO_CLIENTE_FALSO, criarApiClientFalso, ErroDaApi } from "@gr-barber/api-client";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { Entrar } from "../../src/telas/Entrar";
 import { sessaoDoCliente } from "../../src/sessao/armazenamento";
@@ -54,37 +54,6 @@ describe("entrar", () => {
     );
   });
 
-  it("no primeiro acesso cria a senha e entra", async () => {
-    montar();
-    await userEvent.type(screen.getByLabelText(/nome/i), "Maria");
-    await preencher();
-
-    await userEvent.click(screen.getByRole("button", { name: /primeiro acesso/i }));
-
-    await waitFor(() =>
-      expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
-    );
-  });
-
-  it("traduz conflito do primeiro acesso em telefone que já tem senha", async () => {
-    // Não existe rota pública que diga se um telefone tem senha, e é de
-    // propósito — seria a sondagem que o 409 do signup já permite. A
-    // tela reage ao que a API responde.
-    const falso = criarApiClientFalso();
-    falso.publico.signupCliente = async () => {
-      throw new ErroDaApi(409, "conflito", "esse telefone já tem conta");
-    };
-    montar(falso);
-    await userEvent.type(screen.getByLabelText(/nome/i), "Maria");
-    await preencher();
-
-    await userEvent.click(screen.getByRole("button", { name: /primeiro acesso/i }));
-
-    await waitFor(() =>
-      expect(screen.getByText(/já tem senha/i)).toBeInTheDocument()
-    );
-  });
-
   it("telefone sem DDD acusa o campo, e não tenta o login", async () => {
     // O ponto da nota 3: um telefone incompleto é erro de digitação, e
     // não pode aparecer como se a senha estivesse errada. Por isso a
@@ -103,25 +72,6 @@ describe("entrar", () => {
 
     expect(await screen.findByText(/informe o ddd/i)).toBeInTheDocument();
     expect(screen.queryByText(/telefone ou senha incorretos/i)).toBeNull();
-    expect(tentou).toBe(false);
-  });
-
-  it("nome em branco no primeiro acesso acusa o campo, e não tenta a API", async () => {
-    // Sem essa checagem o nome em branco ia até a API, que recusa com
-    // 400 e a mensagem do AJV em inglês — no lugar reservado pro aviso
-    // de autenticação. A tela nem deveria chegar lá.
-    const falso = criarApiClientFalso();
-    let tentou = false;
-    falso.publico.signupCliente = async () => {
-      tentou = true;
-      throw new ErroDaApi(400, "requisicao_invalida", "body/nome must NOT have fewer than 2 characters");
-    };
-    montar(falso);
-    await preencher();
-
-    await userEvent.click(screen.getByRole("button", { name: /primeiro acesso/i }));
-
-    expect(await screen.findByText(/informe seu nome/i)).toBeInTheDocument();
     expect(tentou).toBe(false);
   });
 
@@ -158,83 +108,6 @@ describe("entrar", () => {
 
     expect(await screen.findByText(/informe o ddd/i)).toBeInTheDocument();
     expect(screen.queryByText(/informe sua senha/i)).toBeNull();
-  });
-
-  it("I4: senha curta no primeiro acesso acusa o campo em vez da mensagem do AJV", async () => {
-    // Sem essa checagem, "abc123" (6 caracteres) ia até a API e voltava
-    // 400 com "body/senha must NOT have fewer than 8 characters" — em
-    // inglês, no lugar reservado pro aviso em português.
-    const falso = criarApiClientFalso();
-    let tentou = false;
-    falso.publico.signupCliente = async () => {
-      tentou = true;
-      throw new ErroDaApi(
-        400,
-        "requisicao_invalida",
-        "body/senha must NOT have fewer than 8 characters"
-      );
-    };
-    montar(falso);
-    await userEvent.type(screen.getByLabelText(/nome/i), "Maria");
-    await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
-    await userEvent.type(screen.getByLabelText(/^senha$/i), "abc123");
-
-    await userEvent.click(screen.getByRole("button", { name: /primeiro acesso/i }));
-
-    expect(
-      await screen.findByText(/pelo menos 8 caracteres/i)
-    ).toBeInTheDocument();
-    expect(tentou).toBe(false);
-  });
-
-  it("M6: erro de nome não fica preso na tela ao trocar de Primeiro acesso pra Entrar", async () => {
-    montar();
-    await preencher();
-    await userEvent.click(screen.getByRole("button", { name: /primeiro acesso/i }));
-    expect(await screen.findByText(/informe seu nome/i)).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
-
-    // "Entrar" nem manda o campo nome — o erro de uma tentativa
-    // anterior não pode continuar na tela embaixo de um campo que esta
-    // ação não usa.
-    await waitFor(() =>
-      expect(screen.queryByText(/informe seu nome/i)).toBeNull()
-    );
-  });
-
-  it("login não exige nome, mesmo em branco", async () => {
-    // A checagem de nome é só do primeiro acesso: o login nem manda
-    // esse campo, e exigi-lo aqui quebraria quem nunca digitou nome.
-    montar();
-    await preencher();
-
-    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
-
-    await waitFor(() =>
-      expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
-    );
-    expect(screen.queryByText(/informe seu nome/i)).toBeNull();
-  });
-
-  it("o Enter entra, e não dispara o primeiro acesso", async () => {
-    // Das duas ações da tela, o Enter tem que ser a de quem já tem
-    // conta: o primeiro acesso acontece uma vez só.
-    const falso = criarApiClientFalso();
-    let tentouPrimeiroAcesso = false;
-    falso.publico.signupCliente = async () => {
-      tentouPrimeiroAcesso = true;
-      throw new ErroDaApi(409, "conflito", "");
-    };
-    montar(falso);
-
-    await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
-    await userEvent.type(screen.getByLabelText(/^senha$/i), "segredo123{Enter}");
-
-    await waitFor(() =>
-      expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
-    );
-    expect(tentouPrimeiroAcesso).toBe(false);
   });
 
   it("traduz tentativas_excedidas em espere, e não em senha incorreta", async () => {
@@ -308,6 +181,149 @@ describe("entrar", () => {
     expect(screen.getByLabelText(/^senha$/i)).toHaveAttribute(
       "autocomplete",
       "current-password"
+    );
+  });
+});
+
+// Primeiro acesso e esqueci a senha são o mesmo caminho: provar o
+// telefone com o código e definir a senha. Antes, o primeiro acesso
+// definia a senha de qualquer cadastro sem senha, sem prova nenhuma — e
+// quem chegasse primeiro ficava com o histórico de outra pessoa.
+describe("entrar — primeiro acesso ou esqueci a senha", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir();
+  });
+
+  async function abrirCodigo() {
+    await userEvent.click(
+      screen.getByRole("button", { name: /primeiro acesso ou esqueceu a senha/i })
+    );
+  }
+
+  async function pedirCodigo(telefone = "11999998888") {
+    await abrirCodigo();
+    await userEvent.type(screen.getByLabelText(/telefone/i), telefone);
+    await userEvent.click(screen.getByRole("button", { name: "Enviar código" }));
+  }
+
+  async function preencherCodigo(codigo = CODIGO_DO_CLIENTE_FALSO, senha = "segredo123") {
+    await userEvent.type(await screen.findByLabelText(/^código$/i), codigo);
+    await userEvent.type(screen.getByLabelText(/seu nome/i), "Maria Souza");
+    await userEvent.type(screen.getByLabelText(/^nova senha$/i), senha);
+  }
+
+  it("pede o código, define a senha com ele e entra", async () => {
+    const falso = montar();
+    const pedidos: string[] = [];
+    const original = falso.publico.pedirCodigoDoCliente;
+    falso.publico.pedirCodigoDoCliente = async (slug, telefone) => {
+      pedidos.push(telefone);
+      return original(slug, telefone);
+    };
+
+    await pedirCodigo();
+    expect(await screen.findByText(/enviamos um código/i)).toBeInTheDocument();
+    // Normalizado antes de sair: é a chave do código na API.
+    expect(pedidos).toEqual(["(11) 99999-8888"]);
+
+    await preencherCodigo();
+    await userEvent.click(screen.getByRole("button", { name: "Salvar e entrar" }));
+
+    await waitFor(() =>
+      expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
+    );
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/minha-conta");
+  });
+
+  it("código errado acusa o campo do código, sem sair da tela", async () => {
+    montar();
+    await pedirCodigo();
+    await preencherCodigo("000000");
+
+    await userEvent.click(screen.getByRole("button", { name: "Salvar e entrar" }));
+
+    expect(await screen.findByText(/código inválido ou vencido/i)).toBeInTheDocument();
+    expect(sessaoDoCliente("gr-barber").ler()).toBeNull();
+    expect(navegacaoFalsa.push).not.toHaveBeenCalled();
+  });
+
+  it("telefone sem DDD acusa o campo e não pede código", async () => {
+    const falso = montar();
+    let pediu = false;
+    falso.publico.pedirCodigoDoCliente = async () => {
+      pediu = true;
+    };
+
+    await pedirCodigo("999");
+
+    expect(await screen.findByText(/informe o ddd/i)).toBeInTheDocument();
+    expect(pediu).toBe(false);
+  });
+
+  it("senha curta acusa o campo antes de ir à API", async () => {
+    const falso = montar();
+    let definiu = false;
+    falso.publico.definirSenhaDoCliente = async () => {
+      definiu = true;
+      throw new Error("não devia chegar aqui");
+    };
+    await pedirCodigo();
+    await preencherCodigo(CODIGO_DO_CLIENTE_FALSO, "curta");
+
+    await userEvent.click(screen.getByRole("button", { name: "Salvar e entrar" }));
+
+    expect(await screen.findByText(/pelo menos 8 caracteres/i)).toBeInTheDocument();
+    expect(definiu).toBe(false);
+  });
+
+  it("reenviar pede outro código pro mesmo telefone", async () => {
+    const falso = montar();
+    const pedidos: string[] = [];
+    falso.publico.pedirCodigoDoCliente = async (_slug, telefone) => {
+      pedidos.push(telefone);
+    };
+    await pedirCodigo();
+    await screen.findByText(/enviamos um código/i);
+
+    await userEvent.click(screen.getByRole("button", { name: "Reenviar código" }));
+
+    await waitFor(() => expect(pedidos).toEqual(["(11) 99999-8888", "(11) 99999-8888"]));
+  });
+
+  it("limite de pedidos avisa quanto esperar", async () => {
+    const falso = montar();
+    falso.publico.pedirCodigoDoCliente = async () => {
+      throw new ErroDaApi(429, "tentativas_excedidas", "Muitas tentativas. Tente de novo em 9 minutos.");
+    };
+
+    await pedirCodigo();
+
+    expect(await screen.findByText(/tente de novo em 9 minutos/i)).toBeInTheDocument();
+  });
+
+  it("voltar leva de novo ao login", async () => {
+    montar();
+    await abrirCodigo();
+
+    await userEvent.click(screen.getByRole("button", { name: "Voltar pra entrar" }));
+
+    expect(screen.getByLabelText(/^senha$/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+  });
+
+  it("anuncia o código e a senha nova pros recursos do celular", async () => {
+    // `one-time-code` faz o teclado do celular sugerir o código que
+    // acabou de chegar; `new-password` faz o gerenciador oferecer salvar.
+    montar();
+    await pedirCodigo();
+
+    const codigo = await screen.findByLabelText(/^código$/i);
+    expect(codigo).toHaveAttribute("autocomplete", "one-time-code");
+    expect(codigo).toHaveAttribute("inputmode", "numeric");
+    expect(screen.getByLabelText(/^nova senha$/i)).toHaveAttribute(
+      "autocomplete",
+      "new-password"
     );
   });
 });

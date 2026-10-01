@@ -4,10 +4,10 @@ import { prisma } from "@gr-barber/database";
 // O código de verificação que vai pro telefone (cliente) ou pro e-mail
 // (barbeiro) e volta pra provar posse do destino — no primeiro acesso e
 // na recuperação de senha.
-export type Finalidade =
-  | "primeiro_acesso"
-  | "recuperar_senha_cliente"
-  | "recuperar_senha_barbeiro";
+//
+// Pro cliente, primeiro acesso e esqueci a senha são a mesma coisa —
+// provar o telefone e definir a senha —, então são uma finalidade só.
+export type Finalidade = "senha_cliente" | "senha_barbeiro";
 
 export interface AlvoDoCodigo {
   finalidade: Finalidade;

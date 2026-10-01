@@ -3,6 +3,7 @@ import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
 import { prisma } from "@gr-barber/database";
+import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { limitesDeAuth } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
 import { autenticar, autenticarCliente, registrarAuth } from "./plugins/auth";
@@ -27,9 +28,20 @@ import {
 } from "./routers/servicos";
 import type { App } from "./tipos";
 
+declare module "fastify" {
+  interface FastifyInstance {
+    // Por onde saem os códigos de verificação. Na instância, e não
+    // importado direto pelas rotas, pra cada app (e cada teste) ter o
+    // seu — os testes leem o código no canal de memória.
+    canal: CanalDeMensagem;
+  }
+}
+
 // Monta a instância sem escutar em porta nenhuma. É o que permite os
 // testes usarem app.inject(). Quem abre a porta é o server.ts.
-export function buildApp(opts: { logger?: boolean } = {}): App {
+export function buildApp(
+  opts: { logger?: boolean; canal?: CanalDeMensagem } = {}
+): App {
   const app = Fastify({
     logger: opts.logger ?? false,
     // O AJV do Fastify vem com `removeAdditional: true`: campo fora do
@@ -56,6 +68,11 @@ export function buildApp(opts: { logger?: boolean } = {}): App {
   );
 
   registrarAuth(app);
+
+  // Escolhido ao montar, não na primeira mensagem: em produção sem
+  // provedor real o canalDoAmbiente lança, e é aqui que a API tem que
+  // se recusar a subir.
+  app.decorate("canal", opts.canal ?? canalDoAmbiente(app.log));
 
   // Escopo só pras quatro rotas que recebem senha — as duas de login e
   // as duas de signup. Existe por causa do `await`: os contadores são

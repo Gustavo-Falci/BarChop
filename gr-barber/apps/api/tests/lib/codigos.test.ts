@@ -17,7 +17,7 @@ async function alvo(
     data: { nome: "Barbearia", slug: `b-${Math.random().toString(36).slice(2, 8)}` },
   });
   return {
-    finalidade: "primeiro_acesso",
+    finalidade: "senha_cliente",
     destino: "(11) 99999-8888",
     barbeariaId: barbearia.id,
     ...sobrescrever,
@@ -99,7 +99,7 @@ describe("códigos de verificação", () => {
       await consumirCodigo({ ...a, destino: "(11) 98888-7777" }, codigo, AGORA)
     ).toBe(false);
     expect(
-      await consumirCodigo({ ...a, finalidade: "recuperar_senha_cliente" }, codigo, AGORA)
+      await consumirCodigo({ ...a, finalidade: "senha_barbeiro" }, codigo, AGORA)
     ).toBe(false);
     expect(
       await consumirCodigo({ ...a, barbeariaId: outraBarbearia.barbeariaId }, codigo, AGORA)

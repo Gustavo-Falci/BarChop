@@ -21,6 +21,11 @@ painel da OCI. Veja `.env.example` para a lista e o formato:
 - `JWT_SECRET` — segredo de assinatura do token. Sem ele a API não sobe,
   de propósito: subir sem segredo publicaria as rotas protegidas sem
   proteção.
+- `CANAL_DE_MENSAGEM` — por onde saem os códigos de verificação. Sem
+  ela, `log` em desenvolvimento (o código aparece no terminal do
+  `pnpm dev`) e `memoria` nos testes. Em produção a API **não sobe** sem
+  um provedor real: código no log é conta de quem lê o log. Ver
+  `src/lib/canal.ts`.
 
 A suíte de testes é a exceção: ela carrega `apps/api/.env.test`
 (modelo em `.env.test.example`), que precisa apontar pro banco de
@@ -30,7 +35,7 @@ cada caso trunca todas as tabelas.
 ## Rodando
 
 ```bash
-pnpm --filter @gr-barber/database migrate:dev   # aplica o schema no seu Postgres
+pnpm --filter @gr-barber/database migrate:deploy # aplica as migrations no seu Postgres
 pnpm --filter @gr-barber/api dev
 pnpm --filter @gr-barber/api test               # vitest contra Postgres de verdade
 ```
@@ -44,6 +49,9 @@ Públicas:
 | `GET` | `/health` | sinal de vida |
 | `POST` | `/auth/signup` | cria barbearia + barbeiro numa transação e devolve JWT |
 | `POST` | `/auth/login` | `{ email, senha }` → JWT |
+| `POST` | `/barbearias/:slug/auth/cliente/codigo` | `{ telefone }` → manda código de 6 dígitos; 202 igual tendo ou não conta |
+| `POST` | `/barbearias/:slug/auth/cliente/senha` | `{ telefone, codigo, senha, nome }` → cria o cadastro (201) ou define/troca a senha do existente (200), e devolve JWT de cliente |
+| `POST` | `/barbearias/:slug/auth/cliente/login` | `{ telefone, senha }` → JWT de cliente |
 | `GET` | `/barbearias/:slug` | perfil público + horários de funcionamento |
 | `GET` | `/barbearias/:slug/servicos` | serviços ativos da barbearia, `{ servicos: [...] }` |
 | `POST` | `/barbearias/:slug/agendamentos` | agendamento pelo link público, `origem: "cliente"` |
@@ -94,7 +102,8 @@ Prisma sai no contrato.
 | Unique violada | 409 | `conflito` |
 | Horário já ocupado (trava do banco) | 409 | `horario_ocupado` |
 | Regra de negócio | 422 | código do domínio |
-| Login ou signup acima do limite de tentativas | 429 | `tentativas_excedidas` |
+| Código de verificação errado, vencido, já usado ou esgotado | 422 | `codigo_invalido` |
+| Login, signup, pedido de código ou definir senha acima do limite | 429 | `tentativas_excedidas` |
 | Bug nosso | 500 | `erro_interno` |
 
 Dois pedidos simultâneos no mesmo horário podem terminar em impasse no

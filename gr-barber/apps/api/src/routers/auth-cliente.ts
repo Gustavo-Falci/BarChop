@@ -1,5 +1,6 @@
 import { prisma } from "@gr-barber/database";
-import { conflito } from "../lib/erro-http";
+import { consumirCodigo, emitirCodigo } from "../lib/codigos";
+import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_TELEFONE } from "../lib/padroes";
 import {
@@ -18,14 +19,28 @@ const paramsSlug = {
   properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
 } as const;
 
-const corpoSignup = {
+const corpoCodigo = {
   type: "object",
-  required: ["nome", "telefone", "senha"],
+  required: ["telefone"],
   additionalProperties: false,
   properties: {
-    nome: { type: "string", minLength: 2, maxLength: 120 },
     telefone: { type: "string", pattern: PADRAO_TELEFONE, maxLength: 20 },
+  },
+} as const;
+
+// `nome` obrigatório mesmo pra quem já tem cadastro (e lá ele é
+// ignorado). Exigido só no cadastro novo, "falta o nome" e "código
+// inválido" responderiam diferente — e a diferença diria quem tem
+// cadastro antes de qualquer prova de posse do telefone.
+const corpoSenha = {
+  type: "object",
+  required: ["telefone", "codigo", "senha", "nome"],
+  additionalProperties: false,
+  properties: {
+    telefone: { type: "string", pattern: PADRAO_TELEFONE, maxLength: 20 },
+    codigo: { type: "string", pattern: "^[0-9]{6}$" },
     senha: { type: "string", minLength: 8, maxLength: 200 },
+    nome: { type: "string", minLength: 2, maxLength: 120 },
   },
 } as const;
 
@@ -45,25 +60,74 @@ export function registrarRotasAuthCliente(
   app: App,
   limites: LimitesDeAuth
 ): void {
+  // Primeiro acesso e esqueci a senha são, pro cliente, a mesma coisa:
+  // provar que o telefone é dele e definir a senha. Esta rota manda o
+  // código; a de baixo confere e define.
+  //
+  // A resposta é igual tendo ou não cadastro, e o código vai nos dois
+  // casos: o signup antigo respondia 409 pra telefone com conta, e isso
+  // dizia a quem sondasse quem é cliente de qual barbearia.
   app.post(
-    "/barbearias/:slug/auth/cliente/signup",
+    "/barbearias/:slug/auth/cliente/codigo",
     {
-      schema: { params: paramsSlug, body: corpoSignup },
-      // Por telefone antes de por IP: quem tenta reivindicar cadastros
-      // em série varia o número, não o endereço. Ver lib/limites.ts.
-      preHandler: limites.signupDoCliente,
+      schema: { params: paramsSlug, body: corpoCodigo },
+      preHandler: limites.codigoDoCliente,
     },
     async (request, reply) => {
-      const { nome, senha } = request.body;
-      // Normalizado antes da busca E da gravação: é o mesmo valor dos
-      // dois lados que faz o cadastro ser encontrado depois.
+      // Normalizado: é o destino do código e a chave do cadastro, e os
+      // dois têm que ser o mesmo valor pra confirmação achar o código.
       const telefone = normalizarTelefoneObrigatorio(request.body.telefone);
 
-      // findUniqueOrThrow: slug inexistente vira P2025 -> 404.
+      // findUniqueOrThrow: slug inexistente vira P2025 -> 404, antes de
+      // mandar qualquer coisa.
+      const barbearia = await prisma.barbearia.findUniqueOrThrow({
+        where: { slug: request.params.slug },
+        select: { id: true, nome: true },
+      });
+
+      const codigo = await emitirCodigo({
+        finalidade: "senha_cliente",
+        destino: telefone,
+        barbeariaId: barbearia.id,
+      });
+
+      // O nome da barbearia na mensagem: sem ele, é um código solto no
+      // WhatsApp, igual ao de um golpe pedindo "me passa o código".
+      await app.canal.enviar({
+        para: telefone,
+        texto:
+          `${barbearia.nome}: seu código de acesso é ${codigo}. ` +
+          "Vale 10 minutos. Não passe este código pra ninguém.",
+      });
+
+      return reply.code(202).send({ enviado: true });
+    }
+  );
+
+  app.post(
+    "/barbearias/:slug/auth/cliente/senha",
+    {
+      schema: { params: paramsSlug, body: corpoSenha },
+      preHandler: limites.senhaDoCliente,
+    },
+    async (request, reply) => {
+      const { nome, senha, codigo } = request.body;
+      const telefone = normalizarTelefoneObrigatorio(request.body.telefone);
+
       const barbearia = await prisma.barbearia.findUniqueOrThrow({
         where: { slug: request.params.slug },
         select: { id: true },
       });
+
+      // O código antes de tudo: é a prova de posse do telefone, e sem
+      // ela nada sobre o cadastro deve ser lido nem respondido.
+      const provado = await consumirCodigo(
+        { finalidade: "senha_cliente", destino: telefone, barbeariaId: barbearia.id },
+        codigo
+      );
+      if (!provado) {
+        throw new ErroDeNegocio("código inválido ou vencido", "codigo_invalido");
+      }
 
       const existente = await prisma.cliente.findUnique({
         where: {
@@ -71,21 +135,14 @@ export function registrarRotasAuthCliente(
         },
       });
 
-      // Definir senha só é permitido enquanto não existe uma. Sem posse
-      // verificada do telefone (OTP), esta é a única barreira contra
-      // alguém assumir o cadastro de outra pessoa — quem chegar
-      // primeiro fica com ele, e é uma dívida registrada na spec e no
-      // roadmap, não um esquecimento.
-      if (existente?.senhaHash) {
-        throw conflito("esse telefone já tem conta nesta barbearia");
-      }
-
       const senhaHash = await gerarHashSenha(senha);
 
       // `nome` só entra na criação. Num cadastro que já existe, o nome
-      // do signup é ignorado de propósito: mesma regra do `update: {}`
+      // daqui é ignorado de propósito: mesma regra do `update: {}`
       // vazio do upsert público — quem digita o nome abreviado no
-      // celular não renomeia o cadastro que o barbeiro ajustou.
+      // celular não renomeia o cadastro que o barbeiro ajustou. Com
+      // senha ou sem, o cadastro existente recebe a senha nova: com o
+      // telefone provado, é o dono definindo ou recuperando a dele.
       const cliente = existente
         ? await prisma.cliente.update({
             where: { id: existente.id },
@@ -101,7 +158,9 @@ export function registrarRotasAuthCliente(
         barbeariaId: barbearia.id,
       });
 
-      return reply.code(201).send({ token, cliente: serializarCliente(cliente) });
+      return reply
+        .code(existente ? 200 : 201)
+        .send({ token, cliente: serializarCliente(cliente) });
     }
   );
 

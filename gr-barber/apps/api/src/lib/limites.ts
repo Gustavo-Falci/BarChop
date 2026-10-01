@@ -43,13 +43,16 @@ const JANELA_POR_IP = 5 * MINUTO;
 // grátis, mesmo que o 409 continue respondendo.
 const MAX_SIGNUP_BARBEIRO = 5;
 
-// O signup de cliente é mais frequente (um por pessoa que agenda), e
-// vem de celular por link de WhatsApp. Por IP fica folgado; o que
-// segura de verdade é o limite por telefone logo abaixo, porque é o
-// telefone que alguém tentaria reivindicar em série.
-const MAX_SIGNUP_CLIENTE_POR_IP = 20;
-const MAX_SIGNUP_CLIENTE_POR_TELEFONE = 5;
 const JANELA_SIGNUP = 60 * MINUTO;
+
+// Pedir código de verificação manda uma mensagem — paga no provedor, e
+// um incômodo no celular de alguém. Por telefone é apertado: três
+// pedidos cobrem "não chegou, manda de novo" duas vezes, e um quarto em
+// 15 minutos já não é a pessoa esperando o código. Por IP fica folgado,
+// pelo mesmo motivo de NAT dos outros contadores.
+const MAX_CODIGO_POR_TELEFONE = 3;
+const JANELA_CODIGO_POR_TELEFONE = 15 * MINUTO;
+const MAX_CODIGO_POR_IP = 20;
 
 // A mensagem do plugin é inglesa ("retry in 1 minute") e viraria texto
 // de tela. Em segundos enquanto couber, porque "em 2 minutos" pra 31
@@ -172,18 +175,32 @@ export function limitesDeAuth(app: App) {
       porIpNoLogin,
     ],
 
-    signupDoCliente: [
+    codigoDoCliente: [
       contador(app, {
-        max: MAX_SIGNUP_CLIENTE_POR_TELEFONE,
-        janela: JANELA_SIGNUP,
+        max: MAX_CODIGO_POR_TELEFONE,
+        janela: JANELA_CODIGO_POR_TELEFONE,
         chave: (request) =>
-          `signup-cliente:${slugDaRota(request)}:${chaveDoTelefone(request.body)}`,
+          `codigo-cliente:${slugDaRota(request)}:${chaveDoTelefone(request.body)}`,
       }),
       contador(app, {
-        max: MAX_SIGNUP_CLIENTE_POR_IP,
+        max: MAX_CODIGO_POR_IP,
         janela: JANELA_SIGNUP,
-        chave: (request) => `signup-cliente-ip:${request.ip}`,
+        chave: (request) => `codigo-cliente-ip:${request.ip}`,
       }),
+    ],
+
+    // Definir a senha confere um código: é um login por outro caminho, e
+    // leva o mesmo orçamento por conta. O teto de tentativas do próprio
+    // código segura quem chuta UM código; este segura quem chuta muitos,
+    // pedindo códigos novos entre um e outro.
+    senhaDoCliente: [
+      contador(app, {
+        max: MAX_POR_CONTA,
+        janela: JANELA_POR_CONTA,
+        chave: (request) =>
+          `senha-cliente:${slugDaRota(request)}:${chaveDoTelefone(request.body)}`,
+      }),
+      porIpNoLogin,
     ],
   };
 }

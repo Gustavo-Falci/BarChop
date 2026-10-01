@@ -43,12 +43,13 @@ function montar(entrada: {
   aoAbrir?: (id: string) => void;
   aoCriar?: (data: string, hora: string) => void;
   aoAbrirDia?: (data: string) => void;
+  agora?: Date;
 }) {
   const grade = gradeDeTempo({
     dias: entrada.dias ?? [TERCA],
     horarios: HORARIOS,
     agendamentos: entrada.agendamentos ?? [],
-    agora: AGORA,
+    agora: entrada.agora ?? AGORA,
   });
 
   render(
@@ -139,6 +140,14 @@ describe("GradeDeTempo", () => {
     const reguas = screen.getAllByTestId("regua-do-agora");
     expect(reguas).toHaveLength(1);
     expect(reguas[0].style.getPropertyValue("--linha")).toBe("13");
+  });
+
+  it("desce a régua dentro da linha quando o minuto não é múltiplo de 5", () => {
+    montar({ dias: [TERCA], agora: new Date("2026-09-08T10:02:00-03:00") });
+
+    const regua = screen.getByTestId("regua-do-agora");
+    expect(regua.style.getPropertyValue("--linha")).toBe("13");
+    expect(regua.style.getPropertyValue("--fracao")).toBe("0.4");
   });
 
   it("anuncia o dia fechado em vez de deixar a coluna em branco", () => {

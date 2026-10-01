@@ -233,7 +233,21 @@ describe("gradeDeTempo", () => {
     });
 
     // 10:00 com janela abrindo às 09:00 = 60 min = linha 13.
-    expect(grade.agora).toEqual({ data: TERCA, linha: 13 });
+    expect(grade.agora).toEqual({ data: TERCA, linha: 13, fracao: 0 });
+  });
+
+  it("põe a linha do agora no minuto exato, fora do múltiplo de 5", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: new Date("2026-09-08T10:02:00-03:00"),
+    });
+
+    // 62 min depois da abertura = linha 13 mais 2/5 dela. `linha` vai
+    // direto em grid-row, que só aceita inteiro: um 13.4 ali invalida a
+    // propriedade, e o navegador joga a régua para depois do fechamento.
+    expect(grade.agora).toEqual({ data: TERCA, linha: 13, fracao: 0.4 });
   });
 
   it("não põe linha do agora quando hoje está fora dos dias mostrados", () => {

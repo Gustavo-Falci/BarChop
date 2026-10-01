@@ -1,6 +1,6 @@
-import { screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@gr-barber/api-client";
 import { Agenda } from "../../../src/telas/painel/Agenda";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
@@ -198,5 +198,43 @@ describe("agenda", () => {
     montarPainel(<Agenda agora={AGORA} />, falso);
 
     expect(await screen.findByText("Falha ao buscar horários.")).toBeInTheDocument();
+  });
+});
+
+// O resto da suíte passa `agora` fixo e nunca toca o relógio. Aqui o
+// assunto É o relógio: a régua tem que andar sozinha com a aba aberta,
+// e isso só se prova com tempo que passa. Fake timers ficam presos a
+// este bloco; `shouldAdvanceTime` deixa as promessas do dublê da API
+// resolverem sem que cada teste precise empurrar o tempo à mão.
+describe("agenda — régua do agora com o relógio de verdade", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/agenda",
+      query: { data: "2026-09-08" },
+    });
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-09-08T10:02:30-03:00"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("anda a cada minuto, sem recarregar a tela", async () => {
+    montarPainel(<Agenda />, semear());
+
+    const regua = await screen.findByTestId("regua-do-agora");
+    expect(regua.style.getPropertyValue("--linha")).toBe("13");
+    expect(regua.style.getPropertyValue("--fracao")).toBe("0.4");
+
+    // 10:02:30 + 3 min = 10:05:30: a régua cruza para a linha seguinte.
+    act(() => {
+      vi.advanceTimersByTime(3 * 60_000);
+    });
+
+    const depois = screen.getByTestId("regua-do-agora");
+    expect(depois.style.getPropertyValue("--linha")).toBe("14");
+    expect(depois.style.getPropertyValue("--fracao")).toBe("0");
   });
 });

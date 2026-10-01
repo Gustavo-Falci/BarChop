@@ -3,3 +3,26 @@
    isto os campos perderiam o gap e encostariam um no outro. */
 .formulario { display: grid; gap: var(--espaco-md); }
 .acoes { display: grid; gap: var(--espaco-sm); }
+
+.explicacao { color: var(--cor-ink-soft); }
+
+/* Link de texto, e não Botao: troca de modo e reenvio não são a ação da
+   tela, e um segundo bloco do mesmo peso se leria como outra forma de
+   enviar. O mesmo desenho do "Já tenho conta" do passo de dados. */
+.link {
+  justify-self: start;
+  padding: var(--espaco-xs) 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

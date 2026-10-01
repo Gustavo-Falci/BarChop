@@ -24,8 +24,11 @@ import type {
   CredenciaisDoCliente,
   FiltroDoDia,
   FiltroDoMes,
-  NovaContaDeCliente,
+  DefinicaoDeSenhaDoCliente,
 } from "./publico";
+
+// O único código que o dublê aceita na definição de senha do cliente.
+export const CODIGO_DO_CLIENTE_FALSO = "123456";
 
 export interface EstadoFalso {
   perfil: PerfilPublicoBarbearia;
@@ -284,11 +287,20 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
         exigirSlug(slug);
         return novoAgendamento({ ...novo, origem: "cliente" });
       },
-      async signupCliente(slug: string, conta: NovaContaDeCliente) {
+      async pedirCodigoDoCliente(slug: string, _telefone: string) {
         exigirSlug(slug);
+      },
+      // Recusa qualquer código que não seja o do dublê, com o mesmo erro
+      // da API — é o que faz o ramo de "código inválido" das telas ser
+      // testável.
+      async definirSenhaDoCliente(slug: string, definicao: DefinicaoDeSenhaDoCliente) {
+        exigirSlug(slug);
+        if (definicao.codigo !== CODIGO_DO_CLIENTE_FALSO) {
+          throw new ErroDaApi(422, "codigo_invalido", "código inválido ou vencido");
+        }
         estado.cliente = {
           ...estado.cliente,
-          nome: conta.nome,
+          nome: definicao.nome,
           temConta: true,
         };
         return { token: "jwt-falso-cliente", cliente: estado.cliente };

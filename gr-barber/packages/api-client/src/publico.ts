@@ -26,7 +26,13 @@ export interface CredenciaisDoCliente {
   senha: string;
 }
 
-export interface NovaContaDeCliente extends CredenciaisDoCliente {
+// Primeiro acesso e esqueci a senha, pro cliente, são o mesmo pedido:
+// o código que chegou no telefone prova a posse, e a senha é definida.
+// `nome` vai sempre — a API só o usa se o cadastro for novo.
+export interface DefinicaoDeSenhaDoCliente {
+  telefone: string;
+  codigo: string;
+  senha: string;
   nome: string;
 }
 
@@ -79,13 +85,21 @@ export function criarApiPublica(requisicao: Requisicao) {
       });
     },
 
-    signupCliente(
-      slug: string,
-      conta: NovaContaDeCliente
-    ): Promise<SessaoCliente> {
-      return requisicao(`/barbearias/${slug}/auth/cliente/signup`, {
+    // Responde igual tendo ou não conta: não há nada a devolver.
+    async pedirCodigoDoCliente(slug: string, telefone: string): Promise<void> {
+      await requisicao(`/barbearias/${slug}/auth/cliente/codigo`, {
         metodo: "POST",
-        corpo: conta,
+        corpo: { telefone },
+      });
+    },
+
+    definirSenhaDoCliente(
+      slug: string,
+      definicao: DefinicaoDeSenhaDoCliente
+    ): Promise<SessaoCliente> {
+      return requisicao(`/barbearias/${slug}/auth/cliente/senha`, {
+        metodo: "POST",
+        corpo: definicao,
       });
     },
 

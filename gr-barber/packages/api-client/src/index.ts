@@ -4,7 +4,7 @@ import { criarApiPublica } from "./publico";
 import { criarRequisicao, type OpcoesDoClient } from "./requisicao";
 
 export { ErroDaApi } from "./erro";
-export { criarApiClientFalso } from "./falso";
+export { CODIGO_DO_CLIENTE_FALSO, criarApiClientFalso } from "./falso";
 export type { EstadoFalso } from "./falso";
 export { criarRequisicao } from "./requisicao";
 export type {
@@ -33,7 +33,7 @@ export type {
   CredenciaisDoCliente,
   FiltroDoDia,
   FiltroDoMes,
-  NovaContaDeCliente,
+  DefinicaoDeSenhaDoCliente,
 } from "./publico";
 
 export function criarApiClient(opcoes: OpcoesDoClient) {

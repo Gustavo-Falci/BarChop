@@ -3,6 +3,7 @@ import { prisma } from "@gr-barber/database";
 // TRUNCATE ... CASCADE em vez de deleteMany por tabela: é mais rápido e
 // não depende de acertar a ordem das foreign keys.
 const TABELAS = [
+  "codigo_verificacao",
   "agendamento_servico",
   "agendamento",
   "servico",

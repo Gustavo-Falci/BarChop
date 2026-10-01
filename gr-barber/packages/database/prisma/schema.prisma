@@ -48,6 +48,7 @@ model Barbearia {
   servicos              Servico[]
   horariosFuncionamento HorarioFuncionamento[]
   agendamentos          Agendamento[]
+  codigosVerificacao    CodigoVerificacao[]
 
   @@map("barbearia")
 }
@@ -156,4 +157,25 @@ model AgendamentoServico {
 
   @@index([agendamentoId])
   @@map("agendamento_servico")
+}
+
+// O código de verificação do primeiro acesso e da recuperação de senha.
+// Criado à mão na migration 20261001120000_codigo_verificacao — ver lá
+// por que o código nunca é guardado em texto.
+model CodigoVerificacao {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  finalidade  String    @db.VarChar(40)
+  // Telefone ou e-mail, já normalizado: é o mesmo valor que a busca usa.
+  destino     String    @db.VarChar(160)
+  barbeariaId String?   @map("barbearia_id") @db.Uuid
+  codigoHash  String    @map("codigo_hash")
+  tentativas  Int       @default(0) @db.SmallInt
+  expiraEm    DateTime  @map("expira_em") @db.Timestamptz
+  usadoEm     DateTime? @map("usado_em") @db.Timestamptz
+  criadoEm    DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+
+  barbearia Barbearia? @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@index([finalidade, destino, barbeariaId, criadoEm(sort: Desc)], map: "codigo_verificacao_alvo_idx")
+  @@map("codigo_verificacao")
 }

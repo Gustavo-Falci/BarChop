@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@gr-barber/database";
 import { buildApp } from "../../src/app";
 import { criarBarbeariaComToken } from "../helpers/barbearia";
+import { definirSenhaComCodigo } from "../helpers/cliente";
 import { decodificarPayload } from "../helpers/decodificar-token";
 import type { App } from "../../src/tipos";
 
@@ -9,11 +10,7 @@ const SENHA = "senha-forte-123";
 const TELEFONE = "11999998888";
 
 async function criarConta(app: App, slug: string) {
-  return app.inject({
-    method: "POST",
-    url: `/barbearias/${slug}/auth/cliente/signup`,
-    payload: { nome: "João da Silva", telefone: TELEFONE, senha: SENHA },
-  });
+  return definirSenhaComCodigo(app, slug, { telefone: TELEFONE, senha: SENHA });
 }
 
 describe("POST /barbearias/:slug/auth/cliente/login", () => {

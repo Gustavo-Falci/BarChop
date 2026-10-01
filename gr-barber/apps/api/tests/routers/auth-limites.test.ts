@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app";
 import { criarBarbeariaComToken } from "../helpers/barbearia";
+import { definirSenhaComCodigo } from "../helpers/cliente";
 import type { App } from "../../src/tipos";
 
 // Os limites moram em src/lib/limites.ts. Estes números são os de lá; se
@@ -158,11 +159,7 @@ describe("limite de login do cliente", () => {
   const TELEFONE = "11999998888";
 
   async function criarConta(app: App, slug: string) {
-    const resposta = await app.inject({
-      method: "POST",
-      url: `/barbearias/${slug}/auth/cliente/signup`,
-      payload: { nome: "João da Silva", telefone: TELEFONE, senha: SENHA },
-    });
+    const resposta = await definirSenhaComCodigo(app, slug, { telefone: TELEFONE, senha: SENHA });
     expect(resposta.statusCode).toBe(201);
   }
 
@@ -223,32 +220,57 @@ describe("limite de login do cliente", () => {
   });
 });
 
-describe("limite de signup de cliente", () => {
+describe("limite de pedido de código", () => {
   const TELEFONE = "11988887777";
-  const MAX_SIGNUP_CLIENTE_POR_TELEFONE = 5;
+  const MAX_CODIGO_POR_TELEFONE = 3;
 
-  it("recusa a tentativa seguinte ao limite daquele telefone", async () => {
-    // É o limite que sustenta a dívida do "quem define a senha primeiro
-    // assume o cadastro": sem ele, reivindicar cadastros em série é de
-    // graça. O 409 de cadastro que já tem senha gasta orçamento do mesmo
-    // jeito — o contador é preHandler, roda antes do handler.
+  it("recusa o pedido seguinte ao limite daquele telefone", async () => {
+    // Cada pedido é uma mensagem paga no provedor e um incômodo no
+    // celular de alguém. Sem teto por destino, qualquer um dispara
+    // códigos em série pro número de outra pessoa.
     const app = buildApp();
     const { slug } = await criarBarbeariaComToken(app);
 
-    function signup() {
+    function pedir() {
       return app.inject({
         method: "POST",
-        url: `/barbearias/${slug}/auth/cliente/signup`,
-        payload: { nome: "Maria Souza", telefone: TELEFONE, senha: SENHA },
+        url: `/barbearias/${slug}/auth/cliente/codigo`,
+        payload: { telefone: TELEFONE },
       });
     }
 
-    expect((await signup()).statusCode).toBe(201);
-    for (let tentativa = 1; tentativa < MAX_SIGNUP_CLIENTE_POR_TELEFONE; tentativa += 1) {
-      expect((await signup()).statusCode).toBe(409);
+    for (let pedido = 0; pedido < MAX_CODIGO_POR_TELEFONE; pedido += 1) {
+      expect((await pedir()).statusCode).toBe(202);
     }
 
-    const bloqueado = await signup();
+    const bloqueado = await pedir();
+    expect(bloqueado.statusCode).toBe(429);
+    expect(bloqueado.json().erro).toBe("tentativas_excedidas");
+  });
+});
+
+describe("limite de definir senha", () => {
+  const TELEFONE = "11988887777";
+
+  it("recusa a tentativa seguinte ao limite daquele telefone", async () => {
+    // O teto de tentativas do código já segura quem chuta um código; este
+    // segura quem chuta muitos, pedindo códigos novos entre um e outro.
+    const app = buildApp();
+    const { slug } = await criarBarbeariaComToken(app);
+
+    function definir() {
+      return app.inject({
+        method: "POST",
+        url: `/barbearias/${slug}/auth/cliente/senha`,
+        payload: { telefone: TELEFONE, codigo: "000000", senha: SENHA, nome: "Maria Souza" },
+      });
+    }
+
+    for (let tentativa = 0; tentativa < MAX_POR_CONTA; tentativa += 1) {
+      expect((await definir()).statusCode).toBe(422);
+    }
+
+    const bloqueado = await definir();
     expect(bloqueado.statusCode).toBe(429);
     expect(bloqueado.json().erro).toBe("tentativas_excedidas");
   });

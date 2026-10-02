@@ -225,7 +225,10 @@ dele vem com o tenant por subdomínio (Onda 1). E as duas rotas que
 criam ou movem um agendamento pelo lado do cliente recusam data
 passada com 422 `horario_passado` (`garantirFuturo`); a criação manual
 pelo barbeiro continua aceitando, porque registrar um walk-in depois do
-fato é legítimo.
+fato é legítimo. Do lado da leitura, as duas rotas de disponibilidade
+(dia e mês) passam pelo `descartarPassados`: dia passado sem vaga, hoje
+só o que começa depois de agora. O `horaJaPassou` da tela do dia fica
+como redundância inofensiva.
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
@@ -270,13 +273,3 @@ fato é legítimo.
   escreve, e daí o limite por IP deixa de limitar. Os limites por conta
   (email, telefone) não dependem do IP e continuam valendo nos dois
   casos.
-- **A disponibilidade do mês não conhece o "agora".** A ausência de
-  relógio do lado da leitura (a da escrita fechou com o
-  `garantirFuturo`, na Onda 0): a disponibilidade do mês
-  marca hoje como dia com vaga mesmo depois do fechamento, porque conta
-  os horários da janela inteira. Quem filtra hora passada é só a tela
-  do dia, no cliente (`horaJaPassou`). O PR #12 tirou o beco sem saída
-  — hoje sem sobra fica desabilitado no calendário e a tela oferece
-  "Escolher outra data" —, mas a correção mora no navegador; o app no
-  Expo, ou qualquer outro consumidor da rota, herda o dia falso.
-  Fechar de verdade é a rota filtrar pelo `agoraNaBarbearia`.

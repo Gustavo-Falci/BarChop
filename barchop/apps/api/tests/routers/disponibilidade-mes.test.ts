@@ -5,7 +5,10 @@ import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
 import type { App } from "../../src/tipos";
 
 // Aberta de segunda a sábado, 09:00–18:00, um serviço de 45 minutos.
-// Setembro de 2026 tem 30 dias; 2026-09-06 é um domingo.
+// Setembro de 2037 tem 30 dias; 2037-09-06 é um domingo. 2037, e não o
+// ano corrente: a rota não marca vaga em dia passado, e 2037 tem o
+// calendário idêntico ao de 2026 (mesmos dias da semana, fevereiro de
+// 28 dias), que era o ano destes casos.
 async function prepararAgenda(app: App, sufixo = "um") {
   const barbearia = await criarBarbeariaComToken(app, sufixo);
 
@@ -40,7 +43,7 @@ function url(
 ) {
   const params = new URLSearchParams({
     barbeiroId: agenda.barbeiroId,
-    mes: "2026-09",
+    mes: "2037-09",
     ...extra,
   });
   params.append("servicoIds", agenda.servico.id);
@@ -97,8 +100,8 @@ describe("GET /barbearias/:slug/disponibilidade/mes", () => {
 
     const { dias } = resposta.json();
     expect(Object.keys(dias)).toHaveLength(30);
-    expect(dias["2026-09-01"]).toBe(true);
-    expect(dias["2026-09-30"]).toBe(true);
+    expect(dias["2037-09-01"]).toBe(true);
+    expect(dias["2037-09-30"]).toBe(true);
 
     await app.close();
   });
@@ -111,9 +114,9 @@ describe("GET /barbearias/:slug/disponibilidade/mes", () => {
       await app.inject({ method: "GET", url: url(agenda) })
     ).json();
 
-    // 2026-09-06 é domingo, e a barbearia só abre de segunda a sábado.
-    expect(dias["2026-09-06"]).toBe(false);
-    expect(dias["2026-09-07"]).toBe(true);
+    // 2037-09-06 é domingo, e a barbearia só abre de segunda a sábado.
+    expect(dias["2037-09-06"]).toBe(false);
+    expect(dias["2037-09-07"]).toBe(true);
 
     await app.close();
   });
@@ -122,7 +125,7 @@ describe("GET /barbearias/:slug/disponibilidade/mes", () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
 
-    await lotarDia(agenda, "2026-09-10");
+    await lotarDia(agenda, "2037-09-10");
 
     const { dias } = (
       await app.inject({ method: "GET", url: url(agenda) })
@@ -130,9 +133,9 @@ describe("GET /barbearias/:slug/disponibilidade/mes", () => {
 
     // Prova o agrupamento em memória: os agendamentos de um dia não
     // podem vazar pros outros.
-    expect(dias["2026-09-10"]).toBe(false);
-    expect(dias["2026-09-09"]).toBe(true);
-    expect(dias["2026-09-11"]).toBe(true);
+    expect(dias["2037-09-10"]).toBe(false);
+    expect(dias["2037-09-09"]).toBe(true);
+    expect(dias["2037-09-11"]).toBe(true);
 
     await app.close();
   });
@@ -141,16 +144,16 @@ describe("GET /barbearias/:slug/disponibilidade/mes", () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
 
-    await lotarDia(agenda, "2026-09-10");
-    await lotarDia(agenda, "2026-09-15");
+    await lotarDia(agenda, "2037-09-10");
+    await lotarDia(agenda, "2037-09-15");
 
     const { dias } = (
       await app.inject({ method: "GET", url: url(agenda) })
     ).json();
 
-    expect(dias["2026-09-10"]).toBe(false);
-    expect(dias["2026-09-15"]).toBe(false);
-    expect(dias["2026-09-14"]).toBe(true);
+    expect(dias["2037-09-10"]).toBe(false);
+    expect(dias["2037-09-15"]).toBe(false);
+    expect(dias["2037-09-14"]).toBe(true);
 
     await app.close();
   });
@@ -177,12 +180,12 @@ describe("GET /barbearias/:slug/disponibilidade/mes", () => {
     const agenda = await prepararAgenda(app);
 
     const fevereiro = (
-      await app.inject({ method: "GET", url: url(agenda, { mes: "2026-02" }) })
+      await app.inject({ method: "GET", url: url(agenda, { mes: "2037-02" }) })
     ).json();
 
     expect(Object.keys(fevereiro.dias)).toHaveLength(28);
-    expect(fevereiro.dias["2026-02-28"]).toBe(true);
-    expect(fevereiro.dias["2026-02-29"]).toBeUndefined();
+    expect(fevereiro.dias["2037-02-28"]).toBe(true);
+    expect(fevereiro.dias["2037-02-29"]).toBeUndefined();
 
     await app.close();
   });
@@ -221,7 +224,7 @@ describe("GET /barbearias/:slug/disponibilidade/mes", () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
 
-    for (const mes of ["2026-13", "2026", "09-2026"]) {
+    for (const mes of ["2037-13", "2026", "09-2026"]) {
       const resposta = await app.inject({
         method: "GET",
         url: url(agenda, { mes }),

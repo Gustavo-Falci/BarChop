@@ -86,6 +86,21 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       });
     },
 
+    minhaBarbearia(): Promise<BarbeariaSerializada> {
+      return requisicao("/barbearias/me", { comToken: true });
+    },
+
+    // Rota própria, fora do `atualizarMinhaBarbearia`: trocar o link
+    // quebra o que já foi mandado por WhatsApp, e a tela pede isso num
+    // botão separado.
+    trocarSlug(slug: string): Promise<BarbeariaSerializada> {
+      return requisicao("/barbearias/me/slug", {
+        metodo: "PATCH",
+        corpo: { slug },
+        comToken: true,
+      });
+    },
+
     atualizarMinhaBarbearia(
       edicao: EdicaoDaBarbearia
     ): Promise<BarbeariaSerializada> {

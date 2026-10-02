@@ -215,9 +215,13 @@ Os passos 4 a 7 do roteiro antigo viraram parte da Onda 1:
 A Onda 0 fecha, pelo plano, a recuperação de senha do barbeiro, as
 sessões que sobrevivem à troca de senha, as datas no passado (nas duas
 rotas e na disponibilidade), o `GET /barbearias/me` e a troca de slug.
-Cada uma sai desta lista quando o commit que a fecha entrar. Já saiu: o
-slug `painel` sombreado (`961d2f4`, lista de reservados no
-`@barchop/formato`).
+Cada uma sai desta lista quando o commit que a fecha entrar. Já saíram:
+o slug `painel` sombreado (`961d2f4`, lista de reservados no
+`@barchop/formato`); o painel lendo a própria barbearia pela rota
+pública e o slug sem troca (`GET /barbearias/me` e
+`PATCH /barbearias/me/slug`, com o campo "Link da barbearia" em
+Configurações). O link antigo para de responder na hora; o redirect
+dele vem com o tenant por subdomínio (Onda 1).
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
@@ -289,21 +293,3 @@ slug `painel` sombreado (`961d2f4`, lista de reservados no
   Expo, ou qualquer outro consumidor da rota, herda o dia falso.
   Fechar de verdade é a rota filtrar pelo `agoraNaBarbearia`, junto do
   `garantirFuturo` da dívida acima.
-- **O painel lê a própria barbearia pela rota pública.** A API tem
-  `PATCH /barbearias/me` e nenhum `GET`: a única leitura dos dados da
-  barbearia é `GET /barbearias/:slug`, a mesma rota que a tela de
-  agendamento do cliente usa. A tela de Configurações do painel depende
-  então de uma rota pública pra exibir o que ela própria escreve. Fecha
-  com um `GET /barbearias/me`.
-- **O slug da barbearia é gravado uma vez, no login, e não existe jeito
-  de trocá-lo.** `GET /me` devolve `barbeariaId` e nenhum slug, e a
-  disponibilidade é rota pública endereçada por slug — por isso o
-  painel grava o slug no `localStorage`, ao lado do token, no momento
-  do login. Uma versão anterior desta dívida descrevia uma aba antiga
-  sobrevivendo com o slug velho depois de uma troca em Configurações —
-  isso não pode acontecer: `PATCH /barbearias/me` exclui `slug` de
-  propósito (`apps/api/src/routers/barbearias.ts`), e a tela de
-  Configurações não tem campo pra ele. A dívida real é essa ausência —
-  um barbeiro que erra o slug no cadastro, ou quer mudar o nome do
-  salão no link, fica preso nele. Fecha com uma rota de troca de slug
-  — mudança de API — e o campo correspondente em Configurações.

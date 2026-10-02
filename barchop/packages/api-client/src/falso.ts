@@ -348,6 +348,16 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
           barbeariaId: estado.perfil.id,
         };
       },
+      async minhaBarbearia() {
+        const { id, nome, slug, telefone, endereco, logoUrl, sobre } =
+          estado.perfil;
+        return { id, nome, slug, telefone, endereco, logoUrl, sobre };
+      },
+      async trocarSlug(slug: string) {
+        estado.perfil = { ...estado.perfil, slug };
+        const { id, nome, telefone, endereco, logoUrl, sobre } = estado.perfil;
+        return { id, nome, slug, telefone, endereco, logoUrl, sobre };
+      },
       async atualizarMinhaBarbearia(edicao: EdicaoDaBarbearia) {
         estado.perfil = { ...estado.perfil, ...edicao };
         return estado.perfil;

@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import type { PerfilBarbeiro } from "@barchop/types";
 import {
   encerrarSessaoDoBarbeiro,
+  EVENTO_DE_SESSAO,
   sessaoDaBarbearia,
   sessaoDoBarbeiro,
 } from "../sessao/armazenamento";
@@ -34,6 +35,17 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
   const router = useRouter();
   const api = useApiDoPainel();
   const [perfil, setPerfil] = useState<PerfilBarbeiro | null>(null);
+  // Estado, e não leitura solta no render: o layout do painel não
+  // remonta entre telas, e trocar o link em Configurações regrava o
+  // slug — sem acompanhar o evento, o novo agendamento seguiria
+  // consultando a disponibilidade pelo endereço que acabou de morrer.
+  const [slug, setSlug] = useState(() => sessaoDaBarbearia.ler() ?? "");
+
+  useEffect(() => {
+    const acompanhar = () => setSlug(sessaoDaBarbearia.ler() ?? "");
+    window.addEventListener(EVENTO_DE_SESSAO, acompanhar);
+    return () => window.removeEventListener(EVENTO_DE_SESSAO, acompanhar);
+  }, []);
 
   const sair = useCallback(() => {
     encerrarSessaoDoBarbeiro();
@@ -83,7 +95,7 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
 
   return (
     <Contexto.Provider
-      value={{ perfil, slug: sessaoDaBarbearia.ler() ?? "", sair }}
+      value={{ perfil, slug, sair }}
     >
       {children}
     </Contexto.Provider>

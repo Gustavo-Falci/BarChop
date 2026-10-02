@@ -50,6 +50,22 @@ describe("configurações da barbearia", () => {
     await waitFor(() => expect(sessaoDaBarbearia.ler()).toBe("gr-barber-centro"));
   });
 
+  it("trocar o link não apaga o que foi digitado e ainda não salvo", async () => {
+    montarPainel(<ConfiguracoesDaBarbearia />, criarApiClientFalso());
+
+    const nome = await screen.findByLabelText(/nome da barbearia/i);
+    await userEvent.clear(nome);
+    await userEvent.type(nome, "GR Barber Centro");
+
+    const link = screen.getByLabelText(/link da barbearia/i);
+    await userEvent.clear(link);
+    await userEvent.type(link, "gr-barber-centro");
+    await userEvent.click(screen.getByRole("button", { name: /trocar link/i }));
+
+    await waitFor(() => expect(sessaoDaBarbearia.ler()).toBe("gr-barber-centro"));
+    expect(screen.getByLabelText(/nome da barbearia/i)).toHaveValue("GR Barber Centro");
+  });
+
   it("recusa link reservado no campo, sem chamar a API", async () => {
     const falso = criarApiClientFalso();
     const trocar = vi.fn(async () => {

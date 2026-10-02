@@ -1,7 +1,8 @@
 import { prisma } from "@barchop/database";
-import { normalizarEmail } from "@barchop/formato";
+import { normalizarEmail, slugReservado } from "@barchop/formato";
+import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
-import { PADRAO_EMAIL } from "../lib/padroes";
+import { PADRAO_EMAIL, PADRAO_SLUG } from "../lib/padroes";
 import {
   conferirSenha,
   gerarHashSenha,
@@ -21,7 +22,7 @@ const corpoSignup = {
       properties: {
         nome: { type: "string", minLength: 2, maxLength: 120 },
         // o slug forma o link público que o barbeiro manda no WhatsApp
-        slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" },
+        slug: { type: "string", pattern: PADRAO_SLUG },
       },
     },
     barbeiro: {
@@ -43,6 +44,17 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
     { schema: { body: corpoSignup }, preHandler: limites.signupDoBarbeiro },
     async (request, reply) => {
       const { barbearia, barbeiro } = request.body;
+
+      // Passa no pattern, mas é nome do próprio sistema: aceito, o link
+      // público da barbearia ficaria sombreado por uma rota nossa. É
+      // regra de domínio, não de formato — daí 422, e antes de gastar o
+      // hash da senha.
+      if (slugReservado(barbearia.slug)) {
+        throw new ErroDeNegocio(
+          "esse endereço é reservado pelo sistema",
+          "slug_reservado"
+        );
+      }
       // `!`: o schema exige `email` como string obrigatória e não vazia
       // (PADRAO_EMAIL casa só com algo antes e depois do "@"), então
       // `normalizarEmail` nunca devolve null aqui — o `null` do retorno

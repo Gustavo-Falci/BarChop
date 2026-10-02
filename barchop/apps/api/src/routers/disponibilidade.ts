@@ -6,14 +6,19 @@ import {
 } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { dataParaDate, dateParaData } from "../lib/horas";
-import { PADRAO_DATA, PADRAO_MES, PADRAO_UUID } from "../lib/padroes";
+import {
+  PADRAO_DATA,
+  PADRAO_MES,
+  PADRAO_SLUG,
+  PADRAO_UUID,
+} from "../lib/padroes";
 import type { App } from "../tipos";
 
 const paramsSlug = {
   type: "object",
   required: ["slug"],
   additionalProperties: false,
-  properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
 // `servicoIds` vem repetido na query (`?servicoIds=a&servicoIds=b`). Um

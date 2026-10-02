@@ -6,6 +6,7 @@ import { dataParaDate } from "../lib/horas";
 import {
   PADRAO_DATA,
   PADRAO_HORA,
+  PADRAO_SLUG,
   PADRAO_TELEFONE,
   PADRAO_UUID,
 } from "../lib/padroes";
@@ -94,7 +95,7 @@ const paramsSlug = {
   type: "object",
   required: ["slug"],
   additionalProperties: false,
-  properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
 // Sem `clienteId`: quem agenda pelo link não tem conta nem sabe o id de

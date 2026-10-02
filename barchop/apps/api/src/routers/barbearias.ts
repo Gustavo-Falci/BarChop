@@ -1,6 +1,6 @@
 import { prisma } from "@barchop/database";
 import { normalizarTelefone } from "../lib/telefone";
-import { PADRAO_TELEFONE } from "../lib/padroes";
+import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import { serializarBarbearia } from "../lib/serializar";
 import { completarSemana } from "./horarios";
 import type { App } from "../tipos";
@@ -76,7 +76,7 @@ const paramsSlug = {
   type: "object",
   required: ["slug"],
   additionalProperties: false,
-  properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
 // Pública de propósito: é a landing que o cliente abre pelo link do

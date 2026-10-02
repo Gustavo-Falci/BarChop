@@ -33,6 +33,10 @@ export const PADRAO_PRECO = "^\\d{1,8}(\\.\\d{1,2})?$";
 // um pattern explícito não depende de configuração nenhuma.
 export const PADRAO_EMAIL = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
 
+// O slug mora no @barchop/formato porque as telas e o middleware de
+// subdomínio usam o mesmo pattern; aqui só fica ao lado dos outros.
+export { PADRAO_SLUG } from "@barchop/formato";
+
 // "YYYY-MM-DD". O pattern só garante a forma; se a data existe mesmo
 // (31 de fevereiro, por exemplo) quem decide é o dataParaDate.
 export const PADRAO_DATA = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$";

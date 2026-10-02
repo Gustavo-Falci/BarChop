@@ -2,7 +2,7 @@ import { prisma } from "@barchop/database";
 import { consumirCodigo, emitirCodigo } from "../lib/codigos";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
-import { PADRAO_TELEFONE } from "../lib/padroes";
+import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import {
   conferirSenha,
   gerarHashSenha,
@@ -16,7 +16,7 @@ const paramsSlug = {
   type: "object",
   required: ["slug"],
   additionalProperties: false,
-  properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
 const corpoCodigo = {

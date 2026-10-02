@@ -231,7 +231,13 @@ só o que começa depois de agora. O `horaJaPassou` da tela do dia fica
 como redundância inofensiva. Trocar a senha derruba as sessões abertas:
 `senha_alterada_em` no cliente e no barbeiro, e o hook de
 `plugins/auth.ts` recusa token com `iat` anterior a ela (comparado no
-segundo, pra o token que a própria troca devolve seguir valendo).
+segundo, pra o token que a própria troca devolve seguir valendo). E o
+barbeiro tem "Esqueci a senha": `POST /auth/codigo` (sempre 202, o
+código é emitido com ou sem conta e só enviado se ela existe, sem
+esperar o envio) e `POST /auth/senha` (código de uso único, sessão nova
+no mesmo formato do login), com a tela de dois passos no
+`/painel/entrar`. Como os códigos do cliente, os do barbeiro só saem
+pelo log até o provedor de e-mail da Onda 1.
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
@@ -241,15 +247,6 @@ segundo, pra o token que a própria troca devolve seguir valendo).
   buraco em si continua aberto — cada tentativa, dentro do orçamento,
   ainda responde se aquele email existe. Fechar de verdade é verificação
   de email, que só faz sentido junto do canal de mensagem do passo 4.
-- **O barbeiro não tem recuperação de senha.** O cliente já tem (ver o
-  acesso à conta no passo 3): o código no telefone serve pro primeiro
-  acesso e pro esqueci a senha. O barbeiro (`POST /auth/login`, por
-  e-mail) continua trancado do lado de fora se esquecer — no piloto
-  isso se resolve por `psql`; no primeiro cliente de fora, não. É a
-  Fase 4 do plano de contas: o mesmo `lib/codigos.ts` com a finalidade
-  `senha_barbeiro`, mandado pro e-mail. É também a razão de os limites
-  de `lib/limites.ts` serem janela que passa, e não bloqueio de conta:
-  sem rota de recuperação, um bloqueio de verdade seria definitivo.
 - **Os códigos de verificação só saem pelo log.** O provedor real
   (WhatsApp ou SMS pro cliente, e-mail pro barbeiro) não foi escolhido,
   e `lib/canal.ts` só tem o canal de log (desenvolvimento) e o de

@@ -1,5 +1,6 @@
 import { prisma } from "@barchop/database";
 import { normalizarEmail, slugReservado } from "@barchop/formato";
+import { consumirCodigo, emitirCodigo } from "../lib/codigos";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_EMAIL, PADRAO_SLUG } from "../lib/padroes";
@@ -169,6 +170,122 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
           id: autorizado.barbearia.id,
           nome: autorizado.barbearia.nome,
           slug: autorizado.barbearia.slug,
+        },
+      });
+    }
+  );
+
+  const corpoCodigo = {
+    type: "object",
+    required: ["email"],
+    additionalProperties: false,
+    properties: {
+      email: { type: "string", pattern: PADRAO_EMAIL, maxLength: 160 },
+    },
+  } as const;
+
+  const corpoSenha = {
+    type: "object",
+    required: ["email", "codigo", "senha"],
+    additionalProperties: false,
+    properties: {
+      email: { type: "string", pattern: PADRAO_EMAIL, maxLength: 160 },
+      codigo: { type: "string", pattern: "^[0-9]{6}$" },
+      senha: { type: "string", minLength: 8, maxLength: 200 },
+    },
+  } as const;
+
+  // Esqueci a senha do barbeiro: o código vai pro e-mail da conta.
+  //
+  // A resposta é a mesma tendo ou não conta, e o custo também: o código
+  // é emitido (e guardado) nos dois casos, e só o envio depende de a
+  // conta existir. O envio não é aguardado — com o provedor real ele é
+  // uma ida à rede, e esperar por ela só no caso "tem conta" deixaria o
+  // relógio dizer o que o corpo esconde. Um código emitido pra e-mail
+  // sem conta nunca chega a ninguém, e a confirmação recusa do mesmo
+  // jeito.
+  app.post(
+    "/auth/codigo",
+    { schema: { body: corpoCodigo }, preHandler: limites.codigoDoBarbeiro },
+    async (request, reply) => {
+      // `!`: o schema exige e-mail não vazio, como no login.
+      const email = normalizarEmail(request.body.email)!;
+
+      const barbeiro = await prisma.barbeiro.findUnique({
+        where: { email },
+        select: { ativo: true },
+      });
+
+      const codigo = await emitirCodigo({
+        finalidade: "senha_barbeiro",
+        destino: email,
+        barbeariaId: null,
+      });
+
+      if (barbeiro?.ativo) {
+        void app.canal
+          .enviar({
+            para: email,
+            texto:
+              `BarChop: seu código pra redefinir a senha do painel é ${codigo}. ` +
+              "Vale 10 minutos. Se não foi você que pediu, ignore este e-mail.",
+          })
+          .catch((erro: unknown) =>
+            request.log.error({ erro }, "falha ao enviar o código do barbeiro")
+          );
+      }
+
+      return reply.code(202).send({ enviado: true });
+    }
+  );
+
+  app.post(
+    "/auth/senha",
+    { schema: { body: corpoSenha }, preHandler: limites.senhaDoBarbeiro },
+    async (request, reply) => {
+      const { codigo, senha } = request.body;
+      const email = normalizarEmail(request.body.email)!;
+
+      // O código antes de tudo, como no do cliente: sem prova de posse
+      // do e-mail, nada sobre a conta é lido nem respondido.
+      const provado = await consumirCodigo(
+        { finalidade: "senha_barbeiro", destino: email, barbeariaId: null },
+        codigo
+      );
+      const barbeiro = provado
+        ? await prisma.barbeiro.findUnique({ where: { email } })
+        : null;
+
+      // Conta inexistente ou desativada responde igual a código errado:
+      // com código válido em mãos, só o dono da caixa chega até aqui.
+      if (!barbeiro?.ativo) {
+        throw new ErroDeNegocio("código inválido ou vencido", "codigo_invalido");
+      }
+
+      const atualizado = await prisma.barbeiro.update({
+        where: { id: barbeiro.id },
+        // O carimbo derruba as sessões abertas (plugins/auth.ts).
+        data: {
+          senhaHash: await gerarHashSenha(senha),
+          senhaAlteradaEm: new Date(),
+        },
+        include: { barbearia: true },
+      });
+
+      const token = app.jwt.sign({
+        tipo: "barbeiro",
+        barbeiroId: atualizado.id,
+        barbeariaId: atualizado.barbeariaId,
+      });
+
+      // O mesmo formato do login: a tela grava a sessão do mesmo jeito.
+      return reply.code(200).send({
+        token,
+        barbeiro: { id: atualizado.id, nome: atualizado.nome, email: atualizado.email },
+        barbearia: {
+          id: atualizado.barbearia.id,
+          nome: atualizado.barbearia.nome,
+          slug: atualizado.barbearia.slug,
         },
       });
     }

@@ -189,6 +189,32 @@ export function limitesDeAuth(app: App) {
       }),
     ],
 
+    // Os dois do esqueci-a-senha do barbeiro: mesmos números dos do
+    // cliente, com o e-mail no lugar do telefone. O pedido manda e-mail
+    // (custo e incômodo pra caixa de alguém); a confirmação é um login
+    // por outro caminho.
+    codigoDoBarbeiro: [
+      contador(app, {
+        max: MAX_CODIGO_POR_TELEFONE,
+        janela: JANELA_CODIGO_POR_TELEFONE,
+        chave: (request) => `codigo-barbeiro:${chaveDoEmail(request.body)}`,
+      }),
+      contador(app, {
+        max: MAX_CODIGO_POR_IP,
+        janela: JANELA_SIGNUP,
+        chave: (request) => `codigo-barbeiro-ip:${request.ip}`,
+      }),
+    ],
+
+    senhaDoBarbeiro: [
+      contador(app, {
+        max: MAX_POR_CONTA,
+        janela: JANELA_POR_CONTA,
+        chave: (request) => `senha-barbeiro:${chaveDoEmail(request.body)}`,
+      }),
+      porIpNoLogin,
+    ],
+
     // Definir a senha confere um código: é um login por outro caminho, e
     // leva o mesmo orçamento por conta. O teto de tentativas do próprio
     // código segura quem chuta UM código; este segura quem chuta muitos,

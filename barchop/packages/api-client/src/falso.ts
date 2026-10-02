@@ -17,6 +17,7 @@ import type {
   NovaBarbearia,
   NovoCliente,
   NovoServico,
+  RedefinicaoDeSenha,
 } from "./barbeiro";
 import type { EdicaoDoMeuCadastro, Remarcacao } from "./cliente";
 import { ErroDaApi } from "./erro";
@@ -29,6 +30,9 @@ import type {
 
 // O único código que o dublê aceita na definição de senha do cliente.
 export const CODIGO_DO_CLIENTE_FALSO = "123456";
+
+// O único código que o dublê aceita no esqueci-a-senha do barbeiro.
+export const CODIGO_DO_BARBEIRO_FALSO = "654321";
 
 export interface EstadoFalso {
   perfil: PerfilPublicoBarbearia;
@@ -328,6 +332,15 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
         };
       },
       async login() {
+        return sessaoDoBarbeiro;
+      },
+      async pedirCodigo(_email: string) {},
+      // Mesmo erro da API pra código errado — é o que deixa o ramo de
+      // "código inválido" da tela testável.
+      async redefinirSenha(redefinicao: RedefinicaoDeSenha) {
+        if (redefinicao.codigo !== CODIGO_DO_BARBEIRO_FALSO) {
+          throw new ErroDaApi(422, "codigo_invalido", "código inválido ou vencido");
+        }
         return sessaoDoBarbeiro;
       },
       async meuPerfil() {

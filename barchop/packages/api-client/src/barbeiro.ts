@@ -17,6 +17,12 @@ export interface CredenciaisDoBarbeiro {
   senha: string;
 }
 
+export interface RedefinicaoDeSenha {
+  email: string;
+  codigo: string;
+  senha: string;
+}
+
 export interface NovaBarbearia {
   barbearia: { nome: string; slug: string };
   barbeiro: { nome: string; email: string; senha: string };
@@ -72,6 +78,17 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     login(credenciais: CredenciaisDoBarbeiro): Promise<SessaoBarbeiro> {
       return requisicao("/auth/login", { metodo: "POST", corpo: credenciais });
+    },
+
+    // Sem token, como o login. Responde igual tendo ou não conta: não há
+    // nada a devolver.
+    async pedirCodigo(email: string): Promise<void> {
+      await requisicao("/auth/codigo", { metodo: "POST", corpo: { email } });
+    },
+
+    // Mesmo formato de sessão do login: quem redefine já sai logado.
+    redefinirSenha(redefinicao: RedefinicaoDeSenha): Promise<SessaoBarbeiro> {
+      return requisicao("/auth/senha", { metodo: "POST", corpo: redefinicao });
     },
 
     meuPerfil(): Promise<PerfilBarbeiro> {

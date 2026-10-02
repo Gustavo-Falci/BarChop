@@ -14,6 +14,7 @@ import {
   sessaoDoBarbeiro,
 } from "../../sessao/armazenamento";
 import estilos from "./EntrarNoPainel.module.css";
+import { RecuperarSenhaDoPainel } from "./RecuperarSenhaDoPainel";
 
 // O mesmo pattern e a mesma lista de reservados que a API usa (vêm do
 // @barchop/formato). Barrar aqui mantém o erro no campo, em vez de
@@ -32,6 +33,7 @@ export function EntrarNoPainel() {
   const api = useApiDoPainel();
 
   const [criando, setCriando] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
   const [nomeDaBarbearia, setNomeDaBarbearia] = useState("");
   const [slug, setSlug] = useState("");
   const [nome, setNome] = useState("");
@@ -168,6 +170,15 @@ export function EntrarNoPainel() {
     }
   }
 
+  if (recuperando) {
+    return (
+      <RecuperarSenhaDoPainel
+        emailInicial={email}
+        aoVoltar={() => setRecuperando(false)}
+      />
+    );
+  }
+
   return (
     <main className={estilos.pagina}>
       <h1>{criando ? "Criar barbearia" : "Entrar no painel"}</h1>
@@ -274,6 +285,22 @@ export function EntrarNoPainel() {
           }}
           erro={erroSenha}
         />
+
+        {/* Só no login: quem está criando a barbearia ainda não tem
+            senha pra esquecer. `type="button"` pelo mesmo motivo da
+            troca de modo lá embaixo — dentro do <form>, sem type, ele
+            enviaria o login. */}
+        {criando ? null : (
+          <p className={estilos.troca}>
+            <button
+              type="button"
+              className={estilos.link}
+              onClick={() => setRecuperando(true)}
+            >
+              Esqueci a senha
+            </button>
+          </p>
+        )}
 
         {aviso ? <Aviso>{aviso}</Aviso> : null}
 

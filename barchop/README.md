@@ -3,8 +3,8 @@
 ```
 barchop/
 ├── apps/
-│   ├── mobile/     # React Native + Expo — app do barbeiro
-│   ├── web/        # Next.js — painel do barbeiro
+│   ├── mobile/     # React Native + Expo — app do profissional (Onda 5)
+│   ├── web/        # Next.js — página pública da barbearia, painel e site
 │   └── api/        # Node.js + PostgreSQL — backend
 ├── packages/
 │   ├── database/        # schema.sql + decisão de migration pendente

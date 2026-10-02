@@ -1,6 +1,33 @@
 # Roteiro
 
-O que falta pro BarChop sair do papel, mais ou menos em ordem:
+Desde 2026-10-02 o BarChop é um SaaS para barbearias, construído em
+ondas (ADR-0001, em `docs/adr/`). A GR Barber é o primeiro cliente e o
+piloto, não o produto. O que cada onda entrega, as métricas de sucesso e
+o estado de cada uma moram no PRD, `.claude/prds/barchop-saas.prd.md`;
+cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
+`ecc:plan` (ADR-0008). As telas de cada onda estão em `docs/screens.md`.
+
+| Onda | Resultado | Estado |
+|---|---|---|
+| 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | em andamento — `.claude/plans/onda-0-casa-arrumada.plan.md` |
+| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | pendente |
+| 1s — Site de marketing | Landing, preços, plano grátis, termos e privacidade | pendente, em paralelo à 1 |
+| 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | pendente |
+| 3 — Retenção do cliente final | Pagamento e sinal online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações | pendente |
+| 4 — Crescimento | Indicação, loja, múltiplas unidades, campanhas, login social | pendente |
+| 5 — Diferenciais | IA no WhatsApp, NFS-e, domínio próprio, app do profissional | pendente |
+
+Nenhuma onda nova abre antes de o piloto rodar a Onda 1.
+
+**Começar já, fora do código:** a verificação de negócio na Meta (exige
+CNPJ) e a aprovação dos templates de mensagem levam semanas, e o
+lembrete por WhatsApp da Onda 1 depende delas (ADR-0004).
+
+## Histórico — até 2026-10-02
+
+O roteiro antigo, de quando o BarChop era a agenda de uma barbearia
+só. Os passos 1 a 3 ficam como registro; os passos 4 a 7 foram
+absorvidos pelas ondas (ver o fim desta seção).
 
 1. **Scaffolds do Expo e do Next.js — pronto.** `apps/mobile` e
    `apps/web` já têm o scaffold versionado (commit `6abe8a1`), com o
@@ -162,7 +189,8 @@ O que falta pro BarChop sair do papel, mais ou menos em ordem:
      Suítes ao fim da Fase 3: web 415, api-client 50, API 339 — a da
      API agora roda nesta máquina, com o Postgres de teste
      (`barchop_test`) e o `apps/api/.env.test` configurados.
-   - **D — app do barbeiro no Expo (10 telas)**.
+   - **D — app do barbeiro no Expo (10 telas)** — foi para a Onda 5,
+     como app do profissional: o painel web já cobre a mesma gestão.
 
    Duas decisões do sub-projeto A que mudam o resto do roteiro: o
    painel e o link público ficam no mesmo app Next, separados por route
@@ -170,24 +198,25 @@ O que falta pro BarChop sair do papel, mais ou menos em ordem:
    nenhuma tela foi cortada, as 7 do cliente viraram rotas web, porque
    o login do cliente é por barbearia e um app instalado não tem slug
    antes de receber um deep link.
-4. **Lembretes automáticos** — decidir WhatsApp Business API vs
-   push notification via Expo, e integrar o disparo ao confirmar
-   um agendamento. Ainda não arquitetado.
-5. **Infra na Oracle OCI** — provisionar a VM, subir o Postgres,
-   configurar variáveis de ambiente, deploy do backend e do painel.
-6. **Domínio `barchop.com.br` — comprado.** Falta apontar o DNS, e isso
-   depende do passo 5: sem a VM da OCI de pé não existe endereço pra
-   onde apontar. Continua de pé decidir se o painel do barbeiro e o
-   link público do cliente ficam no mesmo host ou em subdomínios
-   separados — o fluxo do cliente é um link que vai por WhatsApp, então
-   o endereço que ele mostra importa. O que mudou é o custo: como os
-   dois vivem no mesmo app Next, separados por route groups, essa
-   escolha virou configuração de roteamento no deploy, não migração de
-   código.
-7. **Piloto com o barbeiro real** que validou o problema original,
-   antes de pensar em abrir pra outras barbearias.
+Os passos 4 a 7 do roteiro antigo viraram parte da Onda 1:
+
+- **Lembretes automáticos** — decidido: WhatsApp pela Cloud API oficial
+  e e-mail pelo Resend (ADR-0004), disparados por uma fila pg-boss
+  (ADR-0003). O push pelo Expo saiu junto com o app do barbeiro.
+- **Infra na Oracle OCI** — continua: VM, Postgres, variáveis de
+  ambiente, deploy da API e do app web, agora com certificado coringa.
+- **Domínio `barchop.com.br`** — comprado; a dúvida "mesmo host ou
+  subdomínios" foi decidida: cada barbearia em `<slug>.barchop.com.br`
+  e o site em `www` (ADR-0002).
+- **Piloto com o barbeiro real** — é o fechamento da Onda 1.
 
 ## Dívidas conhecidas
+
+A Onda 0 fecha, pelo plano, a recuperação de senha do barbeiro, as
+sessões que sobrevivem à troca de senha, as datas no passado (nas duas
+rotas e na disponibilidade), o slug `painel`, o `GET /barbearias/me` e
+a troca de slug. Cada uma sai desta lista quando o commit que a fecha
+entrar.
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email

@@ -1,12 +1,9 @@
-import { Suspense } from "react";
-import { EscolhaDoHorario } from "../../../../../src/telas/EscolhaDoHorario";
+import { redirecionarRotaAntiga } from "../../../../../src/fluxo/rotaAntiga";
 
-// O Suspense é exigência do Next 16: quem lê useSearchParams numa rota
-// pré-renderizada precisa de um limite acima, senão o build recusa.
-export default function Pagina() {
-  return (
-    <Suspense fallback={<p>Carregando…</p>}>
-      <EscolhaDoHorario />
-    </Suspense>
-  );
+// Dia e horário viraram uma tela só, em /agendar/data. Ver rotaAntiga.
+export default function Pagina(props: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return redirecionarRotaAntiga("data", props);
 }

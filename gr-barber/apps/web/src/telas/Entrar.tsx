@@ -9,7 +9,7 @@ import { useApi } from "../api/ProvedorDaApi";
 import { Aviso } from "../componentes/Aviso";
 import { Botao } from "../componentes/Botao";
 import { Campo } from "../componentes/Campo";
-import { caminhoDoPasso, ehPasso, lerEscolhas } from "../fluxo/passos";
+import { caminhoDoPasso, lerEscolhas, passoDoVoltar } from "../fluxo/passos";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./Entrar.module.css";
 
@@ -40,8 +40,8 @@ export function Entrar() {
   const query = useSearchParams();
   const api = useApi();
 
-  // Pra onde ir depois de entrar. Quem chega pelo passo "quem é você"
-  // do agendamento tem que voltar exatamente pra lá, com os serviços,
+  // Pra onde ir depois de entrar. Quem chega pelo "Já tem conta?" da
+  // confirmação do agendamento tem que voltar exatamente pra lá, com os serviços,
   // a data e a hora que já escolheu — senão entrar custa refazer o
   // fluxo, e ninguém faz isso.
   //
@@ -49,8 +49,8 @@ export function Entrar() {
   // reconstruído aqui pelo `caminhoDoPasso`, a partir do slug da rota.
   // Um valor que não seja passo conhecido cai no destino padrão — ver
   // o comentário do `caminhoDoLogin` em fluxo/passos.ts.
-  const voltar = query.get("voltar");
-  const destino = ehPasso(voltar)
+  const voltar = passoDoVoltar(query.get("voltar"));
+  const destino = voltar
     ? caminhoDoPasso(slug, voltar, lerEscolhas(query))
     : `/${slug}/minha-conta`;
 

@@ -55,9 +55,9 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
      fundação: a vitrine `/primitivos` sai, substituída pelas telas de
      verdade. A suíte foi de 463 pra 571 testes.
    - **Depois do C — acabamento das telas web, de 2026-09-10 a
-     2026-09-27.** Não é sub-projeto: nenhuma tela nova do mapa, só as
-     que já existiam ficando de pé de verdade. Fora o PR #11, tudo foi
-     direto na `main`, sem PR.
+     2026-09-28.** Não é sub-projeto: nenhuma tela nova do mapa, só as
+     que já existiam ficando de pé de verdade. Fora os PRs #11 e #12,
+     tudo foi direto na `main`, sem PR.
      - *Casca do painel* (PR #11, merge `033994a`, 2026-09-10): o
        painel ganha moldura de dashboard, e saem o aviso de hidratação
        do `<html>` e a `busca` vazia que o `api-client` mandava na
@@ -105,8 +105,33 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
        constraint `EXCLUDE` e que o schema do Prisma não enxerga. Toda
        migration daqui pra frente segue esse caminho, aplicada com
        `migrate deploy`.
+     - *Auditoria do fluxo do cliente* (PR #12, merge `361e233`,
+       2026-09-28, mergeado em 2026-10-02): auditoria de UI/UX feita
+       no app rodando a 390px, e o fluxo de agendar cai de seis telas
+       pra três — serviços, quando, confirmar. Dia e horário viram uma
+       tela só, com os horários numa grade reta separada em manhã,
+       tarde e noite; `/agendar/horario` sobrevive como redirect. A
+       identificação entra no formulário da confirmação, com "Já tenho
+       conta? Entrar" como link: some a tela "quem é você" de
+       2026-09-27, e `/agendar/dados` também vira redirect. A home diz
+       se a barbearia está aberta agora e até que horas, mostra o dia
+       fechado como "Fechado" em vez de omiti-lo, e cada serviço leva
+       ao passo de serviços já com ele marcado. A tela de sucesso mostra
+       serviços, total e endereço, e oferece o `.ics` pro calendário.
+       Hoje sem horário restante deixa de ser beco sem saída, e falha ao
+       carregar os horários do dia avisa e deixa tentar de novo. O
+       título da aba e a prévia do link no WhatsApp passam a ter o nome
+       da barbearia, via `generateMetadata` — o que faz o servidor do
+       Next ler `NEXT_PUBLIC_API_URL` também, não só o navegador
+       (conferir no deploy: se ela só for alcançável pelo navegador, o
+       título cai em "GR Barber" em silêncio). Por último, as quatro
+       telas do fluxo ganham duas colunas a partir de 900px; entrar,
+       minha conta e sucesso ficam numa coluna estreita centrada. Tudo
+       testado contra o dublê do `api-client`; criar agendamento,
+       remarcar e o cartão de quem está logado ainda não rodaram contra
+       a API real.
 
-     A suíte da web está em 399 testes. A da API não foi recontada:
+     A suíte da web está em 434 testes. A da API não foi recontada:
      ela exige o Postgres de teste do `apps/api/.env.test`, que não
      estava configurado nesta máquina.
    - **Acesso à conta do cliente — Fases 1 a 3 prontas, Fase 4
@@ -224,6 +249,16 @@ O que falta pro GR Barber sair do papel, mais ou menos em ordem:
   quer dizer que já está na fila pra ser feito. Empurrar a checagem
   pra dentro do `criarAgendamento` mudaria comportamento da fase 4,
   que já tem testes escritos sem essa regra.
+- **A disponibilidade do mês também não conhece o "agora".** A mesma
+  ausência de relógio, do lado da leitura: a disponibilidade do mês
+  marca hoje como dia com vaga mesmo depois do fechamento, porque conta
+  os horários da janela inteira. Quem filtra hora passada é só a tela
+  do dia, no cliente (`horaJaPassou`). O PR #12 tirou o beco sem saída
+  — hoje sem sobra fica desabilitado no calendário e a tela oferece
+  "Escolher outra data" —, mas a correção mora no navegador; o app no
+  Expo, ou qualquer outro consumidor da rota, herda o dia falso.
+  Fechar de verdade é a rota filtrar pelo `agoraNaBarbearia`, junto do
+  `garantirFuturo` da dívida acima.
 - **Uma barbearia com o slug `painel` perde o próprio link público.** O
   painel vive sob o prefixo `/painel`, e esse é um segmento estático —
   que vence a rota dinâmica `[slug]` do fluxo do cliente. A validação

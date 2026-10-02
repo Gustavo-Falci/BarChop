@@ -5,8 +5,10 @@ import {
   sessaoDoCliente,
 } from "./armazenamento";
 
-// A URL da API muda por ambiente e é lida no navegador, então precisa
-// do prefixo NEXT_PUBLIC_. O padrão é o dev local da API.
+// A URL da API muda por ambiente. O navegador a lê (daí o prefixo
+// NEXT_PUBLIC_), e o servidor do Next também, pelo `apiPublica` do
+// título da barbearia — então precisa ser absoluta e alcançável dos
+// dois lados. O padrão é o dev local da API.
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
 
 export function apiDoBarbeiro(fetchInjetado?: typeof globalThis.fetch) {
@@ -18,6 +20,13 @@ export function apiDoBarbeiro(fetchInjetado?: typeof globalThis.fetch) {
     aoExpirarSessao: () => sessaoDoBarbeiro.limpar(),
     fetch: fetchInjetado,
   }).barbeiro;
+}
+
+// Só o escopo público, sem sessão nenhuma: é o que o servidor do Next
+// usa pra montar título e prévia do link, e lá não existe token — nem
+// o do barbeiro nem o do cliente — pra mandar.
+export function apiPublica(fetchInjetado?: typeof globalThis.fetch) {
+  return criarApiClient({ baseUrl: BASE_URL, fetch: fetchInjetado }).publico;
 }
 
 // Devolve o client inteiro, e não só `.cliente` como o de cima: o fluxo

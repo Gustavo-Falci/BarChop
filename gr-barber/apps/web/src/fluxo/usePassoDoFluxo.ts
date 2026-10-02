@@ -5,13 +5,17 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { caminhoDoPasso, lerEscolhas, type Escolhas, type Passo } from "./passos";
 import { ehPassado } from "../formato/datas";
 
-// Pré-requisitos são cumulativos, não por campo: "dados" e "confirmar"
-// precisam de tudo que "horario" precisa, que precisa de tudo que
-// "data" precisa. Checar cada campo isolado deixava combinação quebrada
+// Pré-requisitos são cumulativos, não por campo: "confirmar" precisa
+// de serviço, dia e hora — tudo o que o passo "data" (que
+// escolhe dia e horário na mesma tela) produz, mais o que ele próprio
+// precisa. Checar cada campo isolado deixava combinação quebrada
 // passar — .../dados?hora=09:00 sem serviço nem data renderizava um
 // formulário que levava a uma tela de confirmação em branco. A ordem
 // da lista é a ordem de checagem: a primeira que faltar decide o passo
 // de volta.
+//
+// O passo "data" não exige data: sem ela (ou com uma passada) a tela
+// abre no primeiro dia com vaga, em vez de mandar a pessoa de volta.
 //
 // A checagem de data passada mora aqui, não só na tela de horário: a
 // API não tem noção de "hoje", aceita marcar num dia que já passou, e
@@ -26,24 +30,24 @@ interface Checagem {
 
 const CHECAGENS: Checagem[] = [
   {
-    aplicaA: ["data", "horario", "dados", "confirmar"],
+    aplicaA: ["data", "confirmar"],
     falta: (e) => e.servicoIds.length === 0,
     volta: "servicos",
   },
   {
-    aplicaA: ["horario", "dados", "confirmar"],
+    aplicaA: ["confirmar"],
     falta: (e) => !e.data,
     volta: "data",
   },
   {
-    aplicaA: ["horario", "dados", "confirmar"],
+    aplicaA: ["confirmar"],
     falta: (e, agora) => e.data !== undefined && ehPassado(e.data, agora),
     volta: "data",
   },
   {
-    aplicaA: ["dados", "confirmar"],
+    aplicaA: ["confirmar"],
     falta: (e) => !e.hora,
-    volta: "horario",
+    volta: "data",
   },
 ];
 
@@ -60,7 +64,7 @@ function primeiraFalta(passo: Passo, escolhas: Escolhas, agora: Date): Passo | n
 // não deve chamar a API nem desenhar com dado faltando.
 //
 // `agora` é parâmetro com `new Date()` como padrão, mesma forma das
-// telas que já recebem o instante (EscolhaDaData, EscolhaDoHorario):
+// telas que já recebem o instante (EscolhaDaData):
 // é o que permite testar a checagem de data passada sem fake timers.
 export function usePassoDoFluxo(
   passo: Passo,

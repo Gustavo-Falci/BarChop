@@ -1,18 +1,135 @@
-.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
+/* Estreita e centralizada até a tela ganhar duas colunas: a largura
+   vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
+.pagina {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  width: 100%;
+  max-width: var(--fluxo-estreita);
+  margin-inline: auto;
+}
 .linha { display: flex; justify-content: space-between; gap: var(--espaco-md); padding: var(--espaco-sm) 0; border-bottom: var(--borda-hairline) solid var(--cor-line); }
 
-/* Link de texto, não Botao: a ação principal desta tela já aconteceu,
-   e dois botões empilhados se leriam como duas formas de confirmar. */
+/* Identificação e botão juntos, com um respiro a mais que as linhas do
+   resumo acima: o resumo é o que se confere, o formulário é o que se
+   faz. */
+.formulario {
+  display: grid;
+  gap: var(--espaco-md);
+  margin-top: var(--espaco-sm);
+}
+
+.apurando {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+/* O cartão de quem está logado. Moldura da casa — a mesma borda e o
+   mesmo raio dos campos —, porque ele afirma um dado, não pede um. */
+.identidade {
+  display: grid;
+  gap: var(--espaco-xs);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+}
+
+.identidadeNome {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+}
+
+/* O telefone em segundo plano, mas legível: é ele que distingue duas
+   pessoas de mesmo nome, então não pode virar decoração. O
+   --cor-ink-soft e não --cor-muted, que reprova contraste no claro. */
+.identidadeTelefone {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+/* Dentro do cartão o "Não é você?" alinha com o nome, à esquerda; solto
+   embaixo do botão ("Já tem conta?"), centraliza com ele. */
+.troca {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.formulario > .troca {
+  text-align: center;
+}
+
+/* <button> com cara de link: estes controles trocam o estado da tela ou
+   levam ao login sem enviar o formulário — `type="button"` em todos,
+   senão o botão dentro do <form> viraria submit. Mesmas regras do link
+   de troca de modo em EntrarNoPainel. */
 .link {
-  justify-self: start;
   padding: var(--espaco-xs) 0;
+  border: 0;
+  background: none;
   color: var(--cor-ink);
+  font: inherit;
   font-weight: 700;
   text-decoration: underline;
+  cursor: pointer;
 }
 
 .link:focus-visible {
   outline: 3px solid var(--cor-ink);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
+}
+
+/* "Ver meus agendamentos": navega de verdade, então é <a> — e com cara
+   de link, abaixo do botão principal, pra não competir com ele. */
+.linkDeTexto {
+  justify-self: center;
+  padding: var(--espaco-xs) 0;
+  color: var(--cor-ink);
+  font-weight: 700;
+  font-size: var(--texto-sm);
+}
+
+.linkDeTexto:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
+.titulo { margin: 0; }
+
+/* No celular as linhas do resumo são itens do grid da página, como
+   sempre foram. */
+.resumo { display: contents; }
+
+/* 900px: o mesmo corte das larguras do fluxo, declaradas em
+   app/(publico)/[slug]/layout.module.css. Resumo à esquerda, num
+   cartão; identificação e botão à direita. */
+@media (min-width: 900px) {
+  .duasColunas {
+    max-width: var(--fluxo-largura);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+    column-gap: var(--espaco-xxl);
+    align-items: start;
+  }
+
+  .titulo { grid-column: 1 / -1; }
+
+  .resumo {
+    display: grid;
+    padding: var(--espaco-sm) var(--espaco-lg);
+    border: var(--borda-padrao) solid var(--cor-ink);
+    border-radius: var(--raio-md);
+    background: var(--cor-surface);
+  }
+
+  .resumo > .linha:last-child { border-bottom: 0; }
+
+  /* O respiro de cima era pra separar do resumo empilhado acima; lado
+     a lado, ele só desalinharia o topo das duas colunas. */
+  .formulario { margin-top: 0; }
 }

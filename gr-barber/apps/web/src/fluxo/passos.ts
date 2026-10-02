@@ -11,13 +11,15 @@ export interface Escolhas {
   aviso?: string;
 }
 
-export type Passo = "servicos" | "data" | "horario" | "dados" | "confirmar";
+// Dia e horário são um passo só ("data"), e identificação e
+// confirmação também ("confirmar"). As rotas antigas /agendar/horario
+// e /agendar/dados ainda existem, só como redirect — ver
+// src/fluxo/rotaAntiga.ts.
+export type Passo = "servicos" | "data" | "confirmar";
 
 const CAMINHO_DO_PASSO: Record<Passo, string> = {
   servicos: "/agendar",
   data: "/agendar/data",
-  horario: "/agendar/horario",
-  dados: "/agendar/dados",
   confirmar: "/agendar/confirmar",
 };
 
@@ -66,6 +68,16 @@ export function caminhoDoPasso(
 // por passos válidos — e o valor vem da query, ou seja, de fora.
 export function ehPasso(valor: unknown): valor is Passo {
   return typeof valor === "string" && Object.hasOwn(CAMINHO_DO_PASSO, valor);
+}
+
+// O passo pra onde voltar depois do login, lido da query. Aceita
+// "dados" como sinônimo de "confirmar": era o passo de identificação
+// antes de ele entrar na confirmação, e quem estava no meio do login
+// durante a mudança chega com `voltar=dados` — cair no destino padrão
+// jogaria fora o agendamento que a pessoa estava fazendo.
+export function passoDoVoltar(valor: unknown): Passo | null {
+  if (valor === "dados") return "confirmar";
+  return ehPasso(valor) ? valor : null;
 }
 
 // Caminho pra tela de entrar carregando de onde o fluxo saiu.

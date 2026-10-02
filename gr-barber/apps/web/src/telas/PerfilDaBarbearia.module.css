@@ -1,6 +1,38 @@
-.pagina { display: grid; gap: var(--espaco-lg); padding: var(--espaco-lg); }
-.faixa { height: 120px; border: var(--borda-padrao) solid var(--cor-ink); border-radius: var(--raio-lg); background: var(--cor-accent); }
-.endereco { color: var(--cor-muted); font-size: var(--texto-sm); }
+/* Estreita e centralizada até a tela ganhar duas colunas: a largura
+   vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  padding: var(--espaco-lg);
+  width: 100%;
+  max-width: var(--fluxo-estreita);
+  margin-inline: auto;
+}
+
+.cabecalho {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.nome {
+  margin: 0;
+  text-wrap: balance;
+}
+
+/* "Aberto agora · fecha às 18:00" — a primeira pergunta de quem abre o
+   link. Peso de dado, não de legenda. */
+.situacao {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* --cor-ink-soft, e não o --cor-muted de antes: o muted reprova
+   contraste no tema claro (3.76:1), e endereço é texto que se lê. */
+.endereco {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
 
 /* `pre-line` é o que preserva as quebras de linha que o barbeiro
    digitou no painel, sem interpretar HTML: o texto continua sendo
@@ -37,16 +69,54 @@
 /* Nome de um lado, preço ou horário do outro, com a divisória fina
    entre as linhas — a mesma `--borda-hairline` que a Confirmacao usa
    pra listar itens. Com 2px viraria grade. */
-.linha {
+.linha,
+.servico {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: var(--espaco-md);
   padding: var(--espaco-sm) 0;
   border-bottom: var(--borda-hairline) solid var(--cor-line);
 }
 
+.lista > li:last-child > .servico,
 .linha:last-child {
   border-bottom: 0;
+}
+
+/* O serviço é link, mas lido como linha da lista: sem sublinhado
+   parado, que faria a lista parecer um menu de links. No hover e no
+   foco ele se anuncia. 44px de alvo, que a linha de texto sozinha não
+   dava. */
+.servico {
+  min-height: 44px;
+  color: var(--cor-ink);
+  text-decoration: none;
+}
+
+.servico:hover .servicoNome {
+  text-decoration: underline;
+}
+
+.servico:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
+.servicoNome {
+  display: grid;
+}
+
+.duracao {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+/* O dia de hoje em negrito: quem olha o horário quase sempre quer o de
+   hoje, e achar a linha certa numa semana agrupada custa uma leitura. */
+.hoje {
+  font-weight: 700;
 }
 
 /* `tabular-nums` pra os preços e as horas alinharem na vertical: sem
@@ -61,3 +131,69 @@
 /* No canto, fora do caminho do "Agendar": é atalho pra quem já tem
    conta, não a ação da página. */
 .conta { justify-self: end; }
+
+/* Grudado no rodapé da janela (ver o comentário no TSX sobre por que
+   ele vem por último). O fundo é o da página, pra o texto que rola por
+   baixo não aparecer através do botão; o degradê em cima evita um corte
+   seco na linha que está passando. */
+/* `display: grid` pra o botão continuar com a largura da coluna: dentro
+   desta div ele deixou de ser item do grid da página e encolhia pro
+   tamanho do texto — visto no app. */
+.acao {
+  display: grid;
+  position: sticky;
+  bottom: 0;
+  padding-block: var(--espaco-md) var(--espaco-sm);
+  background: linear-gradient(to bottom, transparent, var(--cor-paper) var(--espaco-md));
+}
+
+/* No celular os dois wrappers não existem como caixa: os filhos são
+   itens do grid da página, e o "Agendar agora" gruda no rodapé da tela
+   (o sticky gruda dentro do pai — com o wrapper como pai, só grudaria
+   enquanto o horário estivesse à vista). */
+.principal,
+.lateral {
+  display: contents;
+}
+
+/* 900px: o mesmo corte das larguras do fluxo, declaradas em
+   app/(publico)/[slug]/layout.module.css. */
+@media (min-width: 900px) {
+  .duasColunas {
+    max-width: var(--fluxo-largura);
+    /* `minmax(0, …)` pra nenhuma coluna alargar além da sua fração por
+       causa de um conteúdo comprido (endereço, apresentação). */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+    column-gap: var(--espaco-xxl);
+    align-items: start;
+  }
+
+  .principal {
+    display: grid;
+    gap: var(--espaco-lg);
+  }
+
+  /* Cartão lateral que acompanha a rolagem: quando abre e o botão de
+     agendar ficam à vista enquanto se lê a apresentação e os serviços.
+     `align-self: start` (herdado do align-items) é o que dá espaço pro
+     sticky andar — esticado até a altura da linha, ele não teria pra
+     onde. */
+  .lateral {
+    display: grid;
+    gap: var(--espaco-md);
+    position: sticky;
+    top: var(--espaco-lg);
+    padding: var(--espaco-lg);
+    border: var(--borda-padrao) solid var(--cor-ink);
+    border-radius: var(--raio-md);
+    background: var(--cor-surface);
+  }
+
+  /* Dentro do cartão o botão não precisa grudar em nada: o cartão
+     inteiro já acompanha a rolagem. */
+  .acao {
+    position: static;
+    padding: 0;
+    background: none;
+  }
+}

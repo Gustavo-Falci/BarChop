@@ -129,9 +129,10 @@ describe("entrar", () => {
   });
 
   it("volta pro passo do agendamento de onde veio", async () => {
-    // Quem chegou aqui pelo "já tenho conta" do passo de dados precisa
-    // cair de volta no mesmo ponto, com serviços, data e hora — senão
-    // entrar custa refazer o fluxo, e ninguém faz isso.
+    // Quem chegou aqui pelo "Já tem conta?" da confirmação precisa cair
+    // de volta no mesmo ponto, com serviços, data e hora — senão entrar
+    // custa refazer o fluxo, e ninguém faz isso. `voltar=dados` é o
+    // nome antigo desse passo, e ainda precisa levar pra confirmação.
     navegacaoFalsa.redefinir({
       query: {
         voltar: "dados",
@@ -147,7 +148,7 @@ describe("entrar", () => {
 
     await waitFor(() =>
       expect(navegacaoFalsa.push).toHaveBeenCalledWith(
-        "/gr-barber/agendar/dados?servicos=s1&data=2026-09-10&hora=09%3A00"
+        "/gr-barber/agendar/confirmar?servicos=s1&data=2026-09-10&hora=09%3A00"
       )
     );
   });

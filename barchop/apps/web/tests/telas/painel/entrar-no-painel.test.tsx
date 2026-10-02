@@ -1,7 +1,11 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
-import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  CODIGO_DO_BARBEIRO_FALSO,
+  criarApiClientFalso,
+  ErroDaApi,
+} from "@barchop/api-client";
 import { ProvedorDoPainel } from "../../../src/painel/ProvedorDoPainel";
 import { EntrarNoPainel } from "../../../src/telas/painel/EntrarNoPainel";
 import {
@@ -94,6 +98,40 @@ describe("entrar no painel", () => {
 
     expect(await screen.findByText(/letras minúsculas, números e hífen/i)).toBeInTheDocument();
     expect(chamou).toBe(false);
+  });
+
+  it("esqueci a senha: pede o código, redefine e entra", async () => {
+    const falso = criarApiClientFalso();
+    const pedir = vi.fn(falso.barbeiro.pedirCodigo);
+    falso.barbeiro.pedirCodigo = pedir;
+    montar(falso);
+
+    await userEvent.click(screen.getByRole("button", { name: /esqueci a senha/i }));
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
+    await userEvent.click(screen.getByRole("button", { name: /enviar código/i }));
+
+    await waitFor(() => expect(pedir).toHaveBeenCalledWith("rafael@gr.com"));
+    await userEvent.type(await screen.findByLabelText(/código/i), CODIGO_DO_BARBEIRO_FALSO);
+    await userEvent.type(screen.getByLabelText(/nova senha/i), "nova-senha-789");
+    await userEvent.click(screen.getByRole("button", { name: /salvar e entrar/i }));
+
+    await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBeTruthy());
+    expect(sessaoDaBarbearia.ler()).toBe("gr-barber");
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
+  });
+
+  it("esqueci a senha: código errado avisa no campo e não entra", async () => {
+    montar();
+
+    await userEvent.click(screen.getByRole("button", { name: /esqueci a senha/i }));
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
+    await userEvent.click(screen.getByRole("button", { name: /enviar código/i }));
+    await userEvent.type(await screen.findByLabelText(/código/i), "000000");
+    await userEvent.type(screen.getByLabelText(/nova senha/i), "nova-senha-789");
+    await userEvent.click(screen.getByRole("button", { name: /salvar e entrar/i }));
+
+    expect(await screen.findByText(/código inválido ou vencido/i)).toBeInTheDocument();
+    expect(sessaoDoBarbeiro.ler()).toBeNull();
   });
 
   it("recusa slug reservado antes de chamar a API", async () => {

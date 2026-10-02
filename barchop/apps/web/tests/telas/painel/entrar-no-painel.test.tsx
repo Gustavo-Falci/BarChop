@@ -96,6 +96,27 @@ describe("entrar no painel", () => {
     expect(chamou).toBe(false);
   });
 
+  it("recusa slug reservado antes de chamar a API", async () => {
+    const falso = criarApiClientFalso();
+    let chamou = false;
+    falso.barbeiro.signup = async () => {
+      chamou = true;
+      throw new ErroDaApi(422, "slug_reservado", "");
+    };
+    montar(falso);
+
+    await userEvent.click(screen.getByRole("button", { name: /criar barbearia/i }));
+    await userEvent.type(screen.getByLabelText(/nome da barbearia/i), "Painel");
+    await userEvent.type(screen.getByLabelText(/endereço do link/i), "painel");
+    await userEvent.type(screen.getByLabelText(/seu nome/i), "Zé");
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "ze@barbearia.com");
+    await userEvent.type(screen.getByLabelText(/^senha/i), "segredo123");
+    await userEvent.click(screen.getByRole("button", { name: /criar e entrar/i }));
+
+    expect(await screen.findByText(/esse link é reservado/i)).toBeInTheDocument();
+    expect(chamou).toBe(false);
+  });
+
   it("traduz conflito sem dizer qual dos dois campos repetiu", async () => {
     // A dívida do 409 já é conhecida; a tela não a amplia dizendo se foi
     // o e-mail ou o endereço.

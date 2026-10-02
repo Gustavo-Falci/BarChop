@@ -214,9 +214,10 @@ Os passos 4 a 7 do roteiro antigo viraram parte da Onda 1:
 
 A Onda 0 fecha, pelo plano, a recuperação de senha do barbeiro, as
 sessões que sobrevivem à troca de senha, as datas no passado (nas duas
-rotas e na disponibilidade), o slug `painel`, o `GET /barbearias/me` e
-a troca de slug. Cada uma sai desta lista quando o commit que a fecha
-entrar.
+rotas e na disponibilidade), o `GET /barbearias/me` e a troca de slug.
+Cada uma sai desta lista quando o commit que a fecha entrar. Já saiu: o
+slug `painel` sombreado (`961d2f4`, lista de reservados no
+`@barchop/formato`).
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
@@ -288,16 +289,6 @@ entrar.
   Expo, ou qualquer outro consumidor da rota, herda o dia falso.
   Fechar de verdade é a rota filtrar pelo `agoraNaBarbearia`, junto do
   `garantirFuturo` da dívida acima.
-- **Uma barbearia com o slug `painel` perde o próprio link público.** O
-  painel vive sob o prefixo `/painel`, e esse é um segmento estático —
-  que vence a rota dinâmica `[slug]` do fluxo do cliente. A validação
-  de slug na API é `^[a-z0-9-]{3,80}$`, sem lista de reservados, então
-  `painel` é aceito no cadastro e fica inalcançável depois, sem erro em
-  lugar nenhum. O prefixo reduziu o problema de pouco mais de uma
-  dezena de slugs sombreados (um por rota que o painel teria criado na
-  raiz) pra exatamente um, mas não o eliminou. Fechar de verdade é uma
-  lista de reservados na validação de slug — mudança de API, fora do
-  escopo deste sub-projeto.
 - **O painel lê a própria barbearia pela rota pública.** A API tem
   `PATCH /barbearias/me` e nenhum `GET`: a única leitura dos dados da
   barbearia é `GET /barbearias/:slug`, a mesma rota que a tela de

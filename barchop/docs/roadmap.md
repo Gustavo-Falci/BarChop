@@ -221,7 +221,11 @@ o slug `painel` sombreado (`961d2f4`, lista de reservados no
 pública e o slug sem troca (`GET /barbearias/me` e
 `PATCH /barbearias/me/slug`, com o campo "Link da barbearia" em
 Configurações). O link antigo para de responder na hora; o redirect
-dele vem com o tenant por subdomínio (Onda 1).
+dele vem com o tenant por subdomínio (Onda 1). E as duas rotas que
+criam ou movem um agendamento pelo lado do cliente recusam data
+passada com 422 `horario_passado` (`garantirFuturo`); a criação manual
+pelo barbeiro continua aceitando, porque registrar um walk-in depois do
+fato é legítimo.
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
@@ -266,30 +270,13 @@ dele vem com o tenant por subdomínio (Onda 1).
   escreve, e daí o limite por IP deixa de limitar. Os limites por conta
   (email, telefone) não dependem do IP e continuam valendo nos dois
   casos.
-- **Nenhuma das duas rotas que criam ou movem um agendamento recusa uma
-  data no passado.** `POST /barbearias/:slug/agendamentos` e
-  `POST /clientes/me/agendamentos/:id/remarcar` passam pelo mesmo
-  `horariosLivres`, que não tem noção de "agora" — só recebe a janela
-  de funcionamento e os horários já ocupados. O único relógio do fluxo
-  é o `agoraNaBarbearia`, usado pelo `garantirAlteravel` em
-  `lib/agendamento-alteravel.ts`, e essa guarda olha pro agendamento
-  de origem, o que está sendo alterado, nunca pro destino da mudança.
-  Na prática, um cliente que remarca pra uma data passada tranca a
-  própria conta: o agendamento resultante é exatamente o que o
-  `garantirAlteravel` recusa cancelar ou remarcar depois, e só o
-  barbeiro consegue desfazer. O fechamento tem a forma de um
-  `garantirFuturo(data, horaInicio)` ao lado do `garantirAlteravel`,
-  chamado pelas rotas que criam ou movem um agendamento — isso não
-  quer dizer que já está na fila pra ser feito. Empurrar a checagem
-  pra dentro do `criarAgendamento` mudaria comportamento da fase 4,
-  que já tem testes escritos sem essa regra.
-- **A disponibilidade do mês também não conhece o "agora".** A mesma
-  ausência de relógio, do lado da leitura: a disponibilidade do mês
+- **A disponibilidade do mês não conhece o "agora".** A ausência de
+  relógio do lado da leitura (a da escrita fechou com o
+  `garantirFuturo`, na Onda 0): a disponibilidade do mês
   marca hoje como dia com vaga mesmo depois do fechamento, porque conta
   os horários da janela inteira. Quem filtra hora passada é só a tela
   do dia, no cliente (`horaJaPassou`). O PR #12 tirou o beco sem saída
   — hoje sem sobra fica desabilitado no calendário e a tela oferece
   "Escolher outra data" —, mas a correção mora no navegador; o app no
   Expo, ou qualquer outro consumidor da rota, herda o dia falso.
-  Fechar de verdade é a rota filtrar pelo `agoraNaBarbearia`, junto do
-  `garantirFuturo` da dívida acima.
+  Fechar de verdade é a rota filtrar pelo `agoraNaBarbearia`.

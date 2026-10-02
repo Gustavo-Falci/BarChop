@@ -1,5 +1,6 @@
 import { prisma } from "@barchop/database";
 import { criarAgendamento, INCLUDE_AGENDAMENTO } from "../lib/agendamento";
+import { garantirFuturo } from "../lib/agendamento-alteravel";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { dataParaDate } from "../lib/horas";
@@ -277,6 +278,10 @@ export function registrarRotasAgendamentosPublicas(app: App): void {
       // cadastro — é o que faz o barbeiro reconhecer o cliente
       // recorrente, e o que a chave única não garantia sozinha.
       const telefone = normalizarTelefoneObrigatorio(dadosCliente.telefone);
+
+      // Antes da transação: horário passado não chega a fazer upsert de
+      // cliente nenhum.
+      garantirFuturo(resto.data, resto.horaInicio);
 
       // Mesmo motivo da rota do walk-in: impasse concorrente não pode
       // sair como 500.

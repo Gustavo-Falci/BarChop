@@ -176,6 +176,39 @@ describe("POST /clientes/me/agendamentos/:id/remarcar", () => {
     expect(antigo.status).toBe("cancelado");
   });
 
+  it("422 horario_passado ao remarcar para uma data passada, e o antigo fica de pé", async () => {
+    // Antes, o destino no passado passava: o agendamento resultante era
+    // exatamente o que o garantirAlteravel recusa depois, e o cliente
+    // trancava a própria conta.
+    const app = buildApp();
+    const barbearia = await criarBarbeariaComToken(app);
+    await abrirTodoDia(app, barbearia.token);
+    const servicoId = await criarServico(app, barbearia.token);
+    const antigoId = await agendar({
+      app,
+      slug: barbearia.slug,
+      barbeiroId: barbearia.barbeiroId,
+      servicoId,
+      horaInicio: "10:00",
+    });
+    const { token } = await criarClienteComToken(app, barbearia.slug);
+
+    const resposta = await app.inject({
+      method: "POST",
+      url: `/clientes/me/agendamentos/${antigoId}/remarcar`,
+      headers: auth(token),
+      payload: { data: PASSADO, horaInicio: "14:00" },
+    });
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("horario_passado");
+
+    const antigo = await prisma.agendamento.findUniqueOrThrow({
+      where: { id: antigoId },
+    });
+    expect(antigo.status).toBe("confirmado");
+  });
+
   it("aceita deslocar 15 minutos no mesmo dia, sobrepondo o próprio horário", async () => {
     const app = buildApp();
     const barbearia = await criarBarbeariaComToken(app);

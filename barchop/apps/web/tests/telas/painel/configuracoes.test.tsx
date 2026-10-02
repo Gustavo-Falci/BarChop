@@ -7,6 +7,7 @@ import { ConfiguracoesDaBarbearia } from "../../../src/telas/painel/Configuracoe
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
 import { montarPainelComSonda } from "../../ajudantes/sondaDeCorrida";
+import { sessaoDaBarbearia } from "../../../src/sessao/armazenamento";
 
 describe("configurações da barbearia", () => {
   beforeEach(() => {
@@ -19,6 +20,52 @@ describe("configurações da barbearia", () => {
 
     expect(await screen.findByDisplayValue("GR Barber")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Rua das Tesouras, 123")).toBeInTheDocument();
+  });
+
+  it("lê a barbearia pelo escopo do painel, não pela rota pública", async () => {
+    const falso = criarApiClientFalso();
+    falso.publico.perfilDaBarbearia = async () => {
+      throw new Error("Configurações não deveria ler a rota pública");
+    };
+
+    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+
+    expect(await screen.findByDisplayValue("GR Barber")).toBeInTheDocument();
+  });
+
+  it("troca o link da barbearia e atualiza o slug da sessão", async () => {
+    const falso = criarApiClientFalso();
+    const original = falso.barbeiro.trocarSlug;
+    const trocar = vi.fn(async (slug: string) => original(slug));
+    falso.barbeiro.trocarSlug = trocar;
+
+    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+
+    const campo = await screen.findByLabelText(/link da barbearia/i);
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "gr-barber-centro");
+    await userEvent.click(screen.getByRole("button", { name: /trocar link/i }));
+
+    await waitFor(() => expect(trocar).toHaveBeenCalledWith("gr-barber-centro"));
+    await waitFor(() => expect(sessaoDaBarbearia.ler()).toBe("gr-barber-centro"));
+  });
+
+  it("recusa link reservado no campo, sem chamar a API", async () => {
+    const falso = criarApiClientFalso();
+    const trocar = vi.fn(async () => {
+      throw new Error("não deveria chamar");
+    });
+    falso.barbeiro.trocarSlug = trocar;
+
+    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+
+    const campo = await screen.findByLabelText(/link da barbearia/i);
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "admin");
+    await userEvent.click(screen.getByRole("button", { name: /trocar link/i }));
+
+    expect(await screen.findByText(/esse link é reservado/i)).toBeInTheDocument();
+    expect(trocar).not.toHaveBeenCalled();
   });
 
   it("salva os dados da barbearia", async () => {
@@ -224,7 +271,7 @@ describe("configurações da barbearia", () => {
   // dependências. O React garante que, dentro de UM commit, layout
   // effects rodam antes de qualquer effect passivo — a sonda explora
   // essa ordem em vez de contar temporizadores. O gatilho pra sua
-  // renderização vem do mock de `perfilDaBarbearia`, chamado de forma
+  // renderização vem do mock de `minhaBarbearia`, chamado de forma
   // síncrona no ponto em que ele retoma de uma promessa travada; isso
   // costuma colocar a atualização da sonda no mesmo lote pendente do
   // React que o `setDados` da tela, fazendo as duas commitarem juntas.
@@ -236,19 +283,19 @@ describe("configurações da barbearia", () => {
     );
     falso.barbeiro.atualizarMinhaBarbearia = salvar;
 
-    // Trava a leitura do perfil público até o teste mandar liberar.
+    // Trava a leitura da barbearia até o teste mandar liberar.
     let liberar: () => void = () => {};
     const pendente = new Promise<void>((resolve) => {
       liberar = resolve;
     });
-    const perfilOriginal = falso.publico.perfilDaBarbearia;
+    const barbeariaOriginal = falso.barbeiro.minhaBarbearia;
     let disparoDaSonda: () => void = () => {};
-    falso.publico.perfilDaBarbearia = async (slug: string) => {
+    falso.barbeiro.minhaBarbearia = async () => {
       await pendente;
       // Síncrono, antes de qualquer outro `await`: coloca a
       // atualização da sonda no mesmo lote que o `setDados` da tela.
       disparoDaSonda();
-      return perfilOriginal(slug);
+      return barbeariaOriginal();
     };
 
     // A sonda roda `aoRenderizar` uma vez no mount (ignorada abaixo) e

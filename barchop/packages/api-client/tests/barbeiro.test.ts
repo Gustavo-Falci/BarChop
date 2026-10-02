@@ -24,6 +24,37 @@ function urlEInit(fetchFalso: ReturnType<typeof vi.fn>) {
 }
 
 describe("api do barbeiro", () => {
+  it("lê a própria barbearia pelo escopo do barbeiro, com token", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
+      respostaJson({ id: "b1", nome: "GR Barber", slug: "gr-barber" })
+    );
+
+    const barbearia = await clientAutenticado(fetchFalso).barbeiro.minhaBarbearia();
+
+    const { url, init } = urlEInit(fetchFalso);
+    expect(url).toBe("https://api.exemplo.br/barbearias/me");
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      "Bearer jwt-do-barbeiro"
+    );
+    expect(barbearia.slug).toBe("gr-barber");
+  });
+
+  it("troca o slug com PATCH no recurso próprio", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
+      respostaJson({ id: "b1", nome: "GR Barber", slug: "gr-barber-centro" })
+    );
+
+    const barbearia = await clientAutenticado(fetchFalso).barbeiro.trocarSlug(
+      "gr-barber-centro"
+    );
+
+    const { url, init } = urlEInit(fetchFalso);
+    expect(url).toBe("https://api.exemplo.br/barbearias/me/slug");
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(init.body as string)).toEqual({ slug: "gr-barber-centro" });
+    expect(barbearia.slug).toBe("gr-barber-centro");
+  });
+
   it("faz login sem token e devolve a sessão", async () => {
     const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
       respostaJson({

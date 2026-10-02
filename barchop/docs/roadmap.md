@@ -228,7 +228,10 @@ pelo barbeiro continua aceitando, porque registrar um walk-in depois do
 fato é legítimo. Do lado da leitura, as duas rotas de disponibilidade
 (dia e mês) passam pelo `descartarPassados`: dia passado sem vaga, hoje
 só o que começa depois de agora. O `horaJaPassou` da tela do dia fica
-como redundância inofensiva.
+como redundância inofensiva. Trocar a senha derruba as sessões abertas:
+`senha_alterada_em` no cliente e no barbeiro, e o hook de
+`plugins/auth.ts` recusa token com `iat` anterior a ela (comparado no
+segundo, pra o token que a própria troca devolve seguir valendo).
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
@@ -247,12 +250,6 @@ como redundância inofensiva.
   `senha_barbeiro`, mandado pro e-mail. É também a razão de os limites
   de `lib/limites.ts` serem janela que passa, e não bloqueio de conta:
   sem rota de recuperação, um bloqueio de verdade seria definitivo.
-- **Trocar a senha não derruba as sessões abertas.** O "esqueci a
-  senha" do cliente troca a senha, mas um token emitido antes continua
-  valendo até expirar (7 dias) — quem roubou a sessão segue dentro
-  depois de a vítima trocar a senha. Fecha na Fase 4: `senha_alterada_em`
-  no cliente e no barbeiro, e o hook de `plugins/auth.ts`, que já lê o
-  banco a cada requisição, recusando token com `iat` anterior a ela.
 - **Os códigos de verificação só saem pelo log.** O provedor real
   (WhatsApp ou SMS pro cliente, e-mail pro barbeiro) não foi escolhido,
   e `lib/canal.ts` só tem o canal de log (desenvolvimento) e o de

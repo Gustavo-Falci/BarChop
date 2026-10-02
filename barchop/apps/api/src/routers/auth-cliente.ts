@@ -146,7 +146,10 @@ export function registrarRotasAuthCliente(
       const cliente = existente
         ? await prisma.cliente.update({
             where: { id: existente.id },
-            data: { senhaHash },
+            // O carimbo derruba as sessões abertas: o hook recusa token
+            // emitido antes dele. Quem esqueceu a senha porque o celular
+            // foi roubado não pode deixar o ladrão logado por 7 dias.
+            data: { senhaHash, senhaAlteradaEm: new Date() },
           })
         : await prisma.cliente.create({
             data: { barbeariaId: barbearia.id, nome, telefone, senhaHash },

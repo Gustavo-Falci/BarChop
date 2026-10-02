@@ -11,12 +11,16 @@ export interface PayloadBarbeiro {
   tipo: "barbeiro";
   barbeiroId: string;
   barbeariaId: string;
+  // Posto pelo próprio jwt ao assinar (segundos). Opcional porque quem
+  // assina não passa; é o hook que lê, contra a última troca de senha.
+  iat?: number;
 }
 
 export interface PayloadCliente {
   tipo: "cliente";
   clienteId: string;
   barbeariaId: string;
+  iat?: number;
 }
 
 declare module "fastify" {
@@ -53,6 +57,20 @@ export function registrarAuth(app: App): void {
   app.register(fastifyJwt, { secret: segredo, sign: { expiresIn: "7d" } });
 }
 
+// Token emitido antes da última troca de senha não vale mais. O `iat`
+// do JWT é em segundos e o carimbo é em milissegundos: a comparação é
+// no segundo, então o token que a própria troca devolve — emitido no
+// mesmo segundo do carimbo — continua valendo. O preço é que um token
+// roubado emitido naquele mesmo segundo também valeria, uma janela de
+// menos de um segundo que ninguém consegue mirar.
+function emitidoAntesDaTroca(
+  payload: { iat?: number },
+  senhaAlteradaEm: Date | null
+): boolean {
+  if (!senhaAlteradaEm || payload.iat === undefined) return false;
+  return payload.iat < Math.floor(senhaAlteradaEm.getTime() / 1000);
+}
+
 // Hook onRequest das rotas protegidas. Token ausente ou inválido faz o
 // jwtVerify lançar com statusCode 401, que o tratador de erros repassa.
 export async function autenticar(request: FastifyRequest): Promise<void> {
@@ -74,11 +92,17 @@ export async function autenticar(request: FastifyRequest): Promise<void> {
   // protegida é o preço de a desativação ser real.
   const barbeiro = await prisma.barbeiro.findUnique({
     where: { id: payload.barbeiroId },
-    select: { ativo: true },
+    select: { ativo: true, senhaAlteradaEm: true },
   });
 
   if (!barbeiro?.ativo) {
     throw Object.assign(new Error("barbeiro inativo ou inexistente"), {
+      statusCode: 401,
+    });
+  }
+
+  if (emitidoAntesDaTroca(payload, barbeiro.senhaAlteradaEm)) {
+    throw Object.assign(new Error("token anterior à troca de senha"), {
       statusCode: 401,
     });
   }
@@ -98,11 +122,17 @@ export async function autenticarCliente(request: FastifyRequest): Promise<void> 
 
   const cliente = await prisma.cliente.findUnique({
     where: { id: payload.clienteId },
-    select: { id: true },
+    select: { id: true, senhaAlteradaEm: true },
   });
 
   if (!cliente) {
     throw Object.assign(new Error("cliente inexistente"), { statusCode: 401 });
+  }
+
+  if (emitidoAntesDaTroca(payload, cliente.senhaAlteradaEm)) {
+    throw Object.assign(new Error("token anterior à troca de senha"), {
+      statusCode: 401,
+    });
   }
 
   request.cliente = payload;

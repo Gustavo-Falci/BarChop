@@ -172,7 +172,10 @@ export function ConfiguracoesDaBarbearia() {
       // agendamento o usa pra chamar a disponibilidade. Sem regravar,
       // o painel seguiria consultando o endereço que acabou de morrer.
       sessaoDaBarbearia.gravar(atualizada.slug);
-      barbearia.recarregar();
+      // Sem `barbearia.recarregar()`: a leitura nova resincronizaria o
+      // formulário inteiro e apagaria o que foi digitado nos outros
+      // campos e ainda não salvo. O campo do link já mostra o slug novo.
+      setNovoSlug(atualizada.slug);
     } catch (causa) {
       const erroDaApi = causa as ErroDaApi;
       // `conflito` é o unique do slug (P2002) — a única coluna única

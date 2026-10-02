@@ -22,6 +22,14 @@ export function proximoDiaDaSemana(diaSemana: number, minimoDeDias = 7): string 
 export const QUINTA = proximoDiaDaSemana(4);
 export const DOMINGO = proximoDiaDaSemana(0);
 
+// O mês anterior ao corrente, "YYYY-MM" — inteiro no passado.
+export function mesPassado(): string {
+  const dia = new Date();
+  dia.setUTCDate(1);
+  dia.setUTCMonth(dia.getUTCMonth() - 1);
+  return dia.toISOString().slice(0, 7);
+}
+
 // Uma quinta já passada, pras rotas que precisam recusar o passado.
 export function quintaPassada(): string {
   const dia = new Date();

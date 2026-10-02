@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
+import { mesPassado } from "../helpers/datas";
 import type { App } from "../../src/tipos";
 
 // Aberta de segunda a sábado, 09:00–18:00, um serviço de 45 minutos.
@@ -102,6 +103,20 @@ describe("GET /barbearias/:slug/disponibilidade/mes", () => {
     expect(Object.keys(dias)).toHaveLength(30);
     expect(dias["2037-09-01"]).toBe(true);
     expect(dias["2037-09-30"]).toBe(true);
+
+    await app.close();
+  });
+
+  it("não marca vaga em nenhum dia de um mês que já passou", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const { dias } = (
+      await app.inject({ method: "GET", url: url(agenda, { mes: mesPassado() }) })
+    ).json();
+
+    expect(Object.keys(dias).length).toBeGreaterThanOrEqual(28);
+    expect(Object.values(dias).every((temVaga) => temVaga === false)).toBe(true);
 
     await app.close();
   });

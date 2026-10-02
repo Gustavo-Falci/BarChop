@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
-import { DOMINGO, QUINTA } from "../helpers/datas";
+import { DOMINGO, QUINTA, quintaPassada } from "../helpers/datas";
 import type { App } from "../../src/tipos";
 
 // Aberta de segunda a sábado, 09:00–18:00, um serviço de 45 minutos.
@@ -101,6 +101,21 @@ describe("GET /barbearias/:slug/disponibilidade", () => {
     const resposta = await app.inject({
       method: "GET",
       url: url(agenda, { data: DOMINGO }),
+    });
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json().horarios).toEqual([]);
+
+    await app.close();
+  });
+
+  it("devolve lista vazia em dia que já passou", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const resposta = await app.inject({
+      method: "GET",
+      url: url(agenda, { data: quintaPassada() }),
     });
 
     expect(resposta.statusCode).toBe(200);

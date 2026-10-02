@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
+import { DOMINGO, QUINTA } from "../helpers/datas";
 import type { App } from "../../src/tipos";
 
 // Aberta de segunda a sábado, 09:00–18:00, um serviço de 45 minutos.
-// 2026-09-10 é uma quinta; 2026-09-13, um domingo.
+// QUINTA e DOMINGO são futuros, relativos a hoje (helpers/datas.ts).
 async function prepararAgenda(app: App, sufixo = "um") {
   const barbearia = await criarBarbeariaComToken(app, sufixo);
 
@@ -39,7 +40,7 @@ function url(
 ) {
   const params = new URLSearchParams({
     barbeiroId: agenda.barbeiroId,
-    data: "2026-09-10",
+    data: QUINTA,
     ...extra,
   });
   // servicoIds vai repetido, como a spec pede.
@@ -74,7 +75,7 @@ describe("GET /barbearias/:slug/disponibilidade", () => {
       payload: {
         barbeiroId: agenda.barbeiroId,
         servicoIds: [agenda.servico.id],
-        data: "2026-09-10",
+        data: QUINTA,
         horaInicio: "10:00",
         cliente: { nome: "João", telefone: "11999998888" },
       },
@@ -99,7 +100,7 @@ describe("GET /barbearias/:slug/disponibilidade", () => {
 
     const resposta = await app.inject({
       method: "GET",
-      url: url(agenda, { data: "2026-09-13" }),
+      url: url(agenda, { data: DOMINGO }),
     });
 
     expect(resposta.statusCode).toBe(200);
@@ -123,7 +124,7 @@ describe("GET /barbearias/:slug/disponibilidade", () => {
 
     const params = new URLSearchParams({
       barbeiroId: agenda.barbeiroId,
-      data: "2026-09-10",
+      data: QUINTA,
     });
     params.append("servicoIds", agenda.servico.id);
     params.append("servicoIds", barba.id);
@@ -178,7 +179,7 @@ describe("GET /barbearias/:slug/disponibilidade", () => {
 
     const params = new URLSearchParams({
       barbeiroId: agenda.barbeiroId,
-      data: "2026-09-10",
+      data: QUINTA,
     });
     params.append("servicoIds", outra.servico.id);
 
@@ -214,7 +215,7 @@ describe("GET /barbearias/:slug/disponibilidade", () => {
 
     const resposta = await app.inject({
       method: "GET",
-      url: `/barbearias/${agenda.slug}/disponibilidade?barbeiroId=${agenda.barbeiroId}&data=2026-09-10`,
+      url: `/barbearias/${agenda.slug}/disponibilidade?barbeiroId=${agenda.barbeiroId}&data=${QUINTA}`,
     });
 
     expect(resposta.statusCode).toBe(400);

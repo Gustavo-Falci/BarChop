@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
+import { QUINTA } from "../helpers/datas";
 import type { App } from "../../src/tipos";
 
 // Mesmo cenário do teste do walk-in: aberta de segunda a sábado,
-// 09:00–18:00, um serviço de 45 minutos. 2026-09-10 é uma quinta.
+// 09:00–18:00, um serviço de 45 minutos. QUINTA é a próxima quinta
+// com uma semana de folga — data fixa passaria e cairia no
+// garantirFuturo.
 async function prepararAgenda(app: App, sufixo = "um") {
   const barbearia = await criarBarbeariaComToken(app, sufixo);
 
@@ -38,7 +41,7 @@ function corpo(agenda: Awaited<ReturnType<typeof prepararAgenda>>, extra = {}) {
   return {
     barbeiroId: agenda.barbeiroId,
     servicoIds: [agenda.servico.id],
-    data: "2026-09-10",
+    data: QUINTA,
     horaInicio: "10:00",
     cliente: { nome: "João da Silva", telefone: "11999998888" },
     ...extra,

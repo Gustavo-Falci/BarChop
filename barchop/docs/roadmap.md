@@ -9,7 +9,7 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 
 | Onda | Resultado | Estado |
 |---|---|---|
-| 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | em andamento — `.claude/plans/onda-0-casa-arrumada.plan.md` |
+| 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | pronta na branch `onda-0`, falta o merge — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
 | 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | pendente |
 | 1s — Site de marketing | Landing, preços, plano grátis, termos e privacidade | pendente, em paralelo à 1 |
 | 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | pendente |
@@ -238,6 +238,31 @@ esperar o envio) e `POST /auth/senha` (código de uso único, sessão nova
 no mesmo formato do login), com a tela de dois passos no
 `/painel/entrar`. Como os códigos do cliente, os do barbeiro só saem
 pelo log até o provedor de e-mail da Onda 1.
+
+A revisão da Onda 0 (`.claude/reviews/onda-0-review.md`) deixou três
+dívidas novas, logo abaixo: o orçamento de pedido de código que um
+terceiro consegue gastar, a sessão do cliente que cai quando o slug
+muda, e o monorepo sem lint.
+
+- **O orçamento de pedido de código é gastável por terceiros.** O
+  limite de 3 pedidos por destino em 15 minutos (`codigoDoCliente` e
+  `codigoDoBarbeiro` em `lib/limites.ts`) é por telefone ou e-mail, não
+  por quem pede: alguém que conheça o número ou o e-mail de outra
+  pessoa gasta o orçamento dela, e a recuperação legítima fica travada
+  pela janela. Não vaza nada nem dá acesso — é um incômodo de 15
+  minutos. Fecha com um desafio humano (captcha) a partir do segundo
+  pedido, ou com a chave por destino + IP e um teto global por destino
+  bem mais alto.
+- **Trocar o slug derruba a sessão dos clientes no navegador.** O token
+  do cliente fica em `sessao.cliente.<slug>` (`apps/web/src/sessao/
+  armazenamento.ts`), e com o slug novo a página procura outra chave:
+  quem estava logado precisa entrar de novo. Fecha junto do redirect do
+  slug antigo, com o tenant por subdomínio (Onda 1) — o mais simples é
+  a chave passar a ser o id da barbearia.
+- **O monorepo não tem lint.** `pnpm lint` roda pelo turbo, mas nenhum
+  pacote tem script de lint — só o build do `@barchop/database` dispara.
+  A disciplina hoje é toda do `tsc` estrito e dos testes. Fecha com um
+  ESLint compartilhado em `packages/config`, ligado em cada pacote.
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email

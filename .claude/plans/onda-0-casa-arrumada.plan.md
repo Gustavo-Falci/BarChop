@@ -111,6 +111,12 @@ pnpm test
 | Trocar o slug quebra links já enviados por WhatsApp | Medium | Aviso na tela; redirect do slug antigo fica para a Onda 1 (junto do subdomínio) |
 
 ## Acceptance
-- [ ] All tasks complete
-- [ ] Validation passes
-- [ ] Patterns mirrored, not reinvented
+- [x] All tasks complete (Tasks 1–8 com RED/GREEN; Task 9 = esta revisão + docs; PR pendente de push)
+- [x] Validation passes — type-check ok; API 367, web 458, api-client 54, formato 19 (lint: nenhum pacote tem script)
+- [x] Patterns mirrored, not reinvented
+
+## Desvios do plano
+- `SCHEMA_SLUG` virou só `PADRAO_SLUG` (string) + `slugReservado()` checado no handler: reservado é regra de domínio, então 422 `slug_reservado`, e não 400 de schema.
+- Task 3 e Task 4 saíram num ciclo só (mesma rota e mesma tela).
+- Preparação extra nos testes da API: datas fixas de 2026-09 já tinham passado e cairiam no `garantirFuturo`; viraram datas relativas (`tests/helpers/datas.ts`) e, no mês, 2037 (calendário idêntico ao de 2026).
+- A revisão achou e corrigiu um bug (trocar o link apagava edição não salva) e registrou três dívidas no roteiro.

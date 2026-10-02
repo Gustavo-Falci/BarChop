@@ -1,4 +1,13 @@
-.pagina { display: grid; gap: var(--espaco-md); padding: var(--espaco-lg); }
+/* Estreita e centralizada até a tela ganhar duas colunas: a largura
+   vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
+.pagina {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  width: 100%;
+  max-width: var(--fluxo-estreita);
+  margin-inline: auto;
+}
 /* Repete o grid da página porque o <form> virou um item só dela: sem
    isto os campos perderiam o gap e encostariam um no outro. */
 .formulario { display: grid; gap: var(--espaco-md); }

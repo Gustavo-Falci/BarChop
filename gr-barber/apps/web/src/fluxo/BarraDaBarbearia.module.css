@@ -13,13 +13,13 @@
      aqui ele empurraria a tela inteira pra baixo no momento em que
      chegasse — quando a pessoa já começou a ler, ou a mirar um toque. */
   min-height: 56px;
-  /* O mesmo teto e o mesmo recuo da coluna do conteúdo (480px de
-     largura, 24px de padding), pra o nome cair na mesma vertical dos
-     campos embaixo dele. Quem define a coluna é
-     `app/(publico)/[slug]/layout.module.css`; se ela mudar, este par
-     tem que mudar junto — a régua embaixo atravessa a janela inteira,
-     então a barra não pode viver DENTRO da coluna. */
-  max-width: 480px;
+  /* A mesma largura da coluna do conteúdo, lida da variável que o
+     layout declara (`app/(publico)/[slug]/layout.module.css`), pra o
+     nome cair na mesma vertical dos campos embaixo dele no celular e no
+     desktop. A barra não pode viver DENTRO da coluna porque a régua
+     embaixo atravessa a janela inteira. O recuo é o mesmo --espaco-lg
+     do padding das telas. */
+  max-width: var(--fluxo-largura);
   margin-inline: auto;
   padding: var(--espaco-sm) var(--espaco-lg);
 }

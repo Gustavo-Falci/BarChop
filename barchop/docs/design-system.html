@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BarChop — Design system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- Clash Grotesk vem do Fontshare, que é a origem dela; no app e no
+     painel ela é self-hosted pelo next/font/local, a partir do pacote
+     em font/ na raiz do monorepo. -->
+<link href="https://api.fontshare.com/v2/css?f%5B%5D=clash-grotesk@600,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F3F0E7;
+    --paper-soft: #FAF8F3;
+    --surface: #FFFFFF;
+    --ink: #202020;
+    --ink-soft: #514c42;
+    --muted: #8a8375;
+    --line: #e6e0d3;
+    --accent: #FFD900;
+    --accent-border: #FFFB7B;
+    --pale-yellow: #FFF3B8;
+    --pale-blue: #EFF8FA;
+    --dark: #1A1A1A;
+    --shadow: #000000;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:"Inter", system-ui, sans-serif; line-height:1.55; }
+  .wrap{ max-width:1180px; margin:0 auto; padding:3rem 1.6rem 6rem; }
+  h1,h2,h3{ font-family:"Clash Grotesk", "Inter", sans-serif; font-weight:700; letter-spacing:-0.01em; margin:0; }
+  .eyebrow{ font-family:"Clash Grotesk", sans-serif; font-weight:600; font-size:0.78rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-soft); }
+  h1{ font-size:clamp(1.9rem,3.4vw,2.6rem); margin:0.5rem 0 0.8rem; }
+  .lede{ max-width:64ch; color:var(--ink-soft); font-size:1.05rem; margin:0 0 1rem; }
+  .note{ display:inline-block; font-size:0.82rem; color:var(--ink-soft); background:var(--surface); border:1.5px solid var(--ink); border-radius:8px; padding:0.4rem 0.7rem; box-shadow:2px 2px 0 0 var(--shadow); }
+  section{ margin-top:3.4rem; }
+  section h2{ font-size:1.4rem; margin-bottom:0.3rem; }
+  section .desc{ color:var(--ink-soft); max-width:66ch; margin:0 0 1.4rem; font-size:0.95rem; }
+
+  .swatch-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:1rem; }
+  .swatch{ border:1.5px solid var(--ink); border-radius:14px; overflow:hidden; background:var(--surface); box-shadow:3px 3px 0 0 var(--shadow); }
+  .swatch-fill{ height:64px; }
+  .swatch-body{ padding:0.7rem 0.85rem; }
+  .swatch-body .name{ font-weight:600; font-size:0.88rem; }
+  .swatch-body .code{ font-size:0.78rem; color:var(--muted); }
+
+  .type-row{ display:flex; flex-direction:column; gap:1.2rem; }
+  .type-card{ border:1.5px solid var(--ink); border-radius:14px; background:var(--surface); padding:1.2rem 1.4rem; box-shadow:4px 4px 0 0 var(--shadow); }
+  .type-card .meta{ font-size:0.78rem; color:var(--muted); margin-bottom:0.6rem; }
+  .type-card .big{ font-family:"Clash Grotesk"; font-weight:700; font-size:2rem; }
+  .type-card .body-sample{ font-size:0.98rem; color:var(--ink-soft); max-width:60ch; }
+
+  .btn-row{ display:flex; flex-wrap:wrap; gap:1.4rem; align-items:flex-start; }
+  .btn{ font-family:"Clash Grotesk", sans-serif; font-weight:700; border-style:solid; cursor:pointer; }
+  .btn-primary{ background:var(--accent); color:var(--ink); font-size:17px; border-radius:14px; border-width:2px; border-color:var(--accent-border); box-shadow:0 4px 0 0 var(--shadow); padding:13px 24px; }
+  .btn-ghost{ background:var(--dark); color:#fff; font-size:15px; border-radius:14px; border-width:2px; border-color:#3a3a3a; box-shadow:0 4px 0 0 var(--shadow); padding:10px 20px; }
+  .btn-outline{ background:var(--surface); color:var(--ink); font-size:15px; border-radius:14px; border-width:2px; border-color:var(--ink); box-shadow:0 4px 0 0 var(--shadow); padding:11px 22px; }
+
+  .demo-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:1.2rem; }
+  .demo-tile{ display:flex; flex-direction:column; align-items:center; gap:0.5rem; }
+  .demo-box{ width:84px; height:84px; background:var(--surface); border:1.5px solid var(--ink); }
+  .demo-tile .tag{ font-size:0.72rem; color:var(--muted); text-align:center; }
+
+  /* ---- screen gallery ---- */
+  .group-label{ font-size:1.15rem; margin:2.2rem 0 1rem; display:flex; align-items:center; gap:0.7rem; flex-wrap:wrap; }
+  .group-tag{ font-family:"Inter"; font-weight:600; font-size:0.68rem; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:2px 9px; text-transform:none; letter-spacing:0; }
+  .tile-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:1.6rem 1.2rem; }
+  .tile-grid.web{ grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); }
+  .tile .label{ font-family:"Clash Grotesk"; font-weight:600; font-size:0.78rem; color:var(--ink-soft); margin-bottom:0.5rem; }
+  .screen{ background:var(--paper-soft); border:1.5px solid var(--ink); border-radius:14px; box-shadow:3px 3px 0 0 var(--shadow); overflow:hidden; display:flex; flex-direction:column; }
+  .screen.mobile{ aspect-ratio:9/17.5; }
+  .screen.web{ aspect-ratio:16/10; }
+
+  .s-header{ display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:var(--surface); border-bottom:1.5px solid var(--ink); font-family:"Clash Grotesk"; font-weight:700; font-size:11px; flex:none; }
+  .s-header .back{ width:16px; height:16px; border-radius:5px; border:1px solid var(--ink); display:flex; align-items:center; justify-content:center; font-size:9px; margin-right:5px; }
+  .s-sub{ font-size:8px; color:var(--muted); font-weight:400; display:block; }
+  .s-body{ padding:8px 10px; flex:1; display:flex; flex-direction:column; gap:6px; overflow:hidden; }
+  .s-row{ display:flex; align-items:center; justify-content:space-between; font-size:9px; padding:5px 6px; background:var(--surface); border:1px solid var(--line); border-radius:6px; gap:4px; }
+  .s-row .l{ display:flex; align-items:center; gap:5px; overflow:hidden; }
+  .s-chip{ font-size:7.5px; font-weight:600; padding:2px 6px; border-radius:999px; background:var(--pale-yellow); border:1px solid var(--ink); white-space:nowrap; }
+  .s-chip.blue{ background:var(--pale-blue); }
+  .s-chip.grey{ background:var(--surface); color:var(--muted); border-color:var(--line); }
+  .s-avatar{ width:15px; height:15px; border-radius:50%; background:var(--ink); color:var(--paper-soft); font-size:6.5px; display:flex; align-items:center; justify-content:center; font-weight:700; flex:none; }
+  .s-btn{ font-family:"Clash Grotesk"; font-weight:700; font-size:9px; background:var(--accent); color:#202020; border:1px solid var(--ink); border-radius:7px; box-shadow:2px 2px 0 0 var(--shadow); padding:6px 8px; text-align:center; }
+  .s-btn.outline{ background:var(--surface); color:var(--ink); box-shadow:none; }
+  .s-input{ font-size:8.5px; color:var(--muted); padding:5px 7px; background:var(--surface); border:1px solid var(--ink); border-radius:6px; }
+  .s-card{ padding:6px 7px; background:var(--surface); border:1px solid var(--ink); border-radius:8px; font-size:9px; box-shadow:2px 2px 0 0 var(--shadow); display:flex; justify-content:space-between; align-items:center; }
+  .s-summary{ padding:5px 8px; background:var(--pale-yellow); border:1px solid var(--ink); border-radius:8px; font-size:8px; display:flex; justify-content:space-between; font-weight:600; flex:none; }
+  .s-mini-cal{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .s-cal-d{ aspect-ratio:1; font-size:6.5px; display:flex; align-items:center; justify-content:center; border-radius:3px; background:var(--surface); border:1px solid var(--line); }
+  .s-cal-d.sel{ background:var(--accent); border-color:var(--ink); font-weight:700; color:#202020; }
+  .s-cal-d.off{ color:var(--muted); border:none; background:transparent; }
+  .s-pills{ display:flex; flex-wrap:wrap; gap:4px; }
+  .s-pill{ font-size:7.5px; padding:4px 6px; border-radius:999px; border:1px solid var(--ink); background:var(--surface); text-align:center; }
+  .s-pill.sel{ background:var(--accent); box-shadow:2px 2px 0 0 var(--shadow); font-weight:700; color:#202020; }
+  .s-week{ display:flex; gap:3px; flex:none; }
+  .s-week span{ flex:1; text-align:center; font-size:6.5px; padding:3px 0; border-radius:5px; border:1px solid var(--line); }
+  .s-week span.sel{ background:var(--accent); border-color:var(--ink); font-weight:700; color:#202020; }
+  .s-slot{ display:flex; align-items:center; gap:5px; font-size:7.5px; }
+  .s-slot .t{ width:22px; color:var(--muted); flex:none; }
+  .s-slot .fill{ flex:1; padding:3px 6px; background:var(--pale-blue); border:1px solid var(--ink); border-radius:5px; }
+  .s-slot .empty{ flex:1; padding:3px 6px; border:1px dashed var(--line); border-radius:5px; color:var(--muted); }
+  .s-banner{ height:44px; background:var(--dark); flex:none; }
+
+  .web-topbar{ display:flex; align-items:center; justify-content:space-between; padding:8px 12px; background:var(--surface); border-bottom:1.5px solid var(--ink); font-family:"Clash Grotesk"; font-weight:700; font-size:11px; flex:none; }
+  .web-stat-row{ display:flex; gap:6px; }
+  .web-stat{ flex:1; background:var(--surface); border:1px solid var(--ink); border-radius:8px; padding:6px 8px; box-shadow:2px 2px 0 0 var(--shadow); }
+  .web-stat .n{ font-family:"Clash Grotesk"; font-weight:700; font-size:13px; }
+  .web-stat .l{ font-size:7px; color:var(--muted); }
+  .web-table{ background:var(--surface); border:1px solid var(--ink); border-radius:8px; overflow:hidden; }
+  .web-table-row{ display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:6px; font-size:8px; padding:6px 8px; border-bottom:1px solid var(--line); }
+  .web-table-row.head{ font-weight:700; color:var(--muted); font-size:7px; text-transform:uppercase; letter-spacing:0.04em; }
+
+  /* ---- dark mode scope (app do barbeiro + painel web) ---- */
+  .dark-scope{ padding:1.2rem; border-radius:20px; color:var(--ink); transition:background .25s ease, color .25s ease; }
+  .dark-scope.dark{
+    background:#17160f;
+    --paper-soft:#252419;
+    --surface:#2c2a1f;
+    --ink:#F3F0E7;
+    --ink-soft:#cbc4b3;
+    --muted:#B0A890;
+    --line:#3d3b2e;
+    --pale-yellow:#3d3410;
+    --pale-blue:#152329;
+    --shadow:#F3F0E7;
+  }
+  .dark-toggle-row{ display:flex; align-items:center; gap:0.8rem; margin-bottom:1.6rem; }
+  .dark-toggle-row .hint{ font-size:0.82rem; color:var(--muted); }
+
+  footer{ margin-top:3.5rem; padding-top:1.4rem; border-top:1px solid var(--line); font-size:0.82rem; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Design system · BarChop</p>
+    <h1>Identidade visual do BarChop</h1>
+    <p class="lede">Linguagem neobrutalista adaptada a partir da referência do barbeiro.app: bordas grossas, sombras duras sem desfoque, amarelo saturado como cor de ação única, sobre uma base editorial em tons de creme.</p>
+    <span class="note">Fontes de produção: Clash Grotesk (via Fontshare, licença Indie gratuita) + Inter. Aqui uso Clash Grotesk como substituto próximo.</span>
+  </header>
+
+  <section id="cores">
+    <h2>Cores</h2>
+    <p class="desc">Amarelo como cor de ação única — nunca usado em mais de um elemento por tela, pra manter o peso do CTA.</p>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-fill" style="background:#FFD900;"></div><div class="swatch-body"><div class="name">Amarelo BarChop</div><div class="code">#FFD900</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#FFFB7B;"></div><div class="swatch-body"><div class="name">Borda do botão</div><div class="code">#FFFB7B</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#202020;"></div><div class="swatch-body"><div class="name">Tinta</div><div class="code">#202020</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#F3F0E7;"></div><div class="swatch-body"><div class="name">Creme (fundo)</div><div class="code">#F3F0E7</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#FFF3B8;"></div><div class="swatch-body"><div class="name">Amarelo pálido</div><div class="code">#FFF3B8</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#EFF8FA;"></div><div class="swatch-body"><div class="name">Azul pálido (painel)</div><div class="code">#EFF8FA</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#1A1A1A;"></div><div class="swatch-body"><div class="name">Escuro (splash)</div><div class="code">#1A1A1A</div></div></div>
+    </div>
+    <h3 class="eyebrow" style="margin:1.6rem 0 0.8rem; display:block;">Modo escuro — app + painel</h3>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-fill" style="background:#17160f;"></div><div class="swatch-body"><div class="name">Fundo</div><div class="code">#17160F</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#2c2a1f;"></div><div class="swatch-body"><div class="name">Superfície (cartões)</div><div class="code">#2C2A1F</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#F3F0E7;"></div><div class="swatch-body"><div class="name">Tinta (texto)</div><div class="code">#F3F0E7</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#FFD900;"></div><div class="swatch-body"><div class="name">Amarelo (inalterado)</div><div class="code">#FFD900</div></div></div>
+    </div>
+  </section>
+
+  <section id="tipografia">
+    <h2>Tipografia</h2>
+    <div class="type-row">
+      <div class="type-card"><div class="meta">Clash Grotesk 700 · títulos, números, botões</div><div class="big">Agenda cheia, sem esforço</div></div>
+      <div class="type-card"><div class="meta">Inter 400/600 · corpo de texto</div><div class="body-sample">O cliente escolhe os serviços, o app calcula o tempo total e mostra só os horários que cabem na agenda do barbeiro.</div></div>
+    </div>
+  </section>
+
+  <section id="botoes">
+    <h2>Botões</h2>
+    <div class="btn-row">
+      <button class="btn btn-primary">Confirmar agendamento</button>
+      <button class="btn btn-ghost">Ver detalhes</button>
+      <button class="btn btn-outline">Cancelar</button>
+    </div>
+  </section>
+
+  <section id="sombras">
+    <h2>Sombras &amp; raios</h2>
+    <p class="desc">Sombra "offset" — deslocamento fixo, zero desfoque, opaca. No modo escuro a sombra vira clara (creme) em vez de preta, pra manter o contraste sobre os cartões escuros. Escala de raios de 8 a 20px.</p>
+    <div class="demo-grid">
+      <div class="demo-tile"><div class="demo-box" style="border-radius:11px; box-shadow:0 3px 0 0 #000;"></div><span class="tag">Botão pequeno</span></div>
+      <div class="demo-tile"><div class="demo-box" style="border-radius:14px; box-shadow:0 4px 0 0 #000;"></div><span class="tag">Botão / cartão</span></div>
+      <div class="demo-tile"><div class="demo-box" style="border-radius:16px; box-shadow:5px 5px 0 0 #202020;"></div><span class="tag">Cartão diagonal</span></div>
+      <div class="demo-tile"><div class="demo-box" style="border-radius:20px;"></div><span class="tag">20px · destaque</span></div>
+      <div class="demo-tile"><div class="demo-box" style="border-radius:999px;"></div><span class="tag">Pílula (chip/status)</span></div>
+    </div>
+  </section>
+
+  <section id="telas">
+    <h2>Todas as telas</h2>
+    <p class="desc">As 23 telas mapeadas do projeto. App do barbeiro e painel web agora têm modo escuro — clique pra alternar. O fluxo do cliente (link público) fica só no modo claro, por ser uma página voltada a quem chega de fora.</p>
+
+    <div class="dark-toggle-row">
+      <button class="btn btn-ghost" id="dark-toggle-btn" onclick="toggleDarkMode()">Ativar modo escuro</button>
+      <span class="hint">Afeta as telas do app do barbeiro e do painel web</span>
+    </div>
+
+    <h3 class="group-label">App do barbeiro<span class="group-tag">claro / escuro</span></h3>
+    <div class="dark-scope" data-scope="mobile">
+    <div class="tile-grid">
+
+      <div class="tile"><div class="label">Login</div><div class="screen mobile"><div class="s-header">Entrar</div><div class="s-body">
+        <div class="s-input">email@barbearia.com</div>
+        <div class="s-input">••••••••</div>
+        <div class="s-btn">Entrar</div>
+        <div style="font-size:8px;color:var(--muted);text-align:center;">Criar conta</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Dashboard do dia</div><div class="screen mobile"><div class="s-header">Olá, Rafael<span class="s-sub">Seg · 6 set</span></div><div class="s-body">
+        <div class="s-summary"><span>Hoje</span><span>5 agendamentos</span></div>
+        <div class="s-row"><div class="l"><span class="s-avatar">J</span>João · Corte</div><span class="s-chip">09:00</span></div>
+        <div class="s-row"><div class="l"><span class="s-avatar">M</span>Marcos · Barba</div><span class="s-chip">10:00</span></div>
+        <div class="s-row"><div class="l"><span class="s-avatar">P</span>Pedro · Corte</div><span class="s-chip">11:30</span></div>
+        <div class="s-btn" style="margin-top:auto;">+ Novo agendamento</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Agenda</div><div class="screen mobile"><div class="s-header">Agenda</div><div class="s-body">
+        <div class="s-week"><span>D</span><span>S</span><span class="sel">T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+        <div class="s-slot"><span class="t">09:00</span><span class="fill">João · Corte</span></div>
+        <div class="s-slot"><span class="t">09:30</span><span class="empty">livre</span></div>
+        <div class="s-slot"><span class="t">10:00</span><span class="fill">Marcos · Barba</span></div>
+        <div class="s-slot"><span class="t">10:30</span><span class="empty">livre</span></div>
+        <div class="s-slot"><span class="t">11:00</span><span class="empty">livre</span></div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Novo agendamento</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Novo agendamento</div><div class="s-body">
+        <div class="s-row">Cliente<span class="s-chip grey">selecionar</span></div>
+        <div class="s-row">☑ Corte<span class="s-chip">30min</span></div>
+        <div class="s-row">☑ Barba<span class="s-chip">20min</span></div>
+        <div class="s-row">☐ Sobrancelha<span class="s-chip grey">15min</span></div>
+        <div class="s-row">Data/hora<span class="s-chip grey">selecionar</span></div>
+        <div class="s-btn" style="margin-top:auto;">Salvar agendamento</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Detalhe do agendamento</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Agendamento<span class="s-chip" style="margin-left:auto;">Confirmado</span></div><div class="s-body">
+        <div class="s-row">Cliente<b>João Silva</b></div>
+        <div class="s-row">Serviços<b>Corte, Barba</b></div>
+        <div class="s-row">Quando<b>09:00 · 6 set</b></div>
+        <div style="display:flex;gap:6px;margin-top:auto;"><div class="s-btn" style="flex:1;">Concluir</div><div class="s-btn outline" style="flex:1;border:1px solid var(--ink);">Cancelar</div></div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Clientes</div><div class="screen mobile"><div class="s-header">Clientes</div><div class="s-body">
+        <div class="s-input">Buscar cliente</div>
+        <div class="s-row"><div class="l"><span class="s-avatar">J</span>João Silva</div><span style="color:var(--muted);">99999-0001</span></div>
+        <div class="s-row"><div class="l"><span class="s-avatar">M</span>Marcos Reis</div><span style="color:var(--muted);">99999-0002</span></div>
+        <div class="s-row"><div class="l"><span class="s-avatar">P</span>Pedro Alves</div><span style="color:var(--muted);">99999-0003</span></div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Cadastro de cliente</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Cliente</div><div class="s-body">
+        <div class="s-input">Nome</div>
+        <div class="s-input">Telefone</div>
+        <div style="font-size:8px;color:var(--muted);margin-top:4px;">Histórico</div>
+        <div class="s-row">Corte · 30 ago<span class="s-chip grey">concluído</span></div>
+        <div class="s-row">Barba · 12 ago<span class="s-chip grey">concluído</span></div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Serviços</div><div class="screen mobile"><div class="s-header">Serviços</div><div class="s-body">
+        <div class="s-card"><span>Corte</span><span>30min · R$ 40</span></div>
+        <div class="s-card"><span>Barba</span><span>20min · R$ 25</span></div>
+        <div class="s-card"><span>Corte + Barba</span><span>45min · R$ 60</span></div>
+        <div class="s-card"><span>Sobrancelha</span><span>15min · R$ 15</span></div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Cadastro de serviço</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Novo serviço</div><div class="s-body">
+        <div class="s-input">Nome do serviço</div>
+        <div class="s-input">Duração (min)</div>
+        <div class="s-input">Preço (R$)</div>
+        <div class="s-btn" style="margin-top:auto;">Salvar</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Configurações</div><div class="screen mobile"><div class="s-header">Configurações</div><div class="s-body">
+        <div class="s-row">Perfil<span>›</span></div>
+        <div class="s-row">Horário de funcionamento<span>›</span></div>
+        <div class="s-row">Lembretes<span class="s-chip">WhatsApp</span></div>
+        <div class="s-row" style="margin-top:auto;">Sair<span>›</span></div>
+      </div></div></div>
+
+    </div>
+    </div>
+
+    <h3 class="group-label">Fluxo do cliente<span class="group-tag">sempre claro</span></h3>
+    <div class="tile-grid">
+
+      <div class="tile"><div class="label">Perfil da barbearia</div><div class="screen mobile"><div class="s-banner"></div><div class="s-body">
+        <div style="font-family:'Clash Grotesk';font-weight:700;font-size:11px;">GR Barber · Centro</div>
+        <div style="font-size:8px;color:var(--muted);">Rua das Tesouras, 123</div>
+        <div class="s-btn" style="margin-top:auto;">Agendar agora</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Escolha dos serviços</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Serviços</div><div class="s-body">
+        <div class="s-row" style="background:var(--pale-yellow);">☑ Corte<span>R$ 40</span></div>
+        <div class="s-row" style="background:var(--pale-yellow);">☑ Barba<span>R$ 25</span></div>
+        <div class="s-row">☐ Sobrancelha<span>R$ 15</span></div>
+        <div class="s-summary" style="margin-top:auto;"><span>2 serviços</span><span>50 min</span></div>
+        <div class="s-btn">Continuar</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Escolha a data</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Escolha a data</div><div class="s-body">
+        <div class="s-summary">2 serviços<span>50 min</span></div>
+        <div style="font-size:8px;font-weight:700;text-align:center;">Setembro 2026</div>
+        <div class="s-mini-cal">
+          <span class="s-cal-d off">1</span><span class="s-cal-d">2</span><span class="s-cal-d">3</span><span class="s-cal-d">4</span><span class="s-cal-d off">5</span><span class="s-cal-d off">6</span><span class="s-cal-d">7</span>
+          <span class="s-cal-d">8</span><span class="s-cal-d sel">9</span><span class="s-cal-d">10</span><span class="s-cal-d">11</span><span class="s-cal-d off">12</span><span class="s-cal-d off">13</span><span class="s-cal-d">14</span>
+        </div>
+        <div class="s-btn" style="margin-top:auto;">Ver horários</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Escolha o horário</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Escolha o horário</div><div class="s-body">
+        <div class="s-summary">9 de setembro<span>50 min</span></div>
+        <div class="s-pills">
+          <div class="s-pill">09:00</div><div class="s-pill sel">09:30</div><div class="s-pill">10:30</div>
+          <div class="s-pill">11:00</div><div class="s-pill">14:00</div><div class="s-pill">15:30</div>
+        </div>
+        <div class="s-btn" style="margin-top:auto;">Continuar</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Dados do cliente</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Seus dados</div><div class="s-body">
+        <div class="s-input">Nome</div>
+        <div class="s-input">Telefone (WhatsApp)</div>
+        <div class="s-btn" style="margin-top:auto;">Continuar</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Confirma e agenda</div><div class="screen mobile"><div class="s-header"><span class="back">←</span>Confirmar</div><div class="s-body">
+        <div class="s-row">Serviços<b>Corte, Barba</b></div>
+        <div class="s-row">Quando<b>09:30 · 9 set</b></div>
+        <div class="s-row">Total<b>R$ 65</b></div>
+        <div class="s-btn" style="margin-top:auto;">Confirmar agendamento</div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Meus agendamentos</div><div class="screen mobile"><div class="s-header">Meus agendamentos</div><div class="s-body">
+        <div class="s-row"><div class="l">9 set · 09:30</div><span class="s-chip">Confirmado</span></div>
+        <div class="s-row"><div class="l">30 ago · 10:00</div><span class="s-chip grey">Concluído</span></div>
+        <div class="s-row"><div class="l">12 ago · 09:00</div><span class="s-chip grey">Concluído</span></div>
+      </div></div></div>
+
+    </div>
+
+    <h3 class="group-label">Painel web (barbeiro)<span class="group-tag">claro / escuro</span></h3>
+    <div class="dark-scope" data-scope="web">
+    <div class="tile-grid web">
+
+      <div class="tile"><div class="label">Login</div><div class="screen web"><div class="web-topbar">BarChop</div><div class="s-body" style="align-items:center;justify-content:center;">
+        <div style="width:70%;display:flex;flex-direction:column;gap:6px;">
+          <div class="s-input">email@barbearia.com</div>
+          <div class="s-input">••••••••</div>
+          <div class="s-btn">Entrar</div>
+        </div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Dashboard</div><div class="screen web"><div class="web-topbar">BarChop<span class="s-avatar">R</span></div><div class="s-body">
+        <div class="web-stat-row">
+          <div class="web-stat"><div class="n">5</div><div class="l">agendamentos hoje</div></div>
+          <div class="web-stat"><div class="n">72%</div><div class="l">ocupação</div></div>
+          <div class="web-stat"><div class="n">R$ 480</div><div class="l">faturamento hoje</div></div>
+        </div>
+        <div class="s-row">09:00 João · Corte<span class="s-chip">confirmado</span></div>
+        <div class="s-row">10:00 Marcos · Barba<span class="s-chip">confirmado</span></div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Agenda</div><div class="screen web"><div class="web-topbar">Agenda</div><div class="s-body">
+        <div class="s-week"><span>D</span><span>S</span><span class="sel">T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+        <div class="s-slot"><span class="t">09:00</span><span class="fill">João · Corte</span></div>
+        <div class="s-slot"><span class="t">09:30</span><span class="empty">livre</span></div>
+        <div class="s-slot"><span class="t">10:00</span><span class="fill">Marcos · Barba</span></div>
+        <div class="s-slot"><span class="t">10:30</span><span class="empty">livre</span></div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Clientes</div><div class="screen web"><div class="web-topbar">Clientes<span class="s-btn" style="font-size:8px;padding:4px 7px;">+ Novo</span></div><div class="s-body">
+        <div class="web-table">
+          <div class="web-table-row head"><span>Nome</span><span>Telefone</span><span>Último agend.</span></div>
+          <div class="web-table-row"><span>João Silva</span><span>99999-0001</span><span>30 ago</span></div>
+          <div class="web-table-row"><span>Marcos Reis</span><span>99999-0002</span><span>28 ago</span></div>
+          <div class="web-table-row"><span>Pedro Alves</span><span>99999-0003</span><span>25 ago</span></div>
+        </div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Serviços</div><div class="screen web"><div class="web-topbar">Serviços<span class="s-btn" style="font-size:8px;padding:4px 7px;">+ Novo</span></div><div class="s-body">
+        <div class="web-table">
+          <div class="web-table-row head"><span>Nome</span><span>Duração</span><span>Preço</span></div>
+          <div class="web-table-row"><span>Corte</span><span>30 min</span><span>R$ 40</span></div>
+          <div class="web-table-row"><span>Barba</span><span>20 min</span><span>R$ 25</span></div>
+          <div class="web-table-row"><span>Corte + Barba</span><span>45 min</span><span>R$ 60</span></div>
+        </div>
+      </div></div></div>
+
+      <div class="tile"><div class="label">Configurações da barbearia</div><div class="screen web"><div class="web-topbar">Configurações</div><div class="s-body">
+        <div class="s-input">Nome da barbearia</div>
+        <div class="s-input">Horário de funcionamento</div>
+        <div class="s-input">WhatsApp</div>
+        <div class="s-btn" style="align-self:flex-start;">Salvar alterações</div>
+      </div></div></div>
+
+    </div>
+    </div>
+  </section>
+
+  <footer>
+    Design tokens adaptados da auditoria de barbeiro.app para uso próprio no BarChop. Referência interna — não afiliado ao Barbeiro.app.
+  </footer>
+
+</div>
+<script>
+function toggleDarkMode(){
+  var scopes = document.querySelectorAll('.dark-scope');
+  var btn = document.getElementById('dark-toggle-btn');
+  var isDark = scopes.length && scopes[0].classList.contains('dark');
+  scopes.forEach(function(el){ el.classList.toggle('dark', !isDark); });
+  btn.textContent = !isDark ? 'Desativar modo escuro' : 'Ativar modo escuro';
+}
+</script>
+</body>
+</html>

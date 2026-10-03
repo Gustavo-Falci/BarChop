@@ -14,10 +14,12 @@ Branch `onda-1`. Bloco A em andamento, cada tarefa com commit RED e GREEN:
 | A1b cliente por e-mail | feito | código, senha e login do cliente aceitam telefone ou e-mail; tela `/[slug]/entrar` por e-mail; 422 `destino_indisponivel` e `telefone_ja_cadastrado` |
 | A2 papel | feito | migrations `20261003120000_papel_do_membro` e `20261003120100_dono_da_barbearia`; signup cria o dono; login recusa conta sem senha |
 | A3 guardas | feito | `plugins/auth.ts`: `request.membro`, `exigirPapel` no `onRequest`, `agendaVisivel`; matriz em `apps/api/tests/routers/auth-papeis.test.ts` |
-| A4 equipe e convite | **próximo** | `GET/POST/PATCH /equipe`, convite por código (`convite_profissional`, 7 dias), `POST /auth/convite/aceitar`, não desativar nem rebaixar o último dono |
-| A5 telas | pendente | Equipe, Profissional, Aceitar convite; navegação esconde o que o papel não pode (via `GET /me`) |
+| A4 equipe e convite | feito | `routers/equipe.ts`; `POST /equipe` já manda o convite (409 `email_em_uso`, 422 `destino_indisponivel`); reenvio 422 `convite_desnecessario` pra quem tem senha; `POST /auth/convite/aceitar` só pra quem não tem senha; 422 `ultimo_dono` conta só donos ativos **com senha**, trava `FOR NO KEY UPDATE` na linha da barbearia; lista pública de barbeiros = ativo + atende + com senha, por `criadoEm` |
+| A5 telas | **próximo** | Equipe, Profissional, Aceitar convite; navegação esconde o que o papel não pode (via `GET /me`); `api-client` + dublê ganham os métodos de equipe e convite; o e-mail do convite ganha link quando houver URL do painel |
 
-Depois do A5: push e PR do Bloco A, e então o Bloco B. Suítes no fim do A3: API 401, web 460, api-client 56.
+Depois do A5: push e PR do Bloco A, e então o Bloco B. Suítes no fim do A4: API 436, web 460, api-client 56.
+
+Dívidas abertas no A4: `POST /auth/senha` ainda não devolve `papel` (o login e o aceite devolvem); `POST /equipe` e o reenvio não têm limite de envio (só o dono autenticado chama); e-mail único na plataforma impede um profissional em duas barbearias.
 
 Pra continuar em outra máquina: `git checkout onda-1`, `pnpm install`, criar `apps/api/.env`, `apps/api/.env.test` e `packages/database/.env` a partir dos `.example`, e rodar `pnpm --filter @barchop/database migrate:deploy` nos bancos de dev e de teste (nunca `migrate dev`).
 

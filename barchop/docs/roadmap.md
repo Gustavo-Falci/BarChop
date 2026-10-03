@@ -277,6 +277,25 @@ config compartilhada em `packages/config/eslint.mjs`.
   telefone com o canal de e-mail responde 422 `destino_indisponivel`.
   Fecha com o canal do WhatsApp (ADR-0004), quando a verificação da Meta
   sair do standby.
+- **O Novo agendamento do painel marca em quem está logado.** A tela
+  manda `barbeiroId: perfil.id` (`NovoAgendamento.tsx`): a recepção
+  marcaria na própria agenda, e ela nasce sem atender. Fecha no C3 do
+  bloco C, quando a tela escolhe o profissional. Até lá, a GR Barber
+  não tem recepção cadastrada.
+- **Convite e reenvio não têm limite de envio.** `POST /equipe` e
+  `POST /equipe/:id/convite` mandam e-mail sem contador: só o dono
+  autenticado chama, mas um dono pode usar a rota pra mandar e-mail a
+  qualquer endereço. Fecha com um contador por barbearia em
+  `lib/limites.ts`, que exige registrar o `rateLimit` no escopo
+  protegido.
+- **Um profissional não fica em duas barbearias.** O e-mail do
+  `barbeiro` é único na plataforma (é a chave do login), e convidar
+  quem já tem conta responde 409 `email_em_uso`. Fecha separando a
+  conta (pessoa) da associação (membro de barbearia).
+- **`POST /auth/senha` não devolve o `papel`.** O login e o aceite do
+  convite devolvem; o esqueci-a-senha do barbeiro ficou no formato
+  antigo. O painel não depende disso (lê o papel no `GET /me`), mas o
+  contrato fica desigual.
 - **Os limites por IP viram limite global atrás de proxy reverso.** O
   `request.ip` do Fastify vem do socket, então quando a API subir atrás
   de proxy (passo 5, a VM da OCI) toda requisição chega com o endereço

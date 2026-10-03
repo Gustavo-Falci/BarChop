@@ -15,11 +15,11 @@ Branch `onda-1`. Bloco A em andamento, cada tarefa com commit RED e GREEN:
 | A2 papel | feito | migrations `20261003120000_papel_do_membro` e `20261003120100_dono_da_barbearia`; signup cria o dono; login recusa conta sem senha |
 | A3 guardas | feito | `plugins/auth.ts`: `request.membro`, `exigirPapel` no `onRequest`, `agendaVisivel`; matriz em `apps/api/tests/routers/auth-papeis.test.ts` |
 | A4 equipe e convite | feito | `routers/equipe.ts`; `POST /equipe` já manda o convite (409 `email_em_uso`, 422 `destino_indisponivel`); reenvio 422 `convite_desnecessario` pra quem tem senha; `POST /auth/convite/aceitar` só pra quem não tem senha; 422 `ultimo_dono` conta só donos ativos **com senha**, trava `FOR NO KEY UPDATE` na linha da barbearia; lista pública de barbeiros = ativo + atende + com senha, por `criadoEm` |
-| A5 telas | **próximo** | Equipe, Profissional, Aceitar convite; navegação esconde o que o papel não pode (via `GET /me`); `api-client` + dublê ganham os métodos de equipe e convite; o e-mail do convite ganha link quando houver URL do painel |
+| A5 telas | feito | `ListaDaEquipe`, `CadastroDeMembro` (convidar e editar), `AceitarConvite` em `/painel/convite` (fora da guarda, `?email=` do link); `SoDoDono` nas páginas de Equipe e do cadastro de serviço; barra esconde Equipe de quem não é dono; Serviços só leitura e Configurações só "Seu perfil" pra quem não é dono; `recarregarPerfil` no `SessaoDoPainel`; dublê com `papel` semeável e as regras da API; `URL_DO_PAINEL` põe o link no e-mail do convite |
 
-Depois do A5: push e PR do Bloco A, e então o Bloco B. Suítes no fim do A4: API 436, web 460, api-client 56.
+**Bloco A completo.** Próximo: push e PR do Bloco A (perguntar antes), depois o Bloco B. Suítes no fim do A5: API 438, web 482, api-client 68, formato 19; lint, type-check e `next build` verdes. Nada do Bloco A foi visto rodando contra a API real — só testes.
 
-Dívidas abertas no A4: `POST /auth/senha` ainda não devolve `papel` (o login e o aceite devolvem); `POST /equipe` e o reenvio não têm limite de envio (só o dono autenticado chama); e-mail único na plataforma impede um profissional em duas barbearias.
+Dívidas abertas no Bloco A (registradas em `docs/roadmap.md`): o Novo agendamento marca em quem está logado (a recepção marcaria em si mesma) até o C3; `POST /auth/senha` não devolve `papel`; convite e reenvio sem limite de envio; e-mail único na plataforma impede um profissional em duas barbearias.
 
 Pra continuar em outra máquina: `git checkout onda-1`, `pnpm install`, criar `apps/api/.env`, `apps/api/.env.test` e `packages/database/.env` a partir dos `.example`, e rodar `pnpm --filter @barchop/database migrate:deploy` nos bancos de dev e de teste (nunca `migrate dev`).
 

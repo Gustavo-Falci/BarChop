@@ -10,6 +10,7 @@ import {
   IconeCasa,
   IconeCliente,
   IconeEngrenagem,
+  IconeEquipe,
   IconeLua,
   IconeRecolher,
   IconeSair,
@@ -20,11 +21,15 @@ import { aplicarTema, gravarTema, lerTema, temaDoSistema, type Tema } from "./te
 import { usePainel } from "./SessaoDoPainel";
 import estilos from "./NavegacaoDoPainel.module.css";
 
+// `soDoDono` some da barra pra quem não é dono. Serviços fica pra todos
+// (a recepção consulta preço) e Configurações também — o "Seu perfil"
+// de cada um mora lá. A tela de cada link decide o resto.
 const LINKS = [
   { href: "/painel", rotulo: "Hoje", Icone: IconeCasa },
   { href: "/painel/agenda", rotulo: "Agenda", Icone: IconeCalendario },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: IconeCliente },
   { href: "/painel/servicos", rotulo: "Serviços", Icone: IconeTesoura },
+  { href: "/painel/equipe", rotulo: "Equipe", Icone: IconeEquipe, soDoDono: true },
   { href: "/painel/configuracoes", rotulo: "Configurações", Icone: IconeEngrenagem },
 ];
 
@@ -32,7 +37,8 @@ const LINKS = [
 const ID_DAS_SECOES = "secoes-do-painel";
 
 export function NavegacaoDoPainel() {
-  const { slug, sair } = usePainel();
+  const { slug, sair, perfil } = usePainel();
+  const links = LINKS.filter((link) => !link.soDoDono || perfil.papel === "dono");
   const caminho = usePathname();
   const [tema, setTema] = useState<Tema>("claro");
   const [recolhida, setRecolhida] = useState(false);
@@ -88,7 +94,7 @@ export function NavegacaoDoPainel() {
       </button>
 
       <nav id={ID_DAS_SECOES} className={estilos.links} aria-label="Seções do painel">
-        {LINKS.map(({ href, rotulo, Icone }) => (
+        {links.map(({ href, rotulo, Icone }) => (
           <Link
             key={href}
             href={href}

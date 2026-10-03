@@ -263,6 +263,40 @@ export function ConfiguracoesDaBarbearia() {
   }
   if (!barbearia.dados || !horariosSalvos.dados) return <p>Carregando…</p>;
 
+  const secaoDoPerfil = (
+    <Secao
+      titulo="Seu perfil"
+      descricao="Seus dados como barbeiro, separados dos dados da barbearia."
+      acao={
+        <Botao onClick={salvarPerfil} carregando={salvando}>
+          Salvar perfil
+        </Botao>
+      }
+    >
+      <Campo rotulo="Seu nome" valor={nome} onChange={setNome} />
+      <Campo
+        rotulo="Seu telefone"
+        formato="telefone"
+        valor={telefone}
+        onChange={setTelefone}
+        erro={erro.telefone}
+      />
+    </Secao>
+  );
+
+  // Barbearia, link e horário são do dono (a API recusa os outros com
+  // 403). O resto da equipe chega aqui pelo próprio perfil, que é o
+  // único lugar onde cada um troca o nome e o telefone.
+  if (perfil.papel !== "dono") {
+    return (
+      <div className={estilos.pagina}>
+        <CabecalhoDaPagina titulo="Configurações" apoio="Seus dados na equipe." />
+        {aviso ? <Aviso>{aviso}</Aviso> : null}
+        {secaoDoPerfil}
+      </div>
+    );
+  }
+
   return (
     <div className={estilos.pagina}>
       <CabecalhoDaPagina
@@ -355,24 +389,7 @@ export function ConfiguracoesDaBarbearia() {
               Trocar link
             </Botao>
           </Secao>
-          <Secao
-            titulo="Seu perfil"
-            descricao="Seus dados como barbeiro, separados dos dados da barbearia."
-            acao={
-              <Botao onClick={salvarPerfil} carregando={salvando}>
-                Salvar perfil
-              </Botao>
-            }
-          >
-            <Campo rotulo="Seu nome" valor={nome} onChange={setNome} />
-            <Campo
-              rotulo="Seu telefone"
-              formato="telefone"
-              valor={telefone}
-              onChange={setTelefone}
-              erro={erro.telefone}
-            />
-          </Secao>
+          {secaoDoPerfil}
         </div>
 
         <Secao

@@ -63,6 +63,19 @@ export function IconeCliente(props: Props) {
   );
 }
 
+// Duas pessoas: o IconeCliente com um colega atrás. Mesma cabeça e
+// mesmos ombros, pra família ler como parente do de Clientes.
+export function IconeEquipe(props: Props) {
+  return (
+    <Base {...props}>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2 20a7 7 0 0 1 14 0" />
+      <path d="M15.5 4.8a3.5 3.5 0 0 1 0 6.4" />
+      <path d="M18 14.2a7 7 0 0 1 4 5.8" />
+    </Base>
+  );
+}
+
 export function IconeTesoura(props: Props) {
   return (
     <Base {...props}>

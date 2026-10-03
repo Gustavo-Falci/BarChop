@@ -1,0 +1,76 @@
+/* Mesmo teto dos formulários do painel (560px). */
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+  max-width: 560px;
+}
+
+.apoio,
+.email {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+.formulario {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+.grupo {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.grupo legend {
+  margin-block-end: var(--espaco-sm);
+  font-weight: 700;
+}
+
+/* Controle, rótulo e, embaixo do rótulo, a descrição. O controle ocupa
+   a primeira coluna nas duas linhas pra a descrição alinhar com o
+   texto, não com a bolinha. `--cor-ink-soft` na descrição, e não
+   `--cor-muted`: é texto que se lê, e o muted reprova contraste no
+   tema claro. */
+.opcao {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--espaco-sm);
+  align-items: center;
+}
+
+.opcao input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--cor-ink);
+}
+
+.opcao label {
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.descricao {
+  grid-column: 2;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+/* Mesma regra de CadastroDeServico: os botões no tamanho do texto. */
+.acoes,
+.acaoDoEstado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+@media (max-width: 560px) {
+  .acoes button,
+  .acaoDoEstado button {
+    flex: 1;
+  }
+}

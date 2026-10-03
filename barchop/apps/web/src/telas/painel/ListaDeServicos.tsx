@@ -9,6 +9,7 @@ import { formatarPreco } from "../../componentes/ItemDeServico";
 import { Tabela } from "../../componentes/Tabela";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./ListaDeServicos.module.css";
 
 // A partir de quantas linhas a contagem passa a informar. Com três ou
@@ -49,6 +50,9 @@ function IconeAbrir() {
 export function ListaDeServicos() {
   const router = useRouter();
   const api = useApiDoPainel();
+  // Recepção e profissional consultam a lista (preço e duração), mas
+  // quem cadastra é o dono: o botão não aparece pra quem levaria 403.
+  const ehDono = usePainel().perfil.papel === "dono";
   // Inclui os inativos: é desta tela que o barbeiro reativa o que
   // desativou, e um inativo que sumisse seria irrecuperável. A API já
   // devolve ordenado por `[ativo desc, nome asc]`, então os desativados
@@ -78,9 +82,11 @@ export function ListaDeServicos() {
           // recolhida — só ícones, sem rótulo — o título da página era
           // a única pista, e ela fica do outro lado da tela. Mesmo
           // conserto que ListaDeClientes já tinha.
-          <Botao onClick={() => router.push("/painel/servicos/novo")}>
-            + Novo serviço
-          </Botao>
+          ehDono ? (
+            <Botao onClick={() => router.push("/painel/servicos/novo")}>
+              + Novo serviço
+            </Botao>
+          ) : undefined
         }
       />
 
@@ -114,11 +120,14 @@ export function ListaDeServicos() {
             vazio="Nenhum serviço cadastrado ainda."
             dicaVazio="Sem serviço cadastrado ninguém consegue agendar — é ele que define quanto tempo o horário ocupa."
             acaoVazio={
-              <Botao onClick={() => router.push("/painel/servicos/novo")}>
-                Cadastrar primeiro serviço
-              </Botao>
+              ehDono ? (
+                <Botao onClick={() => router.push("/painel/servicos/novo")}>
+                  Cadastrar primeiro serviço
+                </Botao>
+              ) : undefined
             }
-            aoAbrir={(id) => router.push(`/painel/servicos/${id}`)}
+            // A linha abre o cadastro, que é só do dono.
+            aoAbrir={ehDono ? (id) => router.push(`/painel/servicos/${id}`) : undefined}
             linhas={listados.map((servico) => ({
               id: servico.id,
               // A linha inteira se atenua. "Sumiu do agendamento do
@@ -137,9 +146,13 @@ export function ListaDeServicos() {
                 </span>,
                 `${servico.duracaoMinutos} min`,
                 formatarPreco(servico.preco),
-                <span className={estilos.abrir} key="abrir">
-                  <IconeAbrir />
-                </span>,
+                // Sem a seta pra quem a linha não abre: ela prometeria
+                // um destino que não existe pra esse papel.
+                ehDono ? (
+                  <span className={estilos.abrir} key="abrir">
+                    <IconeAbrir />
+                  </span>
+                ) : null,
               ],
             }))}
           />

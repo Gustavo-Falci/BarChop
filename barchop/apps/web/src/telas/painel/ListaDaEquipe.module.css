@@ -1,0 +1,29 @@
+/* O mesmo teto de ListaDeServicos: duas colunas curtas não têm o que
+   fazer com os 1180px do container. */
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+  max-width: 760px;
+}
+
+/* Nome e chips na mesma linha, encostados no nome — `inline-flex` pelo
+   mesmo motivo de ListaDeServicos: em bloco, o flex esticaria até a
+   borda da célula e jogaria o chip longe do nome que ele qualifica. */
+.nome {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+/* Ícone decorativo: o piso é 3:1, e `--cor-muted` dá 3.76:1 no claro. */
+.abrir {
+  display: flex;
+  justify-content: flex-end;
+  color: var(--cor-muted);
+}
+
+tr:hover .abrir {
+  color: var(--cor-ink);
+}

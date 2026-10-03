@@ -36,6 +36,7 @@ export type {
 } from "./cliente";
 export type {
   CredenciaisDoCliente,
+  DestinoDoCodigo,
   FiltroDoDia,
   FiltroDoMes,
   DefinicaoDeSenhaDoCliente,

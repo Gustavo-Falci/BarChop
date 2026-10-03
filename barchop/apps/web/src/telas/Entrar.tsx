@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
-import { normalizarTelefoneObrigatorio, TelefoneInvalido } from "@barchop/formato";
+import {
+  normalizarEmail,
+  normalizarTelefoneObrigatorio,
+  TelefoneInvalido,
+} from "@barchop/formato";
 import type { SessaoCliente } from "@barchop/types";
 import { useApi } from "../api/ProvedorDaApi";
 import { Aviso } from "../componentes/Aviso";
@@ -17,14 +21,22 @@ import estilos from "./Entrar.module.css";
 // Cortar na digitação evita o 400 que voltaria sem dizer qual campo
 // passou do tamanho.
 const NOME_MAX = 120;
+const EMAIL_MAX = 160;
 const TELEFONE_MAX = 20;
 const SENHA_MAX = 200;
 const SENHA_MIN = 8;
+// O mesmo PADRAO_EMAIL da API (apps/api/src/lib/padroes.ts).
+const PARECE_EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 // "entrar" é o login. "codigo" é primeiro acesso E esqueci a senha, que
-// pro cliente são a mesma coisa: provar o telefone com o código que
-// chega nele, e definir a senha. Quem escolhe é a pessoa — não existe
-// rota que responda se um telefone já tem senha, e não deve existir.
+// pro cliente são a mesma coisa: provar o e-mail com o código que chega
+// nele, e definir a senha. Quem escolhe é a pessoa — não existe rota
+// que responda se um e-mail já tem senha, e não deve existir.
+//
+// E-mail, e não telefone, desde o piloto da Onda 1: sem a verificação
+// da Meta não há WhatsApp, e o código só tem por onde chegar no e-mail.
+// O telefone segue no cadastro (é por ele que a barbearia reconhece o
+// cliente) e é pedido junto da senha nova.
 type Modo = "entrar" | "codigo";
 
 function mensagemDoLimite(erro: ErroDaApi): string {
@@ -55,21 +67,23 @@ export function Entrar() {
     : `/${slug}/minha-conta`;
 
   const [modo, setModo] = useState<Modo>("entrar");
-  // O telefone sobrevive à troca de modo: quem errou a senha e foi pro
+  // O e-mail sobrevive à troca de modo: quem errou a senha e foi pro
   // "esqueceu a senha?" não precisa digitá-lo de novo.
-  const [telefone, setTelefone] = useState("");
+  const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  // O número que recebeu o código, já normalizado. Enquanto é nulo, o
+  // O e-mail que recebeu o código, já normalizado. Enquanto é nulo, o
   // modo "codigo" está na primeira etapa (pedir); depois, na segunda
   // (confirmar). É também pra onde o "Reenviar" manda.
   const [enviadoPara, setEnviadoPara] = useState<string | null>(null);
   const [codigo, setCodigo] = useState("");
   const [nome, setNome] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
 
-  // Erro de campo é do campo, não da tentativa: um DDD faltando é
-  // problema de digitação, e misturar com o aviso da API faria um
-  // telefone incompleto aparecer como se a senha estivesse errada.
+  // Erro de campo é do campo, não da tentativa: um e-mail sem arroba é
+  // problema de digitação, e misturar com o aviso da API faria ele
+  // aparecer como se a senha estivesse errada.
+  const [erroEmail, setErroEmail] = useState<string | undefined>();
   const [erroTelefone, setErroTelefone] = useState<string | undefined>();
   const [erroSenha, setErroSenha] = useState<string | undefined>();
   const [erroCodigo, setErroCodigo] = useState<string | undefined>();
@@ -81,6 +95,7 @@ export function Entrar() {
 
   function limparErros() {
     setAviso(undefined);
+    setErroEmail(undefined);
     setErroTelefone(undefined);
     setErroSenha(undefined);
     setErroCodigo(undefined);
@@ -95,9 +110,19 @@ export function Entrar() {
     setModo(proximo);
   }
 
-  // A mesma função que a API usa pra guardar o telefone. Barrar aqui
-  // evita a ida e volta que voltaria 400 sem dizer o que fazer, e
-  // mantém o erro no campo certo.
+  // A mesma normalização da API: é o e-mail em minúsculas que ela busca
+  // e que vira a chave do código. Barrar aqui evita a ida e volta que
+  // voltaria 400 sem dizer o que fazer, e mantém o erro no campo certo.
+  function emailValido(): string | null {
+    const normalizado = normalizarEmail(email);
+    if (!normalizado || !PARECE_EMAIL.test(normalizado)) {
+      setErroEmail("Informe um e-mail válido, como voce@exemplo.com");
+      return null;
+    }
+    return normalizado;
+  }
+
+  // A mesma função que a API usa pra guardar o telefone.
   function telefoneValido(): string | null {
     try {
       return normalizarTelefoneObrigatorio(telefone);
@@ -120,8 +145,8 @@ export function Entrar() {
 
   async function entrar() {
     limparErros();
-    const numero = telefoneValido();
-    if (!numero) return;
+    const endereco = emailValido();
+    if (!endereco) return;
     if (!senha) {
       setErroSenha("Informe sua senha");
       return;
@@ -130,11 +155,11 @@ export function Entrar() {
     setEnviando(true);
     let sessao: SessaoCliente | undefined;
     try {
-      sessao = await api.publico.loginCliente(slug, { telefone: numero, senha });
+      sessao = await api.publico.loginCliente(slug, { email: endereco, senha });
     } catch (causa) {
       const erro = causa as ErroDaApi;
       if (erro.codigo === "credenciais_invalidas") {
-        setAviso("Telefone ou senha incorretos.");
+        setAviso("E-mail ou senha incorretos.");
       } else if (erro.codigo === "tentativas_excedidas") {
         setAviso(mensagemDoLimite(erro));
       } else {
@@ -147,13 +172,13 @@ export function Entrar() {
 
   async function pedirCodigo(para?: string) {
     limparErros();
-    const numero = para ?? telefoneValido();
-    if (!numero) return;
+    const endereco = para ?? emailValido();
+    if (!endereco) return;
 
     setEnviando(true);
     try {
-      await api.publico.pedirCodigoDoCliente(slug, numero);
-      setEnviadoPara(numero);
+      await api.publico.pedirCodigoDoCliente(slug, { email: endereco });
+      setEnviadoPara(endereco);
     } catch (causa) {
       const erro = causa as ErroDaApi;
       setAviso(
@@ -183,17 +208,20 @@ export function Entrar() {
       setErroNome("Informe seu nome");
       invalido = true;
     }
+    const numero = telefoneValido();
+    if (!numero) invalido = true;
     if (novaSenha.length < SENHA_MIN) {
       setErroNovaSenha(`A senha deve ter pelo menos ${SENHA_MIN} caracteres`);
       invalido = true;
     }
-    if (invalido) return;
+    if (invalido || !numero) return;
 
     setEnviando(true);
     let sessao: SessaoCliente | undefined;
     try {
       sessao = await api.publico.definirSenhaDoCliente(slug, {
-        telefone: enviadoPara,
+        email: enviadoPara,
+        telefone: numero,
         codigo: codigoLimpo,
         senha: novaSenha,
         nome: nomeAparado,
@@ -204,6 +232,12 @@ export function Entrar() {
         // No campo do código: é ali que a pessoa vai conferir, e o
         // "Reenviar" fica logo abaixo.
         setErroCodigo("Código inválido ou vencido. Confira ou peça outro.");
+      } else if (erro.codigo === "telefone_ja_cadastrado") {
+        // A API não junta o e-mail a um cadastro do balcão: seria tomar
+        // a conta de quem a barbearia cadastrou. Quem junta é a barbearia.
+        setAviso(
+          "Esse telefone já tem cadastro aqui. Peça pra barbearia incluir seu e-mail nele e tente de novo."
+        );
       } else if (erro.codigo === "tentativas_excedidas") {
         setAviso(mensagemDoLimite(erro));
       } else {
@@ -213,6 +247,21 @@ export function Entrar() {
     setEnviando(false);
     if (sessao) concluir(sessao);
   }
+
+  const campoEmail = (
+    <Campo
+      rotulo="E-mail"
+      inputMode="email"
+      autoComplete="email"
+      maxLength={EMAIL_MAX}
+      valor={email}
+      onChange={(proximo) => {
+        setEmail(proximo);
+        setErroEmail(undefined);
+      }}
+      erro={erroEmail}
+    />
+  );
 
   // `inputMode="tel"` e não `type="tel"`: o teclado do celular abre
   // numérico do mesmo jeito, e o campo continua uma string comum — que é
@@ -240,7 +289,7 @@ export function Entrar() {
 
         {/* <form> e não um <div> com onClick: sem ele o Enter não envia,
             e o gerenciador de senhas do celular não reconhece o par
-            telefone/senha pra preencher nem pra salvar — e este fluxo
+            e-mail/senha pra preencher nem pra salvar — e este fluxo
             chega por link de WhatsApp, quase sempre no celular. */}
         <form
           className={estilos.formulario}
@@ -250,7 +299,7 @@ export function Entrar() {
             void entrar();
           }}
         >
-          {campoTelefone}
+          {campoEmail}
           <Campo
             rotulo="Senha"
             type="password"
@@ -295,10 +344,10 @@ export function Entrar() {
           }}
         >
           <p className={estilos.explicacao}>
-            Vamos mandar um código pro seu telefone. Com ele você cria sua
+            Vamos mandar um código pro seu e-mail. Com ele você cria sua
             senha — ou troca, se esqueceu a sua.
           </p>
-          {campoTelefone}
+          {campoEmail}
 
           {aviso ? <Aviso>{aviso}</Aviso> : null}
 
@@ -344,6 +393,7 @@ export function Entrar() {
             apoio="Se você já tem cadastro aqui, mantemos o nome que está nele."
             erro={erroNome}
           />
+          {campoTelefone}
           <Campo
             rotulo="Nova senha"
             type="password"

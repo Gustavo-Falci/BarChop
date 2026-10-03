@@ -41,7 +41,7 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 | `/[slug]/agendar` | Passo 1: serviços | 🔧 Onda 1 (passo do profissional) |
 | `/[slug]/agendar/data` | Passo 2: dia e horário numa tela | 🔧 Onda 0 (some horário passado), 🔧 Onda 1 (por profissional) |
 | `/[slug]/agendar/confirmar` | Passo 3: identificação, resumo, confirmação e sucesso com `.ics` | 🔧 Onda 3 (pagamento/sinal) |
-| `/[slug]/entrar` | Login, primeiro acesso e esqueci a senha por código | 🔧 Onda 1 (código pelo WhatsApp), 🔧 Onda 4 (Google/Apple) |
+| `/[slug]/entrar` | Login, primeiro acesso e esqueci a senha por código | 🔧 Onda 1 (entra e recebe o código por e-mail no piloto; WhatsApp quando a Meta aprovar), 🔧 Onda 4 (Google/Apple) |
 | `/[slug]/minha-conta` | Meus agendamentos: cancelar e remarcar | 🔧 Onda 3 (assinatura, pontos, pedidos) |
 | `/agendar/horario`, `/agendar/dados` | Redirects de URLs antigas | — |
 

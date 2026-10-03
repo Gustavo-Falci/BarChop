@@ -270,14 +270,13 @@ config compartilhada em `packages/config/eslint.mjs`.
   buraco em si continua aberto — cada tentativa, dentro do orçamento,
   ainda responde se aquele email existe. Fechar de verdade é verificação
   de email, que só faz sentido junto do canal de mensagem do passo 4.
-- **Os códigos de verificação só saem pelo log.** O provedor real
-  (WhatsApp ou SMS pro cliente, e-mail pro barbeiro) não foi escolhido,
-  e `lib/canal.ts` só tem o canal de log (desenvolvimento) e o de
-  memória (testes). Em produção, sem `CANAL_DE_MENSAGEM` apontando um
-  provedor real, a API se recusa a subir — de propósito, porque código
-  no log é conta de quem lê o log. Ou seja: o primeiro acesso do
-  cliente bloqueia o deploy do passo 5 até um provedor existir. A
-  escolha pode ser a mesma dos lembretes do passo 4.
+- **O telefone do cliente não recebe código.** Desde a Onda 1 o canal
+  real é o e-mail (`lib/canal-email.ts`, Resend, com
+  `CANAL_DE_MENSAGEM=email`), e o cliente entra e recupera a senha por
+  e-mail. Quem só tem telefone agenda sem conta. Pedir código pro
+  telefone com o canal de e-mail responde 422 `destino_indisponivel`.
+  Fecha com o canal do WhatsApp (ADR-0004), quando a verificação da Meta
+  sair do standby.
 - **Os limites por IP viram limite global atrás de proxy reverso.** O
   `request.ip` do Fastify vem do socket, então quando a API subir atrás
   de proxy (passo 5, a VM da OCI) toda requisição chega com o endereço

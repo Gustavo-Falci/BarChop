@@ -23,6 +23,7 @@ import type { EdicaoDoMeuCadastro, Remarcacao } from "./cliente";
 import { ErroDaApi } from "./erro";
 import type {
   CredenciaisDoCliente,
+  DestinoDoCodigo,
   FiltroDoDia,
   FiltroDoMes,
   DefinicaoDeSenhaDoCliente,
@@ -291,7 +292,7 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
         exigirSlug(slug);
         return novoAgendamento({ ...novo, origem: "cliente" });
       },
-      async pedirCodigoDoCliente(slug: string, _telefone: string) {
+      async pedirCodigoDoCliente(slug: string, _destino: DestinoDoCodigo) {
         exigirSlug(slug);
       },
       // Recusa qualquer código que não seja o do dublê, com o mesmo erro

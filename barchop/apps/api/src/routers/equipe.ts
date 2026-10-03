@@ -109,6 +109,14 @@ async function enviarConvite(
     barbeariaId: null,
   });
 
+  // O link só sai com URL_DO_PAINEL configurada: sem ela não há
+  // endereço certo a apontar, e um link pra lugar nenhum é pior que o
+  // código sozinho. O e-mail vai na query pra a tela já chegar com ele.
+  const painel = process.env.URL_DO_PAINEL?.replace(/\/+$/, "");
+  const link = painel
+    ? ` Abra ${painel}/painel/convite?email=${encodeURIComponent(membro.email)} para começar.`
+    : "";
+
   void app.canal
     .enviar({
       para: membro.email,
@@ -116,7 +124,7 @@ async function enviarConvite(
       texto:
         `${barbearia.nome} convidou você para a equipe no BarChop. ` +
         `Seu código de convite é ${codigo}. Vale 7 dias: use-o para ` +
-        "definir sua senha e entrar no painel.",
+        `definir sua senha e entrar no painel.${link}`,
     })
     .catch((erro: unknown) => request.log.error({ erro }, "falha ao enviar o convite"));
 }

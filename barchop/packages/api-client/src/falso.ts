@@ -3,13 +3,18 @@ import type {
   AgendamentoSerializado,
   ClienteSerializado,
   HorarioSerializado,
+  MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
   NovoAgendamentoPublicoInput,
+  PapelMembro,
   PerfilPublicoBarbearia,
   ServicoSerializado,
 } from "@barchop/types";
 import type {
+  AceiteDoConvite,
   EdicaoDaBarbearia,
+  EdicaoDoMembro,
+  NovoMembro,
   EdicaoDoAgendamento,
   EdicaoDoCliente,
   EdicaoDoPerfil,
@@ -35,6 +40,43 @@ export const CODIGO_DO_CLIENTE_FALSO = "123456";
 // O único código que o dublê aceita no esqueci-a-senha do barbeiro.
 export const CODIGO_DO_BARBEIRO_FALSO = "654321";
 
+// O único código que o dublê aceita no convite da equipe.
+export const CODIGO_DO_CONVITE_FALSO = "246810";
+
+// Quem está logado no painel do dublê. O id é o mesmo da sessão e do
+// `barbeiros` do perfil público.
+function membroLogado(papel: PapelMembro): MembroDaEquipe {
+  return {
+    id: "bb1",
+    nome: "Rafael",
+    email: "rafael@gr.com",
+    telefone: null,
+    papel,
+    atende: papel !== "recepcao",
+    ativo: true,
+    fotoUrl: null,
+    convitePendente: false,
+  };
+}
+
+function equipePadrao(papel: PapelMembro): MembroDaEquipe[] {
+  if (papel === "dono") return [membroLogado(papel)];
+  return [
+    {
+      id: "bb0",
+      nome: "Gustavo",
+      email: "gustavo@gr.com",
+      telefone: null,
+      papel: "dono",
+      atende: true,
+      ativo: true,
+      fotoUrl: null,
+      convitePendente: false,
+    },
+    membroLogado(papel),
+  ];
+}
+
 export interface EstadoFalso {
   perfil: PerfilPublicoBarbearia;
   servicos: ServicoSerializado[];
@@ -55,6 +97,13 @@ export interface EstadoFalso {
   // precisaria de 101 cadastros pra ver a segunda página — com dois
   // clientes e um limite de 1, o mesmo caminho fica legível.
   limiteDaPagina?: number;
+  // O papel de quem está logado no painel (o membro "bb1"). Dono por
+  // padrão, pra as telas de antes da Onda 1 verem tudo como viam.
+  papel?: PapelMembro;
+  // A equipe da barbearia, com o logado dentro. Sem semente: só ele, e
+  // um dono à parte quando ele não é o dono — barbearia sem dono não
+  // existe na API.
+  equipe?: MembroDaEquipe[];
 }
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {
@@ -106,7 +155,45 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
     clientes: [...(semente.clientes ?? [CLIENTE_PADRAO])],
     // O mesmo padrão da API (LIMITE_PADRAO em routers/clientes.ts).
     limiteDaPagina: semente.limiteDaPagina ?? 100,
+    papel: semente.papel ?? "dono",
+    equipe: (semente.equipe ?? equipePadrao(semente.papel ?? "dono")).map((m) => ({ ...m })),
   };
+
+  // `!`: o estado acima sempre preenche a equipe.
+  function equipe(): MembroDaEquipe[] {
+    return estado.equipe!;
+  }
+
+  function membroOu404(id: string): MembroDaEquipe {
+    const achado = equipe().find((m) => m.id === id);
+    if (!achado) throw new ErroDaApi(404, "nao_encontrado", "membro não encontrado");
+    return achado;
+  }
+
+  // O perfil do logado sai da equipe, pra editar um refletir no outro.
+  function perfilDoLogado() {
+    const eu = membroOu404("bb1");
+    return {
+      id: eu.id,
+      nome: eu.nome,
+      email: eu.email,
+      telefone: eu.telefone,
+      barbeariaId: estado.perfil.id,
+      papel: eu.papel,
+      atende: eu.atende,
+    };
+  }
+
+  // A regra do PATCH /equipe/:id: só conta dono que consegue entrar —
+  // ativo e sem convite pendente.
+  function seriaOUltimoDono(alvo: MembroDaEquipe, edicao: EdicaoDoMembro): boolean {
+    const tira =
+      (edicao.papel !== undefined && edicao.papel !== "dono") || edicao.ativo === false;
+    const contaComoDono = (m: MembroDaEquipe) =>
+      m.papel === "dono" && m.ativo && !m.convitePendente;
+    if (!tira || !contaComoDono(alvo)) return false;
+    return !equipe().some((m) => m.id !== alvo.id && contaComoDono(m));
+  }
 
   function exigirSlug(slug: string): void {
     // Mesmo 404 que o findUniqueOrThrow da API produz.
@@ -345,21 +432,70 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
         return sessaoDoBarbeiro;
       },
       async meuPerfil() {
-        return {
-          id: "bb1",
-          nome: "Rafael",
-          email: "rafael@gr.com",
-          telefone: null,
-          barbeariaId: estado.perfil.id,
-        };
+        return perfilDoLogado();
       },
       async atualizarMeuPerfil(edicao: EdicaoDoPerfil) {
+        Object.assign(membroOu404("bb1"), edicao);
+        return perfilDoLogado();
+      },
+      async equipe() {
+        return equipe().map((m) => ({ ...m }));
+      },
+      async convidarMembro(novo: NovoMembro) {
+        const email = novo.email.trim().toLowerCase();
+        if (equipe().some((m) => m.email === email)) {
+          throw new ErroDaApi(409, "email_em_uso", "esse e-mail já tem conta no BarChop");
+        }
+        const membro: MembroDaEquipe = {
+          id: `m${equipe().length + 1}`,
+          nome: novo.nome,
+          email,
+          telefone: novo.telefone ?? null,
+          papel: novo.papel,
+          atende: novo.atende ?? novo.papel !== "recepcao",
+          ativo: true,
+          fotoUrl: null,
+          convitePendente: true,
+        };
+        equipe().push(membro);
+        return { ...membro };
+      },
+      async atualizarMembro(id: string, edicao: EdicaoDoMembro) {
+        const alvo = membroOu404(id);
+        if (seriaOUltimoDono(alvo, edicao)) {
+          throw new ErroDaApi(
+            422,
+            "ultimo_dono",
+            "a barbearia precisa de pelo menos um dono ativo"
+          );
+        }
+        Object.assign(alvo, edicao);
+        return { ...alvo };
+      },
+      async reenviarConvite(id: string) {
+        const alvo = membroOu404(id);
+        if (!alvo.ativo) throw new ErroDaApi(404, "nao_encontrado", "membro não encontrado");
+        if (!alvo.convitePendente) {
+          throw new ErroDaApi(422, "convite_desnecessario", "esse membro já aceitou o convite");
+        }
+      },
+      // Toda falha com o mesmo erro, como a API: código errado, e-mail
+      // sem convite, membro desativado ou que já tem senha.
+      async aceitarConvite(aceite: AceiteDoConvite) {
+        const email = aceite.email.trim().toLowerCase();
+        const alvo = equipe().find((m) => m.email === email);
+        if (
+          aceite.codigo !== CODIGO_DO_CONVITE_FALSO ||
+          !alvo?.ativo ||
+          !alvo.convitePendente
+        ) {
+          throw new ErroDaApi(422, "codigo_invalido", "código inválido ou vencido");
+        }
+        alvo.convitePendente = false;
         return {
-          id: "bb1",
-          nome: edicao.nome ?? "Rafael",
-          email: "rafael@gr.com",
-          telefone: edicao.telefone ?? null,
-          barbeariaId: estado.perfil.id,
+          token: "jwt-falso-convidado",
+          barbeiro: { id: alvo.id, nome: alvo.nome, email: alvo.email },
+          barbearia: sessaoDoBarbeiro.barbearia,
         };
       },
       async minhaBarbearia() {

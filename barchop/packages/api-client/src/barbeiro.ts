@@ -4,8 +4,10 @@ import type {
   BarbeariaSerializada,
   ClienteSerializado,
   HorarioSerializado,
+  MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
   PaginaDeClientes,
+  PapelMembro,
   PerfilBarbeiro,
   ServicoSerializado,
   SessaoBarbeiro,
@@ -69,6 +71,33 @@ export interface ClienteComHistorico extends ClienteSerializado {
   agendamentos: AgendamentoSerializado[];
 }
 
+// POST /equipe. O e-mail é a chave do login do membro, única na
+// plataforma; a API manda o convite pra ele ao criar.
+export interface NovoMembro {
+  nome: string;
+  email: string;
+  papel: PapelMembro;
+  telefone?: string | null;
+  // Sem ele: a recepção nasce sem atender, os outros atendendo.
+  atende?: boolean;
+}
+
+// PATCH /equipe/:id. E-mail fica fora: trocá-lo mudaria por onde o
+// membro entra.
+export interface EdicaoDoMembro {
+  nome?: string;
+  telefone?: string | null;
+  papel?: PapelMembro;
+  atende?: boolean;
+  ativo?: boolean;
+}
+
+export interface AceiteDoConvite {
+  email: string;
+  codigo: string;
+  senha: string;
+}
+
 export function criarApiBarbeiro(requisicao: Requisicao) {
   return {
     // Sem token: não existe sessão ainda.
@@ -89,6 +118,34 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // Mesmo formato de sessão do login: quem redefine já sai logado.
     redefinirSenha(redefinicao: RedefinicaoDeSenha): Promise<SessaoBarbeiro> {
       return requisicao("/auth/senha", { metodo: "POST", corpo: redefinicao });
+    },
+
+    // Sem token: o convidado ainda não tem sessão. Mesmo formato de
+    // sessão do login — quem aceita já sai logado.
+    aceitarConvite(aceite: AceiteDoConvite): Promise<SessaoBarbeiro> {
+      return requisicao("/auth/convite/aceitar", { metodo: "POST", corpo: aceite });
+    },
+
+    // Todos os papéis leem; só o dono muda (as três de baixo).
+    async equipe(): Promise<MembroDaEquipe[]> {
+      const resposta = await requisicao<{ membros: MembroDaEquipe[] }>("/equipe", {
+        comToken: true,
+      });
+      return resposta.membros;
+    },
+
+    convidarMembro(novo: NovoMembro): Promise<MembroDaEquipe> {
+      return requisicao("/equipe", { metodo: "POST", corpo: novo, comToken: true });
+    },
+
+    atualizarMembro(id: string, edicao: EdicaoDoMembro): Promise<MembroDaEquipe> {
+      return requisicao(`/equipe/${id}`, { metodo: "PATCH", corpo: edicao, comToken: true });
+    },
+
+    // Sem corpo, e é o que mantém a requisição sem Content-Type: com
+    // ele e corpo vazio o Fastify responde 400 antes da rota.
+    async reenviarConvite(id: string): Promise<void> {
+      await requisicao(`/equipe/${id}/convite`, { metodo: "POST", comToken: true });
     },
 
     meuPerfil(): Promise<PerfilBarbeiro> {

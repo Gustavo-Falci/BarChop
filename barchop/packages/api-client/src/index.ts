@@ -7,6 +7,7 @@ export { ErroDaApi } from "./erro";
 export {
   CODIGO_DO_BARBEIRO_FALSO,
   CODIGO_DO_CLIENTE_FALSO,
+  CODIGO_DO_CONVITE_FALSO,
   criarApiClientFalso,
 } from "./falso";
 export type { EstadoFalso } from "./falso";
@@ -17,7 +18,10 @@ export type {
   Requisicao,
 } from "./requisicao";
 export type {
+  AceiteDoConvite,
   ClienteComHistorico,
+  EdicaoDoMembro,
+  NovoMembro,
   CredenciaisDoBarbeiro,
   EdicaoDaBarbearia,
   EdicaoDoAgendamento,

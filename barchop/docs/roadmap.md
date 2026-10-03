@@ -242,9 +242,10 @@ no mesmo formato do login), com a tela de dois passos no
 pelo log até o provedor de e-mail da Onda 1.
 
 A revisão da Onda 0 (`.claude/reviews/onda-0-review.md`) deixou três
-dívidas novas, logo abaixo: o orçamento de pedido de código que um
-terceiro consegue gastar, a sessão do cliente que cai quando o slug
-muda, e o monorepo sem lint.
+dívidas novas: o orçamento de pedido de código que um terceiro consegue
+gastar, a sessão do cliente que cai quando o slug muda, e o monorepo
+sem lint. Esta saiu na Onda 1: `pnpm lint` roda o ESLint da raiz, com a
+config compartilhada em `packages/config/eslint.mjs`.
 
 - **O orçamento de pedido de código é gastável por terceiros.** O
   limite de 3 pedidos por destino em 15 minutos (`codigoDoCliente` e
@@ -261,11 +262,6 @@ muda, e o monorepo sem lint.
   quem estava logado precisa entrar de novo. Fecha junto do redirect do
   slug antigo, com o tenant por subdomínio (Onda 1) — o mais simples é
   a chave passar a ser o id da barbearia.
-- **O monorepo não tem lint.** `pnpm lint` roda pelo turbo, mas nenhum
-  pacote tem script de lint — só o build do `@barchop/database` dispara.
-  A disciplina hoje é toda do `tsc` estrito e dos testes. Fecha com um
-  ESLint compartilhado em `packages/config`, ligado em cada pacote.
-
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
   qualquer, e o código de resposta responde. O rate limiting que esta

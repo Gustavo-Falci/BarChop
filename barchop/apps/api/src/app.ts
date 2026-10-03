@@ -2,7 +2,6 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
-import { prisma } from "@barchop/database";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { limitesDeAuth } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";

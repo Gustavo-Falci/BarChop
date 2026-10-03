@@ -84,7 +84,7 @@ A onda é grande demais para um PR só. Ela é executada em **7 blocos (A–G)**
 - **Action**: migration aditiva: `papel` enum, `atende boolean`, `foto_url`, `senha_hash` nulo; backfill: mais antigo de cada barbearia = `dono`.
 - **Validate**: `tests/banco.test.ts`; `migrate deploy` em dev e test.
 #### Task A3: Papel no hook + guardas
-- **Action**: `request.membro`; `exigirPapel(...)`; matriz: dono tudo; recepção agenda/clientes de todos, sem config/equipe/serviços; profissional só a própria agenda (outro = 404, marcar pra outro = 403) e vê/cadastra clientes da barbearia — restringir aos clientes atendidos ficou fora do piloto (o walk-in chega pra qualquer profissional). Guarda no  da rota, antes da validação.
+- **Action**: `request.membro`; `exigirPapel(...)`; matriz: dono tudo; recepção agenda/clientes de todos, sem config/equipe/serviços; profissional só a própria agenda (outro = 404, marcar pra outro = 403) e vê/cadastra clientes da barbearia — restringir aos clientes atendidos ficou fora do piloto (o walk-in chega pra qualquer profissional). Guarda no `onRequest` da rota, antes da validação.
 - **Validate**: `auth-papeis.test.ts` (matriz rota × papel, 403 `sem_permissao`).
 #### Task A4: Rotas de equipe e convite
 - **Action**: `GET/POST/PATCH /equipe`, `POST /equipe/:id/convite`, `POST /auth/convite/aceitar` (código + senha → sessão). Desativar não apaga histórico; não se pode desativar/rebaixar o último dono.

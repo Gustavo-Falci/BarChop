@@ -50,6 +50,9 @@ describe("POST /auth/codigo", () => {
     expect(resposta.statusCode).toBe(202);
     expect(resposta.json()).toEqual({ enviado: true });
     expect(enviadasPara(app, EMAIL)).toHaveLength(1);
+    // Vai por e-mail: sem assunto, o provedor manda um genérico e o
+    // dono não acha a mensagem na caixa de entrada.
+    expect(enviadasPara(app, EMAIL)[0].assunto).toMatch(/código/i);
 
     await app.close();
   });

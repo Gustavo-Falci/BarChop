@@ -44,4 +44,31 @@ describe("canal de mensagem", () => {
       canalDoAmbiente(log, { NODE_ENV: "development", CANAL_DE_MENSAGEM: "pombo" })
     ).toThrow(/pombo/);
   });
+
+  it("com CANAL_DE_MENSAGEM=email e as credenciais, sobe o canal de e-mail — inclusive em produção", () => {
+    const env = {
+      NODE_ENV: "production",
+      CANAL_DE_MENSAGEM: "email",
+      RESEND_API_KEY: "re_teste",
+      EMAIL_REMETENTE: "BarChop <nao-responda@barchop.com.br>",
+    };
+    expect(canalDoAmbiente(log, env).nome).toBe("email");
+  });
+
+  it("e-mail sem chave ou sem remetente é erro de configuração na subida", () => {
+    expect(() =>
+      canalDoAmbiente(log, {
+        NODE_ENV: "production",
+        CANAL_DE_MENSAGEM: "email",
+        EMAIL_REMETENTE: "x@barchop.com.br",
+      })
+    ).toThrow(/RESEND_API_KEY/);
+    expect(() =>
+      canalDoAmbiente(log, {
+        NODE_ENV: "production",
+        CANAL_DE_MENSAGEM: "email",
+        RESEND_API_KEY: "re_teste",
+      })
+    ).toThrow(/EMAIL_REMETENTE/);
+  });
 });

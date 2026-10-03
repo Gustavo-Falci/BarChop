@@ -77,6 +77,8 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
             nome: barbeiro.nome,
             email,
             senhaHash,
+            // Quem cria a barbearia é o dono, e atende (default).
+            papel: "dono",
           },
         });
 
@@ -97,6 +99,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
           id: criado.barbeiro.id,
           nome: criado.barbeiro.nome,
           email: criado.barbeiro.email,
+          papel: criado.barbeiro.papel,
         },
         barbearia: {
           id: criado.barbearia.id,
@@ -147,7 +150,12 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
       // sem esta linha, desativar alguém no futuro não tiraria o acesso
       // dele, e a falha seria silenciosa — ninguém testa o login de uma
       // conta que acabou de ser desligada.
-      const autorizado = barbeiro?.ativo ? barbeiro : null;
+      //
+      // Membro convidado que ainda não definiu a senha também: a conta
+      // existe, mas não tem senha pra conferir. Cai no hash descartável,
+      // com a mesma resposta e o mesmo custo — o login não diz quem foi
+      // convidado.
+      const autorizado = barbeiro?.ativo && barbeiro.senhaHash ? barbeiro : null;
 
       const hashParaConferir =
         autorizado?.senhaHash ?? (await obterHashDescartavel());
@@ -165,7 +173,12 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
 
       return reply.code(200).send({
         token,
-        barbeiro: { id: autorizado.id, nome: autorizado.nome, email: autorizado.email },
+        barbeiro: {
+          id: autorizado.id,
+          nome: autorizado.nome,
+          email: autorizado.email,
+          papel: autorizado.papel,
+        },
         barbearia: {
           id: autorizado.barbearia.id,
           nome: autorizado.barbearia.nome,

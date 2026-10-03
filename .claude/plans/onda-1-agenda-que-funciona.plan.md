@@ -4,6 +4,25 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
+## Onde paramos (2026-10-03)
+Branch `onda-1`. Bloco A em andamento, cada tarefa com commit RED e GREEN:
+
+| Tarefa | Estado | O que ficou |
+|---|---|---|
+| A0 lint | feito | `pnpm lint` roda o ESLint da raiz; config em `barchop/packages/config/eslint.mjs` |
+| A1 e-mail | feito | `apps/api/src/lib/canal-email.ts` (Resend); `CanalDeMensagem.destinos`; `CANAL_DE_MENSAGEM=email` exige `RESEND_API_KEY` e `EMAIL_REMETENTE` |
+| A1b cliente por e-mail | feito | código, senha e login do cliente aceitam telefone ou e-mail; tela `/[slug]/entrar` por e-mail; 422 `destino_indisponivel` e `telefone_ja_cadastrado` |
+| A2 papel | feito | migrations `20261003120000_papel_do_membro` e `20261003120100_dono_da_barbearia`; signup cria o dono; login recusa conta sem senha |
+| A3 guardas | feito | `plugins/auth.ts`: `request.membro`, `exigirPapel` no `onRequest`, `agendaVisivel`; matriz em `apps/api/tests/routers/auth-papeis.test.ts` |
+| A4 equipe e convite | **próximo** | `GET/POST/PATCH /equipe`, convite por código (`convite_profissional`, 7 dias), `POST /auth/convite/aceitar`, não desativar nem rebaixar o último dono |
+| A5 telas | pendente | Equipe, Profissional, Aceitar convite; navegação esconde o que o papel não pode (via `GET /me`) |
+
+Depois do A5: push e PR do Bloco A, e então o Bloco B. Suítes no fim do A3: API 401, web 460, api-client 56.
+
+Pra continuar em outra máquina: `git checkout onda-1`, `pnpm install`, criar `apps/api/.env`, `apps/api/.env.test` e `packages/database/.env` a partir dos `.example`, e rodar `pnpm --filter @barchop/database migrate:deploy` nos bancos de dev e de teste (nunca `migrate dev`).
+
+Pendências do dono antes do Bloco G: conta no Resend com o domínio `barchop.com.br` verificado; DNS do domínio na Cloudflare (certificado coringa por DNS-01).
+
 ## Summary
 Transformar a barbearia de "um barbeiro só" em equipe: profissionais com papel (dono, profissional, recepção), jornada e folgas próprias, serviços que cada um faz; o cliente escolhe o profissional (ou "qualquer um") na página da barbearia, servida em `<slug>.barchop.com.br`; um lembrete por e-mail chega antes do horário e o cliente confirma ou cancela com um toque; o dono se cadastra e configura sozinho com uma trilha de onboarding; tudo rodando na OCI com a GR Barber.
 

@@ -15,6 +15,7 @@ import {
 import { registrarRotasClientes } from "./routers/clientes";
 import { registrarRotasClientesMe } from "./routers/clientes-me";
 import { registrarRotasDisponibilidade } from "./routers/disponibilidade";
+import { registrarRotasEquipe } from "./routers/equipe";
 import {
   registrarRotasBarbeariasProtegidas,
   registrarRotasBarbeariasPublicas,
@@ -106,6 +107,7 @@ export function buildApp(
     registrarRotasServicos(protegidas);
     registrarRotasClientes(protegidas);
     registrarRotasAgendamentos(protegidas);
+    registrarRotasEquipe(protegidas);
   });
 
   // Escopo do cliente, irmão do de cima e pelo mesmo motivo: o hook vale

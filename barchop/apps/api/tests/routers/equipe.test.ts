@@ -209,15 +209,16 @@ describe("PATCH /equipe/:id", () => {
 
     const resposta = await mudar(app, dono.token, ana.id, {
       nome: "Ana S.",
-      telefone: "(11) 99999-8888",
+      telefone: "11999998888",
       papel: "recepcao",
       atende: false,
     });
 
     expect(resposta.statusCode).toBe(200);
+    // Gravado no formato único de lib/telefone.ts.
     expect(resposta.json()).toMatchObject({
       nome: "Ana S.",
-      telefone: "11999998888",
+      telefone: "(11) 99999-8888",
       papel: "recepcao",
       atende: false,
     });
@@ -321,19 +322,45 @@ describe("a barbearia nunca fica sem dono", () => {
     await app.close();
   });
 
-  it("dois donos se rebaixando ao mesmo tempo: um passa, o outro leva 422", async () => {
+  it("dois donos se rebaixando ao mesmo tempo: o segundo espera e leva 422", async () => {
     // Checar e gravar em passos separados deixaria os dois lerem "há
     // outro dono" e os dois gravarem — a barbearia acabaria sem dono.
+    //
+    // Duas requisições em Promise.all não provam nada: terminam rápido
+    // demais pra se cruzarem, e o teste passava até sem a trava. Aqui o
+    // primeiro rebaixamento é uma transação do próprio teste, parada com
+    // a trava na mão e a escrita feita, sem commit. Sem a trava, a rota
+    // leria o outro ainda como dono e passaria; com ela, espera o commit
+    // e conta de novo.
     const app = buildApp();
     const dono = await criarBarbeariaComToken(app);
     const outro = await criarMembroComToken(app, dono.barbeariaId, "dono", "d2");
 
-    const [a, b] = await Promise.all([
-      mudar(app, dono.token, dono.barbeiroId, { papel: "profissional" }),
-      mudar(app, outro.token, outro.barbeiroId, { papel: "profissional" }),
-    ]);
+    let soltar!: () => void;
+    const segurando = new Promise<void>((resolver) => (soltar = resolver));
+    let travou!: () => void;
+    const comATrava = new Promise<void>((resolver) => (travou = resolver));
 
-    expect([a.statusCode, b.statusCode].sort()).toEqual([200, 422]);
+    const primeiro = prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM barbearia WHERE id = ${dono.barbeariaId}::uuid FOR NO KEY UPDATE`;
+      await tx.barbeiro.update({
+        where: { id: outro.barbeiroId },
+        data: { papel: "profissional" },
+      });
+      travou();
+      await segurando;
+    });
+
+    await comATrava;
+    const segundo = mudar(app, dono.token, dono.barbeiroId, { papel: "profissional" });
+    // Tempo pra rota chegar à trava (ou, sem ela, passar direto e gravar).
+    await new Promise((resolver) => setTimeout(resolver, 300));
+    soltar();
+    await primeiro;
+
+    const resposta = await segundo;
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("ultimo_dono");
     const donos = await prisma.barbeiro.count({
       where: { barbeariaId: dono.barbeariaId, papel: "dono", ativo: true },
     });

@@ -304,4 +304,58 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
       });
     }
   );
+
+  // O membro convidado pela equipe define a primeira senha e já entra.
+  // Mesmo desenho do /auth/senha — código antes de tudo, toda falha com
+  // a mesma resposta —, com uma guarda a mais: só vale pra quem ainda
+  // não tem senha. O código do convite vive 7 dias; aceitar que ele
+  // trocasse uma senha existente faria dele um esqueci-a-senha folgado.
+  app.post(
+    "/auth/convite/aceitar",
+    { schema: { body: corpoSenha }, preHandler: limites.conviteDoBarbeiro },
+    async (request, reply) => {
+      const { codigo, senha } = request.body;
+      const email = normalizarEmail(request.body.email)!;
+
+      const provado = await consumirCodigo(
+        { finalidade: "convite_profissional", destino: email, barbeariaId: null },
+        codigo
+      );
+      const membro = provado
+        ? await prisma.barbeiro.findUnique({ where: { email } })
+        : null;
+
+      if (!membro?.ativo || membro.senhaHash !== null) {
+        throw new ErroDeNegocio("código inválido ou vencido", "codigo_invalido");
+      }
+
+      // `senhaHash: null` no where: dois aceites simultâneos com códigos
+      // diferentes (o dono reenviou) não podem, os dois, definir a senha.
+      const definido = await prisma.barbeiro.updateMany({
+        where: { id: membro.id, senhaHash: null },
+        data: { senhaHash: await gerarHashSenha(senha), senhaAlteradaEm: new Date() },
+      });
+      if (definido.count !== 1) {
+        throw new ErroDeNegocio("código inválido ou vencido", "codigo_invalido");
+      }
+
+      const barbearia = await prisma.barbearia.findUniqueOrThrow({
+        where: { id: membro.barbeariaId },
+      });
+
+      const token = app.jwt.sign({
+        tipo: "barbeiro",
+        barbeiroId: membro.id,
+        barbeariaId: membro.barbeariaId,
+      });
+
+      // O formato do login, com o papel: o painel decide o que mostrar
+      // a partir dele desde a primeira tela.
+      return reply.code(200).send({
+        token,
+        barbeiro: { id: membro.id, nome: membro.nome, email: membro.email, papel: membro.papel },
+        barbearia: { id: barbearia.id, nome: barbearia.nome, slug: barbearia.slug },
+      });
+    }
+  );
 }

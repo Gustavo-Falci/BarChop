@@ -225,6 +225,17 @@ export function limitesDeAuth(app: App) {
       porIpNoLogin,
     ],
 
+    // Aceitar o convite também é um login por outro caminho, e o código
+    // dele vive 7 dias: sem teto por conta, quem chuta teria uma semana.
+    conviteDoBarbeiro: [
+      contador(app, {
+        max: MAX_POR_CONTA,
+        janela: JANELA_POR_CONTA,
+        chave: (request) => `convite-barbeiro:${chaveDoEmail(request.body)}`,
+      }),
+      porIpNoLogin,
+    ],
+
     // Definir a senha confere um código: é um login por outro caminho, e
     // leva o mesmo orçamento por conta. O teto de tentativas do próprio
     // código segura quem chuta UM código; este segura quem chuta muitos,

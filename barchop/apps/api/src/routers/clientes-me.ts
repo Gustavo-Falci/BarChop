@@ -2,7 +2,10 @@ import { prisma } from "@barchop/database";
 import { clienteDoToken } from "../plugins/auth";
 import { normalizarEmail } from "@barchop/formato";
 import { criarAgendamento, INCLUDE_AGENDAMENTO } from "../lib/agendamento";
-import { garantirAlteravel } from "../lib/agendamento-alteravel";
+import {
+  garantirAlteravel,
+  garantirFuturo,
+} from "../lib/agendamento-alteravel";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { dataParaDate } from "../lib/horas";
 import { comRetryDeDeadlock } from "../lib/transacao";
@@ -167,6 +170,10 @@ export function registrarRotasClientesMe(app: App): void {
     async (request, reply) => {
       const { clienteId } = clienteDoToken(request);
       const { data, horaInicio, servicoIds } = request.body;
+
+      // O destino, antes de tocar no banco. A origem é conferida lá
+      // dentro, pelo garantirAlteravel.
+      garantirFuturo(data, horaInicio);
 
       // Mesmo motivo das rotas de criação: impasse concorrente não pode
       // sair como 500.

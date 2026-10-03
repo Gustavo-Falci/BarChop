@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
+import { PADRAO_SLUG, slugReservado } from "@barchop/formato";
 import type { SessaoBarbeiro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
@@ -13,10 +14,12 @@ import {
   sessaoDoBarbeiro,
 } from "../../sessao/armazenamento";
 import estilos from "./EntrarNoPainel.module.css";
+import { RecuperarSenhaDoPainel } from "./RecuperarSenhaDoPainel";
 
-// O mesmo do pattern de apps/api/src/routers/auth.ts:23. Barrar aqui
-// mantém o erro no campo, em vez de voltar 400 do AJV em inglês.
-const PADRAO_SLUG = /^[a-z0-9-]{3,80}$/;
+// O mesmo pattern e a mesma lista de reservados que a API usa (vêm do
+// @barchop/formato). Barrar aqui mantém o erro no campo, em vez de
+// voltar 400 do AJV em inglês ou 422 genérico.
+const FORMATO_DO_SLUG = new RegExp(PADRAO_SLUG);
 
 // Os mesmos limites dos schemas da API. Cortar na digitação evita o 400
 // que voltaria sem dizer qual campo passou do tamanho.
@@ -30,6 +33,7 @@ export function EntrarNoPainel() {
   const api = useApiDoPainel();
 
   const [criando, setCriando] = useState(false);
+  const [recuperando, setRecuperando] = useState(false);
   const [nomeDaBarbearia, setNomeDaBarbearia] = useState("");
   const [slug, setSlug] = useState("");
   const [nome, setNome] = useState("");
@@ -87,8 +91,13 @@ export function EntrarNoPainel() {
     setErroEmail(undefined);
     setErroSenha(undefined);
 
-    if (criando && !PADRAO_SLUG.test(slug)) {
+    if (criando && !FORMATO_DO_SLUG.test(slug)) {
       setErroSlug("Use letras minúsculas, números e hífen, de 3 a 80 caracteres");
+      return;
+    }
+
+    if (criando && slugReservado(slug)) {
+      setErroSlug("Esse link é reservado pelo BarChop. Escolha outro");
       return;
     }
 
@@ -159,6 +168,15 @@ export function EntrarNoPainel() {
       sessaoDaBarbearia.gravar(sessao.barbearia.slug);
       router.push("/painel");
     }
+  }
+
+  if (recuperando) {
+    return (
+      <RecuperarSenhaDoPainel
+        emailInicial={email}
+        aoVoltar={() => setRecuperando(false)}
+      />
+    );
   }
 
   return (
@@ -267,6 +285,22 @@ export function EntrarNoPainel() {
           }}
           erro={erroSenha}
         />
+
+        {/* Só no login: quem está criando a barbearia ainda não tem
+            senha pra esquecer. `type="button"` pelo mesmo motivo da
+            troca de modo lá embaixo — dentro do <form>, sem type, ele
+            enviaria o login. */}
+        {criando ? null : (
+          <p className={estilos.troca}>
+            <button
+              type="button"
+              className={estilos.link}
+              onClick={() => setRecuperando(true)}
+            >
+              Esqueci a senha
+            </button>
+          </p>
+        )}
 
         {aviso ? <Aviso>{aviso}</Aviso> : null}
 

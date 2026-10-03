@@ -68,14 +68,16 @@ model HorarioFuncionamento {
 }
 
 model Barbeiro {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  barbeariaId String   @map("barbearia_id") @db.Uuid
-  nome        String   @db.VarChar(120)
-  email       String?  @unique @db.VarChar(160)
-  senhaHash   String   @map("senha_hash")
-  telefone    String?  @db.VarChar(20)
-  ativo       Boolean  @default(true)
-  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId     String    @map("barbearia_id") @db.Uuid
+  nome            String    @db.VarChar(120)
+  email           String?   @unique @db.VarChar(160)
+  senhaHash       String    @map("senha_hash")
+  telefone        String?   @db.VarChar(20)
+  ativo           Boolean   @default(true)
+  criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  // Token com `iat` anterior a isto é recusado (plugins/auth.ts).
+  senhaAlteradaEm DateTime? @map("senha_alterada_em") @db.Timestamptz
 
   barbearia    Barbearia     @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
@@ -85,13 +87,15 @@ model Barbeiro {
 }
 
 model Cliente {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  barbeariaId String   @map("barbearia_id") @db.Uuid
-  nome        String   @db.VarChar(120)
-  telefone    String   @db.VarChar(20)
-  email       String?  @db.VarChar(160)
-  senhaHash   String?  @map("senha_hash")
-  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId     String    @map("barbearia_id") @db.Uuid
+  nome            String    @db.VarChar(120)
+  telefone        String    @db.VarChar(20)
+  email           String?   @db.VarChar(160)
+  senhaHash       String?   @map("senha_hash")
+  criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  // Token com `iat` anterior a isto é recusado (plugins/auth.ts).
+  senhaAlteradaEm DateTime? @map("senha_alterada_em") @db.Timestamptz
 
   barbearia    Barbearia     @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
@@ -146,11 +150,11 @@ model Agendamento {
 }
 
 model AgendamentoServico {
-  id                 String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  agendamentoId      String  @map("agendamento_id") @db.Uuid
-  servicoId          String  @map("servico_id") @db.Uuid
-  precoNoMomento     Decimal @map("preco_no_momento") @db.Decimal(10, 2)
-  duracaoNoMomento   Int     @map("duracao_no_momento") @db.SmallInt
+  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agendamentoId    String  @map("agendamento_id") @db.Uuid
+  servicoId        String  @map("servico_id") @db.Uuid
+  precoNoMomento   Decimal @map("preco_no_momento") @db.Decimal(10, 2)
+  duracaoNoMomento Int     @map("duracao_no_momento") @db.SmallInt
 
   agendamento Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
   servico     Servico     @relation(fields: [servicoId], references: [id])

@@ -91,6 +91,26 @@ describe("POST /auth/signup", () => {
     await app.close();
   });
 
+  it("recusa slug reservado pelo sistema, com 422 e sem criar nada", async () => {
+    // `painel` passa no pattern, mas é rota do sistema: aceito, a
+    // barbearia ficaria com um link público inalcançável.
+    const app = buildApp();
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: {
+        ...CORPO_VALIDO,
+        barbearia: { nome: "Teste", slug: "painel" },
+      },
+    });
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("slug_reservado");
+    expect(await prisma.barbearia.count({ where: { slug: "painel" } })).toBe(0);
+
+    await app.close();
+  });
+
   it("recusa senha curta demais", async () => {
     const app = buildApp();
     const resposta = await app.inject({

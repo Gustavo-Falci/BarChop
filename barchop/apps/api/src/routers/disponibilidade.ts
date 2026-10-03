@@ -1,19 +1,25 @@
 import { prisma } from "@barchop/database";
 import {
   carregarServicos,
+  descartarPassados,
   garantirBarbeiro,
   horariosLivres,
 } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
-import { dataParaDate, dateParaData } from "../lib/horas";
-import { PADRAO_DATA, PADRAO_MES, PADRAO_UUID } from "../lib/padroes";
+import { agoraNaBarbearia, dataParaDate, dateParaData } from "../lib/horas";
+import {
+  PADRAO_DATA,
+  PADRAO_MES,
+  PADRAO_SLUG,
+  PADRAO_UUID,
+} from "../lib/padroes";
 import type { App } from "../tipos";
 
 const paramsSlug = {
   type: "object",
   required: ["slug"],
   additionalProperties: false,
-  properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
 // `servicoIds` vem repetido na query (`?servicoIds=a&servicoIds=b`). Um
@@ -104,7 +110,11 @@ export function registrarRotasDisponibilidade(app: App): void {
       });
 
       return {
-        horarios: horariosLivres({ janela, ocupados, duracaoTotalMinutos }),
+        horarios: descartarPassados({
+          data,
+          horarios: horariosLivres({ janela, ocupados, duracaoTotalMinutos }),
+          agora: agoraNaBarbearia(),
+        }),
       };
     }
   );
@@ -168,19 +178,28 @@ export function registrarRotasDisponibilidade(app: App): void {
         janelas.map((janela) => [janela.diaSemana, janela])
       );
 
+      // Um relógio só pro mês inteiro: o calendário não pode discordar
+      // de si mesmo se a virada de minuto cair no meio do laço.
+      const agora = agoraNaBarbearia();
+
       const dias: Record<string, boolean> = {};
       for (let dia = 1; dia <= ultimoDia.getUTCDate(); dia += 1) {
         const data = new Date(Date.UTC(ano, numeroDoMes - 1, dia));
         const chave = dateParaData(data);
 
-        // Um dia é `true` se tem pelo menos um horário livre. A rota não
-        // sabe que dia é hoje, de propósito: ver "Desvios conscientes"
-        // no plano da fase 5 — quem desabilita o passado é a tela.
+        // Um dia é `true` se tem pelo menos um horário livre que ainda
+        // não passou. Antes a rota não sabia que dia era hoje e quem
+        // desabilitava o passado era a tela; agora qualquer consumidor
+        // (o app do profissional, a IA) recebe o calendário certo.
         dias[chave] =
-          horariosLivres({
-            janela: janelaPorDiaSemana.get(data.getUTCDay()) ?? null,
-            ocupados: ocupadosPorDia.get(chave) ?? [],
-            duracaoTotalMinutos,
+          descartarPassados({
+            data: chave,
+            horarios: horariosLivres({
+              janela: janelaPorDiaSemana.get(data.getUTCDay()) ?? null,
+              ocupados: ocupadosPorDia.get(chave) ?? [],
+              duracaoTotalMinutos,
+            }),
+            agora,
           }).length > 0;
       }
 

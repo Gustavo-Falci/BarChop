@@ -1,16 +1,18 @@
 import { prisma } from "@barchop/database";
+import { slugReservado } from "@barchop/formato";
+import { ErroDeNegocio } from "../lib/erro-negocio";
 import { normalizarTelefone } from "../lib/telefone";
-import { PADRAO_TELEFONE } from "../lib/padroes";
+import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import { serializarBarbearia } from "../lib/serializar";
 import { completarSemana } from "./horarios";
 import type { App } from "../tipos";
 
-// A tela de Configurações edita estes quatro campos. `slug` fica fora:
-// ele forma o link público que o barbeiro já mandou no WhatsApp, e
-// trocar quebraria o link — está fora do escopo desta fase. `id` e
-// `barbeariaId` também ficam fora, e o additionalProperties: false é o
-// que faz um corpo com barbeariaId virar 400 em vez de ser ignorado em
-// silêncio.
+// A tela de Configurações edita estes campos. `slug` fica fora: trocar
+// o link público quebra o que o barbeiro já mandou no WhatsApp, então
+// tem rota própria (PATCH /barbearias/me/slug) e botão próprio na tela,
+// em vez de ir de carona num "Salvar dados". `id` e `barbeariaId`
+// também ficam fora, e o additionalProperties: false é o que faz um
+// corpo com barbeariaId virar 400 em vez de ser ignorado em silêncio.
 const corpoPatchBarbearia = {
   type: "object",
   additionalProperties: false,
@@ -43,7 +45,51 @@ const corpoPatchBarbearia = {
   },
 } as const;
 
+const corpoTrocaDeSlug = {
+  type: "object",
+  required: ["slug"],
+  additionalProperties: false,
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
+} as const;
+
 export function registrarRotasBarbeariasProtegidas(app: App): void {
+  // A leitura do painel. Antes dela, Configurações lia a própria
+  // barbearia pela rota pública por slug — o painel dependia de uma
+  // rota aberta pra exibir o que ele mesmo escreve.
+  app.get("/barbearias/me", async (request) => {
+    const barbearia = await prisma.barbearia.findUniqueOrThrow({
+      where: { id: request.user.barbeariaId },
+    });
+
+    return serializarBarbearia(barbearia);
+  });
+
+  // Trocar o link público. O antigo para de responder na hora: o
+  // redirect do slug antigo vem com o tenant por subdomínio (ADR-0002).
+  // Slug de outra barbearia cai no unique da coluna → P2002 → 409, sem
+  // consulta prévia que abriria corrida entre checar e gravar.
+  app.patch(
+    "/barbearias/me/slug",
+    { schema: { body: corpoTrocaDeSlug } },
+    async (request) => {
+      const { slug } = request.body;
+
+      if (slugReservado(slug)) {
+        throw new ErroDeNegocio(
+          "esse endereço é reservado pelo sistema",
+          "slug_reservado"
+        );
+      }
+
+      const barbearia = await prisma.barbearia.update({
+        where: { id: request.user.barbeariaId },
+        data: { slug },
+      });
+
+      return serializarBarbearia(barbearia);
+    }
+  );
+
   app.patch(
     "/barbearias/me",
     { schema: { body: corpoPatchBarbearia } },
@@ -76,7 +122,7 @@ const paramsSlug = {
   type: "object",
   required: ["slug"],
   additionalProperties: false,
-  properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
 // Pública de propósito: é a landing que o cliente abre pelo link do

@@ -1,6 +1,33 @@
 # Roteiro
 
-O que falta pro BarChop sair do papel, mais ou menos em ordem:
+Desde 2026-10-02 o BarChop é um SaaS para barbearias, construído em
+ondas (ADR-0001, em `docs/adr/`). A GR Barber é o primeiro cliente e o
+piloto, não o produto. O que cada onda entrega, as métricas de sucesso e
+o estado de cada uma moram no PRD, `.claude/prds/barchop-saas.prd.md`;
+cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
+`ecc:plan` (ADR-0008). As telas de cada onda estão em `docs/screens.md`.
+
+| Onda | Resultado | Estado |
+|---|---|---|
+| 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | pronta na branch `onda-0`, falta o merge — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
+| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | pendente |
+| 1s — Site de marketing | Landing, preços, plano grátis, termos e privacidade | pendente, em paralelo à 1 |
+| 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | pendente |
+| 3 — Retenção do cliente final | Pagamento e sinal online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações | pendente |
+| 4 — Crescimento | Indicação, loja, múltiplas unidades, campanhas, login social | pendente |
+| 5 — Diferenciais | IA no WhatsApp, NFS-e, domínio próprio, app do profissional | pendente |
+
+Nenhuma onda nova abre antes de o piloto rodar a Onda 1.
+
+**Começar já, fora do código:** a verificação de negócio na Meta (exige
+CNPJ) e a aprovação dos templates de mensagem levam semanas, e o
+lembrete por WhatsApp da Onda 1 depende delas (ADR-0004).
+
+## Histórico — até 2026-10-02
+
+O roteiro antigo, de quando o BarChop era a agenda de uma barbearia
+só. Os passos 1 a 3 ficam como registro; os passos 4 a 7 foram
+absorvidos pelas ondas (ver o fim desta seção).
 
 1. **Scaffolds do Expo e do Next.js — pronto.** `apps/mobile` e
    `apps/web` já têm o scaffold versionado (commit `6abe8a1`), com o
@@ -162,7 +189,8 @@ O que falta pro BarChop sair do papel, mais ou menos em ordem:
      Suítes ao fim da Fase 3: web 415, api-client 50, API 339 — a da
      API agora roda nesta máquina, com o Postgres de teste
      (`barchop_test`) e o `apps/api/.env.test` configurados.
-   - **D — app do barbeiro no Expo (10 telas)**.
+   - **D — app do barbeiro no Expo (10 telas)** — foi para a Onda 5,
+     como app do profissional: o painel web já cobre a mesma gestão.
 
    Duas decisões do sub-projeto A que mudam o resto do roteiro: o
    painel e o link público ficam no mesmo app Next, separados por route
@@ -170,24 +198,71 @@ O que falta pro BarChop sair do papel, mais ou menos em ordem:
    nenhuma tela foi cortada, as 7 do cliente viraram rotas web, porque
    o login do cliente é por barbearia e um app instalado não tem slug
    antes de receber um deep link.
-4. **Lembretes automáticos** — decidir WhatsApp Business API vs
-   push notification via Expo, e integrar o disparo ao confirmar
-   um agendamento. Ainda não arquitetado.
-5. **Infra na Oracle OCI** — provisionar a VM, subir o Postgres,
-   configurar variáveis de ambiente, deploy do backend e do painel.
-6. **Domínio `barchop.com.br` — comprado.** Falta apontar o DNS, e isso
-   depende do passo 5: sem a VM da OCI de pé não existe endereço pra
-   onde apontar. Continua de pé decidir se o painel do barbeiro e o
-   link público do cliente ficam no mesmo host ou em subdomínios
-   separados — o fluxo do cliente é um link que vai por WhatsApp, então
-   o endereço que ele mostra importa. O que mudou é o custo: como os
-   dois vivem no mesmo app Next, separados por route groups, essa
-   escolha virou configuração de roteamento no deploy, não migração de
-   código.
-7. **Piloto com o barbeiro real** que validou o problema original,
-   antes de pensar em abrir pra outras barbearias.
+Os passos 4 a 7 do roteiro antigo viraram parte da Onda 1:
+
+- **Lembretes automáticos** — decidido: WhatsApp pela Cloud API oficial
+  e e-mail pelo Resend (ADR-0004), disparados por uma fila pg-boss
+  (ADR-0003). O push pelo Expo saiu junto com o app do barbeiro.
+- **Infra na Oracle OCI** — continua: VM, Postgres, variáveis de
+  ambiente, deploy da API e do app web, agora com certificado coringa.
+- **Domínio `barchop.com.br`** — comprado; a dúvida "mesmo host ou
+  subdomínios" foi decidida: cada barbearia em `<slug>.barchop.com.br`
+  e o site em `www` (ADR-0002).
+- **Piloto com o barbeiro real** — é o fechamento da Onda 1.
 
 ## Dívidas conhecidas
+
+A Onda 0 fecha, pelo plano, a recuperação de senha do barbeiro, as
+sessões que sobrevivem à troca de senha, as datas no passado (nas duas
+rotas e na disponibilidade), o `GET /barbearias/me` e a troca de slug.
+Cada uma sai desta lista quando o commit que a fecha entrar. Já saíram:
+o slug `painel` sombreado (`961d2f4`, lista de reservados no
+`@barchop/formato`); o painel lendo a própria barbearia pela rota
+pública e o slug sem troca (`GET /barbearias/me` e
+`PATCH /barbearias/me/slug`, com o campo "Link da barbearia" em
+Configurações). O link antigo para de responder na hora; o redirect
+dele vem com o tenant por subdomínio (Onda 1). E as duas rotas que
+criam ou movem um agendamento pelo lado do cliente recusam data
+passada com 422 `horario_passado` (`garantirFuturo`); a criação manual
+pelo barbeiro continua aceitando, porque registrar um walk-in depois do
+fato é legítimo. Do lado da leitura, as duas rotas de disponibilidade
+(dia e mês) passam pelo `descartarPassados`: dia passado sem vaga, hoje
+só o que começa depois de agora. O `horaJaPassou` da tela do dia fica
+como redundância inofensiva. Trocar a senha derruba as sessões abertas:
+`senha_alterada_em` no cliente e no barbeiro, e o hook de
+`plugins/auth.ts` recusa token com `iat` anterior a ela (comparado no
+segundo, pra o token que a própria troca devolve seguir valendo). E o
+barbeiro tem "Esqueci a senha": `POST /auth/codigo` (sempre 202, o
+código é emitido com ou sem conta e só enviado se ela existe, sem
+esperar o envio) e `POST /auth/senha` (código de uso único, sessão nova
+no mesmo formato do login), com a tela de dois passos no
+`/painel/entrar`. Como os códigos do cliente, os do barbeiro só saem
+pelo log até o provedor de e-mail da Onda 1.
+
+A revisão da Onda 0 (`.claude/reviews/onda-0-review.md`) deixou três
+dívidas novas, logo abaixo: o orçamento de pedido de código que um
+terceiro consegue gastar, a sessão do cliente que cai quando o slug
+muda, e o monorepo sem lint.
+
+- **O orçamento de pedido de código é gastável por terceiros.** O
+  limite de 3 pedidos por destino em 15 minutos (`codigoDoCliente` e
+  `codigoDoBarbeiro` em `lib/limites.ts`) é por telefone ou e-mail, não
+  por quem pede: alguém que conheça o número ou o e-mail de outra
+  pessoa gasta o orçamento dela, e a recuperação legítima fica travada
+  pela janela. Não vaza nada nem dá acesso — é um incômodo de 15
+  minutos. Fecha com um desafio humano (captcha) a partir do segundo
+  pedido, ou com a chave por destino + IP e um teto global por destino
+  bem mais alto.
+- **Trocar o slug derruba a sessão dos clientes no navegador.** O token
+  do cliente fica em `sessao.cliente.<slug>` (`apps/web/src/sessao/
+  armazenamento.ts`), e com o slug novo a página procura outra chave:
+  quem estava logado precisa entrar de novo. Fecha junto do redirect do
+  slug antigo, com o tenant por subdomínio (Onda 1) — o mais simples é
+  a chave passar a ser o id da barbearia.
+- **O monorepo não tem lint.** `pnpm lint` roda pelo turbo, mas nenhum
+  pacote tem script de lint — só o build do `@barchop/database` dispara.
+  A disciplina hoje é toda do `tsc` estrito e dos testes. Fecha com um
+  ESLint compartilhado em `packages/config`, ligado em cada pacote.
 
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
@@ -197,21 +272,6 @@ O que falta pro BarChop sair do papel, mais ou menos em ordem:
   buraco em si continua aberto — cada tentativa, dentro do orçamento,
   ainda responde se aquele email existe. Fechar de verdade é verificação
   de email, que só faz sentido junto do canal de mensagem do passo 4.
-- **O barbeiro não tem recuperação de senha.** O cliente já tem (ver o
-  acesso à conta no passo 3): o código no telefone serve pro primeiro
-  acesso e pro esqueci a senha. O barbeiro (`POST /auth/login`, por
-  e-mail) continua trancado do lado de fora se esquecer — no piloto
-  isso se resolve por `psql`; no primeiro cliente de fora, não. É a
-  Fase 4 do plano de contas: o mesmo `lib/codigos.ts` com a finalidade
-  `senha_barbeiro`, mandado pro e-mail. É também a razão de os limites
-  de `lib/limites.ts` serem janela que passa, e não bloqueio de conta:
-  sem rota de recuperação, um bloqueio de verdade seria definitivo.
-- **Trocar a senha não derruba as sessões abertas.** O "esqueci a
-  senha" do cliente troca a senha, mas um token emitido antes continua
-  valendo até expirar (7 dias) — quem roubou a sessão segue dentro
-  depois de a vítima trocar a senha. Fecha na Fase 4: `senha_alterada_em`
-  no cliente e no barbeiro, e o hook de `plugins/auth.ts`, que já lê o
-  banco a cada requisição, recusando token com `iat` anterior a ela.
 - **Os códigos de verificação só saem pelo log.** O provedor real
   (WhatsApp ou SMS pro cliente, e-mail pro barbeiro) não foi escolhido,
   e `lib/canal.ts` só tem o canal de log (desenvolvimento) e o de
@@ -232,58 +292,3 @@ O que falta pro BarChop sair do papel, mais ou menos em ordem:
   escreve, e daí o limite por IP deixa de limitar. Os limites por conta
   (email, telefone) não dependem do IP e continuam valendo nos dois
   casos.
-- **Nenhuma das duas rotas que criam ou movem um agendamento recusa uma
-  data no passado.** `POST /barbearias/:slug/agendamentos` e
-  `POST /clientes/me/agendamentos/:id/remarcar` passam pelo mesmo
-  `horariosLivres`, que não tem noção de "agora" — só recebe a janela
-  de funcionamento e os horários já ocupados. O único relógio do fluxo
-  é o `agoraNaBarbearia`, usado pelo `garantirAlteravel` em
-  `lib/agendamento-alteravel.ts`, e essa guarda olha pro agendamento
-  de origem, o que está sendo alterado, nunca pro destino da mudança.
-  Na prática, um cliente que remarca pra uma data passada tranca a
-  própria conta: o agendamento resultante é exatamente o que o
-  `garantirAlteravel` recusa cancelar ou remarcar depois, e só o
-  barbeiro consegue desfazer. O fechamento tem a forma de um
-  `garantirFuturo(data, horaInicio)` ao lado do `garantirAlteravel`,
-  chamado pelas rotas que criam ou movem um agendamento — isso não
-  quer dizer que já está na fila pra ser feito. Empurrar a checagem
-  pra dentro do `criarAgendamento` mudaria comportamento da fase 4,
-  que já tem testes escritos sem essa regra.
-- **A disponibilidade do mês também não conhece o "agora".** A mesma
-  ausência de relógio, do lado da leitura: a disponibilidade do mês
-  marca hoje como dia com vaga mesmo depois do fechamento, porque conta
-  os horários da janela inteira. Quem filtra hora passada é só a tela
-  do dia, no cliente (`horaJaPassou`). O PR #12 tirou o beco sem saída
-  — hoje sem sobra fica desabilitado no calendário e a tela oferece
-  "Escolher outra data" —, mas a correção mora no navegador; o app no
-  Expo, ou qualquer outro consumidor da rota, herda o dia falso.
-  Fechar de verdade é a rota filtrar pelo `agoraNaBarbearia`, junto do
-  `garantirFuturo` da dívida acima.
-- **Uma barbearia com o slug `painel` perde o próprio link público.** O
-  painel vive sob o prefixo `/painel`, e esse é um segmento estático —
-  que vence a rota dinâmica `[slug]` do fluxo do cliente. A validação
-  de slug na API é `^[a-z0-9-]{3,80}$`, sem lista de reservados, então
-  `painel` é aceito no cadastro e fica inalcançável depois, sem erro em
-  lugar nenhum. O prefixo reduziu o problema de pouco mais de uma
-  dezena de slugs sombreados (um por rota que o painel teria criado na
-  raiz) pra exatamente um, mas não o eliminou. Fechar de verdade é uma
-  lista de reservados na validação de slug — mudança de API, fora do
-  escopo deste sub-projeto.
-- **O painel lê a própria barbearia pela rota pública.** A API tem
-  `PATCH /barbearias/me` e nenhum `GET`: a única leitura dos dados da
-  barbearia é `GET /barbearias/:slug`, a mesma rota que a tela de
-  agendamento do cliente usa. A tela de Configurações do painel depende
-  então de uma rota pública pra exibir o que ela própria escreve. Fecha
-  com um `GET /barbearias/me`.
-- **O slug da barbearia é gravado uma vez, no login, e não existe jeito
-  de trocá-lo.** `GET /me` devolve `barbeariaId` e nenhum slug, e a
-  disponibilidade é rota pública endereçada por slug — por isso o
-  painel grava o slug no `localStorage`, ao lado do token, no momento
-  do login. Uma versão anterior desta dívida descrevia uma aba antiga
-  sobrevivendo com o slug velho depois de uma troca em Configurações —
-  isso não pode acontecer: `PATCH /barbearias/me` exclui `slug` de
-  propósito (`apps/api/src/routers/barbearias.ts`), e a tela de
-  Configurações não tem campo pra ele. A dívida real é essa ausência —
-  um barbeiro que erra o slug no cadastro, ou quer mudar o nome do
-  salão no link, fica preso nele. Fecha com uma rota de troca de slug
-  — mudança de API — e o campo correspondente em Configurações.

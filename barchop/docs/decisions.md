@@ -3,6 +3,10 @@
 Registro do porquê de cada escolha, não só o quê — pra não perder
 o raciocínio depois.
 
+A partir de 2026-10-02 as decisões novas são ADRs, um arquivo por
+decisão, em `docs/adr/` (índice no `README.md` de lá). Este arquivo
+fica com as decisões da fundação, anteriores a essa data.
+
 ## Monorepo: pnpm workspaces + Turborepo
 
 Mobile, painel e API compartilham tipos, tokens de design e a

@@ -31,3 +31,21 @@ export function garantirAlteravel(agendamento: {
     throw new ErroDeNegocio("esse agendamento já passou", "agendamento_passado");
   }
 }
+
+// O destino de quem cria ou move um agendamento pelo lado do cliente.
+// O `horariosLivres` não conhece o "agora" — só a janela e os ocupados
+// —, então sem esta guarda um horário de ontem passava. E o resultado
+// era pior que um agendamento estranho: era um agendamento que o
+// `garantirAlteravel` acima recusa cancelar ou remarcar depois.
+//
+// Recebe as strings do contrato ("YYYY-MM-DD", "HH:mm"), e compara como
+// string pelo mesmo motivo do `garantirAlteravel`. A criação manual pelo
+// barbeiro não passa por aqui: registrar um walk-in depois do fato é
+// legítimo.
+export function garantirFuturo(data: string, horaInicio: string): void {
+  const agora = agoraNaBarbearia();
+
+  if (data < agora.data || (data === agora.data && horaInicio <= agora.hora)) {
+    throw new ErroDeNegocio("esse horário já passou", "horario_passado");
+  }
+}

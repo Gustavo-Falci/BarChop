@@ -2,7 +2,7 @@ import { prisma } from "@barchop/database";
 import { consumirCodigo, emitirCodigo } from "../lib/codigos";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
-import { PADRAO_TELEFONE } from "../lib/padroes";
+import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import {
   conferirSenha,
   gerarHashSenha,
@@ -16,7 +16,7 @@ const paramsSlug = {
   type: "object",
   required: ["slug"],
   additionalProperties: false,
-  properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
 const corpoCodigo = {
@@ -146,7 +146,10 @@ export function registrarRotasAuthCliente(
       const cliente = existente
         ? await prisma.cliente.update({
             where: { id: existente.id },
-            data: { senhaHash },
+            // O carimbo derruba as sessões abertas: o hook recusa token
+            // emitido antes dele. Quem esqueceu a senha porque o celular
+            // foi roubado não pode deixar o ladrão logado por 7 dias.
+            data: { senhaHash, senhaAlteradaEm: new Date() },
           })
         : await prisma.cliente.create({
             data: { barbeariaId: barbearia.id, nome, telefone, senhaHash },

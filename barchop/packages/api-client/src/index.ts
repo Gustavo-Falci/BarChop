@@ -4,7 +4,11 @@ import { criarApiPublica } from "./publico";
 import { criarRequisicao, type OpcoesDoClient } from "./requisicao";
 
 export { ErroDaApi } from "./erro";
-export { CODIGO_DO_CLIENTE_FALSO, criarApiClientFalso } from "./falso";
+export {
+  CODIGO_DO_BARBEIRO_FALSO,
+  CODIGO_DO_CLIENTE_FALSO,
+  criarApiClientFalso,
+} from "./falso";
 export type { EstadoFalso } from "./falso";
 export { criarRequisicao } from "./requisicao";
 export type {
@@ -23,6 +27,7 @@ export type {
   NovaBarbearia,
   NovoCliente,
   NovoServico,
+  RedefinicaoDeSenha,
 } from "./barbeiro";
 export type {
   EdicaoDoMeuCadastro,

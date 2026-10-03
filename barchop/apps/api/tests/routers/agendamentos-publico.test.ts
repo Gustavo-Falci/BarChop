@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
+import { QUINTA, quintaPassada } from "../helpers/datas";
 import type { App } from "../../src/tipos";
 
 // Mesmo cenário do teste do walk-in: aberta de segunda a sábado,
-// 09:00–18:00, um serviço de 45 minutos. 2026-09-10 é uma quinta.
+// 09:00–18:00, um serviço de 45 minutos. QUINTA é a próxima quinta
+// com uma semana de folga — data fixa passaria e cairia no
+// garantirFuturo.
 async function prepararAgenda(app: App, sufixo = "um") {
   const barbearia = await criarBarbeariaComToken(app, sufixo);
 
@@ -38,7 +41,7 @@ function corpo(agenda: Awaited<ReturnType<typeof prepararAgenda>>, extra = {}) {
   return {
     barbeiroId: agenda.barbeiroId,
     servicoIds: [agenda.servico.id],
-    data: "2026-09-10",
+    data: QUINTA,
     horaInicio: "10:00",
     cliente: { nome: "João da Silva", telefone: "11999998888" },
     ...extra,
@@ -142,6 +145,23 @@ describe("POST /barbearias/:slug/agendamentos", () => {
     // O upsert do cliente e a criação do agendamento estão na mesma
     // transação — é o que impede a base de encher de cliente fantasma a
     // cada tentativa recusada.
+    expect(await prisma.cliente.count()).toBe(0);
+
+    await app.close();
+  });
+
+  it("recusa data passada com 422 horario_passado, sem cadastrar o cliente", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/barbearias/barbearia-um/agendamentos",
+      payload: corpo(agenda, { data: quintaPassada() }),
+    });
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("horario_passado");
     expect(await prisma.cliente.count()).toBe(0);
 
     await app.close();

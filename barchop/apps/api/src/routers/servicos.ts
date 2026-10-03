@@ -1,5 +1,5 @@
 import { prisma } from "@barchop/database";
-import { PADRAO_PRECO, PADRAO_UUID } from "../lib/padroes";
+import { PADRAO_PRECO, PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
 import { serializarServico } from "../lib/serializar";
 import type { App } from "../tipos";
 
@@ -58,7 +58,7 @@ const paramsSlug = {
   type: "object",
   required: ["slug"],
   additionalProperties: false,
-  properties: { slug: { type: "string", pattern: "^[a-z0-9-]{3,80}$" } },
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
 export function registrarRotasServicos(app: App): void {

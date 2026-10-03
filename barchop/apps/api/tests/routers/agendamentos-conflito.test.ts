@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
+import { QUINTA } from "../helpers/datas";
 import type { App } from "../../src/tipos";
 
 async function prepararAgenda(app: App) {
@@ -39,7 +40,7 @@ function corpoPublico(
   return {
     barbeiroId: agenda.barbeiroId,
     servicoIds: [agenda.servico.id],
-    data: "2026-09-10",
+    data: QUINTA,
     horaInicio: "10:00",
     cliente: { nome: "João", telefone: "11999998888" },
     ...extra,
@@ -275,10 +276,10 @@ describe("conflito de horário", () => {
       WHERE id = ${criado.json().id}::uuid
     `;
 
-    expect(linhas[0].dia).toBe("2026-09-10");
+    expect(linhas[0].dia).toBe(QUINTA);
     expect(linhas[0].inicio).toBe("10:00");
     expect(linhas[0].fim).toBe("10:45");
-    expect(linhas[0].periodo).toContain("2026-09-10 10:00:00");
+    expect(linhas[0].periodo).toContain(`${QUINTA} 10:00:00`);
 
     await app.close();
   });

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
@@ -73,6 +73,17 @@ describe("sessão do painel", () => {
     await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBeNull());
     expect(sessaoDaBarbearia.ler()).toBeNull();
     expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/painel/entrar");
+  });
+
+  it("acompanha a troca do slug sem remontar (link trocado em Configurações)", async () => {
+    sessaoDoBarbeiro.gravar("jwt-falso-barbeiro");
+    sessaoDaBarbearia.gravar("gr-barber");
+    montar();
+    expect(await screen.findByText("slug: gr-barber")).toBeInTheDocument();
+
+    act(() => sessaoDaBarbearia.gravar("gr-barber-centro"));
+
+    expect(await screen.findByText("slug: gr-barber-centro")).toBeInTheDocument();
   });
 
   it("sair limpa as duas chaves", async () => {

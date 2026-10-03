@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import {
   normalizarTelefoneObrigatorio,
+  PADRAO_SLUG,
+  slugReservado,
   TelefoneInvalido,
 } from "@barchop/formato";
 import type { HorarioSerializado } from "@barchop/types";
@@ -15,7 +17,10 @@ import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
+import { sessaoDaBarbearia } from "../../sessao/armazenamento";
 import estilos from "./ConfiguracoesDaBarbearia.module.css";
+
+const FORMATO_DO_SLUG = new RegExp(PADRAO_SLUG);
 
 // O mesmo limite da coluna `sobre` e do schema do PATCH. Cortar na
 // digitação evita o 400 que voltaria depois de a pessoa ter escrito o
@@ -40,7 +45,7 @@ function telefoneOuNulo(digitado: string): string | null {
 
 export function ConfiguracoesDaBarbearia() {
   const api = useApiDoPainel();
-  const { perfil, slug } = usePainel();
+  const { perfil } = usePainel();
 
   const horariosSalvos = useRequisicao(() => api.barbeiro.horarios(), []);
 
@@ -48,6 +53,7 @@ export function ConfiguracoesDaBarbearia() {
   const [telefoneDaBarbearia, setTelefoneDaBarbearia] = useState("");
   const [endereco, setEndereco] = useState("");
   const [sobre, setSobre] = useState("");
+  const [novoSlug, setNovoSlug] = useState("");
   const [semana, setSemana] = useState<HorarioSerializado[]>([]);
   const [nome, setNome] = useState(perfil.nome);
   const [telefone, setTelefone] = useState(perfil.telefone ?? "");
@@ -60,14 +66,10 @@ export function ConfiguracoesDaBarbearia() {
   // `salvando` só.
   const [salvando, setSalvando] = useState(false);
 
-  // A API tem PATCH /barbearias/me e nenhum GET: a única leitura dos
-  // dados da própria barbearia é a rota pública por slug. Daí o painel
-  // precisar do escopo publico também aqui, e não só na
-  // disponibilidade.
-  const barbearia = useRequisicao(
-    () => api.publico.perfilDaBarbearia(slug),
-    [slug],
-  );
+  // Pelo escopo do barbeiro, não pela rota pública por slug: o painel
+  // lê o que ele mesmo escreve, e trocar o slug aqui não deixa a
+  // leitura apontando pro endereço velho.
+  const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
 
   // Sincronizado durante a renderização, e não num `useEffect`: um
   // efeito só roda depois do commit, e entre o commit e o efeito o
@@ -95,6 +97,7 @@ export function ConfiguracoesDaBarbearia() {
     setTelefoneDaBarbearia(barbearia.dados.telefone ?? "");
     setEndereco(barbearia.dados.endereco ?? "");
     setSobre(barbearia.dados.sobre ?? "");
+    setNovoSlug(barbearia.dados.slug);
   }
 
   // Mesmo motivo do bloco acima, aplicado à semana: sincronizar depois
@@ -141,6 +144,48 @@ export function ConfiguracoesDaBarbearia() {
       // `return` no meio (telefone inválido), que pularia uma linha
       // solta e deixaria o botão travado depois do primeiro erro desse
       // tipo.
+      setSalvando(false);
+    }
+  }
+
+  async function trocarLink() {
+    setAviso(undefined);
+    setErro({});
+
+    // As mesmas duas regras da API, aqui pra o erro ficar no campo e em
+    // português, sem ida e volta.
+    if (!FORMATO_DO_SLUG.test(novoSlug)) {
+      setErro({
+        slug: "Use letras minúsculas, números e hífen, de 3 a 80 caracteres",
+      });
+      return;
+    }
+    if (slugReservado(novoSlug)) {
+      setErro({ slug: "Esse link é reservado pelo BarChop. Escolha outro" });
+      return;
+    }
+
+    setSalvando(true);
+    try {
+      const atualizada = await api.barbeiro.trocarSlug(novoSlug);
+      // A sessão guarda o slug desde o login, e a tela de novo
+      // agendamento o usa pra chamar a disponibilidade. Sem regravar,
+      // o painel seguiria consultando o endereço que acabou de morrer.
+      sessaoDaBarbearia.gravar(atualizada.slug);
+      // Sem `barbearia.recarregar()`: a leitura nova resincronizaria o
+      // formulário inteiro e apagaria o que foi digitado nos outros
+      // campos e ainda não salvo. O campo do link já mostra o slug novo.
+      setNovoSlug(atualizada.slug);
+    } catch (causa) {
+      const erroDaApi = causa as ErroDaApi;
+      // `conflito` é o unique do slug (P2002) — a única coluna única
+      // que esta rota escreve.
+      if (erroDaApi.codigo === "conflito") {
+        setErro({ slug: "Esse link já está em uso por outra barbearia" });
+        return;
+      }
+      setAviso(erroDaApi.mensagem || "Não foi possível trocar o link agora.");
+    } finally {
       setSalvando(false);
     }
   }
@@ -288,6 +333,27 @@ export function ConfiguracoesDaBarbearia() {
                 {sobre.length} de {SOBRE_MAX}
               </span>
             </div>
+
+            {/* Dentro de "Barbearia", com botão próprio: o link é dado da
+                barbearia, mas trocá-lo quebra o que já foi mandado por
+                WhatsApp — não pode ir de carona no "Salvar dados". */}
+            <Campo
+              rotulo="Link da barbearia"
+              name="slug"
+              autoComplete="off"
+              apoio={`O link dos seus clientes: /${novoSlug || "sua-barbearia"}. Ao trocar, o link antigo para de funcionar.`}
+              valor={novoSlug}
+              onChange={(valor) => setNovoSlug(valor.toLowerCase())}
+              erro={erro.slug}
+              maxLength={80}
+            />
+            <Botao
+              variante="contorno"
+              onClick={trocarLink}
+              carregando={salvando}
+            >
+              Trocar link
+            </Botao>
           </Secao>
           <Secao
             titulo="Seu perfil"

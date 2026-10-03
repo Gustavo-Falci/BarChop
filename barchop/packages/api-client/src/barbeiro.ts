@@ -17,6 +17,12 @@ export interface CredenciaisDoBarbeiro {
   senha: string;
 }
 
+export interface RedefinicaoDeSenha {
+  email: string;
+  codigo: string;
+  senha: string;
+}
+
 export interface NovaBarbearia {
   barbearia: { nome: string; slug: string };
   barbeiro: { nome: string; email: string; senha: string };
@@ -74,6 +80,17 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao("/auth/login", { metodo: "POST", corpo: credenciais });
     },
 
+    // Sem token, como o login. Responde igual tendo ou não conta: não há
+    // nada a devolver.
+    async pedirCodigo(email: string): Promise<void> {
+      await requisicao("/auth/codigo", { metodo: "POST", corpo: { email } });
+    },
+
+    // Mesmo formato de sessão do login: quem redefine já sai logado.
+    redefinirSenha(redefinicao: RedefinicaoDeSenha): Promise<SessaoBarbeiro> {
+      return requisicao("/auth/senha", { metodo: "POST", corpo: redefinicao });
+    },
+
     meuPerfil(): Promise<PerfilBarbeiro> {
       return requisicao("/me", { comToken: true });
     },
@@ -82,6 +99,21 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao("/me", {
         metodo: "PATCH",
         corpo: edicao,
+        comToken: true,
+      });
+    },
+
+    minhaBarbearia(): Promise<BarbeariaSerializada> {
+      return requisicao("/barbearias/me", { comToken: true });
+    },
+
+    // Rota própria, fora do `atualizarMinhaBarbearia`: trocar o link
+    // quebra o que já foi mandado por WhatsApp, e a tela pede isso num
+    // botão separado.
+    trocarSlug(slug: string): Promise<BarbeariaSerializada> {
+      return requisicao("/barbearias/me/slug", {
+        metodo: "PATCH",
+        corpo: { slug },
         comToken: true,
       });
     },

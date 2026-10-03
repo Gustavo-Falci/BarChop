@@ -23,6 +23,24 @@ export interface IntervaloOcupado {
   horaFim: Date;
 }
 
+// O `horariosLivres` não sabe que dia é hoje — só a janela e os
+// ocupados. Isto é o relógio por cima dele, nas rotas de leitura: dia
+// passado não tem vaga, e hoje só vale o que começa depois de agora (o
+// minuto atual já não dá tempo de chegar). Puro, com o `agora` de
+// fora, pelo mesmo motivo do `garantirFuturo`: comparação de string no
+// formato do contrato, sem Date e sem fuso da máquina.
+export function descartarPassados(params: {
+  data: string;
+  horarios: string[];
+  agora: { data: string; hora: string };
+}): string[] {
+  const { data, horarios, agora } = params;
+
+  if (data < agora.data) return [];
+  if (data > agora.data) return horarios;
+  return horarios.filter((hora) => hora > agora.hora);
+}
+
 export function horariosLivres(params: {
   janela: LinhaDeHorario | null;
   ocupados: IntervaloOcupado[];

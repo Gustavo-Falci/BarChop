@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { horariosLivres } from "../../src/lib/disponibilidade";
+import {
+  descartarPassados,
+  horariosLivres,
+} from "../../src/lib/disponibilidade";
 import { horaParaDate } from "../../src/lib/horas";
 
 function janela(abertura: string, fechamento: string) {
@@ -67,5 +70,25 @@ describe("horariosLivres", () => {
         duracaoTotalMinutos: 45,
       })
     ).toEqual([]);
+  });
+});
+
+describe("descartarPassados", () => {
+  const agora = { data: "2037-09-10", hora: "10:30" };
+  const horarios = ["09:00", "10:15", "10:30", "10:45", "17:00"];
+
+  it("devolve tudo num dia futuro", () => {
+    expect(descartarPassados({ data: "2037-09-11", horarios, agora })).toEqual(horarios);
+  });
+
+  it("devolve nada num dia passado", () => {
+    expect(descartarPassados({ data: "2037-09-09", horarios, agora })).toEqual([]);
+  });
+
+  it("hoje, só o que começa depois de agora — o minuto atual já não serve", () => {
+    expect(descartarPassados({ data: "2037-09-10", horarios, agora })).toEqual([
+      "10:45",
+      "17:00",
+    ]);
   });
 });

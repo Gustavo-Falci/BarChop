@@ -138,4 +138,31 @@ describe("GET /barbearias/:slug", () => {
 
     await app.close();
   });
+
+  it("só quem atende e já entrou: sem recepção e sem convite pendente, o dono primeiro", async () => {
+    // O fluxo público usa o primeiro da lista até o bloco C. A ordem é
+    // a de entrada na equipe, não o nome: um "Abel" contratado depois
+    // não pode tomar os agendamentos de quem abriu a barbearia.
+    const app = buildApp();
+    const { slug, barbeiroId, barbeariaId } = await criarBarbeariaComToken(app);
+    const outros = [
+      { nome: "Abel recepção", papel: "recepcao" as const, atende: false, senhaHash: "x" },
+      { nome: "Abel convidado", papel: "profissional" as const, atende: true, senhaHash: null },
+      { nome: "Abel profissional", papel: "profissional" as const, atende: true, senhaHash: "x" },
+    ];
+    for (const [i, outro] of outros.entries()) {
+      await prisma.barbeiro.create({
+        data: { barbeariaId, email: `abel${i}@exemplo.com`, ...outro },
+      });
+    }
+
+    const resposta = await app.inject({ method: "GET", url: `/barbearias/${slug}` });
+
+    expect(resposta.json().barbeiros.map((b: { nome: string }) => b.nome)).toEqual([
+      "Barbeiro um",
+      "Abel profissional",
+    ]);
+    expect(resposta.json().barbeiros[0].id).toBe(barbeiroId);
+    await app.close();
+  });
 });

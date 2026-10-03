@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import type { CanalDeMemoria, CanalDeMensagem } from "../../src/lib/canal";
@@ -122,6 +122,40 @@ describe("POST /equipe", () => {
     expect(enviadas[0].texto).toMatch(/\b\d{6}\b/);
     expect(enviadas[0].texto).toContain("Barbearia um");
     await app.close();
+  });
+
+  it("com URL_DO_PAINEL, o convite leva o link da tela de aceitar, com o e-mail", async () => {
+    vi.stubEnv("URL_DO_PAINEL", "https://painel.barchop.com.br");
+    try {
+      const app = buildApp();
+      const dono = await criarBarbeariaComToken(app);
+
+      await convidar(app, dono.token);
+
+      const [convite] = enviadasPara(app, "ana@exemplo.com");
+      expect(convite.texto).toContain(
+        "https://painel.barchop.com.br/painel/convite?email=ana%40exemplo.com"
+      );
+      await app.close();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("sem URL_DO_PAINEL, o convite vai só com o código — sem link quebrado", async () => {
+    vi.stubEnv("URL_DO_PAINEL", "");
+    try {
+      const app = buildApp();
+      const dono = await criarBarbeariaComToken(app);
+
+      await convidar(app, dono.token);
+
+      const [convite] = enviadasPara(app, "ana@exemplo.com");
+      expect(convite.texto).not.toMatch(/https?:\/\//);
+      await app.close();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("recepção nasce sem atender; o dono pode dizer o contrário", async () => {

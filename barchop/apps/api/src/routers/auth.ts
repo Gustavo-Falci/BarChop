@@ -226,6 +226,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         void app.canal
           .enviar({
             para: email,
+            assunto: "Seu código para redefinir a senha do BarChop",
             texto:
               `BarChop: seu código pra redefinir a senha do painel é ${codigo}. ` +
               "Vale 10 minutos. Se não foi você que pediu, ignore este e-mail.",

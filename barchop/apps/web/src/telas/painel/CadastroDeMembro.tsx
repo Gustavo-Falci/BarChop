@@ -140,12 +140,13 @@ export function CadastroDeMembro() {
       });
 
       // O próprio dono mudou de papel: a barra e as guardas leem o perfil
-      // da sessão, que precisa ser relido. Rebaixado, a Equipe deixa de
-      // ser dele — volta pro início em vez de cair no aviso de "só o
-      // dono".
+      // da sessão, que precisa ser relido. Navega ANTES de reler: com o
+      // perfil novo primeiro, o SoDoDono desta rota trocaria a tela pelo
+      // aviso de "só o dono" — um alerta logo depois de salvar certo. O
+      // recarregar vem do layout, que não desmonta na navegação.
       if (id === perfil.id) {
-        await recarregarPerfil();
         router.push(papel === "dono" ? "/painel/equipe" : "/painel");
+        await recarregarPerfil();
         return;
       }
       router.push("/painel/equipe");

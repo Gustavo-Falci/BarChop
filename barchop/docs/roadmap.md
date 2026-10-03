@@ -280,8 +280,8 @@ config compartilhada em `packages/config/eslint.mjs`.
 - **O Novo agendamento do painel marca em quem está logado.** A tela
   manda `barbeiroId: perfil.id` (`NovoAgendamento.tsx`): a recepção
   marcaria na própria agenda, e ela nasce sem atender. Fecha no C3 do
-  bloco C, quando a tela escolhe o profissional. Até lá, a GR Barber
-  não tem recepção cadastrada.
+  bloco C, quando a tela escolhe o profissional; até lá, não convide
+  recepção numa barbearia em uso.
 - **Convite e reenvio não têm limite de envio.** `POST /equipe` e
   `POST /equipe/:id/convite` mandam e-mail sem contador: só o dono
   autenticado chama, mas um dono pode usar a rota pra mandar e-mail a

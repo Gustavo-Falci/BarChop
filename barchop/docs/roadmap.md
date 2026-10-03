@@ -9,8 +9,8 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 
 | Onda | Resultado | Estado |
 |---|---|---|
-| 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | pronta na branch `onda-0`, falta o merge — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
-| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | pendente |
+| 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | feita, na main (PR #13) — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
+| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | em andamento na branch `onda-1` — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
 | 1s — Site de marketing | Landing, preços, plano grátis, termos e privacidade | pendente, em paralelo à 1 |
 | 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | pendente |
 | 3 — Retenção do cliente final | Pagamento e sinal online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações | pendente |
@@ -19,9 +19,11 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 
 Nenhuma onda nova abre antes de o piloto rodar a Onda 1.
 
-**Começar já, fora do código:** a verificação de negócio na Meta (exige
-CNPJ) e a aprovação dos templates de mensagem levam semanas, e o
-lembrete por WhatsApp da Onda 1 depende delas (ADR-0004).
+**Verificação da Meta em standby (decisão de 2026-10-03).** Ela exige
+CNPJ e leva semanas; até sair, a Onda 1 não depende do WhatsApp: o
+lembrete automático e os códigos do cliente saem por e-mail, e o painel
+oferece lembrar pelo WhatsApp à mão (`wa.me`). O canal da Cloud API
+(ADR-0004) entra quando a verificação andar.
 
 ## Histórico — até 2026-10-02
 

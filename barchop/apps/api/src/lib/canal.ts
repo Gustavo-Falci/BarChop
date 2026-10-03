@@ -12,8 +12,14 @@ export interface Mensagem {
   texto: string;
 }
 
+// O que cada canal sabe entregar. O de e-mail não tem como mandar nada
+// pra um telefone, e a rota precisa saber disso antes de emitir o
+// código — senão o pedido vira um 500 no envio.
+export type Destino = "email" | "telefone";
+
 export interface CanalDeMensagem {
   nome: string;
+  destinos: readonly Destino[];
   enviar(mensagem: Mensagem): Promise<void>;
 }
 
@@ -26,6 +32,7 @@ export function canalDeMemoria(): CanalDeMemoria {
   const enviadas: Mensagem[] = [];
   return {
     nome: "memoria",
+    destinos: ["email", "telefone"],
     enviadas,
     async enviar(mensagem) {
       enviadas.push(mensagem);
@@ -41,6 +48,7 @@ interface Log {
 function canalDeLog(log: Log): CanalDeMensagem {
   return {
     nome: "log",
+    destinos: ["email", "telefone"],
     async enviar(mensagem) {
       log.info({ para: mensagem.para, texto: mensagem.texto }, "mensagem (canal de log)");
     },

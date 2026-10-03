@@ -111,6 +111,16 @@ function chaveDoTelefone(corpo: unknown): string {
   }
 }
 
+// O cliente se identifica por telefone ou, no piloto, por e-mail. Com
+// e-mail no corpo, ele é a identidade — na definição de senha o
+// telefone vai junto só pro cadastro novo — então é ele a chave.
+function chaveDoCliente(corpo: unknown): string {
+  const email = (corpo as { email?: unknown } | null)?.email;
+  return typeof email === "string"
+    ? `email:${chaveDoEmail(corpo)}`
+    : `tel:${chaveDoTelefone(corpo)}`;
+}
+
 // O login do cliente é por barbearia: o mesmo telefone em duas
 // barbearias são duas contas, e uma não pode gastar o limite da outra.
 function slugDaRota(request: FastifyRequest): string {
@@ -170,7 +180,7 @@ export function limitesDeAuth(app: App) {
         max: MAX_POR_CONTA,
         janela: JANELA_POR_CONTA,
         chave: (request) =>
-          `login-cliente:${slugDaRota(request)}:${chaveDoTelefone(request.body)}`,
+          `login-cliente:${slugDaRota(request)}:${chaveDoCliente(request.body)}`,
       }),
       porIpNoLogin,
     ],
@@ -180,7 +190,7 @@ export function limitesDeAuth(app: App) {
         max: MAX_CODIGO_POR_TELEFONE,
         janela: JANELA_CODIGO_POR_TELEFONE,
         chave: (request) =>
-          `codigo-cliente:${slugDaRota(request)}:${chaveDoTelefone(request.body)}`,
+          `codigo-cliente:${slugDaRota(request)}:${chaveDoCliente(request.body)}`,
       }),
       contador(app, {
         max: MAX_CODIGO_POR_IP,
@@ -224,7 +234,7 @@ export function limitesDeAuth(app: App) {
         max: MAX_POR_CONTA,
         janela: JANELA_POR_CONTA,
         chave: (request) =>
-          `senha-cliente:${slugDaRota(request)}:${chaveDoTelefone(request.body)}`,
+          `senha-cliente:${slugDaRota(request)}:${chaveDoCliente(request.body)}`,
       }),
       porIpNoLogin,
     ],

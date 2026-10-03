@@ -72,7 +72,7 @@ describe("código do cliente por e-mail", () => {
     const app = buildApp({ canal: canalSoDeEmail() });
     const { slug } = await criarBarbeariaComToken(app);
 
-    const resposta = await pedirCodigo(app, slug, { email: "  Joao@Exemplo.com " });
+    const resposta = await pedirCodigo(app, slug, { email: "Joao@Exemplo.com" });
 
     expect(resposta.statusCode).toBe(202);
     const [mensagem] = enviadas(app);

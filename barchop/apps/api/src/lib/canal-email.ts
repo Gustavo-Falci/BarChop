@@ -23,6 +23,7 @@ export function canalDeEmail(config: ConfigDoEmail): CanalDeMensagem {
 
   return {
     nome: "email",
+    destinos: ["email"],
     async enviar(mensagem) {
       if (!PARECE_EMAIL.test(mensagem.para)) {
         throw new Error("canal de e-mail recebeu um destino que não é e-mail");

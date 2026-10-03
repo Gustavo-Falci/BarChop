@@ -1,6 +1,7 @@
 import { prisma } from "@barchop/database";
 import { PADRAO_PRECO, PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
 import { serializarServico } from "../lib/serializar";
+import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
 
 // Preço entra como string pelo mesmo motivo que sai como string: number
@@ -75,7 +76,7 @@ export function registrarRotasServicos(app: App): void {
 
   app.post(
     "/servicos",
-    { schema: { body: corpoNovoServico } },
+    { schema: { body: corpoNovoServico }, onRequest: exigirPapel("dono") },
     async (request, reply) => {
       const servico = await prisma.servico.create({
         // barbeariaId do token, sempre. O corpo não tem como mandar o
@@ -89,7 +90,10 @@ export function registrarRotasServicos(app: App): void {
 
   app.patch(
     "/servicos/:id",
-    { schema: { params: paramsComId, body: corpoPatchServico } },
+    {
+      schema: { params: paramsComId, body: corpoPatchServico },
+      onRequest: exigirPapel("dono"),
+    },
     async (request) => {
       const servico = await prisma.servico.update({
         // O barbeariaId vai no MESMO where da escrita. Conferir a posse
@@ -106,7 +110,7 @@ export function registrarRotasServicos(app: App): void {
 
   app.delete(
     "/servicos/:id",
-    { schema: { params: paramsComId } },
+    { schema: { params: paramsComId }, onRequest: exigirPapel("dono") },
     async (request) => {
       // Soft delete: AgendamentoServico tem FK ON DELETE RESTRICT pro
       // serviço — apagar de verdade quebraria o histórico de quem já foi

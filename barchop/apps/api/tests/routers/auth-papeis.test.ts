@@ -141,7 +141,9 @@ describe("agenda por papel", () => {
     const app = buildApp();
     const equipe = await prepararEquipe(app);
     await agendar(app, equipe.dono.token, equipe, equipe.dono.barbeiroId, "10:00");
-    await agendar(app, equipe.dono.token, equipe, equipe.profissional.barbeiroId, "11:00");
+    const dele = (
+      await agendar(app, equipe.dono.token, equipe, equipe.profissional.barbeiroId, "11:00")
+    ).json();
 
     const lista = await app.inject({
       method: "GET",
@@ -151,7 +153,7 @@ describe("agenda por papel", () => {
 
     const agendamentos = lista.json().agendamentos;
     expect(agendamentos).toHaveLength(1);
-    expect(agendamentos[0].barbeiroId).toBe(equipe.profissional.barbeiroId);
+    expect(agendamentos[0].id).toBe(dele.id);
     await app.close();
   });
 

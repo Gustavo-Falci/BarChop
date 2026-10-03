@@ -5,6 +5,7 @@ import { normalizarTelefone } from "../lib/telefone";
 import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import { serializarBarbearia } from "../lib/serializar";
 import { completarSemana } from "./horarios";
+import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
 
 // A tela de Configurações edita estes campos. `slug` fica fora: trocar
@@ -70,7 +71,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
   // consulta prévia que abriria corrida entre checar e gravar.
   app.patch(
     "/barbearias/me/slug",
-    { schema: { body: corpoTrocaDeSlug } },
+    { schema: { body: corpoTrocaDeSlug }, onRequest: exigirPapel("dono") },
     async (request) => {
       const { slug } = request.body;
 
@@ -92,7 +93,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
 
   app.patch(
     "/barbearias/me",
-    { schema: { body: corpoPatchBarbearia } },
+    { schema: { body: corpoPatchBarbearia }, onRequest: exigirPapel("dono") },
     async (request) => {
       // O id sai do token. Não existe rota `/barbearias/:id` de escrita:
       // sem id na URL não há o que escopar errado.

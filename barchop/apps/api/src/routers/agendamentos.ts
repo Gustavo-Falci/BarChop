@@ -17,6 +17,7 @@ import {
 } from "../lib/serializar";
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
+import { agendaVisivel, membroDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
 // Sem `barbeariaId` e sem `origem`: os dois seriam forjáveis. O
@@ -137,6 +138,14 @@ export function registrarRotasAgendamentos(app: App): void {
       const barbeariaId = request.user.barbeariaId;
       const { clienteId, ...resto } = request.body;
 
+      // O profissional marca só na própria agenda; dono e recepção, na
+      // de qualquer um. 403 e não 404: o colega ele conhece, e quem está
+      // no balcão precisa entender por que não deu.
+      const membro = membroDoToken(request);
+      if (membro.papel === "profissional" && resto.barbeiroId !== membro.id) {
+        throw new ErroHttp(403, "sem_permissao", "você só marca na sua própria agenda");
+      }
+
       // O retry existe porque dois pedidos simultâneos no mesmo horário
       // podem virar impasse no Postgres em vez de violação da
       // constraint — e aí a resposta certa (409) viraria 500.
@@ -215,6 +224,7 @@ export function registrarRotasAgendamentos(app: App): void {
         // Sempre o barbeariaId do token.
         where: {
           barbeariaId: request.user.barbeariaId,
+          ...agendaVisivel(request),
           data: { gte: inicio, lte: fim },
         },
         orderBy: [{ data: "asc" }, { horaInicio: "asc" }],
@@ -231,10 +241,13 @@ export function registrarRotasAgendamentos(app: App): void {
     "/agendamentos/:id",
     { schema: { params: paramsComId } },
     async (request) => {
+      // O horário do colega não existe pro profissional: 404, igual ao
+      // de outra barbearia.
       const agendamento = await prisma.agendamento.findFirstOrThrow({
         where: {
           id: request.params.id,
           barbeariaId: request.user.barbeariaId,
+          ...agendaVisivel(request),
         },
         include: INCLUDE_AGENDAMENTO,
       });
@@ -256,6 +269,7 @@ export function registrarRotasAgendamentos(app: App): void {
         where: {
           id: request.params.id,
           barbeariaId: request.user.barbeariaId,
+          ...agendaVisivel(request),
         },
         data: request.body,
         include: INCLUDE_AGENDAMENTO,

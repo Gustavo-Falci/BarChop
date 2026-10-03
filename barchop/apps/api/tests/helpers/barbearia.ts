@@ -1,3 +1,5 @@
+import { prisma } from "@barchop/database";
+import { gerarHashSenha } from "../../src/lib/senha";
 import type { App } from "../../src/tipos";
 
 export interface BarbeariaDeTeste {
@@ -50,4 +52,42 @@ export async function criarBarbeariaComToken(
 
 export function auth(token: string): { authorization: string } {
   return { authorization: `Bearer ${token}` };
+}
+
+export interface MembroDeTeste {
+  token: string;
+  barbeiroId: string;
+}
+
+// Um membro da equipe com papel e senha, já logado. Criado direto no
+// banco, e não pela rota de equipe: os testes de papel não podem
+// depender da rota que eles mesmos protegem.
+export async function criarMembroComToken(
+  app: App,
+  barbeariaId: string,
+  papel: "dono" | "profissional" | "recepcao",
+  sufixo: string
+): Promise<MembroDeTeste> {
+  const email = `${papel}-${sufixo}@exemplo.com`;
+  const membro = await prisma.barbeiro.create({
+    data: {
+      barbeariaId,
+      nome: `Membro ${sufixo}`,
+      email,
+      senhaHash: await gerarHashSenha("senha-forte-123"),
+      papel,
+      atende: papel !== "recepcao",
+    },
+  });
+
+  const resposta = await app.inject({
+    method: "POST",
+    url: "/auth/login",
+    payload: { email, senha: "senha-forte-123" },
+  });
+  if (resposta.statusCode !== 200) {
+    throw new Error(`login do membro falhou: ${resposta.statusCode} ${resposta.body}`);
+  }
+
+  return { token: resposta.json().token, barbeiroId: membro.id };
 }

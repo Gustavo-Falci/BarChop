@@ -169,16 +169,48 @@ describe("api pública", () => {
       respostaJson({ enviado: true }, 202)
     );
 
-    await clientComFetch(fetchFalso).publico.pedirCodigoDoCliente(
-      "gr-barber",
-      "(11) 98888-7777"
-    );
+    await clientComFetch(fetchFalso).publico.pedirCodigoDoCliente("gr-barber", {
+      telefone: "(11) 98888-7777",
+    });
 
     expect(fetchFalso.mock.calls[0][0]).toBe(
       "https://api.exemplo.br/barbearias/gr-barber/auth/cliente/codigo"
     );
     expect(JSON.parse(String(fetchFalso.mock.calls[0][1]?.body))).toEqual({
       telefone: "(11) 98888-7777",
+    });
+  });
+
+  it("pede o código pro e-mail, no piloto sem WhatsApp", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
+      respostaJson({ enviado: true }, 202)
+    );
+
+    await clientComFetch(fetchFalso).publico.pedirCodigoDoCliente("gr-barber", {
+      email: "maria@exemplo.com",
+    });
+
+    expect(JSON.parse(String(fetchFalso.mock.calls[0][1]?.body))).toEqual({
+      email: "maria@exemplo.com",
+    });
+  });
+
+  it("entra com e-mail e senha", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
+      respostaJson({
+        token: "jwt-cliente",
+        cliente: { id: "c1", nome: "Maria", telefone: "(11) 99999-8888", email: "maria@exemplo.com", temConta: true },
+      })
+    );
+
+    await clientComFetch(fetchFalso).publico.loginCliente("gr-barber", {
+      email: "maria@exemplo.com",
+      senha: "segredo123",
+    });
+
+    expect(JSON.parse(String(fetchFalso.mock.calls[0][1]?.body))).toEqual({
+      email: "maria@exemplo.com",
+      senha: "segredo123",
     });
   });
 

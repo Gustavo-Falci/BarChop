@@ -1,5 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { PADRAO_SLUG, slugReservado } from "../src/index";
+import { PADRAO_SLUG, slugReservado, sugerirSlug } from "../src/index";
+
+// O cadastro do dono preenche o link a partir do nome da barbearia, até
+// o dono mexer nele. A sugestão sai no formato que a API aceita.
+describe("sugerirSlug", () => {
+  it("minúsculas, sem acento, hífen no lugar dos espaços", () => {
+    expect(sugerirSlug("Barbearia do Zé")).toBe("barbearia-do-ze");
+    expect(sugerirSlug("Cortes & Navalha São João")).toBe("cortes-navalha-sao-joao");
+  });
+
+  it("junta separadores repetidos e apara as pontas", () => {
+    expect(sugerirSlug("  GR -- Barber!  ")).toBe("gr-barber");
+  });
+
+  it("corta em 80 sem deixar hífen no fim", () => {
+    const sugestao = sugerirSlug(`${"a".repeat(79)} b`);
+    expect(sugestao).toBe("a".repeat(79));
+    expect(sugestao.length).toBeLessThanOrEqual(80);
+  });
+
+  it("nome sem nada aproveitável vira vazio", () => {
+    expect(sugerirSlug("!!!")).toBe("");
+    expect(sugerirSlug("")).toBe("");
+  });
+});
 
 describe("PADRAO_SLUG", () => {
   const padrao = new RegExp(PADRAO_SLUG);

@@ -181,7 +181,7 @@ describe("fila do pg-boss", () => {
     await fila.agendar(trabalho, {}, { quando: new Date(Date.now() + 60 * 60 * 1000) });
 
     const config = await boss.getQueue(trabalho);
-    expect(config?.retryLimit).toBeGreaterThanOrEqual(5);
+    expect(config?.retryLimit).toBeGreaterThanOrEqual(8);
     expect(config?.retryDelay).toBeGreaterThanOrEqual(30);
     expect(config?.retryBackoff).toBe(true);
   });

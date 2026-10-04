@@ -84,10 +84,11 @@ const POLITICA = "exclusive";
 
 // O padrão do pg-boss é repetir 2 vezes sem espera: uma queda de um
 // minuto no provedor de e-mail queimaria as três tentativas em segundos.
-// Com 5 repetições, começando em 1 min e dobrando até 1 h, o trabalho
-// atravessa uma queda de mais de uma hora.
+// Com espera de 1 min dobrando (e um sorteio de até 2x em cada uma) e
+// teto de 1 h, as 8 repetições somam pelo menos ~3 h. Repetir a mais não
+// manda lembrete atrasado: o tratador desiste quando o horário começa.
 const REPETICAO = {
-  retryLimit: 5,
+  retryLimit: 8,
   retryDelay: 60,
   retryBackoff: true,
   retryDelayMax: 60 * 60,

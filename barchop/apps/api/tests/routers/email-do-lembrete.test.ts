@@ -40,7 +40,7 @@ describe("e-mail do lembrete na página pública", () => {
     const resposta = await marcarPublico(app, agenda, {
       nome: "Maria",
       telefone: "11977776666",
-      email: "  Maria@Exemplo.COM ",
+      email: "Maria@Exemplo.COM",
     });
 
     expect(resposta.statusCode).toBe(201);

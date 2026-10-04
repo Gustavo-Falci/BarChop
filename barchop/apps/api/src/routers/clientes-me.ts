@@ -229,6 +229,8 @@ export function registrarRotasClientesMe(app: App): void {
             data,
             horaInicio,
             origem: "cliente",
+            // O e-mail que recebia o lembrete do antigo recebe o do novo.
+            emailLembrete: antigo.emailLembrete,
           });
         })
       );

@@ -123,6 +123,45 @@ const DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {
   timeZone: "UTC",
 });
 
+// O que o texto do lembrete precisa saber do agendamento — o mesmo no
+// e-mail e no WhatsApp do painel.
+export const INCLUDE_DO_LEMBRETE = {
+  cliente: { select: { nome: true, email: true, telefone: true } },
+  barbearia: { select: { nome: true, slug: true } },
+  barbeiro: { select: { nome: true } },
+  servicos: { include: { servico: { select: { nome: true } } } },
+} as const;
+
+interface AgendamentoDoLembrete {
+  data: Date;
+  horaInicio: Date;
+  cliente: { nome: string };
+  barbearia: { nome: string };
+  barbeiro: { nome: string };
+  servicos: { servico: { nome: string } }[];
+}
+
+export function textoDoLembrete(agendamento: AgendamentoDoLembrete, url: string | undefined): string {
+  const servicos = agendamento.servicos.map((s) => s.servico.nome).join(" + ");
+  const primeiroNome = agendamento.cliente.nome.split(" ")[0];
+  const acao = url
+    ? `Confirme sua presença ou cancele por aqui: ${url}`
+    : "Se não puder ir, avise a barbearia.";
+  return (
+    `Olá, ${primeiroNome}! Passando pra lembrar do seu horário na ` +
+    `${agendamento.barbearia.nome}: ${DIA_DA_SEMANA.format(agendamento.data)}, ` +
+    `às ${dateParaHora(agendamento.horaInicio)}, ` +
+    `com ${agendamento.barbeiro.nome} (${servicos}).\n\n` +
+    acao
+  );
+}
+
+// O wa.me quer só dígitos, com o código do país. O telefone chega
+// normalizado ("(11) 99999-8888"), sempre brasileiro.
+export function telefoneParaWhatsApp(telefone: string): string {
+  return `55${telefone.replace(/\D/g, "")}`;
+}
+
 // O tratador. Cada saída antecipada é um "não há o que mandar" e
 // termina sem erro; só a falha no envio lança — é o único caso em que
 // o pg-boss repetir ajuda.
@@ -142,12 +181,7 @@ export async function enviarLembrete(
 ): Promise<void> {
   const agendamento = await prisma.agendamento.findUnique({
     where: { id: agendamentoId },
-    include: {
-      cliente: { select: { nome: true, email: true } },
-      barbearia: { select: { nome: true, slug: true } },
-      barbeiro: { select: { nome: true } },
-      servicos: { include: { servico: { select: { nome: true } } } },
-    },
+    include: INCLUDE_DO_LEMBRETE,
   });
   // Sumiu: a barbearia foi apagada e levou o agendamento junto.
   if (!agendamento) return;
@@ -160,7 +194,8 @@ export async function enviarLembrete(
 
   // Antes de reivindicar a marca: marcar sem mandar impediria o lembrete
   // de sair se o e-mail entrar depois e o trabalho for agendado de novo.
-  const email = agendamento.cliente.email;
+  // O do agendamento (digitado ao marcar) antes do do cadastro.
+  const email = agendamento.emailLembrete ?? agendamento.cliente.email;
   if (!email) {
     log.info({ agendamentoId }, "lembrete não enviado: cliente sem e-mail");
     return;
@@ -176,21 +211,12 @@ export async function enviarLembrete(
   });
   if (count === 0) return;
 
-  const servicos = agendamento.servicos.map((s) => s.servico.nome).join(" + ");
-  const primeiroNome = agendamento.cliente.nome.split(" ")[0];
   const url = link?.({ agendamentoId, slug: agendamento.barbearia.slug, inicio });
-  const acao = url
-    ? `Confirme sua presença ou cancele por aqui: ${url}`
-    : "Se não puder ir, avise a barbearia.";
   try {
     await canal.enviar({
       para: email,
       assunto: `Lembrete: seu horário na ${agendamento.barbearia.nome}`,
-      texto:
-        `Olá, ${primeiroNome}! Passando pra lembrar do seu horário na ` +
-        `${agendamento.barbearia.nome}: ${DIA_DA_SEMANA.format(agendamento.data)}, às ${hora}, ` +
-        `com ${agendamento.barbeiro.nome} (${servicos}).\n\n` +
-        acao,
+      texto: textoDoLembrete(agendamento, url),
     });
   } catch (erro) {
     // Devolve a marca pra repetição do pg-boss conseguir mandar.

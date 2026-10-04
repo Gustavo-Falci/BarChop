@@ -61,6 +61,14 @@ export interface BarbeariaSerializada {
   sobre: string | null;
 }
 
+export type AntecedenciaDoLembrete = 2 | 12 | 24;
+
+// O que só o painel lê: a configuração do lembrete não é da conta de
+// quem abre a página pública.
+export interface BarbeariaDoPainel extends BarbeariaSerializada {
+  lembreteAntecedenciaHoras: AntecedenciaDoLembrete;
+}
+
 export interface HorarioSerializado {
   diaSemana: number; // 0 = domingo
   horaAbertura: string | null; // "HH:mm"
@@ -133,6 +141,9 @@ export interface AgendamentoSerializado {
   // Com quem. No "qualquer um" o cliente só sabe depois de marcar; a
   // agenda da equipe desenha uma coluna por profissional.
   barbeiro: { id: string; nome: string };
+  // Quando o cliente confirmou presença pelo link do lembrete (ISO);
+  // null = não confirmou.
+  presencaConfirmadaEm: string | null;
 }
 
 // As rotas do barbeiro devolvem o cliente junto porque a agenda mostra

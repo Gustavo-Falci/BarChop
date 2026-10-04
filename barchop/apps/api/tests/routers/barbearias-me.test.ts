@@ -23,6 +23,7 @@ describe("GET /barbearias/me", () => {
       endereco: null,
       logoUrl: null,
       sobre: null,
+      lembreteAntecedenciaHoras: 24,
     });
 
     await app.close();

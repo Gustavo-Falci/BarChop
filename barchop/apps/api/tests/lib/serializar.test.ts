@@ -152,6 +152,7 @@ describe("serializarAgendamento", () => {
       status: "confirmado",
       origem: "cliente",
       observacoes: null,
+      presencaConfirmadaEm: new Date("2026-09-09T15:30:00.000Z"),
       servicos: [
         {
           servicoId: "s1",
@@ -172,6 +173,7 @@ describe("serializarAgendamento", () => {
       status: "confirmado",
       origem: "cliente",
       observacoes: null,
+      presencaConfirmadaEm: "2026-09-09T15:30:00.000Z",
       servicos: [
         {
           servicoId: "s1",

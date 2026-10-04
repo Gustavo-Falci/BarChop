@@ -4,7 +4,7 @@ import { PODE_ATENDER } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { normalizarTelefone } from "../lib/telefone";
 import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
-import { serializarBarbearia } from "../lib/serializar";
+import { serializarBarbearia, serializarBarbeariaDoPainel } from "../lib/serializar";
 import { completarSemana } from "./horarios";
 import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
@@ -44,6 +44,9 @@ const corpoPatchBarbearia = {
       pattern: "^https?://",
       maxLength: 500,
     },
+    // Quanto antes do horário sai o lembrete. Mudar não move os que já
+    // estão na fila: a antecedência é lida quando o lembrete é agendado.
+    lembreteAntecedenciaHoras: { type: "integer", enum: [2, 12, 24] },
   },
 } as const;
 
@@ -63,7 +66,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
       where: { id: request.user.barbeariaId },
     });
 
-    return serializarBarbearia(barbearia);
+    return serializarBarbeariaDoPainel(barbearia);
   });
 
   // Trocar o link público. O antigo para de responder na hora: o
@@ -88,7 +91,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
         data: { slug },
       });
 
-      return serializarBarbearia(barbearia);
+      return serializarBarbeariaDoPainel(barbearia);
     }
   );
 
@@ -113,7 +116,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
         },
       });
 
-      return serializarBarbearia(barbearia);
+      return serializarBarbeariaDoPainel(barbearia);
     }
   );
 }

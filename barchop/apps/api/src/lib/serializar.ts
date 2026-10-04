@@ -3,6 +3,8 @@ import type {
   AgendamentoComCliente,
   AgendamentoSerializado,
   AgendamentoServicoSerializado,
+  AntecedenciaDoLembrete,
+  BarbeariaDoPainel,
   BarbeariaSerializada,
   ClienteSerializado,
   HorarioSerializado,
@@ -48,6 +50,18 @@ export function serializarBarbearia(barbearia: {
     endereco: barbearia.endereco,
     logoUrl: barbearia.logoUrl,
     sobre: barbearia.sobre,
+  };
+}
+
+// O painel lê a barbearia com a configuração do lembrete; a página
+// pública, que usa o serializador de cima, não.
+export function serializarBarbeariaDoPainel(
+  barbearia: Parameters<typeof serializarBarbearia>[0] & { lembreteAntecedenciaHoras: number }
+): BarbeariaDoPainel {
+  return {
+    ...serializarBarbearia(barbearia),
+    // O CHECK da coluna garante 2, 12 ou 24.
+    lembreteAntecedenciaHoras: barbearia.lembreteAntecedenciaHoras as AntecedenciaDoLembrete,
   };
 }
 
@@ -113,6 +127,7 @@ export function serializarAgendamento(agendamento: {
   status: string;
   origem: string;
   observacoes: string | null;
+  presencaConfirmadaEm: Date | null;
   servicos: {
     servicoId: string;
     precoNoMomento: Prisma.Decimal;
@@ -131,6 +146,7 @@ export function serializarAgendamento(agendamento: {
     status: agendamento.status,
     origem: agendamento.origem,
     observacoes: agendamento.observacoes,
+    presencaConfirmadaEm: agendamento.presencaConfirmadaEm?.toISOString() ?? null,
     // `precoNoMomento` e `duracaoNoMomento` são o preço e a duração
     // congelados no dia do agendamento — nunca os do serviço hoje. Só o
     // nome vem do serviço atual, pra tela ter o que exibir.

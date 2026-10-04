@@ -224,6 +224,10 @@ model Agendamento {
   lembreteEnviadoEm    DateTime?         @map("lembrete_enviado_em") @db.Timestamptz
   // Confirmação de presença pelo link do lembrete (routers/lembretes.ts).
   presencaConfirmadaEm DateTime?         @map("presenca_confirmada_em") @db.Timestamptz
+  // E-mail digitado ao marcar pela página pública, só pro lembrete deste
+  // agendamento — nunca vai pro cadastro (ver a migration
+  // 20261004150000_email_do_lembrete).
+  emailLembrete        String?           @map("email_lembrete") @db.VarChar(160)
 
   barbearia Barbearia            @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   barbeiro  Barbeiro             @relation(fields: [barbeiroId], references: [id])

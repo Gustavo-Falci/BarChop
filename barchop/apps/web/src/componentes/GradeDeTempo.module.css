@@ -311,3 +311,35 @@ button.diaDoCabecalho:hover .numeroDoDia {
     min-width: 120px;
   }
 }
+
+/* O nome do profissional no cabeçalho da vista de dia da equipe: texto
+   que se lê (`--cor-ink`), e não a legenda miúda do nome do dia. */
+.nomeDoProfissional {
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Folga, almoço, horário fechado: listrado e com o motivo escrito, pra
+   não confundir com agendamento (bloco cheio) nem com livre (vazio). */
+.bloqueio {
+  grid-row: var(--linha) / span var(--linhas);
+  grid-column: 1;
+  display: flex;
+  align-items: flex-start;
+  padding: var(--espaco-xs);
+  overflow: hidden;
+  border-radius: var(--raio-sm);
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--cor-line) 0 6px,
+    transparent 6px 12px
+  );
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  pointer-events: none;
+}

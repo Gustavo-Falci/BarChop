@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
 import { Agenda } from "../../../src/telas/painel/Agenda";
+import { DashboardDoDia } from "../../../src/telas/painel/DashboardDoDia";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
 
@@ -82,5 +83,53 @@ describe("agenda da equipe", () => {
 
     await screen.findByTestId("cabecalho-da-grade");
     expect(screen.queryByText("Ana")).not.toBeInTheDocument();
+  });
+});
+
+describe("painel do dia da equipe", () => {
+  // 2026-09-08 às 08:00, antes do primeiro horário.
+  function comDoisAtendendo() {
+    return criarApiClientFalso({
+      agendamentos: [
+        {
+          id: "a1",
+          data: "2026-09-08",
+          horaInicio: "09:00",
+          horaFim: "09:30",
+          status: "confirmado",
+          origem: "cliente",
+          observacoes: null,
+          barbeiro: { id: "bb1", nome: "Rafael" },
+          servicos: [{ servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 }],
+        },
+        {
+          id: "a2",
+          data: "2026-09-08",
+          horaInicio: "10:00",
+          horaFim: "10:30",
+          status: "confirmado",
+          origem: "cliente",
+          observacoes: null,
+          barbeiro: { id: "m2", nome: "Ana" },
+          servicos: [{ servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 }],
+        },
+      ],
+    });
+  }
+
+  it("com mais de um profissional no dia, cada linha diz com quem", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel" });
+    montarPainel(<DashboardDoDia agora={AGORA} />, comDoisAtendendo());
+
+    expect(await screen.findByRole("button", { name: /10:00.*com ana/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /09:00.*com rafael/i })).toBeInTheDocument();
+  });
+
+  it("com um profissional só, a linha não repete o nome", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel" });
+    montarPainel(<DashboardDoDia agora={AGORA} />, semear("profissional"));
+
+    await screen.findByText(/agendamentos hoje/i);
+    expect(screen.queryByText(/com rafael/i)).not.toBeInTheDocument();
   });
 });

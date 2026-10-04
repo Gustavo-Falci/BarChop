@@ -4,8 +4,22 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## Onde paramos (2026-10-03)
-Branch `onda-1`. Bloco A em andamento, cada tarefa com commit RED e GREEN:
+## Onde paramos (2026-10-04)
+**Bloco A mergeado** na main (PR #14, `8ca5697`). **Bloco B completo** na branch `onda-1-bloco-b` (saída da main), cada tarefa com commit RED e GREEN — falta push e PR:
+
+| Tarefa | Estado | O que ficou |
+|---|---|---|
+| B1 schema | feito | migrations `20261004120000_jornada_servicos_bloqueio` (tabelas, CHECKs, **triggers**) e `20261004120100_equipe_nasce_inteira` (backfill); jornada = 7 linhas por membro, modo `barbearia`/`proprio`/`folga` (decisão 4 revista, abaixo); trigger no insert do membro dá a semana e todos os serviços; trigger no insert do serviço o dá à equipe inteira |
+| B2 rotas | feito | `GET/PUT /equipe/:id/jornada` e `/equipe/:id/servicos` (PUT só dono, na matriz); `routers/bloqueios.ts`: `GET/POST/DELETE /bloqueios`, dono e recepção de qualquer um, profissional só os dele (403 criar no colega, 404 apagar) |
+| B3 disponibilidade | feito | `janelaEfetiva` (pura) = jornada ∩ funcionamento; `aplicarBloqueios`, `caiEmBloqueio`, `contextoDoDia` em `lib/disponibilidade.ts`; 422 `horario_bloqueado`, `servico_fora_do_profissional`, `profissional_nao_atende`; o mês faz uma consulta por tabela |
+| B4 telas | feito | `JornadaDoMembro` e `ServicosDoMembro` na edição do membro; `FolgasEBloqueios` em `/painel/bloqueios` (link "Folgas" pra todos); api-client + dublê com as mesmas recusas |
+
+Suítes no fim do B: API 482, web 492, api-client 75, formato 19; lint, type-check e `next build` verdes. Próximo: push e PR do Bloco B, depois o **Bloco C** (agenda da equipe: "qualquer um", passo de escolher profissional, agenda em colunas).
+
+Dívidas novas do B (em `docs/roadmap.md`): o fluxo público ainda agenda com `barbeiros[0]` e mostra o catálogo inteiro — serviço que esse profissional não faz dá "Não foi possível carregar a agenda" (fecha no C2); a agenda do painel ainda não desenha os bloqueios (C3).
+
+### Bloco A (histórico)
+Cada tarefa com commit RED e GREEN:
 
 | Tarefa | Estado | O que ficou |
 |---|---|---|
@@ -17,11 +31,11 @@ Branch `onda-1`. Bloco A em andamento, cada tarefa com commit RED e GREEN:
 | A4 equipe e convite | feito | `routers/equipe.ts`; `POST /equipe` já manda o convite (409 `email_em_uso`, 422 `destino_indisponivel`); reenvio 422 `convite_desnecessario` pra quem tem senha; `POST /auth/convite/aceitar` só pra quem não tem senha; 422 `ultimo_dono` conta só donos ativos **com senha**, trava `FOR NO KEY UPDATE` na linha da barbearia; lista pública de barbeiros = ativo + atende + com senha, por `criadoEm` |
 | A5 telas | feito | `ListaDaEquipe`, `CadastroDeMembro` (convidar e editar), `AceitarConvite` em `/painel/convite` (fora da guarda, `?email=` do link); `SoDoDono` nas páginas de Equipe e do cadastro de serviço; barra esconde Equipe de quem não é dono; Serviços só leitura e Configurações só "Seu perfil" pra quem não é dono; `recarregarPerfil` no `SessaoDoPainel`; dublê com `papel` semeável e as regras da API; `URL_DO_PAINEL` põe o link no e-mail do convite |
 
-**Bloco A completo.** Próximo: push e PR do Bloco A (perguntar antes), depois o Bloco B. Suítes no fim do A5: API 438, web 482, api-client 68, formato 19; lint, type-check e `next build` verdes. Nada do Bloco A foi visto rodando contra a API real — só testes.
+**Bloco A completo** e mergeado (PR #14), com teste de fumaça contra a API real. Suítes no fim do A5: API 438, web 482, api-client 68, formato 19.
 
 Dívidas abertas no Bloco A (registradas em `docs/roadmap.md`): o Novo agendamento marca em quem está logado (a recepção marcaria em si mesma) até o C3; `POST /auth/senha` não devolve `papel`; convite e reenvio sem limite de envio; e-mail único na plataforma impede um profissional em duas barbearias.
 
-Pra continuar em outra máquina: `git checkout onda-1`, `pnpm install`, criar `apps/api/.env`, `apps/api/.env.test` e `packages/database/.env` a partir dos `.example`, e rodar `pnpm --filter @barchop/database migrate:deploy` nos bancos de dev e de teste (nunca `migrate dev`).
+Pra continuar em outra máquina: `git checkout onda-1-bloco-b` (ou a main, depois do merge do B), `pnpm install`, criar `apps/api/.env`, `apps/api/.env.test` e `packages/database/.env` a partir dos `.example`, e rodar `pnpm --filter @barchop/database migrate:deploy` nos bancos de dev e de teste (nunca `migrate dev`).
 
 Pendências do dono antes do Bloco G: conta no Resend com o domínio `barchop.com.br` verificado; DNS do domínio na Cloudflare (certificado coringa por DNS-01).
 
@@ -53,7 +67,7 @@ A onda é grande demais para um PR só. Ela é executada em **7 blocos (A–G)**
 1. **"Profissional" é o `barbeiro` de hoje.** Tabela e rotas mantêm o nome (sem rename gigante); entra `papel` (`dono | profissional | recepcao`) e `atende` (aparece na agenda e no fluxo público). Recepção nasce com `atende = false`. O primeiro barbeiro de cada barbearia vira `dono` no backfill.
 2. **Papel lido no hook, não no token.** O `autenticar` já consulta o banco; passa a decorar `request.membro = { id, barbeariaId, papel }`. Guardas `exigirPapel("dono")` por escopo. Trocar o papel vale na próxima requisição.
 3. **Convite = código de verificação.** Dono cria o profissional com e-mail e `senha_hash` nulo; o convite reaproveita `emitirCodigo` (finalidade `convite_profissional`, validade 7 dias) e o aceite reaproveita o caminho do `POST /auth/senha`. Login recusa conta sem senha.
-4. **Jornada explícita, sem fallback silencioso.** `jornada_profissional` grava os 7 dias como o PUT de horários; ao criar o profissional ela nasce copiada do horário da barbearia. A janela efetiva é a interseção jornada ∩ funcionamento.
+4. **Jornada explícita, sem fallback silencioso** (revista no B1, 2026-10-04). `jornada_profissional` grava os 7 dias, cada um num modo explícito: `barbearia` (acompanha o funcionamento), `proprio` (horas do membro) ou `folga`; tudo nasce `barbearia`. Não é cópia do horário da barbearia, como dizia a versão anterior: o signup cria a barbearia sem horário (a cópia daria ao dono uma semana de folga) e a cópia congelaria a jornada quando o dono mudasse o horário. "Acompanha" é estado gravado e visível, não linha ausente. A janela efetiva é a interseção jornada ∩ funcionamento.
 5. **Folga, almoço e bloqueio = uma tabela.** `bloqueio (barbeiro_id, data_inicio, data_fim, hora_inicio?, hora_fim?, motivo)`; hora nula = dia inteiro. Entra como "ocupado" no `horariosLivres` e é checado no criar/remarcar.
 6. **Serviços por profissional explícitos.** `profissional_servico`; backfill: todo profissional faz todo serviço ativo; serviço novo entra para todos que `atende`.
 7. **"Qualquer um"** = disponibilidade sem `barbeiroId` devolve a união; no criar, o servidor escolhe dentro da transação o profissional livre com menos agendamentos no dia (a `EXCLUDE` gist continua sendo a trava final).

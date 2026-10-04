@@ -1,9 +1,13 @@
 import { prisma } from "@barchop/database";
 import {
+  aplicarBloqueios,
   carregarServicos,
+  contextoDoDia,
   descartarPassados,
   garantirBarbeiro,
+  garantirServicosDoProfissional,
   horariosLivres,
+  janelaEfetiva,
 } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData } from "../lib/horas";
@@ -92,16 +96,21 @@ export function registrarRotasDisponibilidade(app: App): void {
         servicoIds
       );
 
+      await garantirServicosDoProfissional(prisma, barbeiroId, servicoIds);
+
       const dataDate = dataDaQuery(data);
 
-      const janela = await prisma.horarioFuncionamento.findUnique({
-        where: {
-          barbeariaId_diaSemana: {
-            barbeariaId: barbearia.id,
-            diaSemana: dataDate.getUTCDay(),
-          },
-        },
+      // A janela já cruzada com a jornada do membro, e os bloqueios.
+      const contexto = await contextoDoDia(prisma, {
+        barbeariaId: barbearia.id,
+        barbeiroId,
+        data: dataDate,
       });
+      const { janela, ocupados: bloqueados } = aplicarBloqueios(
+        contexto.janela,
+        contexto.bloqueios,
+        dataDate
+      );
 
       // Mesmo filtro que a trava do banco usa: cancelado não ocupa.
       const ocupados = await prisma.agendamento.findMany({
@@ -112,7 +121,11 @@ export function registrarRotasDisponibilidade(app: App): void {
       return {
         horarios: descartarPassados({
           data,
-          horarios: horariosLivres({ janela, ocupados, duracaoTotalMinutos }),
+          horarios: horariosLivres({
+            janela,
+            ocupados: [...ocupados, ...bloqueados],
+            duracaoTotalMinutos,
+          }),
           agora: agoraNaBarbearia(),
         }),
       };
@@ -137,6 +150,8 @@ export function registrarRotasDisponibilidade(app: App): void {
         barbearia.id,
         servicoIds
       );
+
+      await garantirServicosDoProfissional(prisma, barbeiroId, servicoIds);
 
       const [ano, numeroDoMes] = mes.split("-").map(Number);
       const primeiroDia = new Date(Date.UTC(ano, numeroDoMes - 1, 1));
@@ -170,13 +185,20 @@ export function registrarRotasDisponibilidade(app: App): void {
         ocupadosPorDia.set(chave, doDia);
       }
 
-      // A segunda e última consulta: as sete linhas da semana.
-      const janelas = await prisma.horarioFuncionamento.findMany({
-        where: { barbeariaId: barbearia.id },
-      });
+      // Uma consulta por tabela pro mês inteiro: o funcionamento e a
+      // jornada (sete linhas cada) e os bloqueios que tocam o mês.
+      const [janelas, jornada, bloqueios] = await Promise.all([
+        prisma.horarioFuncionamento.findMany({ where: { barbeariaId: barbearia.id } }),
+        prisma.jornadaProfissional.findMany({ where: { barbeiroId } }),
+        prisma.bloqueio.findMany({
+          where: { barbeiroId, dataInicio: { lte: ultimoDia }, dataFim: { gte: primeiroDia } },
+          select: { dataInicio: true, dataFim: true, horaInicio: true, horaFim: true },
+        }),
+      ]);
       const janelaPorDiaSemana = new Map(
         janelas.map((janela) => [janela.diaSemana, janela])
       );
+      const jornadaPorDiaSemana = new Map(jornada.map((dia) => [dia.diaSemana, dia]));
 
       // Um relógio só pro mês inteiro: o calendário não pode discordar
       // de si mesmo se a virada de minuto cair no meio do laço.
@@ -191,12 +213,20 @@ export function registrarRotasDisponibilidade(app: App): void {
         // não passou. Antes a rota não sabia que dia era hoje e quem
         // desabilitava o passado era a tela; agora qualquer consumidor
         // (o app do profissional, a IA) recebe o calendário certo.
+        const { janela, ocupados: bloqueados } = aplicarBloqueios(
+          janelaEfetiva(
+            janelaPorDiaSemana.get(data.getUTCDay()) ?? null,
+            jornadaPorDiaSemana.get(data.getUTCDay()) ?? null
+          ),
+          bloqueios,
+          data
+        );
         dias[chave] =
           descartarPassados({
             data: chave,
             horarios: horariosLivres({
-              janela: janelaPorDiaSemana.get(data.getUTCDay()) ?? null,
-              ocupados: ocupadosPorDia.get(chave) ?? [],
+              janela,
+              ocupados: [...(ocupadosPorDia.get(chave) ?? []), ...bloqueados],
               duracaoTotalMinutos,
             }),
             agora,

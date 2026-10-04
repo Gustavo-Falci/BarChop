@@ -2,6 +2,8 @@ import type {
   AgendamentoComCliente,
   AgendamentoSerializado,
   ClienteSerializado,
+  BloqueioSerializado,
+  DiaDaJornada,
   HorarioSerializado,
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
@@ -14,6 +16,7 @@ import type {
   AceiteDoConvite,
   EdicaoDaBarbearia,
   EdicaoDoMembro,
+  NovoBloqueio,
   NovoMembro,
   EdicaoDoAgendamento,
   EdicaoDoCliente,
@@ -104,6 +107,11 @@ export interface EstadoFalso {
   // um dono à parte quando ele não é o dono — barbearia sem dono não
   // existe na API.
   equipe?: MembroDaEquipe[];
+  // Por id de membro. Quem não aparece nasce como na API: sete dias
+  // acompanhando a barbearia e todos os serviços.
+  jornadas?: Record<string, DiaDaJornada[]>;
+  servicosPorMembro?: Record<string, string[]>;
+  bloqueios?: BloqueioSerializado[];
 }
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {
@@ -157,7 +165,26 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
     limiteDaPagina: semente.limiteDaPagina ?? 100,
     papel: semente.papel ?? "dono",
     equipe: (semente.equipe ?? equipePadrao(semente.papel ?? "dono")).map((m) => ({ ...m })),
+    jornadas: { ...(semente.jornadas ?? {}) },
+    servicosPorMembro: { ...(semente.servicosPorMembro ?? {}) },
+    bloqueios: [...(semente.bloqueios ?? [])],
   };
+
+  // O que o trigger da API dá a todo membro, criado na primeira leitura.
+  function jornadaDe(id: string): DiaDaJornada[] {
+    estado.jornadas![id] ??= [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+      diaSemana,
+      modo: "barbearia",
+      horaInicio: null,
+      horaFim: null,
+    }));
+    return estado.jornadas![id];
+  }
+
+  function servicosDe(id: string): string[] {
+    estado.servicosPorMembro![id] ??= estado.servicos.map((s) => s.id);
+    return estado.servicosPorMembro![id];
+  }
 
   // `!`: o estado acima sempre preenche a equipe.
   function equipe(): MembroDaEquipe[] {
@@ -440,6 +467,81 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
       },
       async equipe() {
         return equipe().map((m) => ({ ...m }));
+      },
+      async jornada(id: string) {
+        membroOu404(id);
+        return jornadaDe(id).map((dia) => ({ ...dia }));
+      },
+      // As mesmas recusas do PUT da API; hora em dia que não é próprio
+      // é descartada, como lá.
+      async salvarJornada(id: string, jornada: DiaDaJornada[]) {
+        membroOu404(id);
+        const dias = jornada.map((dia) => {
+          if (dia.modo !== "proprio") return { ...dia, horaInicio: null, horaFim: null };
+          if (!dia.horaInicio || !dia.horaFim) {
+            throw new ErroDaApi(422, "horario_incompleto", "dia próprio sem entrada e saída");
+          }
+          if (dia.horaInicio >= dia.horaFim) {
+            throw new ErroDaApi(422, "intervalo_invalido", "a entrada precisa ser antes da saída");
+          }
+          return { ...dia };
+        });
+        estado.jornadas![id] = dias.sort((a, b) => a.diaSemana - b.diaSemana);
+        return jornadaDe(id).map((dia) => ({ ...dia }));
+      },
+      async servicosDoMembro(id: string) {
+        membroOu404(id);
+        return [...servicosDe(id)];
+      },
+      async salvarServicosDoMembro(id: string, servicoIds: string[]) {
+        membroOu404(id);
+        if (servicoIds.some((sid) => !estado.servicos.some((s) => s.id === sid))) {
+          throw new ErroDaApi(422, "servico_invalido", "serviço não encontrado nesta barbearia");
+        }
+        estado.servicosPorMembro![id] = [...new Set(servicoIds)];
+        return [...servicosDe(id)];
+      },
+      // Os que tocam o período; o profissional só vê os dele, como na API.
+      async bloqueios(de: string, ate: string) {
+        return estado.bloqueios!
+          .filter((b) => b.dataInicio <= ate && b.dataFim >= de)
+          .filter((b) => estado.papel !== "profissional" || b.barbeiroId === "bb1")
+          .map((b) => ({ ...b }));
+      },
+      async criarBloqueio(novo: NovoBloqueio) {
+        if (estado.papel === "profissional" && novo.barbeiroId !== "bb1") {
+          throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite isto");
+        }
+        if (novo.dataInicio > novo.dataFim) {
+          throw new ErroDaApi(422, "periodo_invalido", "o fim do período vem antes do início");
+        }
+        if (Boolean(novo.horaInicio) !== Boolean(novo.horaFim)) {
+          throw new ErroDaApi(422, "horario_incompleto", "informe o início e o fim do horário");
+        }
+        if (novo.horaInicio && novo.horaFim && novo.horaInicio >= novo.horaFim) {
+          throw new ErroDaApi(422, "intervalo_invalido", "o início precisa ser antes do fim");
+        }
+        if (!equipe().some((m) => m.id === novo.barbeiroId)) {
+          throw new ErroDaApi(422, "barbeiro_invalido", "membro não encontrado nesta barbearia");
+        }
+        const bloqueio: BloqueioSerializado = {
+          id: `x${estado.bloqueios!.length + 1}`,
+          barbeiroId: novo.barbeiroId,
+          dataInicio: novo.dataInicio,
+          dataFim: novo.dataFim,
+          horaInicio: novo.horaInicio ?? null,
+          horaFim: novo.horaFim ?? null,
+          motivo: novo.motivo?.trim() || null,
+        };
+        estado.bloqueios!.push(bloqueio);
+        return { ...bloqueio };
+      },
+      async apagarBloqueio(id: string) {
+        const indice = estado.bloqueios!.findIndex(
+          (b) => b.id === id && (estado.papel !== "profissional" || b.barbeiroId === "bb1")
+        );
+        if (indice < 0) throw new ErroDaApi(404, "nao_encontrado", "bloqueio não encontrado");
+        estado.bloqueios!.splice(indice, 1);
       },
       async convidarMembro(novo: NovoMembro) {
         const email = novo.email.trim().toLowerCase();

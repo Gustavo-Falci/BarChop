@@ -4,7 +4,8 @@ import { normalizarEmail } from "@barchop/formato";
 import { emitirCodigo } from "../lib/codigos";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
-import { PADRAO_EMAIL, PADRAO_TELEFONE, PADRAO_UUID } from "../lib/padroes";
+import { dateParaHora, horaParaDate } from "../lib/horas";
+import { PADRAO_EMAIL, PADRAO_HORA, PADRAO_TELEFONE, PADRAO_UUID } from "../lib/padroes";
 import { normalizarTelefone } from "../lib/telefone";
 import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
@@ -51,6 +52,85 @@ const paramsComId = {
   additionalProperties: false,
   properties: { id: { type: "string", pattern: PADRAO_UUID } },
 } as const;
+
+// A semana vai inteira, como no PUT de horários: sete dias, e o schema
+// já recusa seis ou oito. Repetido passa no schema e cai no 422 abaixo.
+const corpoPutJornada = {
+  type: "object",
+  additionalProperties: false,
+  required: ["jornada"],
+  properties: {
+    jornada: {
+      type: "array",
+      minItems: 7,
+      maxItems: 7,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["diaSemana", "modo"],
+        properties: {
+          diaSemana: { type: "integer", minimum: 0, maximum: 6 },
+          modo: { type: "string", enum: ["barbearia", "proprio", "folga"] },
+          horaInicio: { type: ["string", "null"], pattern: PADRAO_HORA },
+          horaFim: { type: ["string", "null"], pattern: PADRAO_HORA },
+        },
+      },
+    },
+  },
+} as const;
+
+const corpoPutServicos = {
+  type: "object",
+  additionalProperties: false,
+  required: ["servicoIds"],
+  properties: {
+    servicoIds: {
+      type: "array",
+      maxItems: 200,
+      items: { type: "string", pattern: PADRAO_UUID },
+    },
+  },
+} as const;
+
+function serializarDiaDaJornada(dia: {
+  diaSemana: number;
+  modo: string;
+  horaInicio: Date | null;
+  horaFim: Date | null;
+}) {
+  return {
+    diaSemana: dia.diaSemana,
+    modo: dia.modo,
+    horaInicio: dia.horaInicio ? dateParaHora(dia.horaInicio) : null,
+    horaFim: dia.horaFim ? dateParaHora(dia.horaFim) : null,
+  };
+}
+
+// O membro existe nesta barbearia? Leitura e escrita da jornada e dos
+// serviços passam por aqui: de outra barbearia é 404, como no PATCH.
+async function garantirMembro(barbeariaId: string, id: string): Promise<void> {
+  const achado = await prisma.barbeiro.findFirst({
+    where: { id, barbeariaId },
+    select: { id: true },
+  });
+  if (!achado) throw naoEncontrado();
+}
+
+async function lerJornada(barbeiroId: string) {
+  const dias = await prisma.jornadaProfissional.findMany({
+    where: { barbeiroId },
+    orderBy: { diaSemana: "asc" },
+  });
+  return { jornada: dias.map(serializarDiaDaJornada) };
+}
+
+async function lerServicos(barbeiroId: string) {
+  const linhas = await prisma.profissionalServico.findMany({
+    where: { barbeiroId },
+    select: { servicoId: true },
+  });
+  return { servicoIds: linhas.map((linha) => linha.servicoId) };
+}
 
 // Campos listados um a um, nunca spread do registro: é o que garante
 // que senhaHash não escape. Dele sai só o "convite pendente".
@@ -240,6 +320,107 @@ export function registrarRotasEquipe(app: App): void {
       });
 
       return serializarMembro(membro);
+    }
+  );
+
+  // Todos os papéis leem: a tela da agenda mostra quando cada um atende.
+  app.get("/equipe/:id/jornada", { schema: { params: paramsComId } }, async (request) => {
+    await garantirMembro(request.user.barbeariaId, request.params.id);
+    return lerJornada(request.params.id);
+  });
+
+  app.put(
+    "/equipe/:id/jornada",
+    { schema: { params: paramsComId, body: corpoPutJornada }, onRequest: exigirPapel("dono") },
+    async (request) => {
+      const { id } = request.params;
+      await garantirMembro(request.user.barbeariaId, id);
+
+      // Toda a validação antes de gravar: um dia ruim no meio da lista
+      // não pode deixar meia semana gravada (mesma regra dos horários).
+      const vistos = new Set<number>();
+      const dias = request.body.jornada.map((dia) => {
+        if (vistos.has(dia.diaSemana)) {
+          throw new ErroDeNegocio(
+            `o dia ${dia.diaSemana} aparece mais de uma vez`,
+            "dia_semana_duplicado"
+          );
+        }
+        vistos.add(dia.diaSemana);
+
+        // Hora em dia que não é próprio é descartada, não recusada: a
+        // tela costuma mandar as horas antigas depois de trocar o modo,
+        // como no `fechado` do funcionamento. O CHECK do banco exige
+        // que fiquem nulas.
+        if (dia.modo !== "proprio") {
+          return { diaSemana: dia.diaSemana, modo: dia.modo, horaInicio: null, horaFim: null };
+        }
+        if (!dia.horaInicio || !dia.horaFim) {
+          throw new ErroDeNegocio(
+            `o dia ${dia.diaSemana} tem horário próprio sem entrada e saída`,
+            "horario_incompleto"
+          );
+        }
+        // "HH:mm" compara como texto na ordem do relógio.
+        if (dia.horaInicio >= dia.horaFim) {
+          throw new ErroDeNegocio(
+            `no dia ${dia.diaSemana} a entrada precisa ser antes da saída`,
+            "intervalo_invalido"
+          );
+        }
+        return {
+          diaSemana: dia.diaSemana,
+          modo: dia.modo,
+          horaInicio: horaParaDate(dia.horaInicio),
+          horaFim: horaParaDate(dia.horaFim),
+        };
+      });
+
+      // Update e não upsert: as sete linhas existem desde o insert do
+      // membro (trigger da migration 20261004120000).
+      await prisma.$transaction(
+        dias.map(({ diaSemana, ...resto }) =>
+          prisma.jornadaProfissional.update({
+            where: { barbeiroId_diaSemana: { barbeiroId: id, diaSemana } },
+            data: resto,
+          })
+        )
+      );
+
+      return lerJornada(id);
+    }
+  );
+
+  app.get("/equipe/:id/servicos", { schema: { params: paramsComId } }, async (request) => {
+    await garantirMembro(request.user.barbeariaId, request.params.id);
+    return lerServicos(request.params.id);
+  });
+
+  // A lista inteira, como a jornada: o que não veio deixa de ser feito.
+  app.put(
+    "/equipe/:id/servicos",
+    { schema: { params: paramsComId, body: corpoPutServicos }, onRequest: exigirPapel("dono") },
+    async (request) => {
+      const { id } = request.params;
+      const { barbeariaId } = request.user;
+      await garantirMembro(barbeariaId, id);
+
+      const idsUnicos = [...new Set(request.body.servicoIds)];
+      const daBarbearia = await prisma.servico.count({
+        where: { id: { in: idsUnicos }, barbeariaId },
+      });
+      if (daBarbearia !== idsUnicos.length) {
+        throw new ErroDeNegocio("serviço não encontrado nesta barbearia", "servico_invalido");
+      }
+
+      await prisma.$transaction([
+        prisma.profissionalServico.deleteMany({ where: { barbeiroId: id } }),
+        prisma.profissionalServico.createMany({
+          data: idsUnicos.map((servicoId) => ({ barbeiroId: id, servicoId })),
+        }),
+      ]);
+
+      return lerServicos(id);
     }
   );
 

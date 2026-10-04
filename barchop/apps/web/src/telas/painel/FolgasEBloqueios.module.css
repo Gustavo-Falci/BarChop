@@ -1,0 +1,92 @@
+/* O teto dos detalhes do painel: formulário curto e uma lista. */
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+  max-width: 680px;
+}
+
+.formulario {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+/* Duas datas (ou duas horas) lado a lado: são um par. */
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-md);
+}
+
+.campoSelect {
+  display: grid;
+  gap: var(--espaco-xs);
+  font-weight: 600;
+}
+
+.campoSelect select {
+  min-height: 44px;
+  padding-inline: var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.campoSelect select:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.opcao {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.opcao input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--cor-ink);
+}
+
+.lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  padding-block: var(--espaco-sm);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+}
+
+.item:last-child {
+  border-block-end: none;
+}
+
+.texto {
+  display: grid;
+  gap: 2px;
+}
+
+/* `--cor-ink-soft`: texto que se lê, não legenda decorativa. */
+.motivo,
+.vazio {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.vazio {
+  margin: 0;
+}

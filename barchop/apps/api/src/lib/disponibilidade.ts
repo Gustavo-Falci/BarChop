@@ -23,6 +23,145 @@ export interface IntervaloOcupado {
   horaFim: Date;
 }
 
+// Um dia da jornada do membro (bloco B): acompanha a barbearia, tem
+// horas próprias, ou é folga.
+export interface DiaDaJornada {
+  modo: "barbearia" | "proprio" | "folga";
+  horaInicio: Date | null;
+  horaFim: Date | null;
+}
+
+export interface BloqueioDoDia {
+  dataInicio: Date;
+  dataFim: Date;
+  horaInicio: Date | null;
+  horaFim: Date | null;
+}
+
+const FECHADO: LinhaDeHorario = { horaAbertura: null, horaFechamento: null, fechado: true };
+
+// A janela em que o membro atende no dia: a interseção da jornada dele
+// com o funcionamento. Barbearia fechada fecha o dia em qualquer modo;
+// dia sem linha de jornada é folga, pela mesma regra do funcionamento
+// (sem linha = fechado). Horário próprio que passa do funcionamento é
+// recortado nele — o membro não atende com a porta fechada.
+export function janelaEfetiva(
+  funcionamento: LinhaDeHorario | null,
+  jornada: DiaDaJornada | null
+): LinhaDeHorario {
+  if (
+    !funcionamento ||
+    funcionamento.fechado ||
+    !funcionamento.horaAbertura ||
+    !funcionamento.horaFechamento
+  ) {
+    return FECHADO;
+  }
+  if (!jornada || jornada.modo === "folga") return FECHADO;
+  if (jornada.modo === "barbearia") return funcionamento;
+  if (!jornada.horaInicio || !jornada.horaFim) return FECHADO;
+
+  // Horas como Date em 1970-01-01 UTC (horaParaDate): o getTime ordena
+  // igual ao relógio.
+  const inicio = Math.max(funcionamento.horaAbertura.getTime(), jornada.horaInicio.getTime());
+  const fim = Math.min(funcionamento.horaFechamento.getTime(), jornada.horaFim.getTime());
+  if (inicio >= fim) return FECHADO;
+
+  return { horaAbertura: new Date(inicio), horaFechamento: new Date(fim), fechado: false };
+}
+
+function cobreODia(bloqueio: BloqueioDoDia, data: Date): boolean {
+  return bloqueio.dataInicio.getTime() <= data.getTime() && data.getTime() <= bloqueio.dataFim.getTime();
+}
+
+// Os bloqueios do dia viram o que o `horariosLivres` entende: dia
+// inteiro fecha a janela; faixa de horas vira um intervalo ocupado,
+// como um agendamento.
+export function aplicarBloqueios(
+  janela: LinhaDeHorario,
+  bloqueios: BloqueioDoDia[],
+  data: Date
+): { janela: LinhaDeHorario; ocupados: IntervaloOcupado[] } {
+  const doDia = bloqueios.filter((bloqueio) => cobreODia(bloqueio, data));
+  if (doDia.some((bloqueio) => !bloqueio.horaInicio || !bloqueio.horaFim)) {
+    return { janela: FECHADO, ocupados: [] };
+  }
+  return {
+    janela,
+    ocupados: doDia.map((bloqueio) => ({
+      horaInicio: bloqueio.horaInicio!,
+      horaFim: bloqueio.horaFim!,
+    })),
+  };
+}
+
+// O horário pedido cai num bloqueio? Dá o código próprio na criação —
+// sem esta checagem o bloqueio só sumiria dos livres, e a recusa sairia
+// como `horario_indisponivel`, sem dizer por quê. "HH:mm" compara como
+// texto na ordem do relógio.
+export function caiEmBloqueio(
+  bloqueios: BloqueioDoDia[],
+  data: Date,
+  horaInicio: string,
+  horaFim: string
+): boolean {
+  return bloqueios
+    .filter((bloqueio) => cobreODia(bloqueio, data))
+    .some(
+      (bloqueio) =>
+        !bloqueio.horaInicio ||
+        !bloqueio.horaFim ||
+        (dateParaHora(bloqueio.horaInicio) < horaFim && horaInicio < dateParaHora(bloqueio.horaFim))
+    );
+}
+
+// O que um dia precisa pra calcular a agenda de um membro: a janela já
+// cruzada com a jornada e os bloqueios que o tocam. Três consultas, e a
+// rota do mês tem a versão dela com uma consulta por tabela.
+export async function contextoDoDia(
+  db: ClientePrisma,
+  params: { barbeariaId: string; barbeiroId: string; data: Date }
+) {
+  const { barbeariaId, barbeiroId, data } = params;
+  // getUTCDay: a Date foi construída em UTC por dataParaDate.
+  const diaSemana = data.getUTCDay();
+
+  const [funcionamento, jornada, bloqueios] = await Promise.all([
+    db.horarioFuncionamento.findUnique({
+      where: { barbeariaId_diaSemana: { barbeariaId, diaSemana } },
+    }),
+    db.jornadaProfissional.findUnique({
+      where: { barbeiroId_diaSemana: { barbeiroId, diaSemana } },
+    }),
+    db.bloqueio.findMany({
+      where: { barbeiroId, dataInicio: { lte: data }, dataFim: { gte: data } },
+      select: { dataInicio: true, dataFim: true, horaInicio: true, horaFim: true },
+    }),
+  ]);
+
+  return { janela: janelaEfetiva(funcionamento, jornada), bloqueios };
+}
+
+// O membro faz todos os serviços pedidos? Até o bloco C o fluxo público
+// mostra o catálogo inteiro, então isto é o que impede marcar com quem
+// não faz o serviço.
+export async function garantirServicosDoProfissional(
+  db: ClientePrisma,
+  barbeiroId: string,
+  servicoIds: string[]
+): Promise<void> {
+  const idsUnicos = [...new Set(servicoIds)];
+  const feitos = await db.profissionalServico.count({
+    where: { barbeiroId, servicoId: { in: idsUnicos } },
+  });
+  if (feitos !== idsUnicos.length) {
+    throw new ErroDeNegocio(
+      "esse profissional não faz um dos serviços escolhidos",
+      "servico_fora_do_profissional"
+    );
+  }
+}
+
 // O `horariosLivres` não sabe que dia é hoje — só a janela e os
 // ocupados. Isto é o relógio por cima dele, nas rotas de leitura: dia
 // passado não tem vaga, e hoje só vale o que começa depois de agora (o
@@ -78,13 +217,23 @@ export async function garantirBarbeiro(
 ): Promise<void> {
   const barbeiro = await db.barbeiro.findFirst({
     where: { id: barbeiroId, barbeariaId, ativo: true },
-    select: { id: true },
+    select: { id: true, atende: true },
   });
 
   if (!barbeiro) {
     throw new ErroDeNegocio(
       "barbeiro não encontrado nesta barbearia",
       "barbeiro_invalido"
+    );
+  }
+
+  // Código próprio, e não `barbeiro_invalido`: o membro existe, só não
+  // recebe cliente. É o que impede a recepção (que nasce sem atender) de
+  // marcar horário em si mesma pelo Novo agendamento.
+  if (!barbeiro.atende) {
+    throw new ErroDeNegocio(
+      "esse membro da equipe não atende clientes",
+      "profissional_nao_atende"
     );
   }
 }

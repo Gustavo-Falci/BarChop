@@ -63,6 +63,17 @@ export function IconeCliente(props: Props) {
   );
 }
 
+// O calendário da Agenda com um traço cortando: dia fora da agenda.
+export function IconeBloqueio(props: Props) {
+  return (
+    <Base {...props}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M8 3v4M16 3v4M3.5 10h17" />
+      <path d="m9.5 13 5 5M14.5 13l-5 5" />
+    </Base>
+  );
+}
+
 // Duas pessoas: o IconeCliente com um colega atrás. Mesma cabeça e
 // mesmos ombros, pra família ler como parente do de Clientes.
 export function IconeEquipe(props: Props) {

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Botao } from "../componentes/Botao";
 import { aplicarBarra, gravarBarra, lerBarra } from "./barra";
 import {
+  IconeBloqueio,
   IconeCalendario,
   IconeCasa,
   IconeCliente,
@@ -27,6 +28,8 @@ import estilos from "./NavegacaoDoPainel.module.css";
 const LINKS = [
   { href: "/painel", rotulo: "Hoje", Icone: IconeCasa },
   { href: "/painel/agenda", rotulo: "Agenda", Icone: IconeCalendario },
+  // Pra todos: o profissional bloqueia a própria agenda.
+  { href: "/painel/bloqueios", rotulo: "Folgas", Icone: IconeBloqueio },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: IconeCliente },
   { href: "/painel/servicos", rotulo: "Serviços", Icone: IconeTesoura },
   { href: "/painel/equipe", rotulo: "Equipe", Icone: IconeEquipe, soDoDono: true },

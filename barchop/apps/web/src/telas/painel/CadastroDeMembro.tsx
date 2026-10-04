@@ -11,7 +11,9 @@ import { Campo } from "../../componentes/Campo";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
+import { JornadaDoMembro } from "./JornadaDoMembro";
 import { ROTULO_DO_PAPEL } from "./ListaDaEquipe";
+import { ServicosDoMembro } from "./ServicosDoMembro";
 import estilos from "./CadastroDeMembro.module.css";
 
 // Os limites ESPELHAM o schema de apps/api/src/routers/equipe.ts — o
@@ -324,6 +326,16 @@ export function CadastroDeMembro() {
           </Botao>
         </div>
       </form>
+
+      {/* Só na edição: o membro precisa existir pra ter semana e
+          serviços (nascem com ele, pelo banco). Cada seção salva sozinha
+          — trocar a jornada não exige reenviar o cadastro. */}
+      {atual ? (
+        <>
+          <JornadaDoMembro membroId={atual.id} />
+          <ServicosDoMembro membroId={atual.id} />
+        </>
+      ) : null}
 
       {/* Fora do formulário, como em CadastroDeServico: mudar o estado do
           membro não é uma saída do formulário, e fica longe do Cancelar. */}

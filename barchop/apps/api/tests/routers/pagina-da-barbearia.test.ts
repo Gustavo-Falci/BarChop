@@ -99,7 +99,7 @@ describe("categoria do serviço", () => {
 
     expect(criado.statusCode).toBe(201);
     expect(criado.json().categoria).toBe("Barba e bigode");
-    const publicos = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}/servicos` })).json();
+    const publicos = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}/servicos` })).json().servicos;
     expect(publicos.find((s: { nome: string }) => s.nome === "Barba").categoria).toBe("Barba e bigode");
     expect(publicos.find((s: { nome: string }) => s.nome === "Corte").categoria).toBeNull();
   });

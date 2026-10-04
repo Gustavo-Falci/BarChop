@@ -26,6 +26,8 @@ const corpoNovoServico = {
       multipleOf: 5,
     },
     preco: { type: "string", pattern: PADRAO_PRECO },
+    // Agrupa na página pública. Vazio ou só espaço vira null.
+    categoria: { type: ["string", "null"], maxLength: 60 },
   },
 } as const;
 
@@ -52,8 +54,15 @@ const corpoPatchServico = {
     },
     preco: { type: "string", pattern: PADRAO_PRECO },
     ativo: { type: "boolean" },
+    categoria: { type: ["string", "null"], maxLength: 60 },
   },
 } as const;
+
+// "  Barba " e "Barba" têm que cair na mesma seção da página.
+function limparCategoria(categoria: string | null | undefined): string | null | undefined {
+  if (categoria === undefined) return undefined;
+  return categoria?.trim() || null;
+}
 
 const paramsSlug = {
   type: "object",
@@ -81,7 +90,11 @@ export function registrarRotasServicos(app: App): void {
       const servico = await prisma.servico.create({
         // barbeariaId do token, sempre. O corpo não tem como mandar o
         // dele: additionalProperties: false recusa antes.
-        data: { barbeariaId: request.user.barbeariaId, ...request.body },
+        data: {
+          barbeariaId: request.user.barbeariaId,
+          ...request.body,
+          categoria: limparCategoria(request.body.categoria) ?? null,
+        },
       });
 
       return reply.code(201).send(serializarServico(servico));
@@ -101,7 +114,7 @@ export function registrarRotasServicos(app: App): void {
         // checagem e o update; aqui, se a barbearia não casa, o Prisma
         // lança P2025 e o tratador central devolve 404.
         where: { id: request.params.id, barbeariaId: request.user.barbeariaId },
-        data: request.body,
+        data: { ...request.body, categoria: limparCategoria(request.body.categoria) },
       });
 
       return serializarServico(servico);

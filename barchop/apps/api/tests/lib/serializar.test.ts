@@ -17,6 +17,7 @@ describe("serializarServico", () => {
       duracaoMinutos: 45,
       preco: new Prisma.Decimal("45"),
       ativo: true,
+      categoria: null,
     });
 
     // O motivo de existir deste módulo: `new Prisma.Decimal("45")` sai
@@ -34,6 +35,7 @@ describe("serializarServico", () => {
         duracaoMinutos: 20,
         preco: new Prisma.Decimal("30.5"),
         ativo: true,
+        categoria: null,
       }).preco
     ).toBe("30.50");
   });
@@ -46,6 +48,7 @@ describe("serializarServico", () => {
         duracaoMinutos: 30,
         preco: new Prisma.Decimal("10"),
         ativo: false,
+        categoria: null,
       }).ativo
     ).toBe(false);
   });
@@ -129,6 +132,10 @@ describe("serializarBarbearia", () => {
         endereco: null,
         logoUrl: null,
         sobre: "Corte na tesoura e barba na navalha.",
+        whatsapp: "(11) 98888-7777",
+        instagram: "gr.barber",
+        comodidades: ["wifi"],
+        formasDePagamento: ["pix"],
       })
     ).toEqual({
       id: "b1",
@@ -138,6 +145,10 @@ describe("serializarBarbearia", () => {
       endereco: null,
       logoUrl: null,
       sobre: "Corte na tesoura e barba na navalha.",
+      whatsapp: "(11) 98888-7777",
+      instagram: "gr.barber",
+      comodidades: ["wifi"],
+      formasDePagamento: ["pix"],
     });
   });
 });

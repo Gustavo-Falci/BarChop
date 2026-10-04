@@ -61,6 +61,13 @@ export interface BarbeariaSerializada {
   // Texto de apresentação da home pública. Anulável porque toda
   // barbearia nasce sem ele — a home tem que funcionar assim.
   sobre: string | null;
+  // A página rica (bloco E1). WhatsApp normalizado como o telefone;
+  // Instagram é o @ sem o @ (a tela monta o link). Comodidades e formas
+  // de pagamento são valores das listas de @barchop/formato.
+  whatsapp: string | null;
+  instagram: string | null;
+  comodidades: string[];
+  formasDePagamento: string[];
 }
 
 export type AntecedenciaDoLembrete = 2 | 12 | 24;
@@ -100,6 +107,8 @@ export interface ServicoSerializado {
   // perderia centavo. Ver serializarServico.
   preco: string;
   ativo: boolean;
+  // Agrupa os serviços na página pública; null = sem categoria.
+  categoria: string | null;
 }
 
 // Um nome só, um formato só: a resposta da API e o tipo que web e

@@ -64,6 +64,13 @@ model Barbearia {
   // Quanto antes do horário sai o lembrete: 2, 12 ou 24 (CHECK na
   // migration 20261004130000_lembrete).
   lembreteAntecedenciaHoras Int      @default(24) @map("lembrete_antecedencia_horas") @db.SmallInt
+  // A página pública rica (bloco E1). Listas fechadas: os valores moram
+  // em packages/formato/src/pagina.ts, e a migration
+  // 20261004160000_pagina_da_barbearia tem o CHECK com os mesmos.
+  whatsapp                  String?  @db.VarChar(20)
+  instagram                 String?  @db.VarChar(30)
+  comodidades               String[] @default([])
+  formasDePagamento         String[] @default([]) @map("formas_pagamento")
   criadoEm                  DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
   barbeiros             Barbeiro[]
@@ -199,6 +206,8 @@ model Servico {
   preco          Decimal  @db.Decimal(10, 2)
   ativo          Boolean  @default(true)
   criadoEm       DateTime @default(now()) @map("criado_em") @db.Timestamptz
+  // Agrupa os serviços na página pública. Texto livre e opcional.
+  categoria      String?  @db.VarChar(60)
 
   barbearia           Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentoServicos AgendamentoServico[]

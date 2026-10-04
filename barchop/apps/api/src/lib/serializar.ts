@@ -41,6 +41,10 @@ export function serializarBarbearia(barbearia: {
   endereco: string | null;
   logoUrl: string | null;
   sobre: string | null;
+  whatsapp: string | null;
+  instagram: string | null;
+  comodidades: string[];
+  formasDePagamento: string[];
 }): BarbeariaSerializada {
   return {
     id: barbearia.id,
@@ -50,6 +54,10 @@ export function serializarBarbearia(barbearia: {
     endereco: barbearia.endereco,
     logoUrl: barbearia.logoUrl,
     sobre: barbearia.sobre,
+    whatsapp: barbearia.whatsapp,
+    instagram: barbearia.instagram,
+    comodidades: barbearia.comodidades,
+    formasDePagamento: barbearia.formasDePagamento,
   };
 }
 
@@ -89,6 +97,7 @@ export function serializarServico(servico: {
   duracaoMinutos: number;
   preco: Prisma.Decimal;
   ativo: boolean;
+  categoria: string | null;
 }): ServicoSerializado {
   return {
     id: servico.id,
@@ -98,6 +107,7 @@ export function serializarServico(servico: {
     // não passa por float em momento nenhum.
     preco: servico.preco.toFixed(2),
     ativo: servico.ativo,
+    categoria: servico.categoria,
   };
 }
 

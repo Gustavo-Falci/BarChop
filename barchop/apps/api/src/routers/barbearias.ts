@@ -1,5 +1,5 @@
 import { prisma } from "@barchop/database";
-import { slugReservado } from "@barchop/formato";
+import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM, slugReservado } from "@barchop/formato";
 import { PODE_ATENDER } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { normalizarTelefone } from "../lib/telefone";
@@ -47,6 +47,21 @@ const corpoPatchBarbearia = {
     // Quanto antes do horário sai o lembrete. Mudar não move os que já
     // estão na fila: a antecedência é lida quando o lembrete é agendado.
     lembreteAntecedenciaHoras: { type: "integer", enum: [2, 12, 24] },
+    // A página rica (bloco E1). WhatsApp é normalizado como o telefone.
+    // Instagram é o @ sem o @, nunca URL: a página monta o link.
+    // Comodidades e pagamento são listas fechadas, de @barchop/formato.
+    whatsapp: { type: ["string", "null"], pattern: PADRAO_TELEFONE, maxLength: 20 },
+    instagram: { type: ["string", "null"], pattern: PADRAO_INSTAGRAM },
+    comodidades: {
+      type: "array",
+      uniqueItems: true,
+      items: { type: "string", enum: [...COMODIDADES] },
+    },
+    formasDePagamento: {
+      type: "array",
+      uniqueItems: true,
+      items: { type: "string", enum: [...FORMAS_DE_PAGAMENTO] },
+    },
   },
 } as const;
 
@@ -104,7 +119,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
       // `telefone` sai do corpo pra ser normalizado; o resto vai
       // direto, porque o additionalProperties: false já garantiu que só
       // há campo editável ali.
-      const { telefone, ...resto } = request.body;
+      const { telefone, whatsapp, ...resto } = request.body;
 
       const barbearia = await prisma.barbearia.update({
         where: { id: request.user.barbeariaId },
@@ -113,6 +128,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
           ...(telefone !== undefined
             ? { telefone: normalizarTelefone(telefone) }
             : {}),
+          ...(whatsapp !== undefined ? { whatsapp: normalizarTelefone(whatsapp) } : {}),
         },
       });
 

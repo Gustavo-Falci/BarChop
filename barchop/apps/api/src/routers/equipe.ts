@@ -142,9 +142,11 @@ function serializarMembro(membro: {
   papel: string;
   atende: boolean;
   ativo: boolean;
-  fotoUrl: string | null;
+  fotoChave: string | null;
   senhaHash: string | null;
-}) {
+},
+urlDaImagem: (chave: string) => string
+) {
   return {
     id: membro.id,
     nome: membro.nome,
@@ -153,7 +155,7 @@ function serializarMembro(membro: {
     papel: membro.papel,
     atende: membro.atende,
     ativo: membro.ativo,
-    fotoUrl: membro.fotoUrl,
+    fotoUrl: membro.fotoChave ? urlDaImagem(membro.fotoChave) : null,
     convitePendente: membro.senhaHash === null,
   };
 }
@@ -224,7 +226,7 @@ export function registrarRotasEquipe(app: App): void {
       orderBy: [{ ativo: "desc" }, { criadoEm: "asc" }, { id: "asc" }],
     });
 
-    return { membros: membros.map(serializarMembro) };
+    return { membros: membros.map((membro) => serializarMembro(membro, app.armazenamento.urlPublica)) };
   });
 
   app.post(
@@ -262,7 +264,7 @@ export function registrarRotasEquipe(app: App): void {
 
       await enviarConvite(app, request, { email, barbeariaId: membro.barbeariaId });
 
-      return reply.code(201).send(serializarMembro(membro));
+      return reply.code(201).send(serializarMembro(membro, app.armazenamento.urlPublica));
     }
   );
 
@@ -319,7 +321,7 @@ export function registrarRotasEquipe(app: App): void {
         return tx.barbeiro.update({ where: { id, barbeariaId }, data });
       });
 
-      return serializarMembro(membro);
+      return serializarMembro(membro, app.armazenamento.urlPublica);
     }
   );
 

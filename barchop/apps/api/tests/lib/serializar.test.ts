@@ -136,7 +136,8 @@ describe("serializarBarbearia", () => {
         instagram: "gr.barber",
         comodidades: ["wifi"],
         formasDePagamento: ["pix"],
-      })
+        capaChave: "barbearias/b1/capa/c1.png",
+      }, (chave) => `https://img.exemplo/${chave}`)
     ).toEqual({
       id: "b1",
       nome: "Barbearia do Gu",
@@ -149,6 +150,7 @@ describe("serializarBarbearia", () => {
       instagram: "gr.barber",
       comodidades: ["wifi"],
       formasDePagamento: ["pix"],
+      capaUrl: "https://img.exemplo/barbearias/b1/capa/c1.png",
     });
   });
 });

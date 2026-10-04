@@ -68,6 +68,8 @@ export interface BarbeariaSerializada {
   instagram: string | null;
   comodidades: string[];
   formasDePagamento: string[];
+  // A capa da página pública (bloco E2), montada da chave guardada.
+  capaUrl: string | null;
 }
 
 export type AntecedenciaDoLembrete = 2 | 12 | 24;
@@ -190,7 +192,7 @@ export interface AgendamentoComCliente extends AgendamentoSerializado {
 // oferece só quem faz os serviços escolhidos.
 export interface PerfilPublicoBarbearia extends BarbeariaSerializada {
   horarios: HorarioSerializado[];
-  barbeiros: { id: string; nome: string; servicoIds: string[] }[];
+  barbeiros: { id: string; nome: string; servicoIds: string[]; fotoUrl: string | null }[];
 }
 
 export interface SessaoBarbeiro {

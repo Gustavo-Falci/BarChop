@@ -1,7 +1,9 @@
 import cors from "@fastify/cors";
+import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
+import { armazenamentoPadrao, type Armazenamento } from "./lib/armazenamento";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDeAuth } from "./lib/limites";
@@ -23,6 +25,7 @@ import {
   registrarRotasBarbeariasPublicas,
 } from "./routers/barbearias";
 import { registrarRotasHorarios } from "./routers/horarios";
+import { registrarRotaDeArquivos, registrarRotasImagens } from "./routers/imagens";
 import { ocultarTokenDoLembrete, registrarRotasLembretes } from "./routers/lembretes";
 import { registrarRotasMe } from "./routers/me";
 import {
@@ -41,13 +44,16 @@ declare module "fastify" {
     // instância pelo mesmo motivo do canal: cada teste com a sua, de
     // memória, e o pg-boss só no processo de verdade.
     fila: Fila;
+    // Onde ficam capa e fotos (bloco E2). Na instância pelo mesmo motivo:
+    // cada teste com a sua pasta temporária.
+    armazenamento: Armazenamento;
   }
 }
 
 // Monta a instância sem escutar em porta nenhuma. É o que permite os
 // testes usarem app.inject(). Quem abre a porta é o server.ts.
 export function buildApp(
-  opts: { logger?: boolean; canal?: CanalDeMensagem; fila?: Fila } = {}
+  opts: { logger?: boolean; canal?: CanalDeMensagem; fila?: Fila; armazenamento?: Armazenamento } = {}
 ): App {
   const app = Fastify({
     // O serializer padrão da requisição, com a URL passando pelo
@@ -102,6 +108,9 @@ export function buildApp(
   // Sem fila passada, só nos testes: o filaPadrao recusa subir fora deles.
   app.decorate("fila", opts.fila ?? filaPadrao());
 
+  // Fora dos testes, recusa o disco local em produção (armazenamento.ts).
+  app.decorate("armazenamento", opts.armazenamento ?? armazenamentoPadrao());
+
   // Escopo só pras quatro rotas que recebem senha — as duas de login e
   // as duas de signup. Existe por causa do `await`: os contadores são
   // construídos com `escopo.rateLimit(...)`, que só passa a existir
@@ -125,6 +134,8 @@ export function buildApp(
   registrarRotasDisponibilidade(app);
   // Sem login: quem autoriza é o token do link do e-mail de lembrete.
   registrarRotasLembretes(app);
+  // As imagens servidas pela própria API, só no armazenamento local.
+  registrarRotaDeArquivos(app);
 
   // Escopo dos protegidos: o hook vale pra tudo que for registrado aqui
   // dentro. Pendurar onRequest rota a rota dependeria de ninguém
@@ -139,6 +150,14 @@ export function buildApp(
     registrarRotasAgendamentos(protegidas);
     registrarRotasEquipe(protegidas);
     registrarRotasBloqueios(protegidas);
+
+    // Upload de imagem num escopo filho: o @fastify/multipart vale só
+    // aqui, e o `autenticar` do escopo de cima já rodou antes de qualquer
+    // byte do corpo ser lido.
+    protegidas.register(async (comArquivos: App) => {
+      await comArquivos.register(multipart);
+      registrarRotasImagens(comArquivos);
+    });
   });
 
   // Escopo do cliente, irmão do de cima e pelo mesmo motivo: o hook vale

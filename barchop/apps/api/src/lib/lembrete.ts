@@ -5,6 +5,10 @@ import type { CanalDeMensagem } from "./canal";
 import type { Fila } from "./fila";
 import { dateParaData, dateParaHora, instanteNaBarbearia } from "./horas";
 
+// O wa.me do painel usa; mora no telefone.ts porque o canal de WhatsApp
+// também usa.
+export { telefoneParaWhatsApp } from "./telefone";
+
 export { instanteNaBarbearia } from "./horas";
 
 // O lembrete do agendamento, por e-mail (Onda 1, Bloco D).
@@ -154,12 +158,6 @@ export function textoDoLembrete(agendamento: AgendamentoDoLembrete, url: string 
     `com ${agendamento.barbeiro.nome} (${servicos}).\n\n` +
     acao
   );
-}
-
-// O wa.me quer só dígitos, com o código do país. O telefone chega
-// normalizado ("(11) 99999-8888"), sempre brasileiro.
-export function telefoneParaWhatsApp(telefone: string): string {
-  return `55${telefone.replace(/\D/g, "")}`;
 }
 
 // O tratador. Cada saída antecipada é um "não há o que mandar" e

@@ -67,6 +67,9 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
       // Transação: uma barbearia sem barbeiro seria inacessível pra
       // sempre, já que o login é por email de barbeiro.
       const criado = await prisma.$transaction(async (tx) => {
+        // O slug atual ganha do antigo: se outra barbearia já usou este
+        // nome, o link velho dela passa a abrir esta.
+        await tx.slugAntigo.deleteMany({ where: { slug: barbearia.slug } });
         const novaBarbearia = await tx.barbearia.create({
           data: { nome: barbearia.nome, slug: barbearia.slug },
         });

@@ -82,8 +82,24 @@ model Barbearia {
   agendamentos          Agendamento[]
   codigosVerificacao    CodigoVerificacao[]
   bloqueios             Bloqueio[]
+  slugsAntigos          SlugAntigo[]
 
   @@map("barbearia")
+}
+
+// Slugs que a barbearia já teve (bloco E3): o link antigo continua
+// achando ela. O atual de qualquer barbearia ganha do antigo — quem nasce
+// ou troca para um slug daqui apaga a linha (migration
+// 20261004180000_slug_antigo).
+model SlugAntigo {
+  slug        String   @id @db.VarChar(80)
+  barbeariaId String   @map("barbearia_id") @db.Uuid
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@index([barbeariaId])
+  @@map("slug_antigo")
 }
 
 model HorarioFuncionamento {

@@ -84,10 +84,11 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
     return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
   });
 
-  // Trocar o link público. O antigo para de responder na hora: o
-  // redirect do slug antigo vem com o tenant por subdomínio (ADR-0002).
-  // Slug de outra barbearia cai no unique da coluna → P2002 → 409, sem
-  // consulta prévia que abriria corrida entre checar e gravar.
+  // Trocar o link público. O antigo vai pra `slug_antigo` e continua
+  // achando a barbearia na rota pública do perfil, de onde o site
+  // redireciona (ADR-0002). Slug de outra barbearia cai no unique da
+  // coluna → P2002 → 409, sem consulta prévia que abriria corrida entre
+  // checar e gravar — e a transação desfaz o antigo gravado junto.
   app.patch(
     "/barbearias/me/slug",
     { schema: { body: corpoTrocaDeSlug }, onRequest: exigirPapel("dono") },
@@ -101,9 +102,17 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
         );
       }
 
-      const barbearia = await prisma.barbearia.update({
-        where: { id: request.user.barbeariaId },
-        data: { slug },
+      const id = request.user.barbeariaId;
+      const barbearia = await prisma.$transaction(async (tx) => {
+        const atual = await tx.barbearia.findUniqueOrThrow({ where: { id } });
+        if (atual.slug === slug) return atual;
+
+        // O slug atual de qualquer barbearia ganha do antigo: quem pega
+        // um slug da tabela o tira de lá — inclusive a própria barbearia
+        // voltando ao nome anterior, que senão apontaria pra si mesma.
+        await tx.slugAntigo.deleteMany({ where: { slug } });
+        await tx.slugAntigo.create({ data: { slug: atual.slug, barbeariaId: id } });
+        return tx.barbearia.update({ where: { id }, data: { slug } });
       });
 
       return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
@@ -153,10 +162,17 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
     "/barbearias/:slug",
     { schema: { params: paramsSlug } },
     async (request) => {
-      // findUniqueOrThrow: slug inexistente vira P2025, que o tratador
+      // O slug atual ou um que a barbearia já teve: o link antigo
+      // circulou, e o `slug` da resposta é o atual — o site compara e
+      // redireciona. Os dois nunca acham barbearias diferentes, porque
+      // quem pega um slug o tira de `slug_antigo` (PATCH /me/slug e
+      // signup).
+      //
+      // findFirstOrThrow: slug inexistente vira P2025, que o tratador
       // central traduz pra 404.
-      const barbearia = await prisma.barbearia.findUniqueOrThrow({
-        where: { slug: request.params.slug },
+      const { slug } = request.params;
+      const barbearia = await prisma.barbearia.findFirstOrThrow({
+        where: { OR: [{ slug }, { slugsAntigos: { some: { slug } } }] },
         include: {
           horariosFuncionamento: true,
           // Só id e nome, e só quem atende cliente: ativo, que não é

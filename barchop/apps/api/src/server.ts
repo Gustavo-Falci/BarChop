@@ -1,7 +1,7 @@
 import { PgBoss } from "pg-boss";
 import { buildApp } from "./app";
 import { filaDoPgBoss, urlDoPg } from "./lib/fila";
-import { registrarLembrete } from "./lib/lembrete";
+import { criarLinkDoLembrete, registrarLembrete } from "./lib/lembrete";
 
 // Entrypoint do bundle (ver tsup.config.ts). Toda a montagem da
 // aplicação está no app.ts, que os testes usam sem abrir porta.
@@ -31,9 +31,22 @@ async function main(): Promise<void> {
     await boss.stop();
   });
 
+  // O `ready` antes dos workers: o `app.jwt`, que assina o link do
+  // lembrete, só existe depois que os plugins sobem — e um trabalho
+  // atrasado roda assim que o worker é registrado. Os testes não veem
+  // isso: o `inject` sobe o app antes.
+  await app.ready();
+
+  // A página "Confirmar ou cancelar" mora no site, que por enquanto é o
+  // mesmo host do painel (o Bloco E separa os dois).
+  const link = criarLinkDoLembrete(app, process.env.URL_DO_PAINEL);
+  if (!link) {
+    app.log.warn("URL_DO_PAINEL ausente: o lembrete sai sem o link de confirmar ou cancelar");
+  }
+
   // Os workers depois do start: `work` num pg-boss parado lança. No
   // buildApp rodaria antes, e os testes (fila de memória) não veriam.
-  await registrarLembrete(app.fila, { canal: app.canal, log: app.log });
+  await registrarLembrete(app.fila, { canal: app.canal, log: app.log, link });
 
   for (const sinal of ["SIGINT", "SIGTERM"] as const) {
     process.once(sinal, () => {

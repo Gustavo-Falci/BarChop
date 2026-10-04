@@ -23,6 +23,7 @@ import {
   registrarRotasBarbeariasPublicas,
 } from "./routers/barbearias";
 import { registrarRotasHorarios } from "./routers/horarios";
+import { ocultarTokenDoLembrete, registrarRotasLembretes } from "./routers/lembretes";
 import { registrarRotasMe } from "./routers/me";
 import {
   registrarRotasServicos,
@@ -49,7 +50,22 @@ export function buildApp(
   opts: { logger?: boolean; canal?: CanalDeMensagem; fila?: Fila } = {}
 ): App {
   const app = Fastify({
-    logger: opts.logger ?? false,
+    // O serializer padrão da requisição, com a URL passando pelo
+    // ocultarTokenDoLembrete: o token no caminho é um link de cancelar
+    // que funciona, e não pode ficar legível no log.
+    logger: opts.logger
+      ? {
+          serializers: {
+            req: (req) => ({
+              method: req.method,
+              url: ocultarTokenDoLembrete(req.url),
+              host: req.host,
+              remoteAddress: req.ip,
+              remotePort: req.socket?.remotePort,
+            }),
+          },
+        }
+      : false,
     // O AJV do Fastify vem com `removeAdditional: true`: campo fora do
     // schema é apagado do corpo em silêncio, e a rota responde 200 como
     // se estivesse tudo certo. Com `additionalProperties: false` nos
@@ -58,6 +74,9 @@ export function buildApp(
     // sem esse campo e não me avisou", e o que faz um `barbeariaId`
     // no corpo de rota protegida ser recusado em vez de ignorado.
     ajv: { customOptions: { removeAdditional: false } },
+    // O padrão do Fastify é 100 caracteres por parâmetro de rota, e o
+    // token do link do lembrete (um JWT) passa de 200: sem isto, 414.
+    maxParamLength: 512,
   }).withTypeProvider<JsonSchemaToTsProvider>();
 
   // origin: true por enquanto — trocar por uma lista explícita
@@ -104,6 +123,8 @@ export function buildApp(
   registrarRotasServicosPublicas(app);
   registrarRotasAgendamentosPublicas(app);
   registrarRotasDisponibilidade(app);
+  // Sem login: quem autoriza é o token do link do e-mail de lembrete.
+  registrarRotasLembretes(app);
 
   // Escopo dos protegidos: o hook vale pra tudo que for registrado aqui
   // dentro. Pendurar onRequest rota a rota dependeria de ninguém

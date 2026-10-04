@@ -24,6 +24,16 @@ export interface PayloadCliente {
   iat?: number;
 }
 
+// Não é identidade: é o link do e-mail de lembrete, que deixa confirmar
+// ou cancelar UM agendamento sem login (routers/lembretes.ts). O `tipo`
+// é o que impede esse token de abrir o painel ou a conta do cliente —
+// os dois hooks abaixo exigem o deles. `exp` é o início do horário.
+export interface PayloadLembrete {
+  tipo: "lembrete";
+  agendamentoId: string;
+  exp: number;
+}
+
 // Quem está usando o painel, com o papel lido do banco nesta requisição.
 export interface Membro {
   id: string;
@@ -43,8 +53,9 @@ declare module "fastify" {
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
-    // O que se assina pode ser qualquer uma das duas...
-    payload: PayloadBarbeiro | PayloadCliente;
+    // O que se assina pode ser qualquer uma das duas, ou o link do
+    // lembrete...
+    payload: PayloadBarbeiro | PayloadCliente | PayloadLembrete;
     // ...mas `request.user` é lido só dentro do escopo protegido do
     // barbeiro, onde o hook abaixo já garantiu qual é. Declarar a união
     // aqui obrigaria narrowing em seis arquivos de rota que hoje leem

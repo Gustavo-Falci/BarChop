@@ -38,6 +38,11 @@ export function momentoDoLembrete(data: string, hora: string, antecedenciaHoras:
   return new Date(instanteNaBarbearia(data, hora).getTime() - antecedenciaHoras * 60 * 60 * 1000);
 }
 
+// Abaixo disso não há o que lembrar: é o walk-in marcado pelo painel com
+// o cliente já na cadeira, ou quem marcou pra daqui a pouco. Decisão do
+// dono, junto com a de cima: entre 1 h e a antecedência, sai na hora.
+const PISO_DO_LEMBRETE_MS = 60 * 60 * 1000;
+
 // Chamado pelas rotas depois que a transação commitou. Dentro dela, o
 // trabalho sobreviveria ao rollback (o pg-boss tem pool próprio) e o
 // retry de impasse agendaria duas vezes.
@@ -45,10 +50,13 @@ export function momentoDoLembrete(data: string, hora: string, antecedenciaHoras:
 // Falha aqui só vai pro log: o agendamento já está gravado, e um 500
 // faria o cliente tentar de novo e bater no 409 do próprio horário.
 export async function agendarLembrete(
-  { fila, log }: { fila: Fila; log: Log },
+  { fila, log, agora = () => new Date() }: { fila: Fila; log: Log; agora?: () => Date },
   agendamento: { id: string; barbeariaId: string; data: Date; horaInicio: Date; status: string }
 ): Promise<void> {
   if (!lembraDe(agendamento.status)) return;
+  const data = dateParaData(agendamento.data);
+  const hora = dateParaHora(agendamento.horaInicio);
+  if (instanteNaBarbearia(data, hora).getTime() - agora().getTime() < PISO_DO_LEMBRETE_MS) return;
   try {
     // Lida agora: mudar a antecedência depois não move os lembretes que
     // já estão na fila.
@@ -58,11 +66,7 @@ export async function agendarLembrete(
     });
     const dados: DadosDoLembrete = { agendamentoId: agendamento.id };
     await fila.agendar(TRABALHO_LEMBRETE, dados, {
-      quando: momentoDoLembrete(
-        dateParaData(agendamento.data),
-        dateParaHora(agendamento.horaInicio),
-        lembreteAntecedenciaHoras
-      ),
+      quando: momentoDoLembrete(data, hora, lembreteAntecedenciaHoras),
       // O horário de um agendamento não muda (remarcar cria outro), então
       // o id basta: reativar um cancelado não duplica o que ainda espera.
       chave: `${TRABALHO_LEMBRETE}:${agendamento.id}`,

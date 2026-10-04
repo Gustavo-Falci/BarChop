@@ -1,7 +1,11 @@
 import type { Prisma } from "@barchop/database";
 import {
+  aplicarBloqueios,
+  caiEmBloqueio,
   carregarServicos,
+  contextoDoDia,
   garantirBarbeiro,
+  garantirServicosDoProfissional,
   horariosLivres,
 } from "./disponibilidade";
 import { ErroDeNegocio } from "./erro-negocio";
@@ -52,6 +56,9 @@ export async function criarAgendamento(
     servicoIds
   );
 
+  // Antes do horário: com quem não faz o serviço, nenhum horário serve.
+  await garantirServicosDoProfissional(tx, barbeiroId, servicoIds);
+
   let horaFim: string;
   try {
     horaFim = somarMinutos(horaInicio, duracaoTotalMinutos);
@@ -74,14 +81,22 @@ export async function criarAgendamento(
     throw new ErroDeNegocio(`a data ${data} não existe`, "data_invalida");
   }
 
-  // getUTCDay e não getDay: a Date foi construída em UTC por
-  // dataParaDate, e o dia da semana tem que ser lido no mesmo fuso em
-  // que foi escrito.
-  const janela = await tx.horarioFuncionamento.findUnique({
-    where: {
-      barbeariaId_diaSemana: { barbeariaId, diaSemana: dataDate.getUTCDay() },
-    },
-  });
+  // A janela já cruzada com a jornada do membro, e os bloqueios do dia.
+  const contexto = await contextoDoDia(tx, { barbeariaId, barbeiroId, data: dataDate });
+
+  // Antes do cálculo dos livres: o bloqueio também sumiria de lá, mas a
+  // recusa sairia como `horario_indisponivel`, sem dizer o motivo.
+  if (caiEmBloqueio(contexto.bloqueios, dataDate, horaInicio, horaFim)) {
+    throw new ErroDeNegocio(
+      "esse horário está bloqueado na agenda do profissional",
+      "horario_bloqueado"
+    );
+  }
+  const { janela, ocupados: bloqueados } = aplicarBloqueios(
+    contexto.janela,
+    contexto.bloqueios,
+    dataDate
+  );
 
   // Só o que a trava do banco também considera: cancelado não ocupa
   // horário, o resto ocupa. As duas regras têm que concordar, senão o
@@ -98,9 +113,11 @@ export async function criarAgendamento(
   // única garantia real contra dois clientes confirmando ao mesmo tempo,
   // porque entre esta leitura e o insert existe uma janela.
   if (
-    !horariosLivres({ janela, ocupados, duracaoTotalMinutos }).includes(
-      horaInicio
-    )
+    !horariosLivres({
+      janela,
+      ocupados: [...ocupados, ...bloqueados],
+      duracaoTotalMinutos,
+    }).includes(horaInicio)
   ) {
     throw new ErroDeNegocio(
       "esse horário não está disponível",

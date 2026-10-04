@@ -24,8 +24,8 @@ function perfilComEquipe(base = criarApiClientFalso().estado.perfil): PerfilPubl
   return {
     ...base,
     barbeiros: [
-      { id: "bb1", nome: "Rafael", servicoIds: ["s1", "s2"] },
-      { id: "bb2", nome: "Ana", servicoIds: ["s1"] },
+      { id: "bb1", nome: "Rafael", servicoIds: ["s1", "s2"], fotoUrl: null },
+      { id: "bb2", nome: "Ana", servicoIds: ["s1"], fotoUrl: null },
     ],
   };
 }
@@ -96,7 +96,7 @@ describe("escolher o profissional", () => {
     const falso = falsoComEquipe();
     falso.estado.perfil = {
       ...falso.estado.perfil,
-      barbeiros: [{ id: "bb1", nome: "Rafael", servicoIds: ["s2"] }],
+      barbeiros: [{ id: "bb1", nome: "Rafael", servicoIds: ["s2"], fotoUrl: null }],
     };
     montar(<EscolhaDoProfissional />, falso);
 

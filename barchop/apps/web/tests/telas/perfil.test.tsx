@@ -113,13 +113,14 @@ describe("perfil da barbearia", () => {
       instagram: null,
       comodidades: [],
       formasDePagamento: [],
+      capaUrl: null,
       horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
         diaSemana,
         horaAbertura: null,
         horaFechamento: null,
         fechado: true,
       })),
-      barbeiros: [{ id: "barbeiro-1", nome: "Gu", servicoIds: [] }],
+      barbeiros: [{ id: "barbeiro-1", nome: "Gu", servicoIds: [], fotoUrl: null }],
     });
     montar(falso);
 

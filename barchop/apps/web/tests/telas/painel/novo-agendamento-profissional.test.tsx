@@ -68,7 +68,10 @@ describe("profissional no novo agendamento", () => {
     const criar = vi.spyOn(falso.barbeiro, "criarAgendamento");
     montarPainel(<NovoAgendamento agora={AGORA} />, falso);
 
-    await userEvent.selectOptions(await screen.findByLabelText("Profissional"), "m2");
+    // A opção, e não só o <select>: ele nasce vazio e desabilitado
+    // enquanto a equipe não chega.
+    await screen.findByRole("option", { name: "Ana" });
+    await userEvent.selectOptions(screen.getByLabelText("Profissional"), "m2");
     await agendarComJoao();
 
     await waitFor(() => expect(criar).toHaveBeenCalled());
@@ -79,7 +82,8 @@ describe("profissional no novo agendamento", () => {
   it("só oferece quem atende e já entrou", async () => {
     montarPainel(<NovoAgendamento agora={AGORA} />, semear("recepcao"));
 
-    const opcoes = (await screen.findByLabelText("Profissional")).querySelectorAll("option");
+    await screen.findByRole("option", { name: "Ana" });
+    const opcoes = screen.getByLabelText("Profissional").querySelectorAll("option");
     const nomes = [...opcoes].map((opcao) => opcao.textContent);
     expect(nomes).toContain("Ana");
     expect(nomes).not.toContain("Rafael"); // a recepção logada não atende
@@ -91,7 +95,8 @@ describe("profissional no novo agendamento", () => {
     const criar = vi.spyOn(falso.barbeiro, "criarAgendamento");
     montarPainel(<NovoAgendamento agora={AGORA} />, falso);
 
-    await screen.findByLabelText("Profissional");
+    // A equipe precisa ter chegado: é dela que sai o primeiro que atende.
+    await screen.findByRole("option", { name: "Ana" });
     await agendarComJoao();
 
     await waitFor(() => expect(criar).toHaveBeenCalled());

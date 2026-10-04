@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import { PADRAO_SLUG, slugReservado } from "@barchop/formato";
@@ -299,6 +300,13 @@ export function EntrarNoPainel() {
             >
               Esqueci a senha
             </button>
+            {" · "}
+            {/* <Link> e não <button>: este sim navega, pra outra tela.
+                É a porta de quem recebeu o convite sem link — a API só
+                põe o link no e-mail quando tem URL_DO_PAINEL. */}
+            <Link href="/painel/convite" className={estilos.link}>
+              Recebi um convite
+            </Link>
           </p>
         )}
 

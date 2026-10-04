@@ -1,6 +1,7 @@
 import fastifyJwt from "@fastify/jwt";
 import type { FastifyRequest } from "fastify";
-import { prisma } from "@barchop/database";
+import { prisma, type PapelMembro } from "@barchop/database";
+import { ErroHttp } from "../lib/erro-http";
 import type { App } from "../tipos";
 
 // As duas identidades da plataforma. O `tipo` é o que separa uma da
@@ -23,11 +24,20 @@ export interface PayloadCliente {
   iat?: number;
 }
 
+// Quem está usando o painel, com o papel lido do banco nesta requisição.
+export interface Membro {
+  id: string;
+  barbeariaId: string;
+  papel: PapelMembro;
+}
+
 declare module "fastify" {
   interface FastifyRequest {
     // Preenchido só pelo autenticarCliente. Opcional porque o tipo vale
     // pra toda requisição da aplicação, inclusive as do barbeiro.
     cliente?: PayloadCliente;
+    // Preenchido só pelo autenticar, pelo mesmo motivo.
+    membro?: Membro;
   }
 }
 
@@ -92,7 +102,7 @@ export async function autenticar(request: FastifyRequest): Promise<void> {
   // protegida é o preço de a desativação ser real.
   const barbeiro = await prisma.barbeiro.findUnique({
     where: { id: payload.barbeiroId },
-    select: { ativo: true, senhaAlteradaEm: true },
+    select: { ativo: true, senhaAlteradaEm: true, papel: true },
   });
 
   if (!barbeiro?.ativo) {
@@ -106,6 +116,45 @@ export async function autenticar(request: FastifyRequest): Promise<void> {
       statusCode: 401,
     });
   }
+
+  // O papel vem do banco, não do token: a consulta já está paga, e
+  // assim promover ou rebaixar alguém vale na próxima requisição, não
+  // quando o token vencer.
+  request.membro = {
+    id: payload.barbeiroId,
+    barbeariaId: payload.barbeariaId,
+    papel: barbeiro.papel,
+  };
+}
+
+// Lê o membro que o hook decorou — espelho do clienteDoToken.
+export function membroDoToken(request: FastifyRequest): Membro {
+  if (!request.membro) {
+    throw Object.assign(new Error("rota do painel fora do escopo autenticado"), {
+      statusCode: 401,
+    });
+  }
+  return request.membro;
+}
+
+// Guarda de papel, pra pendurar no `onRequest` da rota. onRequest e não
+// preHandler: o de rota roda depois do `autenticar` do escopo e ANTES
+// da validação do corpo — a recusa não pode depender de o corpo estar
+// certo, senão um 400 diria a quem não pode o formato que a rota espera.
+// A matriz de quem pode o quê está em tests/routers/auth-papeis.test.ts.
+export function exigirPapel(...papeis: PapelMembro[]) {
+  return async (request: FastifyRequest): Promise<void> => {
+    if (!papeis.includes(membroDoToken(request).papel)) {
+      throw new ErroHttp(403, "sem_permissao", "seu papel na equipe não permite isto");
+    }
+  };
+}
+
+// A parte do `where` que limita a agenda ao que o membro enxerga: o
+// profissional, só a própria; dono e recepção, a da barbearia toda.
+export function agendaVisivel(request: FastifyRequest): { barbeiroId?: string } {
+  const membro = membroDoToken(request);
+  return membro.papel === "profissional" ? { barbeiroId: membro.id } : {};
 }
 
 // Hook onRequest do escopo do cliente. Espelho do `autenticar`: recusa

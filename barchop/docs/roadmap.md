@@ -9,8 +9,8 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 
 | Onda | Resultado | Estado |
 |---|---|---|
-| 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | pronta na branch `onda-0`, falta o merge — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
-| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | pendente |
+| 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | feita, na main (PR #13) — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
+| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | em andamento na branch `onda-1` — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
 | 1s — Site de marketing | Landing, preços, plano grátis, termos e privacidade | pendente, em paralelo à 1 |
 | 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | pendente |
 | 3 — Retenção do cliente final | Pagamento e sinal online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações | pendente |
@@ -19,9 +19,11 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 
 Nenhuma onda nova abre antes de o piloto rodar a Onda 1.
 
-**Começar já, fora do código:** a verificação de negócio na Meta (exige
-CNPJ) e a aprovação dos templates de mensagem levam semanas, e o
-lembrete por WhatsApp da Onda 1 depende delas (ADR-0004).
+**Verificação da Meta em standby (decisão de 2026-10-03).** Ela exige
+CNPJ e leva semanas; até sair, a Onda 1 não depende do WhatsApp: o
+lembrete automático e os códigos do cliente saem por e-mail, e o painel
+oferece lembrar pelo WhatsApp à mão (`wa.me`). O canal da Cloud API
+(ADR-0004) entra quando a verificação andar.
 
 ## Histórico — até 2026-10-02
 
@@ -240,9 +242,10 @@ no mesmo formato do login), com a tela de dois passos no
 pelo log até o provedor de e-mail da Onda 1.
 
 A revisão da Onda 0 (`.claude/reviews/onda-0-review.md`) deixou três
-dívidas novas, logo abaixo: o orçamento de pedido de código que um
-terceiro consegue gastar, a sessão do cliente que cai quando o slug
-muda, e o monorepo sem lint.
+dívidas novas: o orçamento de pedido de código que um terceiro consegue
+gastar, a sessão do cliente que cai quando o slug muda, e o monorepo
+sem lint. Esta saiu na Onda 1: `pnpm lint` roda o ESLint da raiz, com a
+config compartilhada em `packages/config/eslint.mjs`.
 
 - **O orçamento de pedido de código é gastável por terceiros.** O
   limite de 3 pedidos por destino em 15 minutos (`codigoDoCliente` e
@@ -259,11 +262,6 @@ muda, e o monorepo sem lint.
   quem estava logado precisa entrar de novo. Fecha junto do redirect do
   slug antigo, com o tenant por subdomínio (Onda 1) — o mais simples é
   a chave passar a ser o id da barbearia.
-- **O monorepo não tem lint.** `pnpm lint` roda pelo turbo, mas nenhum
-  pacote tem script de lint — só o build do `@barchop/database` dispara.
-  A disciplina hoje é toda do `tsc` estrito e dos testes. Fecha com um
-  ESLint compartilhado em `packages/config`, ligado em cada pacote.
-
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
   qualquer, e o código de resposta responde. O rate limiting que esta
@@ -272,14 +270,32 @@ muda, e o monorepo sem lint.
   buraco em si continua aberto — cada tentativa, dentro do orçamento,
   ainda responde se aquele email existe. Fechar de verdade é verificação
   de email, que só faz sentido junto do canal de mensagem do passo 4.
-- **Os códigos de verificação só saem pelo log.** O provedor real
-  (WhatsApp ou SMS pro cliente, e-mail pro barbeiro) não foi escolhido,
-  e `lib/canal.ts` só tem o canal de log (desenvolvimento) e o de
-  memória (testes). Em produção, sem `CANAL_DE_MENSAGEM` apontando um
-  provedor real, a API se recusa a subir — de propósito, porque código
-  no log é conta de quem lê o log. Ou seja: o primeiro acesso do
-  cliente bloqueia o deploy do passo 5 até um provedor existir. A
-  escolha pode ser a mesma dos lembretes do passo 4.
+- **O telefone do cliente não recebe código.** Desde a Onda 1 o canal
+  real é o e-mail (`lib/canal-email.ts`, Resend, com
+  `CANAL_DE_MENSAGEM=email`), e o cliente entra e recupera a senha por
+  e-mail. Quem só tem telefone agenda sem conta. Pedir código pro
+  telefone com o canal de e-mail responde 422 `destino_indisponivel`.
+  Fecha com o canal do WhatsApp (ADR-0004), quando a verificação da Meta
+  sair do standby.
+- **O Novo agendamento do painel marca em quem está logado.** A tela
+  manda `barbeiroId: perfil.id` (`NovoAgendamento.tsx`): a recepção
+  marcaria na própria agenda, e ela nasce sem atender. Fecha no C3 do
+  bloco C, quando a tela escolhe o profissional; até lá, não convide
+  recepção numa barbearia em uso.
+- **Convite e reenvio não têm limite de envio.** `POST /equipe` e
+  `POST /equipe/:id/convite` mandam e-mail sem contador: só o dono
+  autenticado chama, mas um dono pode usar a rota pra mandar e-mail a
+  qualquer endereço. Fecha com um contador por barbearia em
+  `lib/limites.ts`, que exige registrar o `rateLimit` no escopo
+  protegido.
+- **Um profissional não fica em duas barbearias.** O e-mail do
+  `barbeiro` é único na plataforma (é a chave do login), e convidar
+  quem já tem conta responde 409 `email_em_uso`. Fecha separando a
+  conta (pessoa) da associação (membro de barbearia).
+- **`POST /auth/senha` não devolve o `papel`.** O login e o aceite do
+  convite devolvem; o esqueci-a-senha do barbeiro ficou no formato
+  antigo. O painel não depende disso (lê o papel no `GET /me`), mas o
+  contrato fica desigual.
 - **Os limites por IP viram limite global atrás de proxy reverso.** O
   `request.ip` do Fastify vem do socket, então quando a API subir atrás
   de proxy (passo 5, a VM da OCI) toda requisição chega com o endereço

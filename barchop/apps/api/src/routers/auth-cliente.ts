@@ -1,8 +1,9 @@
 import { prisma } from "@barchop/database";
+import { normalizarEmail } from "@barchop/formato";
 import { consumirCodigo, emitirCodigo } from "../lib/codigos";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
-import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
+import { PADRAO_EMAIL, PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import {
   conferirSenha,
   gerarHashSenha,
@@ -19,25 +20,34 @@ const paramsSlug = {
   properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
 } as const;
 
+const campoTelefone = { type: "string", pattern: PADRAO_TELEFONE, maxLength: 20 } as const;
+const campoEmail = { type: "string", pattern: PADRAO_EMAIL, maxLength: 160 } as const;
+
+// Telefone OU e-mail, nunca os dois: é por ele que o código sai, e com
+// os dois a rota teria que escolher em silêncio. No piloto o canal só
+// entrega e-mail (plano da Onda 1); o telefone fica pronto pro WhatsApp.
 const corpoCodigo = {
   type: "object",
-  required: ["telefone"],
   additionalProperties: false,
-  properties: {
-    telefone: { type: "string", pattern: PADRAO_TELEFONE, maxLength: 20 },
-  },
+  properties: { telefone: campoTelefone, email: campoEmail },
+  oneOf: [{ required: ["telefone"] }, { required: ["email"] }],
 } as const;
 
 // `nome` obrigatório mesmo pra quem já tem cadastro (e lá ele é
 // ignorado). Exigido só no cadastro novo, "falta o nome" e "código
 // inválido" responderiam diferente — e a diferença diria quem tem
 // cadastro antes de qualquer prova de posse do telefone.
+//
+// Com `email`, a prova é do e-mail, e o telefone vai junto pelo mesmo
+// motivo do nome: o cadastro novo precisa dele (a coluna é obrigatória),
+// e exigi-lo só ali diria quem já tem conta.
 const corpoSenha = {
   type: "object",
   required: ["telefone", "codigo", "senha", "nome"],
   additionalProperties: false,
   properties: {
-    telefone: { type: "string", pattern: PADRAO_TELEFONE, maxLength: 20 },
+    telefone: campoTelefone,
+    email: campoEmail,
     codigo: { type: "string", pattern: "^[0-9]{6}$" },
     senha: { type: "string", minLength: 8, maxLength: 200 },
     nome: { type: "string", minLength: 2, maxLength: 120 },
@@ -46,13 +56,32 @@ const corpoSenha = {
 
 const corpoLogin = {
   type: "object",
-  required: ["telefone", "senha"],
+  required: ["senha"],
   additionalProperties: false,
   properties: {
-    telefone: { type: "string", pattern: PADRAO_TELEFONE, maxLength: 20 },
+    telefone: campoTelefone,
+    email: campoEmail,
     senha: { type: "string", minLength: 1, maxLength: 200 },
   },
+  oneOf: [{ required: ["telefone"] }, { required: ["email"] }],
 } as const;
+
+type Identidade = { tipo: "email" | "telefone"; valor: string };
+
+// O valor que identifica o cliente nas três rotas, já normalizado: é o
+// destino do código e a chave da busca, e os dois têm que ser o mesmo
+// valor pra confirmação achar o código. Com e-mail no corpo, é ele.
+function identidade(corpo: { telefone?: string; email?: string }): Identidade {
+  const email = normalizarEmail(corpo.email);
+  if (email) return { tipo: "email", valor: email };
+  return { tipo: "telefone", valor: normalizarTelefoneObrigatorio(corpo.telefone ?? "") };
+}
+
+function ondeEstaOCliente(barbeariaId: string, quem: Identidade) {
+  return quem.tipo === "email"
+    ? { barbeariaId_email: { barbeariaId, email: quem.valor } }
+    : { barbeariaId_telefone: { barbeariaId, telefone: quem.valor } };
+}
 
 // Públicas: são as telas de criar conta e entrar, abertas pelo link do
 // WhatsApp. Ficam fora dos dois escopos protegidos do app.ts.
@@ -74,9 +103,17 @@ export function registrarRotasAuthCliente(
       preHandler: limites.codigoDoCliente,
     },
     async (request, reply) => {
-      // Normalizado: é o destino do código e a chave do cadastro, e os
-      // dois têm que ser o mesmo valor pra confirmação achar o código.
-      const telefone = normalizarTelefoneObrigatorio(request.body.telefone);
+      const destino = identidade(request.body);
+
+      // Antes do banco e antes de emitir: um código que não tem por onde
+      // sair não deve existir, e o envio falharia com 500 lá embaixo.
+      // Não diz nada sobre contas — depende só da configuração da API.
+      if (!app.canal.destinos.includes(destino.tipo)) {
+        throw new ErroDeNegocio(
+          "a barbearia ainda não envia código por este meio",
+          "destino_indisponivel"
+        );
+      }
 
       // findUniqueOrThrow: slug inexistente vira P2025 -> 404, antes de
       // mandar qualquer coisa.
@@ -87,14 +124,15 @@ export function registrarRotasAuthCliente(
 
       const codigo = await emitirCodigo({
         finalidade: "senha_cliente",
-        destino: telefone,
+        destino: destino.valor,
         barbeariaId: barbearia.id,
       });
 
       // O nome da barbearia na mensagem: sem ele, é um código solto no
       // WhatsApp, igual ao de um golpe pedindo "me passa o código".
       await app.canal.enviar({
-        para: telefone,
+        para: destino.valor,
+        assunto: `${barbearia.nome}: seu código de acesso`,
         texto:
           `${barbearia.nome}: seu código de acesso é ${codigo}. ` +
           "Vale 10 minutos. Não passe este código pra ninguém.",
@@ -113,16 +151,18 @@ export function registrarRotasAuthCliente(
     async (request, reply) => {
       const { nome, senha, codigo } = request.body;
       const telefone = normalizarTelefoneObrigatorio(request.body.telefone);
+      const provar = identidade(request.body);
 
       const barbearia = await prisma.barbearia.findUniqueOrThrow({
         where: { slug: request.params.slug },
         select: { id: true },
       });
 
-      // O código antes de tudo: é a prova de posse do telefone, e sem
-      // ela nada sobre o cadastro deve ser lido nem respondido.
+      // O código antes de tudo: é a prova de posse do telefone (ou do
+      // e-mail), e sem ela nada sobre o cadastro deve ser lido nem
+      // respondido.
       const provado = await consumirCodigo(
-        { finalidade: "senha_cliente", destino: telefone, barbeariaId: barbearia.id },
+        { finalidade: "senha_cliente", destino: provar.valor, barbeariaId: barbearia.id },
         codigo
       );
       if (!provado) {
@@ -130,10 +170,28 @@ export function registrarRotasAuthCliente(
       }
 
       const existente = await prisma.cliente.findUnique({
-        where: {
-          barbeariaId_telefone: { barbeariaId: barbearia.id, telefone },
-        },
+        where: ondeEstaOCliente(barbearia.id, provar),
       });
+
+      // E-mail provado, sem cadastro com ele, e o telefone já é de outro
+      // cadastro: recusa em vez de vincular. Vincular seria tomar a
+      // conta — quem controla um e-mail qualquer e sabe o telefone de um
+      // cliente do balcão herdaria o histórico dele. O caminho seguro é
+      // a barbearia incluir o e-mail no cadastro, e aí o `existente`
+      // acima acha. Dizer que o telefone tem cadastro, depois da prova
+      // do e-mail, é o preço aceito disso.
+      if (!existente && provar.tipo === "email") {
+        const outro = await prisma.cliente.findUnique({
+          where: ondeEstaOCliente(barbearia.id, { tipo: "telefone", valor: telefone }),
+          select: { id: true },
+        });
+        if (outro) {
+          throw new ErroDeNegocio(
+            "este telefone já tem cadastro na barbearia; peça pra incluírem seu e-mail nele",
+            "telefone_ja_cadastrado"
+          );
+        }
+      }
 
       const senhaHash = await gerarHashSenha(senha);
 
@@ -152,7 +210,13 @@ export function registrarRotasAuthCliente(
             data: { senhaHash, senhaAlteradaEm: new Date() },
           })
         : await prisma.cliente.create({
-            data: { barbeariaId: barbearia.id, nome, telefone, senhaHash },
+            data: {
+              barbeariaId: barbearia.id,
+              nome,
+              telefone,
+              email: provar.tipo === "email" ? provar.valor : null,
+              senhaHash,
+            },
           });
 
       const token = app.jwt.sign({
@@ -176,7 +240,7 @@ export function registrarRotasAuthCliente(
       const { senha } = request.body;
       // Mesma normalização da gravação. Sem ela, quem se cadastrou por
       // um formato não entraria digitando outro.
-      const telefone = normalizarTelefoneObrigatorio(request.body.telefone);
+      const quem = identidade(request.body);
 
       const barbearia = await prisma.barbearia.findUniqueOrThrow({
         where: { slug: request.params.slug },
@@ -184,9 +248,7 @@ export function registrarRotasAuthCliente(
       });
 
       const cliente = await prisma.cliente.findUnique({
-        where: {
-          barbeariaId_telefone: { barbeariaId: barbearia.id, telefone },
-        },
+        where: ondeEstaOCliente(barbearia.id, quem),
       });
 
       // Telefone inexistente e cadastro sem senha (walk-in feito pelo

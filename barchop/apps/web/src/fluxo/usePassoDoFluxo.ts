@@ -93,6 +93,7 @@ export function usePassoDoFluxo(
     // vale pra `falta`/`volta`: como a checagem de data passada é por
     // dia, não por milissegundo, o `agora` padrão não os faz oscilar
     // a cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- ver acima
   }, [falta, slug, volta, router, escolhas.servicoIds.join(","), escolhas.data, escolhas.hora, escolhas.remarcar]);
 
   return { ...escolhas, slug, pronto: !falta };

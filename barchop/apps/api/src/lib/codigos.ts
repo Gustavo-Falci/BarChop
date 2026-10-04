@@ -7,7 +7,9 @@ import { prisma } from "@barchop/database";
 //
 // Pro cliente, primeiro acesso e esqueci a senha são a mesma coisa —
 // provar o telefone e definir a senha —, então são uma finalidade só.
-export type Finalidade = "senha_cliente" | "senha_barbeiro";
+// O convite do membro da equipe é outra: vale mais tempo, e por isso
+// não pode servir de redefinição de senha (nem o contrário).
+export type Finalidade = "senha_cliente" | "senha_barbeiro" | "convite_profissional";
 
 export interface AlvoDoCodigo {
   finalidade: Finalidade;
@@ -19,6 +21,15 @@ export interface AlvoDoCodigo {
 }
 
 export const VALIDADE_DO_CODIGO_MS = 10 * 60 * 1000;
+
+// O convite espera o convidado abrir o e-mail — o dono convida na
+// segunda, o profissional olha no fim de semana. Continua seguro pelo
+// mesmo teto de tentativas, e só o dono emite um novo.
+export const VALIDADE_DO_CONVITE_MS = 7 * 24 * 60 * 60 * 1000;
+
+function validade(finalidade: Finalidade): number {
+  return finalidade === "convite_profissional" ? VALIDADE_DO_CONVITE_MS : VALIDADE_DO_CODIGO_MS;
+}
 
 // Seis dígitos são um milhão de combinações: com 5 tentativas por código
 // e um código novo custando um envio (que tem limite próprio por
@@ -69,7 +80,7 @@ export async function emitirCodigo(
       data: {
         ...ondeEstaOAlvo(alvo),
         codigoHash: hashDoCodigo(codigo),
-        expiraEm: new Date(agora.getTime() + VALIDADE_DO_CODIGO_MS),
+        expiraEm: new Date(agora.getTime() + validade(alvo.finalidade)),
       },
     }),
   ]);

@@ -10,7 +10,7 @@ import { TelefoneInvalido } from "./erros";
 // Mesma função na gravação e na busca — igual ao normalizarEmail. Se só
 // uma das pontas normalizar, ninguém acha o que a outra guardou. Agora
 // vale também pras telas, que escrevem no mesmo campo.
-const FORMATO_GUARDADO = "(AA) NNNNN-NNNN";
+// O formato guardado é "(AA) NNNNN-NNNN".
 
 // 55 na frente de 12 ou 13 dígitos é o código do país, e sai. Em 10
 // dígitos ele é DDD de verdade (Santa Maria, RS) e fica — por isso a

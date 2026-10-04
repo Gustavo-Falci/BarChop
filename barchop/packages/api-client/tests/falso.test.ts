@@ -218,7 +218,7 @@ describe("dublê — escopo do barbeiro", () => {
     // recusar código errado do mesmo jeito que a API, com o mesmo código
     // de erro, senão o ramo de erro das telas nunca roda.
     const falso = criarApiClientFalso();
-    await falso.publico.pedirCodigoDoCliente("gr-barber", "(11) 98888-7777");
+    await falso.publico.pedirCodigoDoCliente("gr-barber", { email: "maria@exemplo.com" });
 
     await expect(
       falso.publico.definirSenhaDoCliente("gr-barber", {

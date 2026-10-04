@@ -21,16 +21,20 @@ export interface FiltroDoMes {
   servicoIds: string[];
 }
 
-export interface CredenciaisDoCliente {
-  telefone: string;
-  senha: string;
-}
+// Por onde o cliente se identifica: telefone OU e-mail, nunca os dois —
+// a API recusa o corpo com os dois. No piloto as telas usam o e-mail,
+// porque é o único canal que entrega o código sem o WhatsApp.
+export type DestinoDoCodigo = { telefone: string } | { email: string };
+
+export type CredenciaisDoCliente = DestinoDoCodigo & { senha: string };
 
 // Primeiro acesso e esqueci a senha, pro cliente, são o mesmo pedido:
-// o código que chegou no telefone prova a posse, e a senha é definida.
-// `nome` vai sempre — a API só o usa se o cadastro for novo.
+// o código que chegou no telefone (ou no e-mail) prova a posse, e a
+// senha é definida. `nome` e `telefone` vão sempre — a API só os usa se
+// o cadastro for novo. Com `email`, a prova é do e-mail.
 export interface DefinicaoDeSenhaDoCliente {
   telefone: string;
+  email?: string;
   codigo: string;
   senha: string;
   nome: string;
@@ -86,10 +90,10 @@ export function criarApiPublica(requisicao: Requisicao) {
     },
 
     // Responde igual tendo ou não conta: não há nada a devolver.
-    async pedirCodigoDoCliente(slug: string, telefone: string): Promise<void> {
+    async pedirCodigoDoCliente(slug: string, destino: DestinoDoCodigo): Promise<void> {
       await requisicao(`/barbearias/${slug}/auth/cliente/codigo`, {
         metodo: "POST",
-        corpo: { telefone },
+        corpo: destino,
       });
     },
 

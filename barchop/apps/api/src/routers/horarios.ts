@@ -3,6 +3,7 @@ import { ErroDeNegocio } from "../lib/erro-negocio";
 import { horaParaDate } from "../lib/horas";
 import { PADRAO_HORA } from "../lib/padroes";
 import { serializarHorario, type HorarioSerializado } from "../lib/serializar";
+import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
 
 // Domingo a sábado, na mesma ordem que a tela desenha.
@@ -68,7 +69,7 @@ export function registrarRotasHorarios(app: App): void {
 
   app.put(
     "/barbearias/me/horarios",
-    { schema: { body: corpoPutHorarios } },
+    { schema: { body: corpoPutHorarios }, onRequest: exigirPapel("dono") },
     async (request) => {
       const barbeariaId = request.user.barbeariaId;
 

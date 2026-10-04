@@ -23,6 +23,10 @@ interface Painel {
   perfil: PerfilBarbeiro;
   slug: string;
   sair: () => void;
+  // O perfil é lido uma vez, ao abrir o painel. Quem muda o próprio
+  // papel (Equipe) relê, senão a barra seguiria mostrando o que o papel
+  // novo já não pode — e cada clique ali voltaria 403.
+  recarregarPerfil: () => Promise<void>;
 }
 
 const Contexto = createContext<Painel | null>(null);
@@ -89,13 +93,23 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
     };
   }, [api, router, sair]);
 
+  // Mesmo desfecho da carga inicial: perfil que não se prova é sessão
+  // que acabou — inclusive o membro que se desativou.
+  const recarregarPerfil = useCallback(async () => {
+    try {
+      setPerfil(await api.barbeiro.meuPerfil());
+    } catch {
+      sair();
+    }
+  }, [api, sair]);
+
   // Nada renderiza antes do perfil: uma tela que aparecesse e sumisse
   // seria pior do que uma que demora.
   if (!perfil) return null;
 
   return (
     <Contexto.Provider
-      value={{ perfil, slug, sair }}
+      value={{ perfil, slug, sair, recarregarPerfil }}
     >
       {children}
     </Contexto.Provider>

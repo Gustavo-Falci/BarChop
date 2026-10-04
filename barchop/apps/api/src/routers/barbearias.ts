@@ -5,6 +5,7 @@ import { normalizarTelefone } from "../lib/telefone";
 import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import { serializarBarbearia } from "../lib/serializar";
 import { completarSemana } from "./horarios";
+import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
 
 // A tela de Configurações edita estes campos. `slug` fica fora: trocar
@@ -70,7 +71,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
   // consulta prévia que abriria corrida entre checar e gravar.
   app.patch(
     "/barbearias/me/slug",
-    { schema: { body: corpoTrocaDeSlug } },
+    { schema: { body: corpoTrocaDeSlug }, onRequest: exigirPapel("dono") },
     async (request) => {
       const { slug } = request.body;
 
@@ -92,7 +93,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
 
   app.patch(
     "/barbearias/me",
-    { schema: { body: corpoPatchBarbearia } },
+    { schema: { body: corpoPatchBarbearia }, onRequest: exigirPapel("dono") },
     async (request) => {
       // O id sai do token. Não existe rota `/barbearias/:id` de escrita:
       // sem id na URL não há o que escopar errado.
@@ -138,13 +139,18 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
         where: { slug: request.params.slug },
         include: {
           horariosFuncionamento: true,
-          // Só id e nome, e só os ativos. O select explícito é o que
-          // impede o senhaHash do barbeiro de sair numa rota pública —
-          // é exatamente o que o comentário do serializador alertava.
+          // Só id e nome, e só quem atende cliente: ativo, que não é
+          // recepção, e que já aceitou o convite (com senha). O select
+          // explícito é o que impede o senhaHash de sair numa rota
+          // pública — o filtro por ele não o devolve.
+          //
+          // Ordem de entrada na equipe, não de nome: até o bloco C o
+          // fluxo público agenda com o primeiro da lista, e um membro
+          // novo com nome em "A" tomaria os agendamentos do dono.
           barbeiros: {
-            where: { ativo: true },
+            where: { ativo: true, atende: true, senhaHash: { not: null } },
             select: { id: true, nome: true },
-            orderBy: { nome: "asc" },
+            orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
           },
         },
       });

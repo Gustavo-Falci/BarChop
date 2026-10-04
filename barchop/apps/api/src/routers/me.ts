@@ -11,6 +11,8 @@ function respostaBarbeiro(barbeiro: {
   email: string | null;
   telefone: string | null;
   barbeariaId: string;
+  papel: string;
+  atende: boolean;
 }) {
   return {
     id: barbeiro.id,
@@ -18,6 +20,9 @@ function respostaBarbeiro(barbeiro: {
     email: barbeiro.email,
     telefone: barbeiro.telefone,
     barbeariaId: barbeiro.barbeariaId,
+    // O painel esconde o que o papel não pode; quem barra é a API.
+    papel: barbeiro.papel,
+    atende: barbeiro.atende,
   };
 }
 

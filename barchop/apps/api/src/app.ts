@@ -2,7 +2,6 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
-import { prisma } from "@barchop/database";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { limitesDeAuth } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
@@ -16,6 +15,7 @@ import {
 import { registrarRotasClientes } from "./routers/clientes";
 import { registrarRotasClientesMe } from "./routers/clientes-me";
 import { registrarRotasDisponibilidade } from "./routers/disponibilidade";
+import { registrarRotasEquipe } from "./routers/equipe";
 import {
   registrarRotasBarbeariasProtegidas,
   registrarRotasBarbeariasPublicas,
@@ -107,6 +107,7 @@ export function buildApp(
     registrarRotasServicos(protegidas);
     registrarRotasClientes(protegidas);
     registrarRotasAgendamentos(protegidas);
+    registrarRotasEquipe(protegidas);
   });
 
   // Escopo do cliente, irmão do de cima e pelo mesmo motivo: o hook vale

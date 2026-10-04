@@ -70,7 +70,7 @@ describe("POST /auth/signup", () => {
 
     const barbeiro = await prisma.barbeiro.findFirstOrThrow();
     expect(barbeiro.senhaHash).not.toBe("senha-forte-123");
-    expect(barbeiro.senhaHash.startsWith("scrypt$")).toBe(true);
+    expect(barbeiro.senhaHash?.startsWith("scrypt$")).toBe(true);
 
     await app.close();
   });

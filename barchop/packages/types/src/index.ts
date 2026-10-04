@@ -156,12 +156,33 @@ export interface SessaoCliente {
   cliente: ClienteSerializado;
 }
 
+// O papel do membro na equipe. Decide o que o painel mostra; quem barra
+// é a API (matriz em apps/api/tests/routers/auth-papeis.test.ts).
+export type PapelMembro = "dono" | "profissional" | "recepcao";
+
 export interface PerfilBarbeiro {
   id: string;
   nome: string;
   email: string | null;
   telefone: string | null;
   barbeariaId: string;
+  papel: PapelMembro;
+  // Aparece na agenda e no fluxo público. A recepção nasce sem atender.
+  atende: boolean;
+}
+
+// GET /equipe. A tabela ainda se chama `barbeiro`; o conceito é membro.
+export interface MembroDaEquipe {
+  id: string;
+  nome: string;
+  email: string | null;
+  telefone: string | null;
+  papel: PapelMembro;
+  atende: boolean;
+  ativo: boolean;
+  fotoUrl: string | null;
+  // Convidado que ainda não definiu a senha — não consegue entrar.
+  convitePendente: boolean;
 }
 
 // GET /barbearias/:slug/disponibilidade — horários de início livres.

@@ -1,11 +1,25 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { CODIGO_DO_CLIENTE_FALSO, criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
+import {
+  CODIGO_DO_CLIENTE_FALSO,
+  criarApiClientFalso,
+  ErroDaApi,
+  type CredenciaisDoCliente,
+  type DefinicaoDeSenhaDoCliente,
+  type DestinoDoCodigo,
+} from "@barchop/api-client";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { Entrar } from "../../src/telas/Entrar";
 import { sessaoDoCliente } from "../../src/sessao/armazenamento";
 import { navegacaoFalsa } from "../ajudantes/navegacao";
+
+// No piloto o cliente entra por e-mail (plano da Onda 1, decisão de
+// 2026-10-03): sem a verificação da Meta não há WhatsApp, e o código só
+// tem por onde chegar no e-mail. O telefone continua no cadastro — é por
+// ele que a barbearia reconhece o cliente — e é pedido só ao criar.
+
+const EMAIL = "maria@exemplo.com";
 
 function montar(falso = criarApiClientFalso()) {
   render(
@@ -16,8 +30,8 @@ function montar(falso = criarApiClientFalso()) {
   return falso;
 }
 
-async function preencher() {
-  await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
+async function preencher(email = EMAIL) {
+  await userEvent.type(screen.getByLabelText(/e-mail/i), email);
   await userEvent.type(screen.getByLabelText(/^senha$/i), "segredo123");
 }
 
@@ -27,19 +41,27 @@ describe("entrar", () => {
     navegacaoFalsa.redefinir();
   });
 
-  it("entra e guarda o token daquela barbearia", async () => {
-    montar();
-    await preencher();
+  it("entra com e-mail e senha e guarda o token daquela barbearia", async () => {
+    const falso = montar();
+    const tentativas: CredenciaisDoCliente[] = [];
+    const original = falso.publico.loginCliente;
+    falso.publico.loginCliente = async (slug, credenciais) => {
+      tentativas.push(credenciais);
+      return original(slug, credenciais);
+    };
+    await preencher("Maria@Exemplo.com");
 
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
     await waitFor(() =>
       expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
     );
+    // Normalizado antes de sair: a API busca pelo e-mail em minúsculas.
+    expect(tentativas).toEqual([{ email: EMAIL, senha: "segredo123" }]);
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/minha-conta");
   });
 
-  it("traduz credenciais_invalidas em telefone ou senha incorretos", async () => {
+  it("traduz credenciais_invalidas em e-mail ou senha incorretos", async () => {
     const falso = criarApiClientFalso();
     falso.publico.loginCliente = async () => {
       throw new ErroDaApi(401, "credenciais_invalidas", "");
@@ -50,14 +72,13 @@ describe("entrar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
     await waitFor(() =>
-      expect(screen.getByText(/telefone ou senha incorretos/i)).toBeInTheDocument()
+      expect(screen.getByText(/e-mail ou senha incorretos/i)).toBeInTheDocument()
     );
   });
 
-  it("telefone sem DDD acusa o campo, e não tenta o login", async () => {
-    // O ponto da nota 3: um telefone incompleto é erro de digitação, e
-    // não pode aparecer como se a senha estivesse errada. Por isso a
-    // API nem chega a ser chamada aqui.
+  it("e-mail inválido acusa o campo, e não tenta o login", async () => {
+    // Erro de digitação não pode aparecer como se a senha estivesse
+    // errada. Por isso a API nem chega a ser chamada aqui.
     const falso = criarApiClientFalso();
     let tentou = false;
     falso.publico.loginCliente = async () => {
@@ -66,16 +87,15 @@ describe("entrar", () => {
     };
     montar(falso);
 
-    await userEvent.type(screen.getByLabelText(/telefone/i), "99999");
-    await userEvent.type(screen.getByLabelText(/^senha$/i), "segredo123");
+    await preencher("maria-sem-arroba");
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
-    expect(await screen.findByText(/informe o ddd/i)).toBeInTheDocument();
-    expect(screen.queryByText(/telefone ou senha incorretos/i)).toBeNull();
+    expect(await screen.findByText(/informe um e-mail válido/i)).toBeInTheDocument();
+    expect(screen.queryByText(/e-mail ou senha incorretos/i)).toBeNull();
     expect(tentou).toBe(false);
   });
 
-  it("I4: senha em branco acusa o campo, e não tenta a API", async () => {
+  it("senha em branco acusa o campo, e não tenta a API", async () => {
     const falso = criarApiClientFalso();
     let tentou = false;
     falso.publico.loginCliente = async () => {
@@ -83,7 +103,7 @@ describe("entrar", () => {
       throw new ErroDaApi(401, "credenciais_invalidas", "");
     };
     montar(falso);
-    await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
+    await userEvent.type(screen.getByLabelText(/e-mail/i), EMAIL);
 
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
@@ -91,22 +111,17 @@ describe("entrar", () => {
     expect(tentou).toBe(false);
   });
 
-  it("um telefone inválido não deixa um erro de senha de tentativa anterior preso na tela", async () => {
-    // Regressão: erroSenha só era limpo dentro do próprio `if` da senha,
-    // que nunca rodava quando o telefone barrava antes. Um erro de senha
-    // de uma tentativa anterior sobrevivia a um telefone que falhou
-    // depois.
+  it("um e-mail inválido não deixa um erro de senha de tentativa anterior preso na tela", async () => {
     montar();
-    await userEvent.type(screen.getByLabelText(/telefone/i), "11999998888");
+    await userEvent.type(screen.getByLabelText(/e-mail/i), EMAIL);
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
     expect(await screen.findByText(/informe sua senha/i)).toBeInTheDocument();
 
-    await userEvent.clear(screen.getByLabelText(/telefone/i));
-    await userEvent.type(screen.getByLabelText(/telefone/i), "99999");
-    await userEvent.type(screen.getByLabelText(/^senha$/i), "segredo123");
+    await userEvent.clear(screen.getByLabelText(/e-mail/i));
+    await preencher("maria-sem-arroba");
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
-    expect(await screen.findByText(/informe o ddd/i)).toBeInTheDocument();
+    expect(await screen.findByText(/informe um e-mail válido/i)).toBeInTheDocument();
     expect(screen.queryByText(/informe sua senha/i)).toBeNull();
   });
 
@@ -171,14 +186,12 @@ describe("entrar", () => {
 
   it("anuncia os tokens que o gerenciador de senhas do celular usa", async () => {
     // Este fluxo chega por link de WhatsApp, quase sempre no celular:
-    // sem o par tel/current-password ninguém preenche nem salva.
+    // sem o par email/current-password ninguém preenche nem salva.
     montar();
 
-    const telefone = screen.getByLabelText(/telefone/i);
-    expect(telefone).toHaveAttribute("autocomplete", "tel");
-    // `inputMode` e não `type="tel"`: o teclado numérico abre do mesmo
-    // jeito, e o campo continua a string que o formatador reescreve.
-    expect(telefone).toHaveAttribute("inputmode", "tel");
+    const email = screen.getByLabelText(/e-mail/i);
+    expect(email).toHaveAttribute("autocomplete", "email");
+    expect(email).toHaveAttribute("inputmode", "email");
     expect(screen.getByLabelText(/^senha$/i)).toHaveAttribute(
       "autocomplete",
       "current-password"
@@ -187,7 +200,7 @@ describe("entrar", () => {
 });
 
 // Primeiro acesso e esqueci a senha são o mesmo caminho: provar o
-// telefone com o código e definir a senha. Antes, o primeiro acesso
+// e-mail com o código e definir a senha. Antes, o primeiro acesso
 // definia a senha de qualquer cadastro sem senha, sem prova nenhuma — e
 // quem chegasse primeiro ficava com o histórico de outra pessoa.
 describe("entrar — primeiro acesso ou esqueci a senha", () => {
@@ -202,31 +215,42 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
     );
   }
 
-  async function pedirCodigo(telefone = "11999998888") {
+  async function pedirCodigo(email = EMAIL) {
     await abrirCodigo();
-    await userEvent.type(screen.getByLabelText(/telefone/i), telefone);
+    await userEvent.type(screen.getByLabelText(/e-mail/i), email);
     await userEvent.click(screen.getByRole("button", { name: "Enviar código" }));
   }
 
-  async function preencherCodigo(codigo = CODIGO_DO_CLIENTE_FALSO, senha = "segredo123") {
+  async function preencherCodigo(
+    codigo = CODIGO_DO_CLIENTE_FALSO,
+    senha = "segredo123",
+    telefone = "11999998888"
+  ) {
     await userEvent.type(await screen.findByLabelText(/^código$/i), codigo);
     await userEvent.type(screen.getByLabelText(/seu nome/i), "Maria Souza");
+    await userEvent.type(screen.getByLabelText(/telefone/i), telefone);
     await userEvent.type(screen.getByLabelText(/^nova senha$/i), senha);
   }
 
-  it("pede o código, define a senha com ele e entra", async () => {
+  it("pede o código pro e-mail, define a senha com ele e entra", async () => {
     const falso = montar();
-    const pedidos: string[] = [];
-    const original = falso.publico.pedirCodigoDoCliente;
-    falso.publico.pedirCodigoDoCliente = async (slug, telefone) => {
-      pedidos.push(telefone);
-      return original(slug, telefone);
+    const pedidos: DestinoDoCodigo[] = [];
+    const definicoes: DefinicaoDeSenhaDoCliente[] = [];
+    const pedir = falso.publico.pedirCodigoDoCliente;
+    const definir = falso.publico.definirSenhaDoCliente;
+    falso.publico.pedirCodigoDoCliente = async (slug, destino) => {
+      pedidos.push(destino);
+      return pedir(slug, destino);
+    };
+    falso.publico.definirSenhaDoCliente = async (slug, definicao) => {
+      definicoes.push(definicao);
+      return definir(slug, definicao);
     };
 
-    await pedirCodigo();
+    await pedirCodigo("Maria@Exemplo.com");
     expect(await screen.findByText(/enviamos um código/i)).toBeInTheDocument();
     // Normalizado antes de sair: é a chave do código na API.
-    expect(pedidos).toEqual(["(11) 99999-8888"]);
+    expect(pedidos).toEqual([{ email: EMAIL }]);
 
     await preencherCodigo();
     await userEvent.click(screen.getByRole("button", { name: "Salvar e entrar" }));
@@ -234,6 +258,15 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
     await waitFor(() =>
       expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
     );
+    expect(definicoes).toEqual([
+      {
+        email: EMAIL,
+        telefone: "(11) 99999-8888",
+        codigo: CODIGO_DO_CLIENTE_FALSO,
+        nome: "Maria Souza",
+        senha: "segredo123",
+      },
+    ]);
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/minha-conta");
   });
 
@@ -249,17 +282,33 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
     expect(navegacaoFalsa.push).not.toHaveBeenCalled();
   });
 
-  it("telefone sem DDD acusa o campo e não pede código", async () => {
+  it("e-mail inválido acusa o campo e não pede código", async () => {
     const falso = montar();
     let pediu = false;
     falso.publico.pedirCodigoDoCliente = async () => {
       pediu = true;
     };
 
-    await pedirCodigo("999");
+    await pedirCodigo("maria-sem-arroba");
+
+    expect(await screen.findByText(/informe um e-mail válido/i)).toBeInTheDocument();
+    expect(pediu).toBe(false);
+  });
+
+  it("telefone sem DDD acusa o campo antes de ir à API", async () => {
+    const falso = montar();
+    let definiu = false;
+    falso.publico.definirSenhaDoCliente = async () => {
+      definiu = true;
+      throw new Error("não devia chegar aqui");
+    };
+    await pedirCodigo();
+    await preencherCodigo(CODIGO_DO_CLIENTE_FALSO, "segredo123", "99999");
+
+    await userEvent.click(screen.getByRole("button", { name: "Salvar e entrar" }));
 
     expect(await screen.findByText(/informe o ddd/i)).toBeInTheDocument();
-    expect(pediu).toBe(false);
+    expect(definiu).toBe(false);
   });
 
   it("senha curta acusa o campo antes de ir à API", async () => {
@@ -278,18 +327,35 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
     expect(definiu).toBe(false);
   });
 
-  it("reenviar pede outro código pro mesmo telefone", async () => {
+  it("telefone de outro cadastro explica o que fazer", async () => {
+    // A API não vincula o e-mail a um cadastro do balcão — seria tomar a
+    // conta de quem a barbearia cadastrou. Quem resolve é a barbearia.
     const falso = montar();
-    const pedidos: string[] = [];
-    falso.publico.pedirCodigoDoCliente = async (_slug, telefone) => {
-      pedidos.push(telefone);
+    falso.publico.definirSenhaDoCliente = async () => {
+      throw new ErroDaApi(422, "telefone_ja_cadastrado", "");
+    };
+    await pedirCodigo();
+    await preencherCodigo();
+
+    await userEvent.click(screen.getByRole("button", { name: "Salvar e entrar" }));
+
+    expect(
+      await screen.findByText(/peça pra barbearia incluir seu e-mail/i)
+    ).toBeInTheDocument();
+  });
+
+  it("reenviar pede outro código pro mesmo e-mail", async () => {
+    const falso = montar();
+    const pedidos: DestinoDoCodigo[] = [];
+    falso.publico.pedirCodigoDoCliente = async (_slug, destino) => {
+      pedidos.push(destino);
     };
     await pedirCodigo();
     await screen.findByText(/enviamos um código/i);
 
     await userEvent.click(screen.getByRole("button", { name: "Reenviar código" }));
 
-    await waitFor(() => expect(pedidos).toEqual(["(11) 99999-8888", "(11) 99999-8888"]));
+    await waitFor(() => expect(pedidos).toEqual([{ email: EMAIL }, { email: EMAIL }]));
   });
 
   it("limite de pedidos avisa quanto esperar", async () => {
@@ -313,7 +379,7 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
     expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
   });
 
-  it("anuncia o código e a senha nova pros recursos do celular", async () => {
+  it("anuncia o código, o telefone e a senha nova pros recursos do celular", async () => {
     // `one-time-code` faz o teclado do celular sugerir o código que
     // acabou de chegar; `new-password` faz o gerenciador oferecer salvar.
     montar();
@@ -322,6 +388,7 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
     const codigo = await screen.findByLabelText(/^código$/i);
     expect(codigo).toHaveAttribute("autocomplete", "one-time-code");
     expect(codigo).toHaveAttribute("inputmode", "numeric");
+    expect(screen.getByLabelText(/telefone/i)).toHaveAttribute("autocomplete", "tel");
     expect(screen.getByLabelText(/^nova senha$/i)).toHaveAttribute(
       "autocomplete",
       "new-password"

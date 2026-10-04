@@ -1,0 +1,42 @@
+/* A mesma grade da semana de Configurações: nome do dia, o modo e as
+   horas, com altura mínima pra a linha não pular quando as horas somem. */
+.dia {
+  display: grid;
+  grid-template-columns: 6rem 13rem 1fr;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-height: 68px;
+  padding-block: var(--espaco-xs);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+}
+
+.dia:last-of-type {
+  border-block-end: none;
+}
+
+.modo {
+  min-height: 44px;
+  padding-inline: var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font: inherit;
+}
+
+.modo:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.horas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-md);
+}
+
+@media (max-width: 560px) {
+  .dia {
+    grid-template-columns: 1fr;
+  }
+}

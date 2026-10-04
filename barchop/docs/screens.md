@@ -57,7 +57,7 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 
 | Tela | Superfície | O que faz | Referência |
 |---|---|---|---|
-| 🆕 Cadastro do dono | painel | Tela dividida: promessa e mini-painel à esquerda, formulário à direita, prévia do link | `admin…/register` |
+| 🔧 Cadastro do dono | painel | Tela dividida: promessa e mini-painel à esquerda, formulário à direita, prévia do link — `/painel/cadastro` no F1, link sugerido pelo nome; falta a verificação do e-mail (F3) | `admin…/register` |
 | 🆕 Onboarding | painel | Trilha de passos: barbearia → serviços → equipe → link → primeira reserva | trilha de 6 passos da central de ajuda |
 | ✅ Equipe | painel | Lista de profissionais com papel e status, convidar (bloco A) | Equipe |
 | 🔧 Profissional | painel | Perfil, foto, papel (dono, profissional, recepção), serviços que faz, jornada da semana — perfil, papel e "atende" no bloco A; jornada e serviços no B4; falta a foto (bloco E, com o upload) | Equipe |

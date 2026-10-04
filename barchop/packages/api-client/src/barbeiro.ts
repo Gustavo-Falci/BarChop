@@ -1,7 +1,8 @@
 import type {
   AgendamentoComCliente,
   AgendamentoSerializado,
-  BarbeariaSerializada,
+  AntecedenciaDoLembrete,
+  BarbeariaDoPainel,
   BloqueioSerializado,
   ClienteSerializado,
   DiaDaJornada,
@@ -44,6 +45,8 @@ export interface EdicaoDaBarbearia {
   logoUrl?: string | null;
   // Texto de apresentação da home pública; `null` limpa.
   sobre?: string | null;
+  // Quanto antes do horário sai o lembrete. Não move os já agendados.
+  lembreteAntecedenciaHoras?: AntecedenciaDoLembrete;
 }
 
 export interface NovoServico {
@@ -223,14 +226,14 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       });
     },
 
-    minhaBarbearia(): Promise<BarbeariaSerializada> {
+    minhaBarbearia(): Promise<BarbeariaDoPainel> {
       return requisicao("/barbearias/me", { comToken: true });
     },
 
     // Rota própria, fora do `atualizarMinhaBarbearia`: trocar o link
     // quebra o que já foi mandado por WhatsApp, e a tela pede isso num
     // botão separado.
-    trocarSlug(slug: string): Promise<BarbeariaSerializada> {
+    trocarSlug(slug: string): Promise<BarbeariaDoPainel> {
       return requisicao("/barbearias/me/slug", {
         metodo: "PATCH",
         corpo: { slug },
@@ -240,7 +243,7 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     atualizarMinhaBarbearia(
       edicao: EdicaoDaBarbearia
-    ): Promise<BarbeariaSerializada> {
+    ): Promise<BarbeariaDoPainel> {
       return requisicao("/barbearias/me", {
         metodo: "PATCH",
         corpo: edicao,
@@ -377,6 +380,16 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     agendamento(id: string): Promise<AgendamentoComCliente> {
       return requisicao(`/agendamentos/${id}`, { comToken: true });
+    },
+
+    // O wa.me com o texto do lembrete e o link assinado pela API — o
+    // painel não tem como assinar o link, por isso a URL vem pronta.
+    async lembreteWhatsApp(id: string): Promise<string> {
+      const resposta = await requisicao<{ url: string }>(
+        `/agendamentos/${id}/lembrete-whatsapp`,
+        { comToken: true }
+      );
+      return resposta.url;
     },
 
     criarAgendamento(

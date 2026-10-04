@@ -8,7 +8,7 @@ import {
   slugReservado,
   TelefoneInvalido,
 } from "@barchop/formato";
-import type { HorarioSerializado } from "@barchop/types";
+import type { AntecedenciaDoLembrete, HorarioSerializado } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
@@ -54,6 +54,7 @@ export function ConfiguracoesDaBarbearia() {
   const [endereco, setEndereco] = useState("");
   const [sobre, setSobre] = useState("");
   const [novoSlug, setNovoSlug] = useState("");
+  const [antecedencia, setAntecedencia] = useState<AntecedenciaDoLembrete>(24);
   const [semana, setSemana] = useState<HorarioSerializado[]>([]);
   const [nome, setNome] = useState(perfil.nome);
   const [telefone, setTelefone] = useState(perfil.telefone ?? "");
@@ -98,6 +99,7 @@ export function ConfiguracoesDaBarbearia() {
     setEndereco(barbearia.dados.endereco ?? "");
     setSobre(barbearia.dados.sobre ?? "");
     setNovoSlug(barbearia.dados.slug);
+    setAntecedencia(barbearia.dados.lembreteAntecedenciaHoras);
   }
 
   // Mesmo motivo do bloco acima, aplicado à semana: sincronizar depois
@@ -203,6 +205,18 @@ export function ConfiguracoesDaBarbearia() {
       setAviso(
         (causa as ErroDaApi).mensagem || "Não foi possível salvar agora.",
       );
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function salvarLembrete() {
+    setAviso(undefined);
+    setSalvando(true);
+    try {
+      await api.barbeiro.atualizarMinhaBarbearia({ lembreteAntecedenciaHoras: antecedencia });
+    } catch (causa) {
+      setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
     } finally {
       setSalvando(false);
     }
@@ -388,6 +402,41 @@ export function ConfiguracoesDaBarbearia() {
             >
               Trocar link
             </Botao>
+          </Secao>
+
+          <Secao
+            titulo="Lembrete"
+            descricao="O cliente com e-mail recebe um lembrete antes do horário, com um link pra confirmar a presença ou cancelar."
+            acao={
+              <Botao onClick={salvarLembrete} carregando={salvando}>
+                Salvar lembrete
+              </Botao>
+            }
+          >
+            <div className={estilos.campoLongo}>
+              <label className={estilos.rotulo} htmlFor="antecedencia">
+                Quando o lembrete sai
+              </label>
+              {/* A antecedência é lida quando o lembrete é agendado, na
+                  hora em que o cliente marca: trocar aqui não move os
+                  lembretes que já estão programados. */}
+              <span className={estilos.apoio} id="antecedencia-apoio">
+                Vale pros próximos agendamentos; os já marcados mantêm o lembrete que tinham.
+              </span>
+              <select
+                id="antecedencia"
+                className={estilos.area}
+                aria-describedby="antecedencia-apoio"
+                value={antecedencia}
+                onChange={(evento) =>
+                  setAntecedencia(Number(evento.target.value) as AntecedenciaDoLembrete)
+                }
+              >
+                <option value={24}>24 horas antes</option>
+                <option value={12}>12 horas antes</option>
+                <option value={2}>2 horas antes</option>
+              </select>
+            </div>
           </Secao>
           {secaoDoPerfil}
         </div>

@@ -81,6 +81,9 @@ export interface CriarAgendamentoParams {
   horaInicio: string; // "HH:mm"
   origem: "cliente" | "barbeiro";
   observacoes?: string;
+  // Só do fluxo público e do remarcar (ver lembrete.ts): o e-mail pro
+  // lembrete deste agendamento, já normalizado.
+  emailLembrete?: string | null;
 }
 
 // Recebe o `tx` em vez de abrir a própria transação: o fluxo público
@@ -99,6 +102,7 @@ export async function criarAgendamento(
     horaInicio,
     origem,
     observacoes,
+    emailLembrete,
   } = params;
 
   await garantirBarbeiro(tx, barbeariaId, barbeiroId);
@@ -191,6 +195,7 @@ export async function criarAgendamento(
       horaFim: horaParaDate(horaFim),
       origem,
       observacoes: observacoes ?? null,
+      emailLembrete: emailLembrete ?? null,
       servicos: {
         create: servicos.map((servico) => ({
           servicoId: servico.id,

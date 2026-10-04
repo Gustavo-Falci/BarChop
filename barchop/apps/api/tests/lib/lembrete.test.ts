@@ -11,6 +11,7 @@ import {
   instanteNaBarbearia,
   momentoDoLembrete,
   registrarLembrete,
+  telefoneParaWhatsApp,
 } from "../../src/lib/lembrete";
 import { QUINTA } from "../helpers/datas";
 import { marcarPeloPainel, prepararAgenda } from "../helpers/agenda";
@@ -29,6 +30,13 @@ describe("instanteNaBarbearia", () => {
     expect(instanteNaBarbearia("2018-12-01", "10:00").toISOString()).toBe(
       "2018-12-01T12:00:00.000Z"
     );
+  });
+});
+
+describe("telefoneParaWhatsApp", () => {
+  it("só dígitos, com o 55 do Brasil na frente", () => {
+    expect(telefoneParaWhatsApp("(11) 99999-8888")).toBe("5511999998888");
+    expect(telefoneParaWhatsApp("(11) 3333-4444")).toBe("551133334444");
   });
 });
 

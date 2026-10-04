@@ -268,6 +268,17 @@ export function GradeDeTempo({
                     {evento.agendamento.horaInicio}
                   </strong>{" "}
                   {evento.agendamento.cliente.nome}
+                  {/* O cliente confirmou pelo link do lembrete. O ✓ é
+                      pro olho; quem ouve recebe a frase, que entra no
+                      nome do botão. */}
+                  {evento.agendamento.presencaConfirmadaEm ? (
+                    <>
+                      <span className={estilos.selo} aria-hidden="true">
+                        {" "}✓
+                      </span>
+                      <span className={estilos.somenteLeitor}>, confirmou presença</span>
+                    </>
+                  ) : null}
                   <span className={estilos.servicos}>
                     {evento.agendamento.servicos.map((s) => s.nome).join(" + ")}
                   </span>

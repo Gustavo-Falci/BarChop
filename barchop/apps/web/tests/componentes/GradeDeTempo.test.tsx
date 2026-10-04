@@ -24,6 +24,7 @@ function agendamento(): AgendamentoComCliente {
     status: "confirmado",
     origem: "cliente",
     observacoes: null,
+    presencaConfirmadaEm: null,
     barbeiro: { id: "bb1", nome: "Rafael" },
     servicos: [
       { servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 60 },
@@ -337,5 +338,25 @@ describe("GradeDeTempo", () => {
     expect(
       screen.queryByRole("button", { name: "8 de setembro" })
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("selo de presença confirmada", () => {
+  // O cliente confirmou pelo link do lembrete: o barbeiro vê na agenda
+  // sem abrir o agendamento.
+  it("o horário confirmado pelo cliente leva o selo", () => {
+    montar({ agendamentos: [{ ...agendamento(), presencaConfirmadaEm: "2026-09-07T15:00:00.000Z" }] });
+
+    expect(screen.getByRole("button", { name: /João Silva/ })).toHaveAccessibleName(
+      /confirmou presença/i
+    );
+  });
+
+  it("sem confirmação, sem selo", () => {
+    montar({ agendamentos: [agendamento()] });
+
+    expect(screen.getByRole("button", { name: /João Silva/ })).not.toHaveAccessibleName(
+      /confirmou presença/i
+    );
   });
 });

@@ -38,6 +38,7 @@ function agendamento(entrada: {
     status: "confirmado",
     origem: "cliente",
     observacoes: null,
+    presencaConfirmadaEm: null,
     barbeiro: { id: "bb1", nome: "Rafael" },
     servicos: [
       { servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 },

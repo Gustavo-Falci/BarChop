@@ -1,0 +1,16 @@
+/* Mesma coluna estreita das outras telas do fluxo: a largura vem de
+   --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
+.pagina {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  width: 100%;
+  max-width: var(--fluxo-estreita);
+  margin-inline: auto;
+}
+
+.resumo { display: grid; gap: var(--espaco-xs); }
+.barbearia { font-weight: 600; }
+.quando { font-size: var(--texto-lg); }
+.estado { font-weight: 600; }
+.acoes { display: grid; gap: var(--espaco-sm); }

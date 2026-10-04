@@ -343,3 +343,19 @@ button.diaDoCabecalho:hover .numeroDoDia {
   font-weight: 600;
   pointer-events: none;
 }
+
+/* Presença confirmada pelo link do lembrete. */
+.selo { font-weight: 700; }
+
+/* Fora da tela, mas no nome acessível do botão. */
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

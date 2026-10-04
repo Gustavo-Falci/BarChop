@@ -41,7 +41,9 @@ export interface NovoAgendamentoPublicoInput {
   servicoIds: string[];
   data: string;
   horaInicio: string;
-  cliente: { nome: string; telefone: string };
+  // `email` é só pro lembrete deste agendamento: a API o grava no
+  // agendamento, nunca no cadastro (cujo e-mail é o login do cliente).
+  cliente: { nome: string; telefone: string; email?: string };
   observacoes?: string;
 }
 
@@ -59,6 +61,28 @@ export interface BarbeariaSerializada {
   // Texto de apresentação da home pública. Anulável porque toda
   // barbearia nasce sem ele — a home tem que funcionar assim.
   sobre: string | null;
+}
+
+export type AntecedenciaDoLembrete = 2 | 12 | 24;
+
+// O que a página "Confirmar ou cancelar" lê pelo token do link do
+// lembrete. Traz a barbearia junto: a página se monta disto, e não de
+// uma busca pelo slug, que pode ter mudado depois que o e-mail saiu.
+export interface AgendamentoDoLembrete {
+  id: string;
+  data: string;
+  horaInicio: string;
+  status: string;
+  presencaConfirmadaEm: string | null;
+  barbearia: { nome: string; slug: string };
+  barbeiro: { nome: string };
+  servicos: { nome: string }[];
+}
+
+// O que só o painel lê: a configuração do lembrete não é da conta de
+// quem abre a página pública.
+export interface BarbeariaDoPainel extends BarbeariaSerializada {
+  lembreteAntecedenciaHoras: AntecedenciaDoLembrete;
 }
 
 export interface HorarioSerializado {
@@ -133,6 +157,9 @@ export interface AgendamentoSerializado {
   // Com quem. No "qualquer um" o cliente só sabe depois de marcar; a
   // agenda da equipe desenha uma coluna por profissional.
   barbeiro: { id: string; nome: string };
+  // Quando o cliente confirmou presença pelo link do lembrete (ISO);
+  // null = não confirmou.
+  presencaConfirmadaEm: string | null;
 }
 
 // As rotas do barbeiro devolvem o cliente junto porque a agenda mostra

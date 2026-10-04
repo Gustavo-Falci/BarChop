@@ -69,6 +69,10 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
   );
   const [erroNome, setErroNome] = useState<string | undefined>();
   const [erroTelefone, setErroTelefone] = useState<string | undefined>();
+  // Opcional, só pro lembrete deste horário. A API o grava no
+  // agendamento, nunca no cadastro — o e-mail do cadastro é o login.
+  const [email, setEmail] = useState("");
+  const [erroEmail, setErroEmail] = useState<string | undefined>();
 
   const { dados: servicos, carregando, erro } = useRequisicao(
     () => api.publico.servicos(slug),
@@ -119,7 +123,11 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     const validacao = validarDados(nome, telefone);
     setErroNome(validacao.ok ? undefined : validacao.erros.nome);
     setErroTelefone(validacao.ok ? undefined : validacao.erros.telefone);
-    if (!validacao.ok) return null;
+    // O mesmo formato que a API exige (PADRAO_EMAIL): sem isto, um
+    // e-mail torto viraria um 400 genérico depois do clique.
+    const emailValido = !email.trim() || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
+    setErroEmail(emailValido ? undefined : "Confira o e-mail: algo como nome@exemplo.com");
+    if (!validacao.ok || !emailValido) return null;
 
     // Guardado antes de enviar: se a API falhar, o que foi digitado
     // continua aí na próxima tentativa, mesmo recarregando a página.
@@ -168,7 +176,8 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
             servicoIds,
             data: diaConfirmado,
             horaInicio: horaConfirmada,
-            cliente,
+            // Logada, sem campo: o lembrete vai pro e-mail do cadastro.
+            cliente: email.trim() && !conta ? { ...cliente, email: email.trim() } : cliente,
           })
         : await api.cliente.remarcar(remarcar as string, {
             data: diaConfirmado,
@@ -377,6 +386,18 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
                 setErroTelefone(undefined);
               }}
               erro={erroTelefone}
+            />
+            <Campo
+              rotulo="E-mail (opcional)"
+              type="email"
+              autoComplete="email"
+              apoio="Pra te mandar o lembrete do horário, com o link pra confirmar ou cancelar."
+              valor={email}
+              onChange={(proximo) => {
+                setEmail(proximo);
+                setErroEmail(undefined);
+              }}
+              erro={erroEmail}
             />
           </>
         )}

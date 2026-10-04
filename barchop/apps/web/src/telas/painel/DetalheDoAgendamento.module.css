@@ -7,3 +7,8 @@
 .status { display: flex; flex-wrap: wrap; gap: var(--espaco-sm); }
 .preco { font-weight: 600; }
 .nota { font-size: var(--texto-sm); }
+.whatsapp {
+  justify-self: start;
+  font-weight: 600;
+  color: var(--cor-ink);
+}

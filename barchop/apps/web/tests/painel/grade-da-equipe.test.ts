@@ -28,6 +28,7 @@ function agendamento(id: string, barbeiroId: string, horaInicio: string, horaFim
     status: "confirmado",
     origem: "cliente",
     observacoes: null,
+    presencaConfirmadaEm: null,
     barbeiro: { id: barbeiroId, nome: barbeiroId === "m2" ? "Ana" : "Rafael" },
     servicos: [{ servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 }],
     cliente: { id: "c1", nome: "João", telefone: "(11) 99999-0001", email: null, temConta: false },

@@ -1,17 +1,26 @@
 import { prisma } from "@barchop/database";
+import { normalizarEmail } from "@barchop/formato";
 import {
   criarAgendamento,
   escolherProfissional,
   INCLUDE_AGENDAMENTO,
 } from "../lib/agendamento";
-import { garantirFuturo } from "../lib/agendamento-alteravel";
+import { garantirAlteravel, garantirFuturo } from "../lib/agendamento-alteravel";
 import { travarQualquerUm } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
-import { dataParaDate } from "../lib/horas";
-import { agendarLembrete } from "../lib/lembrete";
+import { dataParaDate, dateParaData, dateParaHora } from "../lib/horas";
+import {
+  agendarLembrete,
+  criarLinkDoLembrete,
+  INCLUDE_DO_LEMBRETE,
+  instanteNaBarbearia,
+  telefoneParaWhatsApp,
+  textoDoLembrete,
+} from "../lib/lembrete";
 import {
   PADRAO_DATA,
+  PADRAO_EMAIL,
   PADRAO_HORA,
   PADRAO_SLUG,
   PADRAO_TELEFONE,
@@ -131,6 +140,10 @@ const corpoNovoAgendamentoPublico = {
       properties: {
         nome: { type: "string", minLength: 2, maxLength: 120 },
         telefone: { type: "string", pattern: PADRAO_TELEFONE, maxLength: 20 },
+        // Só pro lembrete deste agendamento: vai pro agendamento, NUNCA
+        // pro cadastro, que é achado pelo telefone e cujo e-mail é o
+        // login (ver a migration 20261004150000_email_do_lembrete).
+        email: { type: "string", pattern: PADRAO_EMAIL, maxLength: 160 },
       },
     },
     observacoes: { type: "string", maxLength: 500 },
@@ -295,6 +308,43 @@ export function registrarRotasAgendamentos(app: App): void {
       return serializarAgendamentoComCliente(agendamento);
     }
   );
+
+  // O botão "lembrar pelo WhatsApp": o wa.me do cliente com o mesmo texto
+  // do e-mail, link de confirmar incluso. Montado aqui porque o link é
+  // assinado pela API — o painel não tem o segredo.
+  app.get(
+    "/agendamentos/:id/lembrete-whatsapp",
+    { schema: { params: paramsComId } },
+    async (request, reply) => {
+      const agendamento = await prisma.agendamento.findFirstOrThrow({
+        where: {
+          id: request.params.id,
+          barbeariaId: request.user.barbeariaId,
+          ...agendaVisivel(request),
+        },
+        include: INCLUDE_DO_LEMBRETE,
+      });
+      // Cancelado, concluído, falta ou já passado: não há o que lembrar.
+      garantirAlteravel(agendamento);
+
+      const link = criarLinkDoLembrete(app, process.env.URL_DO_PAINEL);
+      const url = link?.({
+        agendamentoId: agendamento.id,
+        slug: agendamento.barbearia.slug,
+        inicio: instanteNaBarbearia(
+          dateParaData(agendamento.data),
+          dateParaHora(agendamento.horaInicio)
+        ),
+      });
+      const texto = textoDoLembrete(agendamento, url);
+
+      // A resposta leva um link de cancelar que funciona: cache nenhum.
+      reply.header("cache-control", "no-store");
+      return {
+        url: `https://wa.me/${telefoneParaWhatsApp(agendamento.cliente.telefone)}?text=${encodeURIComponent(texto)}`,
+      };
+    }
+  );
 }
 
 // Pública: é a tela "Confirma e agenda", aberta pelo link do WhatsApp.
@@ -369,6 +419,7 @@ export function registrarRotasAgendamentosPublicas(app: App): void {
             barbeariaId: barbearia.id,
             clienteId: cliente.id,
             origem: "cliente",
+            emailLembrete: normalizarEmail(dadosCliente.email),
           });
         })
       );

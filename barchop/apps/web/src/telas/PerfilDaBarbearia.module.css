@@ -241,3 +241,35 @@
   border-radius: var(--raio-sm);
   font-size: var(--texto-sm);
 }
+
+/* Capa e equipe (bloco E2). */
+.capa {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--raio-sm);
+}
+.equipe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-md);
+  padding: 0;
+  list-style: none;
+}
+.membro {
+  display: grid;
+  justify-items: center;
+  gap: var(--espaco-xs);
+  font-size: var(--texto-sm);
+}
+.foto {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  font-weight: 700;
+  font-size: var(--texto-lg);
+}

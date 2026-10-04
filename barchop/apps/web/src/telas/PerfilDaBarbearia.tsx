@@ -83,6 +83,11 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
           tela do celular, sem dizer nada, empurrando o "Agendar" pra
           metade de baixo. O lugar dela é do que a pessoa quer saber
           primeiro — de quem é, onde fica, se está aberto. */}
+        {/* <img> simples: vem do bucket, e o otimizador do Next exigiria
+            liberar o domínio dele. */}
+        {dados?.capaUrl ? (
+          <img className={estilos.capa} src={dados.capaUrl} alt={`Capa da ${dados.nome}`} />
+        ) : null}
         <div className={estilos.cabecalho}>
           <h1 className={estilos.nome}>{dados?.nome}</h1>
           {situacao ? <p className={estilos.situacao}>{situacao}</p> : null}
@@ -174,6 +179,28 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                 <div key="todos">{lista}</div>
               );
             })}
+          </section>
+        ) : null}
+
+        {/* Quem atende, com foto quando o dono pôs uma; sem foto, a
+            inicial no lugar (decorativa: o nome vem ao lado). */}
+        {dados && dados.barbeiros.length > 0 ? (
+          <section className={estilos.secao} aria-label="Equipe">
+            <h2 className={estilos.titulo}>Equipe</h2>
+            <ul className={estilos.equipe}>
+              {dados.barbeiros.map((barbeiro) => (
+                <li key={barbeiro.id} className={estilos.membro}>
+                  {barbeiro.fotoUrl ? (
+                    <img className={estilos.foto} src={barbeiro.fotoUrl} alt={barbeiro.nome} />
+                  ) : (
+                    <span className={estilos.foto} aria-hidden="true">
+                      {barbeiro.nome.charAt(0)}
+                    </span>
+                  )}
+                  <span>{barbeiro.nome}</span>
+                </li>
+              ))}
+            </ul>
           </section>
         ) : null}
       </div>

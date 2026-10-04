@@ -29,3 +29,10 @@ export function normalizarTelefoneObrigatorio(telefone: string): string {
 
 // Não lança, então não passa pela tradução.
 export const apenasDigitos = formato.apenasDigitos;
+
+// O WhatsApp (o wa.me e a Cloud API) quer só dígitos, com o código do
+// país. O telefone chega normalizado ("(11) 99999-8888"), sempre
+// brasileiro.
+export function telefoneParaWhatsApp(telefone: string): string {
+  return `55${telefone.replace(/\D/g, "")}`;
+}

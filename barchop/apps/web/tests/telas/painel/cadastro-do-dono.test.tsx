@@ -67,13 +67,22 @@ describe("cadastro do dono", () => {
     expect(screen.getByLabelText(/endereço do link/i)).toHaveValue("barbearia-do-ze");
     await continuar();
 
-    expect(await screen.findByText(/enviamos um código para ze@barbearia\.com/i)).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent(/enviamos um código para ze@barbearia\.com/i);
     expect(pedidos).toEqual(["ze@barbearia.com"]);
     await digitarCodigo();
 
     await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("jwt-falso-barbeiro"));
     expect(sessaoDaBarbearia.ler()).toBe("barbearia-do-ze");
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
+  });
+
+  it("o passo do código começa no campo do código", async () => {
+    montar();
+
+    await preencher();
+    await continuar();
+
+    expect(await screen.findByLabelText(/código/i)).toHaveFocus();
   });
 
   it("código errado acusa o campo e não entra", async () => {
@@ -132,7 +141,7 @@ describe("cadastro do dono", () => {
     await userEvent.type(email, "ze2@barbearia.com");
     await continuar();
 
-    expect(await screen.findByText(/enviamos um código para ze2@barbearia\.com/i)).toBeInTheDocument();
+    expect(await screen.findByRole("status")).toHaveTextContent(/enviamos um código para ze2@barbearia\.com/i);
     expect(pedidos).toEqual(["ze@barbearia.com", "ze2@barbearia.com"]);
   });
 

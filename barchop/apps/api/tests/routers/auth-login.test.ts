@@ -4,6 +4,7 @@ import { buildApp } from "../../src/app";
 import { conferirSenha, obterHashDescartavel } from "../../src/lib/senha";
 import { decodificarPayload } from "../helpers/decodificar-token";
 import type { App } from "../../src/tipos";
+import { comCodigo } from "../helpers/barbearia";
 
 const CADASTRO = {
   barbearia: { nome: "Barbearia do Gu", slug: "barbearia-do-gu" },

@@ -31,6 +31,8 @@ export interface RedefinicaoDeSenha {
 export interface NovaBarbearia {
   barbearia: { nome: string; slug: string };
   barbeiro: { nome: string; email: string; senha: string };
+  // O código que chegou no e-mail do dono (pedirCodigoDeCadastro).
+  codigo: string;
 }
 
 export interface EdicaoDoPerfil {
@@ -126,6 +128,12 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // Sem token: não existe sessão ainda.
     signup(nova: NovaBarbearia): Promise<SessaoBarbeiro> {
       return requisicao("/auth/signup", { metodo: "POST", corpo: nova });
+    },
+
+    // Sem token. Responde igual com o e-mail livre ou já cadastrado: o
+    // livre recebe o código, o cadastrado recebe um aviso.
+    async pedirCodigoDeCadastro(email: string): Promise<void> {
+      await requisicao("/auth/cadastro/codigo", { metodo: "POST", corpo: { email } });
     },
 
     login(credenciais: CredenciaisDoBarbeiro): Promise<SessaoBarbeiro> {

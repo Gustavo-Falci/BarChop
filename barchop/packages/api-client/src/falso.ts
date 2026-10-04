@@ -48,6 +48,10 @@ export const CODIGO_DO_CLIENTE_FALSO = "123456";
 // O único código que o dublê aceita no esqueci-a-senha do barbeiro.
 export const CODIGO_DO_BARBEIRO_FALSO = "654321";
 
+// O código que o dublê aceita no cadastro do dono — qualquer outro dá o
+// mesmo 422 da API.
+export const CODIGO_DO_CADASTRO_FALSO = "246810";
+
 // O único código que o dublê aceita no convite da equipe.
 export const CODIGO_DO_CONVITE_FALSO = "246810";
 
@@ -613,7 +617,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     },
 
     barbeiro: {
+      async pedirCodigoDeCadastro(_email: string) {},
       async signup(nova: NovaBarbearia) {
+        if (nova.codigo !== CODIGO_DO_CADASTRO_FALSO) {
+          throw new ErroDaApi(422, "codigo_invalido", "código inválido ou vencido");
+        }
         return {
           token: "jwt-falso-barbeiro",
           barbeiro: {

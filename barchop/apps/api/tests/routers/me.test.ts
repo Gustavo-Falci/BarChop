@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import type { App } from "../../src/tipos";
+import { comCodigo } from "../helpers/barbearia";
 
 const CADASTRO = {
   barbearia: { nome: "Barbearia do Gu", slug: "barbearia-do-gu" },

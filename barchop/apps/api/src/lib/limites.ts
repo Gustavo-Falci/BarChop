@@ -203,6 +203,21 @@ export function limitesDeAuth(app: App) {
     // cliente, com o e-mail no lugar do telefone. O pedido manda e-mail
     // (custo e incômodo pra caixa de alguém); a confirmação é um login
     // por outro caminho.
+    // O código do cadastro do dono (F3): mesmo orçamento do de redefinir
+    // a senha, em chaves próprias — um não gasta o do outro.
+    codigoDoCadastro: [
+      contador(app, {
+        max: MAX_CODIGO_POR_TELEFONE,
+        janela: JANELA_CODIGO_POR_TELEFONE,
+        chave: (request) => `codigo-cadastro:${chaveDoEmail(request.body)}`,
+      }),
+      contador(app, {
+        max: MAX_CODIGO_POR_IP,
+        janela: JANELA_SIGNUP,
+        chave: (request) => `codigo-cadastro-ip:${request.ip}`,
+      }),
+    ],
+
     codigoDoBarbeiro: [
       contador(app, {
         max: MAX_CODIGO_POR_TELEFONE,

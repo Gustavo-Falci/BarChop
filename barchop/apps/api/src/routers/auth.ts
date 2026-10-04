@@ -13,9 +13,12 @@ import type { App } from "../tipos";
 
 const corpoSignup = {
   type: "object",
-  required: ["barbearia", "barbeiro"],
+  required: ["barbearia", "barbeiro", "codigo"],
   additionalProperties: false,
   properties: {
+    // O código que chegou no e-mail do dono (POST /auth/cadastro/codigo):
+    // a barbearia só nasce com o e-mail provado (Onda 1, F3).
+    codigo: { type: "string", pattern: "^[0-9]{6}$" },
     barbearia: {
       type: "object",
       required: ["nome", "slug"],
@@ -66,7 +69,20 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
 
       // Transação: uma barbearia sem barbeiro seria inacessível pra
       // sempre, já que o login é por email de barbeiro.
+      //
+      // O código é consumido aqui dentro: um 409 do slug desfaz tudo e o
+      // código volta a valer, pra o dono só trocar o link. Código que não
+      // confere NÃO lança dentro da transação — devolve null, a transação
+      // grava a tentativa gasta, e o erro sai depois.
       const criado = await prisma.$transaction(async (tx) => {
+        const provado = await consumirCodigo(
+          { finalidade: "cadastro_dono", destino: email, barbeariaId: null },
+          request.body.codigo,
+          new Date(),
+          tx
+        );
+        if (!provado) return null;
+
         // O slug atual ganha do antigo: se outra barbearia já usou este
         // nome, o link velho dela passa a abrir esta.
         await tx.slugAntigo.deleteMany({ where: { slug: barbearia.slug } });
@@ -87,6 +103,10 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
 
         return { barbearia: novaBarbearia, barbeiro: novoBarbeiro };
       });
+
+      if (!criado) {
+        throw new ErroDeNegocio("código inválido ou vencido", "codigo_invalido");
+      }
 
       const token = app.jwt.sign({
         tipo: "barbeiro",
@@ -220,6 +240,53 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
   // relógio dizer o que o corpo esconde. Um código emitido pra e-mail
   // sem conta nunca chega a ninguém, e a confirmação recusa do mesmo
   // jeito.
+  // O código do cadastro do dono. Responde igual com o e-mail livre ou
+  // tomado: é o que fecha a sondagem que o 409 do signup permitia. Livre
+  // recebe o código; tomado (conta ou convite pendente) recebe um aviso
+  // pra entrar ou recuperar a senha — e código nenhum, então nenhum
+  // código digitado cadastra de novo um e-mail que já existe.
+  app.post(
+    "/auth/cadastro/codigo",
+    { schema: { body: corpoCodigo }, preHandler: limites.codigoDoCadastro },
+    async (request, reply) => {
+      const email = normalizarEmail(request.body.email)!;
+
+      const existente = await prisma.barbeiro.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+
+      const mensagem = existente
+        ? {
+            para: email,
+            assunto: "Você já tem uma conta no BarChop",
+            texto:
+              "Alguém tentou criar uma barbearia no BarChop com este e-mail, mas você já tem uma conta. " +
+              "Entre pelo painel ou use \"Esqueci a senha\". Se não foi você, ignore este e-mail.",
+          }
+        : {
+            para: email,
+            assunto: "Seu código para criar a barbearia no BarChop",
+            texto:
+              `BarChop: seu código pra criar a barbearia é ${await emitirCodigo({
+                finalidade: "cadastro_dono",
+                destino: email,
+                barbeariaId: null,
+              })}. Vale 10 minutos. Se não foi você que pediu, ignore este e-mail.`,
+          };
+
+      // Sem esperar o envio: o tempo de resposta não pode dizer qual dos
+      // dois e-mails saiu.
+      void app.canal
+        .enviar(mensagem)
+        .catch((erro: unknown) =>
+          request.log.error({ erro }, "falha ao enviar o e-mail do cadastro")
+        );
+
+      return reply.code(202).send({ enviado: true });
+    }
+  );
+
   app.post(
     "/auth/codigo",
     { schema: { body: corpoCodigo }, preHandler: limites.codigoDoBarbeiro },

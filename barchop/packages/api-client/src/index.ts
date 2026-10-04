@@ -6,6 +6,7 @@ import { criarRequisicao, type OpcoesDoClient } from "./requisicao";
 export { ErroDaApi } from "./erro";
 export {
   CODIGO_DO_BARBEIRO_FALSO,
+  CODIGO_DO_CADASTRO_FALSO,
   CODIGO_DO_CLIENTE_FALSO,
   CODIGO_DO_CONVITE_FALSO,
   criarApiClientFalso,

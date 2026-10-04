@@ -11,6 +11,7 @@ import { Campo } from "../../componentes/Campo";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
+import { CampoDeImagem } from "../../componentes/CampoDeImagem";
 import { JornadaDoMembro } from "./JornadaDoMembro";
 import { ROTULO_DO_PAPEL } from "./ListaDaEquipe";
 import { ServicosDoMembro } from "./ServicosDoMembro";
@@ -332,6 +333,16 @@ export function CadastroDeMembro() {
           — trocar a jornada não exige reenviar o cadastro. */}
       {atual ? (
         <>
+          {/* A foto que a página pública mostra na equipe. Salva sozinha,
+              como a jornada e os serviços. */}
+          <CampoDeImagem
+            rotulo="Foto"
+            alt={`Foto de ${atual.nome}`}
+            urlAtual={atual.fotoUrl}
+            formato="retrato"
+            enviar={(arquivo) => api.barbeiro.enviarFotoDoMembro(atual.id, arquivo)}
+            remover={() => api.barbeiro.removerFotoDoMembro(atual.id)}
+          />
           <JornadaDoMembro membroId={atual.id} />
           <ServicosDoMembro membroId={atual.id} />
         </>

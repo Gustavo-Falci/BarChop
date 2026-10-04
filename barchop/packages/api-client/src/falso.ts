@@ -140,13 +140,14 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
   instagram: null,
   comodidades: [],
   formasDePagamento: [],
+  capaUrl: null,
   horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
     diaSemana,
     horaAbertura: diaSemana === 0 ? null : "09:00",
     horaFechamento: diaSemana === 0 ? null : "18:00",
     fechado: diaSemana === 0,
   })),
-  barbeiros: [{ id: "bb1", nome: "Rafael", servicoIds: ["s1", "s2"] }],
+  barbeiros: [{ id: "bb1", nome: "Rafael", servicoIds: ["s1", "s2"], fotoUrl: null }],
 };
 
 const CLIENTE_PADRAO: ClienteSerializado = {
@@ -233,6 +234,15 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // `!`: o estado acima sempre preenche a equipe.
   function equipe(): MembroDaEquipe[] {
     return estado.equipe!;
+  }
+
+  // A foto aparece na equipe e na página pública, como na API.
+  function definirFoto(id: string, fotoUrl: string | null): void {
+    estado.equipe = equipe().map((m) => (m.id === id ? { ...m, fotoUrl } : m));
+    estado.perfil = {
+      ...estado.perfil,
+      barbeiros: estado.perfil.barbeiros.map((b) => (b.id === id ? { ...b, fotoUrl } : b)),
+    };
   }
 
   function membroOu404(id: string): MembroDaEquipe {
@@ -472,6 +482,23 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       servicos: agendamento.servicos.map((s) => ({ nome: s.nome })),
     };
   }
+
+  // As recusas da API pro upload: tipo pelos bytes (422) e teto (413).
+  async function exigirImagem(arquivo: Blob, limite: number): Promise<void> {
+    if (arquivo.size > limite) {
+      throw new ErroDaApi(413, "arquivo_grande_demais", "a imagem é grande demais");
+    }
+    const b = new Uint8Array(await arquivo.slice(0, 12).arrayBuffer());
+    const ascii = (i: number, j: number) => String.fromCharCode(...b.slice(i, j));
+    const png = b[0] === 0x89 && ascii(1, 4) === "PNG";
+    const jpeg = b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+    const webp = ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP";
+    if (!png && !jpeg && !webp) {
+      throw new ErroDaApi(422, "tipo_de_imagem_invalido", "só png, jpeg ou webp");
+    }
+  }
+  let imagensEnviadas = 0;
+  const urlFalsa = (tipo: string) => `https://imagens.falsas/${tipo}-${++imagensEnviadas}.png`;
 
   // O garantirAlteravel da API, sem o relógio: o dublê não sabe que
   // horas são.
@@ -886,6 +913,26 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async criarAgendamento(novo: NovoAgendamentoBarbeiroInput) {
         return comCliente(novoAgendamento({ ...novo, origem: "barbeiro" }));
+      },
+      async enviarCapa(arquivo: Blob) {
+        await exigirImagem(arquivo, 4 * 1024 * 1024);
+        const capaUrl = urlFalsa("capa");
+        estado.perfil = { ...estado.perfil, capaUrl };
+        return capaUrl;
+      },
+      async removerCapa() {
+        estado.perfil = { ...estado.perfil, capaUrl: null };
+      },
+      async enviarFotoDoMembro(id: string, arquivo: Blob) {
+        membroOu404(id);
+        await exigirImagem(arquivo, 2 * 1024 * 1024);
+        const fotoUrl = urlFalsa("foto");
+        definirFoto(id, fotoUrl);
+        return fotoUrl;
+      },
+      async removerFotoDoMembro(id: string) {
+        membroOu404(id);
+        definirFoto(id, null);
       },
       async lembreteWhatsApp(id: string) {
         const achado = estado.agendamentos.find((a) => a.id === id);

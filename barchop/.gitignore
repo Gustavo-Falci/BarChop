@@ -15,3 +15,5 @@ web-build/
 /apps/mobile/ios
 /apps/mobile/android
 /apps/web/next-env.d.ts
+# Imagens enviadas em desenvolvimento (armazenamento local da API, bloco E2).
+/apps/api/.arquivos/

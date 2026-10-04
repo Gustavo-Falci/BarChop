@@ -71,6 +71,8 @@ model Barbearia {
   instagram                 String?  @db.VarChar(30)
   comodidades               String[] @default([])
   formasDePagamento         String[] @default([]) @map("formas_pagamento")
+  // Chave da capa no armazenamento (bloco E2); a URL sai da config.
+  capaChave                 String?  @map("capa_chave") @db.VarChar(200)
   criadoEm                  DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
   barbeiros             Barbeiro[]
@@ -110,7 +112,8 @@ model Barbeiro {
   papel           PapelMembro @default(profissional)
   // Aparece na agenda e no fluxo público. A recepção nasce com false.
   atende          Boolean     @default(true)
-  fotoUrl         String?     @map("foto_url")
+  // Chave da foto no armazenamento (bloco E2); a URL sai da config.
+  fotoChave       String?     @map("foto_chave") @db.VarChar(200)
   criadoEm        DateTime    @default(now()) @map("criado_em") @db.Timestamptz
   // Token com `iat` anterior a isto é recusado (plugins/auth.ts).
   senhaAlteradaEm DateTime?   @map("senha_alterada_em") @db.Timestamptz

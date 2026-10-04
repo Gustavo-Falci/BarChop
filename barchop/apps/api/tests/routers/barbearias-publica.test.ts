@@ -115,7 +115,7 @@ describe("GET /barbearias/:slug", () => {
     // disponibilidade e pro agendamento; sem serviço cadastrado, a lista
     // do que ele faz vem vazia.
     expect(resposta.json().barbeiros).toEqual([
-      { id: barbeiroId, nome: "Barbeiro um", servicoIds: [] },
+      { id: barbeiroId, nome: "Barbeiro um", servicoIds: [], fotoUrl: null },
     ]);
 
     await app.close();

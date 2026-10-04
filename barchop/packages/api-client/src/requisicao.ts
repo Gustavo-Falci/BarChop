@@ -13,6 +13,9 @@ export interface OpcoesDoClient {
 export interface OpcoesDaChamada {
   metodo?: string;
   corpo?: unknown;
+  // Upload de arquivo: vai como multipart, e o Content-Type (com o
+  // boundary) quem põe é o fetch — um à mão quebraria o corpo.
+  formulario?: FormData;
   query?: Record<string, string | string[] | undefined>;
   comToken?: boolean;
 }
@@ -64,9 +67,11 @@ export function criarRequisicao(opcoes: OpcoesDoClient): Requisicao {
       {
         method: chamada.metodo ?? "GET",
         headers: cabecalhos,
-        ...(chamada.corpo !== undefined
-          ? { body: JSON.stringify(chamada.corpo) }
-          : {}),
+        ...(chamada.formulario !== undefined
+          ? { body: chamada.formulario }
+          : chamada.corpo !== undefined
+            ? { body: JSON.stringify(chamada.corpo) }
+            : {}),
       }
     );
 

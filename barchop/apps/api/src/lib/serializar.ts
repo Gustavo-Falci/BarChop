@@ -45,7 +45,11 @@ export function serializarBarbearia(barbearia: {
   instagram: string | null;
   comodidades: string[];
   formasDePagamento: string[];
-}): BarbeariaSerializada {
+  capaChave: string | null;
+},
+// A URL pública de uma chave do armazenamento (app.armazenamento.urlPublica).
+urlDaImagem: (chave: string) => string
+): BarbeariaSerializada {
   return {
     id: barbearia.id,
     nome: barbearia.nome,
@@ -58,16 +62,18 @@ export function serializarBarbearia(barbearia: {
     instagram: barbearia.instagram,
     comodidades: barbearia.comodidades,
     formasDePagamento: barbearia.formasDePagamento,
+    capaUrl: barbearia.capaChave ? urlDaImagem(barbearia.capaChave) : null,
   };
 }
 
 // O painel lê a barbearia com a configuração do lembrete; a página
 // pública, que usa o serializador de cima, não.
 export function serializarBarbeariaDoPainel(
-  barbearia: Parameters<typeof serializarBarbearia>[0] & { lembreteAntecedenciaHoras: number }
+  barbearia: Parameters<typeof serializarBarbearia>[0] & { lembreteAntecedenciaHoras: number },
+  urlDaImagem: (chave: string) => string
 ): BarbeariaDoPainel {
   return {
-    ...serializarBarbearia(barbearia),
+    ...serializarBarbearia(barbearia, urlDaImagem),
     // O CHECK da coluna garante 2, 12 ou 24.
     lembreteAntecedenciaHoras: barbearia.lembreteAntecedenciaHoras as AntecedenciaDoLembrete,
   };

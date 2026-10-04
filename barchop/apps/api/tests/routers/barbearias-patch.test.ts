@@ -34,6 +34,7 @@ describe("PATCH /barbearias/me", () => {
       instagram: null,
       comodidades: [],
       formasDePagamento: [],
+      capaUrl: null,
       lembreteAntecedenciaHoras: 24,
     });
 

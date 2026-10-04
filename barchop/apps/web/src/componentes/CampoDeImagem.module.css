@@ -1,0 +1,22 @@
+.campo {
+  display: grid;
+  gap: var(--espaco-xs);
+  justify-items: start;
+}
+
+.rotulo {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
+.previa {
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  object-fit: cover;
+}
+
+.paisagem { width: 100%; max-width: 420px; aspect-ratio: 16 / 9; }
+.retrato { width: 96px; height: 96px; border-radius: 50%; }
+
+.arquivo { font-size: var(--texto-sm); }

@@ -31,6 +31,11 @@ const SO_DO_DONO = [
   { method: "POST", url: `/equipe/${ID_QUALQUER}/convite` },
   { method: "PUT", url: `/equipe/${ID_QUALQUER}/jornada` },
   { method: "PUT", url: `/equipe/${ID_QUALQUER}/servicos` },
+  // Imagens (bloco E2): a guarda roda antes de ler o corpo multipart.
+  { method: "POST", url: "/barbearias/me/capa" },
+  { method: "DELETE", url: "/barbearias/me/capa" },
+  { method: "POST", url: `/equipe/${ID_QUALQUER}/foto` },
+  { method: "DELETE", url: `/equipe/${ID_QUALQUER}/foto` },
 ] as const;
 
 async function prepararEquipe(app: App) {

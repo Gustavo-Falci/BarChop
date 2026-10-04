@@ -81,7 +81,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
       where: { id: request.user.barbeariaId },
     });
 
-    return serializarBarbeariaDoPainel(barbearia);
+    return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
   });
 
   // Trocar o link público. O antigo para de responder na hora: o
@@ -106,7 +106,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
         data: { slug },
       });
 
-      return serializarBarbeariaDoPainel(barbearia);
+      return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
     }
   );
 
@@ -132,7 +132,7 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
         },
       });
 
-      return serializarBarbeariaDoPainel(barbearia);
+      return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
     }
   );
 }
@@ -170,7 +170,7 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
           barbeiros: {
             // O mesmo critério do "qualquer um" (lib/disponibilidade.ts).
             where: PODE_ATENDER,
-            select: { id: true, nome: true, servicos: { select: { servicoId: true } } },
+            select: { id: true, nome: true, fotoChave: true, servicos: { select: { servicoId: true } } },
             orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
           },
         },
@@ -179,7 +179,7 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
       // Campos escolhidos pelo serializador: um spread traria o
       // senhaHash junto.
       return {
-        ...serializarBarbearia(barbearia),
+        ...serializarBarbearia(barbearia, app.armazenamento.urlPublica),
         horarios: completarSemana(barbearia.horariosFuncionamento),
         // O id vai pra disponibilidade e pro agendamento; os serviços de
         // cada um deixam o passo do profissional oferecer só quem faz o
@@ -188,6 +188,7 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
           id: barbeiro.id,
           nome: barbeiro.nome,
           servicoIds: barbeiro.servicos.map((servico) => servico.servicoId),
+          fotoUrl: barbeiro.fotoChave ? app.armazenamento.urlPublica(barbeiro.fotoChave) : null,
         })),
       };
     }

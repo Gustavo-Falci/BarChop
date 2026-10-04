@@ -230,7 +230,7 @@ describe("POST /equipe", () => {
 
     const publica = await app.inject({ method: "GET", url: `/barbearias/${dono.slug}` });
 
-    expect(publica.json().barbeiros).toEqual([{ id: dono.barbeiroId, nome: "Barbeiro um", servicoIds: [] }]);
+    expect(publica.json().barbeiros).toEqual([{ id: dono.barbeiroId, nome: "Barbeiro um", servicoIds: [], fotoUrl: null }]);
     await app.close();
   });
 });

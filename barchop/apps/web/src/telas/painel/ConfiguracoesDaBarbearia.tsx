@@ -17,6 +17,7 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
+import { CampoDeImagem } from "../../componentes/CampoDeImagem";
 import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
@@ -454,13 +455,22 @@ export function ConfiguracoesDaBarbearia() {
 
           <Secao
             titulo="Página da barbearia"
-            descricao="Contatos, comodidades e formas de pagamento que aparecem na sua página pública."
+            descricao="Capa, contatos, comodidades e formas de pagamento que aparecem na sua página pública."
             acao={
               <Botao onClick={salvarPagina} carregando={salvando}>
                 Salvar página
               </Botao>
             }
           >
+            {/* A capa salva sozinha, na hora do envio — não espera o
+                "Salvar página". */}
+            <CampoDeImagem
+              rotulo="Capa"
+              alt="Capa da barbearia"
+              urlAtual={barbearia.dados?.capaUrl ?? null}
+              enviar={api.barbeiro.enviarCapa}
+              remover={api.barbeiro.removerCapa}
+            />
             <Campo
               rotulo="WhatsApp"
               formato="telefone"

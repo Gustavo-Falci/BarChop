@@ -390,6 +390,38 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao(`/agendamentos/${id}`, { comToken: true });
     },
 
+    // Capa e foto (bloco E2): o arquivo vai pra API, que confere o tipo
+    // pelos bytes, guarda e devolve a URL. Quem chama já redimensionou.
+    async enviarCapa(arquivo: Blob): Promise<string> {
+      const formulario = new FormData();
+      formulario.append("arquivo", arquivo, "capa");
+      const resposta = await requisicao<{ capaUrl: string }>("/barbearias/me/capa", {
+        metodo: "POST",
+        formulario,
+        comToken: true,
+      });
+      return resposta.capaUrl;
+    },
+
+    async removerCapa(): Promise<void> {
+      await requisicao("/barbearias/me/capa", { metodo: "DELETE", comToken: true });
+    },
+
+    async enviarFotoDoMembro(id: string, arquivo: Blob): Promise<string> {
+      const formulario = new FormData();
+      formulario.append("arquivo", arquivo, "foto");
+      const resposta = await requisicao<{ fotoUrl: string }>(`/equipe/${id}/foto`, {
+        metodo: "POST",
+        formulario,
+        comToken: true,
+      });
+      return resposta.fotoUrl;
+    },
+
+    async removerFotoDoMembro(id: string): Promise<void> {
+      await requisicao(`/equipe/${id}/foto`, { metodo: "DELETE", comToken: true });
+    },
+
     // O wa.me com o texto do lembrete e o link assinado pela API — o
     // painel não tem como assinar o link, por isso a URL vem pronta.
     async lembreteWhatsApp(id: string): Promise<string> {

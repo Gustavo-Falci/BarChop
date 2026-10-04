@@ -183,7 +183,7 @@ describe("página da barbearia nas configurações", () => {
     await userEvent.type(await screen.findByLabelText(/^instagram/i), "https://instagram.com/gr");
     await userEvent.click(screen.getByRole("button", { name: /salvar página/i }));
 
-    expect(await screen.findByText(/só o @/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sem o link: algo como/i)).toBeInTheDocument();
     expect(atualizar).not.toHaveBeenCalled();
   });
 });

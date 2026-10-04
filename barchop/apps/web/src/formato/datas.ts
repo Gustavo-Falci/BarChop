@@ -88,3 +88,17 @@ export function diasDoMes(mes: string): (string | null)[] {
 
   return [...vazios, ...dias];
 }
+
+const DIA_CURTO = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+
+// O rótulo de um próximo horário na página da barbearia: curto, porque
+// são três por serviço lado a lado. "hoje 11:00", "amanhã 09:00",
+// "sex 02/10 14:30". Hoje e amanhã pelo relógio do aparelho, como o
+// resto do fluxo (limitação registrada na spec).
+export function rotuloDoProximoHorario(data: string, hora: string, agora: Date = new Date()): string {
+  const hoje = hojeIso(agora);
+  if (data === hoje) return `hoje ${hora}`;
+  if (data === somarDias(hoje, 1)) return `amanhã ${hora}`;
+  const dia = new Date(`${data}T00:00:00Z`);
+  return `${DIA_CURTO[dia.getUTCDay()]} ${data.slice(8, 10)}/${data.slice(5, 7)} ${hora}`;
+}

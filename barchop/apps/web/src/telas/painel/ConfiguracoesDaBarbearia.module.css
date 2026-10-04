@@ -138,3 +138,15 @@
     gap: var(--espaco-sm);
   }
 }
+
+/* As marcas da página rica: comodidades e formas de pagamento. */
+.marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs) var(--espaco-md);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.marcas legend { width: 100%; margin-bottom: var(--espaco-xs); }
+.marcas label { display: inline-flex; align-items: center; gap: var(--espaco-xs); }

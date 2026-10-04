@@ -48,7 +48,11 @@ export function filaDeMemoria(): FilaDeMemoria {
       if (chave !== undefined && pendentes.some((p) => p.trabalho === trabalho && p.chave === chave)) {
         return false;
       }
-      pendentes.push({ trabalho, dados, quando: quando ?? new Date(0), chave });
+      // Uma cópia em JSON, que é o que o pg-boss guarda e devolve: `Date`
+      // vira string, e o tratador que contasse com `Date` passaria aqui e
+      // quebraria no worker de verdade.
+      const copia = JSON.parse(JSON.stringify(dados)) as object;
+      pendentes.push({ trabalho, dados: copia, quando: quando ?? new Date(0), chave });
       return true;
     },
     async trabalhar(trabalho, tratador) {
@@ -78,6 +82,17 @@ export function filaDeMemoria(): FilaDeMemoria {
 // de concluído, a chave fica livre.
 const POLITICA = "exclusive";
 
+// O padrão do pg-boss é repetir 2 vezes sem espera: uma queda de um
+// minuto no provedor de e-mail queimaria as três tentativas em segundos.
+// Com 5 repetições, começando em 1 min e dobrando até 1 h, o trabalho
+// atravessa uma queda de mais de uma hora.
+const REPETICAO = {
+  retryLimit: 5,
+  retryDelay: 60,
+  retryBackoff: true,
+  retryDelayMax: 60 * 60,
+} as const;
+
 export function filaDoPgBoss(
   boss: PgBoss,
   { segundosEntreBuscas = 2 }: { segundosEntreBuscas?: number } = {}
@@ -88,12 +103,17 @@ export function filaDoPgBoss(
   const garantirFila = (trabalho: string): Promise<void> => {
     let criando = criadas.get(trabalho);
     if (!criando) {
-      criando = boss.createQueue(trabalho, { policy: POLITICA }).catch((erro: unknown) => {
-        // Falhou (banco fora, por exemplo): a próxima chamada tenta de
-        // novo, em vez de herdar a promessa rejeitada pra sempre.
-        criadas.delete(trabalho);
-        throw erro;
-      });
+      criando = boss
+        .createQueue(trabalho, { policy: POLITICA, ...REPETICAO })
+        // O `createQueue` não mexe numa fila que já existe: sem o update,
+        // mudar a REPETICAO aqui não chegaria a fila criada antes.
+        .then(() => boss.updateQueue(trabalho, REPETICAO))
+        .catch((erro: unknown) => {
+          // Falhou (banco fora, por exemplo): a próxima chamada tenta de
+          // novo, em vez de herdar a promessa rejeitada pra sempre.
+          criadas.delete(trabalho);
+          throw erro;
+        });
       criadas.set(trabalho, criando);
     }
     return criando;

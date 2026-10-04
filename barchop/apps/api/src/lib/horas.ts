@@ -108,3 +108,22 @@ export function agoraNaBarbearia(instante: Date = new Date()): {
   const [data, hora] = formatado.split(" ");
   return { data, hora };
 }
+
+// O caminho de volta do agoraNaBarbearia: o instante em que o relógio da
+// barbearia marca `data` e `hora`. É o que diz quando o lembrete sai.
+//
+// Sem deslocamento fixo (-03:00): o fuso já teve horário de verão e
+// pode voltar a ter. Parte do relógio lido como se fosse UTC e corrige
+// pela diferença entre o que o fuso mostra nesse instante e o pedido —
+// uma correção basta, a segunda só existe pra a virada do horário.
+export function instanteNaBarbearia(data: string, hora: string): Date {
+  const pedido = dataParaDate(data).getTime() + horaParaDate(hora).getTime();
+  let instante = pedido;
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    const visto = agoraNaBarbearia(new Date(instante));
+    const relogio = dataParaDate(visto.data).getTime() + horaParaDate(visto.hora).getTime();
+    if (relogio === pedido) break;
+    instante += pedido - relogio;
+  }
+  return new Date(instante);
+}

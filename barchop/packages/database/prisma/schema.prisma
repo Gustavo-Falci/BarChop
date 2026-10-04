@@ -50,18 +50,21 @@ enum OrigemAgendamento {
 }
 
 model Barbearia {
-  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nome     String   @db.VarChar(120)
-  slug     String   @unique @db.VarChar(80)
-  telefone String?  @db.VarChar(20)
-  endereco String?  @db.VarChar(255)
-  logoUrl  String?  @map("logo_url")
+  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                      String   @db.VarChar(120)
+  slug                      String   @unique @db.VarChar(80)
+  telefone                  String?  @db.VarChar(20)
+  endereco                  String?  @db.VarChar(255)
+  logoUrl                   String?  @map("logo_url")
   // Texto de apresentação da home pública: o que a barbearia diz de si
   // pra quem abriu o link no WhatsApp. Anulável porque toda barbearia
   // já cadastrada nasce sem ele, e porque a home tem que funcionar sem
   // — quem acabou de criar a conta ainda não escreveu nada.
-  sobre    String?  @db.VarChar(1000)
-  criadoEm DateTime @default(now()) @map("criado_em") @db.Timestamptz
+  sobre                     String?  @db.VarChar(1000)
+  // Quanto antes do horário sai o lembrete: 2, 12 ou 24 (CHECK na
+  // migration 20261004130000_lembrete).
+  lembreteAntecedenciaHoras Int      @default(24) @map("lembrete_antecedencia_horas") @db.SmallInt
+  criadoEm                  DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
   barbeiros             Barbeiro[]
   clientes              Cliente[]
@@ -206,17 +209,19 @@ model Servico {
 }
 
 model Agendamento {
-  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  barbeariaId String            @map("barbearia_id") @db.Uuid
-  barbeiroId  String            @map("barbeiro_id") @db.Uuid
-  clienteId   String            @map("cliente_id") @db.Uuid
-  data        DateTime          @db.Date
-  horaInicio  DateTime          @map("hora_inicio") @db.Time
-  horaFim     DateTime          @map("hora_fim") @db.Time
-  status      StatusAgendamento @default(confirmado)
-  origem      OrigemAgendamento @default(cliente)
-  observacoes String?
-  criadoEm    DateTime          @default(now()) @map("criado_em") @db.Timestamptz
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId       String            @map("barbearia_id") @db.Uuid
+  barbeiroId        String            @map("barbeiro_id") @db.Uuid
+  clienteId         String            @map("cliente_id") @db.Uuid
+  data              DateTime          @db.Date
+  horaInicio        DateTime          @map("hora_inicio") @db.Time
+  horaFim           DateTime          @map("hora_fim") @db.Time
+  status            StatusAgendamento @default(confirmado)
+  origem            OrigemAgendamento @default(cliente)
+  observacoes       String?
+  criadoEm          DateTime          @default(now()) @map("criado_em") @db.Timestamptz
+  // Marca de idempotência do lembrete (ver apps/api/src/lib/lembrete.ts).
+  lembreteEnviadoEm DateTime?         @map("lembrete_enviado_em") @db.Timestamptz
 
   barbearia Barbearia            @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   barbeiro  Barbeiro             @relation(fields: [barbeiroId], references: [id])

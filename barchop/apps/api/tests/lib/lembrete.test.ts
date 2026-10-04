@@ -46,7 +46,7 @@ describe("enviarLembrete", () => {
   // Antes do horário: o relógio do tratador é injetado.
   const antes = new Date("2000-01-01T00:00:00.000Z");
 
-  async function cenario(email: string | undefined = "joao@exemplo.com") {
+  async function cenario({ email }: { email?: string } = { email: "joao@exemplo.com" }) {
     const app = buildApp();
     const agenda = await prepararAgenda(app, { email });
     const agendamento = await marcarPeloPainel(app, agenda, { data: QUINTA, horaInicio: "10:00" });
@@ -97,7 +97,7 @@ describe("enviarLembrete", () => {
   it("cliente sem e-mail: não manda, não falha e não marca como enviado", async () => {
     // Não marcar é o que deixa o lembrete sair se o e-mail entrar depois
     // e o trabalho for agendado de novo.
-    const { agendamento } = await cenario(undefined);
+    const { agendamento } = await cenario({});
     const canal = canalDeMemoria();
 
     await enviarLembrete({ agendamentoId: agendamento.id }, { canal, log, agora: () => antes });

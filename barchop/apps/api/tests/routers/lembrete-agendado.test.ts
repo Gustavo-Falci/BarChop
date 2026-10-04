@@ -120,7 +120,7 @@ describe("lembrete agendado", () => {
     const agendamento = await marcarPeloPainel(app, agenda, { data: QUINTA, horaInicio: "10:00" });
     // O trabalho da criação já rodou (e foi descartado, com o
     // agendamento cancelado na hora): a fila está vazia.
-    (app.fila as FilaDeMemoria).pendentes.splice(0);
+    ((app.fila as FilaDeMemoria).pendentes as unknown[]).splice(0);
 
     for (const status of ["cancelado", "confirmado"]) {
       const resposta = await app.inject({

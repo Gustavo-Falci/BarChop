@@ -4,6 +4,9 @@ import { prisma } from "@barchop/database";
 // não depende de acertar a ordem das foreign keys.
 const TABELAS = [
   "codigo_verificacao",
+  "bloqueio",
+  "profissional_servico",
+  "jornada_profissional",
   "agendamento_servico",
   "agendamento",
   "servico",

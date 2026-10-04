@@ -32,6 +32,16 @@ enum PapelMembro {
   @@map("papel_membro")
 }
 
+// Cada dia da jornada do membro: acompanha o horário da barbearia, tem
+// horas próprias, ou é folga. Ver 20261004120000_jornada_servicos_bloqueio.
+enum ModoJornada {
+  barbearia
+  proprio
+  folga
+
+  @@map("modo_jornada")
+}
+
 enum OrigemAgendamento {
   cliente
   barbeiro
@@ -59,6 +69,7 @@ model Barbearia {
   horariosFuncionamento HorarioFuncionamento[]
   agendamentos          Agendamento[]
   codigosVerificacao    CodigoVerificacao[]
+  bloqueios             Bloqueio[]
 
   @@map("barbearia")
 }
@@ -94,11 +105,64 @@ model Barbeiro {
   // Token com `iat` anterior a isto é recusado (plugins/auth.ts).
   senhaAlteradaEm DateTime?   @map("senha_alterada_em") @db.Timestamptz
 
-  barbearia    Barbearia     @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  barbearia    Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
+  // Sete linhas sempre, e todos os serviços ao nascer: quem garante é o
+  // trigger do insert (migration 20261004120000), não as rotas.
+  jornada      JornadaProfissional[]
+  servicos     ProfissionalServico[]
+  bloqueios    Bloqueio[]
 
   @@index([barbeariaId])
   @@map("barbeiro")
+}
+
+model JornadaProfissional {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeiroId String      @map("barbeiro_id") @db.Uuid
+  diaSemana  Int         @map("dia_semana") @db.SmallInt
+  modo       ModoJornada @default(barbearia)
+  // Só no modo `proprio`, e as duas — CHECK `jornada_horas_do_modo`.
+  horaInicio DateTime?   @map("hora_inicio") @db.Time
+  horaFim    DateTime?   @map("hora_fim") @db.Time
+
+  barbeiro Barbeiro @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
+
+  @@unique([barbeiroId, diaSemana])
+  @@map("jornada_profissional")
+}
+
+model ProfissionalServico {
+  barbeiroId String @map("barbeiro_id") @db.Uuid
+  servicoId  String @map("servico_id") @db.Uuid
+
+  barbeiro Barbeiro @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
+  servico  Servico  @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+
+  @@id([barbeiroId, servicoId])
+  @@index([servicoId])
+  @@map("profissional_servico")
+}
+
+// Período de datas; sem horas é o dia inteiro, com horas é a mesma faixa
+// em cada dia do período. CHECKs `bloqueio_periodo` e `bloqueio_horas`.
+model Bloqueio {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId String    @map("barbearia_id") @db.Uuid
+  barbeiroId  String    @map("barbeiro_id") @db.Uuid
+  dataInicio  DateTime  @map("data_inicio") @db.Date
+  dataFim     DateTime  @map("data_fim") @db.Date
+  horaInicio  DateTime? @map("hora_inicio") @db.Time
+  horaFim     DateTime? @map("hora_fim") @db.Time
+  motivo      String?   @db.VarChar(120)
+  criadoEm    DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  barbeiro  Barbeiro  @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
+
+  @@index([barbeiroId, dataInicio, dataFim])
+  @@index([barbeariaId, dataInicio])
+  @@map("bloqueio")
 }
 
 model Cliente {
@@ -133,8 +197,9 @@ model Servico {
   ativo          Boolean  @default(true)
   criadoEm       DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
-  barbearia           Barbearia            @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  barbearia           Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentoServicos AgendamentoServico[]
+  profissionais       ProfissionalServico[]
 
   @@index([barbeariaId])
   @@map("servico")

@@ -2,7 +2,9 @@ import type {
   AgendamentoComCliente,
   AgendamentoSerializado,
   BarbeariaSerializada,
+  BloqueioSerializado,
   ClienteSerializado,
+  DiaDaJornada,
   HorarioSerializado,
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
@@ -98,6 +100,16 @@ export interface AceiteDoConvite {
   senha: string;
 }
 
+export interface NovoBloqueio {
+  barbeiroId: string;
+  dataInicio: string;
+  dataFim: string;
+  // As duas ou nenhuma: sem horas é o dia inteiro.
+  horaInicio?: string | null;
+  horaFim?: string | null;
+  motivo?: string | null;
+}
+
 export function criarApiBarbeiro(requisicao: Requisicao) {
   return {
     // Sem token: não existe sessão ainda.
@@ -146,6 +158,57 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // ele e corpo vazio o Fastify responde 400 antes da rota.
     async reenviarConvite(id: string): Promise<void> {
       await requisicao(`/equipe/${id}/convite`, { metodo: "POST", comToken: true });
+    },
+
+    async jornada(id: string): Promise<DiaDaJornada[]> {
+      const resposta = await requisicao<{ jornada: DiaDaJornada[] }>(`/equipe/${id}/jornada`, {
+        comToken: true,
+      });
+      return resposta.jornada;
+    },
+
+    // A semana inteira, sete dias: a API recusa menos.
+    async salvarJornada(id: string, jornada: DiaDaJornada[]): Promise<DiaDaJornada[]> {
+      const resposta = await requisicao<{ jornada: DiaDaJornada[] }>(`/equipe/${id}/jornada`, {
+        metodo: "PUT",
+        corpo: { jornada },
+        comToken: true,
+      });
+      return resposta.jornada;
+    },
+
+    async servicosDoMembro(id: string): Promise<string[]> {
+      const resposta = await requisicao<{ servicoIds: string[] }>(`/equipe/${id}/servicos`, {
+        comToken: true,
+      });
+      return resposta.servicoIds;
+    },
+
+    // A lista inteira: o que não vier deixa de ser feito pelo membro.
+    async salvarServicosDoMembro(id: string, servicoIds: string[]): Promise<string[]> {
+      const resposta = await requisicao<{ servicoIds: string[] }>(`/equipe/${id}/servicos`, {
+        metodo: "PUT",
+        corpo: { servicoIds },
+        comToken: true,
+      });
+      return resposta.servicoIds;
+    },
+
+    // Os que tocam o período; o profissional recebe só os dele.
+    async bloqueios(de: string, ate: string): Promise<BloqueioSerializado[]> {
+      const resposta = await requisicao<{ bloqueios: BloqueioSerializado[] }>("/bloqueios", {
+        query: { de, ate },
+        comToken: true,
+      });
+      return resposta.bloqueios;
+    },
+
+    criarBloqueio(novo: NovoBloqueio): Promise<BloqueioSerializado> {
+      return requisicao("/bloqueios", { metodo: "POST", corpo: novo, comToken: true });
+    },
+
+    async apagarBloqueio(id: string): Promise<void> {
+      await requisicao(`/bloqueios/${id}`, { metodo: "DELETE", comToken: true });
     },
 
     meuPerfil(): Promise<PerfilBarbeiro> {

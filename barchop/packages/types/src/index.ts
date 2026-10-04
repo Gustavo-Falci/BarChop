@@ -171,6 +171,30 @@ export interface PerfilBarbeiro {
   atende: boolean;
 }
 
+// Cada dia da jornada do membro: acompanha o funcionamento da barbearia,
+// tem horas próprias (só neste modo há horas) ou é folga. A janela que
+// vale é a interseção com o funcionamento.
+export type ModoJornada = "barbearia" | "proprio" | "folga";
+
+export interface DiaDaJornada {
+  diaSemana: number; // 0 = domingo
+  modo: ModoJornada;
+  horaInicio: string | null; // "HH:mm"
+  horaFim: string | null;
+}
+
+// Folga, almoço ou horário fechado. Sem horas é o dia inteiro; com
+// horas, a mesma faixa em cada dia do período.
+export interface BloqueioSerializado {
+  id: string;
+  barbeiroId: string;
+  dataInicio: string; // "YYYY-MM-DD"
+  dataFim: string;
+  horaInicio: string | null;
+  horaFim: string | null;
+  motivo: string | null;
+}
+
 // GET /equipe. A tabela ainda se chama `barbeiro`; o conceito é membro.
 export interface MembroDaEquipe {
   id: string;

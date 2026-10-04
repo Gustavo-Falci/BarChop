@@ -21,6 +21,7 @@ export type {
   AceiteDoConvite,
   ClienteComHistorico,
   EdicaoDoMembro,
+  NovoBloqueio,
   NovoMembro,
   CredenciaisDoBarbeiro,
   EdicaoDaBarbearia,

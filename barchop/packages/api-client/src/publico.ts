@@ -1,4 +1,5 @@
 import type {
+  AgendamentoDoLembrete,
   AgendamentoSerializado,
   Disponibilidade,
   DisponibilidadeDoMes,
@@ -89,6 +90,32 @@ export function criarApiPublica(requisicao: Requisicao) {
         metodo: "POST",
         corpo: novo,
       });
+    },
+
+    // O link do e-mail de lembrete: sem login, quem autoriza é o token.
+    // Ler é GET e agir é POST — a tela só age no clique, porque leitor
+    // de e-mail abre links sozinho.
+    async lembrete(token: string): Promise<AgendamentoDoLembrete> {
+      const resposta = await requisicao<{ agendamento: AgendamentoDoLembrete }>(
+        `/lembretes/${token}`
+      );
+      return resposta.agendamento;
+    },
+
+    async confirmarPresenca(token: string): Promise<AgendamentoDoLembrete> {
+      const resposta = await requisicao<{ agendamento: AgendamentoDoLembrete }>(
+        `/lembretes/${token}/confirmar`,
+        { metodo: "POST" }
+      );
+      return resposta.agendamento;
+    },
+
+    async cancelarPeloLembrete(token: string): Promise<AgendamentoDoLembrete> {
+      const resposta = await requisicao<{ agendamento: AgendamentoDoLembrete }>(
+        `/lembretes/${token}/cancelar`,
+        { metodo: "POST" }
+      );
+      return resposta.agendamento;
     },
 
     // Responde igual tendo ou não conta: não há nada a devolver.

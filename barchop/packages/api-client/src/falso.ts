@@ -1,6 +1,9 @@
 import type {
   AgendamentoComCliente,
+  AgendamentoDoLembrete,
   AgendamentoSerializado,
+  AntecedenciaDoLembrete,
+  BarbeariaDoPainel,
   ClienteSerializado,
   BloqueioSerializado,
   DiaDaJornada,
@@ -112,6 +115,12 @@ export interface EstadoFalso {
   jornadas?: Record<string, DiaDaJornada[]>;
   servicosPorMembro?: Record<string, string[]>;
   bloqueios?: BloqueioSerializado[];
+  // A configuração do lembrete, que só o painel lê. 24 h, como na API.
+  lembreteAntecedenciaHoras?: AntecedenciaDoLembrete;
+  // Os tokens do link do lembrete que o dublê reconhece, por token o id
+  // do agendamento. Qualquer outro é 401, como na API; os vencidos, 410.
+  lembretes?: Record<string, string>;
+  lembretesVencidos?: string[];
 }
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {
@@ -151,8 +160,10 @@ const SERVICOS_PADRAO: ServicoSerializado[] = [
 // O que um teste semeia: o agendamento pode vir sem `barbeiro` (as
 // sementes de antes do bloco C não o têm) — o dublê completa com o
 // membro logado, "bb1". O que sai do dublê sempre o tem, como na API.
-type AgendamentoSemeado = Omit<AgendamentoSerializado, "barbeiro"> & {
+type AgendamentoSemeado = Omit<AgendamentoSerializado, "barbeiro" | "presencaConfirmadaEm"> & {
   barbeiro?: AgendamentoSerializado["barbeiro"];
+  // As sementes de antes do D4 não o têm: nasce sem confirmação.
+  presencaConfirmadaEm?: string | null;
   clienteId?: string;
 };
 export type SementeFalsa = Partial<Omit<EstadoFalso, "agendamentos">> & {
@@ -172,6 +183,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     agendamentos: (semente.agendamentos ?? []).map((agendamento) => ({
       ...agendamento,
       barbeiro: agendamento.barbeiro ?? { id: "bb1", nome: "Rafael" },
+      presencaConfirmadaEm: agendamento.presencaConfirmadaEm ?? null,
     })),
     cliente: semente.cliente ?? CLIENTE_PADRAO,
     clientes: [...(semente.clientes ?? [CLIENTE_PADRAO])],
@@ -182,6 +194,9 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     jornadas: { ...(semente.jornadas ?? {}) },
     servicosPorMembro: { ...(semente.servicosPorMembro ?? {}) },
     bloqueios: [...(semente.bloqueios ?? [])],
+    lembreteAntecedenciaHoras: semente.lembreteAntecedenciaHoras ?? 24,
+    lembretes: { ...(semente.lembretes ?? {}) },
+    lembretesVencidos: [...(semente.lembretesVencidos ?? [])],
   };
 
   // O que o trigger da API dá a todo membro, criado na primeira leitura.
@@ -313,6 +328,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       status: "pendente",
       origem: entrada.origem,
       observacoes: entrada.observacoes ?? null,
+      presencaConfirmadaEm: null,
       clienteId: entrada.clienteId,
       barbeiro: {
         id: barbeiroId,
@@ -387,6 +403,59 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     return estado.agendamentos[indice];
   }
 
+  // A barbearia como o painel a lê: com a antecedência do lembrete, que a
+  // página pública não mostra.
+  function barbeariaDoPainel(): BarbeariaDoPainel {
+    const { id, nome, slug, telefone, endereco, logoUrl, sobre } = estado.perfil;
+    return {
+      id,
+      nome,
+      slug,
+      telefone,
+      endereco,
+      logoUrl,
+      sobre,
+      lembreteAntecedenciaHoras: estado.lembreteAntecedenciaHoras ?? 24,
+    };
+  }
+
+  // As mesmas respostas da API pro token do link do lembrete.
+  function indiceDoLembrete(token: string): number {
+    if (estado.lembretesVencidos!.includes(token)) {
+      throw new ErroDaApi(410, "link_expirado", "esse link venceu: o horário já começou");
+    }
+    const id = estado.lembretes![token];
+    if (!id) throw new ErroDaApi(401, "link_invalido", "link inválido");
+    const indice = estado.agendamentos.findIndex((a) => a.id === id);
+    if (indice < 0) throw new ErroDaApi(404, "nao_encontrado", "agendamento não encontrado");
+    return indice;
+  }
+
+  function doLembrete(agendamento: AgendamentoSerializado): AgendamentoDoLembrete {
+    return {
+      id: agendamento.id,
+      data: agendamento.data,
+      horaInicio: agendamento.horaInicio,
+      status: agendamento.status,
+      presencaConfirmadaEm: agendamento.presencaConfirmadaEm,
+      barbearia: { nome: estado.perfil.nome, slug: estado.perfil.slug },
+      barbeiro: { nome: agendamento.barbeiro.nome },
+      servicos: agendamento.servicos.map((s) => ({ nome: s.nome })),
+    };
+  }
+
+  // O garantirAlteravel da API, sem o relógio: o dublê não sabe que
+  // horas são.
+  function exigirAtivo(agendamento: AgendamentoSerializado): void {
+    if (agendamento.status !== "pendente" && agendamento.status !== "confirmado") {
+      throw new ErroDaApi(
+        422,
+        "status_nao_permite",
+        `agendamento ${agendamento.status} não pode ser alterado`
+      );
+    }
+  }
+
   const sessaoDoBarbeiro = {
     token: "jwt-falso-barbeiro",
     barbeiro: { id: "bb1", nome: "Rafael", email: "rafael@gr.com" },
@@ -426,7 +495,35 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async agendar(slug: string, novo: NovoAgendamentoPublicoInput) {
         exigirSlug(slug);
+        // O mesmo PADRAO_EMAIL da API, que responde 400 pelo schema.
+        const email = novo.cliente.email;
+        if (email !== undefined && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+          throw new ErroDaApi(400, "requisicao_invalida", "e-mail inválido");
+        }
         return novoAgendamento({ ...novo, origem: "cliente" });
+      },
+      async lembrete(token: string) {
+        return doLembrete(estado.agendamentos[indiceDoLembrete(token)]);
+      },
+      async confirmarPresenca(token: string) {
+        const indice = indiceDoLembrete(token);
+        const agendamento = estado.agendamentos[indice];
+        exigirAtivo(agendamento);
+        estado.agendamentos[indice] = {
+          ...agendamento,
+          presencaConfirmadaEm: agendamento.presencaConfirmadaEm ?? new Date().toISOString(),
+        };
+        return doLembrete(estado.agendamentos[indice]);
+      },
+      async cancelarPeloLembrete(token: string) {
+        const indice = indiceDoLembrete(token);
+        const agendamento = estado.agendamentos[indice];
+        // Cancelar de novo é o mesmo cancelamento, como na API.
+        if (agendamento.status !== "cancelado") {
+          exigirAtivo(agendamento);
+          estado.agendamentos[indice] = { ...agendamento, status: "cancelado" };
+        }
+        return doLembrete(estado.agendamentos[indice]);
       },
       async pedirCodigoDoCliente(slug: string, _destino: DestinoDoCodigo) {
         exigirSlug(slug);
@@ -623,18 +720,23 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         };
       },
       async minhaBarbearia() {
-        const { id, nome, slug, telefone, endereco, logoUrl, sobre } =
-          estado.perfil;
-        return { id, nome, slug, telefone, endereco, logoUrl, sobre };
+        return barbeariaDoPainel();
       },
       async trocarSlug(slug: string) {
         estado.perfil = { ...estado.perfil, slug };
-        const { id, nome, telefone, endereco, logoUrl, sobre } = estado.perfil;
-        return { id, nome, slug, telefone, endereco, logoUrl, sobre };
+        return barbeariaDoPainel();
       },
       async atualizarMinhaBarbearia(edicao: EdicaoDaBarbearia) {
-        estado.perfil = { ...estado.perfil, ...edicao };
-        return estado.perfil;
+        const { lembreteAntecedenciaHoras, ...doPerfil } = edicao;
+        if (lembreteAntecedenciaHoras !== undefined) {
+          // O enum do schema da API: fora dele é 400.
+          if (![2, 12, 24].includes(lembreteAntecedenciaHoras)) {
+            throw new ErroDaApi(400, "requisicao_invalida", "antecedência fora de 2, 12 ou 24 h");
+          }
+          estado.lembreteAntecedenciaHoras = lembreteAntecedenciaHoras;
+        }
+        estado.perfil = { ...estado.perfil, ...doPerfil };
+        return barbeariaDoPainel();
       },
       async horarios() {
         return estado.perfil.horarios;
@@ -746,6 +848,18 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async criarAgendamento(novo: NovoAgendamentoBarbeiroInput) {
         return comCliente(novoAgendamento({ ...novo, origem: "barbeiro" }));
+      },
+      async lembreteWhatsApp(id: string) {
+        const achado = estado.agendamentos.find((a) => a.id === id);
+        if (!achado) {
+          throw new ErroDaApi(404, "nao_encontrado", "agendamento não encontrado");
+        }
+        exigirAtivo(achado);
+        const { cliente } = comCliente(achado);
+        const texto =
+          `Olá, ${cliente.nome.split(" ")[0]}! Passando pra lembrar do seu horário na ` +
+          `${estado.perfil.nome}, às ${achado.horaInicio}, com ${achado.barbeiro.nome}.`;
+        return `https://wa.me/55${cliente.telefone.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
       },
       async atualizarAgendamento(id: string, edicao: EdicaoDoAgendamento) {
         const indice = estado.agendamentos.findIndex((a) => a.id === id);

@@ -41,7 +41,9 @@ export interface NovoAgendamentoPublicoInput {
   servicoIds: string[];
   data: string;
   horaInicio: string;
-  cliente: { nome: string; telefone: string };
+  // `email` é só pro lembrete deste agendamento: a API o grava no
+  // agendamento, nunca no cadastro (cujo e-mail é o login do cliente).
+  cliente: { nome: string; telefone: string; email?: string };
   observacoes?: string;
 }
 
@@ -62,6 +64,20 @@ export interface BarbeariaSerializada {
 }
 
 export type AntecedenciaDoLembrete = 2 | 12 | 24;
+
+// O que a página "Confirmar ou cancelar" lê pelo token do link do
+// lembrete. Traz a barbearia junto: a página se monta disto, e não de
+// uma busca pelo slug, que pode ter mudado depois que o e-mail saiu.
+export interface AgendamentoDoLembrete {
+  id: string;
+  data: string;
+  horaInicio: string;
+  status: string;
+  presencaConfirmadaEm: string | null;
+  barbearia: { nome: string; slug: string };
+  barbeiro: { nome: string };
+  servicos: { nome: string }[];
+}
 
 // O que só o painel lê: a configuração do lembrete não é da conta de
 // quem abre a página pública.

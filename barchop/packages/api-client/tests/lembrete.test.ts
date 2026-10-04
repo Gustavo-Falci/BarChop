@@ -28,7 +28,7 @@ const DO_LEMBRETE = {
 
 describe("api pública — link do lembrete", () => {
   it("lê o agendamento pelo token, sem login", async () => {
-    const fetchFalso = vi.fn(async () => respostaJson({ agendamento: DO_LEMBRETE }));
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({ agendamento: DO_LEMBRETE }));
 
     const lido = await clientComFetch(fetchFalso).publico.lembrete("tok.en.x");
 
@@ -37,7 +37,7 @@ describe("api pública — link do lembrete", () => {
   });
 
   it("confirma e cancela por POST", async () => {
-    const fetchFalso = vi.fn(async () => respostaJson({ agendamento: DO_LEMBRETE }));
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({ agendamento: DO_LEMBRETE }));
     const publico = clientComFetch(fetchFalso).publico;
 
     await publico.confirmarPresenca("tok");
@@ -51,7 +51,7 @@ describe("api pública — link do lembrete", () => {
   });
 
   it("o agendamento público leva o e-mail do lembrete", async () => {
-    const fetchFalso = vi.fn(async () => respostaJson({}, 201));
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({}, 201));
 
     await clientComFetch(fetchFalso).publico.agendar("gr-barber", {
       servicoIds: ["s1"],
@@ -67,7 +67,7 @@ describe("api pública — link do lembrete", () => {
 
 describe("api do barbeiro — lembrete", () => {
   it("pede o wa.me do lembrete e devolve só a URL", async () => {
-    const fetchFalso = vi.fn(async () => respostaJson({ url: "https://wa.me/5511?text=oi" }));
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({ url: "https://wa.me/5511?text=oi" }));
 
     const url = await clientComFetch(fetchFalso).barbeiro.lembreteWhatsApp("a1");
 

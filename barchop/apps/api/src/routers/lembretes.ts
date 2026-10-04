@@ -1,4 +1,5 @@
 import { prisma } from "@barchop/database";
+import type { AgendamentoDoLembrete } from "@barchop/types";
 import { garantirAlteravel } from "../lib/agendamento-alteravel";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
@@ -61,7 +62,9 @@ async function carregar(id: string) {
   return agendamento;
 }
 
-function serializar(agendamento: Awaited<ReturnType<typeof carregar>>) {
+function serializar(agendamento: Awaited<ReturnType<typeof carregar>>): {
+  agendamento: AgendamentoDoLembrete;
+} {
   return {
     agendamento: {
       id: agendamento.id,

@@ -127,9 +127,12 @@ describe("painel do dia da equipe", () => {
 
   it("com um profissional só, a linha não repete o nome", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel" });
-    montarPainel(<DashboardDoDia agora={AGORA} />, semear("profissional"));
+    // Só o agendamento do Rafael: sem o da Ana, o dia é de uma pessoa.
+    const falso = comDoisAtendendo();
+    falso.estado.agendamentos = falso.estado.agendamentos.filter((a) => a.id === "a1");
+    montarPainel(<DashboardDoDia agora={AGORA} />, falso);
 
-    await screen.findByText(/agendamentos hoje/i);
+    expect(await screen.findByRole("button", { name: /09:00/ })).toBeInTheDocument();
     expect(screen.queryByText(/com rafael/i)).not.toBeInTheDocument();
   });
 });

@@ -103,19 +103,19 @@ export interface DadosDoLink {
   inicio: Date;
 }
 
-// Monta o link da página "Confirmar ou cancelar" do site. Sem a URL do
-// site configurada não há link — o e-mail sai sem ele, como o convite.
+// Monta o link da página "Confirmar ou cancelar", no endereço da própria
+// barbearia (lib/endereco.ts). Sem endereço configurado não há link — o
+// e-mail sai sem ele, como o convite.
 //
 // `app.jwt` é lido a cada link, e não aqui: o plugin do JWT só existe
 // depois que o Fastify sobe.
 export function criarLinkDoLembrete(
   app: Pick<App, "jwt">,
-  urlDoSite: string | undefined
+  endereco: ((slug: string) => string) | undefined
 ): ((dados: DadosDoLink) => string) | undefined {
-  const base = urlDoSite?.replace(/\/+$/, "");
-  if (!base) return undefined;
+  if (!endereco) return undefined;
   return ({ agendamentoId, slug, inicio }) =>
-    `${base}/${slug}/lembrete/${assinarTokenDoLembrete(app, { agendamentoId, expiraEm: inicio })}`;
+    `${endereco(slug)}/lembrete/${assinarTokenDoLembrete(app, { agendamentoId, expiraEm: inicio })}`;
 }
 
 const DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {

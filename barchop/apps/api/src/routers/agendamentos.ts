@@ -7,6 +7,7 @@ import {
 } from "../lib/agendamento";
 import { garantirAlteravel, garantirFuturo } from "../lib/agendamento-alteravel";
 import { travarQualquerUm } from "../lib/disponibilidade";
+import { enderecoDasBarbearias } from "../lib/endereco";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { dataParaDate, dateParaData, dateParaHora } from "../lib/horas";
@@ -327,7 +328,7 @@ export function registrarRotasAgendamentos(app: App): void {
       // Cancelado, concluído, falta ou já passado: não há o que lembrar.
       garantirAlteravel(agendamento);
 
-      const link = criarLinkDoLembrete(app, process.env.URL_DO_PAINEL);
+      const link = criarLinkDoLembrete(app, enderecoDasBarbearias(process.env));
       const url = link?.({
         agendamentoId: agendamento.id,
         slug: agendamento.barbearia.slug,

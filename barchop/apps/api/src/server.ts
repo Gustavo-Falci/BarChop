@@ -1,6 +1,7 @@
 import { PgBoss } from "pg-boss";
 import { buildApp } from "./app";
 import { filaDoPgBoss, urlDoPg } from "./lib/fila";
+import { enderecoDasBarbearias } from "./lib/endereco";
 import { criarLinkDoLembrete, registrarLembrete } from "./lib/lembrete";
 
 // Entrypoint do bundle (ver tsup.config.ts). Toda a montagem da
@@ -37,11 +38,14 @@ async function main(): Promise<void> {
   // isso: o `inject` sobe o app antes.
   await app.ready();
 
-  // A página "Confirmar ou cancelar" mora no site, que por enquanto é o
-  // mesmo host do painel (o Bloco E separa os dois).
-  const link = criarLinkDoLembrete(app, process.env.URL_DO_PAINEL);
+  // A página "Confirmar ou cancelar" mora no endereço da barbearia: o
+  // host próprio dela com URL_DAS_BARBEARIAS, ou o caminho no host do
+  // painel sem. Um molde torto lança aqui e a API não sobe.
+  const link = criarLinkDoLembrete(app, enderecoDasBarbearias(process.env));
   if (!link) {
-    app.log.warn("URL_DO_PAINEL ausente: o lembrete sai sem o link de confirmar ou cancelar");
+    app.log.warn(
+      "URL_DAS_BARBEARIAS e URL_DO_PAINEL ausentes: o lembrete sai sem o link de confirmar ou cancelar"
+    );
   }
 
   // Os workers depois do start: `work` num pg-boss parado lança. No

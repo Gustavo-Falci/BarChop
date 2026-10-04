@@ -14,10 +14,12 @@ import { formatarDataLonga } from "../formato/datas";
 import { rotuloDoStatus } from "../formato/status";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./MinhaConta.module.css";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 
 export function MinhaConta() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
+  const noHost = useNoHost();
   const api = useApi();
 
   const temSessao = Boolean(sessaoDoCliente(slug).ler());
@@ -49,9 +51,9 @@ export function MinhaConta() {
   // limpou o armazenamento, e aqui só falta tirar a pessoa da tela.
   useEffect(() => {
     if (!temSessao || erro?.codigo === "nao_autenticado") {
-      router.replace(`/${slug}/entrar`);
+      router.replace(noHost(`/${slug}/entrar`));
     }
-  }, [temSessao, erro, router, slug]);
+  }, [temSessao, erro, router, slug, noHost]);
 
   if (!temSessao) return null;
 
@@ -103,7 +105,7 @@ export function MinhaConta() {
                   variante="fantasma"
                   onClick={() =>
                     router.push(
-                      caminhoDoPasso(slug, "data", {
+                      noHost(caminhoDoPasso(slug, "data", {
                         // Os mesmos serviços do agendamento: remarcar
                         // troca quando, não o quê.
                         servicoIds: agendamento.servicos.map((s) => s.servicoId),
@@ -111,7 +113,7 @@ export function MinhaConta() {
                         // A API remarca com o mesmo profissional; o dia
                         // tem que mostrar a agenda dele, não a de outro.
                         profissional: agendamento.barbeiro.id,
-                      })
+                      }))
                     )
                   }
                 >

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { caminhoDoPasso, lerEscolhas, type Escolhas, type Passo } from "./passos";
 import { ehPassado } from "../formato/datas";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 
 // Pré-requisitos são cumulativos, não por campo: "confirmar" precisa
 // de serviço, dia e hora — tudo o que o passo "data" (que
@@ -73,6 +74,7 @@ export function usePassoDoFluxo(
   const { slug } = useParams<{ slug: string }>();
   const query = useSearchParams();
   const router = useRouter();
+  const noHost = useNoHost();
 
   const escolhas = lerEscolhas(query);
   const volta = primeiraFalta(passo, escolhas, agora);
@@ -85,7 +87,7 @@ export function usePassoDoFluxo(
     if (volta === null) return;
     // `replace` e não `push`: o passo incompleto não merece uma entrada
     // no histórico, senão voltar cairia nele de novo.
-    router.replace(caminhoDoPasso(slug, volta, escolhas));
+    router.replace(noHost(caminhoDoPasso(slug, volta, escolhas)));
     // O array de dependências usa primitivos, não o objeto derivado:
     // `escolhas` é um novo objeto a cada render, logo [... escolhas]
     // dispararia o efeito sempre. Depender de seus campos individuais
@@ -94,7 +96,7 @@ export function usePassoDoFluxo(
     // dia, não por milissegundo, o `agora` padrão não os faz oscilar
     // a cada render.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ver acima
-  }, [falta, slug, volta, router, escolhas.servicoIds.join(","), escolhas.data, escolhas.hora, escolhas.remarcar, escolhas.profissional]);
+  }, [falta, slug, volta, router, escolhas.servicoIds.join(","), escolhas.data, escolhas.hora, escolhas.remarcar, escolhas.profissional, noHost]);
 
   return { ...escolhas, slug, pronto: !falta };
 }

@@ -14,6 +14,7 @@ import {
   sessaoDaBarbearia,
   sessaoDoBarbeiro,
 } from "../../sessao/armazenamento";
+import { enderecoDaBarbearia } from "../../tenant/endereco";
 import estilos from "./EntrarNoPainel.module.css";
 import { RecuperarSenhaDoPainel } from "./RecuperarSenhaDoPainel";
 
@@ -226,7 +227,7 @@ export function EntrarNoPainel() {
                 atrapalharia. */}
             <Campo
               rotulo="Endereço do link"
-              apoio={`O link dos seus clientes: /${slug || "sua-barbearia"}`}
+              apoio={`O link dos seus clientes: ${enderecoDaBarbearia(slug || "sua-barbearia", process.env.NEXT_PUBLIC_URL_DO_SITE)}`}
               name="slug"
               autoComplete="off"
               maxLength={SLUG_MAX}

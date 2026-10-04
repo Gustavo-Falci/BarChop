@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 import { LinkDaConta } from "./LinkDaConta";
 import estilos from "./BarraDaBarbearia.module.css";
 
@@ -20,11 +21,14 @@ import estilos from "./BarraDaBarbearia.module.css";
 export function BarraDaBarbearia() {
   const { slug } = useParams<{ slug: string }>();
   const pathname = usePathname();
+  const noHost = useNoHost();
 
   // Na página da própria barbearia o nome já é o <h1>. Repetir aqui
   // seria o mesmo texto duas vezes, um colado no outro — que se lê como
-  // defeito, não como marca.
-  if (pathname === `/${slug}`) return null;
+  // defeito, não como marca. No host da barbearia a página dela é "/":
+  // sob a reescrita do proxy, o usePathname devolve o caminho do
+  // navegador, não o de /[slug].
+  if (pathname === `/${slug}` || pathname === noHost(`/${slug}`)) return null;
 
   return (
     <header className={estilos.barra}>
@@ -40,6 +44,7 @@ export function BarraDaBarbearia() {
 // barra nem é desenhada — e lá a tela já busca o mesmo perfil.
 function Marca({ slug }: { slug: string }) {
   const api = useApi();
+  const noHost = useNoHost();
   const { dados } = useRequisicao(
     () => api.publico.perfilDaBarbearia(slug),
     [slug]
@@ -63,7 +68,7 @@ function Marca({ slug }: { slug: string }) {
   // slug que não existe, "Entrar" levaria ao login de barbearia nenhuma.
   return (
     <>
-      <Link href={`/${slug}`} className={estilos.marca}>
+      <Link href={noHost(`/${slug}`)} className={estilos.marca}>
         {dados.nome}
       </Link>
       <LinkDaConta slug={slug} />

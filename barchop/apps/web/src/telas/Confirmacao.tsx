@@ -28,6 +28,7 @@ import {
   horaJaPassou,
 } from "../formato/datas";
 import estilos from "./Confirmacao.module.css";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 
 // O último passo, e também onde a pessoa diz quem é. Eram duas telas —
 // "Quem é você?" com dois botões, depois o resumo — e a pergunta
@@ -54,6 +55,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     agora ?? new Date()
   );
   const router = useRouter();
+  const noHost = useNoHost();
   const api = useApi();
   const { conta, esquecer } = useContaDoCliente(slug);
 
@@ -154,13 +156,13 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
       horaJaPassou(diaConfirmado, horaConfirmada, instanteDoEnvio)
     ) {
       router.push(
-        caminhoDoPasso(slug, "data", {
+        noHost(caminhoDoPasso(slug, "data", {
           servicoIds,
           data,
           remarcar,
           aviso: "horario_expirou",
           profissional,
-        })
+        }))
       );
       return;
     }
@@ -200,13 +202,13 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
       // zero, e o estado local desta morre com ela.
       if (erro.codigo === "horario_ocupado") {
         router.push(
-          caminhoDoPasso(slug, "data", {
+          noHost(caminhoDoPasso(slug, "data", {
             servicoIds,
             data,
             remarcar,
             aviso: "horario_ocupado",
             profissional,
-          })
+          }))
         );
         return;
       }
@@ -285,12 +287,12 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
             uma tela de login no lugar da lista. Quem remarcou está
             logado por definição. */}
         {conta || remarcar ? (
-          <Link className={estilos.linkDeTexto} href={`/${slug}/minha-conta`}>
+          <Link className={estilos.linkDeTexto} href={noHost(`/${slug}/minha-conta`)}>
             Ver meus agendamentos
           </Link>
         ) : null}
 
-        <Botao variante="contorno" onClick={() => router.push(`/${slug}`)}>
+        <Botao variante="contorno" onClick={() => router.push(noHost(`/${slug}`))}>
           Voltar ao início
         </Botao>
       </main>
@@ -424,12 +426,12 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
               className={estilos.link}
               onClick={() =>
                 router.push(
-                  caminhoDoLogin(slug, "confirmar", {
+                  noHost(caminhoDoLogin(slug, "confirmar", {
                     servicoIds,
                     data,
                     hora,
                     remarcar,
-                  })
+                  }))
                 )
               }
             >

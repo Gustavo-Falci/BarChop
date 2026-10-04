@@ -22,7 +22,7 @@ function montarNoHost(tela: ReactElement, falso = criarApiClientFalso()) {
 }
 
 describe("links no host da barbearia", () => {
-  beforeEach(() => navegacaoFalsa.redefinir({ pathname: "/entrar" }));
+  beforeEach(() => navegacaoFalsa.redefinir({ pathname: "/agendar" }));
 
   it("a barra leva pra raiz e o Entrar pra /entrar", async () => {
     montarNoHost(<BarraDaBarbearia />);

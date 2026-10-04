@@ -26,6 +26,11 @@ export type Decisao =
 // host da barbearia — os links de lá não levam o slug na frente.
 export const CABECALHO_DA_BARBEARIA = "x-barchop-barbearia";
 
+// O caminho que o navegador pediu, com a query, antes da reescrita. O
+// layout de /[slug] não recebe o caminho, e o redirect do slug antigo
+// precisa dele inteiro — o token do link do lembrete mora ali.
+export const CABECALHO_DO_CAMINHO = "x-barchop-caminho";
+
 const SUBDOMINIO_DO_PAINEL = "painel";
 const FORMATO_DO_SLUG = new RegExp(PADRAO_SLUG);
 

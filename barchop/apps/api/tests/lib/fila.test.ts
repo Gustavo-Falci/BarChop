@@ -135,6 +135,23 @@ describe.each([
     expect(recebidos.sort()).toEqual([1, 2]);
   });
 
+  it("os dados chegam como JSON: Date vira string, como sai do banco", async () => {
+    // O pg-boss guarda os dados em JSONB. Se a de memória entregasse o
+    // objeto original, um tratador que lê `Date` passaria nos testes de
+    // rota e quebraria no worker de verdade.
+    const { fila, processar } = montar();
+    const trabalho = novoTrabalho();
+    const recebidos: unknown[] = [];
+    await fila.trabalhar(trabalho, async (dados) => {
+      recebidos.push(dados);
+    });
+
+    await fila.agendar(trabalho, { em: new Date("2026-10-10T13:00:00.000Z") });
+    await processar(trabalho);
+
+    expect(recebidos).toEqual([{ em: "2026-10-10T13:00:00.000Z" }]);
+  });
+
   it("sem chave não deduplica: dois agendamentos rodam os dois", async () => {
     // A política que faz a chave valer no pg-boss indexa a chave ausente
     // como '' — sem cuidado, todo trabalho sem chave colidiria com o
@@ -151,6 +168,22 @@ describe.each([
     await processar(trabalho);
 
     expect(recebidos.sort()).toEqual([1, 2]);
+  });
+});
+
+describe("fila do pg-boss", () => {
+  it("repete o trabalho que falhou com espera crescente, não na hora", async () => {
+    // O padrão do pg-boss é repetir 2 vezes sem espera nenhuma: uma queda
+    // de um minuto no provedor de e-mail queimaria as três tentativas em
+    // segundos, e o lembrete se perderia.
+    const fila = filaDoPgBoss(boss);
+    const trabalho = `teste-${randomUUID()}`;
+    await fila.agendar(trabalho, {}, { quando: new Date(Date.now() + 60 * 60 * 1000) });
+
+    const config = await boss.getQueue(trabalho);
+    expect(config?.retryLimit).toBeGreaterThanOrEqual(5);
+    expect(config?.retryDelay).toBeGreaterThanOrEqual(30);
+    expect(config?.retryBackoff).toBe(true);
   });
 });
 

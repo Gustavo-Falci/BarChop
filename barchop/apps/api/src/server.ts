@@ -1,6 +1,7 @@
 import { PgBoss } from "pg-boss";
 import { buildApp } from "./app";
 import { filaDoPgBoss, urlDoPg } from "./lib/fila";
+import { registrarLembrete } from "./lib/lembrete";
 
 // Entrypoint do bundle (ver tsup.config.ts). Toda a montagem da
 // aplicação está no app.ts, que os testes usam sem abrir porta.
@@ -29,6 +30,10 @@ async function main(): Promise<void> {
   app.addHook("onClose", async () => {
     await boss.stop();
   });
+
+  // Os workers depois do start: `work` num pg-boss parado lança. No
+  // buildApp rodaria antes, e os testes (fila de memória) não veriam.
+  await registrarLembrete(app.fila, { canal: app.canal, log: app.log });
 
   for (const sinal of ["SIGINT", "SIGTERM"] as const) {
     process.once(sinal, () => {

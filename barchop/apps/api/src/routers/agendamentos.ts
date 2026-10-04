@@ -9,6 +9,7 @@ import { travarQualquerUm } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { dataParaDate } from "../lib/horas";
+import { agendarLembrete } from "../lib/lembrete";
 import {
   PADRAO_DATA,
   PADRAO_HORA,
@@ -175,6 +176,9 @@ export function registrarRotasAgendamentos(app: App): void {
         })
       );
 
+      // Depois do commit, nunca dentro da transação (ver lib/lembrete.ts).
+      await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
+
       return reply.code(201).send(serializarAgendamentoComCliente(agendamento));
     }
   );
@@ -281,6 +285,13 @@ export function registrarRotasAgendamentos(app: App): void {
         include: INCLUDE_AGENDAMENTO,
       });
 
+      // Reativar um cancelado agenda de novo: o trabalho da criação pode
+      // já ter rodado e se descartado. Se ainda estiver na fila, a chave
+      // impede o segundo.
+      if (request.body.status !== undefined) {
+        await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
+      }
+
       return serializarAgendamentoComCliente(agendamento);
     }
   );
@@ -361,6 +372,8 @@ export function registrarRotasAgendamentosPublicas(app: App): void {
           });
         })
       );
+
+      await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
 
       // Só o agendamento recém-criado, sem o cliente e sem histórico:
       // quem sabe o telefone de alguém não pode puxar a agenda dessa

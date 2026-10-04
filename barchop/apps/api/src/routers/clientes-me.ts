@@ -8,6 +8,7 @@ import {
 } from "../lib/agendamento-alteravel";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { dataParaDate } from "../lib/horas";
+import { agendarLembrete } from "../lib/lembrete";
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { PADRAO_DATA, PADRAO_EMAIL, PADRAO_HORA, PADRAO_UUID } from "../lib/padroes";
 import { serializarAgendamento, serializarCliente } from "../lib/serializar";
@@ -231,6 +232,10 @@ export function registrarRotasClientesMe(app: App): void {
           });
         })
       );
+
+      // O agendamento novo ganha o seu; o do antigo se descarta ao reler
+      // o status cancelado.
+      await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
 
       return reply.code(201).send({
         agendamento: serializarAgendamento(agendamento),

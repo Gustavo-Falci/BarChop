@@ -45,3 +45,7 @@ reservados, num lugar só (`packages/formato`).
 
 ### Risks
 - Trocar o slug quebra links já enviados. Mitigação: redirect do slug antigo junto do middleware (Onda 1).
+  Feito no E3 da Onda 1: o middleware virou `proxy.ts` no Next 16 e só
+  decide pelo host, sem consultar a API; o redirect do slug antigo mora
+  no layout de `/[slug]`, que já busca o perfil (tabela `slug_antigo`,
+  307 com o caminho inteiro).

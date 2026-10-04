@@ -9,6 +9,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@barchop/formato": "workspace:*",
     "@barchop/types": "workspace:*"
   },
   "devDependencies": {

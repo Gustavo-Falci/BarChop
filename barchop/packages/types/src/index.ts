@@ -72,6 +72,13 @@ export interface BarbeariaSerializada {
 
 export type AntecedenciaDoLembrete = 2 | 12 | 24;
 
+// Os próximos horários livres de um serviço, na página pública: a união
+// do "qualquer um", em ordem, no máximo três.
+export interface ProximosHorariosDoServico {
+  servicoId: string;
+  horarios: { data: string; horaInicio: string }[];
+}
+
 // O que a página "Confirmar ou cancelar" lê pelo token do link do
 // lembrete. Traz a barbearia junto: a página se monta disto, e não de
 // uma busca pelo slug, que pode ter mudado depois que o e-mail saiu.

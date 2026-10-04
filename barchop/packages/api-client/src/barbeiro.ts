@@ -47,12 +47,20 @@ export interface EdicaoDaBarbearia {
   sobre?: string | null;
   // Quanto antes do horário sai o lembrete. Não move os já agendados.
   lembreteAntecedenciaHoras?: AntecedenciaDoLembrete;
+  // A página rica. Instagram é o @ sem o @; as listas são as de
+  // @barchop/formato. `null` limpa.
+  whatsapp?: string | null;
+  instagram?: string | null;
+  comodidades?: string[];
+  formasDePagamento?: string[];
 }
 
 export interface NovoServico {
   nome: string;
   duracaoMinutos: number;
   preco: string; // string, nunca number — ver ServicoSerializado
+  // Agrupa na página pública; vazio vira null na API.
+  categoria?: string | null;
 }
 
 export interface EdicaoDoServico extends Partial<NovoServico> {

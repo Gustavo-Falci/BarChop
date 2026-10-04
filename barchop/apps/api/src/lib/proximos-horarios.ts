@@ -1,10 +1,8 @@
+import type { ProximosHorariosDoServico } from "@barchop/types";
 import { agendaDoPeriodo, descartarPassados, PODE_ATENDER, type ClientePrisma } from "./disponibilidade";
 import { dataParaDate, dateParaData } from "./horas";
 
-export interface ProximosDoServico {
-  servicoId: string;
-  horarios: { data: string; horaInicio: string }[];
-}
+type ProximosDoServico = ProximosHorariosDoServico;
 
 const UM_DIA = 24 * 60 * 60 * 1000;
 

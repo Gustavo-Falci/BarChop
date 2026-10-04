@@ -1,3 +1,4 @@
+import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM } from "@barchop/formato";
 import type {
   AgendamentoComCliente,
   AgendamentoDoLembrete,
@@ -13,6 +14,7 @@ import type {
   NovoAgendamentoPublicoInput,
   PapelMembro,
   PerfilPublicoBarbearia,
+  ProximosHorariosDoServico,
   ServicoSerializado,
 } from "@barchop/types";
 import type {
@@ -121,6 +123,9 @@ export interface EstadoFalso {
   // do agendamento. Qualquer outro é 401, como na API; os vencidos, 410.
   lembretes?: Record<string, string>;
   lembretesVencidos?: string[];
+  // Os próximos horários da página pública. Sem semente, cada serviço
+  // ativo vem sem horário: calcular a agenda é da API, não do dublê.
+  proximosHorarios?: ProximosHorariosDoServico[];
 }
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {
@@ -131,6 +136,10 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
   endereco: "Rua das Tesouras, 123",
   logoUrl: null,
   sobre: "Barbearia de bairro desde 2012. Corte na tesoura e barba na navalha.",
+  whatsapp: null,
+  instagram: null,
+  comodidades: [],
+  formasDePagamento: [],
   horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
     diaSemana,
     horaAbertura: diaSemana === 0 ? null : "09:00",
@@ -149,8 +158,8 @@ const CLIENTE_PADRAO: ClienteSerializado = {
 };
 
 const SERVICOS_PADRAO: ServicoSerializado[] = [
-  { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true },
-  { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true },
+  { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: null },
+  { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true, categoria: null },
 ];
 
 // Dublê com estado em memória. Existe pra teste de tela rodar sem rede
@@ -169,6 +178,11 @@ type AgendamentoSemeado = Omit<AgendamentoSerializado, "barbeiro" | "presencaCon
 export type SementeFalsa = Partial<Omit<EstadoFalso, "agendamentos">> & {
   agendamentos?: AgendamentoSemeado[];
 };
+
+// Como a API: aparada, e vazia vira null.
+function limparCategoria(categoria: string | null | undefined): string | null {
+  return categoria?.trim() || null;
+}
 
 export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // Cópia de toda lista, tanto do padrão quanto da semente: o dublê faz
@@ -197,6 +211,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     lembreteAntecedenciaHoras: semente.lembreteAntecedenciaHoras ?? 24,
     lembretes: { ...(semente.lembretes ?? {}) },
     lembretesVencidos: [...(semente.lembretesVencidos ?? [])],
+    proximosHorarios: semente.proximosHorarios,
   };
 
   // O que o trigger da API dá a todo membro, criado na primeira leitura.
@@ -369,7 +384,12 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     if (indice < 0) {
       throw new ErroDaApi(404, "nao_encontrado", "serviço não encontrado");
     }
-    estado.servicos[indice] = { ...estado.servicos[indice], ...edicao };
+    const { categoria, ...resto } = edicao;
+    estado.servicos[indice] = {
+      ...estado.servicos[indice],
+      ...resto,
+      ...(categoria !== undefined ? { categoria: limparCategoria(categoria) } : {}),
+    };
     return estado.servicos[indice];
   }
 
@@ -406,17 +426,26 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // A barbearia como o painel a lê: com a antecedência do lembrete, que a
   // página pública não mostra.
   function barbeariaDoPainel(): BarbeariaDoPainel {
-    const { id, nome, slug, telefone, endereco, logoUrl, sobre } = estado.perfil;
-    return {
-      id,
-      nome,
-      slug,
-      telefone,
-      endereco,
-      logoUrl,
-      sobre,
-      lembreteAntecedenciaHoras: estado.lembreteAntecedenciaHoras ?? 24,
-    };
+    const { horarios: _horarios, barbeiros: _barbeiros, ...barbearia } = estado.perfil;
+    return { ...barbearia, lembreteAntecedenciaHoras: estado.lembreteAntecedenciaHoras ?? 24 };
+  }
+
+  // As recusas do schema da API pra página rica: 400, como lá.
+  function exigirPaginaValida(edicao: EdicaoDaBarbearia): void {
+    const invalida = (mensagem: string) => new ErroDaApi(400, "requisicao_invalida", mensagem);
+    if (edicao.instagram && !new RegExp(PADRAO_INSTAGRAM).test(edicao.instagram)) {
+      throw invalida("instagram é o @ sem o @, não uma URL");
+    }
+    for (const [lista, permitidos] of [
+      [edicao.comodidades, COMODIDADES],
+      [edicao.formasDePagamento, FORMAS_DE_PAGAMENTO],
+    ] as const) {
+      if (!lista) continue;
+      if (new Set(lista).size !== lista.length) throw invalida("item repetido");
+      if (lista.some((item) => !(permitidos as readonly string[]).includes(item))) {
+        throw invalida("item fora da lista");
+      }
+    }
   }
 
   // As mesmas respostas da API pro token do link do lembrete.
@@ -501,6 +530,13 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           throw new ErroDaApi(400, "requisicao_invalida", "e-mail inválido");
         }
         return novoAgendamento({ ...novo, origem: "cliente" });
+      },
+      async proximosHorarios(slug: string) {
+        exigirSlug(slug);
+        return (
+          estado.proximosHorarios ??
+          estado.servicos.filter((s) => s.ativo).map((s) => ({ servicoId: s.id, horarios: [] }))
+        );
       },
       async lembrete(token: string) {
         return doLembrete(estado.agendamentos[indiceDoLembrete(token)]);
@@ -727,6 +763,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         return barbeariaDoPainel();
       },
       async atualizarMinhaBarbearia(edicao: EdicaoDaBarbearia) {
+        exigirPaginaValida(edicao);
         const { lembreteAntecedenciaHoras, ...doPerfil } = edicao;
         if (lembreteAntecedenciaHoras !== undefined) {
           // O enum do schema da API: fora dele é 400.
@@ -753,6 +790,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           id: `s${estado.servicos.length + 1}`,
           ...novo,
           ativo: true,
+          categoria: limparCategoria(novo.categoria),
         };
         estado.servicos.push(servico);
         return servico;

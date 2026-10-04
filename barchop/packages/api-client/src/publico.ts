@@ -5,6 +5,7 @@ import type {
   DisponibilidadeDoMes,
   NovoAgendamentoPublicoInput,
   PerfilPublicoBarbearia,
+  ProximosHorariosDoServico,
   ServicoSerializado,
   SessaoCliente,
 } from "@barchop/types";
@@ -90,6 +91,15 @@ export function criarApiPublica(requisicao: Requisicao) {
         metodo: "POST",
         corpo: novo,
       });
+    },
+
+    // Os próximos 3 horários livres de cada serviço, pra página da
+    // barbearia.
+    async proximosHorarios(slug: string): Promise<ProximosHorariosDoServico[]> {
+      const resposta = await requisicao<{ servicos: ProximosHorariosDoServico[] }>(
+        `/barbearias/${slug}/proximos-horarios`
+      );
+      return resposta.servicos;
     },
 
     // O link do e-mail de lembrete: sem login, quem autoriza é o token.

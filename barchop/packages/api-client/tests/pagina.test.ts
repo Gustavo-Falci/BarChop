@@ -72,7 +72,7 @@ describe("dublê — página rica", () => {
       preco: "30.00",
       categoria: "  Barba ",
     });
-    const limpo = await falso.barbeiro.editarServico(barba.id, { categoria: "  " });
+    const limpo = await falso.barbeiro.atualizarServico(barba.id, { categoria: "  " });
 
     expect(barba.categoria).toBe("Barba");
     expect(limpo.categoria).toBeNull();

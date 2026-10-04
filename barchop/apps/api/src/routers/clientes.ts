@@ -227,6 +227,7 @@ export function registrarRotasClientes(app: App): void {
             take: 50,
             include: {
               servicos: { include: { servico: { select: { nome: true } } } },
+              barbeiro: { select: { id: true, nome: true } },
             },
           },
         },

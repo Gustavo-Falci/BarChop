@@ -27,6 +27,7 @@ function agendamento(
     status,
     origem: "barbeiro",
     observacoes: null,
+    barbeiro: { id: "bb1", nome: "Rafael" },
     servicos: [
       {
         servicoId: "s1",

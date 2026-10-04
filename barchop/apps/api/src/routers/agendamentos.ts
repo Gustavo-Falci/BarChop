@@ -1,6 +1,11 @@
 import { prisma } from "@barchop/database";
-import { criarAgendamento, INCLUDE_AGENDAMENTO } from "../lib/agendamento";
+import {
+  criarAgendamento,
+  escolherProfissional,
+  INCLUDE_AGENDAMENTO,
+} from "../lib/agendamento";
 import { garantirFuturo } from "../lib/agendamento-alteravel";
+import { travarQualquerUm } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { dataParaDate } from "../lib/horas";
@@ -106,7 +111,8 @@ const paramsSlug = {
 const corpoNovoAgendamentoPublico = {
   type: "object",
   additionalProperties: false,
-  required: ["barbeiroId", "servicoIds", "data", "horaInicio", "cliente"],
+  // Sem `barbeiroId` é "qualquer um": a API escolhe (escolherProfissional).
+  required: ["servicoIds", "data", "horaInicio", "cliente"],
   properties: {
     barbeiroId: { type: "string", pattern: PADRAO_UUID },
     servicoIds: {
@@ -307,6 +313,20 @@ export function registrarRotasAgendamentosPublicas(app: App): void {
             select: { id: true },
           });
 
+          // "Qualquer um": a trava vem antes de qualquer leitura da
+          // agenda, pra o pedido simultâneo ver o que este marcou. Com o
+          // profissional escolhido não há trava — a EXCLUDE decide.
+          let barbeiroId = resto.barbeiroId;
+          if (!barbeiroId) {
+            await travarQualquerUm(tx, barbearia.id, resto.data);
+            barbeiroId = await escolherProfissional(tx, {
+              barbeariaId: barbearia.id,
+              servicoIds: resto.servicoIds,
+              data: resto.data,
+              horaInicio: resto.horaInicio,
+            });
+          }
+
           // Telefone já cadastrado nesta barbearia reaproveita o
           // registro — é o que faz o barbeiro reconhecer o cliente
           // recorrente.
@@ -334,6 +354,7 @@ export function registrarRotasAgendamentosPublicas(app: App): void {
           // deixaria um cadastro fantasma.
           return criarAgendamento(tx, {
             ...resto,
+            barbeiroId,
             barbeariaId: barbearia.id,
             clienteId: cliente.id,
             origem: "cliente",

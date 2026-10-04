@@ -1,5 +1,6 @@
 import { prisma } from "@barchop/database";
 import { slugReservado } from "@barchop/formato";
+import { PODE_ATENDER } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { normalizarTelefone } from "../lib/telefone";
 import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
@@ -148,7 +149,8 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
           // fluxo público agenda com o primeiro da lista, e um membro
           // novo com nome em "A" tomaria os agendamentos do dono.
           barbeiros: {
-            where: { ativo: true, atende: true, senhaHash: { not: null } },
+            // O mesmo critério do "qualquer um" (lib/disponibilidade.ts).
+            where: PODE_ATENDER,
             select: { id: true, nome: true },
             orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
           },

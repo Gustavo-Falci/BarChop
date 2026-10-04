@@ -128,6 +128,9 @@ export interface AgendamentoSerializado {
   origem: string;
   observacoes: string | null;
   servicos: AgendamentoServicoSerializado[];
+  // Com quem. No "qualquer um" o cliente só sabe depois de marcar; a
+  // agenda da equipe desenha uma coluna por profissional.
+  barbeiro: { id: string; nome: string };
 }
 
 // As rotas do barbeiro devolvem o cliente junto porque a agenda mostra

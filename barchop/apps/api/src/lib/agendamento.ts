@@ -2,10 +2,12 @@ import type { Prisma } from "@barchop/database";
 import {
   aplicarBloqueios,
   caiEmBloqueio,
+  candidatosDoQualquerUm,
   carregarServicos,
   contextoDoDia,
   garantirBarbeiro,
   garantirServicosDoProfissional,
+  horariosDoProfissionalNoDia,
   horariosLivres,
 } from "./disponibilidade";
 import { ErroDeNegocio } from "./erro-negocio";
@@ -17,7 +19,58 @@ import { dataParaDate, horaParaDate, somarMinutos } from "./horas";
 export const INCLUDE_AGENDAMENTO = {
   servicos: { include: { servico: { select: { nome: true } } } },
   cliente: true,
+  // Com quem: o "qualquer um" só sabe depois de marcar, e a agenda da
+  // equipe desenha uma coluna por profissional.
+  barbeiro: { select: { id: true, nome: true } },
 } as const;
+
+// O "qualquer um" do fluxo público: entre os candidatos livres no
+// horário pedido, o que tem menos agendamentos no dia — espalha o
+// movimento pela equipe; empate fica com quem entrou primeiro. Roda
+// dentro da transação, depois de `travarQualquerUm`, e usa a mesma
+// função que montou os horários oferecidos.
+export async function escolherProfissional(
+  tx: Prisma.TransactionClient,
+  params: { barbeariaId: string; servicoIds: string[]; data: string; horaInicio: string }
+): Promise<string> {
+  const { barbeariaId, servicoIds, data, horaInicio } = params;
+  const { duracaoTotalMinutos } = await carregarServicos(tx, barbeariaId, servicoIds);
+
+  let dataDate: Date;
+  try {
+    dataDate = dataParaDate(data);
+  } catch {
+    throw new ErroDeNegocio(`a data ${data} não existe`, "data_invalida");
+  }
+
+  const candidatos = await candidatosDoQualquerUm(tx, barbeariaId, servicoIds);
+  const livres: string[] = [];
+  for (const barbeiroId of candidatos) {
+    const horarios = await horariosDoProfissionalNoDia(tx, {
+      barbeariaId,
+      barbeiroId,
+      data: dataDate,
+      duracaoTotalMinutos,
+    });
+    if (horarios.includes(horaInicio)) livres.push(barbeiroId);
+  }
+
+  if (livres.length === 0) {
+    throw new ErroDeNegocio("esse horário não está disponível", "horario_indisponivel");
+  }
+
+  const contagem = await tx.agendamento.groupBy({
+    by: ["barbeiroId"],
+    where: { barbeiroId: { in: livres }, data: dataDate, status: { not: "cancelado" } },
+    _count: { _all: true },
+  });
+  const doDia = (barbeiroId: string) =>
+    contagem.find((linha) => linha.barbeiroId === barbeiroId)?._count._all ?? 0;
+
+  // `livres` já vem na ordem de entrada: o reduce mantém o primeiro em
+  // caso de empate.
+  return livres.reduce((melhor, atual) => (doDia(atual) < doDia(melhor) ? atual : melhor));
+}
 
 export interface CriarAgendamentoParams {
   barbeariaId: string;

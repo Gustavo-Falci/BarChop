@@ -119,9 +119,12 @@ export function serializarAgendamento(agendamento: {
     duracaoNoMomento: number;
     servico: { nome: string };
   }[];
+  barbeiro: { id: string; nome: string };
 }): AgendamentoSerializado {
   return {
     id: agendamento.id,
+    // Com quem: no "qualquer um" o cliente só sabe depois de marcar.
+    barbeiro: { id: agendamento.barbeiro.id, nome: agendamento.barbeiro.nome },
     data: dateParaData(agendamento.data),
     horaInicio: dateParaHora(agendamento.horaInicio),
     horaFim: dateParaHora(agendamento.horaFim),

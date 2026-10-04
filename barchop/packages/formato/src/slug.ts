@@ -16,6 +16,9 @@ const SLUGS_RESERVADOS: ReadonlySet<string> = new Set([
   // rotas de conta
   "entrar", "sair", "cadastro", "cadastrar", "login", "logout", "signup",
   "registro", "conta", "minha-conta", "convite",
+  // rotas da página da barbearia: no host dela, `agendar.barchop.com.br/agendar`
+  // não diria se o caminho já traz o nome (apps/web/src/tenant/rota.ts)
+  "agendar", "lembrete",
   // site de marketing
   "blog", "precos", "planos", "gratis", "funcionalidades", "comparar",
   "sobre", "metodologia", "termos", "privacidade", "contato",

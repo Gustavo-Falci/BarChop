@@ -60,8 +60,8 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 | 🆕 Cadastro do dono | painel | Tela dividida: promessa e mini-painel à esquerda, formulário à direita, prévia do link | `admin…/register` |
 | 🆕 Onboarding | painel | Trilha de passos: barbearia → serviços → equipe → link → primeira reserva | trilha de 6 passos da central de ajuda |
 | ✅ Equipe | painel | Lista de profissionais com papel e status, convidar (bloco A) | Equipe |
-| 🔧 Profissional | painel | Perfil, foto, papel (dono, profissional, recepção), serviços que faz, jornada da semana — perfil, papel e "atende" no bloco A; foto, serviços e jornada no B4 | Equipe |
-| 🆕 Folgas e bloqueios | painel | Férias, almoço, horário bloqueado por profissional | bloqueio de horários e folgas |
+| 🔧 Profissional | painel | Perfil, foto, papel (dono, profissional, recepção), serviços que faz, jornada da semana — perfil, papel e "atende" no bloco A; jornada e serviços no B4; falta a foto (bloco E, com o upload) | Equipe |
+| ✅ Folgas e bloqueios | painel | Férias, almoço, horário bloqueado por profissional (`/painel/bloqueios`, bloco B) | bloqueio de horários e folgas |
 | ✅ Aceitar convite | painel | Profissional convidado define a senha e entra (`/painel/convite`, bloco A) | — |
 | 🔧 Painel do dia | painel | Previsto do dia, próximos clientes, por profissional | painel do dia |
 | 🔧 Agenda | painel | Colunas por profissional; bloqueios visíveis; profissional vê só a própria | agenda da equipe |

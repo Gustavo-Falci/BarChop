@@ -278,10 +278,21 @@ config compartilhada em `packages/config/eslint.mjs`.
   Fecha com o canal do WhatsApp (ADR-0004), quando a verificação da Meta
   sair do standby.
 - **O Novo agendamento do painel marca em quem está logado.** A tela
-  manda `barbeiroId: perfil.id` (`NovoAgendamento.tsx`): a recepção
-  marcaria na própria agenda, e ela nasce sem atender. Fecha no C3 do
-  bloco C, quando a tela escolhe o profissional; até lá, não convide
-  recepção numa barbearia em uso.
+  manda `barbeiroId: perfil.id` (`NovoAgendamento.tsx`). Desde o bloco
+  B a API recusa marcar em quem não atende (422
+  `profissional_nao_atende`), então a recepção recebe esse erro em vez
+  de marcar na própria agenda — mas ainda não consegue marcar pra
+  ninguém por essa tela. Fecha no C3, quando a tela escolhe o
+  profissional.
+- **O fluxo público mostra o catálogo inteiro e agenda com o primeiro
+  profissional.** Se o dono tirar um serviço desse profissional (tela
+  do membro), quem escolher o serviço vê "Não foi possível carregar a
+  agenda": a API responde 422 `servico_fora_do_profissional` e o
+  `EscolhaDaData` trata como falha genérica. Fecha no C2, com o passo
+  de escolher o profissional.
+- **A agenda do painel não desenha os bloqueios.** Eles valem (somem do
+  agendamento online, e marcar em cima dá 422 `horario_bloqueado`), mas
+  só aparecem na tela de Folgas. Fecha no C3.
 - **Convite e reenvio não têm limite de envio.** `POST /equipe` e
   `POST /equipe/:id/convite` mandam e-mail sem contador: só o dono
   autenticado chama, mas um dono pode usar a rota pra mandar e-mail a

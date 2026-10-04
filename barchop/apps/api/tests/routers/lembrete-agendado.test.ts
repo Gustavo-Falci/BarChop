@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { filaDeMemoria, type Fila, type FilaDeMemoria } from "../../src/lib/fila";
-import { momentoDoLembrete } from "../../src/lib/lembrete";
+import { agendarLembrete, instanteNaBarbearia, momentoDoLembrete } from "../../src/lib/lembrete";
 import { auth } from "../helpers/barbearia";
 import { criarClienteComToken } from "../helpers/cliente";
 import { QUINTA, proximoDiaDaSemana } from "../helpers/datas";
@@ -137,16 +137,43 @@ describe("lembrete agendado", () => {
     ]);
   });
 
-  it("momento do lembrete já passado ainda agenda: sai na hora (decisão do dono)", async () => {
-    // Marcar às 15h pras 18h com antecedência de 24 h: o lembrete não é
-    // pulado. Quem descarta é o tratador, e só se o horário já começou.
+  // As regras de "quando agendar" com o relógio injetado: a agenda de
+  // teste abre de segunda a sábado, das 9h às 18h, e "daqui a meia hora"
+  // nem sempre cai dentro dela.
+  async function agendamentoNoBanco() {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
+    const marcado = await marcarPeloPainel(app, agenda, { data: QUINTA, horaInicio: "10:00" });
+    const agendamento = await prisma.agendamento.findUniqueOrThrow({ where: { id: marcado.id } });
+    return { agendamento, fila: filaDeMemoria() };
+  }
+  const log = { info: () => {}, error: () => {} };
+  const inicio = () => instanteNaBarbearia(QUINTA, "10:00").getTime();
 
-    await marcarPeloPainel(app, agenda, { data: "2026-09-10", horaInicio: "10:00" });
+  it("momento do lembrete já passado ainda agenda: sai na hora (decisão do dono)", async () => {
+    // Marcar às 7h pras 10h com antecedência de 24 h: o lembrete não é
+    // pulado — o momento dele já passou, e o pg-boss roda na hora.
+    const { agendamento, fila } = await agendamentoNoBanco();
+    const tresHorasAntes = new Date(inicio() - 3 * 60 * 60 * 1000);
 
-    const [lembrete] = lembretesNaFila(app.fila);
-    expect(lembrete!.quando.getTime()).toBeLessThan(Date.now());
+    await agendarLembrete({ fila, log, agora: () => tresHorasAntes }, agendamento);
+
+    const [lembrete] = lembretesNaFila(fila);
+    expect(lembrete!.quando.getTime()).toBeLessThan(tresHorasAntes.getTime());
+  });
+
+  it("faltando menos de 1 h pro horário, não agenda (decisão do dono)", async () => {
+    // O cliente que já está na cadeira (o walk-in marcado pelo painel)
+    // receberia um "lembrete" segundos depois de sentar.
+    const { agendamento, fila } = await agendamentoNoBanco();
+
+    const meiaHoraAntes = new Date(inicio() - 30 * 60 * 1000);
+    await agendarLembrete({ fila, log, agora: () => meiaHoraAntes }, agendamento);
+    expect(lembretesNaFila(fila)).toEqual([]);
+
+    const umaHoraAntes = new Date(inicio() - 60 * 60 * 1000);
+    await agendarLembrete({ fila, log, agora: () => umaHoraAntes }, agendamento);
+    expect(lembretesNaFila(fila)).toHaveLength(1);
   });
 
   it("fila fora do ar não derruba o agendamento: ele já está gravado", async () => {

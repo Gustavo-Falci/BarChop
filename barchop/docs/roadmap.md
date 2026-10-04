@@ -223,8 +223,9 @@ o slug `painel` sombreado (`961d2f4`, lista de reservados no
 `@barchop/formato`); o painel lendo a própria barbearia pela rota
 pública e o slug sem troca (`GET /barbearias/me` e
 `PATCH /barbearias/me/slug`, com o campo "Link da barbearia" em
-Configurações). O link antigo para de responder na hora; o redirect
-dele vem com o tenant por subdomínio (Onda 1). E as duas rotas que
+Configurações). Desde o E3 da Onda 1 o link antigo leva ao novo: a tabela
+`slug_antigo` guarda todo nome que a barbearia já teve, e o layout de
+`/[slug]` redireciona com 307 levando o caminho inteiro. E as duas rotas que
 criam ou movem um agendamento pelo lado do cliente recusam data
 passada com 422 `horario_passado` (`garantirFuturo`); a criação manual
 pelo barbeiro continua aceitando, porque registrar um walk-in depois do
@@ -259,10 +260,20 @@ config compartilhada em `packages/config/eslint.mjs`.
   bem mais alto.
 - **Trocar o slug derruba a sessão dos clientes no navegador.** O token
   do cliente fica em `sessao.cliente.<slug>` (`apps/web/src/sessao/
-  armazenamento.ts`), e com o slug novo a página procura outra chave:
-  quem estava logado precisa entrar de novo. Fecha junto do redirect do
-  slug antigo, com o tenant por subdomínio (Onda 1) — o mais simples é
-  a chave passar a ser o id da barbearia.
+  armazenamento.ts`), e com o slug novo quem estava logado precisa
+  entrar de novo. A chave pelo id da barbearia, que esta dívida
+  propunha, **não** resolve com o tenant por host (E3): o
+  `localStorage` é por origem, e `novo.barchop.com.br` nunca enxerga o
+  que ficou em `antigo.barchop.com.br`, qualquer que seja a chave.
+  Aceito: troca de slug é rara, e o redirect leva a pessoa ao lugar
+  certo — ela só entra de novo. Fecharia com a sessão do cliente num
+  cookie do domínio `.barchop.com.br`.
+- **Um nome largado pode ser tomado por outra barbearia.** O slug atual
+  de qualquer barbearia ganha do antigo (E3): se a GR Barber trocar de
+  `gr-barber` pra `gr-barber-centro` e outra barbearia se cadastrar como
+  `gr-barber`, os links velhos da GR Barber passam a abrir a outra. O
+  aviso está no campo do link em Configurações. Fecharia com uma
+  quarentena do nome largado (ex.: 90 dias reservado pra quem largou).
 - **`POST /auth/signup` diz se um email já está cadastrado**, via o
   `409`. Quem quiser sondar a plataforma manda um slug livre e um email
   qualquer, e o código de resposta responde. O rate limiting que esta
@@ -356,6 +367,13 @@ config compartilhada em `packages/config/eslint.mjs`.
 - **Imagem trocada deixa arquivo órfão quando o apagar falha.** A troca
   apaga o antigo em melhor-esforço (falha só vai pro log). Uma limpeza
   periódica do bucket, contra as chaves que o banco referencia, fecha.
+- **O tenant por host precisa de configuração no G.** Sem
+  `NEXT_PUBLIC_URL_DO_SITE` no build do web, nada muda e as barbearias
+  continuam em `/<slug>`; sem `URL_DAS_BARBEARIAS` na API, o link do
+  lembrete aponta pro caminho no host do painel. Em produção: as duas
+  variáveis, o DNS coringa `*.barchop.com.br` e o Caddy repassando o
+  `Host` original (o proxy decide por ele). O `NEXT_PUBLIC_` é embutido
+  no build — a imagem do web é por ambiente.
 - **O EXIF só sai pelo navegador.** Quem tira os metadados (GPS
   inclusive) é a regravação no canvas da tela; um envio que pule a tela
   chega com eles. Aceitável enquanto só o dono envia; HEIC do iPhone não

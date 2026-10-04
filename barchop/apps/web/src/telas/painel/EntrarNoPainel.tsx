@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
-import { PADRAO_SLUG, slugReservado } from "@barchop/formato";
 import type { SessaoBarbeiro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
@@ -14,34 +13,24 @@ import {
   sessaoDaBarbearia,
   sessaoDoBarbeiro,
 } from "../../sessao/armazenamento";
-import { enderecoDaBarbearia } from "../../tenant/endereco";
 import estilos from "./EntrarNoPainel.module.css";
 import { RecuperarSenhaDoPainel } from "./RecuperarSenhaDoPainel";
 
-// O mesmo pattern e a mesma lista de reservados que a API usa (vêm do
-// @barchop/formato). Barrar aqui mantém o erro no campo, em vez de
-// voltar 400 do AJV em inglês ou 422 genérico.
-const FORMATO_DO_SLUG = new RegExp(PADRAO_SLUG);
-
 // Os mesmos limites dos schemas da API. Cortar na digitação evita o 400
 // que voltaria sem dizer qual campo passou do tamanho.
-const NOME_MAX = 120;
-const SLUG_MAX = 80;
 const EMAIL_MAX = 160;
 const SENHA_MAX = 200;
 
+// Só o login. O cadastro do dono era um modo desta tela e virou a dele,
+// /painel/cadastro (Onda 1, F1): quem chega pra entrar não precisa ler
+// o que a barbearia ganha, e quem chega pra criar precisa.
 export function EntrarNoPainel() {
   const router = useRouter();
   const api = useApiDoPainel();
 
-  const [criando, setCriando] = useState(false);
   const [recuperando, setRecuperando] = useState(false);
-  const [nomeDaBarbearia, setNomeDaBarbearia] = useState("");
-  const [slug, setSlug] = useState("");
-  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [erroSlug, setErroSlug] = useState<string | undefined>();
   // Erros de e-mail e senha são do campo, não da tentativa. Com o Enter
   // enviando o formulário, envio com campo vazio ficou mais fácil de
   // acontecer — e sem estes dois ele ia até a API e voltava 400 do AJV
@@ -52,56 +41,10 @@ export function EntrarNoPainel() {
   const [aviso, setAviso] = useState<string | undefined>();
   const [enviando, setEnviando] = useState(false);
 
-  const formulario = useRef<HTMLFormElement>(null);
-  // Só as trocas de modo movem o foco; a primeira montagem é do
-  // `autoFocus` do e-mail. Sem esta trava, o efeito abaixo roda na
-  // montagem e briga com ele.
-  const trocouDeModo = useRef(false);
-
-  function trocarModo() {
-    trocouDeModo.current = true;
-    setCriando((atual) => !atual);
-    setAviso(undefined);
-    setErroSlug(undefined);
-    setErroEmail(undefined);
-    setErroSenha(undefined);
-  }
-
-  // Trocar de modo troca os campos da tela, e o foco não acompanha
-  // sozinho: indo pro "criar", três campos novos nascem ACIMA de onde o
-  // foco está, e quem usa teclado precisa voltar de shift+tab. Voltando
-  // pro "entrar", o campo focado pode ser um dos que acabaram de
-  // desmontar — e aí o foco cai no <body>, que é a versão silenciosa do
-  // mesmo problema.
-  //
-  // Busca por `name` no formulário, e não por ref no Campo: o Campo
-  // gera o próprio `id` com useId e não encaminha ref, então passar um
-  // `id` de fora quebraria o `htmlFor` do rótulo.
-  useEffect(() => {
-    if (!trocouDeModo.current) return;
-    trocouDeModo.current = false;
-
-    const alvo = formulario.current?.querySelector<HTMLInputElement>(
-      criando ? '[name="nomeDaBarbearia"]' : '[name="email"]'
-    );
-    alvo?.focus();
-  }, [criando]);
-
   async function submeter() {
     setAviso(undefined);
-    setErroSlug(undefined);
     setErroEmail(undefined);
     setErroSenha(undefined);
-
-    if (criando && !FORMATO_DO_SLUG.test(slug)) {
-      setErroSlug("Use letras minúsculas, números e hífen, de 3 a 80 caracteres");
-      return;
-    }
-
-    if (criando && slugReservado(slug)) {
-      setErroSlug("Esse link é reservado pelo BarChop. Escolha outro");
-      return;
-    }
 
     // O pattern da API exige algo antes e depois do "@"; barrar o vazio
     // aqui é o que mantém a mensagem em português e no campo certo.
@@ -110,16 +53,10 @@ export function EntrarNoPainel() {
       return;
     }
 
+    // Sem mínimo de tamanho: o login aceita qualquer senha já cadastrada
+    // e exigir 8 recusaria quem cadastrou antes desse mínimo existir.
     if (!senha) {
       setErroSenha("Informe sua senha");
-      return;
-    }
-
-    // Só na criação: o login aceita qualquer senha já cadastrada e
-    // responde nao_autenticado se ela não bater. Exigir 8 no login
-    // recusaria na tela quem cadastrou antes desse mínimo existir.
-    if (criando && senha.length < 8) {
-      setErroSenha("A senha deve ter pelo menos 8 caracteres");
       return;
     }
 
@@ -127,12 +64,7 @@ export function EntrarNoPainel() {
 
     let sessao: SessaoBarbeiro | undefined;
     try {
-      sessao = criando
-        ? await api.barbeiro.signup({
-            barbearia: { nome: nomeDaBarbearia.trim(), slug },
-            barbeiro: { nome: nome.trim(), email, senha },
-          })
-        : await api.barbeiro.login({ email, senha });
+      sessao = await api.barbeiro.login({ email, senha });
     } catch (causa) {
       const erro = causa as ErroDaApi;
       // `credenciais_invalidas` é o código das DUAS rotas de login desde
@@ -144,10 +76,6 @@ export function EntrarNoPainel() {
       // da API, não no falso.ts.
       if (erro.codigo === "credenciais_invalidas") {
         setAviso("E-mail ou senha incorretos.");
-      } else if (erro.codigo === "conflito") {
-        // Sem dizer qual dos dois: a sondagem que o 409 já permite é
-        // dívida conhecida, e não vale ampliá-la na tela.
-        setAviso("Esse e-mail ou esse endereço já está em uso.");
       } else if (erro.codigo === "tentativas_excedidas") {
         // Dizer que foi o limite, e não "senha incorreta", é o que evita
         // a pessoa certa trocar uma senha que estava certa. A mensagem
@@ -183,7 +111,7 @@ export function EntrarNoPainel() {
 
   return (
     <main className={estilos.pagina}>
-      <h1>{criando ? "Criar barbearia" : "Entrar no painel"}</h1>
+      <h1>Entrar no painel</h1>
 
       {/* <form> e não um <div> com onClick no botão: sem ele o Enter não
           envia — num formulário de dois campos, é como quase todo mundo
@@ -194,7 +122,6 @@ export function EntrarNoPainel() {
           mostraria a bolha dela, na língua dela, em vez das mensagens
           que esta tela escolheu. */}
       <form
-        ref={formulario}
         className={estilos.formulario}
         noValidate
         onSubmit={(evento) => {
@@ -202,53 +129,6 @@ export function EntrarNoPainel() {
           void submeter();
         }}
       >
-        {criando ? (
-          <>
-            <Campo
-              rotulo="Nome da barbearia"
-              name="nomeDaBarbearia"
-              autoComplete="organization"
-              maxLength={NOME_MAX}
-              valor={nomeDaBarbearia}
-              onChange={setNomeDaBarbearia}
-            />
-            {/* A prévia do link entra no `apoio`, e não num <p> solto
-                embaixo: solta, ela ficava a 24px do campo que descreve e
-                a 24px do campo seguinte, então grudava visualmente no
-                errado. No `apoio` ela pertence ao campo — e ganha de
-                graça o `aria-describedby`, que faz o leitor de tela
-                anunciar o endereço junto do rótulo.
-
-                É este endereço que vai no WhatsApp; mostrar o resultado
-                evita descobrir depois que ficou errado.
-
-                `autoComplete="off"`: o slug não é dado que o navegador
-                guarde, e oferecer o histórico de outro campo aqui só
-                atrapalharia. */}
-            <Campo
-              rotulo="Endereço do link"
-              apoio={`O link dos seus clientes: ${enderecoDaBarbearia(slug || "sua-barbearia", process.env.NEXT_PUBLIC_URL_DO_SITE)}`}
-              name="slug"
-              autoComplete="off"
-              maxLength={SLUG_MAX}
-              valor={slug}
-              onChange={(proximo) => {
-                setSlug(proximo);
-                setErroSlug(undefined);
-              }}
-              erro={erroSlug}
-            />
-            <Campo
-              rotulo="Seu nome"
-              name="nome"
-              autoComplete="name"
-              maxLength={NOME_MAX}
-              valor={nome}
-              onChange={setNome}
-            />
-          </>
-        ) : null}
-
         {/* `autoComplete="username"` e não "email": é o token que faz o
             gerenciador de senhas emparelhar este campo com o de senha
             abaixo. Com "email" ele trata o campo como contato solto e
@@ -270,15 +150,11 @@ export function EntrarNoPainel() {
           }}
           erro={erroEmail}
         />
-        {/* O token muda com o modo: "new-password" faz o navegador
-            oferecer uma senha forte e salvar a nova, "current-password"
-            faz ele preencher a que já está guardada. Um valor fixo
-            erraria metade das vezes. */}
         <Campo
           rotulo="Senha"
           type="password"
           name="senha"
-          autoComplete={criando ? "new-password" : "current-password"}
+          autoComplete="current-password"
           maxLength={SENHA_MAX}
           valor={senha}
           onChange={(proximo) => {
@@ -288,51 +164,40 @@ export function EntrarNoPainel() {
           erro={erroSenha}
         />
 
-        {/* Só no login: quem está criando a barbearia ainda não tem
-            senha pra esquecer. `type="button"` pelo mesmo motivo da
-            troca de modo lá embaixo — dentro do <form>, sem type, ele
-            enviaria o login. */}
-        {criando ? null : (
-          <p className={estilos.troca}>
-            <button
-              type="button"
-              className={estilos.link}
-              onClick={() => setRecuperando(true)}
-            >
-              Esqueci a senha
-            </button>
-            {" · "}
-            {/* <Link> e não <button>: este sim navega, pra outra tela.
-                É a porta de quem recebeu o convite sem link — a API só
-                põe o link no e-mail quando tem URL_DO_PAINEL. */}
-            <Link href="/painel/convite" className={estilos.link}>
-              Recebi um convite
-            </Link>
-          </p>
-        )}
+        {/* `type="button"`: dentro do <form>, sem type, ele enviaria o
+            login. */}
+        <p className={estilos.troca}>
+          <button
+            type="button"
+            className={estilos.link}
+            onClick={() => setRecuperando(true)}
+          >
+            Esqueci a senha
+          </button>
+          {" · "}
+          {/* <Link> e não <button>: este sim navega, pra outra tela.
+              É a porta de quem recebeu o convite sem link — a API só
+              põe o link no e-mail quando tem URL_DO_PAINEL. */}
+          <Link href="/painel/convite" className={estilos.link}>
+            Recebi um convite
+          </Link>
+        </p>
 
         {aviso ? <Aviso>{aviso}</Aviso> : null}
 
         <div className={estilos.acoes}>
           <Botao type="submit" carregando={enviando}>
-            {criando ? "Criar e entrar" : "Entrar"}
+            Entrar
           </Botao>
         </div>
 
-        {/* A troca de modo saiu de dentro do bloco de ações. Como Botao
-            de contorno ela tinha exatamente o tamanho, a borda e a
-            sombra do "Entrar" logo acima — dois blocos iguais
-            empilhados, e o olho lia os dois como formas de enviar o
-            formulário. Só que ela não envia nada: troca o que a tela
-            pede. Como frase com link, a hierarquia passa a dizer isso.
-
-            `type="button"` porque está DENTRO do <form>, e um <button>
-            sem type é submit — trocar de modo enviaria o formulário. */}
+        {/* Frase com link, abaixo da ação principal: não é uma segunda
+            forma de enviar o formulário, é a porta pra outra tela. */}
         <p className={estilos.troca}>
-          {criando ? "Já tem conta?" : "Ainda não tem uma barbearia aqui?"}{" "}
-          <button type="button" className={estilos.link} onClick={trocarModo}>
-            {criando ? "Entrar" : "Criar barbearia"}
-          </button>
+          Ainda não tem uma barbearia aqui?{" "}
+          <Link href="/painel/cadastro" className={estilos.link}>
+            Criar barbearia
+          </Link>
         </p>
       </form>
     </main>

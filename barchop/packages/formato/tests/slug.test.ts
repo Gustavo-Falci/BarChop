@@ -32,6 +32,14 @@ describe("slugReservado", () => {
     }
   });
 
+  it("reserva as rotas da página da barbearia", () => {
+    // No host da barbearia, `/agendar` é dela; `agendar.barchop.com.br/agendar`
+    // não saberia se o caminho já traz o nome ou não (proxy.ts do web).
+    for (const slug of ["agendar", "lembrete", "entrar", "minha-conta"]) {
+      expect(slugReservado(slug)).toBe(true);
+    }
+  });
+
   it("libera o slug de uma barbearia comum", () => {
     expect(slugReservado("gr-barber")).toBe(false);
     expect(slugReservado("barbearia-do-ze")).toBe(false);

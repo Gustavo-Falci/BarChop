@@ -27,6 +27,8 @@ Decisões tomadas antes do RED (2026-10-04):
 - **C2**: perfil público com `servicoIds` por barbeiro; passo `/agendar/profissional` entre serviços e data, `?profissional=<id>` (ausente = qualquer um), **por último** no `montarQuery`; revalidado no passo de data (fora da lista ou não faz o serviço → `replace` pro passo do profissional); pulado quando só um candidato; mensagem quando ninguém faz a combinação; remarcar leva `profissional=<barbeiro.id do agendamento>`.
 - **C3**: seletor de profissional no Novo agendamento e colunas por profissional na Agenda (com bloqueios), em pares RED/GREEN separados.
 
+Progresso: **C1 feito** (`bb61d2e`): `candidatosDoQualquerUm`, `horariosDoProfissionalNoDia`, `diasComVaga`, `travarQualquerUm`/`chaveDoQualquerUm` e `PODE_ATENDER` em `lib/disponibilidade.ts`; `escolherProfissional` em `lib/agendamento.ts`; teste de concorrência prova a trava (sem ela, 409). Dublê aceita agendamento semeado sem `barbeiro` (`SementeFalsa`), completa com `bb1`, e o conflito passou a ser por profissional. Suítes: API 491, web 492, api-client 75. **Próximo: C2** (fluxo público).
+
 ### Bloco A (histórico)
 Cada tarefa com commit RED e GREEN:
 

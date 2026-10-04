@@ -1,5 +1,5 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
-import { prisma } from "@barchop/database";
+import { prisma, type Prisma } from "@barchop/database";
 
 // O código de verificação que vai pro telefone (cliente) ou pro e-mail
 // (barbeiro) e volta pra provar posse do destino — no primeiro acesso e
@@ -8,8 +8,13 @@ import { prisma } from "@barchop/database";
 // Pro cliente, primeiro acesso e esqueci a senha são a mesma coisa —
 // provar o telefone e definir a senha —, então são uma finalidade só.
 // O convite do membro da equipe é outra: vale mais tempo, e por isso
-// não pode servir de redefinição de senha (nem o contrário).
-export type Finalidade = "senha_cliente" | "senha_barbeiro" | "convite_profissional";
+// não pode servir de redefinição de senha (nem o contrário). O cadastro
+// do dono é outra ainda: prova o e-mail antes de a conta existir.
+export type Finalidade =
+  | "senha_cliente"
+  | "senha_barbeiro"
+  | "convite_profissional"
+  | "cadastro_dono";
 
 export interface AlvoDoCodigo {
   finalidade: Finalidade;
@@ -91,12 +96,18 @@ export async function emitirCodigo(
 // true uma vez só por código. Errar gasta tentativa; vencido, esgotado
 // ou já usado é sempre false — quem chama não precisa (e não deve)
 // distinguir os casos pra quem está do outro lado.
+//
+// `db` deixa consumir dentro da transação de quem cria algo com o
+// código (o signup): se a criação falha, o código volta a valer. Quem
+// passa a transação NÃO pode lançar quando o código não confere — o
+// rollback desfaria a tentativa gasta, e o código se chutaria sem fim.
 export async function consumirCodigo(
   alvo: AlvoDoCodigo,
   codigo: string,
-  agora: Date = new Date()
+  agora: Date = new Date(),
+  db: Prisma.TransactionClient = prisma
 ): Promise<boolean> {
-  const ativo = await prisma.codigoVerificacao.findFirst({
+  const ativo = await db.codigoVerificacao.findFirst({
     where: {
       ...ondeEstaOAlvo(alvo),
       usadoEm: null,
@@ -110,7 +121,7 @@ export async function consumirCodigo(
   if (!confere(codigo, ativo.codigoHash)) {
     // Predicado no próprio update: duas tentativas erradas simultâneas
     // não podem, as duas, ler 4 e gravar 5.
-    await prisma.codigoVerificacao.updateMany({
+    await db.codigoVerificacao.updateMany({
       where: { id: ativo.id, tentativas: { lt: MAX_TENTATIVAS } },
       data: { tentativas: { increment: 1 } },
     });
@@ -120,7 +131,7 @@ export async function consumirCodigo(
   // Marcar usado com `usadoEm: null` no predicado é o que decide a
   // corrida entre dois consumos do mesmo código: só um update encontra a
   // linha ainda livre.
-  const marcado = await prisma.codigoVerificacao.updateMany({
+  const marcado = await db.codigoVerificacao.updateMany({
     where: { id: ativo.id, usadoEm: null },
     data: { usadoEm: agora },
   });

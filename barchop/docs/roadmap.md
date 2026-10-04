@@ -274,14 +274,14 @@ config compartilhada em `packages/config/eslint.mjs`.
   `gr-barber`, os links velhos da GR Barber passam a abrir a outra. O
   aviso está no campo do link em Configurações. Fecharia com uma
   quarentena do nome largado (ex.: 90 dias reservado pra quem largou).
-- **`POST /auth/signup` diz se um email já está cadastrado**, via o
-  `409`. Quem quiser sondar a plataforma manda um slug livre e um email
-  qualquer, e o código de resposta responde. O rate limiting que esta
-  dívida esperava chegou (`apps/api/src/lib/limites.ts`): sondar em
-  série custa, porque o signup de barbearia aceita 5 por hora por IP. O
-  buraco em si continua aberto — cada tentativa, dentro do orçamento,
-  ainda responde se aquele email existe. Fechar de verdade é verificação
-  de email, que só faz sentido junto do canal de mensagem do passo 4.
+- **O cadastro do dono depende do e-mail em produção.** Desde o F3 da
+  Onda 1 o signup exige o código que chega no e-mail
+  (`POST /auth/cadastro/codigo`) — o que fechou a dívida do `409` que
+  dizia se um e-mail estava cadastrado: a rota do código responde igual
+  pros dois casos, e e-mail tomado nunca recebe código. Sem
+  `CANAL_DE_MENSAGEM=email` e o Resend com o domínio verificado,
+  ninguém consegue se cadastrar: no G, testar um cadastro de ponta a
+  ponta antes de divulgar o link.
 - **O telefone do cliente não recebe código.** Desde a Onda 1 o canal
   real é o e-mail (`lib/canal-email.ts`, Resend, com
   `CANAL_DE_MENSAGEM=email`), e o cliente entra e recupera a senha por

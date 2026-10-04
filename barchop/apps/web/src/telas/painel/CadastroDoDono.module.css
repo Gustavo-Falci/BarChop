@@ -172,3 +172,24 @@
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
+
+/* Os controles do passo do código ("Reenviar", "Trocar e-mail") são
+   <button>, não navegação: o reset tira a cara de botão e deixa a do
+   link ao lado. */
+button.link {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.enviado {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+.enviado strong {
+  color: var(--cor-ink);
+  overflow-wrap: anywhere;
+}

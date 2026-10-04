@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app";
-import { criarBarbeariaComToken } from "../helpers/barbearia";
+import { criarBarbeariaComToken, comCodigo } from "../helpers/barbearia";
 import { definirSenhaComCodigo } from "../helpers/cliente";
 import type { App } from "../../src/tipos";
 
@@ -108,10 +108,10 @@ describe("limite de tentativas de login", () => {
     const resposta = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         barbearia: { nome: "Barbearia Nova", slug: "barbearia-nova" },
         barbeiro: { nome: "Novo", email: "novo@exemplo.com", senha: SENHA },
-      },
+      }),
     });
 
     expect(resposta.statusCode).toBe(201);
@@ -129,14 +129,14 @@ describe("limite de signup de barbearia", () => {
       const resposta = await app.inject({
         method: "POST",
         url: "/auth/signup",
-        payload: {
+        payload: await comCodigo({
           barbearia: { nome: `Barbearia ${indice}`, slug: `barbearia-${indice}` },
           barbeiro: {
             nome: `Barbeiro ${indice}`,
             email: `barbeiro-${indice}@exemplo.com`,
             senha: SENHA,
           },
-        },
+        }),
       });
       expect(resposta.statusCode).toBe(201);
     }
@@ -144,10 +144,10 @@ describe("limite de signup de barbearia", () => {
     const bloqueado = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         barbearia: { nome: "Barbearia Extra", slug: "barbearia-extra" },
         barbeiro: { nome: "Extra", email: "extra@exemplo.com", senha: SENHA },
-      },
+      }),
     });
 
     expect(bloqueado.statusCode).toBe(429);

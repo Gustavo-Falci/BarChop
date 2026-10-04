@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { decodificarPayload } from "../helpers/decodificar-token";
+import { comCodigo } from "../helpers/barbearia";
 
 const CORPO_VALIDO = {
   barbearia: { nome: "Barbearia do Gu", slug: "barbearia-do-gu" },
@@ -14,7 +15,7 @@ describe("POST /auth/signup", () => {
     const resposta = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: CORPO_VALIDO,
+      payload: await comCodigo(CORPO_VALIDO),
     });
 
     expect(resposta.statusCode).toBe(201);
@@ -36,7 +37,7 @@ describe("POST /auth/signup", () => {
     const resposta = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: CORPO_VALIDO,
+      payload: await comCodigo(CORPO_VALIDO),
     });
 
     // O signup assina o token por conta própria, não reaproveita o do
@@ -55,7 +56,7 @@ describe("POST /auth/signup", () => {
     const resposta = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: CORPO_VALIDO,
+      payload: await comCodigo(CORPO_VALIDO),
     });
 
     expect(resposta.body).not.toContain("senhaHash");
@@ -66,7 +67,7 @@ describe("POST /auth/signup", () => {
 
   it("guarda a senha com hash, nunca em texto puro", async () => {
     const app = buildApp();
-    await app.inject({ method: "POST", url: "/auth/signup", payload: CORPO_VALIDO });
+    await app.inject({ method: "POST", url: "/auth/signup", payload: await comCodigo(CORPO_VALIDO) });
 
     const barbeiro = await prisma.barbeiro.findFirstOrThrow();
     expect(barbeiro.senhaHash).not.toBe("senha-forte-123");
@@ -80,10 +81,10 @@ describe("POST /auth/signup", () => {
     const resposta = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         ...CORPO_VALIDO,
         barbearia: { nome: "Teste", slug: "Slug Com Espaço" },
-      },
+      }),
     });
 
     expect(resposta.statusCode).toBe(400);
@@ -98,10 +99,10 @@ describe("POST /auth/signup", () => {
     const resposta = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         ...CORPO_VALIDO,
         barbearia: { nome: "Teste", slug: "painel" },
-      },
+      }),
     });
 
     expect(resposta.statusCode).toBe(422);
@@ -116,10 +117,10 @@ describe("POST /auth/signup", () => {
     const resposta = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         ...CORPO_VALIDO,
         barbeiro: { ...CORPO_VALIDO.barbeiro, senha: "curta" },
-      },
+      }),
     });
 
     expect(resposta.statusCode).toBe(400);
@@ -129,15 +130,15 @@ describe("POST /auth/signup", () => {
 
   it("recusa slug já usado, com 409", async () => {
     const app = buildApp();
-    await app.inject({ method: "POST", url: "/auth/signup", payload: CORPO_VALIDO });
+    await app.inject({ method: "POST", url: "/auth/signup", payload: await comCodigo(CORPO_VALIDO) });
 
     const segunda = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         barbearia: { nome: "Outra", slug: "barbearia-do-gu" },
         barbeiro: { nome: "Outro", email: "outro@exemplo.com", senha: "senha-forte-123" },
-      },
+      }),
     });
 
     expect(segunda.statusCode).toBe(409);
@@ -147,17 +148,17 @@ describe("POST /auth/signup", () => {
 
   it("não deixa barbearia órfã quando o barbeiro falha", async () => {
     const app = buildApp();
-    await app.inject({ method: "POST", url: "/auth/signup", payload: CORPO_VALIDO });
+    await app.inject({ method: "POST", url: "/auth/signup", payload: await comCodigo(CORPO_VALIDO) });
 
     // Mesmo email, slug diferente: a barbearia passa, o barbeiro
     // esbarra no unique de email. A transação tem que desfazer as duas.
     const segunda = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         barbearia: { nome: "Outra", slug: "outra-barbearia" },
         barbeiro: { ...CORPO_VALIDO.barbeiro, nome: "Outro" },
-      },
+      }),
     });
 
     expect(segunda.statusCode).toBe(409);

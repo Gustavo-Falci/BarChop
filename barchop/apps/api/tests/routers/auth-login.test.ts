@@ -4,6 +4,7 @@ import { buildApp } from "../../src/app";
 import { conferirSenha, obterHashDescartavel } from "../../src/lib/senha";
 import { decodificarPayload } from "../helpers/decodificar-token";
 import type { App } from "../../src/tipos";
+import { comCodigo } from "../helpers/barbearia";
 
 const CADASTRO = {
   barbearia: { nome: "Barbearia do Gu", slug: "barbearia-do-gu" },
@@ -11,7 +12,7 @@ const CADASTRO = {
 };
 
 async function cadastrar(app: App) {
-  await app.inject({ method: "POST", url: "/auth/signup", payload: CADASTRO });
+  await app.inject({ method: "POST", url: "/auth/signup", payload: await comCodigo(CADASTRO) });
 }
 
 describe("POST /auth/login", () => {
@@ -112,10 +113,10 @@ describe("POST /auth/login", () => {
     await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         ...CADASTRO,
         barbeiro: { ...CADASTRO.barbeiro, email: "Gu@Exemplo.com" },
-      },
+      }),
     });
 
     // A coluna é VARCHAR com unique simples: sem normalizar nos dois

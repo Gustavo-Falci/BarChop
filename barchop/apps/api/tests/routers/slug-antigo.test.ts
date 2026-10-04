@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app";
-import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
+import { auth, criarBarbeariaComToken, comCodigo } from "../helpers/barbearia";
 
 // Trocar o link não pode quebrar o que já circulou: o link antigo foi
 // pro Instagram, pro WhatsApp e pros e-mails de lembrete. A rota pública
@@ -69,10 +69,10 @@ describe("slug antigo", () => {
     const dois = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         barbearia: { nome: "Barbearia dois", slug: "barbearia-um" },
         barbeiro: { nome: "Barbeiro dois", email: "dois@exemplo.com", senha: "senha-forte-123" },
-      },
+      }),
     });
 
     expect(dois.statusCode).toBe(201);

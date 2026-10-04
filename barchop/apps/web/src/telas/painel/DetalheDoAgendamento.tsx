@@ -23,6 +23,17 @@ export function DetalheDoAgendamento() {
   const api = useApiDoPainel();
   const agendamento = useRequisicao(() => api.barbeiro.agendamento(id), [id]);
 
+  // O wa.me do "lembrar pelo WhatsApp", buscado já ao carregar: vira um
+  // <a> de verdade. Buscar no clique e abrir com window.open depois do
+  // await perde o gesto do usuário, e o navegador bloqueia a janela.
+  // Só pra agendamento de pé — a API recusa os outros com 422.
+  const status = agendamento.dados?.status;
+  const lembravel = status === "pendente" || status === "confirmado";
+  const whatsapp = useRequisicao(
+    () => (lembravel ? api.barbeiro.lembreteWhatsApp(id) : Promise.resolve(null)),
+    [id, lembravel]
+  );
+
   const [observacoes, setObservacoes] = useState("");
   const [aviso, setAviso] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
@@ -88,6 +99,20 @@ export function DetalheDoAgendamento() {
         <span className={estilos.preco}>{formatarPreco((total / 100).toFixed(2))}</span>
       </p>
       <Chip tom="neutro">agendado pelo {atual.origem}</Chip>
+      {atual.presencaConfirmadaEm ? <Chip>✓ confirmou presença</Chip> : null}
+
+      {/* noreferrer além do noopener: o WhatsApp não precisa saber de
+          qual tela do painel o link saiu. */}
+      {lembravel && whatsapp.dados ? (
+        <a
+          className={estilos.whatsapp}
+          href={whatsapp.dados}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Lembrar pelo WhatsApp
+        </a>
+      ) : null}
 
       <section>
         <h2>Status</h2>

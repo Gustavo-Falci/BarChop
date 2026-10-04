@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
-import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
+import { auth, criarBarbeariaComToken, comCodigo } from "../helpers/barbearia";
 
 // Onda 1, bloco A: a barbearia deixa de ser "um barbeiro só" e vira
 // equipe. Cada membro tem papel (dono, profissional, recepção) e diz se
@@ -26,10 +26,10 @@ describe("papel do membro da equipe", () => {
     const signup = await app.inject({
       method: "POST",
       url: "/auth/signup",
-      payload: {
+      payload: await comCodigo({
         barbearia: { nome: "Barbearia do Gu", slug: "barbearia-do-gu" },
         barbeiro: { nome: "Gustavo", email: "gu@exemplo.com", senha: "senha-forte-123" },
-      },
+      }),
     });
     expect(signup.json().barbeiro.papel).toBe("dono");
 

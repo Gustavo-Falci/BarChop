@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CODIGO_DO_CLIENTE_FALSO, criarApiClientFalso, ErroDaApi } from "../src/index";
+import { CODIGO_DO_CADASTRO_FALSO, CODIGO_DO_CLIENTE_FALSO, criarApiClientFalso, ErroDaApi } from "../src/index";
 
 describe("criarApiClientFalso", () => {
   it("devolve o perfil semeado, no formato do client real", async () => {
@@ -187,11 +187,24 @@ describe("dublê — escopo do barbeiro", () => {
     const sessao = await falso.barbeiro.signup({
       barbearia: { nome: "Barbearia do Zé", slug: "barbearia-do-ze" },
       barbeiro: { nome: "Zé", email: "ze@barbearia.com", senha: "segredo123" },
+      codigo: CODIGO_DO_CADASTRO_FALSO,
     });
 
     expect(sessao.barbearia.slug).toBe("barbearia-do-ze");
     expect(sessao.barbearia.nome).toBe("Barbearia do Zé");
     expect(sessao.barbeiro.nome).toBe("Zé");
+  });
+
+  it("o signup recusa código errado como a API", async () => {
+    const falso = criarApiClientFalso();
+
+    await expect(
+      falso.barbeiro.signup({
+        barbearia: { nome: "Barbearia do Zé", slug: "barbearia-do-ze" },
+        barbeiro: { nome: "Zé", email: "ze@barbearia.com", senha: "segredo123" },
+        codigo: "000000",
+      })
+    ).rejects.toMatchObject({ status: 422, codigo: "codigo_invalido" });
   });
 
   it("o agendamento do barbeiro carrega o cliente que ele escolheu", async () => {

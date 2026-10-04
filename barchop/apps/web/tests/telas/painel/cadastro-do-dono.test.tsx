@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
+import { CODIGO_DO_CADASTRO_FALSO, criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { ProvedorDoPainel } from "../../../src/painel/ProvedorDoPainel";
 import { sessaoDaBarbearia, sessaoDoBarbeiro } from "../../../src/sessao/armazenamento";
 import { CadastroDoDono } from "../../../src/telas/painel/CadastroDoDono";
@@ -9,7 +9,8 @@ import { navegacaoFalsa } from "../../ajudantes/navegacao";
 
 // Onda 1, F1: o cadastro do dono sai do modo "criar" do /painel/entrar
 // e vira tela própria, /painel/cadastro — promessa à esquerda,
-// formulário à direita, prévia do link.
+// formulário à direita, prévia do link. F3: o e-mail é verificado antes
+// de a barbearia existir — os dados, depois o código que chegou nele.
 function montar(falso = criarApiClientFalso()) {
   render(
     <ProvedorDoPainel valor={{ barbeiro: falso.barbeiro, publico: falso.publico }}>
@@ -37,8 +38,13 @@ async function preencher({
   if (senha) await userEvent.type(screen.getByLabelText(/^senha/i), senha);
 }
 
-function criar() {
-  return userEvent.click(screen.getByRole("button", { name: /criar e entrar/i }));
+function continuar() {
+  return userEvent.click(screen.getByRole("button", { name: /continuar/i }));
+}
+
+async function digitarCodigo(codigo = CODIGO_DO_CADASTRO_FALSO) {
+  await userEvent.type(await screen.findByLabelText(/código/i), codigo);
+  await userEvent.click(screen.getByRole("button", { name: /criar e entrar/i }));
 }
 
 describe("cadastro do dono", () => {
@@ -47,16 +53,117 @@ describe("cadastro do dono", () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/cadastro" });
   });
 
-  it("cria a barbearia com o link sugerido pelo nome e entra no painel", async () => {
-    montar();
+  it("manda o código pro e-mail e cria a barbearia com ele", async () => {
+    const falso = criarApiClientFalso();
+    const pedidos: string[] = [];
+    const pedir = falso.barbeiro.pedirCodigoDeCadastro;
+    falso.barbeiro.pedirCodigoDeCadastro = async (email: string) => {
+      pedidos.push(email);
+      return pedir(email);
+    };
+    montar(falso);
 
     await preencher();
     expect(screen.getByLabelText(/endereço do link/i)).toHaveValue("barbearia-do-ze");
-    await criar();
+    await continuar();
+
+    expect(await screen.findByText(/enviamos um código para ze@barbearia\.com/i)).toBeInTheDocument();
+    expect(pedidos).toEqual(["ze@barbearia.com"]);
+    await digitarCodigo();
 
     await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("jwt-falso-barbeiro"));
     expect(sessaoDaBarbearia.ler()).toBe("barbearia-do-ze");
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
+  });
+
+  it("código errado acusa o campo e não entra", async () => {
+    montar();
+
+    await preencher();
+    await continuar();
+    await digitarCodigo("000000");
+
+    expect(await screen.findByText(/código inválido ou vencido/i)).toBeInTheDocument();
+    expect(sessaoDoBarbeiro.ler()).toBeNull();
+  });
+
+  it("link já usado volta pros dados com o erro no link, e não pede outro código", async () => {
+    const falso = criarApiClientFalso();
+    let pedidos = 0;
+    falso.barbeiro.pedirCodigoDeCadastro = async () => {
+      pedidos += 1;
+    };
+    const original = falso.barbeiro.signup;
+    falso.barbeiro.signup = async (nova) => {
+      if (nova.barbearia.slug === "barbearia-do-ze") throw new ErroDaApi(409, "conflito", "");
+      return original(nova);
+    };
+    montar(falso);
+
+    await preencher();
+    await continuar();
+    await digitarCodigo();
+
+    expect(await screen.findByText(/esse endereço já está em uso/i)).toBeInTheDocument();
+    const link = screen.getByLabelText(/endereço do link/i);
+    await userEvent.clear(link);
+    await userEvent.type(link, "ze-cortes");
+    await continuar();
+    // O código digitado continua valendo: o 409 desfez a criação inteira.
+    await userEvent.click(await screen.findByRole("button", { name: /criar e entrar/i }));
+
+    await waitFor(() => expect(sessaoDaBarbearia.ler()).toBe("ze-cortes"));
+    expect(pedidos).toBe(1);
+  });
+
+  it("trocar o e-mail volta pros dados e o próximo pedido vai pro novo", async () => {
+    const falso = criarApiClientFalso();
+    const pedidos: string[] = [];
+    falso.barbeiro.pedirCodigoDeCadastro = async (email: string) => {
+      pedidos.push(email);
+    };
+    montar(falso);
+
+    await preencher();
+    await continuar();
+    await userEvent.click(await screen.findByRole("button", { name: /trocar e-mail/i }));
+    const email = screen.getByLabelText(/e-mail/i);
+    await userEvent.clear(email);
+    await userEvent.type(email, "ze2@barbearia.com");
+    await continuar();
+
+    expect(await screen.findByText(/enviamos um código para ze2@barbearia\.com/i)).toBeInTheDocument();
+    expect(pedidos).toEqual(["ze@barbearia.com", "ze2@barbearia.com"]);
+  });
+
+  it("reenviar pede outro código pro mesmo e-mail", async () => {
+    const falso = criarApiClientFalso();
+    let pedidos = 0;
+    falso.barbeiro.pedirCodigoDeCadastro = async () => {
+      pedidos += 1;
+    };
+    montar(falso);
+
+    await preencher();
+    await continuar();
+    await userEvent.click(await screen.findByRole("button", { name: /reenviar código/i }));
+
+    expect(await screen.findByText(/código reenviado/i)).toBeInTheDocument();
+    expect(pedidos).toBe(2);
+  });
+
+  it("limite de pedidos de código vira aviso com a mensagem da API", async () => {
+    const falso = criarApiClientFalso();
+    falso.barbeiro.pedirCodigoDeCadastro = async () => {
+      throw new ErroDaApi(429, "tentativas_excedidas", "Muitas tentativas. Tente de novo em 15 minutos.");
+    };
+    montar(falso);
+
+    await preencher();
+    await continuar();
+
+    expect(await screen.findByText(/tente de novo em 15 minutos/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/código/i)).toBeNull();
   });
 
   it("o nome para de mexer no link depois que o dono edita o link", async () => {
@@ -80,72 +187,56 @@ describe("cadastro do dono", () => {
     expect(campo).toHaveAccessibleDescription(/barbearia-do-ze/);
   });
 
-  it("recusa link fora do formato antes de chamar a API", async () => {
+  it("recusa link fora do formato antes de pedir o código", async () => {
     const falso = criarApiClientFalso();
     let chamou = false;
-    falso.barbeiro.signup = async () => {
+    falso.barbeiro.pedirCodigoDeCadastro = async () => {
       chamou = true;
-      throw new ErroDaApi(400, "requisicao_invalida", "");
     };
     montar(falso);
 
     await preencher({ link: "Zé Barbearia!" });
-    await criar();
+    await continuar();
 
     expect(await screen.findByText(/letras minúsculas, números e hífen/i)).toBeInTheDocument();
     expect(chamou).toBe(false);
   });
 
-  it("recusa link reservado antes de chamar a API", async () => {
+  it("recusa link reservado antes de pedir o código", async () => {
     const falso = criarApiClientFalso();
     let chamou = false;
-    falso.barbeiro.signup = async () => {
+    falso.barbeiro.pedirCodigoDeCadastro = async () => {
       chamou = true;
-      throw new ErroDaApi(422, "slug_reservado", "");
     };
     montar(falso);
 
     await preencher({ barbearia: "Painel" });
-    await criar();
+    await continuar();
 
     expect(await screen.findByText(/esse link é reservado/i)).toBeInTheDocument();
     expect(chamou).toBe(false);
   });
 
-  it("e-mail em branco e senha curta acusam o campo, sem chamar a API", async () => {
+  it("e-mail em branco e senha curta acusam o campo, sem pedir o código", async () => {
     const falso = criarApiClientFalso();
     let chamou = false;
-    falso.barbeiro.signup = async () => {
+    falso.barbeiro.pedirCodigoDeCadastro = async () => {
       chamou = true;
-      throw new ErroDaApi(400, "requisicao_invalida", "");
     };
     montar(falso);
 
     await preencher({ email: "", senha: "" });
-    await criar();
+    await continuar();
     expect(await screen.findByText(/informe seu e-mail/i)).toBeInTheDocument();
 
     await userEvent.type(screen.getByLabelText(/e-mail/i), "ze@barbearia.com");
     await userEvent.type(screen.getByLabelText(/^senha/i), "curta");
-    await criar();
+    await continuar();
     expect(await screen.findByText(/pelo menos 8 caracteres/i)).toBeInTheDocument();
     expect(chamou).toBe(false);
   });
 
-  it("traduz conflito sem dizer qual dos dois repetiu", async () => {
-    const falso = criarApiClientFalso();
-    falso.barbeiro.signup = async () => {
-      throw new ErroDaApi(409, "conflito", "");
-    };
-    montar(falso);
-
-    await preencher();
-    await criar();
-
-    expect(await screen.findByText(/e-mail ou esse endereço já está em uso/i)).toBeInTheDocument();
-  });
-
-  it("traduz tentativas_excedidas na mensagem da API", async () => {
+  it("traduz tentativas_excedidas no cadastro na mensagem da API", async () => {
     const falso = criarApiClientFalso();
     falso.barbeiro.signup = async () => {
       throw new ErroDaApi(429, "tentativas_excedidas", "Muitas tentativas. Tente de novo em 1 hora.");
@@ -153,16 +244,21 @@ describe("cadastro do dono", () => {
     montar(falso);
 
     await preencher();
-    await criar();
+    await continuar();
+    await digitarCodigo();
 
     expect(await screen.findByText(/tente de novo em 1 hora/i)).toBeInTheDocument();
   });
 
-  it("anuncia os tokens do gerenciador de senhas pra conta nova", () => {
+  it("anuncia os tokens do gerenciador de senhas e do código", async () => {
     montar();
 
     expect(screen.getByLabelText(/e-mail/i)).toHaveAttribute("autocomplete", "username");
     expect(screen.getByLabelText(/^senha/i)).toHaveAttribute("autocomplete", "new-password");
+
+    await preencher();
+    await continuar();
+    expect(await screen.findByLabelText(/código/i)).toHaveAttribute("autocomplete", "one-time-code");
   });
 
   it("começa no nome da barbearia e leva quem já tem conta pro entrar", () => {

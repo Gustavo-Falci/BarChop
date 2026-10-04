@@ -12,7 +12,7 @@ async function cadastrar(app: App) {
   const resposta = await app.inject({
     method: "POST",
     url: "/auth/signup",
-    payload: CADASTRO,
+    payload: await comCodigo(CADASTRO),
   });
   return resposta.json();
 }

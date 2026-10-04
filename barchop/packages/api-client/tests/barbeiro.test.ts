@@ -134,9 +134,27 @@ describe("api do barbeiro", () => {
     await clientAutenticado(fetchFalso).barbeiro.signup({
       barbearia: { nome: "GR Barber", slug: "gr-barber" },
       barbeiro: { nome: "Rafael", email: "rafael@gr.com", senha: "segredo123" },
+      codigo: "123456",
     });
 
-    expect(urlEInit(fetchFalso).url).toBe("https://api.exemplo.br/auth/signup");
+    const { url, init } = urlEInit(fetchFalso);
+    expect(url).toBe("https://api.exemplo.br/auth/signup");
+    // O código do e-mail vai junto (Onda 1, F3).
+    expect(JSON.parse(init.body as string).codigo).toBe("123456");
+  });
+
+  it("pede o código do cadastro pro e-mail, sem token", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
+      respostaJson({ enviado: true }, 202)
+    );
+
+    await clientAutenticado(fetchFalso).barbeiro.pedirCodigoDeCadastro("ze@barbearia.com");
+
+    const { url, init } = urlEInit(fetchFalso);
+    expect(url).toBe("https://api.exemplo.br/auth/cadastro/codigo");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({ email: "ze@barbearia.com" });
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
   });
 
   it("lê o próprio perfil com o token", async () => {

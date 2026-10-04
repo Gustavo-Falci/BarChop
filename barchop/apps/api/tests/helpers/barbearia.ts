@@ -1,6 +1,21 @@
 import { prisma } from "@barchop/database";
+import { normalizarEmail } from "@barchop/formato";
+import { emitirCodigo } from "../../src/lib/codigos";
 import { gerarHashSenha } from "../../src/lib/senha";
 import type { App } from "../../src/tipos";
+
+// O signup exige o código que chegou no e-mail (Onda 1, F3). Fora dos
+// testes do próprio cadastro, ninguém precisa passar pela caixa de
+// entrada: o código sai da lib, como sairia pro e-mail, e vai no corpo.
+// E-mail torto (testes de validação) segue cru — o schema recusa antes
+// de o código importar.
+export async function comCodigo<T extends { barbeiro: { email: string } }>(
+  corpo: T
+): Promise<T & { codigo: string }> {
+  const destino = normalizarEmail(corpo.barbeiro.email) ?? corpo.barbeiro.email;
+  const codigo = await emitirCodigo({ finalidade: "cadastro_dono", destino, barbeariaId: null });
+  return { ...corpo, codigo };
+}
 
 export interface BarbeariaDeTeste {
   token: string;
@@ -23,14 +38,14 @@ export async function criarBarbeariaComToken(
   const resposta = await app.inject({
     method: "POST",
     url: "/auth/signup",
-    payload: {
+    payload: await comCodigo({
       barbearia: { nome: `Barbearia ${sufixo}`, slug: `barbearia-${sufixo}` },
       barbeiro: {
         nome: `Barbeiro ${sufixo}`,
         email: `${sufixo}@exemplo.com`,
         senha: "senha-forte-123",
       },
-    },
+    }),
   });
 
   // Sem esta guarda, um signup quebrado apareceria como "token

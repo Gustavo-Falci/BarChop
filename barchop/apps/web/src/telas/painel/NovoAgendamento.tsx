@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { ClienteSerializado } from "@barchop/types";
@@ -43,6 +43,27 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
 
   const servicos = useRequisicao(() => api.barbeiro.servicos(), []);
 
+  // Com quem. O profissional marca só na própria agenda (a API recusa o
+  // resto); dono e recepção escolhem entre quem atende e já entrou. O
+  // padrão é quem está logado, se atende — a recepção, que não atende,
+  // cai no primeiro da equipe em vez de receber 422. A coluna da agenda
+  // manda `?profissional=` pela URL.
+  const idDoProfissional = useId();
+  const soOProprio = perfil.papel === "profissional";
+  const equipe = useRequisicao(
+    () => (soOProprio ? Promise.resolve([]) : api.barbeiro.equipe()),
+    [soOProprio]
+  );
+  const atendentes = (equipe.dados ?? []).filter(
+    (membro) => membro.ativo && membro.atende && !membro.convitePendente
+  );
+  const [escolhido, setEscolhido] = useState<string | undefined>(
+    () => query.get("profissional") ?? undefined
+  );
+  const profissionalId = soOProprio
+    ? perfil.id
+    : (escolhido ?? (perfil.atende ? perfil.id : atendentes[0]?.id));
+
   // A lista de clientes manda um cliente pronto pela URL (a ação
   // "Agendar" de cada linha). Sem isto, quem clicou lá chegava aqui e
   // tinha que procurar de novo a pessoa que acabou de escolher.
@@ -74,26 +95,26 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   // a API rejeitaria com 400.
   const horarios = useRequisicao(
     () =>
-      servicoIds.length === 0
+      servicoIds.length === 0 || !profissionalId
         ? Promise.resolve([])
         : api.publico.disponibilidadeDoDia(slug, {
-            barbeiroId: perfil.id,
+            barbeiroId: profissionalId,
             data,
             servicoIds,
           }),
-    [slug, perfil.id, data, servicoIds.join(",")]
+    [slug, profissionalId, data, servicoIds.join(",")]
   );
 
   const diasComVaga = useRequisicao(
     () =>
-      servicoIds.length === 0
+      servicoIds.length === 0 || !profissionalId
         ? Promise.resolve({})
         : api.publico.disponibilidadeDoMes(slug, {
-            barbeiroId: perfil.id,
+            barbeiroId: profissionalId,
             mes,
             servicoIds,
           }),
-    [slug, perfil.id, mes, servicoIds.join(",")]
+    [slug, profissionalId, mes, servicoIds.join(",")]
   );
 
   // A hora que a agenda mandou pela URL só é sintetizada na lista
@@ -198,14 +219,13 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   }
 
   async function agendar() {
-    if (!cliente) return;
+    if (!cliente || !profissionalId) return;
     setAviso(undefined);
     setEnviando(true);
 
     try {
       const criado = await api.barbeiro.criarAgendamento({
-        // A barbearia do MVP tem um barbeiro só, e é o que está logado.
-        barbeiroId: perfil.id,
+        barbeiroId: profissionalId,
         clienteId: cliente.id,
         servicoIds,
         data,
@@ -237,6 +257,24 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   return (
     <div className={estilos.pagina}>
       <h1>Novo agendamento</h1>
+
+      {soOProprio ? null : (
+        <div className={estilos.profissional}>
+          <label htmlFor={idDoProfissional}>Profissional</label>
+          <select
+            id={idDoProfissional}
+            value={profissionalId ?? ""}
+            onChange={(evento) => setEscolhido(evento.target.value)}
+            disabled={!equipe.dados}
+          >
+            {atendentes.map((membro) => (
+              <option key={membro.id} value={membro.id}>
+                {membro.nome}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Duas colunas: a sequência de passos à esquerda e o fecho ao
           lado, grudado no topo enquanto se rola. O que vai ser criado

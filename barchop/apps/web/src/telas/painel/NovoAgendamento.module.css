@@ -250,3 +250,28 @@
     padding-inline-start: 0;
   }
 }
+
+/* Com quem: acima dos passos, porque decide a agenda que eles consultam
+   (serviço, dia e horário são os do profissional escolhido). */
+.profissional {
+  display: grid;
+  gap: var(--espaco-xs);
+  max-width: 20rem;
+  font-weight: 600;
+}
+
+.profissional select {
+  min-height: 44px;
+  padding-inline: var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.profissional select:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}

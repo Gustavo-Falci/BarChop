@@ -5,14 +5,14 @@
 **Complexity**: Large
 
 ## Onde paramos (2026-10-04)
-**Blocos A, B e C mergeados** na main (PRs #14, #15, #16; main em `83185eb`). **Bloco D em andamento** na branch `onda-1-bloco-d` (saída da main).
+**Blocos A, B e C mergeados** na main (PRs #14, #15, #16). **Bloco D em andamento**: D1 mergeado sozinho na main a pedido do dono (PR da `onda-1-bloco-d`); o D2 em diante segue em branch nova saída da main.
 
 ### Bloco D — em andamento
 | Tarefa | Estado | O que ficou |
 |---|---|---|
 | D1 fila | feito | `lib/fila.ts`: `Fila` (`agendar(trabalho, dados, { quando, chave })` → `false` se a chave já está na fila; `trabalhar`), `filaDeMemoria` (`pendentes`, `rodarVencidos(agora)`) e `filaDoPgBoss` (pg-boss 12, ESM, externo no bundle CJS — `require(esm)` do Node ≥22.12). Fila com política **`exclusive`**: na `standard` a `singletonKey` não deduplica nada; chave ausente vira UUID (a `exclusive` indexa `COALESCE(chave,'')`). `buildApp({ fila })`; sem fila só em `NODE_ENV=test` (`filaPadrao`). `server.ts` monta o pg-boss (`urlDoPg` tira o `?schema=`), ouve `error`, `start` antes do `listen`, `stop` no `onClose`. Contrato em `tests/lib/fila.test.ts` roda contra memória **e** pg-boss real no banco de teste. Retenção: o pg-boss conta `keep_until` a partir do `start_after`, então lembrete a 30+ dias não expira |
 
-Decisões pro D2 (antes do RED): agendar o lembrete **depois** do `$transaction` commitar (pg-boss tem pool próprio: dentro da transação, o job sobreviveria ao rollback do 409, e o `comRetryDeDeadlock` roda o callback duas vezes); `quando` = instante absoluto de `data` + `horaInicio` em `FUSO_DA_BARBEARIA` menos a antecedência, função pura testada; decidir o que fazer quando o momento do lembrete já passou na hora de marcar (o pg-boss rodaria na hora — provavelmente pular). O `trabalhar` do lembrete é registrado no `server.ts` **depois** do `boss.start()` — no `buildApp` rodaria antes do start e quebraria na subida, e nenhum teste com a fila de memória mostraria. Idempotência: o pg-boss repete o trabalho que lança (`retryLimit` 2) e a fila de memória não — o tratador precisa de uma marca de "lembrete enviado" conferida antes de enviar, senão uma falha depois do envio manda o e-mail de novo.
+Decisões pro D2 (antes do RED): agendar o lembrete **depois** do `$transaction` commitar (pg-boss tem pool próprio: dentro da transação, o job sobreviveria ao rollback do 409, e o `comRetryDeDeadlock` roda o callback duas vezes); `quando` = instante absoluto de `data` + `horaInicio` em `FUSO_DA_BARBEARIA` menos a antecedência, função pura testada; quando o momento do lembrete já passou na hora de marcar (marcou às 15h pras 18h com antecedência de 24 h), **manda na hora** (decisão do dono, 2026-10-04) — o `quando` no passado faz o pg-boss rodar assim que houver worker; o job continua relendo o agendamento e não manda se o horário já passou. O `trabalhar` do lembrete é registrado no `server.ts` **depois** do `boss.start()` — no `buildApp` rodaria antes do start e quebraria na subida, e nenhum teste com a fila de memória mostraria. Idempotência: o pg-boss repete o trabalho que lança (`retryLimit` 2) e a fila de memória não — o tratador precisa de uma marca de "lembrete enviado" conferida antes de enviar, senão uma falha depois do envio manda o e-mail de novo.
 
 Suítes no fim do D1: API 506.
 

@@ -6,6 +6,7 @@ import { buildApp } from "../../src/app";
 import { canalDeMemoria, type CanalDeMensagem } from "../../src/lib/canal";
 import { filaDoPgBoss, urlDoPg } from "../../src/lib/fila";
 import {
+  criarLinkDoLembrete,
   enviarLembrete,
   instanteNaBarbearia,
   momentoDoLembrete,
@@ -144,6 +145,56 @@ describe("enviarLembrete", () => {
     const canal = canalDeMemoria();
     await enviarLembrete({ agendamentoId: agendamento.id }, { canal, log, agora: () => antes });
     expect(canal.enviadas).toHaveLength(1);
+  });
+});
+
+describe("o link de confirmar ou cancelar", () => {
+  it("aponta pra página do lembrete, com um token que vence no início do horário", async () => {
+    const app = buildApp();
+    await app.ready();
+    const inicio = instanteNaBarbearia(QUINTA, "10:00");
+
+    const link = criarLinkDoLembrete(app, "http://localhost:3000/")!;
+    const url = link({ agendamentoId: "a1", slug: "barbearia-um", inicio });
+
+    const prefixo = "http://localhost:3000/barbearia-um/lembrete/";
+    expect(url.startsWith(prefixo)).toBe(true);
+    const token = url.slice(prefixo.length);
+    expect(app.jwt.verify(token)).toMatchObject({
+      tipo: "lembrete",
+      agendamentoId: "a1",
+      exp: Math.floor(inicio.getTime() / 1000),
+    });
+  });
+
+  it("sem URL do site configurada, não há link", () => {
+    expect(criarLinkDoLembrete(buildApp(), undefined)).toBeUndefined();
+  });
+
+  it("o e-mail leva o link", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app, { email: "joao@exemplo.com" });
+    const agendamento = await marcarPeloPainel(app, agenda, { data: QUINTA, horaInicio: "10:00" });
+    const canal = canalDeMemoria();
+    const vistos: unknown[] = [];
+
+    await enviarLembrete(
+      { agendamentoId: agendamento.id },
+      {
+        canal,
+        log,
+        agora: () => new Date("2000-01-01T00:00:00.000Z"),
+        link: (dados) => {
+          vistos.push(dados);
+          return "https://exemplo.com/barbearia-um/lembrete/TOKEN";
+        },
+      }
+    );
+
+    expect(vistos).toEqual([
+      { agendamentoId: agendamento.id, slug: "barbearia-um", inicio: instanteNaBarbearia(QUINTA, "10:00") },
+    ]);
+    expect(canal.enviadas[0]!.texto).toContain("https://exemplo.com/barbearia-um/lembrete/TOKEN");
   });
 });
 

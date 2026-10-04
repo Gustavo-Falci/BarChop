@@ -18,6 +18,15 @@ Suítes no fim do B: API 482, web 492, api-client 75, formato 19; lint, type-che
 
 Dívidas novas do B (em `docs/roadmap.md`): o fluxo público ainda agenda com `barbeiros[0]` e mostra o catálogo inteiro — serviço que esse profissional não faz dá "Não foi possível carregar a agenda" (fecha no C2); a agenda do painel ainda não desenha os bloqueios (C3).
 
+### Bloco C — em andamento (branch `onda-1-bloco-c`, saída da `onda-1-bloco-b`; PR empilhado sobre o #15 enquanto ele não for mergeado — perguntar antes de mergear o #15)
+Decisões tomadas antes do RED (2026-10-04):
+- **Candidato** ("qualquer um" e passo do profissional): ativo, atende, `senha_hash` não nulo e faz todos os serviços pedidos — uma constante/consulta só, a mesma do perfil público.
+- **Uma função por profissional e dia** (janela efetiva, bloqueios, ocupados, `descartarPassados`) usada pela união do "qualquer um" e pela escolha no POST: todo horário oferecido tem que ser marcável. O mês recebe uma lista de `barbeiroId` e consulta cada tabela uma vez (`in`).
+- **POST público sem `barbeiroId`**: `pg_advisory_xact_lock` por barbearia+data **só nesse caminho**, antes de ler candidatos; escolhe o livre com menos agendamentos no dia (empate: ordem de entrada). Com `barbeiroId` nada muda (409 `horario_ocupado` da EXCLUDE continua). Teste segura a trava de verdade; função da chave exportada.
+- **Agendamento serializado ganha `barbeiro: {id, nome}`** (INCLUDE_AGENDAMENTO e o include próprio do histórico em `clientes.ts`); no dublê o campo é opcional na semente, padrão `bb1`.
+- **C2**: perfil público com `servicoIds` por barbeiro; passo `/agendar/profissional` entre serviços e data, `?profissional=<id>` (ausente = qualquer um), **por último** no `montarQuery`; revalidado no passo de data (fora da lista ou não faz o serviço → `replace` pro passo do profissional); pulado quando só um candidato; mensagem quando ninguém faz a combinação; remarcar leva `profissional=<barbeiro.id do agendamento>`.
+- **C3**: seletor de profissional no Novo agendamento e colunas por profissional na Agenda (com bloqueios), em pares RED/GREEN separados.
+
 ### Bloco A (histórico)
 Cada tarefa com commit RED e GREEN:
 

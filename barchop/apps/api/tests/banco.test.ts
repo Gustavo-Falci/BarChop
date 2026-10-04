@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
-import { limparBanco } from "./helpers/limpar-banco";
+import { exigirBancoDeTeste, limparBanco } from "./helpers/limpar-banco";
 
 describe("banco de teste", () => {
   it("conecta e começa vazio", async () => {
@@ -29,5 +29,15 @@ describe("banco de teste", () => {
     // segundo passaria de graça.
     await limparBanco();
     expect(await prisma.barbearia.count()).toBe(0);
+  });
+
+  it("o limparBanco se recusa a truncar banco que não é de teste", () => {
+    // O global-setup já recusa, mas só quando a config da API é lida.
+    // Rodar o vitest da raiz do monorepo pula essa config, e o Prisma cai
+    // no .env do pacote do banco — o de desenvolvimento (aconteceu em
+    // 2026-10-04). A trava tem que estar também em quem trunca.
+    expect(() => exigirBancoDeTeste("gr_barber")).toThrow(/_test/);
+    expect(() => exigirBancoDeTeste("")).toThrow(/_test/);
+    expect(() => exigirBancoDeTeste("gr_barber_test")).not.toThrow();
   });
 });

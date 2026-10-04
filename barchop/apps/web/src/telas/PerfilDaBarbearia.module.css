@@ -200,6 +200,7 @@
 
 /* Página rica (bloco E1). */
 .grupo { display: grid; gap: var(--espaco-sm); }
+.grupo + .grupo { margin-top: var(--espaco-lg); }
 .subtitulo {
   font-size: var(--texto-sm);
   font-weight: 700;
@@ -236,7 +237,7 @@
 }
 .etiquetas li {
   padding: var(--espaco-xs) var(--espaco-sm);
+  border: 1px solid var(--cor-ink-soft);
   border-radius: var(--raio-sm);
-  background: var(--cor-surface);
   font-size: var(--texto-sm);
 }

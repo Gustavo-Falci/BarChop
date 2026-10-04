@@ -29,3 +29,20 @@ const SLUGS_RESERVADOS: ReadonlySet<string> = new Set([
 export function slugReservado(slug: string): boolean {
   return SLUGS_RESERVADOS.has(slug);
 }
+
+const TAMANHO_MAXIMO = 80;
+
+// O link sugerido a partir do nome da barbearia, no cadastro do dono:
+// "Barbearia do Zé" → "barbearia-do-ze". Sai sempre no formato do
+// PADRAO_SLUG ou vazia — reservado ou curto demais quem acusa é a
+// validação de sempre, não esta função.
+export function sugerirSlug(nome: string): string {
+  return nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, TAMANHO_MAXIMO)
+    .replace(/-+$/, "");
+}

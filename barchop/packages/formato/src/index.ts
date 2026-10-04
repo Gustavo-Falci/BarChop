@@ -6,7 +6,7 @@ export {
   normalizarTelefoneObrigatorio,
 } from "./telefone";
 export { normalizarEmail } from "./email";
-export { PADRAO_SLUG, slugReservado } from "./slug";
+export { PADRAO_SLUG, slugReservado, sugerirSlug } from "./slug";
 export {
   COMODIDADES,
   FORMAS_DE_PAGAMENTO,

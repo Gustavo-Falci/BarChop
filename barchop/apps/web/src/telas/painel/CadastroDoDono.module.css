@@ -1,0 +1,174 @@
+/* Fora do shell do painel, como o /painel/entrar: o centramento e a
+   largura são da própria tela. Uma coluna no celular — título e
+   promessa curta em cima, formulário logo abaixo —, duas no desktop. */
+.pagina {
+  display: grid;
+  gap: var(--espaco-xl);
+  /* `safe center`: centra quando cabe, alinha no topo quando não —
+     sem empurrar o título pra cima da borda (ver EntrarNoPainel). */
+  align-content: safe center;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
+  padding: var(--espaco-xxl) var(--espaco-lg);
+}
+
+@media (min-width: 880px) {
+  .pagina {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+    align-items: center;
+    gap: var(--espaco-xxl);
+  }
+}
+
+.promessa {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+}
+
+.marca {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--texto-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.subtitulo {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  max-width: 46ch;
+}
+
+.ganhos {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O marcador é desenho, não texto: o leitor de tela já anuncia a lista
+   e os itens, e um "✓" lido em cada um só seria ruído. */
+.ganhos li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--espaco-sm);
+  align-items: start;
+}
+
+.ganhos li::before {
+  content: "";
+  width: 1.1em;
+  height: 1.1em;
+  margin-top: 0.15em;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-accent);
+}
+
+/* O mini-painel ocupa a dobra inteira no celular e empurraria o
+   formulário pra baixo dela: lá ele some, e os ganhos em texto ficam. */
+.mini {
+  display: none;
+}
+
+@media (min-width: 880px) {
+  .mini {
+    display: grid;
+    gap: var(--espaco-sm);
+    margin-top: var(--espaco-md);
+    padding: var(--espaco-md);
+    max-width: 440px;
+    border: var(--borda-padrao) solid var(--cor-ink);
+    border-radius: var(--raio-lg);
+    background: var(--cor-surface);
+    box-shadow: 0 4px 0 var(--cor-shadow);
+  }
+}
+
+.miniTitulo {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--texto-sm);
+}
+
+.miniLista {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.miniLinha {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--espaco-sm);
+  align-items: center;
+  padding: var(--espaco-sm);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  font-size: var(--texto-sm);
+}
+
+.miniHora {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.selo {
+  padding: 2px var(--espaco-sm);
+  border: var(--borda-hairline) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cadastro {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+.formulario {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+.troca {
+  margin: 0;
+  text-align: center;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+/* Sublinhado e não só a cor: é ele que diz que aquilo se clica pra quem
+   não distingue as duas. Mesmo link do /painel/entrar. */
+.link {
+  padding: var(--espaco-xs) 0;
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

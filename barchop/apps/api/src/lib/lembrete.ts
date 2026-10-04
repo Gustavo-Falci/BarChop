@@ -1,4 +1,6 @@
 import { prisma } from "@barchop/database";
+import type { PayloadLembrete } from "../plugins/auth";
+import type { App } from "../tipos";
 import type { CanalDeMensagem } from "./canal";
 import type { Fila } from "./fila";
 import { dateParaData, dateParaHora, instanteNaBarbearia } from "./horas";
@@ -76,6 +78,42 @@ export async function agendarLembrete(
   }
 }
 
+// O token do link: vale pra um agendamento e só até o horário começar —
+// depois disso não há o que confirmar nem cancelar. `exp` no payload, e
+// não `expiresIn`: o prazo é um instante, não uma duração.
+export function assinarTokenDoLembrete(
+  app: Pick<App, "jwt">,
+  { agendamentoId, expiraEm }: { agendamentoId: string; expiraEm: Date }
+): string {
+  const payload: PayloadLembrete = {
+    tipo: "lembrete",
+    agendamentoId,
+    exp: Math.floor(expiraEm.getTime() / 1000),
+  };
+  return app.jwt.sign(payload);
+}
+
+export interface DadosDoLink {
+  agendamentoId: string;
+  slug: string;
+  inicio: Date;
+}
+
+// Monta o link da página "Confirmar ou cancelar" do site. Sem a URL do
+// site configurada não há link — o e-mail sai sem ele, como o convite.
+//
+// `app.jwt` é lido a cada link, e não aqui: o plugin do JWT só existe
+// depois que o Fastify sobe.
+export function criarLinkDoLembrete(
+  app: Pick<App, "jwt">,
+  urlDoSite: string | undefined
+): ((dados: DadosDoLink) => string) | undefined {
+  const base = urlDoSite?.replace(/\/+$/, "");
+  if (!base) return undefined;
+  return ({ agendamentoId, slug, inicio }) =>
+    `${base}/${slug}/lembrete/${assinarTokenDoLembrete(app, { agendamentoId, expiraEm: inicio })}`;
+}
+
 const DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {
   weekday: "long",
   day: "2-digit",
@@ -90,13 +128,23 @@ const DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {
 // o pg-boss repetir ajuda.
 export async function enviarLembrete(
   { agendamentoId }: DadosDoLembrete,
-  { canal, log, agora = () => new Date() }: { canal: CanalDeMensagem; log: Log; agora?: () => Date }
+  {
+    canal,
+    log,
+    agora = () => new Date(),
+    link,
+  }: {
+    canal: CanalDeMensagem;
+    log: Log;
+    agora?: () => Date;
+    link?: (dados: DadosDoLink) => string;
+  }
 ): Promise<void> {
   const agendamento = await prisma.agendamento.findUnique({
     where: { id: agendamentoId },
     include: {
       cliente: { select: { nome: true, email: true } },
-      barbearia: { select: { nome: true } },
+      barbearia: { select: { nome: true, slug: true } },
       barbeiro: { select: { nome: true } },
       servicos: { include: { servico: { select: { nome: true } } } },
     },
@@ -107,7 +155,8 @@ export async function enviarLembrete(
 
   const data = dateParaData(agendamento.data);
   const hora = dateParaHora(agendamento.horaInicio);
-  if (agora() >= instanteNaBarbearia(data, hora)) return;
+  const inicio = instanteNaBarbearia(data, hora);
+  if (agora() >= inicio) return;
 
   // Antes de reivindicar a marca: marcar sem mandar impediria o lembrete
   // de sair se o e-mail entrar depois e o trabalho for agendado de novo.
@@ -129,6 +178,10 @@ export async function enviarLembrete(
 
   const servicos = agendamento.servicos.map((s) => s.servico.nome).join(" + ");
   const primeiroNome = agendamento.cliente.nome.split(" ")[0];
+  const url = link?.({ agendamentoId, slug: agendamento.barbearia.slug, inicio });
+  const acao = url
+    ? `Confirme sua presença ou cancele por aqui: ${url}`
+    : "Se não puder ir, avise a barbearia.";
   try {
     await canal.enviar({
       para: email,
@@ -137,7 +190,7 @@ export async function enviarLembrete(
         `Olá, ${primeiroNome}! Passando pra lembrar do seu horário na ` +
         `${agendamento.barbearia.nome}: ${DIA_DA_SEMANA.format(agendamento.data)}, às ${hora}, ` +
         `com ${agendamento.barbeiro.nome} (${servicos}).\n\n` +
-        `Se não puder ir, avise a barbearia.`,
+        acao,
     });
   } catch (erro) {
     // Devolve a marca pra repetição do pg-boss conseguir mandar.
@@ -152,7 +205,7 @@ export async function enviarLembrete(
 
 export function registrarLembrete(
   fila: Fila,
-  deps: { canal: CanalDeMensagem; log: Log }
+  deps: { canal: CanalDeMensagem; log: Log; link?: (dados: DadosDoLink) => string }
 ): Promise<void> {
   return fila.trabalhar<DadosDoLembrete>(TRABALHO_LEMBRETE, (dados) => enviarLembrete(dados, deps));
 }

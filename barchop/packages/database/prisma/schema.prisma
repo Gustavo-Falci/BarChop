@@ -209,19 +209,21 @@ model Servico {
 }
 
 model Agendamento {
-  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  barbeariaId       String            @map("barbearia_id") @db.Uuid
-  barbeiroId        String            @map("barbeiro_id") @db.Uuid
-  clienteId         String            @map("cliente_id") @db.Uuid
-  data              DateTime          @db.Date
-  horaInicio        DateTime          @map("hora_inicio") @db.Time
-  horaFim           DateTime          @map("hora_fim") @db.Time
-  status            StatusAgendamento @default(confirmado)
-  origem            OrigemAgendamento @default(cliente)
-  observacoes       String?
-  criadoEm          DateTime          @default(now()) @map("criado_em") @db.Timestamptz
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId          String            @map("barbearia_id") @db.Uuid
+  barbeiroId           String            @map("barbeiro_id") @db.Uuid
+  clienteId            String            @map("cliente_id") @db.Uuid
+  data                 DateTime          @db.Date
+  horaInicio           DateTime          @map("hora_inicio") @db.Time
+  horaFim              DateTime          @map("hora_fim") @db.Time
+  status               StatusAgendamento @default(confirmado)
+  origem               OrigemAgendamento @default(cliente)
+  observacoes          String?
+  criadoEm             DateTime          @default(now()) @map("criado_em") @db.Timestamptz
   // Marca de idempotência do lembrete (ver apps/api/src/lib/lembrete.ts).
-  lembreteEnviadoEm DateTime?         @map("lembrete_enviado_em") @db.Timestamptz
+  lembreteEnviadoEm    DateTime?         @map("lembrete_enviado_em") @db.Timestamptz
+  // Confirmação de presença pelo link do lembrete (routers/lembretes.ts).
+  presencaConfirmadaEm DateTime?         @map("presenca_confirmada_em") @db.Timestamptz
 
   barbearia Barbearia            @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   barbeiro  Barbeiro             @relation(fields: [barbeiroId], references: [id])

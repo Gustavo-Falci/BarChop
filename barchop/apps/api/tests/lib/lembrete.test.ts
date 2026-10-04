@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { canalDeMemoria, type CanalDeMensagem } from "../../src/lib/canal";
+import { enderecoDasBarbearias } from "../../src/lib/endereco";
 import { filaDoPgBoss, urlDoPg } from "../../src/lib/fila";
 import {
   criarLinkDoLembrete,
@@ -162,10 +163,11 @@ describe("o link de confirmar ou cancelar", () => {
     await app.ready();
     const inicio = instanteNaBarbearia(QUINTA, "10:00");
 
-    const link = criarLinkDoLembrete(app, "http://localhost:3000/")!;
+    const endereco = enderecoDasBarbearias({ URL_DAS_BARBEARIAS: "https://{slug}.barchop.com.br" });
+    const link = criarLinkDoLembrete(app, endereco)!;
     const url = link({ agendamentoId: "a1", slug: "barbearia-um", inicio });
 
-    const prefixo = "http://localhost:3000/barbearia-um/lembrete/";
+    const prefixo = "https://barbearia-um.barchop.com.br/lembrete/";
     expect(url.startsWith(prefixo)).toBe(true);
     const token = url.slice(prefixo.length);
     expect(app.jwt.verify(token)).toMatchObject({

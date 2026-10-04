@@ -81,9 +81,12 @@ describe("presença confirmada na agenda", () => {
 
 describe("GET /agendamentos/:id/lembrete-whatsapp", () => {
   const urlAntes = process.env.URL_DO_PAINEL;
+  const barbeariasAntes = process.env.URL_DAS_BARBEARIAS;
   afterEach(() => {
     if (urlAntes === undefined) delete process.env.URL_DO_PAINEL;
     else process.env.URL_DO_PAINEL = urlAntes;
+    if (barbeariasAntes === undefined) delete process.env.URL_DAS_BARBEARIAS;
+    else process.env.URL_DAS_BARBEARIAS = barbeariasAntes;
   });
 
   function pedir(app: ReturnType<typeof buildApp>, token: string, id: string) {
@@ -110,8 +113,22 @@ describe("GET /agendamentos/:id/lembrete-whatsapp", () => {
     expect(texto).toContain(`http://localhost:3000/${agenda.slug}/lembrete/`);
   });
 
+  it("com o host próprio das barbearias, o link vai pra ele", async () => {
+    process.env.URL_DO_PAINEL = "http://localhost:3000";
+    process.env.URL_DAS_BARBEARIAS = "https://{slug}.barchop.com.br";
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const agendamento = await marcarPeloPainel(app, agenda, { data: QUINTA, horaInicio: "10:00" });
+
+    const resposta = await pedir(app, agenda.token, agendamento.id);
+
+    const texto = new URL(resposta.json().url).searchParams.get("text")!;
+    expect(texto).toContain(`https://${agenda.slug}.barchop.com.br/lembrete/`);
+  });
+
   it("sem URL do site, o texto vai sem link", async () => {
     delete process.env.URL_DO_PAINEL;
+    delete process.env.URL_DAS_BARBEARIAS;
     const app = buildApp();
     const agenda = await prepararAgenda(app);
     const agendamento = await marcarPeloPainel(app, agenda, { data: QUINTA, horaInicio: "10:00" });

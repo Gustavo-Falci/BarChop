@@ -55,7 +55,7 @@ describe("PATCH /barbearias/me/slug", () => {
     });
   }
 
-  it("troca o link: o novo responde na rota pública e o antigo some", async () => {
+  it("troca o link: o novo responde na rota pública e o antigo leva a ele", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
 
@@ -67,7 +67,10 @@ describe("PATCH /barbearias/me/slug", () => {
     const novo = await app.inject({ method: "GET", url: "/barbearias/gr-barber-centro" });
     const antigo = await app.inject({ method: "GET", url: "/barbearias/barbearia-um" });
     expect(novo.statusCode).toBe(200);
-    expect(antigo.statusCode).toBe(404);
+    // O link antigo já circulou: ele acha a barbearia e diz o slug novo
+    // (os detalhes em slug-antigo.test.ts).
+    expect(antigo.statusCode).toBe(200);
+    expect(antigo.json().slug).toBe("gr-barber-centro");
 
     await app.close();
   });

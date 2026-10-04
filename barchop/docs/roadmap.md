@@ -347,3 +347,16 @@ config compartilhada em `packages/config/eslint.mjs`.
   (uma consulta por tabela pra 14 dias de agenda da equipe) e fica na
   página mais aberta do produto. Antes do G: limite de taxa ou cache
   curto (um minuto basta), junto com o limite da rota pública de agendar.
+- **O bucket das imagens ainda não existe.** O E2 grava capa e fotos
+  por chave e serve pelo próprio armazenamento; em produção a API não
+  sobe sem `ARMAZENAMENTO=s3`. No G: criar o bucket no Object Storage da
+  OCI com leitura pública dos objetos e **sem** listagem, gerar a chave
+  de acesso (Customer Secret Key) e preencher as variáveis `S3_*` e
+  `URL_PUBLICA_DAS_IMAGENS` (ver `apps/api/.env.example`).
+- **Imagem trocada deixa arquivo órfão quando o apagar falha.** A troca
+  apaga o antigo em melhor-esforço (falha só vai pro log). Uma limpeza
+  periódica do bucket, contra as chaves que o banco referencia, fecha.
+- **O EXIF só sai pelo navegador.** Quem tira os metadados (GPS
+  inclusive) é a regravação no canvas da tela; um envio que pule a tela
+  chega com eles. Aceitável enquanto só o dono envia; HEIC do iPhone não
+  foi testado num aparelho.

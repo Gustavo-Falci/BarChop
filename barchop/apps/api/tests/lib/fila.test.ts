@@ -34,7 +34,12 @@ afterAll(async () => {
 
 const memoria = (): Bancada => {
   const fila = filaDeMemoria();
-  return { fila, processar: () => fila.rodarVencidos(new Date()) };
+  return {
+    fila,
+    async processar() {
+      await fila.rodarVencidos(new Date());
+    },
+  };
 };
 
 const pgBoss = (): Bancada => {
@@ -125,6 +130,24 @@ describe.each([
 
     expect(await fila.agendar(trabalho, { vez: 1 }, { chave: "a1@10:00" })).toBe(true);
     expect(await fila.agendar(trabalho, { vez: 2 }, { chave: "a1@11:00" })).toBe(true);
+    await processar(trabalho);
+
+    expect(recebidos.sort()).toEqual([1, 2]);
+  });
+
+  it("sem chave não deduplica: dois agendamentos rodam os dois", async () => {
+    // A política que faz a chave valer no pg-boss indexa a chave ausente
+    // como '' — sem cuidado, todo trabalho sem chave colidiria com o
+    // primeiro e seria descartado em silêncio.
+    const { fila, processar } = montar();
+    const trabalho = novoTrabalho();
+    const recebidos: unknown[] = [];
+    await fila.trabalhar<{ vez: number }>(trabalho, async (dados) => {
+      recebidos.push(dados.vez);
+    });
+
+    expect(await fila.agendar(trabalho, { vez: 1 })).toBe(true);
+    expect(await fila.agendar(trabalho, { vez: 2 })).toBe(true);
     await processar(trabalho);
 
     expect(recebidos.sort()).toEqual([1, 2]);

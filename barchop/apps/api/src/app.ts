@@ -3,6 +3,7 @@ import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
+import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDeAuth } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
 import { autenticar, autenticarCliente, registrarAuth } from "./plugins/auth";
@@ -35,13 +36,17 @@ declare module "fastify" {
     // importado direto pelas rotas, pra cada app (e cada teste) ter o
     // seu — os testes leem o código no canal de memória.
     canal: CanalDeMensagem;
+    // Onde se agenda o trabalho que roda depois (o lembrete). Na
+    // instância pelo mesmo motivo do canal: cada teste com a sua, de
+    // memória, e o pg-boss só no processo de verdade.
+    fila: Fila;
   }
 }
 
 // Monta a instância sem escutar em porta nenhuma. É o que permite os
 // testes usarem app.inject(). Quem abre a porta é o server.ts.
 export function buildApp(
-  opts: { logger?: boolean; canal?: CanalDeMensagem } = {}
+  opts: { logger?: boolean; canal?: CanalDeMensagem; fila?: Fila } = {}
 ): App {
   const app = Fastify({
     logger: opts.logger ?? false,
@@ -74,6 +79,9 @@ export function buildApp(
   // provedor real o canalDoAmbiente lança, e é aqui que a API tem que
   // se recusar a subir.
   app.decorate("canal", opts.canal ?? canalDoAmbiente(app.log));
+
+  // Sem fila passada, só nos testes: o filaPadrao recusa subir fora deles.
+  app.decorate("fila", opts.fila ?? filaPadrao());
 
   // Escopo só pras quatro rotas que recebem senha — as duas de login e
   // as duas de signup. Existe por causa do `await`: os contadores são

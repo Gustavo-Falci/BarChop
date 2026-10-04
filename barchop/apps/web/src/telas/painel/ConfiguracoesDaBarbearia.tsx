@@ -23,6 +23,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { sessaoDaBarbearia } from "../../sessao/armazenamento";
+import { enderecoDaBarbearia } from "../../tenant/endereco";
 import estilos from "./ConfiguracoesDaBarbearia.module.css";
 
 const FORMATO_DO_SLUG = new RegExp(PADRAO_SLUG);
@@ -438,7 +439,7 @@ export function ConfiguracoesDaBarbearia() {
               rotulo="Link da barbearia"
               name="slug"
               autoComplete="off"
-              apoio={`O link dos seus clientes: /${novoSlug || "sua-barbearia"}. Ao trocar, o link antigo para de funcionar.`}
+              apoio={`O link dos seus clientes: ${enderecoDaBarbearia(novoSlug || "sua-barbearia", process.env.NEXT_PUBLIC_URL_DO_SITE)}. Ao trocar, o link antigo leva ao novo — até outra barbearia escolher o nome que você deixou.`}
               valor={novoSlug}
               onChange={(valor) => setNovoSlug(valor.toLowerCase())}
               erro={erro.slug}

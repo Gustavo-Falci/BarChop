@@ -1,4 +1,7 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { noHostDaBarbearia } from "../tenant/endereco";
+import { CABECALHO_DA_BARBEARIA } from "../tenant/rota";
 
 // Rotas do agendamento que viraram parte de outra tela:
 // - /agendar/horario → /agendar/data (dia e horário numa tela só);
@@ -33,7 +36,15 @@ export async function redirecionarRotaAntiga(
   // dev: ele entrega o `%2F` ainda codificado, e o redirect sai como
   // `/%252F%252Foutro-site/...`, na mesma origem. A codificação garante
   // isso sem depender de qual das duas formas o Next escolher.
+  //
+  // Pelo host da barbearia o destino sai sem o slug, como os links das
+  // telas (useNoHost) — o proxy o reescreve de volta.
+  const barbeariaDoHost = (await headers()).get(CABECALHO_DA_BARBEARIA);
   redirect(
-    `/${encodeURIComponent(slug)}/agendar/${destino}${texto ? `?${texto}` : ""}`
+    noHostDaBarbearia(
+      `/${encodeURIComponent(slug)}/agendar/${destino}${texto ? `?${texto}` : ""}`,
+      slug,
+      barbeariaDoHost
+    )
   );
 }

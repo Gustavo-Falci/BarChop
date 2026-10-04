@@ -16,6 +16,7 @@ import { Campo } from "../componentes/Campo";
 import { caminhoDoPasso, lerEscolhas, passoDoVoltar } from "../fluxo/passos";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./Entrar.module.css";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 
 // Os mesmos limites dos schemas de apps/api/src/routers/auth-cliente.ts.
 // Cortar na digitação evita o 400 que voltaria sem dizer qual campo
@@ -49,6 +50,7 @@ function mensagemDoLimite(erro: ErroDaApi): string {
 export function Entrar() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
+  const noHost = useNoHost();
   const query = useSearchParams();
   const api = useApi();
 
@@ -63,8 +65,8 @@ export function Entrar() {
   // o comentário do `caminhoDoLogin` em fluxo/passos.ts.
   const voltar = passoDoVoltar(query.get("voltar"));
   const destino = voltar
-    ? caminhoDoPasso(slug, voltar, lerEscolhas(query))
-    : `/${slug}/minha-conta`;
+    ? noHost(caminhoDoPasso(slug, voltar, lerEscolhas(query)))
+    : noHost(`/${slug}/minha-conta`);
 
   const [modo, setModo] = useState<Modo>("entrar");
   // O e-mail sobrevive à troca de modo: quem errou a senha e foi pro

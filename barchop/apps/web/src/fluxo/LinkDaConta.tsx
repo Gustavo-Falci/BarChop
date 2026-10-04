@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTemSessaoDoCliente } from "../sessao/useSessaoDoCliente";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 import estilos from "./LinkDaConta.module.css";
 
 // O caminho de quem já tem conta até ela. Sem ele, cancelar e remarcar
@@ -14,12 +15,13 @@ import estilos from "./LinkDaConta.module.css";
 export function LinkDaConta({ slug }: { slug: string }) {
   const pathname = usePathname();
   const temSessao = useTemSessaoDoCliente(slug);
+  const noHost = useNoHost();
 
   if (temSessao === undefined) return null;
 
   const [destino, rotulo] = temSessao
-    ? [`/${slug}/minha-conta`, "Meus agendamentos"]
-    : [`/${slug}/entrar`, "Entrar"];
+    ? [noHost(`/${slug}/minha-conta`), "Meus agendamentos"]
+    : [noHost(`/${slug}/entrar`), "Entrar"];
 
   // Na própria tela de destino o link apontaria pra onde a pessoa já
   // está.

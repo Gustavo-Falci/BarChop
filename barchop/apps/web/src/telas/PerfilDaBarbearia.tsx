@@ -13,12 +13,14 @@ import { rotuloDaComodidade, rotuloDoPagamento } from "../formato/pagina";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { LinkDaConta } from "../fluxo/LinkDaConta";
 import estilos from "./PerfilDaBarbearia.module.css";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 
 // `agora` é prop com padrão, como nas telas do fluxo: é o que deixa o
 // teste fixar "terça às dez" pra conferir o "aberto agora".
 export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
+  const noHost = useNoHost();
   const api = useApi();
 
   const { dados, carregando, erro } = useRequisicao(
@@ -126,9 +128,9 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                     que abre em outra aba se a pessoa quiser. */}
                   <Link
                     className={estilos.servico}
-                    href={caminhoDoPasso(slug, "servicos", {
+                    href={noHost(caminhoDoPasso(slug, "servicos", {
                       servicoIds: [servico.id],
-                    })}
+                    }))}
                   >
                     <span className={estilos.servicoNome}>
                       {servico.nome}
@@ -154,11 +156,11 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                         <li key={`${horario.data} ${horario.horaInicio}`}>
                           <Link
                             className={estilos.proximo}
-                            href={caminhoDoPasso(slug, "confirmar", {
+                            href={noHost(caminhoDoPasso(slug, "confirmar", {
                               servicoIds: [servico.id],
                               data: horario.data,
                               hora: horario.horaInicio,
-                            })}
+                            }))}
                           >
                             {rotuloDoProximoHorario(horario.data, horario.horaInicio, agora)}
                           </Link>
@@ -301,7 +303,7 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
         <div className={estilos.acao}>
           <Botao
             onClick={() =>
-              router.push(caminhoDoPasso(slug, "servicos", { servicoIds: [] }))
+              router.push(noHost(caminhoDoPasso(slug, "servicos", { servicoIds: [] })))
             }
           >
             Agendar agora

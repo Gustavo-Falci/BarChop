@@ -10,10 +10,12 @@ import { Resumo } from "../componentes/Resumo";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
 import estilos from "./EscolhaDeServicos.module.css";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 
 export function EscolhaDeServicos() {
   const { slug, servicoIds, remarcar, profissional } = usePassoDoFluxo("servicos");
   const router = useRouter();
+  const noHost = useNoHost();
   const api = useApi();
   const { dados, carregando, erro } = useRequisicao(
     () => api.publico.servicos(slug),
@@ -86,14 +88,14 @@ export function EscolhaDeServicos() {
               // Remarcar não troca de profissional (a API mantém o do
               // agendamento): vai direto pro dia, levando quem atende.
               remarcar
-                ? caminhoDoPasso(slug, "data", {
+                ? noHost(caminhoDoPasso(slug, "data", {
                     servicoIds: selecionados.map((s) => s.id),
                     remarcar,
                     profissional,
-                  })
-                : caminhoDoPasso(slug, "profissional", {
+                  }))
+                : noHost(caminhoDoPasso(slug, "profissional", {
                     servicoIds: selecionados.map((s) => s.id),
-                  })
+                  }))
             )
           }
         >

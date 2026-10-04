@@ -8,7 +8,7 @@ import {
 } from "next/experimental/testing/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { config, proxy } from "../../proxy";
-import { CABECALHO_DA_BARBEARIA } from "../../src/tenant/rota";
+import { CABECALHO_DA_BARBEARIA, CABECALHO_DO_CAMINHO } from "../../src/tenant/rota";
 
 function pedir(url: string, cabecalhos: Record<string, string> = {}) {
   const { host } = new URL(url);
@@ -41,6 +41,24 @@ describe("proxy", () => {
     const resposta = proxy(pedir("https://gr-barber.barchop.com.br/"));
 
     expect(cabecalhoRepassado(resposta, CABECALHO_DA_BARBEARIA)).toBe("gr-barber");
+  });
+
+  it("conta pro app o caminho que o navegador pediu, antes da reescrita", () => {
+    // O redirect do slug antigo, no layout, precisa do caminho inteiro:
+    // o token do lembrete mora nele.
+    vi.stubEnv("NEXT_PUBLIC_URL_DO_SITE", "https://barchop.com.br");
+
+    const resposta = proxy(pedir("https://antigo.barchop.com.br/lembrete/a.b.c?x=1"));
+
+    expect(cabecalhoRepassado(resposta, CABECALHO_DO_CAMINHO)).toBe("/lembrete/a.b.c?x=1");
+  });
+
+  it("o caminho vai junto também sem site configurado", () => {
+    vi.stubEnv("NEXT_PUBLIC_URL_DO_SITE", "");
+
+    const resposta = proxy(pedir("http://localhost:3000/antigo/agendar"));
+
+    expect(cabecalhoRepassado(resposta, CABECALHO_DO_CAMINHO)).toBe("/antigo/agendar");
   });
 
   it("não deixa quem chama inventar a barbearia pelo cabeçalho", () => {

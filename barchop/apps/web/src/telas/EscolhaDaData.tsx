@@ -21,6 +21,7 @@ import {
   somarDias,
 } from "../formato/datas";
 import estilos from "./EscolhaDaData.module.css";
+import { useNoHost } from "../tenant/ProvedorDoHost";
 
 const DIAS_NA_FAIXA = 14;
 
@@ -42,6 +43,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     agora
   );
   const router = useRouter();
+  const noHost = useNoHost();
   const api = useApi();
 
   const hoje = hojeIso(agora);
@@ -81,10 +83,10 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     // `replace`: a URL com o profissional que não serve não merece
     // entrada no histórico.
     if (profissionalServe === false) {
-      router.replace(caminhoDoPasso(slug, "profissional", { servicoIds, remarcar }));
+      router.replace(noHost(caminhoDoPasso(slug, "profissional", { servicoIds, remarcar })));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- primitivos, ver usePassoDoFluxo
-  }, [profissionalServe, slug, servicoIds.join(","), remarcar, router]);
+  }, [profissionalServe, slug, servicoIds.join(","), remarcar, router, noHost]);
 
   // A rota de disponibilidade é por mês, e a faixa atravessa a virada
   // (no dia 28 ela é quase toda do mês seguinte). Os meses vão em
@@ -171,7 +173,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     // desfazer cada dia tocado. E sem rolar pro topo, que jogaria a
     // lista de horários pra fora da tela bem quando ela chega.
     router.replace(
-      caminhoDoPasso(slug, "data", { servicoIds, data: dia, remarcar, profissional }),
+      noHost(caminhoDoPasso(slug, "data", { servicoIds, data: dia, remarcar, profissional })),
       { scroll: false }
     );
   }
@@ -290,13 +292,13 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
                 horarios={listaDoDia}
                 aoEscolher={(hora) =>
                   router.push(
-                    caminhoDoPasso(slug, "confirmar", {
+                    noHost(caminhoDoPasso(slug, "confirmar", {
                       servicoIds,
                       data: dataEfetiva,
                       hora,
                       remarcar,
                       profissional,
-                    })
+                    }))
                   )
                 }
               />

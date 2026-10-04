@@ -10,7 +10,7 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 | Onda | Resultado | Estado |
 |---|---|---|
 | 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | feita, na main (PR #13) — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
-| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | em andamento na branch `onda-1` — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
+| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | em andamento — blocos A a D na main (PRs #14 a #21, um PR por tarefa no D); próximo é o E — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
 | 1s — Site de marketing | Landing, preços, plano grátis, termos e privacidade | pendente, em paralelo à 1 |
 | 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | pendente |
 | 3 — Retenção do cliente final | Pagamento e sinal online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações | pendente |
@@ -23,7 +23,8 @@ Nenhuma onda nova abre antes de o piloto rodar a Onda 1.
 CNPJ e leva semanas; até sair, a Onda 1 não depende do WhatsApp: o
 lembrete automático e os códigos do cliente saem por e-mail, e o painel
 oferece lembrar pelo WhatsApp à mão (`wa.me`). O canal da Cloud API
-(ADR-0004) entra quando a verificação andar.
+(ADR-0004) já existe, atrás de `WHATSAPP_ATIVO`, desligada (ADR-0009,
+que lista o que precisa existir antes de ligar).
 
 ## Histórico — até 2026-10-02
 
@@ -319,3 +320,25 @@ config compartilhada em `packages/config/eslint.mjs`.
   escreve, e daí o limite por IP deixa de limitar. Os limites por conta
   (email, telefone) não dependem do IP e continuam valendo nos dois
   casos.
+- **O lembrete não tem interruptor.** Ele passa a sair no deploy, e o
+  G3 pede medir a linha de base de faltas *antes* de ligar. Os
+  agendamentos futuros que entrarem por migração (os da GR Barber)
+  nunca passaram por `agendarLembrete` e não têm lembrete na fila.
+  Fecha com uma chave (por barbearia, migration nova, ou por ambiente)
+  que, ao ligar, enfileira os agendamentos futuros que já existem.
+- **A página pública faz o domínio mandar e-mail pra qualquer endereço.**
+  O e-mail do lembrete digitado ao marcar não é verificado (fica só no
+  agendamento, nunca no cadastro — ADR-0009), e a rota pública de
+  agendar não tem limite de taxa (os limites são só das rotas de auth).
+  A capacidade da agenda limita o volume, mas é preciso um limite antes
+  de ligar o Resend em produção, pela reputação do domínio.
+- **O log do proxy vai gravar o token do lembrete.** A API oculta o
+  token no próprio log (`ocultarTokenDoLembrete`), mas o caminho
+  `/<slug>/lembrete/<token>` do site e o `/lembretes/<token>` da API
+  passam pelo proxy da OCI, que loga a URL. Configurar o Caddy pra não
+  logar (ou mascarar) esses caminhos no bloco G.
+- **Mudar a antecedência não move os lembretes já agendados.** Ela é
+  lida quando o lembrete entra na fila; a tela de Configurações avisa.
+- **Cliente só com telefone não recebe lembrete automático.** Depende
+  do barbeiro tocar em "Lembrar pelo WhatsApp" até a Meta sair do
+  standby (ADR-0009).

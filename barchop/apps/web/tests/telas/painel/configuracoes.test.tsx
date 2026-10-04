@@ -50,6 +50,19 @@ describe("configurações da barbearia", () => {
     await waitFor(() => expect(sessaoDaBarbearia.ler()).toBe("gr-barber-centro"));
   });
 
+  it("mostra o link no host próprio da barbearia, e que o antigo leva ao novo", async () => {
+    vi.stubEnv("NEXT_PUBLIC_URL_DO_SITE", "https://barchop.com.br");
+    try {
+      montarPainel(<ConfiguracoesDaBarbearia />, criarApiClientFalso());
+
+      const campo = await screen.findByLabelText(/link da barbearia/i);
+      expect(campo).toHaveAccessibleDescription(/https:\/\/gr-barber\.barchop\.com\.br/);
+      expect(campo).toHaveAccessibleDescription(/link antigo leva ao novo/i);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("trocar o link não apaga o que foi digitado e ainda não salvo", async () => {
     montarPainel(<ConfiguracoesDaBarbearia />, criarApiClientFalso());
 

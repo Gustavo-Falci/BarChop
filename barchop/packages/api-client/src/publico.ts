@@ -9,14 +9,16 @@ import type {
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
+// Sem `barbeiroId` é "qualquer um": a agenda junta de quem faz os
+// serviços.
 export interface FiltroDoDia {
-  barbeiroId: string;
+  barbeiroId?: string;
   data: string; // "YYYY-MM-DD"
   servicoIds: string[];
 }
 
 export interface FiltroDoMes {
-  barbeiroId: string;
+  barbeiroId?: string;
   mes: string; // "YYYY-MM"
   servicoIds: string[];
 }

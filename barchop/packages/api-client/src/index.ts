@@ -10,7 +10,7 @@ export {
   CODIGO_DO_CONVITE_FALSO,
   criarApiClientFalso,
 } from "./falso";
-export type { EstadoFalso } from "./falso";
+export type { EstadoFalso, SementeFalsa } from "./falso";
 export { criarRequisicao } from "./requisicao";
 export type {
   OpcoesDaChamada,

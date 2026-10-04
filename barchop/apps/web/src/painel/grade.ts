@@ -1,4 +1,8 @@
-import type { AgendamentoComCliente, HorarioSerializado } from "@barchop/types";
+import type {
+  AgendamentoComCliente,
+  BloqueioSerializado,
+  HorarioSerializado,
+} from "@barchop/types";
 import { hojeIso, horaJaPassou } from "../formato/datas";
 
 // Uma linha da grade é 5 minutos. `duracaoMinutos` é multipleOf 5
@@ -28,11 +32,25 @@ export interface FaixaLivre {
   passada: boolean;
 }
 
+// Folga, almoço ou horário fechado de um profissional, já na grade.
+export interface BloqueioPosicionado {
+  linha: number;
+  linhas: number;
+  rotulo: string;
+}
+
+// Uma coluna é um dia (semana, ou dia de quem trabalha sozinho) ou, na
+// vista de dia da equipe, um profissional nesse dia — aí ela tem o
+// `rotulo` (o nome) e o `barbeiroId`, que vai pro "novo agendamento".
 export interface ColunaDeDia {
+  chave: string;
   data: string;
+  rotulo?: string;
+  barbeiroId?: string;
   fechado: boolean;
   eventos: EventoPosicionado[];
   livres: FaixaLivre[];
+  bloqueios: BloqueioPosicionado[];
 }
 
 export interface GradeDeTempo {
@@ -131,8 +149,12 @@ export function gradeDeTempo(entrada: {
   horarios: HorarioSerializado[];
   agendamentos: AgendamentoComCliente[];
   agora: Date;
+  // Só na vista de dia da equipe: uma coluna por profissional (o dia é
+  // o primeiro de `dias`), com os agendamentos e bloqueios de cada um.
+  profissionais?: { id: string; nome: string }[];
+  bloqueios?: BloqueioSerializado[];
 }): GradeDeTempo {
-  const { dias, horarios, agendamentos, agora } = entrada;
+  const { dias, horarios, agendamentos, agora, profissionais, bloqueios = [] } = entrada;
 
   // Só o que pertence aos dias mostrados: quem chama pode ter buscado um
   // intervalo maior (o mês busca a grade inteira).
@@ -165,11 +187,54 @@ export function gradeDeTempo(entrada: {
   const linhaDe = (minuto: number) =>
     (minuto - minutoInicial) / MINUTOS_POR_LINHA + 1;
 
-  const colunas: ColunaDeDia[] = dias.map((data) => {
+  const fimDaJanela = minutoInicial + totalLinhas * MINUTOS_POR_LINHA;
+
+  // Os bloqueios de um profissional que tocam o dia, na grade: dia
+  // inteiro cobre a coluna; faixa de horas é recortada na janela.
+  function bloqueiosNaColuna(data: string, barbeiroId: string): {
+    posicionados: BloqueioPosicionado[];
+    bloqueiaMinuto: (minuto: number) => boolean;
+  } {
+    const doDia = bloqueios.filter(
+      (b) => b.barbeiroId === barbeiroId && b.dataInicio <= data && data <= b.dataFim
+    );
+    const posicionados: BloqueioPosicionado[] = [];
+    for (const bloqueio of doDia) {
+      const rotulo = bloqueio.motivo ?? "Bloqueado";
+      if (!bloqueio.horaInicio || !bloqueio.horaFim) {
+        posicionados.push({ linha: 1, linhas: totalLinhas, rotulo });
+        continue;
+      }
+      const inicio = Math.max(emMinutos(bloqueio.horaInicio), minutoInicial);
+      const fim = Math.min(emMinutos(bloqueio.horaFim), fimDaJanela);
+      if (fim > inicio) {
+        posicionados.push({ linha: linhaDe(inicio), linhas: (fim - inicio) / MINUTOS_POR_LINHA, rotulo });
+      }
+    }
+    const bloqueiaMinuto = (minuto: number) =>
+      doDia.some(
+        (b) =>
+          !b.horaInicio ||
+          !b.horaFim ||
+          (emMinutos(b.horaInicio) <= minuto && minuto < emMinutos(b.horaFim))
+      );
+    return { posicionados, bloqueiaMinuto };
+  }
+
+  // Na equipe, cada coluna é um profissional no mesmo dia; sozinho, cada
+  // coluna é um dia com todos os agendamentos.
+  const alvos = profissionais
+    ? profissionais.map((p) => ({ chave: p.id, data: dias[0], rotulo: p.nome, barbeiroId: p.id }))
+    : dias.map((data) => ({ chave: data, data, rotulo: undefined, barbeiroId: undefined }));
+
+  const colunas: ColunaDeDia[] = alvos.map(({ chave, data, rotulo, barbeiroId }) => {
     const horario = horarioDe(data, horarios);
     const doDia = doPeriodo
-      .filter((a) => a.data === data)
+      .filter((a) => a.data === data && (!barbeiroId || a.barbeiro.id === barbeiroId))
       .sort((um, outro) => um.horaInicio.localeCompare(outro.horaInicio));
+    const { posicionados, bloqueiaMinuto } = barbeiroId
+      ? bloqueiosNaColuna(data, barbeiroId)
+      : { posicionados: [], bloqueiaMinuto: () => false };
 
     const eventos: EventoPosicionado[] = doDia.map((agendamento) => {
       const inicio = emMinutos(agendamento.horaInicio);
@@ -198,7 +263,7 @@ export function gradeDeTempo(entrada: {
           (a) =>
             emMinutos(a.horaInicio) <= minuto && minuto < emMinutos(a.horaFim)
         );
-        if (ocupado) continue;
+        if (ocupado || bloqueiaMinuto(minuto)) continue;
 
         const hora = emHora(minuto);
         livres.push({
@@ -210,7 +275,16 @@ export function gradeDeTempo(entrada: {
       }
     }
 
-    return { data, fechado: !aberto(horario), eventos, livres };
+    return {
+      chave,
+      data,
+      rotulo,
+      barbeiroId,
+      fechado: !aberto(horario),
+      eventos,
+      livres,
+      bloqueios: posicionados,
+    };
   });
 
   const hoje = hojeIso(agora);

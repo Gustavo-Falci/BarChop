@@ -115,7 +115,7 @@ describe("perfil da barbearia", () => {
         horaFechamento: null,
         fechado: true,
       })),
-      barbeiros: [{ id: "barbeiro-1", nome: "Gu" }],
+      barbeiros: [{ id: "barbeiro-1", nome: "Gu", servicoIds: [] }],
     });
     montar(falso);
 

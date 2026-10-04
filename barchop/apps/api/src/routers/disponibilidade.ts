@@ -1,16 +1,16 @@
 import { prisma } from "@barchop/database";
 import {
-  aplicarBloqueios,
+  candidatosDoQualquerUm,
   carregarServicos,
-  contextoDoDia,
   descartarPassados,
+  diasComVaga,
   garantirBarbeiro,
   garantirServicosDoProfissional,
-  horariosLivres,
-  janelaEfetiva,
+  horariosDoProfissionalNoDia,
+  type ClientePrisma,
 } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
-import { agoraNaBarbearia, dataParaDate, dateParaData } from "../lib/horas";
+import { agoraNaBarbearia, dataParaDate } from "../lib/horas";
 import {
   PADRAO_DATA,
   PADRAO_MES,
@@ -29,10 +29,13 @@ const paramsSlug = {
 // `servicoIds` vem repetido na query (`?servicoIds=a&servicoIds=b`). Um
 // valor só também chega como array: o coerceTypes do AJV embrulha o
 // escalar sozinho — medido, ver o plano da fase 5.
+//
+// Sem `barbeiroId` é "qualquer um" (bloco C): a união da agenda de quem
+// pode atender e faz os serviços.
 const filtroDia = {
   type: "object",
   additionalProperties: false,
-  required: ["barbeiroId", "data", "servicoIds"],
+  required: ["data", "servicoIds"],
   properties: {
     barbeiroId: { type: "string", pattern: PADRAO_UUID },
     data: { type: "string", pattern: PADRAO_DATA },
@@ -48,7 +51,7 @@ const filtroDia = {
 const filtroMes = {
   type: "object",
   additionalProperties: false,
-  required: ["barbeiroId", "mes", "servicoIds"],
+  required: ["mes", "servicoIds"],
   properties: {
     barbeiroId: { type: "string", pattern: PADRAO_UUID },
     mes: { type: "string", pattern: PADRAO_MES },
@@ -73,6 +76,22 @@ function dataDaQuery(valor: string): Date {
   }
 }
 
+// De quem é a agenda pedida. Com o profissional, as checagens dele
+// (existe, atende, faz os serviços) respondem 422 com o motivo; sem,
+// são os candidatos do "qualquer um" — lista vazia quando ninguém faz a
+// combinação, e aí a resposta é só "sem horário".
+async function agendaDe(
+  db: ClientePrisma,
+  barbeariaId: string,
+  barbeiroId: string | undefined,
+  servicoIds: string[]
+): Promise<string[]> {
+  if (!barbeiroId) return candidatosDoQualquerUm(db, barbeariaId, servicoIds);
+  await garantirBarbeiro(db, barbeariaId, barbeiroId);
+  await garantirServicosDoProfissional(db, barbeiroId, servicoIds);
+  return [barbeiroId];
+}
+
 // Públicas: são as telas de escolha de data e de horário, abertas pelo
 // link do WhatsApp. Ficam fora do escopo protegido do app.ts.
 export function registrarRotasDisponibilidade(app: App): void {
@@ -88,46 +107,29 @@ export function registrarRotasDisponibilidade(app: App): void {
         select: { id: true },
       });
 
-      await garantirBarbeiro(prisma, barbearia.id, barbeiroId);
-
-      const { duracaoTotalMinutos } = await carregarServicos(
-        prisma,
-        barbearia.id,
-        servicoIds
-      );
-
-      await garantirServicosDoProfissional(prisma, barbeiroId, servicoIds);
-
+      // Os serviços antes da agenda: serviço de outra barbearia ou
+      // inativo é 422 também no "qualquer um".
+      const { duracaoTotalMinutos } = await carregarServicos(prisma, barbearia.id, servicoIds);
+      const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds);
       const dataDate = dataDaQuery(data);
 
-      // A janela já cruzada com a jornada do membro, e os bloqueios.
-      const contexto = await contextoDoDia(prisma, {
-        barbeariaId: barbearia.id,
-        barbeiroId,
-        data: dataDate,
-      });
-      const { janela, ocupados: bloqueados } = aplicarBloqueios(
-        contexto.janela,
-        contexto.bloqueios,
-        dataDate
+      // A mesma função que o POST do "qualquer um" usa pra escolher: o
+      // horário oferecido aqui é o que ele aceita lá.
+      const porProfissional = await Promise.all(
+        barbeiroIds.map((id) =>
+          horariosDoProfissionalNoDia(prisma, {
+            barbeariaId: barbearia.id,
+            barbeiroId: id,
+            data: dataDate,
+            duracaoTotalMinutos,
+          })
+        )
       );
-
-      // Mesmo filtro que a trava do banco usa: cancelado não ocupa.
-      const ocupados = await prisma.agendamento.findMany({
-        where: { barbeiroId, data: dataDate, status: { not: "cancelado" } },
-        select: { horaInicio: true, horaFim: true },
-      });
+      // "HH:mm" ordena como texto na ordem do relógio.
+      const uniao = [...new Set(porProfissional.flat())].sort();
 
       return {
-        horarios: descartarPassados({
-          data,
-          horarios: horariosLivres({
-            janela,
-            ocupados: [...ocupados, ...bloqueados],
-            duracaoTotalMinutos,
-          }),
-          agora: agoraNaBarbearia(),
-        }),
+        horarios: descartarPassados({ data, horarios: uniao, agora: agoraNaBarbearia() }),
       };
     }
   );
@@ -143,15 +145,8 @@ export function registrarRotasDisponibilidade(app: App): void {
         select: { id: true },
       });
 
-      await garantirBarbeiro(prisma, barbearia.id, barbeiroId);
-
-      const { duracaoTotalMinutos } = await carregarServicos(
-        prisma,
-        barbearia.id,
-        servicoIds
-      );
-
-      await garantirServicosDoProfissional(prisma, barbeiroId, servicoIds);
+      const { duracaoTotalMinutos } = await carregarServicos(prisma, barbearia.id, servicoIds);
+      const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds);
 
       const [ano, numeroDoMes] = mes.split("-").map(Number);
       const primeiroDia = new Date(Date.UTC(ano, numeroDoMes - 1, 1));
@@ -159,79 +154,18 @@ export function registrarRotasDisponibilidade(app: App): void {
       // manter uma tabela de 28/30/31 e de acertar ano bissexto.
       const ultimoDia = new Date(Date.UTC(ano, numeroDoMes, 0));
 
-      // Uma consulta pro mês inteiro, agrupada em memória logo abaixo.
-      // Trinta consultas (uma por dia) desenhariam o mesmo calendário
-      // com trinta idas ao banco.
-      const agendamentos = await prisma.agendamento.findMany({
-        where: {
-          barbeiroId,
-          data: { gte: primeiroDia, lte: ultimoDia },
-          status: { not: "cancelado" },
-        },
-        select: { data: true, horaInicio: true, horaFim: true },
-      });
-
-      const ocupadosPorDia = new Map<
-        string,
-        { horaInicio: Date; horaFim: Date }[]
-      >();
-      for (const agendamento of agendamentos) {
-        const chave = dateParaData(agendamento.data);
-        const doDia = ocupadosPorDia.get(chave) ?? [];
-        doDia.push({
-          horaInicio: agendamento.horaInicio,
-          horaFim: agendamento.horaFim,
-        });
-        ocupadosPorDia.set(chave, doDia);
-      }
-
-      // Uma consulta por tabela pro mês inteiro: o funcionamento e a
-      // jornada (sete linhas cada) e os bloqueios que tocam o mês.
-      const [janelas, jornada, bloqueios] = await Promise.all([
-        prisma.horarioFuncionamento.findMany({ where: { barbeariaId: barbearia.id } }),
-        prisma.jornadaProfissional.findMany({ where: { barbeiroId } }),
-        prisma.bloqueio.findMany({
-          where: { barbeiroId, dataInicio: { lte: ultimoDia }, dataFim: { gte: primeiroDia } },
-          select: { dataInicio: true, dataFim: true, horaInicio: true, horaFim: true },
-        }),
-      ]);
-      const janelaPorDiaSemana = new Map(
-        janelas.map((janela) => [janela.diaSemana, janela])
-      );
-      const jornadaPorDiaSemana = new Map(jornada.map((dia) => [dia.diaSemana, dia]));
-
       // Um relógio só pro mês inteiro: o calendário não pode discordar
-      // de si mesmo se a virada de minuto cair no meio do laço.
-      const agora = agoraNaBarbearia();
-
-      const dias: Record<string, boolean> = {};
-      for (let dia = 1; dia <= ultimoDia.getUTCDate(); dia += 1) {
-        const data = new Date(Date.UTC(ano, numeroDoMes - 1, dia));
-        const chave = dateParaData(data);
-
-        // Um dia é `true` se tem pelo menos um horário livre que ainda
-        // não passou. Antes a rota não sabia que dia era hoje e quem
-        // desabilitava o passado era a tela; agora qualquer consumidor
-        // (o app do profissional, a IA) recebe o calendário certo.
-        const { janela, ocupados: bloqueados } = aplicarBloqueios(
-          janelaEfetiva(
-            janelaPorDiaSemana.get(data.getUTCDay()) ?? null,
-            jornadaPorDiaSemana.get(data.getUTCDay()) ?? null
-          ),
-          bloqueios,
-          data
-        );
-        dias[chave] =
-          descartarPassados({
-            data: chave,
-            horarios: horariosLivres({
-              janela,
-              ocupados: [...(ocupadosPorDia.get(chave) ?? []), ...bloqueados],
-              duracaoTotalMinutos,
-            }),
-            agora,
-          }).length > 0;
-      }
+      // de si mesmo se a virada de minuto cair no meio do cálculo. A rota
+      // sabe que dia é hoje, então dia passado já chega `false` pra
+      // qualquer consumidor (a tela, o app do profissional, a IA).
+      const dias = await diasComVaga(prisma, {
+        barbeariaId: barbearia.id,
+        barbeiroIds,
+        primeiroDia,
+        ultimoDia,
+        duracaoTotalMinutos,
+        agora: agoraNaBarbearia(),
+      });
 
       return { dias };
     }

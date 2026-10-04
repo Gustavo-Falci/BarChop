@@ -88,7 +88,8 @@ export function GradeDeTempo({
   aoAbrir: (id: string) => void;
   // O dia vai junto da hora: na vista de semana a hora sozinha não diz
   // qual coluna foi clicada.
-  aoCriar: (data: string, hora: string) => void;
+  // `barbeiroId` vem quando a coluna é de um profissional (equipe).
+  aoCriar: (data: string, hora: string, barbeiroId?: string) => void;
   // Só a vista de semana passa: é o cabeçalho clicável de cada coluna.
   aoAbrirDia?: (data: string) => void;
 }) {
@@ -119,9 +120,15 @@ export function GradeDeTempo({
       <div className={estilos.cabecalho} data-testid="cabecalho-da-grade">
         <span className={estilos.canto} />
         {grade.colunas.map((coluna) =>
-          aoAbrirDia ? (
+          coluna.rotulo ? (
+            // Coluna de profissional: o cabeçalho é o nome; o dia é o
+            // mesmo em todas e já está no título da agenda.
+            <span key={coluna.chave} className={estilos.diaDoCabecalho}>
+              <span className={estilos.nomeDoProfissional}>{coluna.rotulo}</span>
+            </span>
+          ) : aoAbrirDia ? (
             <button
-              key={coluna.data}
+              key={coluna.chave}
               type="button"
               className={estilos.diaDoCabecalho}
               // A data por extenso é o nome acessível: "8" sozinho não
@@ -139,7 +146,7 @@ export function GradeDeTempo({
           ) : (
             // Sem navegação a vista de dia ainda precisa dizer que dia
             // está na tela — o que some é o clique, não o rótulo.
-            <span key={coluna.data} className={estilos.diaDoCabecalho}>
+            <span key={coluna.chave} className={estilos.diaDoCabecalho}>
               <span className={estilos.nomeDoDia}>
                 {nomeDoDia(coluna.data)}
               </span>
@@ -178,7 +185,7 @@ export function GradeDeTempo({
           </div>
 
           {grade.colunas.map((coluna) => (
-            <div key={coluna.data} className={estilos.coluna}>
+            <div key={coluna.chave} className={estilos.coluna}>
               {coluna.fechado ? (
                 <p className={estilos.fechado}>Fechado neste dia.</p>
               ) : null}
@@ -209,12 +216,33 @@ export function GradeDeTempo({
                         "--linhas": faixa.linhas,
                       } as CSSProperties
                     }
-                    onClick={() => aoCriar(coluna.data, faixa.hora)}
+                    onClick={() =>
+                      coluna.barbeiroId
+                        ? aoCriar(coluna.data, faixa.hora, coluna.barbeiroId)
+                        : aoCriar(coluna.data, faixa.hora)
+                    }
                   >
                     {faixa.hora}
                   </button>
                 ),
               )}
+
+              {/* Antes dos eventos no DOM: um agendamento que já existia
+                  quando o bloqueio foi criado continua clicável por cima. */}
+              {coluna.bloqueios.map((bloqueio, indice) => (
+                <span
+                  key={`bloqueio-${indice}`}
+                  className={estilos.bloqueio}
+                  style={
+                    {
+                      "--linha": bloqueio.linha,
+                      "--linhas": bloqueio.linhas,
+                    } as CSSProperties
+                  }
+                >
+                  {bloqueio.rotulo}
+                </span>
+              ))}
 
               {coluna.eventos.map((evento) => (
                 <button

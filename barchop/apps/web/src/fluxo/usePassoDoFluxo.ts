@@ -30,7 +30,7 @@ interface Checagem {
 
 const CHECAGENS: Checagem[] = [
   {
-    aplicaA: ["data", "confirmar"],
+    aplicaA: ["profissional", "data", "confirmar"],
     falta: (e) => e.servicoIds.length === 0,
     volta: "servicos",
   },
@@ -94,7 +94,7 @@ export function usePassoDoFluxo(
     // dia, não por milissegundo, o `agora` padrão não os faz oscilar
     // a cada render.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- ver acima
-  }, [falta, slug, volta, router, escolhas.servicoIds.join(","), escolhas.data, escolhas.hora, escolhas.remarcar]);
+  }, [falta, slug, volta, router, escolhas.servicoIds.join(","), escolhas.data, escolhas.hora, escolhas.remarcar, escolhas.profissional]);
 
   return { ...escolhas, slug, pronto: !falta };
 }

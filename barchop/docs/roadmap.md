@@ -277,22 +277,22 @@ config compartilhada em `packages/config/eslint.mjs`.
   telefone com o canal de e-mail responde 422 `destino_indisponivel`.
   Fecha com o canal do WhatsApp (ADR-0004), quando a verificação da Meta
   sair do standby.
-- **O Novo agendamento do painel marca em quem está logado.** A tela
-  manda `barbeiroId: perfil.id` (`NovoAgendamento.tsx`). Desde o bloco
-  B a API recusa marcar em quem não atende (422
-  `profissional_nao_atende`), então a recepção recebe esse erro em vez
-  de marcar na própria agenda — mas ainda não consegue marcar pra
-  ninguém por essa tela. Fecha no C3, quando a tela escolhe o
-  profissional.
-- **O fluxo público mostra o catálogo inteiro e agenda com o primeiro
-  profissional.** Se o dono tirar um serviço desse profissional (tela
-  do membro), quem escolher o serviço vê "Não foi possível carregar a
-  agenda": a API responde 422 `servico_fora_do_profissional` e o
-  `EscolhaDaData` trata como falha genérica. Fecha no C2, com o passo
-  de escolher o profissional.
-- **A agenda do painel não desenha os bloqueios.** Eles valem (somem do
-  agendamento online, e marcar em cima dá 422 `horario_bloqueado`), mas
-  só aparecem na tela de Folgas. Fecha no C3.
+- **A coluna de cada profissional na agenda oferece o horário da
+  barbearia, não a jornada dele.** As faixas livres da vista de dia
+  descontam agendamentos e bloqueios, mas não a jornada (horário
+  próprio, folga): tocar numa faixa fora dela leva ao Novo agendamento,
+  que mostra a lista certa (a API calcula pela jornada) e recusa o
+  horário. Fecha buscando a jornada de cada membro na agenda.
+- **A ocupação do painel do dia não sabe que há equipe.** Ela compara
+  os agendamentos do dia inteiro com o horário de UMA pessoa — com dois
+  atendendo, passa de 100%. Fecha somando a janela de cada um.
+- **A semana da agenda mistura a equipe.** Colunas por profissional só
+  na vista de dia; a semana segue uma coluna por dia com todos juntos.
+- **Remarcar com profissional que saiu da equipe.** O link de remarcar
+  leva o profissional original; se ele foi desativado ou deixou de
+  fazer o serviço, o passo de data devolve pro passo do profissional, e
+  a API mantém o original no remarcar — o cliente não consegue
+  remarcar. Fecha deixando o remarcar trocar de profissional.
 - **Convite e reenvio não têm limite de envio.** `POST /equipe` e
   `POST /equipe/:id/convite` mandam e-mail sem contador: só o dono
   autenticado chama, mas um dono pode usar a rota pra mandar e-mail a

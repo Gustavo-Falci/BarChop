@@ -9,6 +9,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
 import { diasDaSemana, gradeDeTempo, gradeDoMes } from "../../painel/grade";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
 import estilos from "./Agenda.module.css";
 
@@ -77,6 +78,26 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     [de, ate]
   );
   const horarios = useRequisicao(() => api.barbeiro.horarios(), []);
+
+  // A equipe, pra vista de dia: uma coluna por quem atende. O
+  // profissional recebe da API só a própria agenda — pra ele não há o que
+  // dividir. Os bloqueios entram como faixas na coluna de cada um.
+  const { perfil } = usePainel();
+  const daEquipe = perfil.papel !== "profissional";
+  const equipe = useRequisicao(
+    () => (daEquipe && vista === "dia" ? api.barbeiro.equipe() : Promise.resolve([])),
+    [daEquipe, vista]
+  );
+  const bloqueios = useRequisicao(
+    () => (vista === "dia" ? api.barbeiro.bloqueios(data, data) : Promise.resolve([])),
+    [vista, data]
+  );
+  const atendentes = (equipe.dados ?? [])
+    .filter((membro) => membro.ativo && membro.atende && !membro.convitePendente)
+    .map((membro) => ({ id: membro.id, nome: membro.nome }));
+  // Com uma pessoa só, a coluna de dia de sempre: dividir por profissional
+  // só ocuparia o cabeçalho com um nome que ninguém precisa ler.
+  const profissionais = vista === "dia" && atendentes.length > 1 ? atendentes : undefined;
 
   function irPara(proxima: Vista, proximaData: string) {
     router.push(`/painel/agenda?vista=${proxima}&data=${proximaData}`);
@@ -150,11 +171,14 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             horarios: horarios.dados,
             agendamentos: agendamentos.dados,
             agora,
+            profissionais,
+            bloqueios: bloqueios.dados ?? [],
           })}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
-          aoCriar={(dia, hora) =>
+          aoCriar={(dia, hora, barbeiroId) =>
             router.push(
-              `/painel/agendamentos/novo?data=${dia}&hora=${encodeURIComponent(hora)}`
+              `/painel/agendamentos/novo?data=${dia}&hora=${encodeURIComponent(hora)}` +
+                (barbeiroId ? `&profissional=${barbeiroId}` : "")
             )
           }
           // Só na semana: na vista de dia, um botão para abrir o dia que

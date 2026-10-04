@@ -128,7 +128,7 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
     horaFechamento: diaSemana === 0 ? null : "18:00",
     fechado: diaSemana === 0,
   })),
-  barbeiros: [{ id: "bb1", nome: "Rafael" }],
+  barbeiros: [{ id: "bb1", nome: "Rafael", servicoIds: ["s1", "s2"] }],
 };
 
 const CLIENTE_PADRAO: ClienteSerializado = {
@@ -148,7 +148,18 @@ const SERVICOS_PADRAO: ServicoSerializado[] = [
 // e sem Postgres; o que ele NÃO faz é provar que a API real responde
 // assim — os tipos compartilhados pegam divergência de forma, não de
 // comportamento.
-export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
+// O que um teste semeia: o agendamento pode vir sem `barbeiro` (as
+// sementes de antes do bloco C não o têm) — o dublê completa com o
+// membro logado, "bb1". O que sai do dublê sempre o tem, como na API.
+type AgendamentoSemeado = Omit<AgendamentoSerializado, "barbeiro"> & {
+  barbeiro?: AgendamentoSerializado["barbeiro"];
+  clienteId?: string;
+};
+export type SementeFalsa = Partial<Omit<EstadoFalso, "agendamentos">> & {
+  agendamentos?: AgendamentoSemeado[];
+};
+
+export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // Cópia de toda lista, tanto do padrão quanto da semente: o dublê faz
   // `push` em `agendamentos` e em `servicos`, e sem a cópia dois testes
   // do mesmo arquivo veriam o estado um do outro — o padrão é um só
@@ -158,7 +169,10 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
     servicos: [...(semente.servicos ?? SERVICOS_PADRAO)],
     horariosLivres: [...(semente.horariosLivres ?? ["09:00", "09:30", "10:00"])],
     diasComVaga: { ...(semente.diasComVaga ?? {}) },
-    agendamentos: [...(semente.agendamentos ?? [])],
+    agendamentos: (semente.agendamentos ?? []).map((agendamento) => ({
+      ...agendamento,
+      barbeiro: agendamento.barbeiro ?? { id: "bb1", nome: "Rafael" },
+    })),
     cliente: semente.cliente ?? CLIENTE_PADRAO,
     clientes: [...(semente.clientes ?? [CLIENTE_PADRAO])],
     // O mesmo padrão da API (LIMITE_PADRAO em routers/clientes.ts).
@@ -269,12 +283,16 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
     origem: string;
     observacoes?: string;
     clienteId?: string;
+    // Sem ele é "qualquer um": o dublê fica com o membro logado.
+    barbeiroId?: string;
   }): AgendamentoSerializado & { clienteId?: string } {
+    const barbeiroId = entrada.barbeiroId ?? "bb1";
     // A trava do banco não deixa dois ativos no mesmo horário; o dublê
     // reproduz isso porque a tela precisa saber tratar horario_ocupado
     // mesmo tendo acabado de ver o horário como livre.
     const conflito = estado.agendamentos.some(
       (a) =>
+        a.barbeiro.id === barbeiroId &&
         a.data === entrada.data &&
         a.horaInicio === entrada.horaInicio &&
         a.status !== "cancelado"
@@ -296,6 +314,10 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
       origem: entrada.origem,
       observacoes: entrada.observacoes ?? null,
       clienteId: entrada.clienteId,
+      barbeiro: {
+        id: barbeiroId,
+        nome: estado.equipe?.find((m) => m.id === barbeiroId)?.nome ?? "Rafael",
+      },
       servicos: entrada.servicoIds.map((servicoId) => {
         const servico = estado.servicos.find((s) => s.id === servicoId);
         return {
@@ -770,6 +792,8 @@ export function criarApiClientFalso(semente: Partial<EstadoFalso> = {}) {
         // próprio agendamento.
         cancelarAgendamento(id);
         return novoAgendamento({
+          // Remarcar não troca de profissional, como na API.
+          barbeiroId: antigo.barbeiro.id,
           data: remarcacao.data,
           horaInicio: remarcacao.horaInicio,
           servicoIds:

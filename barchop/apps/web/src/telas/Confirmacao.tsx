@@ -49,7 +49,7 @@ import estilos from "./Confirmacao.module.css";
 // aberta antes de decidir — um padrão resolvido no render ficaria
 // congelado desde a montagem e não pegaria esse intervalo.
 export function Confirmacao({ agora }: { agora?: Date } = {}) {
-  const { slug, servicoIds, data, hora, remarcar, pronto } = usePassoDoFluxo(
+  const { slug, servicoIds, data, hora, remarcar, profissional, pronto } = usePassoDoFluxo(
     "confirmar",
     agora ?? new Date()
   );
@@ -74,10 +74,14 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     () => api.publico.servicos(slug),
     [slug]
   );
-  // Do perfil saem o barbeiroId do envio e o endereço da tela de
-  // sucesso. Falhar aqui não bloqueia nada: o envio busca de novo, e o
-  // sucesso só deixa de mostrar o endereço.
+  // Do perfil saem o nome do profissional escolhido e o endereço da tela
+  // de sucesso. Falhar aqui não bloqueia nada: o resumo diz só "com quem
+  // estiver livre" e o sucesso deixa de mostrar o endereço.
   const perfil = useRequisicao(() => api.publico.perfilDaBarbearia(slug), [slug]);
+
+  const nomeDoProfissional = profissional
+    ? perfil.dados?.barbeiros.find((barbeiro) => barbeiro.id === profissional)?.nome
+    : undefined;
 
   if (!pronto || !data || !hora) return null;
 
@@ -147,6 +151,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
           data,
           remarcar,
           aviso: "horario_expirou",
+          profissional,
         })
       );
       return;
@@ -158,8 +163,8 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     try {
       const agendamento = cliente
         ? await api.publico.agendar(slug, {
-            barbeiroId: (perfil.dados ?? (await api.publico.perfilDaBarbearia(slug)))
-              .barbeiros[0].id,
+            // Ausente é "qualquer um": a API escolhe e devolve quem.
+            barbeiroId: profissional,
             servicoIds,
             data: diaConfirmado,
             horaInicio: horaConfirmada,
@@ -191,6 +196,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
             data,
             remarcar,
             aviso: "horario_ocupado",
+            profissional,
           })
         );
         return;
@@ -248,6 +254,11 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
           <span>Serviços</span>
           <b>{nomes}</b>
         </div>
+        {/* No "qualquer um" é aqui que o cliente descobre com quem. */}
+        <div className={estilos.linha}>
+          <span>Profissional</span>
+          <b>Com {criado.barbeiro.nome}</b>
+        </div>
         <div className={estilos.linha}>
           <span>Total</span>
           <b>{formatarPreco((totalEmCentavos / 100).toFixed(2))}</b>
@@ -292,6 +303,18 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
           <span>Quando</span>
           <b>
             <span>{hora}</span> · <span>{formatarDataLonga(data)}</span>
+          </b>
+        </div>
+        <div className={estilos.linha}>
+          <span>Profissional</span>
+          {/* Com profissional escolhido e o perfil ainda chegando, nada
+              de "quem estiver livre": seria falso por um instante. */}
+          <b>
+            {!profissional
+              ? "Com quem estiver livre"
+              : nomeDoProfissional
+                ? `Com ${nomeDoProfissional}`
+                : "…"}
           </b>
         </div>
         <div className={estilos.linha}>

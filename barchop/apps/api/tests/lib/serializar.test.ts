@@ -160,10 +160,12 @@ describe("serializarAgendamento", () => {
           servico: { nome: "Corte" },
         },
       ],
+      barbeiro: { id: "b1", nome: "Rafael" },
     });
 
     expect(agendamento).toEqual({
       id: "a1",
+      barbeiro: { id: "b1", nome: "Rafael" },
       data: "2026-09-10",
       horaInicio: "10:00",
       horaFim: "10:45",

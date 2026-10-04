@@ -142,6 +142,141 @@ export async function contextoDoDia(
   return { janela: janelaEfetiva(funcionamento, jornada), bloqueios };
 }
 
+// Quem pode receber cliente: ativo, que atende e que já entrou (aceitou
+// o convite). O mesmo critério da lista pública de barbeiros e do
+// "qualquer um" — divergir faria a tela oferecer quem a API recusa.
+export const PODE_ATENDER = {
+  ativo: true,
+  atende: true,
+  senhaHash: { not: null },
+} as const;
+
+// Os candidatos do "qualquer um": quem pode atender e faz todos os
+// serviços pedidos, na ordem de entrada na equipe (que desempata).
+export async function candidatosDoQualquerUm(
+  db: ClientePrisma,
+  barbeariaId: string,
+  servicoIds: string[]
+): Promise<string[]> {
+  const idsUnicos = [...new Set(servicoIds)];
+  const membros = await db.barbeiro.findMany({
+    where: {
+      barbeariaId,
+      ...PODE_ATENDER,
+      AND: idsUnicos.map((servicoId) => ({ servicos: { some: { servicoId } } })),
+    },
+    orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
+    select: { id: true },
+  });
+  return membros.map((membro) => membro.id);
+}
+
+// Os horários de início livres de UM membro num dia, antes do filtro de
+// "já passou": janela efetiva, bloqueios e agendamentos. É a função que
+// a união do "qualquer um" e a escolha do POST usam — o horário que a
+// tela oferece tem que ser o que o POST aceita.
+export async function horariosDoProfissionalNoDia(
+  db: ClientePrisma,
+  params: { barbeariaId: string; barbeiroId: string; data: Date; duracaoTotalMinutos: number }
+): Promise<string[]> {
+  const { barbeariaId, barbeiroId, data, duracaoTotalMinutos } = params;
+  const contexto = await contextoDoDia(db, { barbeariaId, barbeiroId, data });
+  const { janela, ocupados: bloqueados } = aplicarBloqueios(contexto.janela, contexto.bloqueios, data);
+  // Mesmo filtro da trava do banco: cancelado não ocupa.
+  const ocupados = await db.agendamento.findMany({
+    where: { barbeiroId, data, status: { not: "cancelado" } },
+    select: { horaInicio: true, horaFim: true },
+  });
+  return horariosLivres({ janela, ocupados: [...ocupados, ...bloqueados], duracaoTotalMinutos });
+}
+
+// O calendário do mês pra uma lista de membros (um, ou os candidatos do
+// "qualquer um"): o dia tem vaga se algum deles tem. Uma consulta por
+// tabela, com `in`, e o agrupamento em memória — trinta dias vezes N
+// membros seriam centenas de idas ao banco.
+export async function diasComVaga(
+  db: ClientePrisma,
+  params: {
+    barbeariaId: string;
+    barbeiroIds: string[];
+    primeiroDia: Date;
+    ultimoDia: Date;
+    duracaoTotalMinutos: number;
+    agora: { data: string; hora: string };
+  }
+): Promise<Record<string, boolean>> {
+  const { barbeariaId, barbeiroIds, primeiroDia, ultimoDia, duracaoTotalMinutos, agora } = params;
+
+  const [funcionamento, jornadas, bloqueios, agendamentos] = await Promise.all([
+    db.horarioFuncionamento.findMany({ where: { barbeariaId } }),
+    db.jornadaProfissional.findMany({ where: { barbeiroId: { in: barbeiroIds } } }),
+    db.bloqueio.findMany({
+      where: { barbeiroId: { in: barbeiroIds }, dataInicio: { lte: ultimoDia }, dataFim: { gte: primeiroDia } },
+      select: { barbeiroId: true, dataInicio: true, dataFim: true, horaInicio: true, horaFim: true },
+    }),
+    db.agendamento.findMany({
+      where: {
+        barbeiroId: { in: barbeiroIds },
+        data: { gte: primeiroDia, lte: ultimoDia },
+        status: { not: "cancelado" },
+      },
+      select: { barbeiroId: true, data: true, horaInicio: true, horaFim: true },
+    }),
+  ]);
+
+  const funcionamentoPorDia = new Map(funcionamento.map((linha) => [linha.diaSemana, linha]));
+  const jornadaDe = (barbeiroId: string, diaSemana: number) =>
+    jornadas.find((dia) => dia.barbeiroId === barbeiroId && dia.diaSemana === diaSemana) ?? null;
+
+  const dias: Record<string, boolean> = {};
+  for (
+    let data = new Date(primeiroDia);
+    data.getTime() <= ultimoDia.getTime();
+    data = new Date(data.getTime() + 24 * 60 * 60 * 1000)
+  ) {
+    const chave = data.toISOString().slice(0, 10);
+    const diaSemana = data.getUTCDay();
+    dias[chave] = barbeiroIds.some((barbeiroId) => {
+      const { janela, ocupados: bloqueados } = aplicarBloqueios(
+        janelaEfetiva(funcionamentoPorDia.get(diaSemana) ?? null, jornadaDe(barbeiroId, diaSemana)),
+        bloqueios.filter((bloqueio) => bloqueio.barbeiroId === barbeiroId),
+        data
+      );
+      const ocupados = agendamentos.filter(
+        (agendamento) =>
+          agendamento.barbeiroId === barbeiroId && agendamento.data.getTime() === data.getTime()
+      );
+      return (
+        descartarPassados({
+          data: chave,
+          horarios: horariosLivres({ janela, ocupados: [...ocupados, ...bloqueados], duracaoTotalMinutos }),
+          agora,
+        }).length > 0
+      );
+    });
+  }
+  return dias;
+}
+
+// A chave da trava do "qualquer um": uma barbearia num dia. Exportada pra
+// o teste travar exatamente a mesma.
+export function chaveDoQualquerUm(barbeariaId: string, data: string): string {
+  return `qualquer-um:${barbeariaId}:${data}`;
+}
+
+// Serializa as escolhas do "qualquer um" na mesma barbearia e dia: dois
+// pedidos simultâneos leriam a mesma agenda, escolheriam o mesmo
+// profissional e um bateria na EXCLUDE. Com a trava o segundo espera o
+// commit do primeiro e escolhe de novo. Só neste caminho — com o
+// profissional escolhido, a EXCLUDE segue decidindo (409).
+export async function travarQualquerUm(
+  db: ClientePrisma,
+  barbeariaId: string,
+  data: string
+): Promise<void> {
+  await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${chaveDoQualquerUm(barbeariaId, data)}))`;
+}
+
 // O membro faz todos os serviços pedidos? Até o bloco C o fluxo público
 // mostra o catálogo inteiro, então isto é o que impede marcar com quem
 // não faz o serviço.

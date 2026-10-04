@@ -36,6 +36,9 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
     (h) => h.diaSemana === new Date(`${hoje}T12:00:00`).getDay()
   );
   const percentual = ocupacao(doDia, horarioDeHoje);
+  // Com mais de um profissional no dia, cada linha diz com quem; com um
+  // só, o nome repetido em toda linha seria ruído.
+  const comEquipe = new Set(doDia.map((agendamento) => agendamento.barbeiro.id)).size > 1;
 
   return (
     <div className={estilos.pagina}>
@@ -76,6 +79,7 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
               >
                 {agendamento.horaInicio} {agendamento.cliente.nome} ·{" "}
                 {agendamento.servicos.map((s) => s.nome).join(" + ")}
+                {comEquipe ? ` · com ${agendamento.barbeiro.nome}` : null}
               </button>
             </li>
           ))}

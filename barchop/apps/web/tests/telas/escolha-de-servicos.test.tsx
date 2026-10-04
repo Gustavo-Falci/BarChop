@@ -44,7 +44,7 @@ describe("escolha dos serviços", () => {
     expect(screen.getByRole("button", { name: /continuar/i })).toBeDisabled();
   });
 
-  it("leva pro passo de data levando os ids escolhidos", async () => {
+  it("leva pro passo do profissional levando os ids escolhidos", async () => {
     montar();
     await waitFor(() => screen.getByText("Corte"));
 
@@ -52,7 +52,7 @@ describe("escolha dos serviços", () => {
     await userEvent.click(screen.getByRole("button", { name: /continuar/i }));
 
     expect(navegacaoFalsa.push).toHaveBeenCalledWith(
-      "/gr-barber/agendar/data?servicos=s1"
+      "/gr-barber/agendar/profissional?servicos=s1"
     );
   });
 
@@ -74,7 +74,7 @@ describe("escolha dos serviços", () => {
     await userEvent.click(screen.getByRole("button", { name: /continuar/i }));
 
     expect(navegacaoFalsa.push).toHaveBeenCalledWith(
-      "/gr-barber/agendar/data?servicos=s1"
+      "/gr-barber/agendar/profissional?servicos=s1"
     );
   });
 

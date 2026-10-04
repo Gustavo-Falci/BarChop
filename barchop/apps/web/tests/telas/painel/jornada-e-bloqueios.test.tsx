@@ -123,7 +123,10 @@ describe("folgas e bloqueios", () => {
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
 
-    await userEvent.selectOptions(await screen.findByLabelText("Membro"), "m2");
+    // Espera a opção, e não só o <select>: ele aparece antes de a equipe
+    // chegar, vazio — sob carga o selectOptions corria contra a lista.
+    await screen.findByRole("option", { name: "Ana" });
+    await userEvent.selectOptions(screen.getByLabelText("Membro"), "m2");
     fireEvent.change(screen.getByLabelText("De"), { target: { value: "2037-01-12" } });
     fireEvent.change(screen.getByLabelText("Até"), { target: { value: "2037-01-16" } });
     await userEvent.click(screen.getByRole("checkbox", { name: /dia inteiro/i }));

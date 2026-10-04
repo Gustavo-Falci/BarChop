@@ -63,12 +63,12 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 | 🔧 Profissional | painel | Perfil, foto, papel (dono, profissional, recepção), serviços que faz, jornada da semana — perfil, papel e "atende" no bloco A; jornada e serviços no B4; falta a foto (bloco E, com o upload) | Equipe |
 | ✅ Folgas e bloqueios | painel | Férias, almoço, horário bloqueado por profissional (`/painel/bloqueios`, bloco B) | bloqueio de horários e folgas |
 | ✅ Aceitar convite | painel | Profissional convidado define a senha e entra (`/painel/convite`, bloco A) | — |
-| 🔧 Painel do dia | painel | Previsto do dia, próximos clientes, por profissional | painel do dia |
-| 🔧 Agenda | painel | Colunas por profissional; bloqueios visíveis; profissional vê só a própria | agenda da equipe |
-| 🔧 Novo agendamento | painel | Escolhe o profissional | — |
+| ✅ Painel do dia | painel | Previsto do dia, próximos clientes, por profissional (bloco C: "com quem" em cada linha; a ocupação ainda não soma a equipe) | painel do dia |
+| ✅ Agenda | painel | Colunas por profissional; bloqueios visíveis; profissional vê só a própria (bloco C, na vista de dia) | agenda da equipe |
+| ✅ Novo agendamento | painel | Escolhe o profissional (bloco C) | — |
 | 🔧 Configurações | painel | Antecedência e canal do lembrete; comodidades; fotos; WhatsApp, Instagram, mapa; formas de pagamento | — |
 | 🔧 Página da barbearia | pública | Capa, comodidades, aberto até, equipe com fotos, serviços por categoria com os próximos 3 horários livres, mapa e rota, contatos, formas de pagamento | Início da página pública |
-| 🆕 Escolher profissional | pública | Passo entre serviços e horário, com "qualquer um" | fluxo de agendamento |
+| ✅ Escolher profissional | pública | Passo entre serviços e horário, com "qualquer um" (`/agendar/profissional`, bloco C) | fluxo de agendamento |
 | 🆕 Confirmar ou cancelar | pública | Destino do link do lembrete; confirma ou cancela com um toque | resposta ao lembrete |
 
 ## Onda 1s — Site de marketing (mínimo)

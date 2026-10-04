@@ -111,12 +111,43 @@ describe("GET /barbearias/:slug", () => {
     });
 
     expect(resposta.statusCode).toBe(200);
-    // Sem este id o cliente não consegue chamar /disponibilidade nem
-    // criar agendamento: as duas rotas exigem barbeiroId.
+    // O id é o que o passo "escolher profissional" manda pra
+    // disponibilidade e pro agendamento; sem serviço cadastrado, a lista
+    // do que ele faz vem vazia.
     expect(resposta.json().barbeiros).toEqual([
-      { id: barbeiroId, nome: "Barbeiro um" },
+      { id: barbeiroId, nome: "Barbeiro um", servicoIds: [] },
     ]);
 
+    await app.close();
+  });
+
+  it("diz que serviços cada um faz, pro passo do profissional filtrar", async () => {
+    // Bloco C: o cliente escolhe os serviços antes do profissional, e a
+    // tela só oferece quem faz todos eles.
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app);
+    const criar = async (nome: string) =>
+      (
+        await app.inject({
+          method: "POST",
+          url: "/servicos",
+          headers: auth(um.token),
+          payload: { nome, duracaoMinutos: 30, preco: "40.00" },
+        })
+      ).json().id as string;
+    const corte = await criar("Corte");
+    const barba = await criar("Barba");
+    await app.inject({
+      method: "PUT",
+      url: `/equipe/${um.barbeiroId}/servicos`,
+      headers: auth(um.token),
+      payload: { servicoIds: [corte] },
+    });
+
+    const resposta = await app.inject({ method: "GET", url: `/barbearias/${um.slug}` });
+
+    expect(resposta.json().barbeiros[0].servicoIds).toEqual([corte]);
+    expect(resposta.json().barbeiros[0].servicoIds).not.toContain(barba);
     await app.close();
   });
 

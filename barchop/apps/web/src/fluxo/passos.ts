@@ -9,16 +9,20 @@ export interface Escolhas {
   // zero, e estado local (useState) não sobrevive a isso. Vai na URL
   // pelo mesmo motivo que as outras escolhas do fluxo vão.
   aviso?: string;
+  // Com quem (id do profissional). Ausente é "qualquer um": a API
+  // escolhe quem estiver livre na hora.
+  profissional?: string;
 }
 
 // Dia e horário são um passo só ("data"), e identificação e
 // confirmação também ("confirmar"). As rotas antigas /agendar/horario
 // e /agendar/dados ainda existem, só como redirect — ver
 // src/fluxo/rotaAntiga.ts.
-export type Passo = "servicos" | "data" | "confirmar";
+export type Passo = "servicos" | "profissional" | "data" | "confirmar";
 
 const CAMINHO_DO_PASSO: Record<Passo, string> = {
   servicos: "/agendar",
+  profissional: "/agendar/profissional",
   data: "/agendar/data",
   confirmar: "/agendar/confirmar",
 };
@@ -35,6 +39,7 @@ export function lerEscolhas(query: URLSearchParams): Escolhas {
     hora: query.get("hora") ?? undefined,
     remarcar: query.get("remarcar") ?? undefined,
     aviso: query.get("aviso") ?? undefined,
+    profissional: query.get("profissional") ?? undefined,
   };
 }
 
@@ -50,6 +55,8 @@ export function montarQuery(escolhas: Escolhas): string {
   // a ordem dos campos anteriores, e um campo novo no meio deslocaria
   // todas elas.
   if (escolhas.aviso) params.set("aviso", escolhas.aviso);
+  // Depois do aviso, pelo mesmo motivo: entrou no bloco C da Onda 1.
+  if (escolhas.profissional) params.set("profissional", escolhas.profissional);
 
   const texto = params.toString();
   return texto ? `?${texto}` : "";

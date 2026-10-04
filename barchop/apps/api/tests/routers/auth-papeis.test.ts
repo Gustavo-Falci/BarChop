@@ -29,6 +29,8 @@ const SO_DO_DONO = [
   { method: "POST", url: "/equipe" },
   { method: "PATCH", url: `/equipe/${ID_QUALQUER}` },
   { method: "POST", url: `/equipe/${ID_QUALQUER}/convite` },
+  { method: "PUT", url: `/equipe/${ID_QUALQUER}/jornada` },
+  { method: "PUT", url: `/equipe/${ID_QUALQUER}/servicos` },
 ] as const;
 
 async function prepararEquipe(app: App) {

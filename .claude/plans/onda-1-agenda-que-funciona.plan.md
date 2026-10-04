@@ -5,7 +5,19 @@
 **Complexity**: Large
 
 ## Onde paramos (2026-10-04)
-**Bloco A mergeado** na main (PR #14, `8ca5697`). **Bloco B completo** na branch `onda-1-bloco-b` (saída da main), cada tarefa com commit RED e GREEN — falta push e PR:
+**Blocos A, B e C mergeados** na main (PRs #14, #15, #16; main em `83185eb`). **Bloco D em andamento** na branch `onda-1-bloco-d` (saída da main).
+
+### Bloco D — em andamento
+| Tarefa | Estado | O que ficou |
+|---|---|---|
+| D1 fila | feito | `lib/fila.ts`: `Fila` (`agendar(trabalho, dados, { quando, chave })` → `false` se a chave já está na fila; `trabalhar`), `filaDeMemoria` (`pendentes`, `rodarVencidos(agora)`) e `filaDoPgBoss` (pg-boss 12, ESM, externo no bundle CJS — `require(esm)` do Node ≥22.12). Fila com política **`exclusive`**: na `standard` a `singletonKey` não deduplica nada; chave ausente vira UUID (a `exclusive` indexa `COALESCE(chave,'')`). `buildApp({ fila })`; sem fila só em `NODE_ENV=test` (`filaPadrao`). `server.ts` monta o pg-boss (`urlDoPg` tira o `?schema=`), ouve `error`, `start` antes do `listen`, `stop` no `onClose`. Contrato em `tests/lib/fila.test.ts` roda contra memória **e** pg-boss real no banco de teste. Retenção: o pg-boss conta `keep_until` a partir do `start_after`, então lembrete a 30+ dias não expira |
+
+Decisões pro D2 (antes do RED): agendar o lembrete **depois** do `$transaction` commitar (pg-boss tem pool próprio: dentro da transação, o job sobreviveria ao rollback do 409, e o `comRetryDeDeadlock` roda o callback duas vezes); `quando` = instante absoluto de `data` + `horaInicio` em `FUSO_DA_BARBEARIA` menos a antecedência, função pura testada; decidir o que fazer quando o momento do lembrete já passou na hora de marcar (o pg-boss rodaria na hora — provavelmente pular).
+
+Suítes no fim do D1: API 506.
+
+### Bloco B (histórico)
+Cada tarefa com commit RED e GREEN:
 
 | Tarefa | Estado | O que ficou |
 |---|---|---|
@@ -14,11 +26,11 @@
 | B3 disponibilidade | feito | `janelaEfetiva` (pura) = jornada ∩ funcionamento; `aplicarBloqueios`, `caiEmBloqueio`, `contextoDoDia` em `lib/disponibilidade.ts`; 422 `horario_bloqueado`, `servico_fora_do_profissional`, `profissional_nao_atende`; o mês faz uma consulta por tabela |
 | B4 telas | feito | `JornadaDoMembro` e `ServicosDoMembro` na edição do membro; `FolgasEBloqueios` em `/painel/bloqueios` (link "Folgas" pra todos); api-client + dublê com as mesmas recusas |
 
-Suítes no fim do B: API 482, web 492, api-client 75, formato 19; lint, type-check e `next build` verdes. Próximo: push e PR do Bloco B, depois o **Bloco C** (agenda da equipe: "qualquer um", passo de escolher profissional, agenda em colunas).
+Suítes no fim do B: API 482, web 492, api-client 75, formato 19; lint, type-check e `next build` verdes. Mergeado no PR #15.
 
 Dívidas novas do B (em `docs/roadmap.md`): o fluxo público ainda agenda com `barbeiros[0]` e mostra o catálogo inteiro — serviço que esse profissional não faz dá "Não foi possível carregar a agenda" (fecha no C2); a agenda do painel ainda não desenha os bloqueios (C3).
 
-### Bloco C — em andamento (branch `onda-1-bloco-c`, saída da `onda-1-bloco-b`; PR empilhado sobre o #15 enquanto ele não for mergeado — perguntar antes de mergear o #15)
+### Bloco C (histórico — mergeado no PR #16)
 Decisões tomadas antes do RED (2026-10-04):
 - **Candidato** ("qualquer um" e passo do profissional): ativo, atende, `senha_hash` não nulo e faz todos os serviços pedidos — uma constante/consulta só, a mesma do perfil público.
 - **Uma função por profissional e dia** (janela efetiva, bloqueios, ocupados, `descartarPassados`) usada pela união do "qualquer um" e pela escolha no POST: todo horário oferecido tem que ser marcável. O mês recebe uma lista de `barbeiroId` e consulta cada tabela uma vez (`in`).
@@ -29,7 +41,7 @@ Decisões tomadas antes do RED (2026-10-04):
 
 Progresso: **C1 feito** (`bb61d2e`): `candidatosDoQualquerUm`, `horariosDoProfissionalNoDia`, `diasComVaga`, `travarQualquerUm`/`chaveDoQualquerUm` e `PODE_ATENDER` em `lib/disponibilidade.ts`; `escolherProfissional` em `lib/agendamento.ts`; teste de concorrência prova a trava (sem ela, 409). Dublê aceita agendamento semeado sem `barbeiro` (`SementeFalsa`), completa com `bb1`, e o conflito passou a ser por profissional. Suítes: API 491, web 492, api-client 75. **C2 feito** (`4424241`): `EscolhaDoProfissional` em `/agendar/profissional`, `profissionaisQueFazem` em `src/fluxo/profissionais.ts`, `?profissional=` revalidado na `EscolhaDaData`, confirmação com "Com X"/"Com quem estiver livre" e o nome de quem ficou no sucesso, remarcar com o profissional original. Suítes: API 492, web 506 (uma falha intermitente vista uma vez em "bloqueia o almoço da Ana", não reproduziu em 5 execuções). **C3 feito**: `NovoAgendamento` com seletor de profissional (`?profissional=` da URL), agenda do dia em colunas por profissional com bloqueios listrados (`gradeDeTempo` com `profissionais`/`bloqueios`), painel do dia com "com X" quando há equipe. Corrida de teste do `<select>` encontrada e corrigida (memória `select-carregado-espere-a-opcao`).
 
-**Bloco C completo.** Suítes: API 492, web 521, api-client 75, formato 19; lint, type-check e build verdes. Falta: push e PR (empilhado sobre o #15 se ele ainda estiver aberto — perguntar antes de mergear). Dívidas novas no roadmap: coluna da agenda sem a jornada, ocupação sem a equipe, semana mistura a equipe, remarcar com profissional que saiu. Próximo bloco: **D** (lembrete).
+**Bloco C completo.** Suítes: API 492, web 521, api-client 75, formato 19; lint, type-check e build verdes. Dívidas novas no roadmap: coluna da agenda sem a jornada, ocupação sem a equipe, semana mistura a equipe, remarcar com profissional que saiu. Próximo bloco: **D** (lembrete).
 
 ### Bloco A (histórico)
 Cada tarefa com commit RED e GREEN:

@@ -117,7 +117,8 @@ describe("minha conta", () => {
     await userEvent.click(screen.getByRole("button", { name: /remarcar/i }));
 
     expect(navegacaoFalsa.push).toHaveBeenCalledWith(
-      "/gr-barber/agendar/data?servicos=s1&remarcar=a1"
+      // Com o profissional de quem atendeu: a API remarca com ele.
+      "/gr-barber/agendar/data?servicos=s1&remarcar=a1&profissional=bb1"
     );
   });
 

@@ -12,7 +12,7 @@ import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
 import estilos from "./EscolhaDeServicos.module.css";
 
 export function EscolhaDeServicos() {
-  const { slug, servicoIds, remarcar } = usePassoDoFluxo("servicos");
+  const { slug, servicoIds, remarcar, profissional } = usePassoDoFluxo("servicos");
   const router = useRouter();
   const api = useApi();
   const { dados, carregando, erro } = useRequisicao(
@@ -83,10 +83,17 @@ export function EscolhaDeServicos() {
           disabled={escolhidos.length === 0}
           onClick={() =>
             router.push(
-              caminhoDoPasso(slug, "data", {
-                servicoIds: selecionados.map((s) => s.id),
-                remarcar,
-              })
+              // Remarcar não troca de profissional (a API mantém o do
+              // agendamento): vai direto pro dia, levando quem atende.
+              remarcar
+                ? caminhoDoPasso(slug, "data", {
+                    servicoIds: selecionados.map((s) => s.id),
+                    remarcar,
+                    profissional,
+                  })
+                : caminhoDoPasso(slug, "profissional", {
+                    servicoIds: selecionados.map((s) => s.id),
+                  })
             )
           }
         >

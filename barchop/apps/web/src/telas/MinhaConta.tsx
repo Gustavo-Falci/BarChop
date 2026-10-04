@@ -108,6 +108,9 @@ export function MinhaConta() {
                         // troca quando, não o quê.
                         servicoIds: agendamento.servicos.map((s) => s.servicoId),
                         remarcar: agendamento.id,
+                        // A API remarca com o mesmo profissional; o dia
+                        // tem que mostrar a agenda dele, não a de outro.
+                        profissional: agendamento.barbeiro.id,
                       })
                     )
                   }

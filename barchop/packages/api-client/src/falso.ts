@@ -128,7 +128,7 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
     horaFechamento: diaSemana === 0 ? null : "18:00",
     fechado: diaSemana === 0,
   })),
-  barbeiros: [{ id: "bb1", nome: "Rafael" }],
+  barbeiros: [{ id: "bb1", nome: "Rafael", servicoIds: ["s1", "s2"] }],
 };
 
 const CLIENTE_PADRAO: ClienteSerializado = {

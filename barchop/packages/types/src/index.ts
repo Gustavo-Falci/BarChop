@@ -35,7 +35,9 @@ export interface NovoAgendamentoBarbeiroInput {
 // em "cliente", e o cliente é resolvido pelo telefone dentro daquela
 // barbearia.
 export interface NovoAgendamentoPublicoInput {
-  barbeiroId: string;
+  // Ausente é "qualquer um": a API escolhe quem estiver livre e devolve
+  // no `barbeiro` do agendamento.
+  barbeiroId?: string;
   servicoIds: string[];
   data: string;
   horaInicio: string;
@@ -140,12 +142,12 @@ export interface AgendamentoComCliente extends AgendamentoSerializado {
   cliente: ClienteSerializado;
 }
 
-// Resposta de GET /barbearias/:slug. O `barbeiros` é o que destrava o
-// fluxo público inteiro: /disponibilidade e o POST público exigem
-// barbeiroId, e esta é a única rota pública que o entrega.
+// Resposta de GET /barbearias/:slug. O `barbeiros` traz quem pode
+// atender e o que cada um faz: é com isso que o passo do profissional
+// oferece só quem faz os serviços escolhidos.
 export interface PerfilPublicoBarbearia extends BarbeariaSerializada {
   horarios: HorarioSerializado[];
-  barbeiros: { id: string; nome: string }[];
+  barbeiros: { id: string; nome: string; servicoIds: string[] }[];
 }
 
 export interface SessaoBarbeiro {

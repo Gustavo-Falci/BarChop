@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
@@ -11,6 +11,7 @@ import { FaixaDeDias } from "../componentes/FaixaDeDias";
 import { ListaDeHorarios } from "../componentes/ListaDeHorarios";
 import { Resumo } from "../componentes/Resumo";
 import { caminhoDoPasso } from "../fluxo/passos";
+import { profissionaisQueFazem } from "../fluxo/profissionais";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
 import {
   ehPassado,
@@ -36,7 +37,7 @@ const DIAS_NA_FAIXA = 14;
 // API recebe o instante: é o que deixa o teste escolher o dia sem fake
 // timers.
 export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
-  const { slug, servicoIds, data, remarcar, aviso, pronto } = usePassoDoFluxo(
+  const { slug, servicoIds, data, remarcar, aviso, profissional, pronto } = usePassoDoFluxo(
     "data",
     agora
   );
@@ -55,13 +56,35 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
   const [mes, setMes] = useState(() => hoje.slice(0, 7));
   const [calendarioAbertoNoCelular, setCalendarioAberto] = useState(false);
 
-  // O perfil uma vez só, e não a cada troca de dia: dele sai só o
-  // barbeiroId, e a barbearia do MVP tem um barbeiro só.
+  // O perfil uma vez só, e não a cada troca de dia: é com ele que o
+  // profissional da URL é conferido.
   const perfil = useRequisicao(
     async () => (pronto ? api.publico.perfilDaBarbearia(slug) : null),
     [slug, pronto]
   );
-  const barbeiroId = perfil.dados?.barbeiros[0]?.id;
+  // Sem profissional na URL é "qualquer um": a API junta a agenda de
+  // quem faz os serviços.
+  const barbeiroId = profissional;
+  // O profissional da URL ainda serve? Link velho, ou serviço trocado
+  // depois de escolher, podem trazer quem não faz o que foi pedido — e a
+  // API responderia 422. `undefined` enquanto o perfil não chegou.
+  const profissionalServe = !profissional
+    ? true
+    : perfil.dados
+      ? profissionaisQueFazem(perfil.dados.barbeiros, servicoIds).some(
+          (barbeiro) => barbeiro.id === profissional
+        )
+      : undefined;
+  const podeConsultar = pronto && profissionalServe === true;
+
+  useEffect(() => {
+    // `replace`: a URL com o profissional que não serve não merece
+    // entrada no histórico.
+    if (profissionalServe === false) {
+      router.replace(caminhoDoPasso(slug, "profissional", { servicoIds, remarcar }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- primitivos, ver usePassoDoFluxo
+  }, [profissionalServe, slug, servicoIds.join(","), remarcar, router]);
 
   // A rota de disponibilidade é por mês, e a faixa atravessa a virada
   // (no dia 28 ela é quase toda do mês seguinte). Os meses vão em
@@ -75,7 +98,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
   ];
 
   const agenda = useRequisicao(async () => {
-    if (!barbeiroId) return null;
+    if (!podeConsultar) return null;
     const porMes = await Promise.all(
       meses.map((mes) =>
         api.publico.disponibilidadeDoMes(slug, { barbeiroId, mes, servicoIds })
@@ -99,7 +122,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
       }
     }
     return dias;
-  }, [slug, barbeiroId, meses.join(","), servicoIds.join(","), hoje]);
+  }, [slug, podeConsultar, barbeiroId, meses.join(","), servicoIds.join(","), hoje]);
 
   const dias = agenda.dados ?? {};
 
@@ -112,7 +135,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
   const dataEfetiva = dataValida ?? faixa.find((dia) => dias[dia]);
 
   const horarios = useRequisicao(async () => {
-    if (!barbeiroId || !dataEfetiva) return null;
+    if (!podeConsultar || !dataEfetiva) return null;
     const livres = await api.publico.disponibilidadeDoDia(slug, {
       barbeiroId,
       data: dataEfetiva,
@@ -126,7 +149,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
       data: dataEfetiva,
       livres: livres.filter((hora) => !horaJaPassou(dataEfetiva, hora, agora)),
     };
-  }, [slug, barbeiroId, dataEfetiva, servicoIds.join(",")]);
+  }, [slug, podeConsultar, barbeiroId, dataEfetiva, servicoIds.join(",")]);
 
   if (!pronto) return null;
 
@@ -148,7 +171,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     // desfazer cada dia tocado. E sem rolar pro topo, que jogaria a
     // lista de horários pra fora da tela bem quando ela chega.
     router.replace(
-      caminhoDoPasso(slug, "data", { servicoIds, data: dia, remarcar }),
+      caminhoDoPasso(slug, "data", { servicoIds, data: dia, remarcar, profissional }),
       { scroll: false }
     );
   }
@@ -272,6 +295,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
                       data: dataEfetiva,
                       hora,
                       remarcar,
+                      profissional,
                     })
                   )
                 }

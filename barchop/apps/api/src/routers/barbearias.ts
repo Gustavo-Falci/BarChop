@@ -151,7 +151,7 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
           barbeiros: {
             // O mesmo critério do "qualquer um" (lib/disponibilidade.ts).
             where: PODE_ATENDER,
-            select: { id: true, nome: true },
+            select: { id: true, nome: true, servicos: { select: { servicoId: true } } },
             orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
           },
         },
@@ -162,9 +162,14 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
       return {
         ...serializarBarbearia(barbearia),
         horarios: completarSemana(barbearia.horariosFuncionamento),
-        // O cliente precisa deste id pra chamar /disponibilidade e pra
-        // criar o agendamento; sem ele o fluxo público não fecha.
-        barbeiros: barbearia.barbeiros,
+        // O id vai pra disponibilidade e pro agendamento; os serviços de
+        // cada um deixam o passo do profissional oferecer só quem faz o
+        // que o cliente escolheu.
+        barbeiros: barbearia.barbeiros.map((barbeiro) => ({
+          id: barbeiro.id,
+          nome: barbeiro.nome,
+          servicoIds: barbeiro.servicos.map((servico) => servico.servicoId),
+        })),
       };
     }
   );

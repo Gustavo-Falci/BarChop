@@ -109,6 +109,10 @@ describe("perfil da barbearia", () => {
       endereco: null,
       logoUrl: null,
       sobre: null,
+      whatsapp: null,
+      instagram: null,
+      comodidades: [],
+      formasDePagamento: [],
       horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
         diaSemana,
         horaAbertura: null,

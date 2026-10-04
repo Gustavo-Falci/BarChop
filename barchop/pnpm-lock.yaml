@@ -179,6 +179,9 @@ importers:
 
   packages/api-client:
     dependencies:
+      '@barchop/formato':
+        specifier: workspace:*
+        version: link:../formato
       '@barchop/types':
         specifier: workspace:*
         version: link:../types

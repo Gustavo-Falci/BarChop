@@ -83,6 +83,7 @@ export function CadastroDeServico() {
   const [nome, setNome] = useState("");
   const [duracao, setDuracao] = useState("");
   const [preco, setPreco] = useState("");
+  const [categoria, setCategoria] = useState("");
   const [erroNome, setErroNome] = useState<string | undefined>();
   const [erroDuracao, setErroDuracao] = useState<string | undefined>();
   const [erroPreco, setErroPreco] = useState<string | undefined>();
@@ -122,6 +123,7 @@ export function CadastroDeServico() {
     setNome(atual.nome);
     setDuracao(String(atual.duracaoMinutos));
     setPreco(atual.preco);
+    setCategoria(atual.categoria ?? "");
   }
 
   // Sem isto, uma falha em servicos() deixava dados null pra sempre: o
@@ -160,6 +162,9 @@ export function CadastroDeServico() {
         nome: comNome.valor,
         duracaoMinutos: comMinutos.valor,
         preco: comDecimal.valor,
+        // Na edição vai sempre: apagar o campo é tirar a categoria (null).
+        // No cadastro, só se preenchida.
+        ...(id || categoria.trim() ? { categoria: categoria.trim() || null } : {}),
       };
       if (id) await api.barbeiro.atualizarServico(id, corpo);
       else await api.barbeiro.criarServico(corpo);
@@ -226,6 +231,14 @@ export function CadastroDeServico() {
           setErroPreco(undefined);
         }}
         erro={erroPreco}
+      />
+      <Campo
+        rotulo="Categoria (opcional)"
+        apoio="Agrupa os serviços na sua página. Exemplo: Cabelo, Barba."
+        placeholder="Cabelo"
+        maxLength={60}
+        valor={categoria}
+        onChange={setCategoria}
       />
 
       {aviso ? <Aviso>{aviso}</Aviso> : null}

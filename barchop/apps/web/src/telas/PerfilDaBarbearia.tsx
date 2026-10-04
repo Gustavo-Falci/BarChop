@@ -6,7 +6,10 @@ import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
 import { Botao } from "../componentes/Botao";
 import { formatarPreco } from "../componentes/ItemDeServico";
+import { agruparPorCategoria } from "../fluxo/categorias";
 import { agruparSemana, situacaoAgora } from "../fluxo/funcionamento";
+import { rotuloDoProximoHorario } from "../formato/datas";
+import { rotuloDaComodidade, rotuloDoPagamento } from "../formato/pagina";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { LinkDaConta } from "../fluxo/LinkDaConta";
 import estilos from "./PerfilDaBarbearia.module.css";
@@ -28,6 +31,13 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
   // primeiro passo do agendamento usa a mesma. Como as duas chamadas
   // partem do mesmo render, elas correm em paralelo — não há cascata.
   const servicos = useRequisicao(() => api.publico.servicos(slug), [slug]);
+
+  // Os próximos horários de cada serviço, em paralelo com as outras duas.
+  // Se falhar, a página continua sem eles: são atalho, não conteúdo.
+  const proximos = useRequisicao(() => api.publico.proximosHorarios(slug), [slug]);
+  const proximosDe = new Map(
+    (proximos.dados ?? []).map((item) => [item.servicoId, item.horarios])
+  );
 
   if (carregando) return <main className={estilos.pagina}>Carregando…</main>;
 
@@ -97,8 +107,12 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
         {servicos.dados && servicos.dados.length > 0 ? (
           <section className={estilos.secao}>
             <h2 className={estilos.titulo}>Serviços</h2>
+            {/* Por categoria quando o dono as cadastrou; sem nenhuma, a
+                lista é uma só, sem subtítulo. */}
+            {agruparPorCategoria(servicos.dados).map((grupo) => {
+              const lista = (
             <ul className={estilos.lista}>
-              {servicos.dados.map((servico) => (
+              {grupo.servicos.map((servico) => (
                 <li key={servico.id}>
                   {/* Link pro agendamento com este serviço já marcado —
                     no passo de serviços, e não direto no de data: corte
@@ -121,14 +135,118 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                       {formatarPreco(servico.preco)}
                     </span>
                   </Link>
+                  {/* Os próximos horários, fora do link do serviço (link
+                      dentro de link não existe em HTML). Cada um leva
+                      direto à confirmação, com "qualquer um": a lista é a
+                      união de quem faz o serviço, e a confirmação já
+                      trata o horário que expirou no meio do caminho. */}
+                  {(proximosDe.get(servico.id) ?? []).length > 0 ? (
+                    <ul
+                      className={estilos.proximos}
+                      aria-label={`Próximos horários de ${servico.nome}`}
+                    >
+                      {proximosDe.get(servico.id)!.map((horario) => (
+                        <li key={`${horario.data} ${horario.horaInicio}`}>
+                          <Link
+                            className={estilos.proximo}
+                            href={caminhoDoPasso(slug, "confirmar", {
+                              servicoIds: [servico.id],
+                              data: horario.data,
+                              hora: horario.horaInicio,
+                            })}
+                          >
+                            {rotuloDoProximoHorario(horario.data, horario.horaInicio, agora)}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </li>
               ))}
             </ul>
+              );
+              return grupo.titulo ? (
+                <section key={grupo.titulo} className={estilos.grupo} aria-label={grupo.titulo}>
+                  <h3 className={estilos.subtitulo}>{grupo.titulo}</h3>
+                  {lista}
+                </section>
+              ) : (
+                <div key="todos">{lista}</div>
+              );
+            })}
           </section>
         ) : null}
       </div>
 
       <div className={estilos.lateral}>
+        {/* Links montados aqui, de dados que a API validou: o WhatsApp é
+            o telefone normalizado, o Instagram é só o @ (nunca uma URL
+            digitada), e o mapa é uma busca pelo endereço — nada que o
+            dono escreva vira link sozinho. Outra aba, sem referrer. */}
+        {dados && (dados.whatsapp || dados.instagram || dados.endereco) ? (
+          <section className={estilos.secao} aria-label="Contato">
+            <h2 className={estilos.titulo}>Contato</h2>
+            <ul className={estilos.contatos}>
+              {dados.whatsapp ? (
+                <li>
+                  <a
+                    href={`https://wa.me/55${dados.whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Chamar no WhatsApp
+                  </a>
+                </li>
+              ) : null}
+              {dados.instagram ? (
+                <li>
+                  <a
+                    href={`https://instagram.com/${dados.instagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    @{dados.instagram}
+                  </a>
+                </li>
+              ) : null}
+              {dados.endereco ? (
+                <li>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dados.endereco)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Ver no mapa
+                  </a>
+                </li>
+              ) : null}
+            </ul>
+          </section>
+        ) : null}
+
+        {/* Só quando há o que dizer, pelo mesmo motivo de Serviços. */}
+        {dados && dados.comodidades.length > 0 ? (
+          <section className={estilos.secao} aria-label="Comodidades">
+            <h2 className={estilos.titulo}>Comodidades</h2>
+            <ul className={estilos.etiquetas}>
+              {dados.comodidades.map((comodidade) => (
+                <li key={comodidade}>{rotuloDaComodidade(comodidade)}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {dados && dados.formasDePagamento.length > 0 ? (
+          <section className={estilos.secao} aria-label="Formas de pagamento">
+            <h2 className={estilos.titulo}>Formas de pagamento</h2>
+            <ul className={estilos.etiquetas}>
+              {dados.formasDePagamento.map((forma) => (
+                <li key={forma}>{rotuloDoPagamento(forma)}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         {temDiaAberto ? (
           <section className={estilos.secao}>
             <h2 className={estilos.titulo}>Horário de funcionamento</h2>

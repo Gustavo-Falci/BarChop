@@ -23,6 +23,10 @@ describe("GET /barbearias/me", () => {
       endereco: null,
       logoUrl: null,
       sobre: null,
+      whatsapp: null,
+      instagram: null,
+      comodidades: [],
+      formasDePagamento: [],
       lembreteAntecedenciaHoras: 24,
     });
 

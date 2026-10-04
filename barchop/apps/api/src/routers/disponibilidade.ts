@@ -11,6 +11,7 @@ import {
 } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate } from "../lib/horas";
+import { proximosHorarios } from "../lib/proximos-horarios";
 import {
   PADRAO_DATA,
   PADRAO_MES,
@@ -95,6 +96,26 @@ async function agendaDe(
 // Públicas: são as telas de escolha de data e de horário, abertas pelo
 // link do WhatsApp. Ficam fora do escopo protegido do app.ts.
 export function registrarRotasDisponibilidade(app: App): void {
+  // Os próximos 3 horários livres de cada serviço, pra página da
+  // barbearia (bloco E1). Sem token, como as outras daqui.
+  app.get(
+    "/barbearias/:slug/proximos-horarios",
+    { schema: { params: paramsSlug } },
+    async (request) => {
+      // findUniqueOrThrow: slug inexistente vira P2025 → 404.
+      const barbearia = await prisma.barbearia.findUniqueOrThrow({
+        where: { slug: request.params.slug },
+        select: { id: true },
+      });
+      return {
+        servicos: await proximosHorarios(prisma, {
+          barbeariaId: barbearia.id,
+          agora: agoraNaBarbearia(),
+        }),
+      };
+    }
+  );
+
   app.get(
     "/barbearias/:slug/disponibilidade",
     { schema: { params: paramsSlug, querystring: filtroDia } },

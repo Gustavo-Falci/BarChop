@@ -5,7 +5,7 @@
 **Complexity**: Large
 
 ## Onde paramos (2026-10-04)
-**Blocos A, B e C mergeados** na main (PRs #14, #15, #16). **Bloco D completo**: D1 a D5 mergeados na main, um PR por tarefa (PRs #17 a #21). **Próximo: Bloco E** (página da barbearia no endereço próprio), em branch nova saída da main.
+**Blocos A, B e C mergeados** na main (PRs #14, #15, #16). **Bloco D completo**: D1 a D5 mergeados na main, um PR por tarefa (PRs #17 a #21). **Bloco E em andamento.** E1 (página rica) na branch `onda-1-bloco-e`: migration `20261004160000_pagina_da_barbearia` (whatsapp, instagram, comodidades e formas de pagamento com CHECK da lista de `@barchop/formato/pagina.ts`; categoria no serviço); `GET /barbearias/:slug/proximos-horarios` (3 por serviço em 14 dias, união do "qualquer um", `agendaDoPeriodo` com uma consulta por tabela, também usado pelo `diasComVaga`); página pública com categorias, próximos horários levando à confirmação, Contato/Comodidades/Pagamento; Configurações "Página da barbearia"; categoria no cadastro de serviço. Capa e fotos ficaram inteiras pro E2 (upload + URL só do bucket). Rodado de verdade no Chrome (desktop e celular). Suítes: API 592, web 557, api-client 94, formato 19. Escolhas de produto a confirmar com o dono: comodidades = wifi, ar-condicionado, estacionamento, acessibilidade, café, bebidas, TV, espaço kids; pagamento = pix, dinheiro, débito, crédito. **Próximo: E2** (imagens) — antes do RED, verificar se o S3 da OCI aceita POST pré-assinado com `content-length-range`; só jpeg/png/webp; implementação local atrás de interface.
 
 ### Bloco D — completo (PRs #17 a #21)
 | Tarefa | Estado | O que ficou |

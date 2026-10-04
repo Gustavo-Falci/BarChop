@@ -30,6 +30,10 @@ describe("PATCH /barbearias/me", () => {
       endereco: "Rua das Tesouras, 100",
       logoUrl: "https://exemplo.com/logo.png",
       sobre: "Corte na tesoura e barba na navalha.",
+      whatsapp: null,
+      instagram: null,
+      comodidades: [],
+      formasDePagamento: [],
       lembreteAntecedenciaHoras: 24,
     });
 

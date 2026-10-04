@@ -342,3 +342,8 @@ config compartilhada em `packages/config/eslint.mjs`.
 - **Cliente só com telefone não recebe lembrete automático.** Depende
   do barbeiro tocar em "Lembrar pelo WhatsApp" até a Meta sair do
   standby (ADR-0009).
+- **A rota dos próximos horários não tem limite nem cache.**
+  `GET /barbearias/:slug/proximos-horarios` é a rota pública mais pesada
+  (uma consulta por tabela pra 14 dias de agenda da equipe) e fica na
+  página mais aberta do produto. Antes do G: limite de taxa ou cache
+  curto (um minuto basta), junto com o limite da rota pública de agendar.

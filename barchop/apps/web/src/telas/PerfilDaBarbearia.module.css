@@ -197,3 +197,47 @@
     background: none;
   }
 }
+
+/* Página rica (bloco E1). */
+.grupo { display: grid; gap: var(--espaco-sm); }
+.grupo + .grupo { margin-top: var(--espaco-lg); }
+.subtitulo {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.proximos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
+  margin-top: var(--espaco-xs);
+  padding: 0;
+  list-style: none;
+}
+.proximo {
+  display: inline-block;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink);
+  text-decoration: none;
+}
+.contatos { display: grid; gap: var(--espaco-xs); padding: 0; list-style: none; }
+.contatos a { color: var(--cor-ink); font-weight: 600; }
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
+  padding: 0;
+  list-style: none;
+}
+.etiquetas li {
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: 1px solid var(--cor-ink-soft);
+  border-radius: var(--raio-sm);
+  font-size: var(--texto-sm);
+}

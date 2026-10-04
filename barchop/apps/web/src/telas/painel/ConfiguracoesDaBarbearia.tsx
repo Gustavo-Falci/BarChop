@@ -3,11 +3,15 @@
 import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import {
+  COMODIDADES,
+  FORMAS_DE_PAGAMENTO,
   normalizarTelefoneObrigatorio,
+  PADRAO_INSTAGRAM,
   PADRAO_SLUG,
   slugReservado,
   TelefoneInvalido,
 } from "@barchop/formato";
+import { ROTULO_DA_COMODIDADE, ROTULO_DO_PAGAMENTO } from "../../formato/pagina";
 import type { AntecedenciaDoLembrete, HorarioSerializado } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
@@ -55,6 +59,11 @@ export function ConfiguracoesDaBarbearia() {
   const [sobre, setSobre] = useState("");
   const [novoSlug, setNovoSlug] = useState("");
   const [antecedencia, setAntecedencia] = useState<AntecedenciaDoLembrete>(24);
+  // A página rica (bloco E1).
+  const [whatsapp, setWhatsapp] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [comodidades, setComodidades] = useState<string[]>([]);
+  const [formasDePagamento, setFormasDePagamento] = useState<string[]>([]);
   const [semana, setSemana] = useState<HorarioSerializado[]>([]);
   const [nome, setNome] = useState(perfil.nome);
   const [telefone, setTelefone] = useState(perfil.telefone ?? "");
@@ -100,6 +109,10 @@ export function ConfiguracoesDaBarbearia() {
     setSobre(barbearia.dados.sobre ?? "");
     setNovoSlug(barbearia.dados.slug);
     setAntecedencia(barbearia.dados.lembreteAntecedenciaHoras);
+    setWhatsapp(barbearia.dados.whatsapp ?? "");
+    setInstagram(barbearia.dados.instagram ?? "");
+    setComodidades(barbearia.dados.comodidades);
+    setFormasDePagamento(barbearia.dados.formasDePagamento);
   }
 
   // Mesmo motivo do bloco acima, aplicado à semana: sincronizar depois
@@ -208,6 +221,41 @@ export function ConfiguracoesDaBarbearia() {
     } finally {
       setSalvando(false);
     }
+  }
+
+  async function salvarPagina() {
+    setAviso(undefined);
+    setErro({});
+    // O @ que a pessoa digita por hábito sai aqui; uma URL inteira não é
+    // aceita (a API recusaria com 400), e o aviso diz o que pôr.
+    const arroba = instagram.trim().replace(/^@/, "");
+    if (arroba && !new RegExp(PADRAO_INSTAGRAM).test(arroba)) {
+      setErro({ instagram: "Só o @ do Instagram, sem o link: algo como gr.barber" });
+      return;
+    }
+    setSalvando(true);
+    try {
+      await api.barbeiro.atualizarMinhaBarbearia({
+        whatsapp: telefoneOuNulo(whatsapp),
+        instagram: arroba || null,
+        // Na ordem da lista, não na dos cliques: a página mostra igual
+        // pra todo mundo, seja qual for a ordem em que o dono marcou.
+        comodidades: COMODIDADES.filter((c) => comodidades.includes(c)),
+        formasDePagamento: FORMAS_DE_PAGAMENTO.filter((f) => formasDePagamento.includes(f)),
+      });
+    } catch (causa) {
+      if (causa instanceof TelefoneInvalido) {
+        setErro({ whatsapp: "Informe o DDD e o número, como (11) 99999-8888" });
+        return;
+      }
+      setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  function alternar(lista: string[], valor: string): string[] {
+    return lista.includes(valor) ? lista.filter((v) => v !== valor) : [...lista, valor];
   }
 
   async function salvarLembrete() {
@@ -402,6 +450,58 @@ export function ConfiguracoesDaBarbearia() {
             >
               Trocar link
             </Botao>
+          </Secao>
+
+          <Secao
+            titulo="Página da barbearia"
+            descricao="Contatos, comodidades e formas de pagamento que aparecem na sua página pública."
+            acao={
+              <Botao onClick={salvarPagina} carregando={salvando}>
+                Salvar página
+              </Botao>
+            }
+          >
+            <Campo
+              rotulo="WhatsApp"
+              formato="telefone"
+              valor={whatsapp}
+              onChange={setWhatsapp}
+              erro={erro.whatsapp}
+            />
+            <Campo
+              rotulo="Instagram"
+              apoio="Só o @, sem o link. Exemplo: gr.barber"
+              autoComplete="off"
+              valor={instagram}
+              onChange={setInstagram}
+              erro={erro.instagram}
+            />
+            <fieldset className={estilos.marcas}>
+              <legend className={estilos.rotulo}>Comodidades</legend>
+              {COMODIDADES.map((comodidade) => (
+                <label key={comodidade}>
+                  <input
+                    type="checkbox"
+                    checked={comodidades.includes(comodidade)}
+                    onChange={() => setComodidades((atual) => alternar(atual, comodidade))}
+                  />
+                  {ROTULO_DA_COMODIDADE[comodidade]}
+                </label>
+              ))}
+            </fieldset>
+            <fieldset className={estilos.marcas}>
+              <legend className={estilos.rotulo}>Formas de pagamento</legend>
+              {FORMAS_DE_PAGAMENTO.map((forma) => (
+                <label key={forma}>
+                  <input
+                    type="checkbox"
+                    checked={formasDePagamento.includes(forma)}
+                    onChange={() => setFormasDePagamento((atual) => alternar(atual, forma))}
+                  />
+                  {ROTULO_DO_PAGAMENTO[forma]}
+                </label>
+              ))}
+            </fieldset>
           </Secao>
 
           <Secao

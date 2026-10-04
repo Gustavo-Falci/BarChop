@@ -206,6 +206,39 @@ export async function diasComVaga(
   }
 ): Promise<Record<string, boolean>> {
   const { barbeariaId, barbeiroIds, primeiroDia, ultimoDia, duracaoTotalMinutos, agora } = params;
+  const horariosDoDia = await agendaDoPeriodo(db, { barbeariaId, barbeiroIds, primeiroDia, ultimoDia });
+
+  const dias: Record<string, boolean> = {};
+  for (
+    let data = new Date(primeiroDia);
+    data.getTime() <= ultimoDia.getTime();
+    data = new Date(data.getTime() + 24 * 60 * 60 * 1000)
+  ) {
+    const chave = data.toISOString().slice(0, 10);
+    dias[chave] = barbeiroIds.some(
+      (barbeiroId) =>
+        descartarPassados({
+          data: chave,
+          horarios: horariosDoDia(barbeiroId, data, duracaoTotalMinutos),
+          agora,
+        }).length > 0
+    );
+  }
+  return dias;
+}
+
+// Um período inteiro de agenda pra uma lista de membros, com uma
+// consulta por tabela (`in`) e o resto em memória. Devolve a função que
+// diz os horários de início livres de um membro num dia, antes do filtro
+// de "já passou" — a mesma conta do `horariosDoProfissionalNoDia`
+// (janela efetiva, bloqueios, agendamentos não cancelados), só que sem
+// ir ao banco a cada dia. Usada pelo calendário do mês e pelos próximos
+// horários da página pública.
+export async function agendaDoPeriodo(
+  db: ClientePrisma,
+  params: { barbeariaId: string; barbeiroIds: string[]; primeiroDia: Date; ultimoDia: Date }
+): Promise<(barbeiroId: string, data: Date, duracaoTotalMinutos: number) => string[]> {
+  const { barbeariaId, barbeiroIds, primeiroDia, ultimoDia } = params;
 
   const [funcionamento, jornadas, bloqueios, agendamentos] = await Promise.all([
     db.horarioFuncionamento.findMany({ where: { barbeariaId } }),
@@ -228,34 +261,19 @@ export async function diasComVaga(
   const jornadaDe = (barbeiroId: string, diaSemana: number) =>
     jornadas.find((dia) => dia.barbeiroId === barbeiroId && dia.diaSemana === diaSemana) ?? null;
 
-  const dias: Record<string, boolean> = {};
-  for (
-    let data = new Date(primeiroDia);
-    data.getTime() <= ultimoDia.getTime();
-    data = new Date(data.getTime() + 24 * 60 * 60 * 1000)
-  ) {
-    const chave = data.toISOString().slice(0, 10);
+  return (barbeiroId, data, duracaoTotalMinutos) => {
     const diaSemana = data.getUTCDay();
-    dias[chave] = barbeiroIds.some((barbeiroId) => {
-      const { janela, ocupados: bloqueados } = aplicarBloqueios(
-        janelaEfetiva(funcionamentoPorDia.get(diaSemana) ?? null, jornadaDe(barbeiroId, diaSemana)),
-        bloqueios.filter((bloqueio) => bloqueio.barbeiroId === barbeiroId),
-        data
-      );
-      const ocupados = agendamentos.filter(
-        (agendamento) =>
-          agendamento.barbeiroId === barbeiroId && agendamento.data.getTime() === data.getTime()
-      );
-      return (
-        descartarPassados({
-          data: chave,
-          horarios: horariosLivres({ janela, ocupados: [...ocupados, ...bloqueados], duracaoTotalMinutos }),
-          agora,
-        }).length > 0
-      );
-    });
-  }
-  return dias;
+    const { janela, ocupados: bloqueados } = aplicarBloqueios(
+      janelaEfetiva(funcionamentoPorDia.get(diaSemana) ?? null, jornadaDe(barbeiroId, diaSemana)),
+      bloqueios.filter((bloqueio) => bloqueio.barbeiroId === barbeiroId),
+      data
+    );
+    const ocupados = agendamentos.filter(
+      (agendamento) =>
+        agendamento.barbeiroId === barbeiroId && agendamento.data.getTime() === data.getTime()
+    );
+    return horariosLivres({ janela, ocupados: [...ocupados, ...bloqueados], duracaoTotalMinutos });
+  };
 }
 
 // A chave da trava do "qualquer um": uma barbearia num dia. Exportada pra

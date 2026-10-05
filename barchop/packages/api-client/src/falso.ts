@@ -132,6 +132,8 @@ export interface EstadoFalso {
   bloqueios?: BloqueioSerializado[];
   // A configuração do lembrete, que só o painel lê. 24 h, como na API.
   lembreteAntecedenciaHoras?: AntecedenciaDoLembrete;
+  // O interruptor do lembrete (G2c). Ligado, como nas barbearias novas.
+  lembreteAtivo?: boolean;
   // Os tokens do link do lembrete que o dublê reconhece, por token o id
   // do agendamento. Qualquer outro é 401, como na API; os vencidos, 410.
   lembretes?: Record<string, string>;
@@ -232,6 +234,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     servicosPorMembro: { ...(semente.servicosPorMembro ?? {}) },
     bloqueios: [...(semente.bloqueios ?? [])],
     lembreteAntecedenciaHoras: semente.lembreteAntecedenciaHoras ?? 24,
+    lembreteAtivo: semente.lembreteAtivo ?? true,
     lembretes: { ...(semente.lembretes ?? {}) },
     lembretesVencidos: [...(semente.lembretesVencidos ?? [])],
     proximosHorarios: semente.proximosHorarios,
@@ -513,7 +516,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // página pública não mostra.
   function barbeariaDoPainel(): BarbeariaDoPainel {
     const { horarios: _horarios, barbeiros: _barbeiros, ...barbearia } = estado.perfil;
-    return { ...barbearia, lembreteAntecedenciaHoras: estado.lembreteAntecedenciaHoras ?? 24 };
+    return {
+      ...barbearia,
+      lembreteAntecedenciaHoras: estado.lembreteAntecedenciaHoras ?? 24,
+      lembreteAtivo: estado.lembreteAtivo ?? true,
+    };
   }
 
   // As recusas do schema da API pra página rica: 400, como lá.
@@ -910,7 +917,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async atualizarMinhaBarbearia(edicao: EdicaoDaBarbearia) {
         exigirPaginaValida(edicao);
-        const { lembreteAntecedenciaHoras, ...doPerfil } = edicao;
+        const { lembreteAntecedenciaHoras, lembreteAtivo, ...doPerfil } = edicao;
+        if (lembreteAtivo !== undefined) estado.lembreteAtivo = lembreteAtivo;
         if (lembreteAntecedenciaHoras !== undefined) {
           // O enum do schema da API: fora dele é 400.
           if (![2, 12, 24].includes(lembreteAntecedenciaHoras)) {

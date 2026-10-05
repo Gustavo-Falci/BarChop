@@ -1,6 +1,7 @@
 import { prisma } from "@barchop/database";
 import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM } from "@barchop/formato";
 import { PODE_ATENDER } from "../lib/disponibilidade";
+import { enfileirarLembretesFuturos } from "../lib/lembrete";
 import { normalizarTelefone } from "../lib/telefone";
 import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import { serializarBarbearia, serializarBarbeariaDoPainel } from "../lib/serializar";
@@ -45,6 +46,8 @@ const corpoPatchBarbearia = {
     // Quanto antes do horário sai o lembrete. Mudar não move os que já
     // estão na fila: a antecedência é lida quando o lembrete é agendado.
     lembreteAntecedenciaHoras: { type: "integer", enum: [2, 12, 24] },
+    // O interruptor do lembrete (G2c). Ligar enfileira os futuros.
+    lembreteAtivo: { type: "boolean" },
     // A página rica (bloco E1). WhatsApp é normalizado como o telefone.
     // Instagram é o @ sem o @, nunca URL: a página monta o link.
     // Comodidades e pagamento são listas fechadas, de @barchop/formato.
@@ -86,6 +89,10 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
       // há campo editável ali.
       const { telefone, whatsapp, ...resto } = request.body;
 
+      const antes = await prisma.barbearia.findUniqueOrThrow({
+        where: { id: request.user.barbeariaId },
+        select: { lembreteAtivo: true },
+      });
       const barbearia = await prisma.barbearia.update({
         where: { id: request.user.barbeariaId },
         data: {
@@ -96,6 +103,12 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
           ...(whatsapp !== undefined ? { whatsapp: normalizarTelefone(whatsapp) } : {}),
         },
       });
+
+      // Só na virada de desligado pra ligado, e depois de gravar: os
+      // agendamentos que entraram com ele desligado ganham o lembrete.
+      if (!antes.lembreteAtivo && barbearia.lembreteAtivo) {
+        await enfileirarLembretesFuturos({ fila: app.fila, log: request.log }, barbearia.id);
+      }
 
       return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
     }

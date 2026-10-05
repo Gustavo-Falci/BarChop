@@ -63,6 +63,7 @@ export function ConfiguracoesDaBarbearia() {
   const [novoLink, setNovoLink] = useState("");
   const [motivo, setMotivo] = useState("");
   const [antecedencia, setAntecedencia] = useState<AntecedenciaDoLembrete>(24);
+  const [lembreteAtivo, setLembreteAtivo] = useState(true);
   // A página rica (bloco E1).
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
@@ -119,6 +120,7 @@ export function ConfiguracoesDaBarbearia() {
     setEndereco(barbearia.dados.endereco ?? "");
     setSobre(barbearia.dados.sobre ?? "");
     setAntecedencia(barbearia.dados.lembreteAntecedenciaHoras);
+    setLembreteAtivo(barbearia.dados.lembreteAtivo);
     setWhatsapp(barbearia.dados.whatsapp ?? "");
     setInstagram(barbearia.dados.instagram ?? "");
     setComodidades(barbearia.dados.comodidades);
@@ -293,7 +295,10 @@ export function ConfiguracoesDaBarbearia() {
     setAviso(undefined);
     setSalvando(true);
     try {
-      await api.barbeiro.atualizarMinhaBarbearia({ lembreteAntecedenciaHoras: antecedencia });
+      await api.barbeiro.atualizarMinhaBarbearia({
+        lembreteAtivo,
+        lembreteAntecedenciaHoras: antecedencia,
+      });
     } catch (causa) {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
     } finally {
@@ -594,6 +599,21 @@ export function ConfiguracoesDaBarbearia() {
               </Botao>
             }
           >
+            {/* O interruptor (G2c). Ligar enfileira na API os agendamentos
+                futuros que ainda não têm lembrete — é o caso da barbearia
+                que chegou com a agenda migrada. */}
+            <label className={estilos.chave}>
+              <input
+                type="checkbox"
+                aria-describedby="lembrete-ativo-apoio"
+                checked={lembreteAtivo}
+                onChange={(evento) => setLembreteAtivo(evento.target.checked)}
+              />
+              Enviar lembrete por e-mail
+            </label>
+            <span className={estilos.apoio} id="lembrete-ativo-apoio">
+              Ao ligar, os agendamentos já marcados também recebem o lembrete.
+            </span>
             <div className={estilos.campoLongo}>
               <label className={estilos.rotulo} htmlFor="antecedencia">
                 Quando o lembrete sai

@@ -99,6 +99,8 @@ export interface AgendamentoDoLembrete {
 // quem abre a página pública.
 export interface BarbeariaDoPainel extends BarbeariaSerializada {
   lembreteAntecedenciaHoras: AntecedenciaDoLembrete;
+  // O interruptor do lembrete (Onda 1, G2c). Ligado nas barbearias novas.
+  lembreteAtivo: boolean;
 }
 
 export interface HorarioSerializado {

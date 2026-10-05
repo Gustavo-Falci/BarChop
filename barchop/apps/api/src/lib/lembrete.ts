@@ -66,10 +66,13 @@ export async function agendarLembrete(
   try {
     // Lida agora: mudar a antecedência depois não move os lembretes que
     // já estão na fila.
-    const { lembreteAntecedenciaHoras } = await prisma.barbearia.findUniqueOrThrow({
+    const { lembreteAntecedenciaHoras, lembreteAtivo } = await prisma.barbearia.findUniqueOrThrow({
       where: { id: agendamento.barbeariaId },
-      select: { lembreteAntecedenciaHoras: true },
+      select: { lembreteAntecedenciaHoras: true, lembreteAtivo: true },
     });
+    // Desligado (G2c): nada entra na fila. Ligar depois enfileira os
+    // futuros (enfileirarLembretesFuturos).
+    if (!lembreteAtivo) return;
     const dados: DadosDoLembrete = { agendamentoId: agendamento.id };
     await fila.agendar(TRABALHO_LEMBRETE, dados, {
       quando: momentoDoLembrete(data, hora, lembreteAntecedenciaHoras),
@@ -79,6 +82,32 @@ export async function agendarLembrete(
     });
   } catch (erro) {
     log.error({ err: erro, agendamentoId: agendamento.id }, "lembrete não agendado");
+  }
+}
+
+// Ao ligar o interruptor (G2c): os agendamentos que entraram com ele
+// desligado — e os migrados, que nunca passaram por agendarLembrete —
+// ganham o lembrete. Só os ativos e ainda não lembrados; o resto (piso de
+// 1 h, horário que já passou) o agendarLembrete decide como sempre. A
+// chave do trabalho evita duplicar o que ainda está na fila.
+export async function enfileirarLembretesFuturos(
+  deps: { fila: Fila; log: Log; agora?: () => Date },
+  barbeariaId: string
+): Promise<void> {
+  const agora = deps.agora?.() ?? new Date();
+  const futuros = await prisma.agendamento.findMany({
+    where: {
+      barbeariaId,
+      status: { in: [...STATUS_QUE_LEMBRA] },
+      lembreteEnviadoEm: null,
+      // Folga de um dia pro fuso: o corte fino é do agendarLembrete.
+      data: { gte: new Date(agora.getTime() - 24 * 60 * 60 * 1000) },
+    },
+    select: { id: true, barbeariaId: true, data: true, horaInicio: true, status: true },
+    orderBy: [{ data: "asc" }, { horaInicio: "asc" }],
+  });
+  for (const agendamento of futuros) {
+    await agendarLembrete(deps, agendamento);
   }
 }
 
@@ -131,7 +160,7 @@ const DIA_DA_SEMANA = new Intl.DateTimeFormat("pt-BR", {
 // e-mail e no WhatsApp do painel.
 export const INCLUDE_DO_LEMBRETE = {
   cliente: { select: { nome: true, email: true, telefone: true } },
-  barbearia: { select: { nome: true, slug: true } },
+  barbearia: { select: { nome: true, slug: true, lembreteAtivo: true } },
   barbeiro: { select: { nome: true } },
   servicos: { include: { servico: { select: { nome: true } } } },
 } as const;
@@ -184,6 +213,9 @@ export async function enviarLembrete(
   // Sumiu: a barbearia foi apagada e levou o agendamento junto.
   if (!agendamento) return;
   if (!lembraDe(agendamento.status)) return;
+  // Desligado depois de o trabalho entrar na fila: não manda, e não
+  // marca — ligar de novo enfileira e ele sai.
+  if (!agendamento.barbearia.lembreteAtivo) return;
 
   const data = dateParaData(agendamento.data);
   const hora = dateParaHora(agendamento.horaInicio);

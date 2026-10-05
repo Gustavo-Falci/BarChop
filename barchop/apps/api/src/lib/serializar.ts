@@ -69,13 +69,17 @@ urlDaImagem: (chave: string) => string
 // O painel lê a barbearia com a configuração do lembrete; a página
 // pública, que usa o serializador de cima, não.
 export function serializarBarbeariaDoPainel(
-  barbearia: Parameters<typeof serializarBarbearia>[0] & { lembreteAntecedenciaHoras: number },
+  barbearia: Parameters<typeof serializarBarbearia>[0] & {
+    lembreteAntecedenciaHoras: number;
+    lembreteAtivo: boolean;
+  },
   urlDaImagem: (chave: string) => string
 ): BarbeariaDoPainel {
   return {
     ...serializarBarbearia(barbearia, urlDaImagem),
     // O CHECK da coluna garante 2, 12 ou 24.
     lembreteAntecedenciaHoras: barbearia.lembreteAntecedenciaHoras as AntecedenciaDoLembrete,
+    lembreteAtivo: barbearia.lembreteAtivo,
   };
 }
 

@@ -163,3 +163,13 @@
   margin: 0;
   overflow-wrap: anywhere;
 }
+
+/* A chave do lembrete: caixa e texto na mesma linha, com o alvo do
+   clique no texto inteiro. */
+.chave {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  font-weight: 600;
+  cursor: pointer;
+}

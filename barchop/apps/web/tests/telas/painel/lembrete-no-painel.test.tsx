@@ -92,7 +92,7 @@ describe("antecedência do lembrete nas configurações", () => {
     await userEvent.click(screen.getByRole("button", { name: /salvar lembrete/i }));
 
     await waitFor(() =>
-      expect(atualizar).toHaveBeenCalledWith({ lembreteAntecedenciaHoras: 2 })
+      expect(atualizar).toHaveBeenCalledWith({ lembreteAtivo: true, lembreteAntecedenciaHoras: 2 })
     );
     expect((await falso.barbeiro.minhaBarbearia()).lembreteAntecedenciaHoras).toBe(2);
   });

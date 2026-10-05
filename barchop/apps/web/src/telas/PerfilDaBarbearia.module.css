@@ -54,10 +54,12 @@
 
 /* Sem capa, a proporção da foto deixaria um bloco escuro de 400px no
    desktop pra mostrar duas letras. Altura própria, menor — e depois
-   da media query, pra ganhar dela com a mesma especificidade. */
+   da media query, pra ganhar dela com a mesma especificidade. No
+   celular fica em 96px: a faixa amarela vazia que abria esta página
+   saiu justamente por ocupar 120px do topo sem dizer nada. */
 .semCapa {
   aspect-ratio: auto;
-  height: clamp(140px, 20vw, 200px);
+  height: clamp(96px, 18vw, 200px);
 }
 
 .capa {

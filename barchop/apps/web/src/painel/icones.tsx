@@ -1,4 +1,4 @@
-// Ícones desenhados à mão em vez de uma biblioteca: são oito, e uma
+// Ícones desenhados à mão em vez de uma biblioteca: são poucos, e uma
 // dependência de ícones traria centenas de SVGs e um peso que nenhuma
 // outra tela pede.
 //

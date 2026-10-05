@@ -4,7 +4,20 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-05)
+## RETOMAR AQUI (2026-10-05, fim do dia)
+
+**Estado:** `main` em PR #35. Onda 1: blocos A–F e **F4 completos**. Nada pela metade em branch nenhuma. Falta só o **G** (produção na OCI e piloto).
+
+**O G começa pelo DNS, feito pelo dono nas contas (eu oriento):**
+1. Cloudflare (Free): "Add a site" `barchop.com.br`, anotar os 2 nameservers.
+2. Registro.br: desligar o DNSSEC se estiver ligado; trocar os servidores DNS pelos da Cloudflare; esperar a zona ficar "Active" (horas, até 48 h).
+3. Com o IP público da VM da OCI: `A @` e `A *` (coringa) → IP, em "DNS only" — o TLS é do Caddy.
+4. Token de API da Cloudflare só com `Zone → DNS → Edit` na zona, pro Caddy emitir o coringa por DNS-01. Segredo da VM: nunca no repo nem no chat.
+5. Resend: adicionar o domínio, criar na Cloudflare os TXT/MX que ele pedir, esperar "Verified".
+
+**Depois, código (um PR por item, TDD, push+PR+merge sem perguntar):** G1 `infra/` (compose api+worker, web, postgres com backup, Caddy coringa) → G2 `trustProxy`, CORS por lista, limites nas rotas públicas, interruptor do lembrete, `CANAL_DE_MENSAGEM=email` → G3 GR Barber (medir faltas antes de ligar o lembrete) → G4 docs. Conferir no navegador as telas do F4c/F4d (não vistas: a extensão do Chrome não conectou).
+
+## Histórico do F4 (2026-10-05)
 
 **Estado:** Onda 1: blocos **A–F completos** (PRs #14–#30), **F4 completo**: F4a (PR #31), F4b (PR #33), F4c (PR #34) e F4d (branch `onda-1-bloco-f4d`). Próximo: **G**.
 

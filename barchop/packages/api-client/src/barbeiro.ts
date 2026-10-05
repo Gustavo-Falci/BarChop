@@ -14,6 +14,7 @@ import type {
   PerfilBarbeiro,
   ServicoSerializado,
   SessaoBarbeiro,
+  EstadoDoOnboarding,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
@@ -428,6 +429,24 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     async removerFotoDoMembro(id: string): Promise<void> {
       await requisicao(`/equipe/${id}/foto`, { metodo: "DELETE", comToken: true });
+    },
+
+    // A trilha de primeiros passos (só o dono lê e marca).
+    onboarding(): Promise<EstadoDoOnboarding> {
+      return requisicao("/barbearias/me/onboarding", { comToken: true });
+    },
+
+    marcarTrabalhoSozinho(trabalhoSozinho: boolean): Promise<EstadoDoOnboarding> {
+      return requisicao("/barbearias/me/onboarding", {
+        metodo: "PATCH",
+        corpo: { trabalhoSozinho },
+        comToken: true,
+      });
+    },
+
+    // Qualquer um da equipe: quem copia o link pode ser o profissional.
+    async marcarLinkCopiado(): Promise<void> {
+      await requisicao("/barbearias/me/link-copiado", { metodo: "POST", comToken: true });
     },
 
     // O wa.me com o texto do lembrete e o link assinado pela API — o

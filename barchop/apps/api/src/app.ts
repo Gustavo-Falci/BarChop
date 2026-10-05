@@ -19,6 +19,7 @@ import { registrarRotasClientes } from "./routers/clientes";
 import { registrarRotasClientesMe } from "./routers/clientes-me";
 import { registrarRotasDisponibilidade } from "./routers/disponibilidade";
 import { registrarRotasBloqueios } from "./routers/bloqueios";
+import { registrarRotasOnboarding } from "./routers/onboarding";
 import { registrarRotasEquipe } from "./routers/equipe";
 import {
   registrarRotasBarbeariasProtegidas,
@@ -150,6 +151,7 @@ export function buildApp(
     registrarRotasAgendamentos(protegidas);
     registrarRotasEquipe(protegidas);
     registrarRotasBloqueios(protegidas);
+    registrarRotasOnboarding(protegidas);
 
     // Upload de imagem num escopo filho: o @fastify/multipart vale só
     // aqui, e o `autenticar` do escopo de cima já rodou antes de qualquer

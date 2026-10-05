@@ -7,6 +7,6 @@
     "declaration": false,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.mts"],
+  "include": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts", "vitest.config.mts"],
   "exclude": ["node_modules", "dist"]
 }

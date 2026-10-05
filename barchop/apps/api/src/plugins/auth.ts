@@ -34,6 +34,16 @@ export interface PayloadLembrete {
   exp: number;
 }
 
+// O suporte da plataforma (bloco F4). Não é membro de barbearia: sem
+// `barbeariaId`, e por isso nunca pode passar no `autenticar` do painel —
+// lá `where: { barbeariaId: undefined }` viraria "todas". O hook do
+// painel aceita só `tipo === "barbeiro"`; este, só `"suporte"`.
+export interface PayloadSuporte {
+  tipo: "suporte";
+  operadorId: string;
+  iat?: number;
+}
+
 // Quem está usando o painel, com o papel lido do banco nesta requisição.
 export interface Membro {
   id: string;
@@ -48,6 +58,8 @@ declare module "fastify" {
     cliente?: PayloadCliente;
     // Preenchido só pelo autenticar, pelo mesmo motivo.
     membro?: Membro;
+    // Preenchido só pelo autenticarSuporte.
+    operador?: PayloadSuporte;
   }
 }
 
@@ -55,7 +67,7 @@ declare module "@fastify/jwt" {
   interface FastifyJWT {
     // O que se assina pode ser qualquer uma das duas, ou o link do
     // lembrete...
-    payload: PayloadBarbeiro | PayloadCliente | PayloadLembrete;
+    payload: PayloadBarbeiro | PayloadCliente | PayloadLembrete | PayloadSuporte;
     // ...mas `request.user` é lido só dentro do escopo protegido do
     // barbeiro, onde o hook abaixo já garantiu qual é. Declarar a união
     // aqui obrigaria narrowing em seis arquivos de rota que hoje leem
@@ -210,4 +222,41 @@ export function clienteDoToken(request: FastifyRequest): PayloadCliente {
   }
 
   return request.cliente;
+}
+
+// Hook do escopo do suporte (bloco F4), irmão do do cliente e pelo mesmo
+// motivo: identidade diferente, escopo diferente. Conta desativada ou
+// token anterior à troca de senha param de valer na hora.
+export async function autenticarSuporte(request: FastifyRequest): Promise<void> {
+  const payload = await request.jwtVerify<PayloadSuporte | PayloadBarbeiro | PayloadCliente>();
+
+  if (payload.tipo !== "suporte") {
+    throw Object.assign(new Error("token não é do suporte"), { statusCode: 401 });
+  }
+
+  const operador = await prisma.operadorSuporte.findUnique({
+    where: { id: payload.operadorId },
+    select: { ativo: true, senhaAlteradaEm: true },
+  });
+
+  if (!operador?.ativo) {
+    throw Object.assign(new Error("operador inativo ou inexistente"), { statusCode: 401 });
+  }
+
+  if (emitidoAntesDaTroca(payload, operador.senhaAlteradaEm)) {
+    throw Object.assign(new Error("token anterior à troca de senha"), { statusCode: 401 });
+  }
+
+  request.operador = payload;
+}
+
+// Lê o operador que o hook decorou; o esquecimento vira 401, não
+// `undefined` vazando pro Prisma.
+export function operadorDoToken(request: FastifyRequest): PayloadSuporte {
+  if (!request.operador) {
+    throw Object.assign(new Error("rota do suporte fora do escopo autenticado"), {
+      statusCode: 401,
+    });
+  }
+  return request.operador;
 }

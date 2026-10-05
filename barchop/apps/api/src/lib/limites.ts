@@ -167,6 +167,17 @@ export function limitesDeAuth(app: App) {
       porIpNoLogin,
     ],
 
+    // O login do suporte (bloco F4): os mesmos orçamentos do login do
+    // painel, em chaves próprias.
+    loginDoSuporte: [
+      contador(app, {
+        max: MAX_POR_CONTA,
+        janela: JANELA_POR_CONTA,
+        chave: (request) => `login-suporte:${chaveDoEmail(request.body)}`,
+      }),
+      porIpNoLogin,
+    ],
+
     signupDoBarbeiro: [
       contador(app, {
         max: MAX_SIGNUP_BARBEIRO,

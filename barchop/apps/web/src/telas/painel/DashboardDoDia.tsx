@@ -13,6 +13,7 @@ import { ocupacao, previstoDoDia } from "../../painel/metricas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./DashboardDoDia.module.css";
+import { TrilhaDoOnboarding } from "./TrilhaDoOnboarding";
 
 // `agora` por parâmetro, como toda tela que olhe relógio: fake timers
 // não entram nesta suíte, e teste que compara data fixa com o relógio
@@ -51,6 +52,10 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
           </Botao>
         }
       />
+
+      {/* Só pro dono: a rota da trilha é dele, e os passos apontam pra
+          telas que só ele abre. */}
+      {perfil.papel === "dono" ? <TrilhaDoOnboarding /> : null}
 
       <div className={estilos.numeros}>
         <Estatistica numero={String(doDia.length)} legenda="agendamentos hoje" />

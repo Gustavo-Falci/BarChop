@@ -10,7 +10,7 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 | Onda | Resultado | Estado |
 |---|---|---|
 | 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | feita, na main (PR #13) — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
-| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | em andamento — blocos A a E na main (PRs #14 a #26, um PR por tarefa desde o D); próximo é o F — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
+| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | em andamento — blocos A a F na main (PRs #14 a #30, um PR por tarefa desde o D); próximo é o G (produção na OCI e piloto) — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
 | 1s — Site de marketing | Landing, preços, plano grátis, termos e privacidade | pendente, em paralelo à 1 |
 | 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | pendente |
 | 3 — Retenção do cliente final | Pagamento e sinal online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações | pendente |

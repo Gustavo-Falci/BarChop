@@ -28,6 +28,8 @@ const corpoNovoServico = {
     preco: { type: "string", pattern: PADRAO_PRECO },
     // Agrupa na página pública. Vazio ou só espaço vira null.
     categoria: { type: ["string", "null"], maxLength: 60 },
+    // O texto curto do cartão na página pública. Vazio vira null.
+    descricao: { type: ["string", "null"], maxLength: 300 },
   },
 } as const;
 
@@ -55,13 +57,17 @@ const corpoPatchServico = {
     preco: { type: "string", pattern: PADRAO_PRECO },
     ativo: { type: "boolean" },
     categoria: { type: ["string", "null"], maxLength: 60 },
+    // O texto curto do cartão na página pública. Vazio vira null.
+    descricao: { type: ["string", "null"], maxLength: 300 },
   },
 } as const;
 
-// "  Barba " e "Barba" têm que cair na mesma seção da página.
-function limparCategoria(categoria: string | null | undefined): string | null | undefined {
-  if (categoria === undefined) return undefined;
-  return categoria?.trim() || null;
+// Texto livre opcional (categoria, descrição): "  Barba " e "Barba" têm
+// que cair na mesma seção da página, e só espaço é o mesmo que nada.
+// undefined passa como undefined — no PATCH, campo ausente não mexe.
+function limparTextoOpcional(texto: string | null | undefined): string | null | undefined {
+  if (texto === undefined) return undefined;
+  return texto?.trim() || null;
 }
 
 const paramsSlug = {
@@ -80,7 +86,7 @@ export function registrarRotasServicos(app: App): void {
       orderBy: [{ ativo: "desc" }, { nome: "asc" }],
     });
 
-    return { servicos: servicos.map(serializarServico) };
+    return { servicos: servicos.map((servico) => serializarServico(servico, app.armazenamento.urlPublica)) };
   });
 
   app.post(
@@ -93,11 +99,12 @@ export function registrarRotasServicos(app: App): void {
         data: {
           barbeariaId: request.user.barbeariaId,
           ...request.body,
-          categoria: limparCategoria(request.body.categoria) ?? null,
+          categoria: limparTextoOpcional(request.body.categoria) ?? null,
+          descricao: limparTextoOpcional(request.body.descricao) ?? null,
         },
       });
 
-      return reply.code(201).send(serializarServico(servico));
+      return reply.code(201).send(serializarServico(servico, app.armazenamento.urlPublica));
     }
   );
 
@@ -114,10 +121,14 @@ export function registrarRotasServicos(app: App): void {
         // checagem e o update; aqui, se a barbearia não casa, o Prisma
         // lança P2025 e o tratador central devolve 404.
         where: { id: request.params.id, barbeariaId: request.user.barbeariaId },
-        data: { ...request.body, categoria: limparCategoria(request.body.categoria) },
+        data: {
+          ...request.body,
+          categoria: limparTextoOpcional(request.body.categoria),
+          descricao: limparTextoOpcional(request.body.descricao),
+        },
       });
 
-      return serializarServico(servico);
+      return serializarServico(servico, app.armazenamento.urlPublica);
     }
   );
 
@@ -133,7 +144,7 @@ export function registrarRotasServicos(app: App): void {
         data: { ativo: false },
       });
 
-      return serializarServico(servico);
+      return serializarServico(servico, app.armazenamento.urlPublica);
     }
   );
 }
@@ -154,7 +165,7 @@ export function registrarRotasServicosPublicas(app: App): void {
         orderBy: { nome: "asc" },
       });
 
-      return { servicos: servicos.map(serializarServico) };
+      return { servicos: servicos.map((servico) => serializarServico(servico, app.armazenamento.urlPublica)) };
     }
   );
 }

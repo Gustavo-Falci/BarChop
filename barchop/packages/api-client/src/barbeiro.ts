@@ -67,6 +67,8 @@ export interface NovoServico {
   preco: string; // string, nunca number — ver ServicoSerializado
   // Agrupa na página pública; vazio vira null na API.
   categoria?: string | null;
+  // O texto curto do cartão na página pública; vazio vira null na API.
+  descricao?: string | null;
 }
 
 export interface EdicaoDoServico extends Partial<NovoServico> {
@@ -448,6 +450,21 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     async removerFotoDoMembro(id: string): Promise<void> {
       await requisicao(`/equipe/${id}/foto`, { metodo: "DELETE", comToken: true });
+    },
+
+    async enviarFotoDoServico(id: string, arquivo: Blob): Promise<string> {
+      const formulario = new FormData();
+      formulario.append("arquivo", arquivo, "foto");
+      const resposta = await requisicao<{ fotoUrl: string }>(`/servicos/${id}/foto`, {
+        metodo: "POST",
+        formulario,
+        comToken: true,
+      });
+      return resposta.fotoUrl;
+    },
+
+    async removerFotoDoServico(id: string): Promise<void> {
+      await requisicao(`/servicos/${id}/foto`, { metodo: "DELETE", comToken: true });
     },
 
     // A trilha de primeiros passos (só o dono lê e marca).

@@ -108,7 +108,12 @@ export function serializarServico(servico: {
   preco: Prisma.Decimal;
   ativo: boolean;
   categoria: string | null;
-}): ServicoSerializado {
+  descricao: string | null;
+  fotoChave: string | null;
+},
+// A URL pública de uma chave do armazenamento (app.armazenamento.urlPublica).
+urlDaImagem: (chave: string) => string
+): ServicoSerializado {
   return {
     id: servico.id,
     nome: servico.nome,
@@ -118,6 +123,8 @@ export function serializarServico(servico: {
     preco: servico.preco.toFixed(2),
     ativo: servico.ativo,
     categoria: servico.categoria,
+    descricao: servico.descricao,
+    fotoUrl: servico.fotoChave ? urlDaImagem(servico.fotoChave) : null,
   };
 }
 

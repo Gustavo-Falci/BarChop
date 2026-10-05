@@ -272,6 +272,10 @@ model Servico {
   criadoEm       DateTime @default(now()) @map("criado_em") @db.Timestamptz
   // Agrupa os serviços na página pública. Texto livre e opcional.
   categoria      String?  @db.VarChar(60)
+  // Texto curto do cartão na página pública. Opcional.
+  descricao      String?  @db.VarChar(300)
+  // Chave da foto no armazenamento, como a do barbeiro; a URL sai da config.
+  fotoChave      String?  @map("foto_chave") @db.VarChar(200)
 
   barbearia           Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentoServicos AgendamentoServico[]

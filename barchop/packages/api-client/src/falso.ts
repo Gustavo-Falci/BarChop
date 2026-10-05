@@ -183,8 +183,8 @@ const CLIENTE_PADRAO: ClienteSerializado = {
 };
 
 const SERVICOS_PADRAO: ServicoSerializado[] = [
-  { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: null },
-  { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true, categoria: null },
+  { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
+  { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
 ];
 
 // Dublê com estado em memória. Existe pra teste de tela rodar sem rede
@@ -204,9 +204,9 @@ export type SementeFalsa = Partial<Omit<EstadoFalso, "agendamentos">> & {
   agendamentos?: AgendamentoSemeado[];
 };
 
-// Como a API: aparada, e vazia vira null.
-function limparCategoria(categoria: string | null | undefined): string | null {
-  return categoria?.trim() || null;
+// Como a API: aparada, e vazia vira null (categoria e descrição).
+function limparTextoOpcional(texto: string | null | undefined): string | null {
+  return texto?.trim() || null;
 }
 
 export function criarApiClientFalso(semente: SementeFalsa = {}) {
@@ -473,13 +473,23 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     if (indice < 0) {
       throw new ErroDaApi(404, "nao_encontrado", "serviço não encontrado");
     }
-    const { categoria, ...resto } = edicao;
+    const { categoria, descricao, ...resto } = edicao;
     estado.servicos[indice] = {
       ...estado.servicos[indice],
       ...resto,
-      ...(categoria !== undefined ? { categoria: limparCategoria(categoria) } : {}),
+      ...(categoria !== undefined ? { categoria: limparTextoOpcional(categoria) } : {}),
+      ...(descricao !== undefined ? { descricao: limparTextoOpcional(descricao) } : {}),
     };
     return estado.servicos[indice];
+  }
+
+  // A foto não passa pelo PATCH, como na API: tem rota própria.
+  function definirFotoDoServico(id: string, fotoUrl: string | null): void {
+    const indice = estado.servicos.findIndex((s) => s.id === id);
+    if (indice < 0) {
+      throw new ErroDaApi(404, "nao_encontrado", "serviço não encontrado");
+    }
+    estado.servicos[indice] = { ...estado.servicos[indice]!, fotoUrl };
   }
 
   // Nome sem acento e sem caixa; telefone dígito a dígito. É o que a
@@ -944,7 +954,9 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           id: `s${estado.servicos.length + 1}`,
           ...novo,
           ativo: true,
-          categoria: limparCategoria(novo.categoria),
+          categoria: limparTextoOpcional(novo.categoria),
+          descricao: limparTextoOpcional(novo.descricao),
+          fotoUrl: null,
         };
         estado.servicos.push(servico);
         return servico;
@@ -1060,6 +1072,15 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       async removerFotoDoMembro(id: string) {
         membroOu404(id);
         definirFoto(id, null);
+      },
+      async enviarFotoDoServico(id: string, arquivo: Blob) {
+        await exigirImagem(arquivo, 2 * 1024 * 1024);
+        const fotoUrl = urlFalsa("servico");
+        definirFotoDoServico(id, fotoUrl);
+        return fotoUrl;
+      },
+      async removerFotoDoServico(id: string) {
+        definirFotoDoServico(id, null);
       },
       async onboarding() {
         exigirDono();

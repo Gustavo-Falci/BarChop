@@ -12,8 +12,8 @@ import { montarPainelComSonda } from "../../ajudantes/sondaDeCorrida";
 function semear() {
   return criarApiClientFalso({
     servicos: [
-      { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: null },
-      { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: false, categoria: null },
+      { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
+      { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: false, categoria: null, descricao: null, fotoUrl: null },
     ],
   });
 }
@@ -467,7 +467,7 @@ describe("serviços no painel", () => {
   it("não conta uma lista curta sem inativo, mas conta quando há inativo", async () => {
     const soAtivos = criarApiClientFalso({
       servicos: [
-        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: null },
+        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
       ],
     });
     montarPainel(<ListaDeServicos />, soAtivos);
@@ -488,6 +488,8 @@ describe("serviços no painel", () => {
         preco: "40.00",
         ativo: true,
         categoria: null,
+        descricao: null,
+        fotoUrl: null,
       })),
     });
 

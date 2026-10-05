@@ -4,6 +4,7 @@ import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
 import { armazenamentoPadrao, type Armazenamento } from "./lib/armazenamento";
+import { confiancaNoProxy, origemPermitida, origensPermitidas, proxiesConfiaveis } from "./lib/borda";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDeAuth } from "./lib/limites";
@@ -56,9 +57,24 @@ declare module "fastify" {
 // Monta a instância sem escutar em porta nenhuma. É o que permite os
 // testes usarem app.inject(). Quem abre a porta é o server.ts.
 export function buildApp(
-  opts: { logger?: boolean; canal?: CanalDeMensagem; fila?: Fila; armazenamento?: Armazenamento } = {}
+  opts: {
+    logger?: boolean;
+    canal?: CanalDeMensagem;
+    fila?: Fila;
+    armazenamento?: Armazenamento;
+    // A borda (proxy de confiança e CORS) lê daqui; o padrão é o
+    // process.env. Existe pra o teste montar a API "atrás do Caddy" sem
+    // mexer no ambiente do processo.
+    ambiente?: Record<string, string | undefined>;
+  } = {}
 ): App {
+  const ambiente = opts.ambiente ?? process.env;
+  // Lidas antes do Fastify: valor torto, ou ausente em produção, lança
+  // aqui e a API não sobe (lib/borda.ts).
+  const origens = origensPermitidas(ambiente);
   const app = Fastify({
+    // Só com o Caddy na frente (G1): ver lib/borda.ts.
+    trustProxy: confiancaNoProxy(proxiesConfiaveis(ambiente)),
     // O serializer padrão da requisição, com a URL passando pelo
     // ocultarTokenDoLembrete: o token no caminho é um link de cancelar
     // que funciona, e não pode ficar legível no log.
@@ -88,9 +104,13 @@ export function buildApp(
     maxParamLength: 512,
   }).withTypeProvider<JsonSchemaToTsProvider>();
 
-  // origin: true por enquanto — trocar por uma lista explícita
-  // (domínio do painel web + esquema do app mobile) antes de produção.
-  app.register(cors, { origin: true });
+  // Qualquer origem só fora de produção e sem ORIGENS_PERMITIDAS (dev
+  // local). Com a lista, origem de fora fica sem o cabeçalho e o
+  // navegador barra a resposta. O app mobile não manda Origin, então
+  // não precisa estar nela.
+  app.register(cors, {
+    origin: (origem, responder) => responder(null, !!origem && origemPermitida(origens, origem)),
+  });
 
   registrarTratamentoDeErros(app);
 

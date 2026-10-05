@@ -111,3 +111,30 @@ describe("limite de convites da equipe", () => {
     await app.close();
   });
 });
+
+// O segundo contador de uma rota também conta. O @fastify/rate-limit
+// marca a requisição no primeiro `rateLimit()` que passa e pula os
+// outros — com isso, os limites por IP de auth (o segundo da lista de
+// cada rota) nunca rodavam.
+describe("todos os contadores de uma rota valem", () => {
+  it("o limite por IP do pedido de código do cadastro vale, além do por e-mail", async () => {
+    const app = buildApp();
+    const MAX_CODIGO_POR_IP = 20;
+    const pedir = (indice: number) =>
+      app.inject({
+        method: "POST",
+        url: "/auth/cadastro/codigo",
+        payload: { email: `dono-${indice}@exemplo.com` },
+      });
+
+    const antes: number[] = [];
+    for (let indice = 0; indice < MAX_CODIGO_POR_IP; indice += 1) {
+      antes.push((await pedir(indice)).statusCode);
+    }
+    const bloqueado = await pedir(MAX_CODIGO_POR_IP);
+
+    expect(antes).not.toContain(429);
+    expect(bloqueado.statusCode).toBe(429);
+    await app.close();
+  });
+});

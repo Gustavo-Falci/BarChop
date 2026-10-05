@@ -308,12 +308,6 @@ config compartilhada em `packages/config/eslint.mjs`.
   fazer o serviço, o passo de data devolve pro passo do profissional, e
   a API mantém o original no remarcar — o cliente não consegue
   remarcar. Fecha deixando o remarcar trocar de profissional.
-- **Convite e reenvio não têm limite de envio.** `POST /equipe` e
-  `POST /equipe/:id/convite` mandam e-mail sem contador: só o dono
-  autenticado chama, mas um dono pode usar a rota pra mandar e-mail a
-  qualquer endereço. Fecha com um contador por barbearia em
-  `lib/limites.ts`, que exige registrar o `rateLimit` no escopo
-  protegido.
 - **Um profissional não fica em duas barbearias.** O e-mail do
   `barbeiro` é único na plataforma (é a chave do login), e convidar
   quem já tem conta responde 409 `email_em_uso`. Fecha separando a
@@ -328,12 +322,6 @@ config compartilhada em `packages/config/eslint.mjs`.
   nunca passaram por `agendarLembrete` e não têm lembrete na fila.
   Fecha com uma chave (por barbearia, migration nova, ou por ambiente)
   que, ao ligar, enfileira os agendamentos futuros que já existem.
-- **A página pública faz o domínio mandar e-mail pra qualquer endereço.**
-  O e-mail do lembrete digitado ao marcar não é verificado (fica só no
-  agendamento, nunca no cadastro — ADR-0009), e a rota pública de
-  agendar não tem limite de taxa (os limites são só das rotas de auth).
-  A capacidade da agenda limita o volume, mas é preciso um limite antes
-  de ligar o Resend em produção, pela reputação do domínio.
 - **O log do proxy vai gravar o token do lembrete.** A API oculta o
   token no próprio log (`ocultarTokenDoLembrete`), mas o caminho
   `/<slug>/lembrete/<token>` do site e o `/lembretes/<token>` da API
@@ -344,11 +332,6 @@ config compartilhada em `packages/config/eslint.mjs`.
 - **Cliente só com telefone não recebe lembrete automático.** Depende
   do barbeiro tocar em "Lembrar pelo WhatsApp" até a Meta sair do
   standby (ADR-0009).
-- **A rota dos próximos horários não tem limite nem cache.**
-  `GET /barbearias/:slug/proximos-horarios` é a rota pública mais pesada
-  (uma consulta por tabela pra 14 dias de agenda da equipe) e fica na
-  página mais aberta do produto. Antes do G: limite de taxa ou cache
-  curto (um minuto basta), junto com o limite da rota pública de agendar.
 - **O bucket das imagens ainda não existe.** O E2 grava capa e fotos
   por chave e serve pelo próprio armazenamento; em produção a API não
   sobe sem `ARMAZENAMENTO=s3`. No G: criar o bucket no Object Storage da

@@ -18,6 +18,7 @@ import {
   PADRAO_SLUG,
   PADRAO_UUID,
 } from "../lib/padroes";
+import type { LimitesPublicos } from "../lib/limites";
 import type { App } from "../tipos";
 
 const paramsSlug = {
@@ -95,12 +96,12 @@ async function agendaDe(
 
 // Públicas: são as telas de escolha de data e de horário, abertas pelo
 // link do WhatsApp. Ficam fora do escopo protegido do app.ts.
-export function registrarRotasDisponibilidade(app: App): void {
+export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos): void {
   // Os próximos 3 horários livres de cada serviço, pra página da
   // barbearia (bloco E1). Sem token, como as outras daqui.
   app.get(
     "/barbearias/:slug/proximos-horarios",
-    { schema: { params: paramsSlug } },
+    { schema: { params: paramsSlug }, preHandler: limites.proximosHorarios },
     async (request) => {
       // findUniqueOrThrow: slug inexistente vira P2025 → 404.
       const barbearia = await prisma.barbearia.findUniqueOrThrow({

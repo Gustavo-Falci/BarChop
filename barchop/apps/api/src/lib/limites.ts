@@ -1,4 +1,4 @@
-import type { FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { normalizarEmail, normalizarTelefone } from "@barchop/formato";
 import { ErroHttp } from "./erro-http";
 import type { App } from "../tipos";
@@ -67,13 +67,10 @@ function esperaEmPortugues(ttl: number): string {
   return `${minutos} minuto${minutos === 1 ? "" : "s"}`;
 }
 
-// O plugin LANÇA o que esta função devolve (ver o `throw
-// params.errorResponseBuilder(...)` no index.js dele), então devolver um
-// ErroHttp é o que mantém a resposta no formato { erro, mensagem } do
-// resto da API — sem isto a 429 sairia como { message, error, statusCode
-// }, que é o formato do framework, e nenhuma tela saberia ramificar
-// nela. O cabeçalho Retry-After o plugin já pôs antes de lançar.
-function excedido(_request: FastifyRequest, contexto: { ttl: number }): ErroHttp {
+// No formato { erro, mensagem } do resto da API: o 429 do plugin sairia
+// como { message, error, statusCode }, que é o formato do framework, e
+// nenhuma tela saberia ramificar nele.
+function excedido(ttl: number): ErroHttp {
   return new ErroHttp(
     429,
     "tentativas_excedidas",
@@ -82,7 +79,7 @@ function excedido(_request: FastifyRequest, contexto: { ttl: number }): ErroHttp
     // duas telas de login põem `erro.mensagem` como o texto inteiro do
     // aviso, ao lado de "E-mail ou senha incorretos." e "Esse telefone
     // já tem senha. Use Entrar."
-    `Muitas tentativas. Tente de novo em ${esperaEmPortugues(contexto.ttl)}.`
+    `Muitas tentativas. Tente de novo em ${esperaEmPortugues(ttl)}.`
   );
 }
 
@@ -133,19 +130,36 @@ interface Limite {
   max: number;
   janela: number;
   chave: (request: FastifyRequest) => string;
+  // Requisição que este contador não conta (ex.: sem e-mail, no limite
+  // por e-mail). Os outros contadores da rota continuam valendo.
+  isenta?: (request: FastifyRequest) => boolean;
 }
 
 // Todos os contadores rodam como preHandler, que é depois da validação
 // de schema: corpo torto leva 400 sem gastar orçamento de ninguém, e
 // isso é de propósito — o que custa caro (o scrypt) está no handler,
 // depois daqui, então o que precisa ser protegido está protegido.
+//
+// `createRateLimit`, e não `rateLimit()`: o handler do `rateLimit()`
+// marca a requisição na primeira passagem e pula os outros da mesma
+// rota — com ele, o segundo contador de cada lista (os por IP) nunca
+// contava. Aqui cada contador confere a sua chave, e o primeiro que
+// estourar responde.
 function contador(app: App, limite: Limite) {
-  return app.rateLimit({
+  const isenta = limite.isenta;
+  const verificar = app.createRateLimit({
     max: limite.max,
     timeWindow: limite.janela,
     keyGenerator: limite.chave,
-    errorResponseBuilder: excedido,
+    ...(isenta ? { allowList: (request: FastifyRequest) => isenta(request) } : {}),
   });
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    const resultado = await verificar(request);
+    if (resultado.isAllowed || !resultado.isExceeded) return;
+    // É o que diz à tela (e a qualquer cliente HTTP) quanto esperar.
+    reply.header("retry-after", resultado.ttlInSeconds);
+    throw excedido(resultado.ttl);
+  };
 }
 
 // Os prefixos de chave importam: sem eles uma tentativa de login
@@ -280,3 +294,72 @@ export function limitesDeAuth(app: App) {
 }
 
 export type LimitesDeAuth = ReturnType<typeof limitesDeAuth>;
+
+// As rotas abertas fora do login (Onda 1, G2), antes de o Resend ir pra
+// produção: a reputação do domínio é uma só, e a rota mais pesada não
+// pode ficar de graça na página mais aberta do produto.
+
+// O agendamento público manda e-mail pro endereço que a pessoa digitou,
+// sem verificar (ADR-0009). Por caixa: 5 por hora cobre quem marca pra
+// família inteira, e segura quem usa o BarChop pra encher a caixa de
+// alguém. Por IP, folgado pelo NAT de operadora, como os de auth.
+const MAX_AGENDAR_POR_EMAIL = 5;
+const MAX_AGENDAR_POR_IP = 20;
+const JANELA_AGENDAR = 60 * MINUTO;
+
+// Os próximos horários: uma carga da página é uma chamada. 60 por minuto
+// é alguém recarregando sem parar, não um cliente olhando a agenda.
+const MAX_PROXIMOS_POR_IP = 60;
+
+// Convidar e reenviar mandam e-mail pra qualquer endereço que o dono
+// digitar. 20 por dia montam uma equipe inteira com folga.
+const MAX_CONVITES_POR_BARBEARIA = 20;
+const JANELA_CONVITES = 24 * 60 * MINUTO;
+
+function emailDoLembrete(corpo: unknown): string | null {
+  const email = (corpo as { cliente?: { email?: unknown } } | null)?.cliente?.email;
+  return typeof email === "string" ? normalizarEmail(email) : null;
+}
+
+export function limitesPublicos(app: App) {
+  return {
+    agendar: [
+      contador(app, {
+        max: MAX_AGENDAR_POR_EMAIL,
+        janela: JANELA_AGENDAR,
+        chave: (request) => `agendar-email:${emailDoLembrete(request.body)}`,
+        isenta: (request) => !emailDoLembrete(request.body),
+      }),
+      contador(app, {
+        max: MAX_AGENDAR_POR_IP,
+        janela: JANELA_AGENDAR,
+        chave: (request) => `agendar-ip:${request.ip}`,
+      }),
+    ],
+    proximosHorarios: [
+      contador(app, {
+        max: MAX_PROXIMOS_POR_IP,
+        janela: MINUTO,
+        chave: (request) => `proximos-ip:${request.ip}`,
+      }),
+    ],
+  };
+}
+
+export type LimitesPublicos = ReturnType<typeof limitesPublicos>;
+
+// No escopo protegido: roda depois do `autenticar`, então a barbearia do
+// token já está na requisição.
+export function limitesDaEquipe(app: App) {
+  return {
+    convite: [
+      contador(app, {
+        max: MAX_CONVITES_POR_BARBEARIA,
+        janela: JANELA_CONVITES,
+        chave: (request) => `convite:${request.user.barbeariaId}`,
+      }),
+    ],
+  };
+}
+
+export type LimitesDaEquipe = ReturnType<typeof limitesDaEquipe>;

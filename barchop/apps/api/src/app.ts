@@ -7,7 +7,7 @@ import { armazenamentoPadrao, type Armazenamento } from "./lib/armazenamento";
 import { confiancaNoProxy, origemPermitida, origensPermitidas, proxiesConfiaveis } from "./lib/borda";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { filaPadrao, type Fila } from "./lib/fila";
-import { limitesDeAuth } from "./lib/limites";
+import { limitesDaEquipe, limitesDeAuth, limitesPublicos } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
 import { autenticar, autenticarCliente, autenticarSuporte, registrarAuth } from "./plugins/auth";
 import { registrarRotasAuth } from "./routers/auth";
@@ -154,8 +154,14 @@ export function buildApp(
 
   registrarRotasBarbeariasPublicas(app);
   registrarRotasServicosPublicas(app);
-  registrarRotasAgendamentosPublicas(app);
-  registrarRotasDisponibilidade(app);
+  // As abertas que mandam e-mail ou custam caro (G2), num escopo com o
+  // plugin de limite pelo mesmo motivo do de auth: o `await`.
+  app.register(async (abertas: App) => {
+    await abertas.register(rateLimit, { global: false });
+    const limites = limitesPublicos(abertas);
+    registrarRotasAgendamentosPublicas(abertas, limites);
+    registrarRotasDisponibilidade(abertas, limites);
+  });
   // Sem login: quem autoriza é o token do link do e-mail de lembrete.
   registrarRotasLembretes(app);
   // As imagens servidas pela própria API, só no armazenamento local.
@@ -166,13 +172,16 @@ export function buildApp(
   // esquecer, e quem esquecesse publicaria a rota em silêncio.
   app.register(async (protegidas: App) => {
     protegidas.addHook("onRequest", autenticar);
+    // O convite da equipe manda e-mail pra qualquer endereço (G2).
+    await protegidas.register(rateLimit, { global: false });
+    const limitesDeEquipe = limitesDaEquipe(protegidas);
     registrarRotasMe(protegidas);
     registrarRotasBarbeariasProtegidas(protegidas);
     registrarRotasHorarios(protegidas);
     registrarRotasServicos(protegidas);
     registrarRotasClientes(protegidas);
     registrarRotasAgendamentos(protegidas);
-    registrarRotasEquipe(protegidas);
+    registrarRotasEquipe(protegidas, limitesDeEquipe);
     registrarRotasBloqueios(protegidas);
     registrarRotasOnboarding(protegidas);
     registrarRotasSolicitacaoDeLink(protegidas);

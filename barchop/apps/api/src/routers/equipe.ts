@@ -8,6 +8,7 @@ import { dateParaHora, horaParaDate } from "../lib/horas";
 import { PADRAO_EMAIL, PADRAO_HORA, PADRAO_TELEFONE, PADRAO_UUID } from "../lib/padroes";
 import { normalizarTelefone } from "../lib/telefone";
 import { exigirPapel } from "../plugins/auth";
+import type { LimitesDaEquipe } from "../lib/limites";
 import type { App } from "../tipos";
 
 // A equipe da barbearia. A tabela continua `barbeiro` (decisão 1 do
@@ -217,7 +218,7 @@ function tiraUmDono(corpo: { papel?: string; ativo?: boolean }): boolean {
   return (corpo.papel !== undefined && corpo.papel !== "dono") || corpo.ativo === false;
 }
 
-export function registrarRotasEquipe(app: App): void {
+export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
   // Todos os papéis leem: a recepção marca pra qualquer profissional e
   // precisa da lista; o profissional vê os colegas na agenda.
   app.get("/equipe", async (request) => {
@@ -231,7 +232,8 @@ export function registrarRotasEquipe(app: App): void {
 
   app.post(
     "/equipe",
-    { schema: { body: corpoNovoMembro }, onRequest: exigirPapel("dono") },
+    // Criar manda o convite: o mesmo orçamento do reenvio.
+    { schema: { body: corpoNovoMembro }, onRequest: exigirPapel("dono"), preHandler: limites.convite },
     async (request, reply) => {
       exigirCanalDeEmail(app);
 
@@ -428,7 +430,7 @@ export function registrarRotasEquipe(app: App): void {
 
   app.post(
     "/equipe/:id/convite",
-    { schema: { params: paramsComId }, onRequest: exigirPapel("dono") },
+    { schema: { params: paramsComId }, onRequest: exigirPapel("dono"), preHandler: limites.convite },
     async (request, reply) => {
       const membro = await prisma.barbeiro.findFirst({
         where: { id: request.params.id, barbeariaId: request.user.barbeariaId, ativo: true },

@@ -865,10 +865,6 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       async minhaBarbearia() {
         return barbeariaDoPainel();
       },
-      async trocarSlug(slug: string) {
-        estado.perfil = { ...estado.perfil, slug };
-        return barbeariaDoPainel();
-      },
       async solicitacaoDeLink() {
         exigirDono();
         const pedido = meuPedidoMaisRecente();

@@ -248,17 +248,6 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao("/barbearias/me", { comToken: true });
     },
 
-    // Rota própria, fora do `atualizarMinhaBarbearia`: trocar o link
-    // quebra o que já foi mandado por WhatsApp, e a tela pede isso num
-    // botão separado.
-    trocarSlug(slug: string): Promise<BarbeariaDoPainel> {
-      return requisicao("/barbearias/me/slug", {
-        metodo: "PATCH",
-        corpo: { slug },
-        comToken: true,
-      });
-    },
-
     // O link é único pra sempre e só o suporte troca (F4): o dono pede.
     // A leitura devolve o pedido mais recente, de qualquer status — a
     // tela mostra o pendente e também a última decisão.

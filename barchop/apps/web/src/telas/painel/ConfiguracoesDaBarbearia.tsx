@@ -12,7 +12,7 @@ import {
   TelefoneInvalido,
 } from "@barchop/formato";
 import { ROTULO_DA_COMODIDADE, ROTULO_DO_PAGAMENTO } from "../../formato/pagina";
-import type { AntecedenciaDoLembrete, HorarioSerializado } from "@barchop/types";
+import type { AntecedenciaDoLembrete, HorarioSerializado, SolicitacaoDeLink } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
@@ -22,7 +22,6 @@ import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
-import { sessaoDaBarbearia } from "../../sessao/armazenamento";
 import { enderecoDaBarbearia } from "../../tenant/endereco";
 import estilos from "./ConfiguracoesDaBarbearia.module.css";
 
@@ -59,7 +58,10 @@ export function ConfiguracoesDaBarbearia() {
   const [telefoneDaBarbearia, setTelefoneDaBarbearia] = useState("");
   const [endereco, setEndereco] = useState("");
   const [sobre, setSobre] = useState("");
-  const [novoSlug, setNovoSlug] = useState("");
+  // O pedido de troca do link (F4): o link é único pra sempre e só o
+  // suporte troca.
+  const [novoLink, setNovoLink] = useState("");
+  const [motivo, setMotivo] = useState("");
   const [antecedencia, setAntecedencia] = useState<AntecedenciaDoLembrete>(24);
   // A página rica (bloco E1).
   const [whatsapp, setWhatsapp] = useState("");
@@ -82,6 +84,13 @@ export function ConfiguracoesDaBarbearia() {
   // lê o que ele mesmo escreve, e trocar o slug aqui não deixa a
   // leitura apontando pro endereço velho.
   const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
+
+  // O pedido mais recente, de qualquer status. Depois de pedir ou
+  // cancelar, a resposta da API entra por cima da leitura, sem reler —
+  // reler apagaria o formulário por um instante.
+  const pedidoLido = useRequisicao(() => api.barbeiro.solicitacaoDeLink(), []);
+  const [pedidoNovo, setPedidoNovo] = useState<SolicitacaoDeLink | undefined>();
+  const pedido = pedidoNovo ?? pedidoLido.dados;
 
   // Sincronizado durante a renderização, e não num `useEffect`: um
   // efeito só roda depois do commit, e entre o commit e o efeito o
@@ -109,7 +118,6 @@ export function ConfiguracoesDaBarbearia() {
     setTelefoneDaBarbearia(barbearia.dados.telefone ?? "");
     setEndereco(barbearia.dados.endereco ?? "");
     setSobre(barbearia.dados.sobre ?? "");
-    setNovoSlug(barbearia.dados.slug);
     setAntecedencia(barbearia.dados.lembreteAntecedenciaHoras);
     setWhatsapp(barbearia.dados.whatsapp ?? "");
     setInstagram(barbearia.dados.instagram ?? "");
@@ -165,43 +173,64 @@ export function ConfiguracoesDaBarbearia() {
     }
   }
 
-  async function trocarLink() {
+  async function pedirTroca() {
     setAviso(undefined);
     setErro({});
 
-    // As mesmas duas regras da API, aqui pra o erro ficar no campo e em
-    // português, sem ida e volta.
-    if (!FORMATO_DO_SLUG.test(novoSlug)) {
+    // As regras da API, aqui pra o erro ficar no campo e em português,
+    // sem ida e volta.
+    if (!FORMATO_DO_SLUG.test(novoLink)) {
       setErro({
-        slug: "Use letras minúsculas, números e hífen, de 3 a 80 caracteres",
+        novoLink: "Use letras minúsculas, números e hífen, de 3 a 80 caracteres",
       });
       return;
     }
-    if (slugReservado(novoSlug)) {
-      setErro({ slug: "Esse link é reservado pelo BarChop. Escolha outro" });
+    if (slugReservado(novoLink)) {
+      setErro({ novoLink: "Esse link é reservado pelo BarChop. Escolha outro" });
+      return;
+    }
+    if (novoLink === barbearia.dados?.slug) {
+      setErro({ novoLink: "Esse já é o link da barbearia" });
       return;
     }
 
     setSalvando(true);
     try {
-      const atualizada = await api.barbeiro.trocarSlug(novoSlug);
-      // A sessão guarda o slug desde o login, e a tela de novo
-      // agendamento o usa pra chamar a disponibilidade. Sem regravar,
-      // o painel seguiria consultando o endereço que acabou de morrer.
-      sessaoDaBarbearia.gravar(atualizada.slug);
-      // Sem `barbearia.recarregar()`: a leitura nova resincronizaria o
-      // formulário inteiro e apagaria o que foi digitado nos outros
-      // campos e ainda não salvo. O campo do link já mostra o slug novo.
-      setNovoSlug(atualizada.slug);
+      setPedidoNovo(
+        await api.barbeiro.pedirTrocaDeLink(novoLink, motivo.trim() || undefined),
+      );
+      setNovoLink("");
+      setMotivo("");
     } catch (causa) {
       const erroDaApi = causa as ErroDaApi;
-      // `conflito` é o unique do slug (P2002) — a única coluna única
-      // que esta rota escreve.
+      // O nome é de outra barbearia, atual ou antigo: o link é único pra
+      // sempre.
       if (erroDaApi.codigo === "conflito") {
-        setErro({ slug: "Esse link já está em uso por outra barbearia" });
+        setErro({ novoLink: "Esse link já está em uso por outra barbearia" });
         return;
       }
-      setAviso(erroDaApi.mensagem || "Não foi possível trocar o link agora.");
+      // Pedido feito em outra aba: mostra o que está valendo.
+      if (erroDaApi.codigo === "solicitacao_pendente") {
+        setPedidoNovo(undefined);
+        pedidoLido.recarregar();
+        return;
+      }
+      setAviso(erroDaApi.mensagem || "Não foi possível pedir a troca agora.");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function cancelarPedido() {
+    setAviso(undefined);
+    setSalvando(true);
+    try {
+      setPedidoNovo(await api.barbeiro.cancelarPedidoDeLink());
+    } catch (causa) {
+      // 404: o suporte decidiu no meio. Relê pra mostrar a decisão.
+      setPedidoNovo(undefined);
+      pedidoLido.recarregar();
+      setAviso((causa as ErroDaApi).mensagem || "Não foi possível cancelar agora.");
     } finally {
       setSalvando(false);
     }
@@ -432,26 +461,67 @@ export function ConfiguracoesDaBarbearia() {
               </span>
             </div>
 
-            {/* Dentro de "Barbearia", com botão próprio: o link é dado da
-                barbearia, mas trocá-lo quebra o que já foi mandado por
-                WhatsApp — não pode ir de carona no "Salvar dados". */}
+          </Secao>
+
+          {/* Seção própria, sem o "Salvar dados": o link não se edita
+              aqui. Ele é único pra sempre (F4) — os links velhos já
+              circularam no WhatsApp e nos lembretes — e só o suporte o
+              troca, avaliando o pedido do dono. */}
+          <Secao
+            titulo="Link da barbearia"
+            descricao="O endereço que seus clientes usam pra marcar horário."
+          >
             <Campo
               rotulo="Link da barbearia"
-              name="slug"
-              autoComplete="off"
-              apoio={`O link dos seus clientes: ${enderecoDaBarbearia(novoSlug || "sua-barbearia", process.env.NEXT_PUBLIC_URL_DO_SITE)}. Ao trocar, o link antigo leva ao novo — até outra barbearia escolher o nome que você deixou.`}
-              valor={novoSlug}
-              onChange={(valor) => setNovoSlug(valor.toLowerCase())}
-              erro={erro.slug}
-              maxLength={80}
+              name="link"
+              readOnly
+              apoio="O link é fixo: muda só com um pedido ao suporte. O endereço antigo continua levando à sua barbearia."
+              valor={enderecoDaBarbearia(barbearia.dados.slug, process.env.NEXT_PUBLIC_URL_DO_SITE)}
             />
-            <Botao
-              variante="contorno"
-              onClick={trocarLink}
-              carregando={salvando}
-            >
-              Trocar link
-            </Botao>
+            {pedidoLido.carregando && pedido === null ? null : pedido?.status === "pendente" ? (
+              <div className={estilos.pedido}>
+                <p>
+                  Pedido aguardando o suporte:{" "}
+                  <strong>{enderecoDaBarbearia(pedido.slugPedido, process.env.NEXT_PUBLIC_URL_DO_SITE)}</strong>
+                </p>
+                {pedido.motivo ? <p className={estilos.apoio}>Motivo: {pedido.motivo}</p> : null}
+                <Botao variante="contorno" onClick={cancelarPedido} carregando={salvando}>
+                  Cancelar pedido
+                </Botao>
+              </div>
+            ) : (
+              <>
+                {pedido?.status === "recusada" ? (
+                  <div className={estilos.pedido}>
+                    <p>
+                      Pedido recusado pelo suporte:{" "}
+                      <strong>{enderecoDaBarbearia(pedido.slugPedido, process.env.NEXT_PUBLIC_URL_DO_SITE)}</strong>
+                    </p>
+                    {pedido.resposta ? <p className={estilos.apoio}>{pedido.resposta}</p> : null}
+                  </div>
+                ) : null}
+                <Campo
+                  rotulo="Novo link"
+                  name="novo-link"
+                  autoComplete="off"
+                  apoio="Como vai aparecer no endereço. Exemplo: barbearia-do-centro"
+                  valor={novoLink}
+                  onChange={(valor) => setNovoLink(valor.toLowerCase())}
+                  erro={erro.novoLink}
+                  maxLength={80}
+                />
+                <Campo
+                  rotulo="Motivo (opcional)"
+                  name="motivo"
+                  valor={motivo}
+                  onChange={setMotivo}
+                  maxLength={500}
+                />
+                <Botao variante="contorno" onClick={pedirTroca} carregando={salvando}>
+                  Pedir troca
+                </Botao>
+              </>
+            )}
           </Secao>
 
           <Secao

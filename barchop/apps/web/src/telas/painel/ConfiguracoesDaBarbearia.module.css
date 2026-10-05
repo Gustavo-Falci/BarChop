@@ -150,3 +150,16 @@
 }
 .marcas legend { width: 100%; margin-bottom: var(--espaco-xs); }
 .marcas label { display: inline-flex; align-items: center; gap: var(--espaco-xs); }
+
+/* O pedido de troca do link: o que está com o suporte, ou a última
+   recusa com a resposta dele. Empilhado, com o mesmo respiro dos campos. */
+.pedido {
+  display: grid;
+  gap: var(--espaco-xs);
+  justify-items: start;
+}
+
+.pedido p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

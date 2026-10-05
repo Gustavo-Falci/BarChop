@@ -279,7 +279,7 @@ export function CadastroDoDono() {
                   anuncia junto do rótulo. É este endereço que vai no WhatsApp. */}
               <Campo
                 rotulo="Endereço do link"
-                apoio={`O link dos seus clientes: ${enderecoDaBarbearia(slug || "sua-barbearia", process.env.NEXT_PUBLIC_URL_DO_SITE)}`}
+                apoio={`O link dos seus clientes: ${enderecoDaBarbearia(slug || "sua-barbearia", process.env.NEXT_PUBLIC_URL_DO_SITE)}. Escolha com calma: depois de criado, ele só muda com um pedido ao suporte.`}
                 name="slug"
                 autoComplete="off"
                 maxLength={SLUG_MAX}

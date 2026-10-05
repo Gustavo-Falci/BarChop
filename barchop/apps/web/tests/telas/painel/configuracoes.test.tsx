@@ -176,8 +176,8 @@ describe("configurações da barbearia", () => {
   });
 
   it("põe o perfil antes do horário no DOM, que é onde ele aparece na tela", async () => {
-    // No desktop a tela é de duas colunas: Barbearia, Página da
-    // barbearia, Lembrete e Seu perfil empilhados à esquerda, Horário de funcionamento à direita. A ordem
+    // No desktop a tela é de duas colunas: Barbearia, Link da barbearia,
+    // Página da barbearia, Lembrete e Seu perfil empilhados à esquerda, Horário de funcionamento à direita. A ordem
     // do DOM segue a ordem visual porque é ela que o Tab percorre —
     // deixar "Horário" no meio faria o foco saltar da coluna esquerda
     // pra direita e voltar.
@@ -194,6 +194,7 @@ describe("configurações da barbearia", () => {
 
     expect(titulos).toEqual([
       "Barbearia",
+      "Link da barbearia",
       "Página da barbearia",
       "Lembrete",
       "Seu perfil",

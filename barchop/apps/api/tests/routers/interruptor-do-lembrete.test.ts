@@ -87,7 +87,7 @@ describe("interruptor do lembrete", () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
     await marcarPeloPainel(app, agenda, { data: QUINTA, horaInicio: "10:00" });
-    (app.fila as FilaDeMemoria).pendentes.splice(0);
+    ((app.fila as FilaDeMemoria).pendentes as unknown[]).splice(0);
 
     await ligar(app, agenda, true);
 

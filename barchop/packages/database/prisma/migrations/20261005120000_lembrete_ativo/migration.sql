@@ -1,0 +1,21 @@
+-- Interruptor do lembrete por barbearia (Onda 1, G2c; decisão do dono,
+-- 2026-10-05).
+--
+-- `barbearia.lembrete_ativo`: com false, nenhum lembrete é agendado e o
+-- tratador descarta os que já estavam na fila. Ligada por padrão: as
+-- barbearias novas recebem o lembrete desde o primeiro agendamento. A GR
+-- Barber entra desligada na migração do G3, pra medir a linha de base de
+-- faltas antes de ligar; ligar pelo painel enfileira os agendamentos
+-- futuros que já existem.
+--
+-- NOT NULL com DEFAULT constante: no Postgres 11+ é só catálogo, sem
+-- reescrever a tabela.
+--
+-- Escrita à mão, e não gerada por `prisma migrate dev`: o `migrate dev`
+-- propõe DERRUBAR `agendamento.periodo` (ver o aviso no fim de
+-- 20260829120000_init/migration.sql). Aplicar com `migrate deploy`.
+--
+-- Desfazer (se um dia preciso, numa migration nova):
+--   ALTER TABLE "barbearia" DROP COLUMN "lembrete_ativo";
+
+ALTER TABLE "barbearia" ADD COLUMN "lembrete_ativo" BOOLEAN NOT NULL DEFAULT true;

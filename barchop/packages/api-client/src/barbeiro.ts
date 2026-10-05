@@ -51,6 +51,8 @@ export interface EdicaoDaBarbearia {
   sobre?: string | null;
   // Quanto antes do horário sai o lembrete. Não move os já agendados.
   lembreteAntecedenciaHoras?: AntecedenciaDoLembrete;
+  // Ligar enfileira os agendamentos futuros que ainda não têm lembrete.
+  lembreteAtivo?: boolean;
   // A página rica. Instagram é o @ sem o @; as listas são as de
   // @barchop/formato. `null` limpa.
   whatsapp?: string | null;

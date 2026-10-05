@@ -36,6 +36,7 @@ describe("PATCH /barbearias/me", () => {
       formasDePagamento: [],
       capaUrl: null,
       lembreteAntecedenciaHoras: 24,
+      lembreteAtivo: true,
     });
 
     await app.close();

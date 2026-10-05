@@ -56,6 +56,11 @@ export function sessaoDoCliente(slug: string): Sessao {
 // precisa dele para a disponibilidade, que é rota pública por slug.
 export const sessaoDaBarbearia = sessaoNaChave("sessao.barbearia");
 
+// O suporte da plataforma (Onda 1, F4d): conta própria, fora de qualquer
+// equipe. Chave à parte: sair do suporte não derruba o painel, e um
+// token de um nunca vai nas chamadas do outro.
+export const sessaoDoSuporte = sessaoNaChave("sessao.suporte");
+
 // Uma função e não duas chamadas soltas: um logout que esquecesse o
 // slug deixaria lixo que a próxima sessão leria como se fosse dela.
 export function encerrarSessaoDoBarbeiro(): void {

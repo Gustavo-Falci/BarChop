@@ -1,0 +1,85 @@
+/* A fila do suporte: uma coluna de cartões, larga o bastante pra ler o
+   link atual e o pedido lado a lado. Mesmos tokens do painel. */
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  padding: var(--espaco-xl) var(--espaco-lg);
+}
+
+.lista {
+  display: grid;
+  gap: var(--espaco-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pedido {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+}
+
+.pedido p {
+  margin: 0;
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+/* Os slugs quebram em qualquer ponto: num celular, um link de 80
+   caracteres empurraria o cartão pra fora da tela. */
+.troca {
+  overflow-wrap: anywhere;
+}
+
+.apoio {
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+}
+
+.recusa {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.rotulo {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
+.area {
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-family: var(--fonte-corpo), system-ui, sans-serif;
+  font-size: var(--texto-md);
+  resize: vertical;
+}
+
+.area[aria-invalid="true"] {
+  border-color: var(--cor-erro);
+}
+
+.erro {
+  font-size: var(--texto-xs);
+  color: var(--cor-erro);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}

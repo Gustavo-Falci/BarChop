@@ -3,6 +3,7 @@ import {
   encerrarSessaoDoBarbeiro,
   sessaoDoBarbeiro,
   sessaoDoCliente,
+  sessaoDoSuporte,
 } from "./armazenamento";
 
 // A URL da API muda por ambiente. O navegador a lê (daí o prefixo
@@ -82,4 +83,16 @@ export function apiDoPainel(fetchInjetado?: typeof globalThis.fetch) {
     fetch: fetchInjetado,
   });
   return { barbeiro: client.barbeiro, publico: client.publico };
+}
+
+// A área do suporte monta o client dela, com o token da sessão do
+// suporte. O 401 só limpa a chave; quem navega é a tela, que já trata o
+// erro da chamada que o recebeu.
+export function apiDoSuporte(fetchInjetado?: typeof globalThis.fetch) {
+  return criarApiClient({
+    baseUrl: BASE_URL,
+    obterToken: () => sessaoDoSuporte.ler(),
+    aoExpirarSessao: () => sessaoDoSuporte.limpar(),
+    fetch: fetchInjetado,
+  }).suporte;
 }

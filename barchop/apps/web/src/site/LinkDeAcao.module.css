@@ -1,0 +1,46 @@
+/* O mesmo desenho do Botao (componentes/Botao.module.css): borda de
+   2px, sombra offset sem desfoque e o "afundar" no :active. */
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-sm) var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-md);
+  font-weight: 700;
+  /* O espaço da Clash Grotesk é estreito: sem isto "Criar minha
+     barbearia" lia como uma palavra só. */
+  word-spacing: 0.08em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 0 var(--cor-shadow);
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+
+.link:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--cor-shadow);
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 3px;
+}
+
+.primario {
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+}
+
+.contorno {
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+}
+
+.grande {
+  padding: var(--espaco-md) var(--espaco-xl);
+  font-size: var(--texto-lg);
+}

@@ -1,0 +1,36 @@
+.cabecalho {
+  border-bottom: var(--borda-padrao) solid var(--cor-ink);
+  background: var(--cor-paper);
+}
+
+.conteudo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: var(--espaco-md) var(--espaco-lg);
+}
+
+.marca {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--cor-ink);
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+}
+
+.entrar {
+  font-weight: 600;
+  color: var(--cor-ink);
+  text-underline-offset: 4px;
+}

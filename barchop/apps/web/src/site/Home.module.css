@@ -1,0 +1,303 @@
+.home {
+  display: grid;
+  gap: var(--espaco-xxl);
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: var(--espaco-xxl) var(--espaco-lg);
+}
+
+/* Uma coluna no celular — promessa e convite antes de tudo —, duas no
+   desktop com a agenda de exemplo ao lado. */
+.topo {
+  display: grid;
+  gap: var(--espaco-xl);
+  align-items: center;
+}
+
+@media (min-width: 880px) {
+  .topo {
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr);
+    gap: var(--espaco-xxl);
+  }
+}
+
+.promessa {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.chapeu {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+/* Maior que o --texto-display no desktop: é a frase que vende. clamp
+   pra não quebrar em quatro linhas no celular. */
+.titulo {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: clamp(var(--texto-display), 7vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+/* O espaço da Clash Grotesk é estreito, e com o letter-spacing negativo
+   dos títulos as palavras grudavam ("Soafamiliar?") nos tamanhos
+   grandes do site. */
+.titulo,
+.tituloDaSecao,
+.tituloDoItem,
+.valor {
+  word-spacing: 0.08em;
+}
+
+.apoio {
+  margin: 0;
+  max-width: 52ch;
+  font-size: var(--texto-lg);
+  line-height: 1.5;
+  color: var(--cor-ink-soft);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-md);
+  margin-top: var(--espaco-sm);
+}
+
+.nota {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.exemplo {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: 0 8px 0 var(--cor-shadow);
+}
+
+.exemploTitulo {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+}
+
+.exemploLista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exemploItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  padding: var(--espaco-sm) 0;
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+  font-size: var(--texto-sm);
+}
+
+.exemploHora {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.exemploProfissional {
+  padding: 2px var(--espaco-sm);
+  border-radius: var(--raio-pill);
+  background: var(--cor-pale-blue);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.exemploSelo {
+  justify-self: start;
+  margin: 0;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.secao {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+.tituloDaSecao {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.tituloDoItem {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+}
+
+.dores {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dores li {
+  padding: var(--espaco-md) var(--espaco-lg);
+  border-left: 4px solid var(--cor-accent);
+  background: var(--cor-paper-soft);
+  font-size: var(--texto-lg);
+}
+
+/* O número do passo sai do contador da lista, e não do texto: o leitor
+   de tela já anuncia a lista ordenada. */
+.passos {
+  display: grid;
+  gap: var(--espaco-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+}
+
+@media (min-width: 880px) {
+  .passos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.passo {
+  display: grid;
+  gap: var(--espaco-sm);
+  align-content: start;
+  counter-increment: passo;
+}
+
+.passo::before {
+  content: counter(passo);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.passo p,
+.recurso p,
+.pergunta p {
+  margin: 0;
+  line-height: 1.55;
+  color: var(--cor-ink-soft);
+}
+
+.recursos {
+  display: grid;
+  gap: var(--espaco-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .recursos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .recursos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.recurso {
+  display: grid;
+  gap: var(--espaco-sm);
+  align-content: start;
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+}
+
+.preco {
+  padding: var(--espaco-xl);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-pale-yellow);
+}
+
+.preco p {
+  margin: 0;
+  max-width: 60ch;
+  line-height: 1.55;
+}
+
+.valor {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-display);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.perguntas {
+  display: grid;
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.pergunta {
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.pergunta summary {
+  padding: var(--espaco-md) 0;
+  font-weight: 600;
+  font-size: var(--texto-lg);
+  cursor: pointer;
+}
+
+.pergunta p {
+  padding-bottom: var(--espaco-md);
+  max-width: 64ch;
+}
+
+.final {
+  display: grid;
+  justify-items: center;
+  gap: var(--espaco-lg);
+  padding: var(--espaco-xxl) var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  text-align: center;
+}

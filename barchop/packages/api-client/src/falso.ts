@@ -1,4 +1,4 @@
-import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM } from "@barchop/formato";
+import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM, slugReservado } from "@barchop/formato";
 import type {
   AgendamentoComCliente,
   AgendamentoDoLembrete,
@@ -18,6 +18,9 @@ import type {
   ServicoSerializado,
   EstadoDoOnboarding,
   PassoDoOnboarding,
+  SessaoSuporte,
+  SolicitacaoDeLink,
+  SolicitacaoNaFila,
 } from "@barchop/types";
 import type {
   AceiteDoConvite,
@@ -56,6 +59,10 @@ export const CODIGO_DO_CADASTRO_FALSO = "246810";
 
 // O único código que o dublê aceita no convite da equipe.
 export const CODIGO_DO_CONVITE_FALSO = "246810";
+
+// A única conta de suporte que o dublê conhece; o resto é 401.
+export const EMAIL_DO_SUPORTE_FALSO = "suporte@barchop.com.br";
+export const SENHA_DO_SUPORTE_FALSA = "senha-do-suporte-falsa";
 
 // Quem está logado no painel do dublê. O id é o mesmo da sessão e do
 // `barbeiros` do perfil público.
@@ -135,6 +142,12 @@ export interface EstadoFalso {
   // Os próximos horários da página pública. Sem semente, cada serviço
   // ativo vem sem horário: calcular a agenda é da API, não do dublê.
   proximosHorarios?: ProximosHorariosDoServico[];
+  // Os pedidos de troca do link de todas as barbearias, como o suporte
+  // os vê. Os da barbearia do dublê (id do `perfil`) são os do dono.
+  solicitacoesDeLink?: SolicitacaoNaFila[];
+  // Links de outras barbearias, atuais ou antigos: pedir ou aprovar um
+  // deles é 409, como na API.
+  slugsEmUso?: string[];
 }
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {
@@ -223,7 +236,47 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     lembretesVencidos: [...(semente.lembretesVencidos ?? [])],
     proximosHorarios: semente.proximosHorarios,
     onboarding: { ...(semente.onboarding ?? {}) },
+    solicitacoesDeLink: (semente.solicitacoesDeLink ?? []).map((s) => ({
+      ...s,
+      barbearia: { ...s.barbearia },
+    })),
+    slugsEmUso: [...(semente.slugsEmUso ?? [])],
   };
+
+  // O pedido como o dono o vê: sem a barbearia, que é a dele.
+  function semBarbearia({ barbearia: _barbearia, ...solicitacao }: SolicitacaoNaFila): SolicitacaoDeLink {
+    return solicitacao;
+  }
+
+  function daMinhaBarbearia(s: SolicitacaoNaFila): boolean {
+    return s.barbearia.id === estado.perfil.id;
+  }
+
+  // A mais recente; no empate, a última que entrou.
+  function meuPedidoMaisRecente(): SolicitacaoNaFila | null {
+    return estado.solicitacoesDeLink!.filter(daMinhaBarbearia).reduce<SolicitacaoNaFila | null>(
+      (maisRecente, s) => (!maisRecente || s.criadoEm >= maisRecente.criadoEm ? s : maisRecente),
+      null
+    );
+  }
+
+  // As mesmas respostas do `pedidoPendente` da API.
+  function pedidoPendente(id: string): SolicitacaoNaFila {
+    const pedido = estado.solicitacoesDeLink!.find((s) => s.id === id);
+    if (!pedido) throw new ErroDaApi(404, "nao_encontrado", "pedido não encontrado");
+    if (pedido.status !== "pendente") {
+      throw new ErroDaApi(422, "solicitacao_decidida", "esse pedido já foi decidido");
+    }
+    return pedido;
+  }
+
+  function exigirSlugLivre(slug: string): void {
+    if (estado.slugsEmUso!.includes(slug)) {
+      throw new ErroDaApi(409, "conflito", "esse endereço já está em uso");
+    }
+  }
+
+  let pedidosCriados = 0;
 
   // A mesma ordem da API (routers/onboarding.ts).
   function trilha(): EstadoDoOnboarding {
@@ -816,6 +869,49 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         estado.perfil = { ...estado.perfil, slug };
         return barbeariaDoPainel();
       },
+      async solicitacaoDeLink() {
+        exigirDono();
+        const pedido = meuPedidoMaisRecente();
+        return pedido ? semBarbearia(pedido) : null;
+      },
+      // As recusas da API, na mesma ordem: reservado, igual ao atual,
+      // pendente, de outra barbearia.
+      async pedirTrocaDeLink(slug: string, motivo?: string) {
+        exigirDono();
+        if (slugReservado(slug)) {
+          throw new ErroDaApi(422, "slug_reservado", "esse endereço é reservado pelo sistema");
+        }
+        if (slug === estado.perfil.slug) {
+          throw new ErroDaApi(422, "slug_igual_ao_atual", "esse já é o link da barbearia");
+        }
+        if (estado.solicitacoesDeLink!.some((s) => daMinhaBarbearia(s) && s.status === "pendente")) {
+          throw new ErroDaApi(409, "solicitacao_pendente", "já existe um pedido aguardando o suporte");
+        }
+        exigirSlugLivre(slug);
+        const pedido: SolicitacaoNaFila = {
+          id: `pedido-${++pedidosCriados}`,
+          slugPedido: slug,
+          motivo: motivo?.trim() || null,
+          status: "pendente",
+          resposta: null,
+          criadoEm: new Date().toISOString(),
+          decididoEm: null,
+          barbearia: { id: estado.perfil.id, nome: estado.perfil.nome, slug: estado.perfil.slug },
+        };
+        estado.solicitacoesDeLink!.push(pedido);
+        return semBarbearia(pedido);
+      },
+      async cancelarPedidoDeLink() {
+        exigirDono();
+        const pendente = estado.solicitacoesDeLink!.find(
+          (s) => daMinhaBarbearia(s) && s.status === "pendente"
+        );
+        if (!pendente) {
+          throw new ErroDaApi(404, "nao_encontrado", "nenhum pedido aguardando o suporte");
+        }
+        Object.assign(pendente, { status: "cancelada", decididoEm: new Date().toISOString() });
+        return semBarbearia(pendente);
+      },
       async atualizarMinhaBarbearia(edicao: EdicaoDaBarbearia) {
         exigirPaginaValida(edicao);
         const { lembreteAntecedenciaHoras, ...doPerfil } = edicao;
@@ -1038,6 +1134,50 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             remarcacao.servicoIds ?? antigo.servicos.map((s) => s.servicoId),
           origem: "cliente",
         });
+      },
+    },
+
+    suporte: {
+      async login(email: string, senha: string): Promise<SessaoSuporte> {
+        if (email.trim().toLowerCase() !== EMAIL_DO_SUPORTE_FALSO || senha !== SENHA_DO_SUPORTE_FALSA) {
+          throw new ErroDaApi(401, "credenciais_invalidas", "");
+        }
+        return {
+          token: "jwt-falso-suporte",
+          operador: { id: "op1", nome: "Suporte", email: EMAIL_DO_SUPORTE_FALSO },
+        };
+      },
+      // A barbearia do dublê sai com o nome e o link de agora, como a API
+      // lê do banco na hora.
+      async solicitacoes() {
+        return estado.solicitacoesDeLink!
+          .filter((s) => s.status === "pendente")
+          .sort((a, b) => a.criadoEm.localeCompare(b.criadoEm))
+          .map((s) => ({
+            ...s,
+            barbearia: daMinhaBarbearia(s)
+              ? { id: estado.perfil.id, nome: estado.perfil.nome, slug: estado.perfil.slug }
+              : { ...s.barbearia },
+          }));
+      },
+      // 409 desfaz tudo: o pedido fica pendente e o link não muda.
+      async aprovar(id: string) {
+        const pedido = pedidoPendente(id);
+        exigirSlugLivre(pedido.slugPedido);
+        if (daMinhaBarbearia(pedido)) {
+          estado.perfil = { ...estado.perfil, slug: pedido.slugPedido };
+        }
+        Object.assign(pedido, { status: "aprovada", decididoEm: new Date().toISOString() });
+        return semBarbearia(pedido);
+      },
+      async recusar(id: string, resposta: string) {
+        const pedido = pedidoPendente(id);
+        Object.assign(pedido, {
+          status: "recusada",
+          resposta: resposta.trim(),
+          decididoEm: new Date().toISOString(),
+        });
+        return semBarbearia(pedido);
       },
     },
   };

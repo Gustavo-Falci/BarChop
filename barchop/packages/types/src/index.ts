@@ -214,6 +214,29 @@ export interface SessaoCliente {
   cliente: ClienteSerializado;
 }
 
+// O pedido de troca do link (Onda 1, F4): o link é único pra sempre, e
+// só o suporte troca. `resposta` é o que o suporte escreveu ao recusar.
+export interface SolicitacaoDeLink {
+  id: string;
+  slugPedido: string;
+  motivo: string | null;
+  status: "pendente" | "aprovada" | "recusada" | "cancelada";
+  resposta: string | null;
+  criadoEm: string;
+  decididoEm: string | null;
+}
+
+// Como o suporte vê o pedido: com a barbearia e o link atual dela.
+export interface SolicitacaoNaFila extends SolicitacaoDeLink {
+  barbearia: { id: string; nome: string; slug: string };
+}
+
+// A conta do suporte é da plataforma, fora de qualquer equipe.
+export interface SessaoSuporte {
+  token: string;
+  operador: { id: string; nome: string; email: string };
+}
+
 // O papel do membro na equipe. Decide o que o painel mostra; quem barra
 // é a API (matriz em apps/api/tests/routers/auth-papeis.test.ts).
 export type PapelMembro = "dono" | "profissional" | "recepcao";

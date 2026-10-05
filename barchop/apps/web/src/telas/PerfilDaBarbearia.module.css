@@ -9,30 +9,179 @@
   margin-inline: auto;
 }
 
-.cabecalho {
-  display: grid;
-  gap: var(--espaco-xs);
+/* ---------- Fachada ----------
+   Mesma largura útil da página abaixo dela: a coluna do fluxo menos o
+   padding da .pagina, pros dois alinharem na vertical. */
+.fachada {
+  width: calc(100% - 2 * var(--espaco-lg));
+  max-width: calc(var(--fluxo-largura) - 2 * var(--espaco-lg));
+  margin: var(--espaco-lg) auto 0;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  overflow: hidden;
+  background: var(--cor-surface);
+  box-shadow: 0 6px 0 var(--cor-shadow);
 }
 
+/* Proporção fixa, com ou sem capa: a foto que chega depois (ou não
+   chega) não empurra o nome pra baixo. O fundo escuro aparece por trás
+   enquanto a imagem carrega. */
+.vitrine {
+  position: relative;
+  aspect-ratio: 2 / 1;
+  background: var(--cor-dark);
+}
+
+/* A faixa listrada na base da vitrine — amarelo e preto, a "fita" da
+   casa — separa a imagem do nome, com ou sem capa. */
+.vitrine::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 10px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--cor-accent) 0 10px,
+    var(--cor-dark) 10px 20px
+  );
+}
+
+@media (min-width: 900px) {
+  .vitrine {
+    aspect-ratio: 3 / 1;
+  }
+}
+
+/* Sem capa, a proporção da foto deixaria um bloco escuro de 400px no
+   desktop pra mostrar duas letras. Altura própria, menor — e depois
+   da media query, pra ganhar dela com a mesma especificidade. No
+   celular fica em 96px: a faixa amarela vazia que abria esta página
+   saiu justamente por ocupar 120px do topo sem dizer nada. */
+.semCapa {
+  aspect-ratio: auto;
+  height: clamp(96px, 18vw, 200px);
+}
+
+.capa {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sem capa: as iniciais em amarelo sobre o escuro, com uma trama de
+   pontos que tira o bloco do chapado. --cor-dark e --cor-accent são os
+   mesmos nos dois temas, então a fachada fica escura de propósito
+   mesmo com a página clara. */
+.monograma {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--cor-accent) 22%, transparent) 1.2px,
+    transparent 1.2px
+  );
+  background-size: 18px 18px;
+  color: var(--cor-accent);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(64px, 12vw, 112px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.identidade {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--espaco-sm) var(--espaco-md);
+  padding: var(--espaco-lg);
+}
+
+.identidade > * {
+  grid-column: 1 / -1;
+}
+
+/* O nome e o atalho da conta dividem a primeira linha: o atalho no
+   canto, fora do caminho do "Agendar" — é pra quem já tem conta, não a
+   ação da página. */
 .nome {
+  grid-column: 1;
+  grid-row: 1;
   margin: 0;
+  font-size: clamp(var(--texto-xl), 5vw, var(--texto-display));
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  /* O espaço da Clash Grotesk é estreito: no tamanho grande as palavras
+     do nome grudavam. */
+  word-spacing: 0.08em;
   text-wrap: balance;
 }
 
+.conta {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  padding-top: var(--espaco-xs);
+  font-size: var(--texto-sm);
+}
+
 /* "Aberto agora · fecha às 18:00" — a primeira pergunta de quem abre o
-   link. Peso de dado, não de legenda. */
-.situacao {
+   link. Selo e não legenda: amarelo quando abre, apagado quando não. O
+   ponto é ::before pra o texto do elemento continuar sendo só a frase. */
+.selo {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
   margin: 0;
-  font-weight: 600;
+  padding: var(--espaco-xs) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}
+
+.selo::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.selo[data-estado="aberto"] {
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+}
+
+.selo[data-estado="fechado"] {
+  background: var(--cor-paper-soft);
+  border-color: var(--cor-line);
+  color: var(--cor-ink-soft);
 }
 
 /* --cor-ink-soft, e não o --cor-muted de antes: o muted reprova
    contraste no tema claro (3.76:1), e endereço é texto que se lê. */
 .endereco {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-xs) var(--espaco-md);
   margin: 0;
   color: var(--cor-ink-soft);
-  font-size: var(--texto-sm);
 }
+
+.mapa {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  color: var(--cor-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Conteúdo ---------- */
 
 /* `pre-line` é o que preserva as quebras de linha que o barbeiro
    digitou no painel, sem interpretar HTML: o texto continua sendo
@@ -47,17 +196,206 @@
   max-width: 60ch;
   white-space: pre-line;
   line-height: 1.6;
+  font-size: var(--texto-lg);
 }
 
 .secao {
   display: grid;
-  gap: var(--espaco-sm);
+  gap: var(--espaco-md);
 }
 
 .titulo {
   margin: 0;
   font-size: var(--texto-lg);
+  word-spacing: 0.08em;
 }
+
+.principal .titulo {
+  font-size: var(--texto-xl);
+}
+
+.grupo { display: grid; gap: var(--espaco-sm); }
+.grupo + .grupo { margin-top: var(--espaco-md); }
+.subtitulo {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Cada serviço é um cartão: nome, duração e preço juntos — antes o
+   preço ficava a 600px do nome no desktop —, e os próximos horários no
+   pé do mesmo cartão. */
+.servicos {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cartaoDeServico {
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  overflow: hidden;
+}
+
+/* O serviço é link, mas lido como linha do cartão: sem sublinhado
+   parado, que faria a lista parecer um menu de links. No hover a linha
+   ganha o amarelo claro e a seta anda. */
+.servico {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-height: 56px;
+  padding: var(--espaco-md) var(--espaco-lg);
+  color: var(--cor-ink);
+  text-decoration: none;
+  transition: background 120ms ease;
+}
+
+.servico:hover {
+  background: var(--cor-pale-yellow);
+}
+
+.servico:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: -5px;
+}
+
+.servicoNome {
+  display: grid;
+  font-weight: 600;
+  font-size: var(--texto-lg);
+}
+
+.duracao {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 400;
+}
+
+.seta {
+  font-weight: 700;
+  transition: transform 120ms ease;
+}
+
+.servico:hover .seta {
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .servico,
+  .seta {
+    transition: none;
+  }
+}
+
+.proximosLinha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-xs) var(--espaco-sm);
+  padding: 0 var(--espaco-lg) var(--espaco-md);
+}
+
+.proximosRotulo {
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cor-ink-soft);
+}
+
+.proximos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 32px de altura: menor que os 44 do cartão, mas é atalho dentro de um
+   alvo maior, e os três ficam lado a lado no celular. */
+.proximo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-pale-yellow);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink);
+  text-decoration: none;
+}
+
+.proximo:hover {
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+}
+
+.proximo:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+/* Equipe em cartões: foto (ou iniciais), nome e o que a pessoa faz. */
+.equipe {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.membro {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+}
+
+.foto {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  background: var(--cor-pale-blue);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--texto-lg);
+}
+
+.membroTexto {
+  display: grid;
+  min-width: 0;
+}
+
+.membroNome {
+  font-weight: 600;
+}
+
+.membroFaz {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+/* ---------- Lateral ---------- */
 
 .lista {
   margin: 0;
@@ -66,57 +404,28 @@
   display: grid;
 }
 
-/* Nome de um lado, preço ou horário do outro, com a divisória fina
-   entre as linhas — a mesma `--borda-hairline` que a Confirmacao usa
-   pra listar itens. Com 2px viraria grade. */
-.linha,
-.servico {
+/* Dia de um lado, horário do outro, com a divisória fina entre as
+   linhas — a mesma `--borda-hairline` que a Confirmacao usa pra listar
+   itens. Com 2px viraria grade. */
+.linha {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: var(--espaco-md);
-  padding: var(--espaco-sm) 0;
+  padding: var(--espaco-sm);
   border-bottom: var(--borda-hairline) solid var(--cor-line);
 }
 
-.lista > li:last-child > .servico,
 .linha:last-child {
   border-bottom: 0;
 }
 
-/* O serviço é link, mas lido como linha da lista: sem sublinhado
-   parado, que faria a lista parecer um menu de links. No hover e no
-   foco ele se anuncia. 44px de alvo, que a linha de texto sozinha não
-   dava. */
-.servico {
-  min-height: 44px;
-  color: var(--cor-ink);
-  text-decoration: none;
-}
-
-.servico:hover .servicoNome {
-  text-decoration: underline;
-}
-
-.servico:focus-visible {
-  outline: 3px solid var(--cor-ink);
-  outline-offset: 2px;
-  border-radius: var(--raio-sm);
-}
-
-.servicoNome {
-  display: grid;
-}
-
-.duracao {
-  color: var(--cor-ink-soft);
-  font-size: var(--texto-sm);
-}
-
-/* O dia de hoje em negrito: quem olha o horário quase sempre quer o de
+/* O dia de hoje marcado: quem olha o horário quase sempre quer o de
    hoje, e achar a linha certa numa semana agrupada custa uma leitura. */
 .hoje {
   font-weight: 700;
+  background: var(--cor-pale-yellow);
+  border-radius: var(--raio-sm);
 }
 
 /* `tabular-nums` pra os preços e as horas alinharem na vertical: sem
@@ -128,9 +437,38 @@
   white-space: nowrap;
 }
 
-/* No canto, fora do caminho do "Agendar": é atalho pra quem já tem
-   conta, não a ação da página. */
-.conta { justify-self: end; }
+.contatos {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contatos a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  color: var(--cor-ink);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etiquetas li {
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: 1px solid var(--cor-ink-soft);
+  border-radius: var(--raio-pill);
+  font-size: var(--texto-sm);
+}
 
 /* Grudado no rodapé da janela (ver o comentário no TSX sobre por que
    ele vem por último). O fundo é o da página, pra o texto que rola por
@@ -166,27 +504,35 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
     column-gap: var(--espaco-xxl);
     align-items: start;
+    padding-top: var(--espaco-xl);
   }
 
   .principal {
     display: grid;
-    gap: var(--espaco-lg);
+    gap: var(--espaco-xl);
   }
 
   /* Cartão lateral que acompanha a rolagem: quando abre e o botão de
      agendar ficam à vista enquanto se lê a apresentação e os serviços.
      `align-self: start` (herdado do align-items) é o que dá espaço pro
      sticky andar — esticado até a altura da linha, ele não teria pra
-     onde. */
+     onde. As seções dentro dele se separam por linha fina, não por
+     cartão dentro de cartão. */
   .lateral {
     display: grid;
-    gap: var(--espaco-md);
+    gap: var(--espaco-lg);
     position: sticky;
     top: var(--espaco-lg);
     padding: var(--espaco-lg);
     border: var(--borda-padrao) solid var(--cor-ink);
     border-radius: var(--raio-md);
     background: var(--cor-surface);
+    box-shadow: 0 6px 0 var(--cor-shadow);
+  }
+
+  .lateral > .secao + .secao {
+    padding-top: var(--espaco-lg);
+    border-top: var(--borda-hairline) solid var(--cor-line);
   }
 
   /* Dentro do cartão o botão não precisa grudar em nada: o cartão
@@ -196,80 +542,4 @@
     padding: 0;
     background: none;
   }
-}
-
-/* Página rica (bloco E1). */
-.grupo { display: grid; gap: var(--espaco-sm); }
-.grupo + .grupo { margin-top: var(--espaco-lg); }
-.subtitulo {
-  font-size: var(--texto-sm);
-  font-weight: 700;
-  color: var(--cor-ink-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.proximos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-xs);
-  margin-top: var(--espaco-xs);
-  padding: 0;
-  list-style: none;
-}
-.proximo {
-  display: inline-block;
-  padding: var(--espaco-xs) var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-sm);
-  font-size: var(--texto-sm);
-  font-weight: 600;
-  color: var(--cor-ink);
-  text-decoration: none;
-}
-.contatos { display: grid; gap: var(--espaco-xs); padding: 0; list-style: none; }
-.contatos a { color: var(--cor-ink); font-weight: 600; }
-.etiquetas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-xs);
-  padding: 0;
-  list-style: none;
-}
-.etiquetas li {
-  padding: var(--espaco-xs) var(--espaco-sm);
-  border: 1px solid var(--cor-ink-soft);
-  border-radius: var(--raio-sm);
-  font-size: var(--texto-sm);
-}
-
-/* Capa e equipe (bloco E2). */
-.capa {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  border-radius: var(--raio-sm);
-}
-.equipe {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-md);
-  padding: 0;
-  list-style: none;
-}
-.membro {
-  display: grid;
-  justify-items: center;
-  gap: var(--espaco-xs);
-  font-size: var(--texto-sm);
-}
-.foto {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: var(--borda-padrao) solid var(--cor-ink);
-  font-weight: 700;
-  font-size: var(--texto-lg);
 }

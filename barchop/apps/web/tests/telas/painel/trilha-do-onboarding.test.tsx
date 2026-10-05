@@ -69,7 +69,7 @@ describe("trilha de primeiros passos", () => {
     const falso = montarPainel(<DashboardDoDia agora={AGORA} />);
     const regiao = await trilha();
 
-    await usuario.click(within(passo(regiao, /link/i)).getByRole("button", { name: /copiar link/i }));
+    await usuario.click(within(passo(regiao, /seu link/i)).getByRole("button", { name: /copiar link/i }));
 
     expect(await navigator.clipboard.readText()).toBe(`${window.location.origin}/gr-barber`);
     expect(await within(regiao).findByText(/link copiado/i)).toBeInTheDocument();

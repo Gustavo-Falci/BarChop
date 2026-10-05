@@ -1,0 +1,148 @@
+/* O cartão da trilha, no idioma do resto do painel: borda cheia e a
+   sombra offset sem desfoque. */
+.trilha {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+.topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.progresso {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink-soft);
+  white-space: nowrap;
+}
+
+.passos {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Marca, texto e ações numa linha no desktop; no celular as ações caem
+   pra baixo do texto, alinhadas com ele. */
+.passo {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--espaco-xs) var(--espaco-sm);
+  align-items: start;
+  padding: var(--espaco-sm);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+}
+
+@media (min-width: 720px) {
+  .passo {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+  }
+}
+
+.marca {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.passo[data-feito="true"] .marca {
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+}
+
+.corpo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nome {
+  font-weight: 700;
+}
+
+.passo[data-feito="true"] .nome {
+  color: var(--cor-ink-soft);
+}
+
+/* `--cor-ink-soft`, não `--cor-muted`: a dica é texto de leitura, e o
+   muted reprova contraste no tema claro. */
+.dica,
+.feito {
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.dica strong {
+  color: var(--cor-ink);
+  overflow-wrap: anywhere;
+}
+
+.acoes {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+@media (min-width: 720px) {
+  .acoes {
+    grid-column: 3;
+    justify-content: flex-end;
+  }
+}
+
+/* A ação principal do passo: pílula com a cor de destaque, alvo de
+   44px de altura pro dedo. */
+.acao,
+.secundaria {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.acao {
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+}
+
+.secundaria {
+  background: transparent;
+  color: var(--cor-ink);
+}
+
+.acao:focus-visible,
+.secundaria:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}

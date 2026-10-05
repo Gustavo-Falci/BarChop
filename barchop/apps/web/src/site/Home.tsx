@@ -34,7 +34,7 @@ const RECURSOS = [
   },
   {
     titulo: "Página da barbearia",
-    texto: "Capa, fotos, serviços com preço, equipe e os próximos horários livres, no seu endereço.",
+    texto: "Capa, serviços com preço, equipe com foto e os próximos horários livres, no seu endereço.",
   },
   {
     titulo: "Lembrete por e-mail",
@@ -42,7 +42,7 @@ const RECURSOS = [
   },
   {
     titulo: "Equipe com papéis",
-    texto: "Dono, profissional e recepção: cada um vê e mexe só no que é seu.",
+    texto: "O profissional vê a própria agenda, a recepção cuida de todas, e só o dono mexe nas configurações.",
   },
   {
     titulo: "Painel do dia",

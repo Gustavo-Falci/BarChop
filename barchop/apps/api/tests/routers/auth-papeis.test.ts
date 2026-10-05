@@ -21,7 +21,10 @@ const ID_QUALQUER = "00000000-0000-4000-8000-000000000000";
 // antes da validação.
 const SO_DO_DONO = [
   { method: "PATCH", url: "/barbearias/me" },
-  { method: "PATCH", url: "/barbearias/me/slug" },
+  // O pedido de troca do link (F4).
+  { method: "GET", url: "/barbearias/me/solicitacao-de-link" },
+  { method: "POST", url: "/barbearias/me/solicitacao-de-link" },
+  { method: "POST", url: "/barbearias/me/solicitacao-de-link/cancelar" },
   { method: "PUT", url: "/barbearias/me/horarios" },
   { method: "POST", url: "/servicos" },
   { method: "PATCH", url: `/servicos/${ID_QUALQUER}` },

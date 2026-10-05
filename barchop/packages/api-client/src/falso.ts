@@ -16,6 +16,8 @@ import type {
   PerfilPublicoBarbearia,
   ProximosHorariosDoServico,
   ServicoSerializado,
+  EstadoDoOnboarding,
+  PassoDoOnboarding,
 } from "@barchop/types";
 import type {
   AceiteDoConvite,
@@ -127,6 +129,9 @@ export interface EstadoFalso {
   // do agendamento. Qualquer outro é 401, como na API; os vencidos, 410.
   lembretes?: Record<string, string>;
   lembretesVencidos?: string[];
+  // A trilha do dono: quais passos já estão feitos. Sem semente, nenhum
+  // — derivar do resto do estado é trabalho da API, não do dublê.
+  onboarding?: Partial<Record<PassoDoOnboarding, boolean>>;
   // Os próximos horários da página pública. Sem semente, cada serviço
   // ativo vem sem horário: calcular a agenda é da API, não do dublê.
   proximosHorarios?: ProximosHorariosDoServico[];
@@ -217,7 +222,21 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     lembretes: { ...(semente.lembretes ?? {}) },
     lembretesVencidos: [...(semente.lembretesVencidos ?? [])],
     proximosHorarios: semente.proximosHorarios,
+    onboarding: { ...(semente.onboarding ?? {}) },
   };
+
+  // A mesma ordem da API (routers/onboarding.ts).
+  function trilha(): EstadoDoOnboarding {
+    const ordem: PassoDoOnboarding[] = ["horarios", "servicos", "equipe", "link", "primeira_reserva"];
+    const passos = ordem.map((id) => ({ id, feito: estado.onboarding![id] === true }));
+    return { passos, completo: passos.every((passo) => passo.feito) };
+  }
+
+  function exigirDono() {
+    if (estado.papel !== "dono") {
+      throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite isto");
+    }
+  }
 
   // O que o trigger da API dá a todo membro, criado na primeira leitura.
   function jornadaDe(id: string): DiaDaJornada[] {
@@ -941,6 +960,18 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       async removerFotoDoMembro(id: string) {
         membroOu404(id);
         definirFoto(id, null);
+      },
+      async onboarding() {
+        exigirDono();
+        return trilha();
+      },
+      async marcarTrabalhoSozinho(trabalhoSozinho: boolean) {
+        exigirDono();
+        estado.onboarding!.equipe = trabalhoSozinho;
+        return trilha();
+      },
+      async marcarLinkCopiado() {
+        estado.onboarding!.link = true;
       },
       async lembreteWhatsApp(id: string) {
         const achado = estado.agendamentos.find((a) => a.id === id);

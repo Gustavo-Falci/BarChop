@@ -195,6 +195,14 @@ export interface PerfilPublicoBarbearia extends BarbeariaSerializada {
   barbeiros: { id: string; nome: string; servicoIds: string[]; fotoUrl: string | null }[];
 }
 
+// A trilha de primeiros passos do dono (Onda 1, F2), na ordem da tela.
+export type PassoDoOnboarding = "horarios" | "servicos" | "equipe" | "link" | "primeira_reserva";
+
+export interface EstadoDoOnboarding {
+  passos: { id: PassoDoOnboarding; feito: boolean }[];
+  completo: boolean;
+}
+
 export interface SessaoBarbeiro {
   token: string;
   barbeiro: { id: string; nome: string; email: string | null };

@@ -31,9 +31,10 @@ const JANELA_POR_CONTA = 10 * MINUTO;
 
 // Contador por IP: rede de arrasto pra quem varre muitas contas de uma
 // origem só. Folgado de propósito, porque NAT de operadora põe muita
-// gente atrás do mesmo endereço — e porque, atrás de proxy reverso sem
-// `trustProxy` configurado, TODO mundo chega com o IP do proxy e este
-// contador viraria um limite global. Ver a nota no roadmap.
+// gente atrás do mesmo endereço. Atrás do Caddy, o `request.ip` só é o
+// do cliente com PROXIES_CONFIAVEIS (lib/borda.ts) — sem ela, todo mundo
+// chegaria com o IP do proxy e este contador viraria um limite global,
+// por isso a API não sobe em produção sem a variável.
 const MAX_POR_IP = 100;
 const JANELA_POR_IP = 5 * MINUTO;
 

@@ -15,6 +15,8 @@
 4. Token de API da Cloudflare só com `Zone → DNS → Edit` na zona, pro Caddy emitir o coringa por DNS-01. Segredo da VM: nunca no repo nem no chat.
 5. Resend: adicionar o domínio, criar na Cloudflare os TXT/MX que ele pedir, esperar "Verified".
 
+**G2 em três PRs (começado 2026-10-05, enquanto o DNS propaga):** **G2a feito** (branch `onda-1-bloco-g2a`): `lib/borda.ts` — `PROXIES_CONFIAVEIS` (saltos de proxy, vira `trustProxy` em forma de função porque os tipos do Fastify não aceitam número) e `ORIGENS_PERMITIDAS` (lista com coringa de um nível, `https://*.barchop.com.br`); em produção a API não sobe sem as duas; `buildApp({ ambiente })` pros testes. G2b: limites no `POST` público de agendar, nos próximos horários e no convite/reenvio. G2c: interruptor do lembrete **por barbearia, ligado nas novas** (decisão do dono 2026-10-05); a GR Barber entra desligada na migração do G3; ligar enfileira os agendamentos futuros.
+
 **Depois, código (um PR por item, TDD, push+PR+merge sem perguntar):** G1 `infra/` (compose api+worker, web, postgres com backup, Caddy coringa) → G2 `trustProxy`, CORS por lista, limites nas rotas públicas, interruptor do lembrete, `CANAL_DE_MENSAGEM=email` → G3 GR Barber (medir faltas antes de ligar o lembrete) → G4 docs. Conferir no navegador as telas do F4c/F4d (não vistas: a extensão do Chrome não conectou).
 
 ## Histórico do F4 (2026-10-05)

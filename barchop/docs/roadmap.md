@@ -322,18 +322,6 @@ config compartilhada em `packages/config/eslint.mjs`.
   convite devolvem; o esqueci-a-senha do barbeiro ficou no formato
   antigo. O painel não depende disso (lê o papel no `GET /me`), mas o
   contrato fica desigual.
-- **Os limites por IP viram limite global atrás de proxy reverso.** O
-  `request.ip` do Fastify vem do socket, então quando a API subir atrás
-  de proxy (passo 5, a VM da OCI) toda requisição chega com o endereço
-  do proxy, e os contadores por IP de `lib/limites.ts` — o do login, o
-  do signup do barbeiro e o do pedido de código do cliente — passam a
-  somar o tráfego de todo mundo num
-  orçamento só. Fecha com `trustProxy` no `Fastify()` do `app.ts`, e
-  isso não pode ser ligado antes: sem proxy confiável na frente,
-  `trustProxy` faz a API acreditar num `X-Forwarded-For` que qualquer um
-  escreve, e daí o limite por IP deixa de limitar. Os limites por conta
-  (email, telefone) não dependem do IP e continuam valendo nos dois
-  casos.
 - **O lembrete não tem interruptor.** Ele passa a sair no deploy, e o
   G3 pede medir a linha de base de faltas *antes* de ligar. Os
   agendamentos futuros que entrarem por migração (os da GR Barber)

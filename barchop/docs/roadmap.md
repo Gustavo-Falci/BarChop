@@ -223,7 +223,8 @@ o slug `painel` sombreado (`961d2f4`, lista de reservados no
 `@barchop/formato`); o painel lendo a própria barbearia pela rota
 pública e o slug sem troca (`GET /barbearias/me` e
 `PATCH /barbearias/me/slug`, com o campo "Link da barbearia" em
-Configurações). Desde o E3 da Onda 1 o link antigo leva ao novo: a tabela
+Configurações — no F4c o PATCH saiu: o link é único pra sempre e o dono
+pede a troca ao suporte). Desde o E3 da Onda 1 o link antigo leva ao novo: a tabela
 `slug_antigo` guarda todo nome que a barbearia já teve, e o layout de
 `/[slug]` redireciona com 307 levando o caminho inteiro. E as duas rotas que
 criam ou movem um agendamento pelo lado do cliente recusam data

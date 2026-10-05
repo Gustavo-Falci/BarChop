@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { criarApiClient } from "../src/index";
+import { criarApiClient, criarApiClientFalso } from "../src/index";
 
 function respostaJson(corpo: unknown, status = 200): Response {
   return new Response(JSON.stringify(corpo), {
@@ -79,20 +79,11 @@ describe("api do barbeiro", () => {
     expect(sessao.token).toBe("jwt-novo");
   });
 
-  it("troca o slug com PATCH no recurso próprio", async () => {
-    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
-      respostaJson({ id: "b1", nome: "GR Barber", slug: "gr-barber-centro" })
-    );
-
-    const barbearia = await clientAutenticado(fetchFalso).barbeiro.trocarSlug(
-      "gr-barber-centro"
-    );
-
-    const { url, init } = urlEInit(fetchFalso);
-    expect(url).toBe("https://api.exemplo.br/barbearias/me/slug");
-    expect(init.method).toBe("PATCH");
-    expect(JSON.parse(init.body as string)).toEqual({ slug: "gr-barber-centro" });
-    expect(barbearia.slug).toBe("gr-barber-centro");
+  // F4c: o link só muda pelo suporte (pedirTrocaDeLink); o client não
+  // tem mais como trocá-lo direto, nem o dublê.
+  it("não troca mais o link direto", () => {
+    expect("trocarSlug" in clientAutenticado(vi.fn()).barbeiro).toBe(false);
+    expect("trocarSlug" in criarApiClientFalso().barbeiro).toBe(false);
   });
 
   it("faz login sem token e devolve a sessão", async () => {

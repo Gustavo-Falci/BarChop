@@ -1,19 +1,16 @@
 import { prisma } from "@barchop/database";
-import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM, slugReservado } from "@barchop/formato";
+import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM } from "@barchop/formato";
 import { PODE_ATENDER } from "../lib/disponibilidade";
-import { ErroDeNegocio } from "../lib/erro-negocio";
 import { normalizarTelefone } from "../lib/telefone";
 import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import { serializarBarbearia, serializarBarbeariaDoPainel } from "../lib/serializar";
 import { completarSemana } from "./horarios";
-import { trocarSlug } from "../lib/slug";
 import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
 
-// A tela de Configurações edita estes campos. `slug` fica fora: trocar
-// o link público quebra o que o barbeiro já mandou no WhatsApp, então
-// tem rota própria (PATCH /barbearias/me/slug) e botão próprio na tela,
-// em vez de ir de carona num "Salvar dados". `id` e `barbeariaId`
+// A tela de Configurações edita estes campos. `slug` fica fora: o link
+// é único pra sempre e só o suporte troca, aprovando um pedido do dono
+// (routers/solicitacao-de-link.ts e routers/suporte.ts). `id` e `barbeariaId`
 // também ficam fora, e o additionalProperties: false é o que faz um
 // corpo com barbeariaId virar 400 em vez de ser ignorado em silêncio.
 const corpoPatchBarbearia = {
@@ -66,13 +63,6 @@ const corpoPatchBarbearia = {
   },
 } as const;
 
-const corpoTrocaDeSlug = {
-  type: "object",
-  required: ["slug"],
-  additionalProperties: false,
-  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
-} as const;
-
 export function registrarRotasBarbeariasProtegidas(app: App): void {
   // A leitura do painel. Antes dela, Configurações lia a própria
   // barbearia pela rota pública por slug — o painel dependia de uma
@@ -84,35 +74,6 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
 
     return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
   });
-
-  // Trocar o link público. O antigo vai pra `slug_antigo` e continua
-  // achando a barbearia na rota pública do perfil, de onde o site
-  // redireciona (ADR-0002). Slug de outra barbearia cai no unique da
-  // coluna → P2002 → 409, sem consulta prévia que abriria corrida entre
-  // checar e gravar — e a transação desfaz o antigo gravado junto.
-  app.patch(
-    "/barbearias/me/slug",
-    { schema: { body: corpoTrocaDeSlug }, onRequest: exigirPapel("dono") },
-    async (request) => {
-      const { slug } = request.body;
-
-      if (slugReservado(slug)) {
-        throw new ErroDeNegocio(
-          "esse endereço é reservado pelo sistema",
-          "slug_reservado"
-        );
-      }
-
-      // A mesma troca que o suporte faz ao aprovar um pedido (lib/slug.ts):
-      // nome de outra barbearia, atual ou antigo, é 409. Esta rota sai no
-      // F4c, quando Configurações passa a pedir em vez de trocar.
-      const barbearia = await prisma.$transaction((tx) =>
-        trocarSlug(tx, request.user.barbeariaId, slug)
-      );
-
-      return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
-    }
-  );
 
   app.patch(
     "/barbearias/me",
@@ -159,9 +120,8 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
     async (request) => {
       // O slug atual ou um que a barbearia já teve: o link antigo
       // circulou, e o `slug` da resposta é o atual — o site compara e
-      // redireciona. Os dois nunca acham barbearias diferentes, porque
-      // quem pega um slug o tira de `slug_antigo` (PATCH /me/slug e
-      // signup).
+      // redireciona. Os dois nunca acham barbearias diferentes: um slug,
+      // atual ou antigo, nunca vai pra outra barbearia (lib/slug.ts).
       //
       // findFirstOrThrow: slug inexistente vira P2025, que o tratador
       // central traduz pra 404.

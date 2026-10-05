@@ -86,6 +86,35 @@ describe("sessão do painel", () => {
     expect(await screen.findByText("slug: gr-barber-centro")).toBeInTheDocument();
   });
 
+  // F4: o link só muda pelo suporte, longe do painel. A sessão guarda o
+  // slug desde o login; sem reler, depois de uma aprovação o Novo
+  // agendamento consultaria a disponibilidade pelo link velho (as rotas
+  // públicas só aceitam o atual) e a trilha copiaria o link velho.
+  it("ao abrir, relê o link da barbearia e grava o atual na sessão", async () => {
+    sessaoDoBarbeiro.gravar("jwt");
+    sessaoDaBarbearia.gravar("link-velho");
+
+    montar();
+
+    expect(await screen.findByText("slug: gr-barber")).toBeInTheDocument();
+    expect(sessaoDaBarbearia.ler()).toBe("gr-barber");
+  });
+
+  it("se a releitura do link falhar, o painel abre com o link guardado", async () => {
+    sessaoDoBarbeiro.gravar("jwt");
+    sessaoDaBarbearia.gravar("gr-barber");
+    const falso = criarApiClientFalso();
+    falso.barbeiro.minhaBarbearia = async () => {
+      throw new ErroDaApi(500, "erro_interno", "");
+    };
+
+    montar(falso);
+
+    expect(await screen.findByText("Rafael")).toBeInTheDocument();
+    expect(screen.getByText("slug: gr-barber")).toBeInTheDocument();
+    expect(sessaoDoBarbeiro.ler()).toBe("jwt");
+  });
+
   it("sair limpa as duas chaves", async () => {
     sessaoDoBarbeiro.gravar("jwt");
     sessaoDaBarbearia.gravar("gr-barber");

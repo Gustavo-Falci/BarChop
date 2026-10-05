@@ -45,93 +45,24 @@ describe("GET /barbearias/me", () => {
   });
 });
 
+// F4c (decisão do dono, 2026-10-04): o link é único pra sempre e só o
+// suporte troca, aprovando um pedido do dono (solicitacao-de-link.test.ts
+// e suporte.test.ts). A troca direta saiu.
 describe("PATCH /barbearias/me/slug", () => {
-  function trocarSlug(app: ReturnType<typeof buildApp>, token: string, slug: string) {
-    return app.inject({
-      method: "PATCH",
-      url: "/barbearias/me/slug",
-      headers: auth(token),
-      payload: { slug },
-    });
-  }
-
-  it("troca o link: o novo responde na rota pública e o antigo leva a ele", async () => {
+  it("não existe mais", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
-
-    const resposta = await trocarSlug(app, um.token, "gr-barber-centro");
-
-    expect(resposta.statusCode).toBe(200);
-    expect(resposta.json().slug).toBe("gr-barber-centro");
-
-    const novo = await app.inject({ method: "GET", url: "/barbearias/gr-barber-centro" });
-    const antigo = await app.inject({ method: "GET", url: "/barbearias/barbearia-um" });
-    expect(novo.statusCode).toBe(200);
-    // O link antigo já circulou: ele acha a barbearia e diz o slug novo
-    // (os detalhes em slug-antigo.test.ts).
-    expect(antigo.statusCode).toBe(200);
-    expect(antigo.json().slug).toBe("gr-barber-centro");
-
-    await app.close();
-  });
-
-  it("aceita o próprio slug atual sem erro", async () => {
-    const app = buildApp();
-    const um = await criarBarbeariaComToken(app, "um");
-
-    const resposta = await trocarSlug(app, um.token, "barbearia-um");
-
-    expect(resposta.statusCode).toBe(200);
-    expect(resposta.json().slug).toBe("barbearia-um");
-
-    await app.close();
-  });
-
-  it("recusa slug de outra barbearia, com 409", async () => {
-    const app = buildApp();
-    const um = await criarBarbeariaComToken(app, "um");
-    await criarBarbeariaComToken(app, "dois");
-
-    const resposta = await trocarSlug(app, um.token, "barbearia-dois");
-
-    expect(resposta.statusCode).toBe(409);
-
-    await app.close();
-  });
-
-  it("recusa slug reservado, com 422", async () => {
-    const app = buildApp();
-    const um = await criarBarbeariaComToken(app, "um");
-
-    const resposta = await trocarSlug(app, um.token, "admin");
-
-    expect(resposta.statusCode).toBe(422);
-    expect(resposta.json().erro).toBe("slug_reservado");
-
-    await app.close();
-  });
-
-  it("recusa slug fora do formato, com 400", async () => {
-    const app = buildApp();
-    const um = await criarBarbeariaComToken(app, "um");
-
-    const resposta = await trocarSlug(app, um.token, "GR Barber");
-
-    expect(resposta.statusCode).toBe(400);
-
-    await app.close();
-  });
-
-  it("recusa sem token, com 401", async () => {
-    const app = buildApp();
 
     const resposta = await app.inject({
       method: "PATCH",
       url: "/barbearias/me/slug",
-      payload: { slug: "qualquer-um" },
+      headers: auth(um.token),
+      payload: { slug: "gr-barber-centro" },
     });
 
-    expect(resposta.statusCode).toBe(401);
+    expect(resposta.statusCode).toBe(404);
+    const perfil = await app.inject({ method: "GET", url: "/barbearias/barbearia-um" });
+    expect(perfil.json().slug).toBe("barbearia-um");
 
     await app.close();
   });

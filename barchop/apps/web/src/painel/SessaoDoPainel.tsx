@@ -40,9 +40,9 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
   const api = useApiDoPainel();
   const [perfil, setPerfil] = useState<PerfilBarbeiro | null>(null);
   // Estado, e não leitura solta no render: o layout do painel não
-  // remonta entre telas, e trocar o link em Configurações regrava o
-  // slug — sem acompanhar o evento, o novo agendamento seguiria
-  // consultando a disponibilidade pelo endereço que acabou de morrer.
+  // remonta entre telas, e a releitura do link (abaixo) regrava o slug
+  // depois de montar — sem acompanhar o evento, o novo agendamento
+  // seguiria consultando a disponibilidade pelo endereço velho.
   const [slug, setSlug] = useState(() => sessaoDaBarbearia.ler() ?? "");
 
   useEffect(() => {
@@ -87,6 +87,21 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
         // requisição, então desativar um barbeiro invalida na hora.
         sair();
       });
+
+    // O link só muda pelo suporte, longe daqui (F4), e a sessão guarda o
+    // slug desde o login. Sem reler, depois de uma aprovação o Novo
+    // agendamento consultaria a disponibilidade pelo link velho (as rotas
+    // públicas só aceitam o atual) e a trilha copiaria o link velho.
+    // Falhar aqui não fecha o painel: fica o slug guardado, e quem prova
+    // a sessão é o perfil.
+    api.barbeiro
+      .minhaBarbearia()
+      .then((barbearia) => {
+        if (vivo && sessaoDoBarbeiro.ler() && barbearia.slug !== sessaoDaBarbearia.ler()) {
+          sessaoDaBarbearia.gravar(barbearia.slug);
+        }
+      })
+      .catch(() => {});
 
     return () => {
       vivo = false;

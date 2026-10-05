@@ -196,6 +196,14 @@ describe("cadastro do dono", () => {
     expect(campo).toHaveAccessibleDescription(/barbearia-do-ze/);
   });
 
+  it("avisa que o link, depois de criado, só muda pelo suporte", () => {
+    montar();
+
+    expect(screen.getByLabelText(/endereço do link/i)).toHaveAccessibleDescription(
+      /só muda com um pedido ao suporte/i
+    );
+  });
+
   it("recusa link fora do formato antes de pedir o código", async () => {
     const falso = criarApiClientFalso();
     let chamou = false;

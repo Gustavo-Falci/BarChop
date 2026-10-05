@@ -1,20 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
-import { travarSlugs } from "../../src/lib/slug";
-import { auth, criarBarbeariaComToken, comCodigo } from "../helpers/barbearia";
+import { ErroHttp } from "../../src/lib/erro-http";
+import { travarSlugs, trocarSlug as trocarNaLib } from "../../src/lib/slug";
+import { criarBarbeariaComToken, comCodigo } from "../helpers/barbearia";
 
 // Trocar o link não pode quebrar o que já circulou: o link antigo foi
 // pro Instagram, pro WhatsApp e pros e-mails de lembrete. A rota pública
 // do perfil continua achando a barbearia pelo slug antigo e devolve o
 // atual, e o site redireciona a partir dele.
-function trocarSlug(app: ReturnType<typeof buildApp>, token: string, slug: string) {
-  return app.inject({
-    method: "PATCH",
-    url: "/barbearias/me/slug",
-    headers: auth(token),
-    payload: { slug },
-  });
+// Só o suporte troca o link (F4c), aprovando um pedido; aqui a troca vai
+// direto pela lib, numa transação, que é o que a aprovação faz.
+async function trocarSlug(barbeariaId: string, slug: string): Promise<{ statusCode: number }> {
+  try {
+    await prisma.$transaction((tx) => trocarNaLib(tx, barbeariaId, slug));
+    return { statusCode: 200 };
+  } catch (erro) {
+    if (erro instanceof ErroHttp) return { statusCode: erro.status };
+    throw erro;
+  }
 }
 
 function perfil(app: ReturnType<typeof buildApp>, slug: string) {
@@ -25,7 +29,7 @@ describe("slug antigo", () => {
   it("o slug antigo acha a barbearia e devolve o atual", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
-    await trocarSlug(app, um.token, "gr-barber-centro");
+    await trocarSlug(um.barbeariaId, "gr-barber-centro");
 
     const resposta = await perfil(app, "barbearia-um");
 
@@ -39,8 +43,8 @@ describe("slug antigo", () => {
   it("todos os slugs que a barbearia já teve continuam achando ela", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
-    await trocarSlug(app, um.token, "segundo-nome");
-    await trocarSlug(app, um.token, "terceiro-nome");
+    await trocarSlug(um.barbeariaId, "segundo-nome");
+    await trocarSlug(um.barbeariaId, "terceiro-nome");
 
     expect((await perfil(app, "barbearia-um")).json().slug).toBe("terceiro-nome");
     expect((await perfil(app, "segundo-nome")).json().slug).toBe("terceiro-nome");
@@ -51,9 +55,9 @@ describe("slug antigo", () => {
   it("voltar ao slug anterior não deixa ele apontando pra si mesmo", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
-    await trocarSlug(app, um.token, "outro-nome");
+    await trocarSlug(um.barbeariaId, "outro-nome");
 
-    const volta = await trocarSlug(app, um.token, "barbearia-um");
+    const volta = await trocarSlug(um.barbeariaId, "barbearia-um");
 
     expect(volta.statusCode).toBe(200);
     expect((await perfil(app, "barbearia-um")).json().slug).toBe("barbearia-um");
@@ -68,7 +72,7 @@ describe("slug antigo", () => {
   it("o slug antigo de uma barbearia não serve pro cadastro de outra", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
-    await trocarSlug(app, um.token, "gr-barber-centro");
+    await trocarSlug(um.barbeariaId, "gr-barber-centro");
 
     const dois = await app.inject({
       method: "POST",
@@ -90,9 +94,9 @@ describe("slug antigo", () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
     const dois = await criarBarbeariaComToken(app, "dois");
-    await trocarSlug(app, um.token, "gr-barber-centro");
+    await trocarSlug(um.barbeariaId, "gr-barber-centro");
 
-    const troca = await trocarSlug(app, dois.token, "barbearia-um");
+    const troca = await trocarSlug(dois.barbeariaId, "barbearia-um");
 
     expect(troca.statusCode).toBe(409);
     expect((await perfil(app, "barbearia-um")).json().id).toBe(um.barbeariaId);
@@ -104,7 +108,7 @@ describe("slug antigo", () => {
   it("o cadastro recusado pelo slug antigo não gasta o código", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
-    await trocarSlug(app, um.token, "gr-barber-centro");
+    await trocarSlug(um.barbeariaId, "gr-barber-centro");
     const corpo = await comCodigo({
       barbearia: { nome: "Barbearia dois", slug: "barbearia-um" },
       barbeiro: { nome: "Barbeiro dois", email: "dois@exemplo.com", senha: "senha-forte-123" },
@@ -168,7 +172,7 @@ describe("slug antigo", () => {
     const um = await criarBarbeariaComToken(app, "um");
     await criarBarbeariaComToken(app, "dois");
 
-    const troca = await trocarSlug(app, um.token, "barbearia-dois");
+    const troca = await trocarSlug(um.barbeariaId, "barbearia-dois");
 
     expect(troca.statusCode).toBe(409);
     expect((await perfil(app, "barbearia-um")).json().slug).toBe("barbearia-um");
@@ -181,7 +185,7 @@ describe("slug antigo", () => {
     // O site já redirecionou pro slug novo antes de chegar nelas.
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
-    await trocarSlug(app, um.token, "gr-barber-centro");
+    await trocarSlug(um.barbeariaId, "gr-barber-centro");
 
     const servicos = await app.inject({ method: "GET", url: "/barbearias/barbearia-um/servicos" });
 

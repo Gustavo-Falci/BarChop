@@ -1,0 +1,33 @@
+/* Fundo escuro fixo, não var(--cor-ink): o site é sempre claro (o
+   script de tema trava data-theme="light" fora do /painel), e o
+   rodapé fecha a página em contraste. */
+.rodape {
+  border-top: var(--borda-padrao) solid var(--cor-ink);
+  background: var(--cor-dark);
+  color: var(--cor-paper);
+}
+
+.conteudo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco-sm) var(--espaco-lg);
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: var(--espaco-xl) var(--espaco-lg);
+}
+
+.marca {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+}
+
+.linha {
+  margin: 0;
+  font-size: var(--texto-sm);
+  opacity: 0.8;
+}

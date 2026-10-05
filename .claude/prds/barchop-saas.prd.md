@@ -44,7 +44,7 @@ We'll know we're right when **a GR Barber tiver ≥ 50% dos agendamentos feitos 
 |---|---|---|---|---|
 | 0 | Onda 0 — Casa arrumada | Dono recupera a própria senha; trocar senha derruba sessões; nenhum slug sombreia rotas do sistema; ninguém agenda ou remarca para o passado; documentação descreve o BarChop como SaaS | complete | `.claude/plans/onda-0-casa-arrumada.plan.md` |
 | 1 | Onda 1 — Agenda que funciona (MVP + piloto) | Barbearia com vários profissionais e papéis; cliente agenda com o profissional que quer, na página da barbearia no endereço próprio; lembrete chega e cliente confirma/cancela; dono se cadastra e configura sozinho; GR Barber em produção | in-progress | `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
-| 1s | Site de marketing (mínimo, em paralelo à Onda 1) | Visitante entende a promessa, vê preços e cria a conta da barbearia sem falar com ninguém | pending | — |
+| 1s | Site de marketing (mínimo, em paralelo à Onda 1) | Visitante entende a promessa, vê preços e cria a conta da barbearia sem falar com ninguém | in-progress | `.claude/plans/onda-1s-site-de-marketing.plan.md` |
 | 2 | Onda 2 — Dinheiro | Dono fecha o caixa do dia, vê comissões e relatórios; BarChop cobra a própria assinatura (grátis + planos por profissional, teste de 14 dias) | pending | — |
 | 3 | Onda 3 — Retenção do cliente final | Cliente paga ou deixa sinal online, assina clube, acumula pontos, entra em lista de espera e avalia o atendimento | pending | — |
 | 4 | Onda 4 — Crescimento | Indicação, loja com estoque, múltiplas unidades, campanhas, login com Google/Apple | pending | — |

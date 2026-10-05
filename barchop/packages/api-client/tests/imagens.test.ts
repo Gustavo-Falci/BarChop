@@ -89,3 +89,46 @@ describe("dublê — imagens", () => {
     });
   });
 });
+
+describe("foto do serviço", () => {
+  it("envia e remove em /servicos/:id/foto", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
+      _init?.method === "DELETE" ? new Response(null, { status: 204 }) : respostaJson({ fotoUrl: "https://img/s.png" })
+    );
+    const barbeiro = clientComFetch(fetchFalso).barbeiro;
+
+    expect(await barbeiro.enviarFotoDoServico("s1", new Blob([PNG]))).toBe("https://img/s.png");
+    await barbeiro.removerFotoDoServico("s1");
+
+    expect(fetchFalso.mock.calls.map(([url, init]) => [url, init!.method])).toEqual([
+      ["https://api.exemplo.br/servicos/s1/foto", "POST"],
+      ["https://api.exemplo.br/servicos/s1/foto", "DELETE"],
+    ]);
+  });
+
+  it("no dublê, a foto aparece no painel e na lista pública; remover limpa", async () => {
+    const falso = criarApiClientFalso();
+
+    const url = await falso.barbeiro.enviarFotoDoServico("s1", new Blob([PNG]));
+
+    expect((await falso.barbeiro.servicos()).find((s) => s.id === "s1")!.fotoUrl).toBe(url);
+    expect((await falso.publico.servicos("gr-barber")).find((s) => s.id === "s1")!.fotoUrl).toBe(url);
+    await falso.barbeiro.removerFotoDoServico("s1");
+    expect((await falso.publico.servicos("gr-barber")).find((s) => s.id === "s1")!.fotoUrl).toBeNull();
+  });
+
+  it("no dublê, a descrição criada e editada aparece na lista pública", async () => {
+    const falso = criarApiClientFalso();
+
+    const criado = await falso.barbeiro.criarServico({
+      nome: "Pigmentação",
+      duracaoMinutos: 30,
+      preco: "60.00",
+      descricao: "Cobre falhas da barba",
+    });
+    await falso.barbeiro.atualizarServico(criado.id, { descricao: null });
+
+    expect(criado.descricao).toBe("Cobre falhas da barba");
+    expect((await falso.publico.servicos("gr-barber")).find((s) => s.id === criado.id)!.descricao).toBeNull();
+  });
+});

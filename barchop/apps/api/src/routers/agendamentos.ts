@@ -34,6 +34,7 @@ import {
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
 import { agendaVisivel, membroDoToken } from "../plugins/auth";
+import type { LimitesPublicos } from "../lib/limites";
 import type { App } from "../tipos";
 
 // Sem `barbeariaId` e sem `origem`: os dois seriam forjáveis. O
@@ -350,10 +351,10 @@ export function registrarRotasAgendamentos(app: App): void {
 
 // Pública: é a tela "Confirma e agenda", aberta pelo link do WhatsApp.
 // Fica fora do escopo protegido do app.ts.
-export function registrarRotasAgendamentosPublicas(app: App): void {
+export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPublicos): void {
   app.post(
     "/barbearias/:slug/agendamentos",
-    { schema: { params: paramsSlug, body: corpoNovoAgendamentoPublico } },
+    { schema: { params: paramsSlug, body: corpoNovoAgendamentoPublico }, preHandler: limites.agendar },
     async (request, reply) => {
       const { cliente: dadosCliente, ...resto } = request.body;
       // O mesmo número em formatos diferentes tem que cair no mesmo

@@ -8,7 +8,7 @@ import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDeAuth } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
-import { autenticar, autenticarCliente, registrarAuth } from "./plugins/auth";
+import { autenticar, autenticarCliente, autenticarSuporte, registrarAuth } from "./plugins/auth";
 import { registrarRotasAuth } from "./routers/auth";
 import { registrarRotasAuthCliente } from "./routers/auth-cliente";
 import {
@@ -20,6 +20,8 @@ import { registrarRotasClientesMe } from "./routers/clientes-me";
 import { registrarRotasDisponibilidade } from "./routers/disponibilidade";
 import { registrarRotasBloqueios } from "./routers/bloqueios";
 import { registrarRotasOnboarding } from "./routers/onboarding";
+import { registrarRotasSolicitacaoDeLink } from "./routers/solicitacao-de-link";
+import { registrarRotasLoginDoSuporte, registrarRotasSuporte } from "./routers/suporte";
 import { registrarRotasEquipe } from "./routers/equipe";
 import {
   registrarRotasBarbeariasProtegidas,
@@ -127,6 +129,7 @@ export function buildApp(
     const limites = limitesDeAuth(comLimite);
     registrarRotasAuth(comLimite, limites);
     registrarRotasAuthCliente(comLimite, limites);
+    registrarRotasLoginDoSuporte(comLimite, limites);
   });
 
   registrarRotasBarbeariasPublicas(app);
@@ -152,6 +155,7 @@ export function buildApp(
     registrarRotasEquipe(protegidas);
     registrarRotasBloqueios(protegidas);
     registrarRotasOnboarding(protegidas);
+    registrarRotasSolicitacaoDeLink(protegidas);
 
     // Upload de imagem num escopo filho: o @fastify/multipart vale só
     // aqui, e o `autenticar` do escopo de cima já rodou antes de qualquer
@@ -168,6 +172,15 @@ export function buildApp(
   app.register(async (doCliente: App) => {
     doCliente.addHook("onRequest", autenticarCliente);
     registrarRotasClientesMe(doCliente);
+  });
+
+  // Escopo do suporte da plataforma (bloco F4), irmão dos dois de cima:
+  // o hook aceita só `tipo: "suporte"`, e os outros dois recusam o token
+  // dele — o do painel principalmente, porque o suporte não tem
+  // barbeariaId e lá ele viraria "todas as barbearias".
+  app.register(async (doSuporte: App) => {
+    doSuporte.addHook("onRequest", autenticarSuporte);
+    registrarRotasSuporte(doSuporte);
   });
 
   app.get("/health", async () => ({ status: "ok" }));

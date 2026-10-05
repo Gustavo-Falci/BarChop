@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
+import { travarSlugs } from "../../src/lib/slug";
 import { auth, criarBarbeariaComToken, comCodigo } from "../helpers/barbearia";
 
 // Trocar o link não pode quebrar o que já circulou: o link antigo foi
@@ -60,12 +62,14 @@ describe("slug antigo", () => {
     await app.close();
   });
 
-  it("o slug atual de outra barbearia ganha do antigo, pelo cadastro", async () => {
+  // F4 (decisão do dono, 2026-10-04): o link é único PRA SEMPRE. O nome
+  // que uma barbearia já teve continua dela — os links velhos (WhatsApp,
+  // Instagram, e-mails de lembrete) nunca passam a abrir outra.
+  it("o slug antigo de uma barbearia não serve pro cadastro de outra", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
     await trocarSlug(app, um.token, "gr-barber-centro");
 
-    // A barbearia "dois" nasce com o slug que a "um" largou.
     const dois = await app.inject({
       method: "POST",
       url: "/auth/signup",
@@ -75,14 +79,14 @@ describe("slug antigo", () => {
       }),
     });
 
-    expect(dois.statusCode).toBe(201);
-    const resposta = await perfil(app, "barbearia-um");
-    expect(resposta.json().id).toBe(dois.json().barbearia.id);
+    expect(dois.statusCode).toBe(409);
+    expect(dois.json().erro).toBe("conflito");
+    expect((await perfil(app, "barbearia-um")).json().id).toBe(um.barbeariaId);
 
     await app.close();
   });
 
-  it("o slug atual de outra barbearia ganha do antigo, pela troca", async () => {
+  it("o slug antigo de uma barbearia não serve pra troca de outra", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
     const dois = await criarBarbeariaComToken(app, "dois");
@@ -90,10 +94,71 @@ describe("slug antigo", () => {
 
     const troca = await trocarSlug(app, dois.token, "barbearia-um");
 
-    expect(troca.statusCode).toBe(200);
-    expect((await perfil(app, "barbearia-um")).json().id).toBe(dois.barbeariaId);
-    // E o antigo da "dois" passa a apontar pra ela.
+    expect(troca.statusCode).toBe(409);
+    expect((await perfil(app, "barbearia-um")).json().id).toBe(um.barbeariaId);
     expect((await perfil(app, "barbearia-dois")).json().id).toBe(dois.barbeariaId);
+
+    await app.close();
+  });
+
+  it("o cadastro recusado pelo slug antigo não gasta o código", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+    await trocarSlug(app, um.token, "gr-barber-centro");
+    const corpo = await comCodigo({
+      barbearia: { nome: "Barbearia dois", slug: "barbearia-um" },
+      barbeiro: { nome: "Barbeiro dois", email: "dois@exemplo.com", senha: "senha-forte-123" },
+    });
+
+    await app.inject({ method: "POST", url: "/auth/signup", payload: corpo });
+    const outra = await app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: { ...corpo, barbearia: { nome: "Barbearia dois", slug: "barbearia-dois" } },
+    });
+
+    expect(outra.statusCode).toBe(201);
+
+    await app.close();
+  });
+
+  it("enquanto outra transação grava um slug antigo, o cadastro com ele espera e é recusado", async () => {
+    // A corrida que só a trava fecha: o suporte troca o link da "um"
+    // (o antigo vai pra slug_antigo) ao mesmo tempo que alguém se
+    // cadastra com ele. Sem a trava, o cadastro leria slug_antigo antes
+    // do commit, não veria nada e criaria — o nome ficaria das duas.
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+
+    let soltar!: () => void;
+    const segurando = new Promise<void>((resolver) => (soltar = resolver));
+    let travou!: () => void;
+    const comATrava = new Promise<void>((resolver) => (travou = resolver));
+
+    const troca = prisma.$transaction(
+      async (tx) => {
+        await travarSlugs(tx);
+        await tx.slugAntigo.create({ data: { slug: "nome-disputado", barbeariaId: um.barbeariaId } });
+        travou();
+        await segurando;
+      },
+      { timeout: 10_000 }
+    );
+
+    await comATrava;
+    const cadastro = app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: await comCodigo({
+        barbearia: { nome: "Barbearia dois", slug: "nome-disputado" },
+        barbeiro: { nome: "Barbeiro dois", email: "dois@exemplo.com", senha: "senha-forte-123" },
+      }),
+    });
+    await new Promise((resolver) => setTimeout(resolver, 300));
+    soltar();
+    await troca;
+
+    expect((await cadastro).statusCode).toBe(409);
 
     await app.close();
   });

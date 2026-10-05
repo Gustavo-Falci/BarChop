@@ -2,6 +2,7 @@ import { prisma } from "@barchop/database";
 import { normalizarEmail, slugReservado } from "@barchop/formato";
 import { consumirCodigo, emitirCodigo } from "../lib/codigos";
 import { ErroDeNegocio } from "../lib/erro-negocio";
+import { garantirSlugLivre } from "../lib/slug";
 import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_EMAIL, PADRAO_SLUG } from "../lib/padroes";
 import {
@@ -83,9 +84,10 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         );
         if (!provado) return null;
 
-        // O slug atual ganha do antigo: se outra barbearia já usou este
-        // nome, o link velho dela passa a abrir esta.
-        await tx.slugAntigo.deleteMany({ where: { slug: barbearia.slug } });
+        // O link é único pra sempre (F4): um nome que outra barbearia já
+        // teve continua dela. Lança aqui dentro de propósito — o rollback
+        // devolve o código, e o dono só escolhe outro link.
+        await garantirSlugLivre(tx, barbearia.slug, null);
         const novaBarbearia = await tx.barbearia.create({
           data: { nome: barbearia.nome, slug: barbearia.slug },
         });

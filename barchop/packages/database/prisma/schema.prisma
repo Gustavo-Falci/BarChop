@@ -87,8 +87,47 @@ model Barbearia {
   codigosVerificacao    CodigoVerificacao[]
   bloqueios             Bloqueio[]
   slugsAntigos          SlugAntigo[]
+  solicitacoesDeLink    SolicitacaoTrocaLink[]
 
   @@map("barbearia")
+}
+
+// O suporte da plataforma (bloco F4): avalia os pedidos de troca de
+// link. Não é membro de barbearia nenhuma; a conta nasce só por comando
+// (apps/api/scripts/criar-suporte.ts).
+model OperadorSuporte {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome            String    @db.VarChar(120)
+  email           String    @unique @db.VarChar(160)
+  senhaHash       String    @map("senha_hash")
+  ativo           Boolean   @default(true)
+  senhaAlteradaEm DateTime? @map("senha_alterada_em") @db.Timestamptz
+  criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+
+  decisoes SolicitacaoTrocaLink[]
+
+  @@map("operador_suporte")
+}
+
+// O pedido do dono pra trocar o link (bloco F4). status: pendente,
+// aprovada, recusada ou cancelada (CHECK na migration
+// 20261004200000_suporte); uma pendente por barbearia (índice parcial).
+model SolicitacaoTrocaLink {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId String    @map("barbearia_id") @db.Uuid
+  slugPedido  String    @map("slug_pedido") @db.VarChar(80)
+  motivo      String?   @db.VarChar(500)
+  status      String    @default("pendente") @db.VarChar(20)
+  resposta    String?   @db.VarChar(500)
+  criadoEm    DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  decididoEm  DateTime? @map("decidido_em") @db.Timestamptz
+  decididoPor String?   @map("decidido_por") @db.Uuid
+
+  barbearia Barbearia        @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  operador  OperadorSuporte? @relation(fields: [decididoPor], references: [id], onDelete: SetNull)
+
+  @@index([status, criadoEm])
+  @@map("solicitacao_troca_link")
 }
 
 // Slugs que a barbearia já teve (bloco E3): o link antigo continua

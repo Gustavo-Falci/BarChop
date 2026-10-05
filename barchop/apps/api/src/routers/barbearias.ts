@@ -6,6 +6,7 @@ import { normalizarTelefone } from "../lib/telefone";
 import { PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
 import { serializarBarbearia, serializarBarbeariaDoPainel } from "../lib/serializar";
 import { completarSemana } from "./horarios";
+import { trocarSlug } from "../lib/slug";
 import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -102,18 +103,12 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
         );
       }
 
-      const id = request.user.barbeariaId;
-      const barbearia = await prisma.$transaction(async (tx) => {
-        const atual = await tx.barbearia.findUniqueOrThrow({ where: { id } });
-        if (atual.slug === slug) return atual;
-
-        // O slug atual de qualquer barbearia ganha do antigo: quem pega
-        // um slug da tabela o tira de lá — inclusive a própria barbearia
-        // voltando ao nome anterior, que senão apontaria pra si mesma.
-        await tx.slugAntigo.deleteMany({ where: { slug } });
-        await tx.slugAntigo.create({ data: { slug: atual.slug, barbeariaId: id } });
-        return tx.barbearia.update({ where: { id }, data: { slug } });
-      });
+      // A mesma troca que o suporte faz ao aprovar um pedido (lib/slug.ts):
+      // nome de outra barbearia, atual ou antigo, é 409. Esta rota sai no
+      // F4c, quando Configurações passa a pedir em vez de trocar.
+      const barbearia = await prisma.$transaction((tx) =>
+        trocarSlug(tx, request.user.barbeariaId, slug)
+      );
 
       return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
     }

@@ -2,6 +2,7 @@ import { criarApiBarbeiro } from "./barbeiro";
 import { criarApiCliente } from "./cliente";
 import { criarApiPublica } from "./publico";
 import { criarRequisicao, type OpcoesDoClient } from "./requisicao";
+import { criarApiSuporte } from "./suporte";
 
 export { ErroDaApi } from "./erro";
 export {
@@ -10,6 +11,8 @@ export {
   CODIGO_DO_CLIENTE_FALSO,
   CODIGO_DO_CONVITE_FALSO,
   criarApiClientFalso,
+  EMAIL_DO_SUPORTE_FALSO,
+  SENHA_DO_SUPORTE_FALSA,
 } from "./falso";
 export type { EstadoFalso, SementeFalsa } from "./falso";
 export { criarRequisicao } from "./requisicao";
@@ -55,6 +58,7 @@ export function criarApiClient(opcoes: OpcoesDoClient) {
     publico: criarApiPublica(requisicao),
     barbeiro: criarApiBarbeiro(requisicao),
     cliente: criarApiCliente(requisicao),
+    suporte: criarApiSuporte(requisicao),
   };
 }
 

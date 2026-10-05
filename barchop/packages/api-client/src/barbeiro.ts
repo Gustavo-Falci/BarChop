@@ -15,6 +15,7 @@ import type {
   ServicoSerializado,
   SessaoBarbeiro,
   EstadoDoOnboarding,
+  SolicitacaoDeLink,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
@@ -254,6 +255,33 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao("/barbearias/me/slug", {
         metodo: "PATCH",
         corpo: { slug },
+        comToken: true,
+      });
+    },
+
+    // O link é único pra sempre e só o suporte troca (F4): o dono pede.
+    // A leitura devolve o pedido mais recente, de qualquer status — a
+    // tela mostra o pendente e também a última decisão.
+    async solicitacaoDeLink(): Promise<SolicitacaoDeLink | null> {
+      const resposta = await requisicao<{ solicitacao: SolicitacaoDeLink | null }>(
+        "/barbearias/me/solicitacao-de-link",
+        { comToken: true }
+      );
+      return resposta.solicitacao;
+    },
+
+    pedirTrocaDeLink(slug: string, motivo?: string): Promise<SolicitacaoDeLink> {
+      return requisicao("/barbearias/me/solicitacao-de-link", {
+        metodo: "POST",
+        corpo: motivo === undefined ? { slug } : { slug, motivo },
+        comToken: true,
+      });
+    },
+
+    // Sem corpo, pelo mesmo motivo do reenviarConvite.
+    cancelarPedidoDeLink(): Promise<SolicitacaoDeLink> {
+      return requisicao("/barbearias/me/solicitacao-de-link/cancelar", {
+        metodo: "POST",
         comToken: true,
       });
     },

@@ -155,6 +155,32 @@ describe("configurações da barbearia", () => {
     expect(screen.getByLabelText(/novo link/i)).toBeInTheDocument();
   });
 
+  // G2c: o interruptor do lembrete, por barbearia.
+  it("mostra o lembrete ligado e desliga ao salvar", async () => {
+    const falso = criarApiClientFalso();
+    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+
+    const chave = await screen.findByRole("checkbox", { name: /enviar lembrete por e-mail/i });
+    expect(chave).toBeChecked();
+    await userEvent.click(chave);
+    await userEvent.click(screen.getByRole("button", { name: /salvar lembrete/i }));
+
+    await waitFor(() => expect(falso.estado.lembreteAtivo).toBe(false));
+  });
+
+  it("ligar avisa que os agendamentos já marcados também recebem", async () => {
+    const falso = criarApiClientFalso({ lembreteAtivo: false });
+    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+
+    const chave = await screen.findByRole("checkbox", { name: /enviar lembrete por e-mail/i });
+    expect(chave).not.toBeChecked();
+    expect(chave).toHaveAccessibleDescription(/já marcados/i);
+    await userEvent.click(chave);
+    await userEvent.click(screen.getByRole("button", { name: /salvar lembrete/i }));
+
+    await waitFor(() => expect(falso.estado.lembreteAtivo).toBe(true));
+  });
+
   it("salva os dados da barbearia", async () => {
     const falso = criarApiClientFalso();
     const original = falso.barbeiro.atualizarMinhaBarbearia;

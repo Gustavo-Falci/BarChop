@@ -82,7 +82,13 @@ describe("fachada da página da barbearia", () => {
   });
 
   it("os próximos horários vêm rotulados", async () => {
-    montar();
+    montar(
+      criarApiClientFalso({
+        proximosHorarios: [
+          { servicoId: "s1", horarios: [{ data: "2026-09-29", horaInicio: "11:00" }] },
+        ],
+      })
+    );
 
     const lista = await screen.findByRole("list", { name: "Próximos horários de Corte" });
     expect(lista.previousElementSibling).toHaveTextContent("Próximos:");

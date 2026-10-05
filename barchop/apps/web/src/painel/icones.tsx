@@ -145,3 +145,33 @@ export function IconeRecolher(props: Props) {
     </Base>
   );
 }
+
+// Os três da página pública (contatos e endereço). Genéricos de
+// propósito — balão, câmera, alfinete — e não as marcas: logo de
+// terceiro tem regra de uso, e o texto ao lado já diz qual é.
+export function IconeConversa(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3 21l1.9-5.4A8.5 8.5 0 1 1 21 11.5Z" />
+    </Base>
+  );
+}
+
+export function IconeCamera(props: Props) {
+  return (
+    <Base {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M17.5 6.5h.01" />
+    </Base>
+  );
+}
+
+export function IconeMapa(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </Base>
+  );
+}

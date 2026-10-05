@@ -316,12 +316,6 @@ config compartilhada em `packages/config/eslint.mjs`.
   convite devolvem; o esqueci-a-senha do barbeiro ficou no formato
   antigo. O painel não depende disso (lê o papel no `GET /me`), mas o
   contrato fica desigual.
-- **O lembrete não tem interruptor.** Ele passa a sair no deploy, e o
-  G3 pede medir a linha de base de faltas *antes* de ligar. Os
-  agendamentos futuros que entrarem por migração (os da GR Barber)
-  nunca passaram por `agendarLembrete` e não têm lembrete na fila.
-  Fecha com uma chave (por barbearia, migration nova, ou por ambiente)
-  que, ao ligar, enfileira os agendamentos futuros que já existem.
 - **O log do proxy vai gravar o token do lembrete.** A API oculta o
   token no próprio log (`ocultarTokenDoLembrete`), mas o caminho
   `/<slug>/lembrete/<token>` do site e o `/lembretes/<token>` da API

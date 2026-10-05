@@ -268,12 +268,14 @@ config compartilhada em `packages/config/eslint.mjs`.
   Aceito: troca de slug é rara, e o redirect leva a pessoa ao lugar
   certo — ela só entra de novo. Fecharia com a sessão do cliente num
   cookie do domínio `.barchop.com.br`.
-- **Um nome largado pode ser tomado por outra barbearia.** O slug atual
-  de qualquer barbearia ganha do antigo (E3): se a GR Barber trocar de
-  `gr-barber` pra `gr-barber-centro` e outra barbearia se cadastrar como
-  `gr-barber`, os links velhos da GR Barber passam a abrir a outra. O
-  aviso está no campo do link em Configurações. Fecharia com uma
-  quarentena do nome largado (ex.: 90 dias reservado pra quem largou).
+- **A conta de suporte do G ainda não existe.** Desde o F4 o link é
+  único pra sempre (o atual e os antigos de uma barbearia nunca vão pra
+  outra) e só o suporte troca, aprovando o pedido do dono. Em produção:
+  criar a conta com `SENHA_DO_SUPORTE=... pnpm --filter @barchop/api
+  criar-suporte "Nome" email` na VM. Não há troca de senha nem
+  recuperação pro suporte ainda — trocar é `UPDATE` com
+  `gerarHashSenha`, e desativar é `ativo = false` (derruba o token na
+  hora).
 - **O cadastro do dono depende do e-mail em produção.** Desde o F3 da
   Onda 1 o signup exige o código que chega no e-mail
   (`POST /auth/cadastro/codigo`) — o que fechou a dívida do `409` que

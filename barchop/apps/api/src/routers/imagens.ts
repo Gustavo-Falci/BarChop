@@ -8,14 +8,15 @@ import { PADRAO_UUID } from "../lib/padroes";
 import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
 
-// Capa da barbearia e foto do profissional (Onda 1, bloco E2). O arquivo
+// Capa da barbearia, foto do profissional (Onda 1, bloco E2) e foto do
+// serviço (cartão da escolha de serviços). O arquivo
 // passa pela API — e não direto do navegador pro bucket — porque o CORS
 // do Object Storage da OCI não estava confirmado, e porque assim a API
 // confere o tipo pelos bytes em produção também. O cliente manda só o
 // arquivo: a chave é sorteada aqui e a URL sai do armazenamento.
 //
-// Só o dono: `PATCH /equipe/:id` também é só dele. O profissional não
-// troca a própria foto por enquanto.
+// Só o dono: `PATCH /equipe/:id` e `PATCH /servicos/:id` também são só
+// dele. O profissional não troca a própria foto por enquanto.
 
 // Depois do redimensionamento no navegador uma foto fica bem abaixo
 // disto; o teto é pra quem pula a tela.
@@ -131,12 +132,51 @@ export function registrarRotasImagens(app: App): void {
       return reply.code(204).send();
     }
   );
+
+  // Foto do serviço: o mesmo desenho da foto do membro. Serviço inativo
+  // também aceita — o dono pode arrumar antes de reativar.
+  app.post(
+    "/servicos/:id/foto",
+    { schema: { params: paramsComId }, onRequest: exigirPapel("dono") },
+    async (request) => {
+      const barbeariaId = request.user.barbeariaId;
+      const servico = await prisma.servico.findFirst({
+        where: { id: request.params.id, barbeariaId },
+        select: { id: true, fotoChave: true },
+      });
+      if (!servico) throw naoEncontrado("serviço não encontrado");
+
+      const { bytes, tipo } = await lerImagem(request, LIMITE_DA_FOTO);
+      const chave = `barbearias/${barbeariaId}/servicos/${servico.id}/${randomUUID()}.${EXTENSAO_DO_TIPO[tipo]}`;
+
+      await app.armazenamento.guardar(chave, bytes, tipo);
+      await prisma.servico.update({ where: { id: servico.id }, data: { fotoChave: chave } });
+      await apagarSemFalhar(app, servico.fotoChave);
+
+      return { fotoUrl: app.armazenamento.urlPublica(chave) };
+    }
+  );
+
+  app.delete(
+    "/servicos/:id/foto",
+    { schema: { params: paramsComId }, onRequest: exigirPapel("dono") },
+    async (request, reply) => {
+      const servico = await prisma.servico.findFirst({
+        where: { id: request.params.id, barbeariaId: request.user.barbeariaId },
+        select: { id: true, fotoChave: true },
+      });
+      if (!servico) throw naoEncontrado("serviço não encontrado");
+      await prisma.servico.update({ where: { id: servico.id }, data: { fotoChave: null } });
+      await apagarSemFalhar(app, servico.fotoChave);
+      return reply.code(204).send();
+    }
+  );
 }
 
 // O formato exato das chaves que a API sorteia. Validada antes de chegar
 // perto do disco: é o que impede `../` de virar leitura de arquivo.
 const FORMATO_DA_CHAVE =
-  /^barbearias\/[0-9a-f-]{36}\/(capa|equipe\/[0-9a-f-]{36})\/[0-9a-f-]{36}\.(png|jpg|webp)$/;
+  /^barbearias\/[0-9a-f-]{36}\/(capa|(equipe|servicos)\/[0-9a-f-]{36})\/[0-9a-f-]{36}\.(png|jpg|webp)$/;
 
 // Só no armazenamento local (desenvolvimento e testes): no S3 quem serve
 // é o bucket. Pública, porque a imagem é da página pública.

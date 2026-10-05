@@ -120,6 +120,10 @@ export interface ServicoSerializado {
   ativo: boolean;
   // Agrupa os serviços na página pública; null = sem categoria.
   categoria: string | null;
+  // O texto curto do cartão na página pública; null = sem descrição.
+  descricao: string | null;
+  // URL pública da foto (a chave fica na API); null = sem foto.
+  fotoUrl: string | null;
 }
 
 // Um nome só, um formato só: a resposta da API e o tipo que web e

@@ -80,10 +80,10 @@ describe("página da barbearia rica", () => {
   it("serviços por categoria, sem separar por caixa ou espaço; os sem categoria por último", async () => {
     const falso = criarApiClientFalso({
       servicos: [
-        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cabelo" },
-        { id: "s2", nome: "Pigmentação", duracaoMinutos: 30, preco: "50.00", ativo: true, categoria: " cabelo " },
-        { id: "s3", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true, categoria: "Barba" },
-        { id: "s4", nome: "Sobrancelha", duracaoMinutos: 15, preco: "15.00", ativo: true, categoria: null },
+        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cabelo", descricao: null, fotoUrl: null },
+        { id: "s2", nome: "Pigmentação", duracaoMinutos: 30, preco: "50.00", ativo: true, categoria: " cabelo ", descricao: null, fotoUrl: null },
+        { id: "s3", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true, categoria: "Barba", descricao: null, fotoUrl: null },
+        { id: "s4", nome: "Sobrancelha", duracaoMinutos: 15, preco: "15.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
       ],
     });
     montarPagina(falso);
@@ -215,7 +215,7 @@ describe("categoria no cadastro de serviço", () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
     const falso = criarApiClientFalso({
       servicos: [
-        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cabelo" },
+        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cabelo", descricao: null, fotoUrl: null },
       ],
     });
     const atualizar = vi.fn(falso.barbeiro.atualizarServico);

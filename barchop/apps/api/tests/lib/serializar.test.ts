@@ -10,6 +10,28 @@ import {
 } from "../../src/lib/serializar";
 
 describe("serializarServico", () => {
+  const url = (chave: string) => `https://arquivos.exemplo/${chave}`;
+
+  it("a foto sai como URL pública; sem foto, null — a chave nunca sai", () => {
+    const base = {
+      id: "s1",
+      nome: "Corte",
+      duracaoMinutos: 30,
+      preco: new Prisma.Decimal("40"),
+      ativo: true,
+      categoria: null,
+      descricao: "Máquina e tesoura",
+    };
+
+    const com = serializarServico({ ...base, fotoChave: "barbearias/b/servicos/s1/f.png" }, url);
+    const sem = serializarServico({ ...base, fotoChave: null }, url);
+
+    expect(com.fotoUrl).toBe("https://arquivos.exemplo/barbearias/b/servicos/s1/f.png");
+    expect(com.descricao).toBe("Máquina e tesoura");
+    expect(sem.fotoUrl).toBeNull();
+    expect(Object.keys(com)).not.toContain("fotoChave");
+  });
+
   it("devolve o preço como string de duas casas", () => {
     const servico = serializarServico({
       id: "s1",
@@ -18,7 +40,9 @@ describe("serializarServico", () => {
       preco: new Prisma.Decimal("45"),
       ativo: true,
       categoria: null,
-    });
+      descricao: null,
+      fotoChave: null,
+    }, url);
 
     // O motivo de existir deste módulo: `new Prisma.Decimal("45")` sai
     // como `{}` no JSON.stringify, e o preço sumiria da resposta sem
@@ -36,7 +60,9 @@ describe("serializarServico", () => {
         preco: new Prisma.Decimal("30.5"),
         ativo: true,
         categoria: null,
-      }).preco
+        descricao: null,
+        fotoChave: null,
+      }, url).preco
     ).toBe("30.50");
   });
 
@@ -49,7 +75,9 @@ describe("serializarServico", () => {
         preco: new Prisma.Decimal("10"),
         ativo: false,
         categoria: null,
-      }).ativo
+        descricao: null,
+        fotoChave: null,
+      }, url).ativo
     ).toBe(false);
   });
 });

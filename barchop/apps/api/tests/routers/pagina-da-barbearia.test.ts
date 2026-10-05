@@ -126,6 +126,65 @@ describe("categoria do serviço", () => {
   });
 });
 
+describe("descrição do serviço", () => {
+  it("o serviço guarda a descrição, sem espaços nas pontas, e a lista pública a devolve", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const criado = await app.inject({
+      method: "POST",
+      url: "/servicos",
+      headers: auth(agenda.token),
+      payload: { nome: "Barba", duracaoMinutos: 30, preco: "30.00", descricao: "  Navalha e toalha quente \n" },
+    });
+
+    expect(criado.statusCode).toBe(201);
+    expect(criado.json().descricao).toBe("Navalha e toalha quente");
+    const publicos = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}/servicos` })).json().servicos;
+    expect(publicos.find((s: { nome: string }) => s.nome === "Barba").descricao).toBe("Navalha e toalha quente");
+    // Sem descrição e sem foto: null, nunca ausente — a tela decide pelo null.
+    const corte = publicos.find((s: { nome: string }) => s.nome === "Corte");
+    expect(corte.descricao).toBeNull();
+    expect(corte.fotoUrl).toBeNull();
+  });
+
+  it("só espaço vira null; passar de 300 caracteres é 400", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const base = { nome: "Barba", duracaoMinutos: 30, preco: "30.00" };
+
+    const vazia = await app.inject({
+      method: "POST",
+      url: "/servicos",
+      headers: auth(agenda.token),
+      payload: { ...base, descricao: "   " },
+    });
+    const longa = await app.inject({
+      method: "POST",
+      url: "/servicos",
+      headers: auth(agenda.token),
+      payload: { ...base, descricao: "a".repeat(301) },
+    });
+
+    expect(vazia.json().descricao).toBeNull();
+    expect(longa.statusCode).toBe(400);
+  });
+
+  it("o dono troca ou limpa a descrição, e um PATCH sem ela não mexe", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const url = `/servicos/${agenda.servico.id}`;
+
+    const trocado = await app.inject({ method: "PATCH", url, headers: auth(agenda.token), payload: { descricao: "Máquina e tesoura" } });
+    const outro = await app.inject({ method: "PATCH", url, headers: auth(agenda.token), payload: { nome: "Corte social" } });
+    const limpo = await app.inject({ method: "PATCH", url, headers: auth(agenda.token), payload: { descricao: null } });
+
+    expect(trocado.json().descricao).toBe("Máquina e tesoura");
+    expect(outro.json().descricao).toBe("Máquina e tesoura");
+    expect(limpo.json().descricao).toBeNull();
+  });
+});
+
 describe("GET /barbearias/:slug/proximos-horarios", () => {
   async function proximos(app: App, slug: string) {
     const resposta = await app.inject({ method: "GET", url: `/barbearias/${slug}/proximos-horarios` });

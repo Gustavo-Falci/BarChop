@@ -186,6 +186,76 @@ describe("foto do profissional", () => {
   });
 });
 
+describe("foto do serviço", () => {
+  function publicoDoServico(app: App, agenda: { slug: string; servico: { id: string } }) {
+    return app
+      .inject({ method: "GET", url: `/barbearias/${agenda.slug}/servicos` })
+      .then((r) => r.json().servicos.find((s: { id: string }) => s.id === agenda.servico.id));
+  }
+
+  it("o dono envia; o painel e a lista pública mostram; a API serve os bytes", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const resposta = await enviar(app, `/servicos/${agenda.servico.id}/foto`, agenda.token, WEBP);
+
+    expect(resposta.statusCode).toBe(200);
+    const { fotoUrl } = resposta.json();
+    expect(fotoUrl).toMatch(new RegExp(`/servicos/${agenda.servico.id}/[0-9a-f-]+\\.webp$`));
+    const painel = (await app.inject({ method: "GET", url: "/servicos", headers: auth(agenda.token) })).json();
+    expect(painel.servicos[0].fotoUrl).toBe(fotoUrl);
+    expect((await publicoDoServico(app, agenda)).fotoUrl).toBe(fotoUrl);
+    const servido = await app.inject({ method: "GET", url: caminho(fotoUrl) });
+    expect(servido.statusCode).toBe(200);
+    expect(servido.rawPayload.equals(WEBP)).toBe(true);
+  });
+
+  it("serviço de outra barbearia é 404", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const outra = await prepararAgenda(app, { sufixo: "dois" });
+
+    const resposta = await enviar(app, `/servicos/${outra.servico.id}/foto`, agenda.token, PNG);
+
+    expect(resposta.statusCode).toBe(404);
+  });
+
+  it("só o dono troca foto de serviço", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const profissional = await criarMembroComToken(app, agenda.barbeariaId, "profissional", "p");
+
+    const resposta = await enviar(app, `/servicos/${agenda.servico.id}/foto`, profissional.token, PNG);
+
+    expect(resposta.statusCode).toBe(403);
+  });
+
+  it("arquivo que não é imagem é 422", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const resposta = await enviar(app, `/servicos/${agenda.servico.id}/foto`, agenda.token, Buffer.from("oi"), "x.png");
+
+    expect(resposta.statusCode).toBe(422);
+  });
+
+  it("trocar a foto apaga a antiga; tirar limpa o campo", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const url = `/servicos/${agenda.servico.id}/foto`;
+    const antiga = (await enviar(app, url, agenda.token, PNG)).json().fotoUrl;
+    const nova = (await enviar(app, url, agenda.token, JPEG)).json().fotoUrl;
+
+    expect((await app.inject({ method: "GET", url: caminho(antiga) })).statusCode).toBe(404);
+
+    const resposta = await app.inject({ method: "DELETE", url, headers: auth(agenda.token) });
+
+    expect(resposta.statusCode).toBe(204);
+    expect((await publicoDoServico(app, agenda)).fotoUrl).toBeNull();
+    expect((await app.inject({ method: "GET", url: caminho(nova) })).statusCode).toBe(404);
+  });
+});
+
 describe("GET /arquivos/*", () => {
   it("caminho fora do formato é 404, sem chegar no disco", async () => {
     const app = buildApp();

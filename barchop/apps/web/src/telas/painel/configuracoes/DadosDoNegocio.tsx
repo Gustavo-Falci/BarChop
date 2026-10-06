@@ -267,7 +267,11 @@ function Dados() {
 
             {/* Seção própria, sem o "Salvar dados": o link não se edita
                 aqui. Ele é único pra sempre (F4) e só o suporte o troca. */}
-            <Secao titulo="Link da barbearia" descricao="O endereço que seus clientes usam pra marcar horário.">
+            {/* Título diferente do rótulo do campo: a seção é região
+                nomeada pelo título, e os dois com "Link da barbearia"
+                deixariam o campo ambíguo pra quem procura pelo rótulo. */}
+            <Secao titulo="Endereço da sua página" descricao="O endereço que seus clientes usam pra marcar horário.">
+
               <Campo
                 rotulo="Link da barbearia"
                 name="link"
@@ -318,7 +322,10 @@ function Dados() {
         ) : null}
 
         {aba === "marca" ? (
-          <Secao titulo="Capa" descricao="A faixa larga no topo da sua página pública. Salva assim que você escolhe a imagem.">
+          <Secao
+            titulo="Como sua página abre"
+            descricao="A capa é a faixa larga no topo da sua página pública. Salva assim que você escolhe a imagem."
+          >
             <CampoDeImagem
               rotulo="Capa"
               alt="Capa da barbearia"

@@ -326,3 +326,107 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* ── Horários: a rotina da semana ───────────────────────────────────── */
+
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+/* Atalho é ação, não escolha que fica marcada: contorno fino, sem o
+   amarelo de "selecionado". */
+.atalho {
+  min-height: 36px;
+  padding: var(--espaco-xs) var(--espaco-md);
+  border: var(--borda-hairline) solid var(--cor-ink-soft);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.atalho:hover {
+  border-color: var(--cor-ink);
+  background: var(--cor-paper-soft);
+}
+
+.diasDaRotina {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.diasDaRotina legend {
+  width: 100%;
+  margin-block-end: var(--espaco-sm);
+}
+
+/* Cada dia é um checkbox de verdade (teclado e leitor de tela de graça)
+   desenhado como pílula; marcado = amarelo com a sombra da casa. */
+.diaDaRotina {
+  position: relative;
+  cursor: pointer;
+}
+
+.diaDaRotina span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0 var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  color: var(--cor-ink-soft);
+  font-weight: 700;
+}
+
+.diaDaRotina:hover span {
+  border-color: var(--cor-ink);
+}
+
+.marcaEscondida {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.marcaEscondida:checked + span {
+  border-color: var(--cor-ink);
+  background: var(--cor-accent);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+  color: var(--cor-dark);
+}
+
+.marcaEscondida:focus-visible + span {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.resultado {
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-sm);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+  font-weight: 600;
+}
+
+/* Nome do dia com o selo "Diferente da rotina" embaixo. */
+.nomeDoDia {
+  display: grid;
+  gap: var(--espaco-xs);
+  justify-items: start;
+  text-transform: capitalize;
+}

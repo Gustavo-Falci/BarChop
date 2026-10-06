@@ -30,6 +30,16 @@ export const colors = {
     // ainda é bem mais fraco que o --cor-ink-soft (8,53:1) — um
     // placeholder que passa por conteúdo preenchido é outro problema.
     placeholder: "#6b6559",
+    // Estados do painel v2: o selo "Configurado" (ok), o "Faltando" e o
+    // "Configurar →" das Configurações (atencao), e o fundo do erro. O
+    // texto usa a cor forte; o fundo do selo, a clara do mesmo estado.
+    // Medido (WCAG): ok 5,55:1 sobre o okFundo e 6,55:1 sobre a
+    // surface; atencao 5,80:1 e 6,80:1; erro 5,34:1 sobre o erroFundo.
+    ok: "#1e6b34",
+    okFundo: "#dff1e2",
+    atencao: "#8a4b00",
+    atencaoFundo: "#fdebc8",
+    erroFundo: "#fbe3e0",
   },
   dark: {
     paper: "#17160F",
@@ -50,6 +60,14 @@ export const colors = {
     // dizia o que consertar. Este sobe pra 6,49:1 e 5,16:1.
     erro: "#FF6B5E",
     placeholder: "#9e9681", // 4,89:1 sobre a surface, 6,16:1 sobre o paper
+    // No escuro inverte: texto claro e saturado sobre fundo escuro do
+    // mesmo estado. ok 7,13:1 sobre o okFundo e 8,14:1 sobre a surface;
+    // atencao 7,58:1 e 8,20:1; erro 5,09:1 sobre o erroFundo.
+    ok: "#6fd88a",
+    okFundo: "#173a22",
+    atencao: "#ffb547",
+    atencaoFundo: "#3f2c0b",
+    erroFundo: "#45201b",
   },
 } as const;
 

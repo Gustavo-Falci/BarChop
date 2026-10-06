@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import estilos from "./Secao.module.css";
 
 // Um bloco de configuração: título, o que ele faz, os campos e a ação
@@ -19,10 +19,15 @@ export function Secao({
   acao?: ReactNode;
   children: ReactNode;
 }) {
+  // Nomeada pelo próprio título: vira região, e quem navega por landmark
+  // pula de bloco em bloco ("A rotina da semana", "A semana").
+  const id = useId();
   return (
-    <section className={estilos.secao}>
+    <section className={estilos.secao} aria-labelledby={id}>
       <div className={estilos.topo}>
-        <h2 className={estilos.titulo}>{titulo}</h2>
+        <h2 id={id} className={estilos.titulo}>
+          {titulo}
+        </h2>
         {descricao ? <p className={estilos.descricao}>{descricao}</p> : null}
       </div>
       <div className={estilos.corpo}>{children}</div>

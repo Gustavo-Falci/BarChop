@@ -5,7 +5,8 @@ import { criarApiClientFalso } from "@barchop/api-client";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../src/telas/PerfilDaBarbearia";
 import { CadastroDeServico } from "../../src/telas/painel/CadastroDeServico";
-import { ConfiguracoesDaBarbearia } from "../../src/telas/painel/ConfiguracoesDaBarbearia";
+import { ComunicacaoDaBarbearia } from "../../src/telas/painel/configuracoes/ComunicacaoDaBarbearia";
+import { DadosDoNegocio } from "../../src/telas/painel/configuracoes/DadosDoNegocio";
 import { navegacaoFalsa } from "../ajudantes/navegacao";
 import { montarPainel } from "../ajudantes/painel";
 
@@ -141,47 +142,69 @@ describe("página da barbearia nas configurações", () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes" });
   });
 
-  it("o dono grava contatos, comodidades e pagamento; o @ digitado sai", async () => {
+  // Painel v2: contatos moram em Comunicação; comodidades e pagamento,
+  // na aba Comodidades de Dados do negócio. Cada um salva o seu.
+  it("o dono grava os contatos; o @ digitado sai", async () => {
     const falso = criarApiClientFalso();
     const original = falso.barbeiro.atualizarMinhaBarbearia;
     const atualizar = vi.fn(original);
     falso.barbeiro.atualizarMinhaBarbearia = atualizar;
-    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+    montarPainel(<ComunicacaoDaBarbearia />, falso);
 
     await userEvent.type(await screen.findByLabelText(/^whatsapp/i), "11988887777");
     await userEvent.type(screen.getByLabelText(/^instagram/i), "@gr.barber");
-    await userEvent.click(screen.getByRole("checkbox", { name: "Wi-Fi" }));
-    await userEvent.click(screen.getByRole("checkbox", { name: "Pix" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar página/i }));
+    await userEvent.click(screen.getByRole("button", { name: /salvar comunicação/i }));
 
     await waitFor(() =>
       expect(atualizar).toHaveBeenCalledWith({
+        telefone: "(11) 3333-4444",
         whatsapp: "(11) 98888-7777",
         instagram: "gr.barber",
-        comodidades: ["wifi"],
-        formasDePagamento: ["pix"],
       })
     );
   });
 
-  it("chega marcado com o que já foi salvo", async () => {
-    const falso = await comPagina({ instagram: "gr.barber", comodidades: ["cafe"], formasDePagamento: ["dinheiro"] });
-    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+  it("o dono grava comodidades e pagamento", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes/dados-do-negocio", query: { aba: "comodidades" } });
+    const falso = criarApiClientFalso();
+    const original = falso.barbeiro.atualizarMinhaBarbearia;
+    const atualizar = vi.fn(original);
+    falso.barbeiro.atualizarMinhaBarbearia = atualizar;
+    montarPainel(<DadosDoNegocio />, falso);
 
-    expect(await screen.findByDisplayValue("gr.barber")).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Café" })).toBeChecked();
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Wi-Fi" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: "Pix" }));
+    await userEvent.click(screen.getByRole("button", { name: /salvar comodidades/i }));
+
+    await waitFor(() =>
+      expect(atualizar).toHaveBeenCalledWith({ comodidades: ["wifi"], formasDePagamento: ["pix"] })
+    );
+  });
+
+  it("chega marcado com o que já foi salvo", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes/dados-do-negocio", query: { aba: "comodidades" } });
+    const falso = await comPagina({ comodidades: ["cafe"], formasDePagamento: ["dinheiro"] });
+    montarPainel(<DadosDoNegocio />, falso);
+
+    expect(await screen.findByRole("checkbox", { name: "Café" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "Dinheiro" })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: "Wi-Fi" })).not.toBeChecked();
+  });
+
+  it("o instagram salvo chega preenchido na Comunicação", async () => {
+    montarPainel(<ComunicacaoDaBarbearia />, await comPagina({ instagram: "gr.barber" }));
+
+    expect(await screen.findByDisplayValue("gr.barber")).toBeInTheDocument();
   });
 
   it("instagram com link inteiro avisa em vez de mandar pra API", async () => {
     const falso = criarApiClientFalso();
     const atualizar = vi.fn(falso.barbeiro.atualizarMinhaBarbearia);
     falso.barbeiro.atualizarMinhaBarbearia = atualizar;
-    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+    montarPainel(<ComunicacaoDaBarbearia />, falso);
 
     await userEvent.type(await screen.findByLabelText(/^instagram/i), "https://instagram.com/gr");
-    await userEvent.click(screen.getByRole("button", { name: /salvar página/i }));
+    await userEvent.click(screen.getByRole("button", { name: /salvar comunicação/i }));
 
     expect(await screen.findByText(/sem o link: algo como/i)).toBeInTheDocument();
     expect(atualizar).not.toHaveBeenCalled();

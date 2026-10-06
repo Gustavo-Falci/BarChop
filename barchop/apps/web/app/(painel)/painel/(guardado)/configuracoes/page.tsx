@@ -1,7 +1,7 @@
 "use client";
 
-import { ConfiguracoesDaBarbearia } from "../../../../../src/telas/painel/ConfiguracoesDaBarbearia";
+import { IndiceDeConfiguracoes } from "../../../../../src/telas/painel/configuracoes/IndiceDeConfiguracoes";
 
 export default function Pagina() {
-  return <ConfiguracoesDaBarbearia />;
+  return <IndiceDeConfiguracoes />;
 }

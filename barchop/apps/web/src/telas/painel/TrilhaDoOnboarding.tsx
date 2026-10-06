@@ -16,7 +16,7 @@ const TEXTOS: Record<PassoDoOnboarding, { titulo: string; dica: string; destino?
   horarios: {
     titulo: "Horário de funcionamento",
     dica: "Os dias e horas em que a barbearia abre.",
-    destino: "/painel/configuracoes",
+    destino: "/painel/configuracoes/horarios",
     acao: "Definir horário",
   },
   servicos: {

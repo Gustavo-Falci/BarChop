@@ -1,4 +1,12 @@
-import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM, slugReservado } from "@barchop/formato";
+import {
+  COMODIDADES,
+  FORMAS_DE_PAGAMENTO,
+  PADRAO_INSTAGRAM,
+  areasTocadas,
+  juntarAreas,
+  slugReservado,
+  type AreaDeConfiguracao,
+} from "@barchop/formato";
 import type {
   AgendamentoComCliente,
   AgendamentoDoLembrete,
@@ -134,6 +142,9 @@ export interface EstadoFalso {
   lembreteAntecedenciaHoras?: AntecedenciaDoLembrete;
   // O interruptor do lembrete (G2c). Ligado, como nas barbearias novas.
   lembreteAtivo?: boolean;
+  // As áreas das Configurações já salvas (painel v2). Sem semente,
+  // nenhuma — como numa barbearia nova.
+  areasDecididas?: AreaDeConfiguracao[];
   // Os tokens do link do lembrete que o dublê reconhece, por token o id
   // do agendamento. Qualquer outro é 401, como na API; os vencidos, 410.
   lembretes?: Record<string, string>;
@@ -235,6 +246,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     bloqueios: [...(semente.bloqueios ?? [])],
     lembreteAntecedenciaHoras: semente.lembreteAntecedenciaHoras ?? 24,
     lembreteAtivo: semente.lembreteAtivo ?? true,
+    areasDecididas: [...(semente.areasDecididas ?? [])],
     lembretes: { ...(semente.lembretes ?? {}) },
     lembretesVencidos: [...(semente.lembretesVencidos ?? [])],
     proximosHorarios: semente.proximosHorarios,
@@ -530,7 +542,14 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       ...barbearia,
       lembreteAntecedenciaHoras: estado.lembreteAntecedenciaHoras ?? 24,
       lembreteAtivo: estado.lembreteAtivo ?? true,
+      areasDecididas: [...(estado.areasDecididas ?? [])],
     };
+  }
+
+  // Mesma regra da API (@barchop/formato/areas): marca no salvar, sem
+  // repetir, na ordem do índice.
+  function decidir(novas: AreaDeConfiguracao[]): void {
+    estado.areasDecididas = juntarAreas(estado.areasDecididas ?? [], novas);
   }
 
   // As recusas do schema da API pra página rica: 400, como lá.
@@ -937,6 +956,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           estado.lembreteAntecedenciaHoras = lembreteAntecedenciaHoras;
         }
         estado.perfil = { ...estado.perfil, ...doPerfil };
+        decidir(areasTocadas(edicao));
         return barbeariaDoPainel();
       },
       async horarios() {
@@ -944,6 +964,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async salvarHorarios(horarios: HorarioSerializado[]) {
         estado.perfil = { ...estado.perfil, horarios };
+        decidir(["horarios"]);
         return horarios;
       },
       async servicos() {
@@ -1057,6 +1078,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         await exigirImagem(arquivo, 4 * 1024 * 1024);
         const capaUrl = urlFalsa("capa");
         estado.perfil = { ...estado.perfil, capaUrl };
+        decidir(["dados_do_negocio"]);
         return capaUrl;
       },
       async removerCapa() {

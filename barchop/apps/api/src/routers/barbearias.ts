@@ -1,5 +1,11 @@
 import { prisma } from "@barchop/database";
-import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_INSTAGRAM } from "@barchop/formato";
+import {
+  COMODIDADES,
+  FORMAS_DE_PAGAMENTO,
+  PADRAO_INSTAGRAM,
+  areasTocadas,
+  juntarAreas,
+} from "@barchop/formato";
 import { PODE_ATENDER } from "../lib/disponibilidade";
 import { enfileirarLembretesFuturos } from "../lib/lembrete";
 import { normalizarTelefone } from "../lib/telefone";
@@ -91,12 +97,15 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
 
       const antes = await prisma.barbearia.findUniqueOrThrow({
         where: { id: request.user.barbeariaId },
-        select: { lembreteAtivo: true },
+        select: { lembreteAtivo: true, areasDecididas: true },
       });
       const barbearia = await prisma.barbearia.update({
         where: { id: request.user.barbeariaId },
         data: {
           ...resto,
+          // Cada campo enviado decide a área dele (painel v2), no mesmo
+          // update: um PATCH recusado pelo schema nem chega aqui.
+          areasDecididas: juntarAreas(antes.areasDecididas, areasTocadas(request.body)),
           ...(telefone !== undefined
             ? { telefone: normalizarTelefone(telefone) }
             : {}),

@@ -10,6 +10,7 @@ import type {
   HorarioSerializado,
   ServicoSerializado,
 } from "@barchop/types";
+import { juntarAreas } from "@barchop/formato";
 import { dateParaData, dateParaHora } from "./horas";
 
 // Reexportados porque routers/horarios.ts e os testes importam daqui. A
@@ -72,6 +73,7 @@ export function serializarBarbeariaDoPainel(
   barbearia: Parameters<typeof serializarBarbearia>[0] & {
     lembreteAntecedenciaHoras: number;
     lembreteAtivo: boolean;
+    areasDecididas: string[];
   },
   urlDaImagem: (chave: string) => string
 ): BarbeariaDoPainel {
@@ -80,6 +82,8 @@ export function serializarBarbeariaDoPainel(
     // O CHECK da coluna garante 2, 12 ou 24.
     lembreteAntecedenciaHoras: barbearia.lembreteAntecedenciaHoras as AntecedenciaDoLembrete,
     lembreteAtivo: barbearia.lembreteAtivo,
+    // juntarAreas com nada: ordem do índice e só nomes que ainda são área.
+    areasDecididas: juntarAreas(barbearia.areasDecididas, []),
   };
 }
 

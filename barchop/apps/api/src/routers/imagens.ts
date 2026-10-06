@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyRequest } from "fastify";
 import { prisma } from "@barchop/database";
+import { marcarAreas } from "../lib/areas";
 import { EXTENSAO_DO_TIPO, tipoPelosBytes } from "../lib/armazenamento";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
@@ -80,6 +81,8 @@ export function registrarRotasImagens(app: App): void {
     });
     await prisma.barbearia.update({ where: { id: barbeariaId }, data: { capaChave: chave } });
     await apagarSemFalhar(app, antes.capaChave);
+    // A capa é da aba Marca, em Dados do negócio (painel v2).
+    await marcarAreas(barbeariaId, ["dados_do_negocio"]);
 
     return { capaUrl: app.armazenamento.urlPublica(chave) };
   });

@@ -34,7 +34,7 @@ Uma vez só, na VM e nas contas:
 ## Primeira subida
 
 ```bash
-git clone <repo> ~/BarChop   # repo privado: deploy key só de leitura
+git clone https://github.com/Gustavo-Falci/BarChop.git ~/BarChop
 cd ~/BarChop/barchop/infra
 
 cp .env.example .env

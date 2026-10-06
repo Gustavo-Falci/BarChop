@@ -2,24 +2,130 @@
    vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
 .pagina {
   display: grid;
-  gap: var(--espaco-md);
+  gap: var(--espaco-lg);
   padding: var(--espaco-lg);
   width: 100%;
   max-width: var(--fluxo-estreita);
   margin-inline: auto;
+  align-content: start;
 }
-.lista { display: grid; gap: var(--espaco-sm); }
+
+.cabecalho { display: grid; gap: var(--espaco-xs); }
 
 .titulo { margin: 0; }
 
-/* No celular o resumo e o botão ficam em fila embaixo da lista, como
-   sempre estiveram. */
-.lateral { display: grid; gap: var(--espaco-md); }
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-md);
+}
+
+.grupos { display: grid; gap: var(--espaco-xl); }
+
+.grupo { display: grid; gap: var(--espaco-md); }
+
+/* Ícone, nome da categoria e a contagem na mesma linha, a contagem
+   apagada: é informação de apoio, não título. */
+.subtitulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.contagem {
+  font-family: var(--fonte-corpo), system-ui, sans-serif;
+  font-size: var(--texto-sm);
+  font-weight: 400;
+  color: var(--cor-ink-soft);
+}
+
+/* O vão entre cartões leva em conta a sombra de 4px de baixo. */
+.lista {
+  display: grid;
+  gap: calc(var(--espaco-md) + 4px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Carregando: três cartões vazios no lugar dos de verdade, pra tela
+   não pular quando a lista chega. */
+.esqueleto {
+  height: 104px;
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: linear-gradient(90deg, var(--cor-paper-soft) 0%, var(--cor-surface) 50%, var(--cor-paper-soft) 100%);
+  background-size: 200% 100%;
+  animation: brilho 1.2s ease-in-out infinite;
+}
+
+@keyframes brilho {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- O resumo -------------------------------------------------------
+   No celular: barra presa no rodapé, com o total e o Continuar sempre
+   à mão, por mais longa que seja a lista. Só aparece com algo
+   escolhido; sem nada, a barra só cobriria o último cartão. */
+.resumo {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  padding: var(--espaco-md) var(--espaco-lg);
+  padding-bottom: calc(var(--espaco-md) + env(safe-area-inset-bottom));
+  border-top: var(--borda-padrao) solid var(--cor-ink);
+  background: var(--cor-surface);
+}
+
+.resumo[data-vazio] { display: none; }
+
+/* A barra cobre o fim da página: o respiro garante que o último cartão
+   rola até ficar acima dela. */
+.comBarra { padding-bottom: 120px; }
+
+.resumoTitulo,
+.resumoVazio { display: none; }
+
+.numeros { display: grid; gap: 2px; min-width: 0; }
+
+.linha {
+  display: flex;
+  gap: var(--espaco-xs);
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.total {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 
 /* 900px: o mesmo corte das larguras do fluxo, declaradas em
-   app/(publico)/[slug]/layout.module.css. Lista à esquerda; o que foi
-   escolhido e o "Continuar" à direita, acompanhando a rolagem — com dez
-   serviços na lista, o botão não fica lá embaixo, fora da tela. */
+   app/(publico)/[slug]/layout.module.css. Lista à esquerda; o resumo
+   vira um cartão à direita, acompanhando a rolagem — com dez serviços
+   na lista, o Continuar não fica lá embaixo, fora da tela. */
 @media (min-width: 900px) {
   .duasColunas {
     max-width: var(--fluxo-largura);
@@ -28,10 +134,40 @@
     align-items: start;
   }
 
-  .titulo { grid-column: 1 / -1; }
+  .cabecalho { grid-column: 1 / -1; }
 
-  .lateral {
+  .comBarra { padding-bottom: var(--espaco-lg); }
+
+  .resumo,
+  .resumo[data-vazio] {
     position: sticky;
     top: var(--espaco-lg);
+    z-index: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--espaco-md);
+    padding: var(--espaco-lg);
+    border: var(--borda-padrao) solid var(--cor-ink);
+    border-radius: var(--raio-md);
+    box-shadow: 0 4px 0 var(--cor-shadow);
   }
+
+  .resumoTitulo {
+    display: block;
+    margin: 0;
+    font-size: var(--texto-lg);
+  }
+
+  .resumoVazio {
+    display: block;
+    margin: 0;
+    color: var(--cor-ink-soft);
+    font-size: var(--texto-sm);
+  }
+
+  .numeros { gap: var(--espaco-xs); }
+
+  .linha { font-size: var(--texto-md); }
+
+  .total { font-size: var(--texto-xl); }
 }

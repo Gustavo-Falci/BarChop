@@ -175,3 +175,56 @@ export function IconeMapa(props: Props) {
     </Base>
   );
 }
+
+// Os da escolha de serviços: o ícone de cada categoria, o relógio da
+// duração e a marca do cartão escolhido.
+export function IconeNavalha(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M3 21 13.5 10.5" />
+      <path d="M13.5 10.5 19 5a2.1 2.1 0 0 1 3 3l-5.5 5.5-3-3Z" />
+    </Base>
+  );
+}
+
+export function IconeGota(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M12 3s6 6.4 6 11a6 6 0 0 1-12 0c0-4.6 6-11 6-11Z" />
+    </Base>
+  );
+}
+
+export function IconeCoroa(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="m3 7 4.5 4L12 5l4.5 6L21 7l-2 11H5L3 7Z" />
+    </Base>
+  );
+}
+
+export function IconeBrilho(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4" />
+      <path d="m7.5 7.5 1.5 1.5M15 15l1.5 1.5M16.5 7.5 15 9M9 15l-1.5 1.5" />
+    </Base>
+  );
+}
+
+export function IconeRelogio(props: Props) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </Base>
+  );
+}
+
+export function IconeCheck(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </Base>
+  );
+}

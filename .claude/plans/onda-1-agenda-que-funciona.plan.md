@@ -4,6 +4,21 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
+## RETOMAR AQUI (2026-10-07) — vale mais que a seção de 2026-10-05 abaixo
+
+**Estado:** `main` em PR #54, nada pela metade em branch nenhuma.
+
+- **Onda 1:** blocos A–F, F4 e G2 completos. DNS completo (domínio e coringa → VM `137.131.214.186`, Resend verificado, token da Cloudflare criado). Faltam **G1** (infra na VM: compose + Caddy coringa DNS-01; só do PC de casa, onde estão as chaves SSH; VM Ubuntu ARM/aarch64, montar imagens na própria VM, Caddy com plugin `caddy-dns/cloudflare`), **G3** (GR Barber entra com `lembrete_ativo = false`) e **G4** (docs).
+- **Onda 1s (site):** #40 (home em `/`) feito; faltam `onda-1s-b` (termos + aceite no cadastro) e `onda-1s-c` (robots/sitemap/docs). Plano `onda-1s-site-de-marketing.plan.md`.
+- **Serviços com foto e descrição:** #42–#44 feitos (plano `servicos-com-foto-e-descricao.plan.md`). Candidato: foto + descrição também na PerfilDaBarbearia.
+- **Painel v2** (PRD `.claude/prds/painel-v2.prd.md`, 6 marcos): **marco 1** peças comuns completo (#45–#47, plano `painel-v2-pecas-comuns.plan.md`); **marco 2** Configurações em decisões completo (#48–#51, plano `painel-v2-configuracoes.plan.md`) + ajustes visuais pedidos pelo dono (#52 cartão em pé, #53 Identidade com os 2 quadros lado a lado, #54 "Próxima área faltando" no canto inferior direito).
+
+**Próximo — perguntar ao dono qual:** marco 3 do painel v2 (**Regras de agendamento**, inclui pausa do almoço e exceções por dia; criar plano com `ecc:plan` a partir do PRD do painel v2) **ou** G1 (só no PC de casa).
+
+**Ao trocar de máquina:** `git checkout main && git pull`, `pnpm install`, `migrate deploy` nos bancos dev **e** test (em `packages/database`; `.env.test` tem BOM; migrations novas desde 05/10: `lembrete_ativo`, `servico_descricao_foto`, `areas_decididas`, `areas_decididas_horarios`), `prisma generate` com a API de dev desligada (EPERM na DLL). Subir: `pnpm dev` em `apps/api` (3333) e `apps/web` (3000).
+
+**Combinados de trabalho:** um PR por item, TDD com commit RED e depois GREEN, mensagens/PRs em português; push, PR e merge sem perguntar quando os testes passam. Rodar só os testes afetados + tsc + lint. Skills só do ECC (`ecc:*`), nunca superpowers.
+
 ## RETOMAR AQUI (2026-10-05, fim do dia)
 
 **Estado:** `main` em PR #35. Onda 1: blocos A–F e **F4 completos**. Nada pela metade em branch nenhuma. Falta só o **G** (produção na OCI e piloto).

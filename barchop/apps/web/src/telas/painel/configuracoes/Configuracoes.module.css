@@ -292,17 +292,87 @@
   }
 }
 
-/* As marcas da página rica: comodidades e formas de pagamento. */
-.marcas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-xs) var(--espaco-md);
+/* As marcas da página rica: comodidades e formas de pagamento, em grade
+   de cartões. Colunas de no mínimo 150px: quatro no desktop, duas no
+   celular — "Cartão de crédito" cabe numa linha nas duas. */
+.grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--espaco-sm);
   margin: 0;
   padding: 0;
   border: 0;
+  min-width: 0;
 }
-.marcas legend { width: 100%; margin-bottom: var(--espaco-xs); }
-.marcas label { display: inline-flex; align-items: center; gap: var(--espaco-xs); }
+.grade legend { padding: 0; margin-bottom: var(--espaco-sm); }
+
+.cartaoDeEscolha {
+  position: relative;
+  display: flex;
+  cursor: pointer;
+}
+
+/* A caixa sai da vista mas fica no teclado e no leitor de tela, cobrindo
+   o cartão inteiro pro clique; quem desenha é o cartão ao lado. */
+.caixaEscondida {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.desenhoDoCartao {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 56px;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.iconeDoCartao {
+  flex-shrink: 0;
+  color: var(--cor-ink-soft);
+}
+
+.checkDoCartao {
+  margin-left: auto;
+  flex-shrink: 0;
+  visibility: hidden;
+}
+
+.cartaoDeEscolha:hover .desenhoDoCartao {
+  border-color: var(--cor-ink);
+}
+
+/* Marcado: o desenho da pílula escolhida (SeletorEmPilulas), mais o
+   check, pra que a diferença não seja só a cor. */
+.caixaEscondida:checked + .desenhoDoCartao {
+  border-color: var(--cor-ink);
+  background: var(--cor-accent);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+  color: var(--cor-dark);
+}
+.caixaEscondida:checked + .desenhoDoCartao .iconeDoCartao {
+  color: var(--cor-dark);
+}
+.caixaEscondida:checked + .desenhoDoCartao .checkDoCartao {
+  visibility: visible;
+}
+
+.caixaEscondida:focus-visible + .desenhoDoCartao {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
 
 /* O pedido de troca do link: o que está com o suporte, ou a última
    recusa com a resposta dele. Empilhado, com o mesmo respiro dos campos. */

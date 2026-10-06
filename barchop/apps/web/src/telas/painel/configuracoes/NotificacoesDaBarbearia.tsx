@@ -5,12 +5,16 @@ import type { ErroDaApi } from "@barchop/api-client";
 import type { AntecedenciaDoLembrete } from "@barchop/types";
 import { Botao } from "../../../componentes/Botao";
 import { Secao } from "../../../componentes/Secao";
+import { SeletorEmPilulas } from "../../../componentes/SeletorEmPilulas";
 import { useRequisicao } from "../../../api/useRequisicao";
 import { Aviso } from "../../../componentes/Aviso";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import estilos from "./Configuracoes.module.css";
+
+// As antecedências que a API aceita, da maior pra menor.
+const ANTECEDENCIAS: AntecedenciaDoLembrete[] = [24, 12, 2];
 
 // Notificações: hoje, o lembrete por e-mail que o cliente recebe antes
 // do horário (G2c). Ligado/desligado e a antecedência.
@@ -83,26 +87,24 @@ function Notificacoes() {
             Ao ligar, os agendamentos já marcados também recebem o lembrete.
           </span>
           <div className={estilos.campoLongo}>
-            <label className={estilos.rotulo} htmlFor="antecedencia">
-              Quando o lembrete sai
-            </label>
+            <SeletorEmPilulas
+              nome="antecedencia"
+              legenda="Quando o lembrete sai"
+              opcoes={ANTECEDENCIAS.map((horas) => ({ valor: String(horas), rotulo: `${horas} h antes` }))}
+              valor={String(antecedencia)}
+              aoTrocar={(valor) => setAntecedencia(Number(valor) as AntecedenciaDoLembrete)}
+              efeito={
+                lembreteAtivo
+                  ? `O cliente recebe o lembrete ${antecedencia} horas antes do horário.`
+                  : "Lembrete desligado: o cliente não recebe e-mail antes do horário."
+              }
+            />
             {/* A antecedência é lida quando o lembrete é agendado, na hora
                 em que o cliente marca: trocar aqui não move os que já
                 estão programados. */}
-            <span className={estilos.apoio} id="antecedencia-apoio">
+            <span className={estilos.apoio}>
               Vale pros próximos agendamentos; os já marcados mantêm o lembrete que tinham.
             </span>
-            <select
-              id="antecedencia"
-              className={estilos.area}
-              aria-describedby="antecedencia-apoio"
-              value={antecedencia}
-              onChange={(evento) => setAntecedencia(Number(evento.target.value) as AntecedenciaDoLembrete)}
-            >
-              <option value={24}>24 horas antes</option>
-              <option value={12}>12 horas antes</option>
-              <option value={2}>2 horas antes</option>
-            </select>
           </div>
         </Secao>
       </div>

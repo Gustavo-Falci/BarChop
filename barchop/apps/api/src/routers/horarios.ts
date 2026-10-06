@@ -1,4 +1,5 @@
 import { prisma } from "@barchop/database";
+import { marcarAreas } from "../lib/areas";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { horaParaDate } from "../lib/horas";
 import { PADRAO_HORA } from "../lib/padroes";
@@ -156,6 +157,9 @@ export function registrarRotasHorarios(app: App): void {
           })
         )
       );
+
+      // Salvar a semana decide Horários, mesmo sem mudar nada (painel v2).
+      await marcarAreas(barbeariaId, ["horarios"]);
 
       return { horarios: completarSemana(gravados) };
     }

@@ -101,7 +101,13 @@ export interface BarbeariaDoPainel extends BarbeariaSerializada {
   lembreteAntecedenciaHoras: AntecedenciaDoLembrete;
   // O interruptor do lembrete (Onda 1, G2c). Ligado nas barbearias novas.
   lembreteAtivo: boolean;
+  // As áreas das Configurações salvas pelo menos uma vez (painel v2), na
+  // ordem do índice. Mesmos nomes de AREAS_DE_CONFIGURACAO em
+  // @barchop/formato, que é quem decide qual campo marca qual área.
+  areasDecididas: AreaDeConfiguracao[];
 }
+
+export type AreaDeConfiguracao = "horarios" | "dados_do_negocio" | "comunicacao" | "notificacoes";
 
 export interface HorarioSerializado {
   diaSemana: number; // 0 = domingo

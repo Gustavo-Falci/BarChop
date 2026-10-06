@@ -37,6 +37,9 @@ describe("PATCH /barbearias/me", () => {
       capaUrl: null,
       lembreteAntecedenciaHoras: 24,
       lembreteAtivo: true,
+      // Nome, endereço, logo e sobre são Dados do negócio; telefone é
+      // Comunicação (painel v2).
+      areasDecididas: ["dados_do_negocio", "comunicacao"],
     });
 
     await app.close();

@@ -66,6 +66,9 @@ model Barbearia {
   lembreteAntecedenciaHoras Int      @default(24) @map("lembrete_antecedencia_horas") @db.SmallInt
   // Interruptor do lembrete (G2c). Ligado nas barbearias novas.
   lembreteAtivo             Boolean  @default(true) @map("lembrete_ativo")
+  // Áreas das Configurações salvas pelo menos uma vez (painel v2). Só
+  // cresce; a API marca no salvar (@barchop/formato/areas).
+  areasDecididas            String[] @default([]) @map("areas_decididas")
   // A página pública rica (bloco E1). Listas fechadas: os valores moram
   // em packages/formato/src/pagina.ts, e a migration
   // 20261004160000_pagina_da_barbearia tem o CHECK com os mesmos.

@@ -30,6 +30,7 @@ describe("GET /barbearias/me", () => {
       capaUrl: null,
       lembreteAntecedenciaHoras: 24,
       lembreteAtivo: true,
+      areasDecididas: [],
     });
 
     await app.close();

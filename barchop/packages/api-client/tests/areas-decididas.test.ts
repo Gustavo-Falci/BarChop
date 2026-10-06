@@ -38,7 +38,9 @@ describe("áreas decididas no dublê", () => {
   it("enviar a capa decide Dados do negócio", async () => {
     const api = criarApiClientFalso();
 
-    await api.barbeiro.enviarCapa(new Blob(["x"], { type: "image/png" }));
+    // Os bytes do PNG: o dublê confere o tipo pelos bytes, como a API.
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+    await api.barbeiro.enviarCapa(new Blob([png], { type: "image/png" }));
 
     expect((await api.barbeiro.minhaBarbearia()).areasDecididas).toEqual(["dados_do_negocio"]);
   });

@@ -293,11 +293,13 @@
 }
 
 /* As marcas da página rica: comodidades e formas de pagamento, em grade
-   de cartões. Colunas de no mínimo 150px: quatro no desktop, duas no
-   celular — "Cartão de crédito" cabe numa linha nas duas. */
+   de cartões. Colunas de no mínimo 134px: quatro no desktop, duas num
+   celular de 375px (grade de ~277px). O cartão é em pé — ícone em cima,
+   nome embaixo — porque em linha o ícone e o check comiam a largura e
+   "Estacionamento" vazava do cartão. */
 .grade {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(134px, 1fr));
   gap: var(--espaco-sm);
   margin: 0;
   padding: 0;
@@ -309,6 +311,7 @@
 .cartaoDeEscolha {
   position: relative;
   display: flex;
+  min-width: 0;
   cursor: pointer;
 }
 
@@ -328,15 +331,19 @@
   position: relative;
   display: flex;
   flex: 1;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: var(--espaco-sm);
-  min-height: 56px;
-  padding: var(--espaco-sm) var(--espaco-md);
+  min-width: 0;
+  min-height: 72px;
+  padding: var(--espaco-sm);
   border: var(--borda-padrao) solid var(--cor-line);
   border-radius: var(--raio-md);
   background: var(--cor-surface);
   font-size: var(--texto-sm);
   font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: break-word;
 }
 
 .iconeDoCartao {
@@ -344,9 +351,11 @@
   color: var(--cor-ink-soft);
 }
 
+/* No canto, fora do fluxo: escondido não toma largura do nome. */
 .checkDoCartao {
-  margin-left: auto;
-  flex-shrink: 0;
+  position: absolute;
+  top: var(--espaco-sm);
+  right: var(--espaco-sm);
   visibility: hidden;
 }
 

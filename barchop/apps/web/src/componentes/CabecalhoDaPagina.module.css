@@ -19,6 +19,29 @@
   font-size: var(--texto-xl);
 }
 
+/* Título e selo na mesma linha; o selo desce pra baixo do título quando
+   não cabe, em vez de espremer o nome da tela. */
+.linhaDoTitulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+/* O caminho de volta é navegação discreta acima do título, não um botão
+   com o mesmo peso da ação principal. */
+.voltar {
+  justify-self: start;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.voltar:hover {
+  color: var(--cor-ink);
+  text-decoration: underline;
+}
+
 .apoio {
   color: var(--cor-muted);
   font-size: var(--texto-sm);

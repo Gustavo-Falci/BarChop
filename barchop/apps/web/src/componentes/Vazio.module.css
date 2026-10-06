@@ -25,3 +25,21 @@
   color: var(--cor-muted);
   font-size: var(--texto-sm);
 }
+
+/* O círculo do ícone: fundo amarelo-claro e borda fina, menor que a
+   frase — ilustra, não compete com ela. */
+.icone {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-pill);
+  background: var(--cor-pale-yellow);
+  color: var(--cor-ink);
+}
+
+.icone svg {
+  width: 26px;
+  height: 26px;
+}

@@ -1,0 +1,52 @@
+.secao {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+/* Título, régua e resumo numa linha: a régua corre do fim do título até
+   o resumo, que é o que deixa ler "onde começa a parte 2" de longe sem
+   precisar de moldura. */
+.topo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+}
+
+/* Versalete pequeno, como o cabeçalho da tabela: é rótulo de trecho, não
+   título de tela. A caixa alta é do CSS — no texto o título continua
+   em caixa normal, que é como o leitor de tela deve lê-lo. */
+.titulo {
+  flex-shrink: 0;
+  max-width: 70%;
+  color: var(--cor-ink-soft);
+  font-family: var(--fonte-corpo), Inter, system-ui, sans-serif;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.regua {
+  flex: 1;
+  min-width: var(--espaco-lg);
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+.lado {
+  flex-shrink: 0;
+  color: var(--cor-muted);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.apoio {
+  margin: 0;
+  max-width: 70ch;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.corpo {
+  display: grid;
+  gap: var(--espaco-md);
+}

@@ -1,0 +1,132 @@
+# Produção na VM da OCI (Onda 1, G1). Roteiro em infra/README.md.
+#
+# Dois arquivos de variáveis, nenhum no repo:
+# - infra/.env: o que o próprio compose lê (banco, Cloudflare, build do
+#   web, backup) — ver .env.example;
+# - infra/api.env: o que só a API recebe — ver api.env.example.
+# Separados pra que o token da Cloudflare e a senha do Postgres não
+# entrem no ambiente da API.
+#
+# Só o Caddy publica porta. Postgres, API e web ficam na rede interna.
+
+name: barchop
+
+# A senha do banco vai crua na URL: gerar com `openssl rand -hex 24`
+# (só hexadecimal, nada pra escapar).
+x-url-do-banco: &url-do-banco "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public"
+
+# Sem limite, o log de cada contêiner cresce até encher o disco.
+x-log: &log
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    # A mesma versão maior do desenvolvimento. Do 18 em diante o volume
+    # monta em /var/lib/postgresql, não mais em .../data.
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina em infra/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina em infra/.env}
+      POSTGRES_DB: ${POSTGRES_DB:?defina em infra/.env}
+    volumes:
+      - banco:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *log
+
+  # Aplica as migrations pendentes e sai. A API só sobe depois que ela
+  # termina bem: API nova em banco velho quebra na primeira consulta.
+  migrar:
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+      target: migrar
+    environment:
+      DATABASE_URL: *url-do-banco
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    logging: *log
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+      target: api
+    restart: unless-stopped
+    env_file: api.env
+    environment:
+      DATABASE_URL: *url-do-banco
+    depends_on:
+      migrar:
+        condition: service_completed_successfully
+    logging: *log
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?defina em infra/.env}
+        NEXT_PUBLIC_URL_DO_SITE: ${NEXT_PUBLIC_URL_DO_SITE:?defina em infra/.env}
+    restart: unless-stopped
+    logging: *log
+
+  caddy:
+    build: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:?defina em infra/.env}
+      ACME_EMAIL: ${ACME_EMAIL:?defina em infra/.env}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-dados:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+      - web
+    networks:
+      default:
+        # O servidor do Next chama a API pelo endereço público (o mesmo
+        # NEXT_PUBLIC_API_URL do navegador). Com o apelido, o nome
+        # resolve pro Caddy dentro da rede: o certificado vale e a
+        # chamada não sai pelo IP público da VM pra voltar.
+        aliases:
+          - api.barchop.com.br
+    logging: *log
+
+  backup:
+    image: postgres:18
+    restart: unless-stopped
+    entrypoint: ["sh", "/backup.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      BACKUP_DIAS: ${BACKUP_DIAS:-14}
+    volumes:
+      - ./backup/backup.sh:/backup.sh:ro
+      - backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *log
+
+volumes:
+  banco:
+  backups:
+  caddy-dados:
+  caddy-config:

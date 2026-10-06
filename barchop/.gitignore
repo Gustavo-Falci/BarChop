@@ -7,6 +7,8 @@ dist/
 .env
 .env.local
 .env.test
+# Segredos da API em produção (infra/compose.yaml); o infra/.env já cai no .env acima.
+/infra/api.env
 .DS_Store
 expo-env.d.ts
 *.tsbuildinfo

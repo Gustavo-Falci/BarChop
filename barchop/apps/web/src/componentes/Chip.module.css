@@ -16,3 +16,34 @@
   background: var(--cor-paper-soft);
   color: var(--cor-ink-soft);
 }
+
+/* Estados: texto na cor forte sobre o fundo claro do mesmo estado. A
+   borda segue o texto, e não o ink: um selo verde de borda preta lê
+   como botão, não como etiqueta de situação. */
+.ok {
+  border-color: var(--cor-ok);
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
+}
+
+.atencao {
+  border-color: var(--cor-atencao);
+  background: var(--cor-atencao-fundo);
+  color: var(--cor-atencao);
+}
+
+.erro {
+  border-color: var(--cor-erro);
+  background: var(--cor-erro-fundo);
+  color: var(--cor-erro);
+}
+
+/* O selo ao lado do título: menor que o título e alinhado à linha dele,
+   sem disputar atenção com o nome da tela. */
+.pequeno {
+  padding: 2px var(--espaco-sm);
+  border-width: var(--borda-hairline);
+  font-size: var(--texto-xs);
+  line-height: 1.4;
+  vertical-align: middle;
+}

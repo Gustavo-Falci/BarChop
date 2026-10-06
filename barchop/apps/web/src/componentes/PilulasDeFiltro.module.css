@@ -1,0 +1,69 @@
+/* Quebra em várias linhas quando não cabe, em vez de rolar de lado: um
+   filtro escondido fora da tela é um filtro que ninguém usa. */
+.pilulas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+.pilula {
+  min-height: 40px;
+  padding: var(--espaco-xs) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pilula:hover {
+  border-color: var(--cor-ink);
+}
+
+.contagem {
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Os tons pintam só a pílula NÃO escolhida: a escolhida é sempre
+   amarela, senão "estar filtrando" e "ter atrasados" teriam a mesma
+   cara. */
+.ok {
+  border-color: var(--cor-ok);
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
+}
+
+.atencao {
+  border-color: var(--cor-atencao);
+  background: var(--cor-atencao-fundo);
+  color: var(--cor-atencao);
+}
+
+.erro {
+  border-color: var(--cor-erro);
+  background: var(--cor-erro-fundo);
+  color: var(--cor-erro);
+}
+
+.ok .contagem,
+.atencao .contagem,
+.erro .contagem {
+  color: inherit;
+}
+
+/* A escolhida: amarelo com a sombra deslocada, igual à vista corrente
+   da agenda e ao item ativo da barra lateral — mesmo significado, mesmo
+   desenho. */
+.pilula[aria-pressed="true"] {
+  border-color: var(--cor-ink);
+  background: var(--cor-accent);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+  color: var(--cor-dark);
+}
+
+.pilula[aria-pressed="true"] .contagem {
+  color: var(--cor-dark);
+}

@@ -95,8 +95,8 @@ Visual: as peças só aparecem em tela a partir do marco 2; conferir no navegado
 | Paginação numerada brigar com a lista de clientes (API por cursor, "carregar mais") | — | **fora deste marco**: a paginação do PRD fica como o "carregar mais" que já existe |
 
 ## Acceptance
-- [ ] Três PRs mergeados
-- [ ] Testes novos e os já existentes de Tabela/Chip passando; tsc e lint limpos
-- [ ] Os 4 usos atuais de `Chip` e os 8 de `CabecalhoDaPagina` sem mudança visual
-- [ ] Contraste dos tokens novos anotado (claro e escuro)
-- [ ] Patterns mirrored, not reinvented
+- [x] Três PRs mergeados
+- [x] Testes novos e os já existentes de Tabela/Chip passando; tsc e lint limpos
+- [x] Os 4 usos atuais de `Chip` e os 8 de `CabecalhoDaPagina` sem mudança visual
+- [x] Contraste dos tokens novos anotado (claro e escuro)
+- [x] Patterns mirrored, not reinvented

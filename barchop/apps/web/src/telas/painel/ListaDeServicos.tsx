@@ -6,6 +6,7 @@ import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Chip } from "../../componentes/Chip";
 import { formatarPreco } from "../../componentes/ItemDeServico";
+import { MiniaturaDoServico } from "../../componentes/MiniaturaDoServico";
 import { Tabela } from "../../componentes/Tabela";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
@@ -141,6 +142,7 @@ export function ListaDeServicos() {
                 // "Platinado inativo", que é exatamente o que se quer
                 // ouvir antes de decidir abrir.
                 <span className={estilos.nome} key="nome">
+                  <MiniaturaDoServico nome={servico.nome} fotoUrl={servico.fotoUrl} />
                   {servico.nome}
                   {servico.ativo ? null : <Chip tom="neutro">inativo</Chip>}
                 </span>,

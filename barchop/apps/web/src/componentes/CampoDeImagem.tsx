@@ -7,7 +7,8 @@ import { Aviso } from "./Aviso";
 import { Botao } from "./Botao";
 import estilos from "./CampoDeImagem.module.css";
 
-// Capa da barbearia e foto do profissional: prévia, trocar e remover.
+// Capa da barbearia, foto do profissional e do serviço: prévia, trocar e
+// remover.
 // Cada troca salva na hora (a API guarda o arquivo e grava a chave), sem
 // passar pelo "Salvar" do formulário em volta.
 export function CampoDeImagem({
@@ -24,7 +25,7 @@ export function CampoDeImagem({
   urlAtual: string | null;
   enviar: (arquivo: Blob) => Promise<string>;
   remover: () => Promise<void>;
-  formato?: "paisagem" | "retrato";
+  formato?: "paisagem" | "retrato" | "quadrado";
 }) {
   const id = useId();
   const [url, setUrl] = useState(urlAtual);

@@ -6,6 +6,7 @@ import type { ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { CampoDeImagem } from "../../componentes/CampoDeImagem";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./CadastroDeServico.module.css";
@@ -26,6 +27,9 @@ const DURACAO_MAX = 480;
 const DURACAO_PASSO = 5;
 // PADRAO_PRECO aceita no máximo 8 dígitos na parte inteira.
 const PRECO_INTEIRO_MAX = 8;
+// O mesmo teto da coluna `servico.descricao` e do schema da API. Cortar
+// na digitação evita o 400 depois do texto escrito.
+const DESCRICAO_MAX = 300;
 
 // Um resultado, e não `T | null`: com null a tela tinha uma mensagem só
 // por campo, e "30 não serve" e "7 não serve" precisam dizer coisas
@@ -84,6 +88,7 @@ export function CadastroDeServico() {
   const [duracao, setDuracao] = useState("");
   const [preco, setPreco] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [descricao, setDescricao] = useState("");
   const [erroNome, setErroNome] = useState<string | undefined>();
   const [erroDuracao, setErroDuracao] = useState<string | undefined>();
   const [erroPreco, setErroPreco] = useState<string | undefined>();
@@ -124,6 +129,7 @@ export function CadastroDeServico() {
     setDuracao(String(atual.duracaoMinutos));
     setPreco(atual.preco);
     setCategoria(atual.categoria ?? "");
+    setDescricao(atual.descricao ?? "");
   }
 
   // Sem isto, uma falha em servicos() deixava dados null pra sempre: o
@@ -165,6 +171,8 @@ export function CadastroDeServico() {
         // Na edição vai sempre: apagar o campo é tirar a categoria (null).
         // No cadastro, só se preenchida.
         ...(id || categoria.trim() ? { categoria: categoria.trim() || null } : {}),
+        // Mesma regra da categoria.
+        ...(id || descricao.trim() ? { descricao: descricao.trim() || null } : {}),
       };
       if (id) await api.barbeiro.atualizarServico(id, corpo);
       else await api.barbeiro.criarServico(corpo);
@@ -240,6 +248,43 @@ export function CadastroDeServico() {
         valor={categoria}
         onChange={setCategoria}
       />
+
+      {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
+          desenho do "Sobre a barbearia" em ConfiguracoesDaBarbearia. */}
+      <div className={estilos.campoLongo}>
+        <label className={estilos.rotulo} htmlFor="descricao">
+          Descrição (opcional)
+        </label>
+        <span className={estilos.apoio} id="descricao-apoio">
+          Aparece no cartão do serviço, na hora de agendar. Exemplo: máquina e
+          tesoura, acabamento na navalha.
+        </span>
+        <textarea
+          id="descricao"
+          className={estilos.area}
+          aria-describedby="descricao-apoio"
+          rows={3}
+          maxLength={DESCRICAO_MAX}
+          value={descricao}
+          onChange={(evento) => setDescricao(evento.target.value)}
+        />
+        <span className={estilos.contador}>
+          {descricao.length} de {DESCRICAO_MAX}
+        </span>
+      </div>
+
+      {/* Só na edição: a foto precisa de um serviço que já exista, como a
+          do membro. Salva sozinha, sem passar pelo Salvar. */}
+      {atual ? (
+        <CampoDeImagem
+          rotulo="Foto"
+          alt={`Foto de ${atual.nome}`}
+          urlAtual={atual.fotoUrl}
+          formato="quadrado"
+          enviar={(arquivo) => api.barbeiro.enviarFotoDoServico(atual.id, arquivo)}
+          remover={() => api.barbeiro.removerFotoDoServico(atual.id)}
+        />
+      ) : null}
 
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 

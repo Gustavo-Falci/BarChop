@@ -196,9 +196,11 @@
 
 /* ── Subtelas ───────────────────────────────────────────────────────── */
 
-/* O atalho do rodapé: discreto, com borda tracejada de "ainda falta". */
+/* O atalho do rodapé: discreto, com borda tracejada de "ainda falta".
+   No canto inferior direito (pedido do dono), alinhado à régua do
+   cabeçalho — é onde o olho termina a página e procura o "seguir". */
 .proxima {
-  justify-self: start;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
   gap: var(--espaco-sm);

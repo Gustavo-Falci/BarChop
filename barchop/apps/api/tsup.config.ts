@@ -6,7 +6,13 @@ import { defineConfig } from "tsup";
 // pelo transpilePackages e o mobile pelo Metro; aqui quem resolve
 // é o bundler, que compila o source dos @barchop/* junto.
 export default defineConfig({
-  entry: ["src/server.ts"],
+  // O criar-suporte entra no bundle porque a imagem de produção não
+  // leva o tsx nem o TypeScript: é a única porta pra criar a conta de
+  // suporte na VM (`node dist/criar-suporte.js`).
+  entry: {
+    server: "src/server.ts",
+    "criar-suporte": "scripts/criar-suporte.ts",
+  },
   outDir: "dist",
   format: ["cjs"], // sem "type": "module" no package.json, o start roda CJS
   target: "node22",

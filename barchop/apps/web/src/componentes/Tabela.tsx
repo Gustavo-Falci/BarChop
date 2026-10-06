@@ -13,6 +13,16 @@ export interface Linha {
   atenuada?: boolean;
 }
 
+// Um bloco de linhas com título — a categoria, na lista de serviços.
+// O `resumo` é a linha de apoio ao lado do título ("2 serviços · R$ 40
+// a R$ 60").
+export interface Grupo {
+  id: string;
+  titulo: string;
+  resumo?: ReactNode;
+  linhas: Linha[];
+}
+
 // Alinhamento por coluna, na ordem do cabeçalho. Vale pro `th` e pro
 // `td` juntos de propósito: cabeçalho à esquerda sobre número à direita
 // é o tipo de desalinhamento que parece defeito.
@@ -21,6 +31,7 @@ export type Alinhamento = "inicio" | "fim";
 export function Tabela({
   cabecalho,
   linhas,
+  grupos,
   aoAbrir,
   vazio,
   dicaVazio,
@@ -29,7 +40,11 @@ export function Tabela({
   alinhamentos,
 }: {
   cabecalho: string[];
-  linhas: Linha[];
+  // `linhas` OU `grupos`. Com grupos, cada um vira um <tbody> com o
+  // título na primeira linha — é o que liga a linha ao grupo pra quem
+  // navega a tabela pelo leitor de tela. Grupo sem linha não aparece.
+  linhas?: Linha[];
+  grupos?: Grupo[];
   aoAbrir?: (id: string) => void;
   vazio: string;
   // A tabela vazia era um <p> solto. O texto continua o mesmo; o que
@@ -50,8 +65,53 @@ export function Tabela({
   const classeDaColuna = (indice: number) =>
     alinhamentos?.[indice] === "fim" ? estilos.fim : undefined;
 
-  if (linhas.length === 0) {
+  // Sem grupos, a lista inteira é um bloco só, sem título.
+  const blocos: (Partial<Grupo> & { linhas: Linha[] })[] = grupos
+    ? grupos.filter((grupo) => grupo.linhas.length > 0)
+    : [{ linhas: linhas ?? [] }];
+
+  if (blocos.every((bloco) => bloco.linhas.length === 0)) {
     return <Vazio mensagem={vazio} dica={dicaVazio} acao={acaoVazio} />;
+  }
+
+  function desenharLinha(linha: Linha) {
+    return (
+      // A linha inteira abre, porque é a linha inteira que o CSS
+      // acende no hover — realçar sete colunas e aceitar clique em
+      // uma só é prometer um alvo que não existe.
+      <tr
+        key={linha.id}
+        className={
+          [aoAbrir ? estilos.clicavel : "", linha.atenuada ? estilos.atenuada : ""]
+            .filter(Boolean)
+            .join(" ") || undefined
+        }
+        onClick={aoAbrir ? () => aoAbrir(linha.id) : undefined}
+      >
+        {linha.celulas.map((celula, indice) => (
+          <td key={indice} className={classeDaColuna(indice)}>
+            {/* O botão continua na primeira célula, e não some com
+              a linha clicável: <tr> com onClick não chega pelo
+              teclado, e é ele que dá foco, Enter e nome acessível.
+              `stopPropagation` para o clique no nome não contar
+              duas vezes — a dele e a da linha. */}
+            {indice === 0 && aoAbrir ? (
+              <button
+                type="button"
+                onClick={(evento) => {
+                  evento.stopPropagation();
+                  aoAbrir(linha.id);
+                }}
+              >
+                {celula}
+              </button>
+            ) : (
+              celula
+            )}
+          </td>
+        ))}
+      </tr>
+    );
   }
 
   return (
@@ -73,48 +133,19 @@ export function Tabela({
             ))}
           </tr>
         </thead>
-        <tbody>
-          {linhas.map((linha) => (
-            // A linha inteira abre, porque é a linha inteira que o CSS
-            // acende no hover — realçar sete colunas e aceitar clique em
-            // uma só é prometer um alvo que não existe.
-            <tr
-              key={linha.id}
-              className={
-                [
-                  aoAbrir ? estilos.clicavel : "",
-                  linha.atenuada ? estilos.atenuada : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ") || undefined
-              }
-              onClick={aoAbrir ? () => aoAbrir(linha.id) : undefined}
-            >
-              {linha.celulas.map((celula, indice) => (
-                <td key={indice} className={classeDaColuna(indice)}>
-                  {/* O botão continua na primeira célula, e não some com
-                    a linha clicável: <tr> com onClick não chega pelo
-                    teclado, e é ele que dá foco, Enter e nome acessível.
-                    `stopPropagation` para o clique no nome não contar
-                    duas vezes — a dele e a da linha. */}
-                  {indice === 0 && aoAbrir ? (
-                    <button
-                      type="button"
-                      onClick={(evento) => {
-                        evento.stopPropagation();
-                        aoAbrir(linha.id);
-                      }}
-                    >
-                      {celula}
-                    </button>
-                  ) : (
-                    celula
-                  )}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
+        {blocos.map((bloco, indice) => (
+          <tbody key={bloco.id ?? indice}>
+            {bloco.titulo ? (
+              <tr className={estilos.linhaDoGrupo}>
+                <th scope="rowgroup" colSpan={cabecalho.length} className={estilos.grupo}>
+                  {bloco.titulo}
+                  {bloco.resumo ? <span className={estilos.resumo}>{bloco.resumo}</span> : null}
+                </th>
+              </tr>
+            ) : null}
+            {bloco.linhas.map(desenharLinha)}
+          </tbody>
+        ))}
       </table>
     </div>
   );

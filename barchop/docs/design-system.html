@@ -162,6 +162,30 @@
       <div class="swatch"><div class="swatch-fill" style="background:#F3F0E7;"></div><div class="swatch-body"><div class="name">Tinta (texto)</div><div class="code">#F3F0E7</div></div></div>
       <div class="swatch"><div class="swatch-fill" style="background:#FFD900;"></div><div class="swatch-body"><div class="name">Amarelo (inalterado)</div><div class="code">#FFD900</div></div></div>
     </div>
+    <h3 class="eyebrow" style="margin:1.6rem 0 0.8rem; display:block;">Estados do painel (selos, pílulas, Configurações)</h3>
+    <p class="desc">Texto e borda na cor forte, fundo na clara do mesmo estado. Todos passam 4,5:1 contra o próprio fundo e contra a superfície, nos dois temas (medido no teste <code>tests/app/contraste-dos-tokens.test.ts</code>).</p>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-fill" style="background:#dff1e2; color:#1e6b34; display:grid; place-items:center; font-weight:700;">Configurado</div><div class="swatch-body"><div class="name">ok / okFundo</div><div class="code">#1E6B34 · #DFF1E2</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#fdebc8; color:#8a4b00; display:grid; place-items:center; font-weight:700;">Faltando</div><div class="swatch-body"><div class="name">atencao / atencaoFundo</div><div class="code">#8A4B00 · #FDEBC8</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#fbe3e0; color:#b3261e; display:grid; place-items:center; font-weight:700;">Erro</div><div class="swatch-body"><div class="name">erro / erroFundo</div><div class="code">#B3261E · #FBE3E0</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#173a22; color:#6fd88a; display:grid; place-items:center; font-weight:700;">escuro</div><div class="swatch-body"><div class="name">ok (escuro)</div><div class="code">#6FD88A · #173A22</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#3f2c0b; color:#ffb547; display:grid; place-items:center; font-weight:700;">escuro</div><div class="swatch-body"><div class="name">atencao (escuro)</div><div class="code">#FFB547 · #3F2C0B</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#45201b; color:#ff6b5e; display:grid; place-items:center; font-weight:700;">escuro</div><div class="swatch-body"><div class="name">erro (escuro)</div><div class="code">#FF6B5E · #45201B</div></div></div>
+    </div>
+  </section>
+
+  <section id="pecas-do-painel">
+    <h2>Peças do painel (painel v2)</h2>
+    <p class="desc">Vocabulário comum das telas do painel, em <code>apps/web/src/componentes</code>. Referência de organização: os prints do painel do barbeiro.app; o desenho continua o da casa.</p>
+    <ul class="desc">
+      <li><strong>Chip</strong> — tons <code>acento</code>, <code>neutro</code>, <code>ok</code>, <code>atencao</code>, <code>erro</code>; <code>tamanho="pequeno"</code> é o selo ao lado do título.</li>
+      <li><strong>CabecalhoDaPagina</strong> — título, apoio, ação, <code>selo</code> (fora do h1) e <code>voltar</code> ("← Configurações").</li>
+      <li><strong>SecaoNumerada</strong> — "1 · Título" em versalete com régua e resumo na ponta; sem moldura (não é cartão).</li>
+      <li><strong>Vazio</strong> — mensagem, dica, ação e <code>icone</code> num círculo amarelo-claro.</li>
+      <li><strong>PilulasDeFiltro</strong> — filtros de lista com contagem no nome; a escolhida é amarela com sombra deslocada; o tom só pinta quando há o que contar.</li>
+      <li><strong>SeletorEmPilulas</strong> — escolha de formulário em rádios nativos desenhados em pílula, com a frase de efeito abaixo.</li>
+      <li><strong>Tabela</strong> — <code>linhas</code> ou <code>grupos</code> (um <code>&lt;tbody&gt;</code> por grupo, título e resumo na primeira linha).</li>
+    </ul>
   </section>
 
   <section id="tipografia">

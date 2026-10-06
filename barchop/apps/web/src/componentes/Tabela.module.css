@@ -126,3 +126,35 @@
 .tabela td:first-child button:focus-visible {
   outline-offset: -4px;
 }
+
+/* Linha de título do grupo. Sobrescreve o `.tabela th` do cabeçalho
+   (versalete, fundo e régua grossa): aqui é o nome da categoria, em
+   caixa normal, com o resumo ao lado em tom apagado. A régua de cima
+   separa um grupo do anterior — a última linha de cada <tbody> perde a
+   dela pela regra de `tr:last-child` lá em cima. */
+.tabela tbody th.grupo {
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.tabela tbody:first-of-type th.grupo {
+  border-top: none;
+}
+
+.resumo {
+  margin-inline-start: var(--espaco-sm);
+  color: var(--cor-ink-soft);
+  font-weight: 500;
+}
+
+/* O título do grupo não é linha de dado: sem realce no hover. */
+.tabela tbody tr.linhaDoGrupo:hover th {
+  background: var(--cor-paper-soft);
+}

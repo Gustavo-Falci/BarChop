@@ -294,7 +294,14 @@ function Dados() {
         ))}
       </div>
 
-      <div role="tabpanel" id={`${id}-painel`} aria-labelledby={`${id}-aba-${aba}`} className={estilos.coluna}>
+      {/* A Identidade usa a largura toda: a apresentação à esquerda e o
+          endereço da página à direita (empilham quando não cabem). */}
+      <div
+        role="tabpanel"
+        id={`${id}-painel`}
+        aria-labelledby={`${id}-aba-${aba}`}
+        className={aba === "identidade" ? estilos.ladoALado : estilos.coluna}
+      >
         {aba === "identidade" ? (
           <>
             <Secao

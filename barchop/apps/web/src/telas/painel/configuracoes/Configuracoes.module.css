@@ -63,6 +63,18 @@
   max-width: 860px;
 }
 
+/* Duas seções lado a lado (Identidade: apresentação | endereço da
+   página). Cada coluna com no mínimo 380px; abaixo disso — tablet
+   estreito, celular — `auto-fit` empilha sem media query. `min(100%, …)`
+   pra não estourar a tela quando ela mesma é menor que 380px. */
+.ladoALado {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: var(--espaco-lg);
+  align-items: start;
+  max-width: 1240px;
+}
+
 /* ── Índice ─────────────────────────────────────────────────────────── */
 
 .progresso {

@@ -228,3 +228,112 @@ export function IconeCheck(props: Props) {
     </Base>
   );
 }
+
+// Os das comodidades e das formas de pagamento (Configurações → Dados do
+// negócio → Comodidades). Um por item, menos o cartão, que serve ao
+// débito e ao crédito — quem os separa é o nome.
+export function IconeWifi(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M2.5 9a14 14 0 0 1 19 0" />
+      <path d="M5.5 12.5a9.5 9.5 0 0 1 13 0" />
+      <path d="M8.5 16a5 5 0 0 1 7 0" />
+      <path d="M12 19.5h.01" />
+    </Base>
+  );
+}
+
+export function IconeFloco(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7" />
+      <path d="m9.5 3.5 2.5 2 2.5-2M9.5 20.5l2.5-2 2.5 2" />
+    </Base>
+  );
+}
+
+export function IconeCarro(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M5 16H3.5v-4l2-5h13l2 5v4H19" />
+      <path d="M3.5 12h17" />
+      <path d="M9 16h6" />
+      <circle cx="7" cy="16.5" r="2" />
+      <circle cx="17" cy="16.5" r="2" />
+    </Base>
+  );
+}
+
+export function IconeAcessivel(props: Props) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="4.5" r="1.5" />
+      <path d="M5 8.5h14M12 8.5v5M12 13.5 8.5 21M12 13.5l3.5 7.5" />
+    </Base>
+  );
+}
+
+export function IconeXicara(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V9Z" />
+      <path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16" />
+      <path d="M8 3.5v2.5M12 3.5v2.5" />
+    </Base>
+  );
+}
+
+export function IconeCopo(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M6 3h12l-1.6 17.1a1 1 0 0 1-1 .9H8.6a1 1 0 0 1-1-.9L6 3Z" />
+      <path d="M6.6 9h10.8" />
+    </Base>
+  );
+}
+
+export function IconeTv(props: Props) {
+  return (
+    <Base {...props}>
+      <rect x="2.5" y="6" width="19" height="13" rx="2" />
+      <path d="m8 2.5 4 3.5 4-3.5" />
+    </Base>
+  );
+}
+
+export function IconeBalao(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M12 16c3.3 0 6-3.1 6-6.8A6 6 0 0 0 6 9.2C6 12.9 8.7 16 12 16Z" />
+      <path d="M12 16v1.5c0 1.5-2 2-2 3.5" />
+    </Base>
+  );
+}
+
+export function IconePix(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M12 2.5 21.5 12 12 21.5 2.5 12 12 2.5Z" />
+      <path d="M7.5 7 12 11.5 16.5 7M7.5 17 12 12.5l4.5 4.5" />
+    </Base>
+  );
+}
+
+export function IconeCedula(props: Props) {
+  return (
+    <Base {...props}>
+      <rect x="2.5" y="6" width="19" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M6 9.5v.01M18 14.5v.01" />
+    </Base>
+  );
+}
+
+export function IconeCartao(props: Props) {
+  return (
+    <Base {...props}>
+      <rect x="2.5" y="5" width="19" height="14" rx="2" />
+      <path d="M2.5 10h19M6.5 15h4" />
+    </Base>
+  );
+}

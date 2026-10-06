@@ -84,11 +84,9 @@ describe("antecedência do lembrete nas configurações", () => {
     falso.barbeiro.atualizarMinhaBarbearia = atualizar;
     montarPainel(<NotificacoesDaBarbearia />, falso);
 
-    const seletor = await screen.findByLabelText(/quando o lembrete sai/i);
-    await screen.findByRole("option", { name: /24 horas antes/i });
-    expect(seletor).toHaveValue("24");
+    expect(await screen.findByRole("radio", { name: "24 h antes" })).toBeChecked();
 
-    await userEvent.selectOptions(seletor, "2");
+    await userEvent.click(screen.getByRole("radio", { name: "2 h antes" }));
     await userEvent.click(screen.getByRole("button", { name: /salvar lembrete/i }));
 
     await waitFor(() =>

@@ -1,9 +1,16 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type ComponentType, type SVGProps } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
-import { COMODIDADES, FORMAS_DE_PAGAMENTO, PADRAO_SLUG, slugReservado } from "@barchop/formato";
+import {
+  COMODIDADES,
+  FORMAS_DE_PAGAMENTO,
+  PADRAO_SLUG,
+  slugReservado,
+  type Comodidade,
+  type FormaDePagamento,
+} from "@barchop/formato";
 import type { SolicitacaoDeLink } from "@barchop/types";
 import { ROTULO_DA_COMODIDADE, ROTULO_DO_PAGAMENTO } from "../../../formato/pagina";
 import { Aviso } from "../../../componentes/Aviso";
@@ -14,6 +21,20 @@ import { Secao } from "../../../componentes/Secao";
 import { useRequisicao } from "../../../api/useRequisicao";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
+import {
+  IconeAcessivel,
+  IconeBalao,
+  IconeCarro,
+  IconeCartao,
+  IconeCedula,
+  IconeCheck,
+  IconeCopo,
+  IconeFloco,
+  IconePix,
+  IconeTv,
+  IconeWifi,
+  IconeXicara,
+} from "../../../painel/icones";
 import { enderecoDaBarbearia } from "../../../tenant/endereco";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import estilos from "./Configuracoes.module.css";
@@ -34,6 +55,54 @@ type Aba = (typeof ABAS)[number]["id"];
 
 function alternar(lista: string[], valor: string): string[] {
   return lista.includes(valor) ? lista.filter((v) => v !== valor) : [...lista, valor];
+}
+
+type Icone = ComponentType<SVGProps<SVGSVGElement>>;
+
+const ICONE_DA_COMODIDADE: Record<Comodidade, Icone> = {
+  wifi: IconeWifi,
+  ar_condicionado: IconeFloco,
+  estacionamento: IconeCarro,
+  acessibilidade: IconeAcessivel,
+  cafe: IconeXicara,
+  bebidas: IconeCopo,
+  tv: IconeTv,
+  espaco_kids: IconeBalao,
+};
+
+const ICONE_DO_PAGAMENTO: Record<FormaDePagamento, Icone> = {
+  pix: IconePix,
+  dinheiro: IconeCedula,
+  debito: IconeCartao,
+  credito: IconeCartao,
+};
+
+// Um cartão da grade de comodidades: a caixa nativa, fora da vista mas
+// no teclado e no leitor de tela, e o cartão desenhado ao lado (o mesmo
+// truque das pílulas do SeletorEmPilulas). O ícone é enfeite; quem
+// nomeia a caixa é o texto. Marcado ganha o amarelo e o check — o check
+// pra que a diferença não dependa só da cor.
+function CartaoDeEscolha({
+  rotulo,
+  Icone,
+  marcado,
+  aoAlternar,
+}: {
+  rotulo: string;
+  Icone: Icone;
+  marcado: boolean;
+  aoAlternar: () => void;
+}) {
+  return (
+    <label className={estilos.cartaoDeEscolha}>
+      <input type="checkbox" className={estilos.caixaEscondida} checked={marcado} onChange={aoAlternar} />
+      <span className={estilos.desenhoDoCartao}>
+        <Icone className={estilos.iconeDoCartao} />
+        <span>{rotulo}</span>
+        <IconeCheck className={estilos.checkDoCartao} width={16} height={16} />
+      </span>
+    </label>
+  );
 }
 
 // Dados do negócio: como a barbearia se apresenta na página pública, em
@@ -346,30 +415,28 @@ function Dados() {
               </Botao>
             }
           >
-            <fieldset className={estilos.marcas}>
+            <fieldset className={estilos.grade}>
               <legend className={estilos.rotulo}>Comodidades</legend>
               {COMODIDADES.map((comodidade) => (
-                <label key={comodidade}>
-                  <input
-                    type="checkbox"
-                    checked={comodidades.includes(comodidade)}
-                    onChange={() => setComodidades((atual) => alternar(atual, comodidade))}
-                  />
-                  {ROTULO_DA_COMODIDADE[comodidade]}
-                </label>
+                <CartaoDeEscolha
+                  key={comodidade}
+                  rotulo={ROTULO_DA_COMODIDADE[comodidade]}
+                  Icone={ICONE_DA_COMODIDADE[comodidade]}
+                  marcado={comodidades.includes(comodidade)}
+                  aoAlternar={() => setComodidades((atual) => alternar(atual, comodidade))}
+                />
               ))}
             </fieldset>
-            <fieldset className={estilos.marcas}>
+            <fieldset className={estilos.grade}>
               <legend className={estilos.rotulo}>Formas de pagamento</legend>
               {FORMAS_DE_PAGAMENTO.map((forma) => (
-                <label key={forma}>
-                  <input
-                    type="checkbox"
-                    checked={formasDePagamento.includes(forma)}
-                    onChange={() => setFormasDePagamento((atual) => alternar(atual, forma))}
-                  />
-                  {ROTULO_DO_PAGAMENTO[forma]}
-                </label>
+                <CartaoDeEscolha
+                  key={forma}
+                  rotulo={ROTULO_DO_PAGAMENTO[forma]}
+                  Icone={ICONE_DO_PAGAMENTO[forma]}
+                  marcado={formasDePagamento.includes(forma)}
+                  aoAlternar={() => setFormasDePagamento((atual) => alternar(atual, forma))}
+                />
               ))}
             </fieldset>
           </Secao>

@@ -1,0 +1,188 @@
+/* O cartão do serviço. A assinatura da casa (borda preta e sombra
+   deslocada) vale aqui como nos botões: parado, o cartão flutua sobre a
+   sombra; escolhido, afunda nela e fica amarelo. É o mesmo gesto do
+   botão apertado, e é o que diz "escolhido" sem depender só da cor. */
+.cartao {
+  list-style: none;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.cartao:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--cor-shadow); }
+
+.marcado,
+.marcado:hover {
+  background: var(--cor-pale-yellow);
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--cor-shadow);
+}
+
+/* O anel de foco vai no cartão inteiro: o checkbox de verdade está
+   escondido, e um anel num quadrado de 1px não se veria. */
+.cartao:has(.caixa:focus-visible) {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 3px;
+}
+
+/* No celular: foto, texto e marca na primeira linha; preço e duração
+   embaixo do texto. A partir de 600px o preço sobe pra mesma linha, à
+   direita, onde o olho procura o valor. */
+.escolha {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "foto texto marca"
+    "foto valores marca";
+  align-items: center;
+  column-gap: var(--espaco-md);
+  row-gap: var(--espaco-xs);
+  padding: var(--espaco-md);
+  cursor: pointer;
+}
+
+@media (min-width: 600px) {
+  .escolha {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "foto texto valores marca";
+  }
+}
+
+/* Escondido só da vista: continua no teclado e no leitor de tela. */
+.caixa {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.foto { grid-area: foto; align-self: start; }
+
+.texto {
+  grid-area: texto;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nome {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--cor-ink);
+}
+
+/* Duas linhas e reticências: o cartão fica da mesma altura com uma
+   descrição de 20 ou de 300 caracteres. O texto inteiro continua no
+   DOM, e o leitor de tela lê tudo. */
+.descricao {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+  line-height: 1.4;
+}
+
+.valores {
+  grid-area: valores;
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaco-sm);
+}
+
+@media (min-width: 600px) {
+  .valores {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+}
+
+.preco {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  color: var(--cor-ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.duracao {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+  white-space: nowrap;
+}
+
+/* O quadrado da escolha: vazio parado, amarelo com o check escolhido. */
+.marca {
+  grid-area: marca;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: transparent;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.marcado .marca {
+  background: var(--cor-accent);
+  color: #202020;
+}
+
+/* Os atalhos de horário, no rodapé do cartão. */
+.proximos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm) var(--espaco-lg);
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md) var(--espaco-md);
+  border-top: 1px solid var(--cor-line);
+  list-style: none;
+}
+
+.marcado .proximos { border-top-color: var(--cor-ink); }
+
+.dia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.rotuloDoDia {
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+.horario {
+  padding: 4px 10px;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.horario:hover { background: var(--cor-accent); color: #202020; }

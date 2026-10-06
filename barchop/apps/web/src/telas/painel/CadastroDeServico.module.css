@@ -27,3 +27,40 @@
     flex: 1;
   }
 }
+
+/* A descrição: mesmo desenho do "Sobre a barbearia" das configurações
+   (lá está o porquê do <textarea> à mão). */
+.campoLongo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-xs);
+}
+
+.rotulo {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
+.apoio {
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+}
+
+.area {
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-family: var(--fonte-corpo), system-ui, sans-serif;
+  font-size: var(--texto-md);
+  resize: vertical;
+}
+
+.contador {
+  align-self: flex-end;
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+}

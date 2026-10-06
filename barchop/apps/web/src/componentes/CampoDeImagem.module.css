@@ -18,5 +18,7 @@
 
 .paisagem { width: 100%; max-width: 420px; aspect-ratio: 16 / 9; }
 .retrato { width: 96px; height: 96px; border-radius: 50%; }
+/* A foto do serviço: quadrada como a miniatura do cartão. */
+.quadrado { width: 120px; height: 120px; border-radius: var(--raio-md); }
 
 .arquivo { font-size: var(--texto-sm); }

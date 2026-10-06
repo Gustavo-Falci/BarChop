@@ -1,0 +1,25 @@
+/* Quadrada, com a borda preta da casa: a mesma moldura do avatar da
+   equipe na página pública, só que de canto arredondado em vez de
+   círculo — serviço não é pessoa. */
+.miniatura {
+  flex: none;
+  display: block;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  object-fit: cover;
+  background: var(--cor-pale-yellow);
+}
+
+.pequena { width: 36px; height: 36px; border-radius: var(--raio-sm); }
+.grande { width: 72px; height: 72px; border-radius: var(--raio-md); }
+
+.inicial {
+  display: grid;
+  place-items: center;
+  color: var(--cor-ink);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.pequena.inicial { font-size: var(--texto-md); }
+.grande.inicial { font-size: var(--texto-xl); }

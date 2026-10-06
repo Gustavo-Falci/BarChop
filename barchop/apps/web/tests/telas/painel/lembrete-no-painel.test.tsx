@@ -2,7 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
-import { ConfiguracoesDaBarbearia } from "../../../src/telas/painel/ConfiguracoesDaBarbearia";
+import { NotificacoesDaBarbearia } from "../../../src/telas/painel/configuracoes/NotificacoesDaBarbearia";
 import { DetalheDoAgendamento } from "../../../src/telas/painel/DetalheDoAgendamento";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
@@ -82,7 +82,7 @@ describe("antecedência do lembrete nas configurações", () => {
     const original = falso.barbeiro.atualizarMinhaBarbearia;
     const atualizar = vi.fn(original);
     falso.barbeiro.atualizarMinhaBarbearia = atualizar;
-    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+    montarPainel(<NotificacoesDaBarbearia />, falso);
 
     const seletor = await screen.findByLabelText(/quando o lembrete sai/i);
     await screen.findByRole("option", { name: /24 horas antes/i });
@@ -98,7 +98,7 @@ describe("antecedência do lembrete nas configurações", () => {
   });
 
   it("avisa que a troca vale pros próximos agendamentos", async () => {
-    montarPainel(<ConfiguracoesDaBarbearia />, criarApiClientFalso());
+    montarPainel(<NotificacoesDaBarbearia />, criarApiClientFalso());
 
     expect(await screen.findByText(/próximos agendamentos/i)).toBeInTheDocument();
   });

@@ -10,7 +10,7 @@ import { ProvedorDoPainel } from "../../../src/painel/ProvedorDoPainel";
 import { sessaoDaBarbearia, sessaoDoBarbeiro } from "../../../src/sessao/armazenamento";
 import { AceitarConvite } from "../../../src/telas/painel/AceitarConvite";
 import { CadastroDeMembro } from "../../../src/telas/painel/CadastroDeMembro";
-import { ConfiguracoesDaBarbearia } from "../../../src/telas/painel/ConfiguracoesDaBarbearia";
+import { IndiceDeConfiguracoes } from "../../../src/telas/painel/configuracoes/IndiceDeConfiguracoes";
 import { EntrarNoPainel } from "../../../src/telas/painel/EntrarNoPainel";
 import { ListaDaEquipe } from "../../../src/telas/painel/ListaDaEquipe";
 import { ListaDeServicos } from "../../../src/telas/painel/ListaDeServicos";
@@ -104,7 +104,7 @@ describe("o que cada papel vê no painel", () => {
 
   it("em Configurações, quem não é dono vê só o próprio perfil", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes" });
-    montarPainel(<ConfiguracoesDaBarbearia />, criarApiClientFalso({ papel: "profissional" }));
+    montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ papel: "profissional" }));
 
     expect(await screen.findByRole("button", { name: /salvar perfil/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /salvar dados/i })).not.toBeInTheDocument();

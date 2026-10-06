@@ -50,7 +50,7 @@ describe("trilha de primeiros passos", () => {
 
     expect(within(passo(regiao, /horário/i)).getByRole("link")).toHaveAttribute(
       "href",
-      "/painel/configuracoes"
+      "/painel/configuracoes/horarios"
     );
   });
 

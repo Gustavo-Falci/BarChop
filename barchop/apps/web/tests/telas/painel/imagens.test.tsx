@@ -5,7 +5,7 @@ import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { ProvedorDaApi } from "../../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../../src/telas/PerfilDaBarbearia";
 import { CadastroDeMembro } from "../../../src/telas/painel/CadastroDeMembro";
-import { ConfiguracoesDaBarbearia } from "../../../src/telas/painel/ConfiguracoesDaBarbearia";
+import { DadosDoNegocio } from "../../../src/telas/painel/configuracoes/DadosDoNegocio";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
 
@@ -19,15 +19,16 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2
 const arquivo = () => new File([PNG], "capa.png", { type: "image/png" });
 
 describe("capa nas configurações", () => {
+  // A capa mora na aba Marca de Dados do negócio (painel v2).
   beforeEach(() => {
     localStorage.clear();
-    navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes" });
+    navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes/dados-do-negocio", query: { aba: "marca" } });
   });
 
   it("enviar mostra a capa nova", async () => {
     const falso = criarApiClientFalso();
     const enviar = vi.spyOn(falso.barbeiro, "enviarCapa");
-    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+    montarPainel(<DadosDoNegocio />, falso);
 
     await userEvent.upload(await screen.findByLabelText(/^capa/i), arquivo());
 
@@ -39,7 +40,7 @@ describe("capa nas configurações", () => {
   it("remover tira a capa", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.enviarCapa(new Blob([PNG]));
-    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+    montarPainel(<DadosDoNegocio />, falso);
 
     await screen.findByRole("img", { name: /capa da barbearia/i });
     await userEvent.click(screen.getByRole("button", { name: /remover capa/i }));
@@ -53,7 +54,7 @@ describe("capa nas configurações", () => {
     falso.barbeiro.enviarCapa = async () => {
       throw new ErroDaApi(413, "arquivo_grande_demais", "a imagem passa de 4 MB");
     };
-    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+    montarPainel(<DadosDoNegocio />, falso);
 
     await userEvent.upload(await screen.findByLabelText(/^capa/i), arquivo());
 
@@ -65,7 +66,7 @@ describe("capa nas configurações", () => {
     falso.barbeiro.enviarCapa = async () => {
       throw new ErroDaApi(422, "tipo_de_imagem_invalido", "só png, jpeg ou webp");
     };
-    montarPainel(<ConfiguracoesDaBarbearia />, falso);
+    montarPainel(<DadosDoNegocio />, falso);
 
     await userEvent.upload(await screen.findByLabelText(/^capa/i), arquivo());
 

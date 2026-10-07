@@ -614,7 +614,13 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       horaInicio: agendamento.horaInicio,
       status: agendamento.status,
       presencaConfirmadaEm: agendamento.presencaConfirmadaEm,
-      barbearia: { nome: estado.perfil.nome, slug: estado.perfil.slug },
+      barbearia: {
+        nome: estado.perfil.nome,
+        slug: estado.perfil.slug,
+        prazoCancelarHoras: estado.perfil.prazoCancelarHoras,
+        whatsapp: estado.perfil.whatsapp,
+        telefone: estado.perfil.telefone,
+      },
       barbeiro: { nome: agendamento.barbeiro.nome },
       servicos: agendamento.servicos.map((s) => ({ nome: s.nome })),
     };

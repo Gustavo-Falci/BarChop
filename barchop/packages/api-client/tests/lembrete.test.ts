@@ -106,7 +106,13 @@ describe("dublê — lembrete", () => {
       horaInicio: "10:00",
       status: "confirmado",
       presencaConfirmadaEm: null,
-      barbearia: { nome: "GR Barber", slug: "gr-barber" },
+      barbearia: {
+        nome: "GR Barber",
+        slug: "gr-barber",
+        prazoCancelarHoras: 0,
+        whatsapp: null,
+        telefone: "(11) 3333-4444",
+      },
       barbeiro: { nome: "Rafael" },
       servicos: [{ nome: "Corte" }],
     });

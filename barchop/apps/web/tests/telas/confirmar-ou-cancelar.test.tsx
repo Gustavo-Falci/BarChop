@@ -30,14 +30,14 @@ function semear(status = "confirmado", presencaConfirmadaEm: string | null = nul
   });
 }
 
-function montar(falso: ReturnType<typeof criarApiClientFalso>, token = "token-a1") {
+function montar(falso: ReturnType<typeof criarApiClientFalso>, token = "token-a1", agora?: Date) {
   navegacaoFalsa.redefinir({
     pathname: `/gr-barber/lembrete/${token}`,
     params: { slug: "gr-barber", token },
   });
   render(
     <ProvedorDaApi valor={falso}>
-      <ConfirmarOuCancelar />
+      <ConfirmarOuCancelar agora={agora} />
     </ProvedorDaApi>
   );
 }
@@ -136,5 +136,33 @@ describe("confirmar ou cancelar pelo link do lembrete", () => {
     await userEvent.click(botao);
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
+  });
+
+  describe("prazo de cancelar da barbearia (painel v2, 3g)", () => {
+    // O horário é 10 de outubro às 10:00; o aparelho marca 07:00.
+    const TRES_HORAS_ANTES = new Date(2026, 9, 10, 7, 0);
+
+    it("passou o prazo: some o Cancelar, a confirmação fica, e aparece com quem falar", async () => {
+      const falso = semear();
+      falso.estado.perfil = { ...falso.estado.perfil, prazoCancelarHoras: 6, whatsapp: "(11) 98888-7777" };
+      montar(falso, "token-a1", TRES_HORAS_ANTES);
+
+      expect(await screen.findByRole("button", { name: /confirmar presença/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /cancelar horário/i })).not.toBeInTheDocument();
+      expect(screen.getByText(/o prazo pra cancelar pelo link acabou/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /whatsapp/i })).toHaveAttribute(
+        "href",
+        "https://wa.me/5511988887777"
+      );
+    });
+
+    it("dentro do prazo, cancela como antes", async () => {
+      const falso = semear();
+      falso.estado.perfil = { ...falso.estado.perfil, prazoCancelarHoras: 2 };
+      montar(falso, "token-a1", TRES_HORAS_ANTES);
+
+      expect(await screen.findByRole("button", { name: /cancelar horário/i })).toBeInTheDocument();
+      expect(screen.queryByText(/prazo/i)).not.toBeInTheDocument();
+    });
   });
 });

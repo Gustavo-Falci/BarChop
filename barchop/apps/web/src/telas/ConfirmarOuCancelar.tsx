@@ -9,6 +9,8 @@ import { useRequisicao } from "../api/useRequisicao";
 import { Aviso } from "../componentes/Aviso";
 import { Botao } from "../componentes/Botao";
 import { formatarDataLonga } from "../formato/datas";
+import { prazoAcabou } from "../formato/prazos";
+import { AvisoDoPrazo } from "./AvisoDoPrazo";
 import estilos from "./ConfirmarOuCancelar.module.css";
 
 // O destino do link do e-mail de lembrete: confirmar presença ou
@@ -22,7 +24,11 @@ import estilos from "./ConfirmarOuCancelar.module.css";
 // A tela se monta do que o token devolve — a barbearia vem junto —, e
 // não de uma busca pelo slug da URL: o dono pode ter trocado o link da
 // barbearia depois que o e-mail saiu.
-export function ConfirmarOuCancelar() {
+//
+// Passado o prazo de cancelar da barbearia (painel v2, 3g), o Cancelar
+// some e entra o contato da casa; confirmar presença não tem prazo.
+// `agora` é prop com padrão pelo mesmo motivo da MinhaConta.
+export function ConfirmarOuCancelar({ agora = new Date() }: { agora?: Date } = {}) {
   const { token } = useParams<{ slug: string; token: string }>();
   const api = useApi();
   const lido = useRequisicao(() => api.publico.lembrete(token), [token]);
@@ -75,6 +81,12 @@ export function ConfirmarOuCancelar() {
 
   const cancelado = agendamento.status === "cancelado";
   const ativo = agendamento.status === "pendente" || agendamento.status === "confirmado";
+  const podeCancelar = !prazoAcabou(
+    agendamento.barbearia.prazoCancelarHoras,
+    agendamento.data,
+    agendamento.horaInicio,
+    agora
+  );
 
   return (
     <div className={estilos.pagina}>
@@ -97,7 +109,7 @@ export function ConfirmarOuCancelar() {
         <p className={estilos.estado}>Presença confirmada. Te esperamos!</p>
       ) : null}
 
-      {ativo && cancelando ? (
+      {ativo && cancelando && podeCancelar ? (
         <div className={estilos.acoes}>
           <p>Tem certeza? O horário fica livre pra outra pessoa.</p>
           <Botao
@@ -120,10 +132,20 @@ export function ConfirmarOuCancelar() {
               Confirmar presença
             </Botao>
           )}
-          <Botao variante="contorno" onClick={() => setCancelando(true)}>
-            Cancelar horário
-          </Botao>
+          {podeCancelar ? (
+            <Botao variante="contorno" onClick={() => setCancelando(true)}>
+              Cancelar horário
+            </Botao>
+          ) : null}
         </div>
+      ) : null}
+
+      {ativo && !podeCancelar ? (
+        <AvisoDoPrazo
+          acao="cancelar"
+          whatsapp={agendamento.barbearia.whatsapp}
+          telefone={agendamento.barbearia.telefone}
+        />
       ) : null}
 
       {aviso ? <Aviso>{aviso}</Aviso> : null}

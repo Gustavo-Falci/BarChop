@@ -25,7 +25,10 @@ const paramsToken = {
 const STATUS_ATIVO = ["pendente", "confirmado"] as const;
 
 const INCLUDE = {
-  barbearia: { select: { nome: true, slug: true } },
+  // O prazo de cancelar e o contato vão pra tela (painel v2, 3g).
+  barbearia: {
+    select: { nome: true, slug: true, prazoCancelarHoras: true, whatsapp: true, telefone: true },
+  },
   barbeiro: { select: { nome: true } },
   servicos: { include: { servico: { select: { nome: true } } } },
 } as const;
@@ -73,7 +76,12 @@ function serializar(agendamento: Awaited<ReturnType<typeof carregar>>): {
       horaInicio: dateParaHora(agendamento.horaInicio),
       status: agendamento.status,
       presencaConfirmadaEm: agendamento.presencaConfirmadaEm?.toISOString() ?? null,
-      barbearia: agendamento.barbearia,
+      barbearia: {
+        ...agendamento.barbearia,
+        // O CHECK da coluna garante uma das opções.
+        prazoCancelarHoras: agendamento.barbearia
+          .prazoCancelarHoras as AgendamentoDoLembrete["barbearia"]["prazoCancelarHoras"],
+      },
       barbeiro: agendamento.barbeiro,
       servicos: agendamento.servicos.map((s) => ({ nome: s.servico.nome })),
     },

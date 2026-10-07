@@ -8,7 +8,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BarChop",
-  description: "Agenda de barbearia",
+  description:
+    "BarChop, a agenda online para barbearias: o cliente marca pelo link, a casa organiza tudo no painel.",
 };
 
 export default function RootLayout({

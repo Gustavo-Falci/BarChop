@@ -28,7 +28,10 @@ describe("cartaz do link", () => {
     const imprimir = vi.spyOn(window, "print").mockImplementation(() => {});
     montarPainel(<CartazDoLink />);
 
-    await userEvent.click(await screen.findByRole("button", { name: /imprimir/i }));
+    // O cartaz espera a sessão e a barbearia; com as suítes em paralelo
+    // isso passa do segundo padrão do findBy.
+    await screen.findByRole("heading", { name: "GR Barber" }, { timeout: 5000 });
+    await userEvent.click(screen.getByRole("button", { name: /imprimir/i }));
 
     expect(imprimir).toHaveBeenCalled();
   });

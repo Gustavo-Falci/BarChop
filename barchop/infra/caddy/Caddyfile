@@ -1,0 +1,41 @@
+# Borda de produção (ADR-0002): cada barbearia em <slug>.barchop.com.br,
+# o painel em painel., o site na raiz e no www, a API em api.
+#
+# Os certificados saem pelo desafio DNS-01 na Cloudflare — o único que
+# emite coringa. O coringa não cobre a raiz: por isso barchop.com.br e
+# *.barchop.com.br vão juntos no mesmo bloco.
+{
+	email {$ACME_EMAIL}
+	acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+}
+
+# O token do lembrete viaja no caminho: /<slug>/lembrete/<token> no web
+# e /lembretes/<token> na API. A API já esconde o dela no próprio log;
+# aqui o log de acesso troca o token por *** e descarta o Referer, que
+# leva o caminho inteiro nas navegações dentro do mesmo host. Cookie e
+# Authorization o Caddy já não loga.
+(log_sem_token) {
+	log {
+		output stdout
+		format filter {
+			wrap json
+			fields {
+				request>uri regexp "(/lembretes?/)[^/?]+" "${1}***"
+				request>headers>Referer delete
+			}
+		}
+	}
+}
+
+# O Caddy repassa o Host original (o proxy.ts do web decide a rota por
+# ele) e reescreve o X-Forwarded-For com o IP de quem chegou: um salto
+# só, por isso PROXIES_CONFIAVEIS=1 na API.
+api.barchop.com.br {
+	import log_sem_token
+	reverse_proxy api:3333
+}
+
+barchop.com.br, *.barchop.com.br {
+	import log_sem_token
+	reverse_proxy web:3000
+}

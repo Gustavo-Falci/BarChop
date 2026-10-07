@@ -1,0 +1,25 @@
+# O contexto das imagens (infra/*.Dockerfile) é a pasta barchop/
+# inteira: o pnpm precisa do workspace todo pra instalar com o lockfile.
+# Fica de fora o que é gerado, local ou segredo.
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+**/.arquivos
+
+# Segredos e configuração local nunca entram na imagem.
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+infra/api.env
+
+# O app mobile não entra em imagem nenhuma, mas o manifesto fica: o
+# lockfile tem o apps/mobile como projeto, e o --frozen-lockfile
+# confere os manifestos do workspace.
+apps/mobile/*
+!apps/mobile/package.json
+
+# A própria infra não vai pra dentro das imagens.
+infra

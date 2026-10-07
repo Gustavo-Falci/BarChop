@@ -40,7 +40,7 @@ Não há Dockerfile, compose nem Caddyfile no repo: não existe padrão de infra
 |---|---|---|
 | `barchop/apps/web/next.config.js` | UPDATE | `output: "standalone"` + `outputFileTracingRoot` na raiz do monorepo |
 | `barchop/apps/api/tsup.config.ts` | UPDATE | `scripts/criar-suporte.ts` como segunda entrada (sai `dist/criar-suporte.js`) |
-| `barchop/apps/api/package.json` | UPDATE | script `criar-suporte:prod` (`node dist/criar-suporte.js`) |
+| `barchop/apps/api/scripts/criar-suporte.ts` | UPDATE | Comentário do uso em produção. Sem script `criar-suporte:prod`: a imagem não tem pnpm, roda `node dist/criar-suporte.js` direto |
 
 **Validar:** `pnpm --filter @barchop/web build` e `node .next/standalone/apps/web/server.js` com `.next/static` e `public` copiados: páginas abrem **com** CSS e JS; `pnpm --filter @barchop/api build` gera as duas entradas; tsc + lint + testes afetados de web e api.
 
@@ -65,8 +65,10 @@ Não há Dockerfile, compose nem Caddyfile no repo: não existe padrão de infra
 - **Validate**: build + `server.js` local servindo `/`, `/painel/entrar` e uma página de barbearia com estilo.
 
 ### Tarefa 2 (G1a): `criar-suporte` no bundle
-- **Action**: entrada nova no tsup; script `criar-suporte:prod`. O script lê `SENHA_DO_SUPORTE` do ambiente como hoje.
-- **Validate**: `dist/criar-suporte.js` existe; rodar contra o banco de dev cria a conta.
+- **Action**: entrada nova no tsup. O script lê `SENHA_DO_SUPORTE` do ambiente como hoje.
+- **Validate**: `dist/criar-suporte.js` existe e só depende de `@prisma/client` e de módulos do Node.
+
+**Feito (PR #56).** G1b na branch `onda-1-bloco-g1b` (em cima do G1a): install filtrado + build da API e do web provados num clone limpo neste PC; o filtro não reduz nada com `node-linker=hoisted` (instala os 830 pacotes, Expo junto — imagem maior). Token da Cloudflare precisa de **Zone:Read + DNS:Edit**. Os dois PRs ficam abertos até o compose rodar na VM; ajustes vão na própria branch.
 
 ### Tarefa 3: imagem da API
 - **Action**: base `node:22-bookworm-slim` (Debian, não Alpine, por causa do Prisma) com `openssl`; pnpm 9 por corepack (igual ao `packageManager`); `pnpm install --frozen-lockfile --filter @barchop/api...` (sem puxar o `apps/mobile`/Expo); `prisma generate` dentro da imagem; `tsup`. Alvo `migrar`: `prisma migrate deploy` e sai. Alvo `api`: `node dist/server.js`, usuário sem root, `NODE_ENV=production`. Se o `pnpm deploy --prod` perder o `.prisma/client` gerado, copiar o `node_modules` da instalação filtrada (imagem maior, sem surpresa).

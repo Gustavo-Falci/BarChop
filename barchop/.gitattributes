@@ -1,0 +1,4 @@
+# Scripts que rodam dentro dos contêineres (Linux): com CRLF, vindo de
+# um checkout no Windows, o sh quebra na primeira linha.
+*.sh text eol=lf
+infra/caddy/Caddyfile text eol=lf

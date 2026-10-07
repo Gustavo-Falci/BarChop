@@ -7,7 +7,7 @@ import { montarPainel } from "../../ajudantes/painel";
 
 // Painel v2, marco 2: Configurações vira um índice de áreas. Cada linha
 // mostra o que vale hoje ou, se a área nunca foi salva, o que acontece
-// se ficar assim — e a contagem "X de 4 decididas" no topo. Decidida =
+// se ficar assim — e a contagem "X de 5 decididas" no topo. Decidida =
 // salva pelo menos uma vez (decisão do dono do produto, 2026-10-06).
 
 describe("índice das configurações", () => {
@@ -19,7 +19,7 @@ describe("índice das configurações", () => {
   it("conta quantas áreas já foram decididas", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ areasDecididas: ["horarios", "comunicacao"] }));
 
-    expect(await screen.findByText("2 de 4 decididas")).toBeInTheDocument();
+    expect(await screen.findByText("2 de 5 decididas")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: /decididas/i })).toHaveAttribute("aria-valuenow", "2");
   });
 
@@ -29,6 +29,10 @@ describe("índice das configurações", () => {
     expect(await screen.findByRole("link", { name: /^Horários/ })).toHaveAttribute(
       "href",
       "/painel/configuracoes/horarios"
+    );
+    expect(screen.getByRole("link", { name: /^Regras de agendamento/ })).toHaveAttribute(
+      "href",
+      "/painel/configuracoes/regras-de-agendamento"
     );
     expect(screen.getByRole("link", { name: /^Dados do negócio/ })).toHaveAttribute(
       "href",
@@ -51,7 +55,7 @@ describe("índice das configurações", () => {
   it("área decidida mostra o que vale hoje, sem pedir pra configurar", async () => {
     montarPainel(
       <IndiceDeConfiguracoes />,
-      criarApiClientFalso({ areasDecididas: ["horarios", "dados_do_negocio", "comunicacao", "notificacoes"] })
+      criarApiClientFalso({ areasDecididas: ["horarios", "regras_de_agendamento", "dados_do_negocio", "comunicacao", "notificacoes"] })
     );
 
     expect(await screen.findByRole("link", { name: /^Horários/ })).toHaveTextContent("Aberto 6 dias por semana");
@@ -62,7 +66,10 @@ describe("índice das configurações", () => {
     expect(screen.getByRole("link", { name: /^Notificações/ })).toHaveTextContent(
       "Lembrete por e-mail 24 horas antes"
     );
-    expect(screen.getByText("4 de 4 decididas")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Regras de agendamento/ })).toHaveTextContent(
+      "Grade de 15 min · agenda sem limite"
+    );
+    expect(screen.getByText("5 de 5 decididas")).toBeInTheDocument();
     expect(screen.queryByText(/configurar/i)).not.toBeInTheDocument();
   });
 
@@ -75,12 +82,21 @@ describe("índice das configurações", () => {
     expect(screen.getByRole("link", { name: /^Horários/ })).not.toHaveTextContent(/configurar/i);
   });
 
+  it("barbearia que nunca salvou as regras vê que vale o padrão", async () => {
+    montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ areasDecididas: ["horarios"] }));
+
+    const regras = await screen.findByRole("link", { name: /^Regras de agendamento/ });
+    expect(regras).toHaveTextContent(/vale o padrão/i);
+    expect(regras).toHaveTextContent(/configurar/i);
+    expect(screen.getByText("1 de 5 decididas")).toBeInTheDocument();
+  });
+
   it("o perfil é de cada pessoa: não entra na contagem nem pede configurar", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso());
 
     const perfil = await screen.findByRole("link", { name: /^Seu perfil/ });
     expect(perfil).not.toHaveTextContent(/configurar/i);
-    expect(screen.getByText("0 de 4 decididas")).toBeInTheDocument();
+    expect(screen.getByText("0 de 5 decididas")).toBeInTheDocument();
   });
 
   it("quem não é dono vê só o próprio perfil, sem o índice", async () => {

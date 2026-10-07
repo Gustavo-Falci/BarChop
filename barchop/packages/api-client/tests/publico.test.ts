@@ -87,6 +87,25 @@ describe("api pública", () => {
     expect(horarios).toEqual(["09:00", "09:15"]);
   });
 
+  it("com comToken, a disponibilidade vai com o token do painel (o painel encaixa livre)", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({ horarios: [] }));
+    const api = criarApiClient({
+      baseUrl: "https://api.exemplo.br",
+      fetch: fetchFalso as unknown as typeof globalThis.fetch,
+      obterToken: () => "token-do-painel",
+    });
+    const filtro = { barbeiroId: "bb1", data: "2026-09-10", servicoIds: ["s1"] };
+
+    await api.publico.disponibilidadeDoDia("gr-barber", filtro);
+    await api.publico.disponibilidadeDoDia("gr-barber", filtro, { comToken: true });
+    await api.publico.disponibilidadeDoMes("gr-barber", { ...filtro, mes: "2026-09" }, { comToken: true });
+
+    const cabecalhos = fetchFalso.mock.calls.map((chamada) => (chamada[1]?.headers ?? {}) as Record<string, string>);
+    expect(cabecalhos[0].Authorization).toBeUndefined();
+    expect(cabecalhos[1].Authorization).toBe("Bearer token-do-painel");
+    expect(cabecalhos[2].Authorization).toBe("Bearer token-do-painel");
+  });
+
   it("pede o mapa do mês pro calendário", async () => {
     const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
       respostaJson({ dias: { "2026-09-10": true, "2026-09-11": false } })

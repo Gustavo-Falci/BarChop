@@ -23,4 +23,12 @@ describe("regras de agendamento no dublê", () => {
     expect(salva).toMatchObject(regras);
     expect(await api.publico.perfilDaBarbearia("gr-barber")).toMatchObject(regras);
   });
+
+  it("salvar as regras decide a área delas", async () => {
+    const api = criarApiClientFalso();
+
+    const salva = await api.barbeiro.atualizarMinhaBarbearia({ prazoRemarcarHoras: 2 });
+
+    expect(salva.areasDecididas).toEqual(["regras_de_agendamento"]);
+  });
 });

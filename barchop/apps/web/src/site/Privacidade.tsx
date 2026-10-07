@@ -1,5 +1,15 @@
 import { CONTROLADOR, ouAPreencher } from "./controlador";
-import { DocumentoLegal, SecaoLegal } from "./DocumentoLegal";
+import { DocumentoLegal, SecaoLegal, type ItemDoSumario } from "./DocumentoLegal";
+
+const SUMARIO: ItemDoSumario[] = [
+  { id: "papeis", titulo: "Quem decide sobre cada dado" },
+  { id: "dados-coletados", titulo: "Que dados coletamos" },
+  { id: "para-que", titulo: "Para que usamos" },
+  { id: "quem-ajuda", titulo: "Quem nos ajuda a operar" },
+  { id: "por-quanto-tempo", titulo: "Por quanto tempo guardamos" },
+  { id: "seus-direitos", titulo: "Seus direitos" },
+  { id: "contato", titulo: "Contato" },
+];
 
 // Política de privacidade do BarChop (onda 1s-b), pela LGPD. Rascunho
 // base pra revisão jurídica. O BarChop tem dois papéis: controlador dos
@@ -7,7 +17,7 @@ import { DocumentoLegal, SecaoLegal } from "./DocumentoLegal";
 // finais, que são da barbearia.
 export function Privacidade() {
   return (
-    <DocumentoLegal titulo="Política de privacidade">
+    <DocumentoLegal titulo="Política de privacidade" sumario={SUMARIO}>
       <SecaoLegal id="papeis" titulo="Quem decide sobre cada dado">
         <p>
           Para os dados de quem cria e usa o painel — o dono da barbearia e a equipe —, o BarChop (

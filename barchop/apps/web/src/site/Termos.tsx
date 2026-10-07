@@ -1,11 +1,22 @@
 import { CONTROLADOR, ouAPreencher } from "./controlador";
-import { DocumentoLegal, SecaoLegal } from "./DocumentoLegal";
+import { DocumentoLegal, SecaoLegal, type ItemDoSumario } from "./DocumentoLegal";
+
+const SUMARIO: ItemDoSumario[] = [
+  { id: "quem-somos", titulo: "Quem somos" },
+  { id: "o-servico", titulo: "O serviço" },
+  { id: "sua-conta", titulo: "Sua conta e a da sua equipe" },
+  { id: "dados-dos-clientes", titulo: "Os dados dos seus clientes" },
+  { id: "uso-correto", titulo: "Uso correto" },
+  { id: "disponibilidade", titulo: "Disponibilidade" },
+  { id: "encerramento", titulo: "Encerramento" },
+  { id: "mudancas", titulo: "Mudanças nestes termos" },
+];
 
 // Termos de uso do BarChop (onda 1s-b). Rascunho base pra revisão
 // jurídica; só fala do que o produto já faz.
 export function Termos() {
   return (
-    <DocumentoLegal titulo="Termos de uso">
+    <DocumentoLegal titulo="Termos de uso" sumario={SUMARIO}>
       <SecaoLegal id="quem-somos" titulo="Quem somos">
         <p>
           O BarChop é um sistema de agendamento online para barbearias, oferecido por{" "}

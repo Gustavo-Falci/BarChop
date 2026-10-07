@@ -1,12 +1,58 @@
-/* Texto corrido: uma coluna de leitura (~70 caracteres), centralizada. */
+/* Celular: título, sumário e texto em coluna. Desktop: o sumário fixo
+   à esquerda e o texto à direita, na coluna de leitura (~70 caracteres). */
 .documento {
   display: grid;
   gap: var(--espaco-lg);
   width: 100%;
-  max-width: 72ch;
+  max-width: 1120px;
   margin-inline: auto;
   padding: var(--espaco-xxl) var(--espaco-lg);
   line-height: 1.6;
+}
+
+.cabeca {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.texto {
+  display: grid;
+  gap: var(--espaco-lg);
+  max-width: 72ch;
+}
+
+.sumario ol {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: var(--espaco-md);
+  list-style: none;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+}
+
+.sumario a {
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+@media (min-width: 900px) {
+  .documento {
+    grid-template-columns: 16rem minmax(0, 1fr);
+    column-gap: var(--espaco-xxl);
+    align-items: start;
+  }
+
+  .cabeca {
+    grid-column: 1 / -1;
+  }
+
+  .sumario {
+    position: sticky;
+    top: var(--espaco-lg);
+  }
 }
 
 .titulo {

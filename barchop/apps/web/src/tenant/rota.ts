@@ -34,7 +34,10 @@ export const CABECALHO_DO_CAMINHO = "x-barchop-caminho";
 const SUBDOMINIO_DO_PAINEL = "painel";
 const FORMATO_DO_SLUG = new RegExp(PADRAO_SLUG);
 
-function eSlugDeBarbearia(texto: string): boolean {
+// Se o texto pode ser o link de uma barbearia: o formato que a API
+// aceita e fora dos nomes do sistema. Também é o que poupa a API das
+// consultas que nunca achariam nada (src/fluxo/).
+export function eSlugDeBarbearia(texto: string): boolean {
   return FORMATO_DO_SLUG.test(texto) && !slugReservado(texto);
 }
 

@@ -331,13 +331,13 @@ config compartilhada em `packages/config/eslint.mjs`.
   inteiro como um cliente só — no G, isentar o IP do web ou limitar por
   outro critério. Um `cache()` do React compartilhado entre os dois
   deixaria uma chamada só.
-- **Os ícones que o navegador pede viram consulta de barbearia.**
-  `/favicon.ico`, `/favicon.png` e `/apple-touch-icon.png` não existem
-  no app: caem em `/[slug]` (o `favicon.ico` também no host da
-  barbearia), e o servidor do Next pede `GET /barbearias/favicon.ico` à
-  API (400 de slug inválido), a cada página. Visto no primeiro dia em
-  produção. Fecha com os ícones de
-  verdade no `app/` ou tirando esses caminhos do matcher.
+- **O site não tem ícone.** `/favicon.ico`, `/favicon.png` e
+  `/apple-touch-icon.png` caem em `/[slug]` e devolvem a página de
+  barbearia não encontrada. Já não custam consulta à API: o metadata e o
+  slug atual só perguntam por quem pode ser link de barbearia
+  (`eSlugDeBarbearia`) — o mesmo vale pros robôs atrás de
+  `/wp-login.php`. Fecha com os ícones no `app/` (`favicon.ico`, `icon`,
+  `apple-icon`) quando houver a marca.
 - **O backup fica no mesmo disco da VM.** O `pg_dump` diário
   (`infra/backup/backup.sh`) protege de erro e de migração ruim, não da
   perda do disco. Fecha copiando cada dump pro bucket da OCI.

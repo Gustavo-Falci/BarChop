@@ -84,4 +84,25 @@ describe("metadata da barbearia", () => {
 
     expect(metadata).toEqual({});
   });
+
+  // Todo caminho sem rota própria cai em /[slug]: o favicon.ico que o
+  // navegador pede sozinho, o apple-touch-icon.png do iPhone, os robôs
+  // atrás de /wp-login.php. Nenhum deles pode ser link de barbearia, e
+  // cada um custava uma ida à API (400) por página. Visto em produção.
+  it.each([
+    "favicon.ico",
+    "apple-touch-icon.png",
+    "wp-login.php",
+    "Barbearia-Do-Gu",
+    "termos",
+  ])("%s não pode ser link de barbearia: nem pergunta à API", async (slug) => {
+    let chamadas = 0;
+    const metadata = await metadataDaBarbearia(slug, async () => {
+      chamadas++;
+      return new Response("{}", { status: 400 });
+    });
+
+    expect(chamadas).toBe(0);
+    expect(metadata).toEqual({});
+  });
 });

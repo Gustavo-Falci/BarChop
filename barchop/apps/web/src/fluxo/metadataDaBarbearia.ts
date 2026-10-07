@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { apiPublica } from "../sessao/cliente-da-api";
+import { eSlugDeBarbearia } from "../tenant/rota";
 
 // O limite que os buscadores e as prévias de link costumam mostrar
 // antes de cortar sozinhos — e cortar aqui, na palavra, fica melhor do
@@ -24,6 +25,10 @@ export async function metadataDaBarbearia(
   slug: string,
   fetchInjetado: typeof globalThis.fetch = globalThis.fetch
 ): Promise<Metadata> {
+  // O favicon.ico, o apple-touch-icon.png e os robôs também caem em
+  // /[slug]: o que não pode ser link de barbearia nem vai à API.
+  if (!eSlugDeBarbearia(slug)) return {};
+
   const comTeto: typeof globalThis.fetch = (entrada, init) =>
     fetchInjetado(entrada, {
       ...init,

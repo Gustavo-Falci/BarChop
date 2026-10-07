@@ -1,4 +1,5 @@
 import type { AreaDeConfiguracao, BarbeariaDoPainel, HorarioSerializado } from "@barchop/types";
+import { resumoDasRegras } from "./regras";
 
 // As áreas das Configurações como o painel as mostra (painel v2, marco
 // 2). A ordem é a do índice e a mesma de AREAS_DE_CONFIGURACAO em
@@ -23,6 +24,14 @@ export const AREAS: DescricaoDaArea[] = [
     apoio: "Quando a barbearia atende, dia a dia.",
     rota: "/painel/configuracoes/horarios",
     consequencia: "Sem horário salvo, a página não mostra horário livre pra ninguém marcar",
+  },
+  {
+    area: "regras_de_agendamento",
+    titulo: "Regras de agendamento",
+    apoio: "Como o cliente marca, remarca e cancela pelo link.",
+    rota: "/painel/configuracoes/regras-de-agendamento",
+    consequencia:
+      "Vale o padrão: horários de 15 em 15 min, e o cliente marca, remarca e cancela até o horário começar",
   },
   {
     area: "dados_do_negocio",
@@ -76,6 +85,8 @@ export function resumoDaArea(
       const abertos = horarios.filter((dia) => !dia.fechado).length;
       return abertos === 0 ? "Fechado todos os dias" : `Aberto ${plural(abertos, "dia", "dias")} por semana`;
     }
+    case "regras_de_agendamento":
+      return resumoDasRegras(barbearia);
     case "dados_do_negocio":
       return `${barbearia.nome} · ${barbearia.endereco ?? "sem endereço"}`;
     case "comunicacao": {

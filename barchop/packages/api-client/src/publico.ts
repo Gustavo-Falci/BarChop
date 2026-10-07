@@ -19,6 +19,11 @@ export interface FiltroDoDia {
   servicoIds: string[];
 }
 
+// `comToken`: o painel pergunta como membro da barbearia.
+export interface OpcoesDaDisponibilidade {
+  comToken?: boolean;
+}
+
 export interface FiltroDoMes {
   barbeiroId?: string;
   mes: string; // "YYYY-MM"
@@ -45,7 +50,10 @@ export interface DefinicaoDeSenhaDoCliente {
 }
 
 // Nenhuma destas manda token: são as telas abertas pelo link do
-// WhatsApp, e a API as registra fora dos dois escopos protegidos.
+// WhatsApp, e a API as registra fora dos dois escopos protegidos. A
+// exceção é a disponibilidade pedida pelo painel (`comToken`): com o
+// token de membro, a API devolve os horários sem as regras do cliente —
+// o Novo agendamento encaixa livre (painel v2, marco 3).
 export function criarApiPublica(requisicao: Requisicao) {
   return {
     perfilDaBarbearia(slug: string): Promise<PerfilPublicoBarbearia> {
@@ -63,22 +71,24 @@ export function criarApiPublica(requisicao: Requisicao) {
 
     async disponibilidadeDoDia(
       slug: string,
-      filtro: FiltroDoDia
+      filtro: FiltroDoDia,
+      opcoes: OpcoesDaDisponibilidade = {}
     ): Promise<string[]> {
       const resposta = await requisicao<Disponibilidade>(
         `/barbearias/${slug}/disponibilidade`,
-        { query: { ...filtro } }
+        { query: { ...filtro }, comToken: opcoes.comToken }
       );
       return resposta.horarios;
     },
 
     async disponibilidadeDoMes(
       slug: string,
-      filtro: FiltroDoMes
+      filtro: FiltroDoMes,
+      opcoes: OpcoesDaDisponibilidade = {}
     ): Promise<Record<string, boolean>> {
       const resposta = await requisicao<DisponibilidadeDoMes>(
         `/barbearias/${slug}/disponibilidade/mes`,
-        { query: { ...filtro } }
+        { query: { ...filtro }, comToken: opcoes.comToken }
       );
       return resposta.dias;
     },

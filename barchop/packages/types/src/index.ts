@@ -123,7 +123,12 @@ export interface BarbeariaDoPainel extends BarbeariaSerializada {
   areasDecididas: AreaDeConfiguracao[];
 }
 
-export type AreaDeConfiguracao = "horarios" | "dados_do_negocio" | "comunicacao" | "notificacoes";
+export type AreaDeConfiguracao =
+  | "horarios"
+  | "regras_de_agendamento"
+  | "dados_do_negocio"
+  | "comunicacao"
+  | "notificacoes";
 
 export interface HorarioSerializado {
   diaSemana: number; // 0 = domingo

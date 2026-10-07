@@ -97,11 +97,14 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
     () =>
       servicoIds.length === 0 || !profissionalId
         ? Promise.resolve([])
-        : api.publico.disponibilidadeDoDia(slug, {
-            barbeiroId: profissionalId,
-            data,
-            servicoIds,
-          }),
+        : // Com o token do painel: a API devolve os horários sem as
+          // regras do cliente (antecedência, mesmo dia, janela) — o
+          // painel encaixa livre (painel v2, marco 3).
+          api.publico.disponibilidadeDoDia(
+            slug,
+            { barbeiroId: profissionalId, data, servicoIds },
+            { comToken: true }
+          ),
     [slug, profissionalId, data, servicoIds.join(",")]
   );
 
@@ -109,11 +112,11 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
     () =>
       servicoIds.length === 0 || !profissionalId
         ? Promise.resolve({})
-        : api.publico.disponibilidadeDoMes(slug, {
-            barbeiroId: profissionalId,
-            mes,
-            servicoIds,
-          }),
+        : api.publico.disponibilidadeDoMes(
+            slug,
+            { barbeiroId: profissionalId, mes, servicoIds },
+            { comToken: true }
+          ),
     [slug, profissionalId, mes, servicoIds.join(",")]
   );
 

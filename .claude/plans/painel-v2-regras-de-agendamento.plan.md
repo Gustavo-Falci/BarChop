@@ -83,11 +83,11 @@ Listas fechadas em `@barchop/formato` (como `pagina.ts`), CHECK na migration com
 - **Painel livre**: as rotas de disponibilidade são públicas e o Novo agendamento do painel usa as mesmas. Com token válido de membro da barbearia, a resposta sai sem as regras do cliente; sem token, com. Mostrar a mais não abre brecha: o POST do cliente aplica as regras de novo.
 - **Testes**: cada regra no dia, no mês, nos próximos e no POST; padrões = resultado de hoje (rodar a suíte de disponibilidade inteira sem mudar nenhum teste antigo); prazo de remarcar/cancelar no cliente e não no painel.
 
-### 3f — Tela Regras de agendamento — **próximo**
+### 3f — Tela Regras de agendamento — **feito (este PR)**: rota `/painel/configuracoes/regras-de-agendamento`, dois salvar (como o cliente marca / prazos), frase de efeito por escolha; área entre Horários e Dados do negócio; `disponibilidadeDoDia/Mes(slug, filtro, { comToken: true })` no Novo agendamento
 - Inclui o que saiu do 3e: área `regras_de_agendamento` em `AREAS_DE_CONFIGURACAO`/`AREA_DO_CAMPO`/tipo/`AREAS` da web, e o `NovoAgendamento` do painel pedindo a disponibilidade com token (`comToken`).
 - 5ª área do índice (Operação, depois de Horários): pílulas pra cada regra, frase "Resultado: …" com o efeito pro cliente; "X de 5 decididas". Barbearias existentes passam a ver "4 de 5" com a consequência "Vale o padrão: …".
 
-### 3g — Cliente obedece os prazos
+### 3g — Cliente obedece os prazos — **próximo**
 - Telas do cliente (meus agendamentos, página do lembrete): sem Remarcar/Cancelar depois do prazo, com o aviso e o WhatsApp/telefone da casa; mensagens dos códigos novos no fluxo de agendar.
 
 **Fora deste marco:** prévia "o que o cliente vê" nos Horários (TBD no PRD), sombra da pausa na agenda (marco 6).

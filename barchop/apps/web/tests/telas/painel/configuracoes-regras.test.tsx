@@ -38,7 +38,8 @@ describe("regras de agendamento", () => {
   it("cada escolha diz o que o cliente vai ver", async () => {
     montarPainel(<RegrasDeAgendamento />, criarApiClientFalso());
 
-    await userEvent.click(await screen.findByRole("radio", { name: "30 min" }));
+    await screen.findByRole("group", { name: /intervalo entre horários/i });
+    await userEvent.click(grupo(/intervalo entre horários/i).getByRole("radio", { name: "30 min" }));
     await userEvent.click(grupo(/antecedência mínima/i).getByRole("radio", { name: "2 h" }));
     await userEvent.click(grupo(/mesmo dia/i).getByRole("radio", { name: "Não" }));
     await userEvent.click(grupo(/até quando a agenda abre/i).getByRole("radio", { name: "30 dias" }));
@@ -55,7 +56,8 @@ describe("regras de agendamento", () => {
     const falso = criarApiClientFalso();
     montarPainel(<RegrasDeAgendamento />, falso);
 
-    await userEvent.click(await screen.findByRole("radio", { name: "1 h" }));
+    await screen.findByRole("group", { name: /intervalo entre horários/i });
+    await userEvent.click(grupo(/intervalo entre horários/i).getByRole("radio", { name: "1 h" }));
     await userEvent.click(grupo(/caber antes de fechar/i).getByRole("radio", { name: "Não" }));
     await userEvent.click(grupo(/até quando a agenda abre/i).getByRole("radio", { name: "14 dias" }));
     await userEvent.click(screen.getByRole("button", { name: /salvar regras de marcar/i }));
@@ -74,6 +76,7 @@ describe("regras de agendamento", () => {
     const falso = criarApiClientFalso();
     montarPainel(<RegrasDeAgendamento />, falso);
 
+    await screen.findByRole("group", { name: /cliente remarca/i });
     await userEvent.click(grupo(/cliente remarca/i).getByRole("radio", { name: "6 h" }));
     await userEvent.click(grupo(/cliente cancela/i).getByRole("radio", { name: "12 h" }));
     await userEvent.click(screen.getByRole("button", { name: /salvar prazos/i }));

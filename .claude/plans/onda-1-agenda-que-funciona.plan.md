@@ -4,16 +4,18 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-07) — vale mais que a seção de 2026-10-05 abaixo
+## RETOMAR AQUI (2026-10-07, G1 no ar) — vale mais que as seções abaixo
 
-**Estado:** `main` em PR #54, nada pela metade em branch nenhuma.
+**Produção no ar** (G1, plano `onda-1-g1-infra.plan.md`): PRs #56 (G1a: web standalone, `criar-suporte` no bundle) e #57 (G1b: `barchop/infra/`) — **merge pelo dono** (o modo automático bloqueia `gh pr merge`). Na VM (`~/BarChop`, branch `onda-1-bloco-g1b` até o merge; depois `git checkout main && git pull`): compose com postgres 18, migrar, api, web, caddy e backup; certificados da raiz e do coringa emitidos; `api.`, raiz e `painel.` respondendo 200; log do Caddy com `/lembretes/***`. VM: Ubuntu 26.04 ARM, 1 OCPU, 5,8 GB + swap 4 GB; iptables com 80/443/443udp salvos; Docker 29.8. Bucket `barchop-imagens` (namespace `grljjvpwv9ed`, `sa-saopaulo-1`), Customer Secret Key e chave do Resend nos `infra/.env` e `infra/api.env` da VM (só lá). Token da Cloudflare com Zone:Read + DNS:Edit. Acesso à VM pelo MobaXterm do PC de casa; repo público, clone por HTTPS.
 
-- **Onda 1:** blocos A–F, F4 e G2 completos. DNS completo (domínio e coringa → VM `137.131.214.186`, Resend verificado, token da Cloudflare criado). Faltam **G1** (infra na VM: compose + Caddy coringa DNS-01; só do PC de casa, onde estão as chaves SSH; VM Ubuntu ARM/aarch64, montar imagens na própria VM, Caddy com plugin `caddy-dns/cloudflare`), **G3** (GR Barber entra com `lembrete_ativo = false`) e **G4** (docs).
+**Falta no G1:** criar a conta de suporte de produção (`infra/README.md`), ver as telas no navegador (inclusive as do F4c/F4d) e testar um upload de capa (o S3 nunca rodou de verdade).
+
+- **Onda 1:** blocos A–F, F4, G1 e G2 completos. Faltam **G3** (GR Barber entra com `lembrete_ativo = false`) e **G4** (docs).
 - **Onda 1s (site):** #40 (home em `/`) feito; faltam `onda-1s-b` (termos + aceite no cadastro) e `onda-1s-c` (robots/sitemap/docs). Plano `onda-1s-site-de-marketing.plan.md`.
 - **Serviços com foto e descrição:** #42–#44 feitos (plano `servicos-com-foto-e-descricao.plan.md`). Candidato: foto + descrição também na PerfilDaBarbearia.
 - **Painel v2** (PRD `.claude/prds/painel-v2.prd.md`, 6 marcos): **marco 1** peças comuns completo (#45–#47, plano `painel-v2-pecas-comuns.plan.md`); **marco 2** Configurações em decisões completo (#48–#51, plano `painel-v2-configuracoes.plan.md`) + ajustes visuais pedidos pelo dono (#52 cartão em pé, #53 Identidade com os 2 quadros lado a lado, #54 "Próxima área faltando" no canto inferior direito).
 
-**Próximo — perguntar ao dono qual:** marco 3 do painel v2 (**Regras de agendamento**, inclui pausa do almoço e exceções por dia; criar plano com `ecc:plan` a partir do PRD do painel v2) **ou** G1 (só no PC de casa).
+**Próximo — perguntar ao dono qual:** marco 3 do painel v2 (**Regras de agendamento**, inclui pausa do almoço e exceções por dia; criar plano com `ecc:plan` a partir do PRD do painel v2) **ou** G3 (GR Barber).
 
 **Ao trocar de máquina:** `git checkout main && git pull`, `pnpm install`, `migrate deploy` nos bancos dev **e** test (em `packages/database`; `.env.test` tem BOM; migrations novas desde 05/10: `lembrete_ativo`, `servico_descricao_foto`, `areas_decididas`, `areas_decididas_horarios`), `prisma generate` com a API de dev desligada (EPERM na DLL). Subir: `pnpm dev` em `apps/api` (3333) e `apps/web` (3000).
 

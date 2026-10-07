@@ -316,22 +316,11 @@ config compartilhada em `packages/config/eslint.mjs`.
   convite devolvem; o esqueci-a-senha do barbeiro ficou no formato
   antigo. O painel não depende disso (lê o papel no `GET /me`), mas o
   contrato fica desigual.
-- **O log do proxy vai gravar o token do lembrete.** A API oculta o
-  token no próprio log (`ocultarTokenDoLembrete`), mas o caminho
-  `/<slug>/lembrete/<token>` do site e o `/lembretes/<token>` da API
-  passam pelo proxy da OCI, que loga a URL. Configurar o Caddy pra não
-  logar (ou mascarar) esses caminhos no bloco G.
 - **Mudar a antecedência não move os lembretes já agendados.** Ela é
   lida quando o lembrete entra na fila; a tela de Configurações avisa.
 - **Cliente só com telefone não recebe lembrete automático.** Depende
   do barbeiro tocar em "Lembrar pelo WhatsApp" até a Meta sair do
   standby (ADR-0009).
-- **O bucket das imagens ainda não existe.** O E2 grava capa e fotos
-  por chave e serve pelo próprio armazenamento; em produção a API não
-  sobe sem `ARMAZENAMENTO=s3`. No G: criar o bucket no Object Storage da
-  OCI com leitura pública dos objetos e **sem** listagem, gerar a chave
-  de acesso (Customer Secret Key) e preencher as variáveis `S3_*` e
-  `URL_PUBLICA_DAS_IMAGENS` (ver `apps/api/.env.example`).
 - **Imagem trocada deixa arquivo órfão quando o apagar falha.** A troca
   apaga o antigo em melhor-esforço (falha só vai pro log). Uma limpeza
   periódica do bucket, contra as chaves que o banco referencia, fecha.
@@ -342,13 +331,19 @@ config compartilhada em `packages/config/eslint.mjs`.
   inteiro como um cliente só — no G, isentar o IP do web ou limitar por
   outro critério. Um `cache()` do React compartilhado entre os dois
   deixaria uma chamada só.
-- **O tenant por host precisa de configuração no G.** Sem
-  `NEXT_PUBLIC_URL_DO_SITE` no build do web, nada muda e as barbearias
-  continuam em `/<slug>`; sem `URL_DAS_BARBEARIAS` na API, o link do
-  lembrete aponta pro caminho no host do painel. Em produção: as duas
-  variáveis, o DNS coringa `*.barchop.com.br` e o Caddy repassando o
-  `Host` original (o proxy decide por ele). O `NEXT_PUBLIC_` é embutido
-  no build — a imagem do web é por ambiente.
+- **Os ícones que o navegador pede viram consulta de barbearia.**
+  `/favicon.png` e `/apple-touch-icon.png` na raiz não estão na lista
+  que o `proxy.ts` deixa passar: caem em `/[slug]`, e o servidor do Next
+  pede `GET /barbearias/favicon.png` à API (400 de slug inválido), a cada
+  página. Visto no primeiro dia em produção. Fecha com os ícones de
+  verdade no `app/` ou tirando esses caminhos do matcher.
+- **O backup fica no mesmo disco da VM.** O `pg_dump` diário
+  (`infra/backup/backup.sh`) protege de erro e de migração ruim, não da
+  perda do disco. Fecha copiando cada dump pro bucket da OCI.
+- **A imagem da API leva o node_modules inteiro.** Com o
+  `node-linker=hoisted` (por causa do Expo), o `--filter` do install não
+  reduz nada: os 830 pacotes, Expo junto, vão pra imagem. Funciona; só
+  pesa no disco e no tempo de build.
 - **O EXIF só sai pelo navegador.** Quem tira os metadados (GPS
   inclusive) é a regravação no canvas da tela; um envio que pule a tela
   chega com eles. Aceitável enquanto só o dono envia; HEIC do iPhone não

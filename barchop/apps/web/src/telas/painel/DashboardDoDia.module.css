@@ -1,5 +1,9 @@
 .pagina {
   display: grid;
+  /* `minmax(0, 1fr)` e não o `auto` implícito: o LadoALado lá dentro
+     tem mínimo de 380px por coluna, e item de grid não encolhe abaixo
+     do próprio mínimo — no celular de 375px a página vazava pro lado. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--espaco-lg);
   align-content: start;
 }

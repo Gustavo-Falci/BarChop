@@ -208,6 +208,131 @@ describe("bloqueio na disponibilidade", () => {
   });
 });
 
+// Painel v2, marco 3: a pausa do almoço mora na jornada de cada membro
+// e vale nos três caminhos — o dia, o mês e o POST —, pro cliente e pro
+// painel (é horário, não regra do cliente).
+describe("pausa na disponibilidade", () => {
+  const PAUSA_NA_QUINTA = jornadaCom({
+    diaSemana: 4,
+    modo: "barbearia",
+    pausaInicio: "12:00",
+    pausaFim: "13:00",
+  });
+
+  it("a pausa tira a faixa dos horários, e marcar nela dá 422 horario_na_pausa", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await putJornada(app, agenda, agenda.ana.barbeiroId, PAUSA_NA_QUINTA);
+
+    const { horarios } = (await horariosDe(app, agenda, agenda.ana.barbeiroId)).json();
+    const naPausa = await agendarPublico(app, agenda, agenda.ana.barbeiroId, "12:15");
+    // Começa antes e invade a pausa: 11:45 + 30 min = 12:15.
+    const invadindo = await agendarPublico(app, agenda, agenda.ana.barbeiroId, "11:45");
+
+    expect(horarios).toContain("11:30");
+    expect(horarios).not.toContain("11:45");
+    expect(horarios).not.toContain("12:00");
+    expect(horarios).not.toContain("12:45");
+    expect(horarios).toContain("13:00");
+    expect(naPausa.statusCode).toBe(422);
+    expect(naPausa.json().erro).toBe("horario_na_pausa");
+    expect(invadindo.json().erro).toBe("horario_na_pausa");
+    await app.close();
+  });
+
+  it("a pausa é de quem tem: a agenda do dono segue inteira", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await putJornada(app, agenda, agenda.ana.barbeiroId, PAUSA_NA_QUINTA);
+
+    const doDono = (await horariosDe(app, agenda, agenda.dono.barbeiroId)).json().horarios;
+
+    expect(doDono).toContain("12:00");
+    await app.close();
+  });
+
+  it("o painel também não marca em cima da pausa", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await putJornada(app, agenda, agenda.ana.barbeiroId, PAUSA_NA_QUINTA);
+    const cliente = (
+      await app.inject({
+        method: "POST",
+        url: "/clientes",
+        headers: auth(agenda.dono.token),
+        payload: { nome: "Maria", telefone: "11999990002" },
+      })
+    ).json();
+
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/agendamentos",
+      headers: auth(agenda.dono.token),
+      payload: {
+        barbeiroId: agenda.ana.barbeiroId,
+        clienteId: cliente.id,
+        servicoIds: [agenda.corte.id],
+        data: QUINTA,
+        horaInicio: "12:00",
+      },
+    });
+
+    expect(resposta.json().erro).toBe("horario_na_pausa");
+    await app.close();
+  });
+
+  it("pausa que cobre o expediente inteiro some do calendário do mês", async () => {
+    // Setembro de 2037: dia 3 é quinta; dia 2 é quarta.
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await putJornada(
+      app,
+      agenda,
+      agenda.ana.barbeiroId,
+      jornadaCom({ diaSemana: 4, modo: "barbearia", pausaInicio: "09:00", pausaFim: "18:00" })
+    );
+    const params = new URLSearchParams({ barbeiroId: agenda.ana.barbeiroId, mes: "2037-09" });
+    params.append("servicoIds", agenda.corte.id);
+
+    const { dias } = (
+      await app.inject({
+        method: "GET",
+        url: `/barbearias/${agenda.dono.slug}/disponibilidade/mes?${params}`,
+      })
+    ).json();
+
+    expect(dias["2037-09-03"]).toBe(false);
+    expect(dias["2037-09-02"]).toBe(true);
+    await app.close();
+  });
+
+  it("no qualquer um, quem está na pausa não é escolhido", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    // O dono não atende: sobra a Ana, e na pausa dela ninguém atende.
+    await app.inject({
+      method: "PATCH",
+      url: `/equipe/${agenda.dono.barbeiroId}`,
+      headers: auth(agenda.dono.token),
+      payload: { atende: false },
+    });
+    await putJornada(app, agenda, agenda.ana.barbeiroId, PAUSA_NA_QUINTA);
+    const params = new URLSearchParams({ data: QUINTA });
+    params.append("servicoIds", agenda.corte.id);
+
+    const { horarios } = (
+      await app.inject({
+        method: "GET",
+        url: `/barbearias/${agenda.dono.slug}/disponibilidade?${params}`,
+      })
+    ).json();
+
+    expect(horarios).toContain("11:30");
+    expect(horarios).not.toContain("12:00");
+    await app.close();
+  });
+});
+
 describe("serviços e atendimento do membro", () => {
   it("serviço que o membro não faz: 422 servico_fora_do_profissional, na consulta e ao marcar", async () => {
     const app = buildApp();

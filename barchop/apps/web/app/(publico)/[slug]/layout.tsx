@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { ProvedorDaApi } from "../../../src/api/ProvedorDaApi";
 import { BarraDaBarbearia } from "../../../src/fluxo/BarraDaBarbearia";
 import { metadataDaBarbearia } from "../../../src/fluxo/metadataDaBarbearia";
-import { apiPublica } from "../../../src/sessao/cliente-da-api";
+import { slugAtual } from "../../../src/fluxo/slugAtual";
 import { destinoDoSlugAntigo } from "../../../src/tenant/endereco";
 import { ProvedorDoHost } from "../../../src/tenant/ProvedorDoHost";
 import { CABECALHO_DA_BARBEARIA, CABECALHO_DO_CAMINHO } from "../../../src/tenant/rota";
@@ -21,23 +21,6 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   return metadataDaBarbearia(slug);
-}
-
-// O mesmo teto da metadata: com a API travada, a página abre sem o
-// redirect em vez de esperar.
-const TEMPO_MAXIMO_MS = 3000;
-
-// O slug atual da barbearia que este slug acha — o próprio, ou o novo
-// quando ele é um antigo (a API acha pelos dois). Qualquer falha devolve
-// null e a página segue: quem explica slug inexistente é a tela.
-async function slugAtual(slug: string): Promise<string | null> {
-  const comTeto: typeof globalThis.fetch = (entrada, init) =>
-    globalThis.fetch(entrada, { ...init, signal: AbortSignal.timeout(TEMPO_MAXIMO_MS) });
-  try {
-    return (await apiPublica(comTeto).perfilDaBarbearia(slug)).slug;
-  } catch {
-    return null;
-  }
 }
 
 // A barra da barbearia mora aqui, e não em cada tela, pelo mesmo motivo

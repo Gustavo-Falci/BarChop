@@ -92,7 +92,9 @@ function Comunicacao() {
 
   return (
     <MolduraDaArea area="comunicacao" decididas={decididas} aviso={aviso}>
-      <div className={estilos.coluna}>
+      {/* A seção na largura toda, com os três campos lado a lado (as
+          telas usam a largura — pedido do dono). */}
+      <div className={estilos.ladoALado}>
         <Secao
           titulo="Como o cliente fala com você"
           descricao="Aparece na sua página pública, no bloco de contato. Deixe em branco o que não quiser mostrar."
@@ -102,28 +104,30 @@ function Comunicacao() {
             </Botao>
           }
         >
-          <Campo
-            rotulo="WhatsApp"
-            formato="telefone"
-            valor={whatsapp}
-            onChange={setWhatsapp}
-            erro={erro.whatsapp}
-          />
-          <Campo
-            rotulo="Telefone da barbearia"
-            formato="telefone"
-            valor={telefone}
-            onChange={setTelefone}
-            erro={erro.telefone}
-          />
-          <Campo
-            rotulo="Instagram"
-            apoio="Só o @, sem o link. Exemplo: gr.barber"
-            autoComplete="off"
-            valor={instagram}
-            onChange={setInstagram}
-            erro={erro.instagram}
-          />
+          <div className={estilos.camposLadoALado}>
+            <Campo
+              rotulo="WhatsApp"
+              formato="telefone"
+              valor={whatsapp}
+              onChange={setWhatsapp}
+              erro={erro.whatsapp}
+            />
+            <Campo
+              rotulo="Telefone da barbearia"
+              formato="telefone"
+              valor={telefone}
+              onChange={setTelefone}
+              erro={erro.telefone}
+            />
+            <Campo
+              rotulo="Instagram"
+              apoio="Só o @, sem o link. Exemplo: gr.barber"
+              autoComplete="off"
+              valor={instagram}
+              onChange={setInstagram}
+              erro={erro.instagram}
+            />
+          </div>
         </Secao>
       </div>
     </MolduraDaArea>

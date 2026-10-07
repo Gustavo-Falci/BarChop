@@ -50,13 +50,6 @@
    campo de texto ainda é confortável de ler; a do horário é mais larga
    porque a linha do dia precisa caber nome (7rem) + "fechado" (8rem) +
    dois campos de hora (7.5rem cada) sem quebrar. */
-.coluna {
-  display: grid;
-  gap: var(--espaco-lg);
-  align-content: start;
-  max-width: 680px;
-}
-
 /* Duas seções lado a lado (Identidade: apresentação | endereço da
    página). Cada coluna com no mínimo 380px; abaixo disso — tablet
    estreito, celular — `auto-fit` empilha sem media query. `min(100%, …)`
@@ -67,6 +60,19 @@
   gap: var(--espaco-lg);
   align-items: start;
   max-width: 1240px;
+}
+
+/* Campos de uma seção lado a lado (Comunicação, Notificações, Seu
+   perfil): a seção ocupa a largura e os campos dividem a linha em vez de
+   descer um embaixo do outro. Cada um com no mínimo 240px; mais estreito,
+   empilham. Alinhados pela base: um campo com frase de apoio (o do
+   Instagram) teria a caixa mais baixa que os vizinhos se alinhasse pelo
+   topo. */
+.camposLadoALado {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--espaco-lg);
+  align-items: end;
 }
 
 /* Horários em duas colunas: rotina, datas especiais e pausas à

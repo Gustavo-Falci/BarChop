@@ -53,7 +53,7 @@ export function SeuPerfil({ comVoltar = true }: { comVoltar?: boolean }) {
         voltar={comVoltar ? { href: "/painel/configuracoes", rotulo: "Configurações" } : undefined}
       />
       {aviso ? <Aviso>{aviso}</Aviso> : null}
-      <div className={estilos.coluna}>
+      <div className={estilos.ladoALado}>
         <Secao
           titulo="Seus dados"
           acao={
@@ -62,8 +62,10 @@ export function SeuPerfil({ comVoltar = true }: { comVoltar?: boolean }) {
             </Botao>
           }
         >
-          <Campo rotulo="Seu nome" valor={nome} onChange={setNome} />
-          <Campo rotulo="Seu telefone" formato="telefone" valor={telefone} onChange={setTelefone} erro={erro} />
+          <div className={estilos.camposLadoALado}>
+            <Campo rotulo="Seu nome" valor={nome} onChange={setNome} />
+            <Campo rotulo="Seu telefone" formato="telefone" valor={telefone} onChange={setTelefone} erro={erro} />
+          </div>
         </Secao>
       </div>
     </div>

@@ -19,13 +19,17 @@ async function comUmAgendamento() {
   return falso;
 }
 
-function montar(falso: ReturnType<typeof criarApiClientFalso>) {
+function montar(falso: ReturnType<typeof criarApiClientFalso>, agora?: Date) {
   render(
     <ProvedorDaApi valor={falso}>
-      <MinhaConta />
+      <MinhaConta agora={agora} />
     </ProvedorDaApi>
   );
 }
+
+// O agendamento é dia 20 de setembro às 09:30; três horas antes, pelo
+// relógio do aparelho.
+const TRES_HORAS_ANTES = new Date(2026, 8, 20, 6, 30);
 
 describe("minha conta", () => {
   beforeEach(() => {
@@ -184,5 +188,51 @@ describe("minha conta", () => {
     expect(
       screen.queryByRole("button", { name: /remarcar/i })
     ).not.toBeInTheDocument();
+  });
+
+  describe("prazos da barbearia (painel v2, 3g)", () => {
+    it("dentro dos prazos, cancelar e remarcar continuam lá", async () => {
+      const falso = await comUmAgendamento();
+      falso.estado.perfil = { ...falso.estado.perfil, prazoCancelarHoras: 2, prazoRemarcarHoras: 2 };
+      montar(falso, TRES_HORAS_ANTES);
+
+      await waitFor(() => screen.getByText("20 de setembro"));
+      expect(screen.getByRole("button", { name: /cancelar/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /remarcar/i })).toBeInTheDocument();
+      expect(screen.queryByText(/prazo/i)).not.toBeInTheDocument();
+    });
+
+    it("passou o prazo de cancelar: some o Cancelar e aparece o WhatsApp da casa", async () => {
+      const falso = await comUmAgendamento();
+      falso.estado.perfil = { ...falso.estado.perfil, prazoCancelarHoras: 6, whatsapp: "(11) 98888-7777" };
+      montar(falso, TRES_HORAS_ANTES);
+
+      await waitFor(() => screen.getByText("20 de setembro"));
+      expect(screen.queryByRole("button", { name: /cancelar/i })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /remarcar/i })).toBeInTheDocument();
+      expect(screen.getByText(/o prazo pra cancelar pelo link acabou/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /whatsapp/i })).toHaveAttribute(
+        "href",
+        "https://wa.me/5511988887777"
+      );
+    });
+
+    it("passaram os dois prazos: nenhum botão, e sem WhatsApp vai o telefone", async () => {
+      const falso = await comUmAgendamento();
+      falso.estado.perfil = {
+        ...falso.estado.perfil,
+        prazoCancelarHoras: 24,
+        prazoRemarcarHoras: 6,
+        whatsapp: null,
+        telefone: "(11) 3333-4444",
+      };
+      montar(falso, TRES_HORAS_ANTES);
+
+      await waitFor(() => screen.getByText("20 de setembro"));
+      expect(screen.queryByRole("button", { name: /cancelar/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /remarcar/i })).not.toBeInTheDocument();
+      expect(screen.getByText(/o prazo pra alterar pelo link acabou/i)).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /\(11\) 3333-4444/ })).toHaveAttribute("href", "tel:1133334444");
+    });
   });
 });

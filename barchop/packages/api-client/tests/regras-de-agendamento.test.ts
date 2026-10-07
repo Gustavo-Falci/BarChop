@@ -31,4 +31,34 @@ describe("regras de agendamento no dublê", () => {
 
     expect(salva.areasDecididas).toEqual(["regras_de_agendamento"]);
   });
+
+  it("o lembrete traz o prazo de cancelar e o contato da barbearia", async () => {
+    const api = criarApiClientFalso({
+      agendamentos: [
+        {
+          id: "a1",
+          data: "2026-10-10",
+          horaInicio: "10:00",
+          horaFim: "10:30",
+          status: "confirmado",
+          origem: "cliente",
+          observacoes: null,
+          servicos: [{ servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 }],
+        },
+      ],
+      lembretes: { "token-a1": "a1" },
+    });
+    api.estado.perfil = { ...api.estado.perfil, prazoCancelarHoras: 12, whatsapp: "(11) 98888-7777" };
+
+    const lembrete = await api.publico.lembrete("token-a1");
+
+    expect(lembrete.barbearia).toEqual({
+      nome: "GR Barber",
+      slug: "gr-barber",
+      prazoCancelarHoras: 12,
+      whatsapp: "(11) 98888-7777",
+      telefone: "(11) 3333-4444",
+    });
+  });
 });
+

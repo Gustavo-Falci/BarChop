@@ -42,7 +42,15 @@ describe("GET /lembretes/:token", () => {
         horaInicio: "10:00",
         status: "confirmado",
         presencaConfirmadaEm: null,
-        barbearia: { nome: "Barbearia um", slug: "barbearia-um" },
+        // O prazo de cancelar e o contato (painel v2, 3g): passado o
+        // prazo, a tela esconde o Cancelar e mostra com quem falar.
+        barbearia: {
+          nome: "Barbearia um",
+          slug: "barbearia-um",
+          prazoCancelarHoras: 0,
+          whatsapp: null,
+          telefone: null,
+        },
         barbeiro: { nome: "Barbeiro um" },
         servicos: [{ nome: "Corte" }],
       },

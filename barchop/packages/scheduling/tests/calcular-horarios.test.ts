@@ -112,3 +112,79 @@ describe("calcularHorariosDisponiveis", () => {
     expect(horarios).toContain("10:45");
   });
 });
+
+// "Serviço cabe antes de fechar" (painel v2, marco 3): desligado, o
+// atendimento pode COMEÇAR antes de fechar e terminar depois. Só a ponta
+// do fechamento muda — agendamento, pausa e bloqueio seguem inteiros.
+describe("cabeAntesDeFechar", () => {
+  it("ligado (o padrão) termina até o fechamento, como sempre", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [],
+      duracaoTotalMinutos: 45,
+      cabeAntesDeFechar: true,
+    });
+
+    expect(horarios[horarios.length - 1]).toBe("17:15");
+  });
+
+  it("desligado, começa até o último horário da grade antes de fechar", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [],
+      duracaoTotalMinutos: 45,
+      cabeAntesDeFechar: false,
+    });
+
+    expect(horarios.slice(-4)).toEqual(["17:00", "17:15", "17:30", "17:45"]);
+  });
+
+  it("desligado, segue respeitando o que está ocupado no meio do dia", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [{ horaInicio: "10:00", horaFim: "11:00" }],
+      duracaoTotalMinutos: 45,
+      cabeAntesDeFechar: false,
+    });
+
+    // 09:30 + 45 = 10:15, invade o agendamento das 10:00.
+    expect(horarios).not.toContain("09:30");
+    expect(horarios).toContain("09:15");
+  });
+
+  it("desligado, não estica pra cima de um ocupado depois do fechamento", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [{ horaInicio: "18:15", horaFim: "19:00" }],
+      duracaoTotalMinutos: 45,
+      cabeAntesDeFechar: false,
+    });
+
+    // 17:30 + 45 = 18:15, encosta; 17:45 invadiria.
+    expect(horarios[horarios.length - 1]).toBe("17:30");
+  });
+
+  it("desligado, nunca passa da meia-noite", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: { horaAbertura: "22:00", horaFechamento: "23:59", fechado: false },
+      agendamentosExistentes: [],
+      duracaoTotalMinutos: 30,
+      cabeAntesDeFechar: false,
+    });
+
+    // 23:30 + 30 = 24:00 viraria o dia; o agendamento não atravessa.
+    expect(horarios[horarios.length - 1]).toBe("23:15");
+  });
+
+  it("desligado, respeita a grade escolhida", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [],
+      duracaoTotalMinutos: 45,
+      intervaloMinutos: 30,
+      cabeAntesDeFechar: false,
+    });
+
+    expect(horarios.slice(-2)).toEqual(["17:00", "17:30"]);
+  });
+});

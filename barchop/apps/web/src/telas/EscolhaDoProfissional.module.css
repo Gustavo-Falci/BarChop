@@ -52,3 +52,15 @@
   color: var(--cor-ink);
   font-weight: 700;
 }
+
+/* Desktop: os profissionais em grade, na largura do fluxo (as telas usam
+   a largura — pedido do dono). */
+@media (min-width: 900px) {
+  .pagina {
+    max-width: var(--fluxo-largura);
+  }
+
+  .lista {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}

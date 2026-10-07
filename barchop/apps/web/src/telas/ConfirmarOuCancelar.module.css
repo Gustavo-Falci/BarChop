@@ -14,3 +14,31 @@
 .quando { font-size: var(--texto-lg); }
 .estado { font-weight: 600; }
 .acoes { display: grid; gap: var(--espaco-sm); }
+
+/* Desktop: o horário à esquerda, o que fazer com ele à direita (as telas
+   usam a largura — pedido do dono). */
+@media (min-width: 900px) {
+  .pagina {
+    max-width: var(--fluxo-largura);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: var(--espaco-xl);
+  }
+
+  .pagina > * {
+    grid-column: 2;
+  }
+
+  .pagina > h1 {
+    grid-column: 1 / -1;
+  }
+
+  .resumo {
+    grid-column: 1;
+    grid-row: 2 / span 3;
+    padding: var(--espaco-lg);
+    border: var(--borda-padrao) solid var(--cor-ink);
+    border-radius: var(--raio-lg);
+    background: var(--cor-surface);
+  }
+}

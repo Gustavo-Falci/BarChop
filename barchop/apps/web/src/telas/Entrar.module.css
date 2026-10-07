@@ -35,3 +35,21 @@
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
+
+/* Desktop: os campos dividem a linha, na largura do fluxo (as telas usam
+   a largura — pedido do dono); explicação, botão e links na linha toda. */
+@media (min-width: 900px) {
+  .pagina {
+    max-width: var(--fluxo-largura);
+  }
+
+  .formulario {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    align-items: end;
+  }
+
+  .formulario > :not(:has(input)) {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import estilos from "./Aviso.module.css";
 
-type Tom = "erro" | "sucesso";
+type Tom = "erro" | "sucesso" | "atencao";
 
 // `role="alert"` porque a mensagem aparece depois de uma ação da
 // pessoa: sem ele, quem usa leitor de tela não fica sabendo.
@@ -10,7 +10,9 @@ type Tom = "erro" | "sucesso";
 // nenhuma das telas que já usam o componente muda de aparência. O
 // "sucesso" entrou pra confirmar o cadastro: navegar pra outra tela é
 // feedback implícito, e quem chega lá não distingue "acabei de criar"
-// de "abri um cadastro antigo".
+// de "abri um cadastro antigo". O "atencao" é pra deu certo, mas tem
+// consequência a cuidar (painel v2, marco 3: data especial salva com
+// agendamentos fora do horário novo).
 export function Aviso({
   children,
   tom = "erro",

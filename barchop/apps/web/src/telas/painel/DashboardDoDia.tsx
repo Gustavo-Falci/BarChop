@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
@@ -9,10 +10,13 @@ import { Vazio } from "../../componentes/Vazio";
 import { formatarPreco } from "../../componentes/ItemDeServico";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
+import { linkDaBarbearia } from "../../painel/compartilhar";
 import { ocupacao, previstoDoDia } from "../../painel/metricas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./DashboardDoDia.module.css";
+import { CartaoDoLink } from "./hoje/CartaoDoLink";
+import { JanelaDeCompartilhar } from "./hoje/JanelaDeCompartilhar";
 import { TrilhaDoOnboarding } from "./TrilhaDoOnboarding";
 
 // `agora` por parâmetro, como toda tela que olhe relógio: fake timers
@@ -21,11 +25,28 @@ import { TrilhaDoOnboarding } from "./TrilhaDoOnboarding";
 export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
   const router = useRouter();
   const api = useApiDoPainel();
-  const { perfil } = usePainel();
+  const { perfil, slug } = usePainel();
   const hoje = hojeIso(agora);
 
   const agendamentos = useRequisicao(() => api.barbeiro.agendamentosDoDia(hoje), [hoje]);
   const horarios = useRequisicao(() => api.barbeiro.horarios(), []);
+  // O nome da casa vai na mensagem do WhatsApp. Sem ele o cartão do link
+  // não aparece — o resto do dia não depende disso.
+  const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
+  const [compartilhando, setCompartilhando] = useState(false);
+  const [linkCompartilhado, setLinkCompartilhado] = useState(false);
+
+  // O passo "Seu link" da trilha: marcar é ajuda, não o que o dono veio
+  // fazer — se a API falhar, o link já foi compartilhado e a janela
+  // segue; só a trilha não fica sabendo.
+  async function marcarLinkCompartilhado() {
+    setLinkCompartilhado(true);
+    try {
+      await api.barbeiro.marcarLinkCopiado();
+    } catch {
+      // Ver acima: sem aviso de propósito.
+    }
+  }
 
   if (agendamentos.erro) {
     return <Aviso>{agendamentos.erro.mensagem || "Não foi possível carregar o dia agora."}</Aviso>;
@@ -40,6 +61,8 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
   // Com mais de um profissional no dia, cada linha diz com quem; com um
   // só, o nome repetido em toda linha seria ruído.
   const comEquipe = new Set(doDia.map((agendamento) => agendamento.barbeiro.id)).size > 1;
+  // O endereço inteiro, que abre fora do painel (WhatsApp, QR).
+  const link = slug ? linkDaBarbearia(slug, process.env.NEXT_PUBLIC_URL_DO_SITE, window.location.origin) : null;
 
   return (
     <div className={estilos.pagina}>
@@ -55,7 +78,23 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
 
       {/* Só pro dono: a rota da trilha é dele, e os passos apontam pra
           telas que só ele abre. */}
-      {perfil.papel === "dono" ? <TrilhaDoOnboarding /> : null}
+      {perfil.papel === "dono" ? (
+        <TrilhaDoOnboarding
+          linkCompartilhado={linkCompartilhado}
+          aoCompartilharLink={() => setCompartilhando(true)}
+        />
+      ) : null}
+
+      {link && barbearia.dados ? <CartaoDoLink link={link} aoCompartilhar={() => setCompartilhando(true)} /> : null}
+      {compartilhando && link && barbearia.dados ? (
+        <JanelaDeCompartilhar
+          link={link}
+          nome={barbearia.dados.nome}
+          slug={slug}
+          aoCompartilhar={marcarLinkCompartilhado}
+          aoFechar={() => setCompartilhando(false)}
+        />
+      ) : null}
 
       <div className={estilos.numeros}>
         <Estatistica numero={String(doDia.length)} legenda="agendamentos hoje" />

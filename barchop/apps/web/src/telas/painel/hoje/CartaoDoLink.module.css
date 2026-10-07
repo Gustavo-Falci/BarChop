@@ -1,0 +1,81 @@
+/* O cartão no idioma do painel: borda cheia e sombra offset sem
+   desfoque. Texto à esquerda, QR à direita; no celular estreito o QR
+   desce. */
+.cartao {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--espaco-md);
+  align-items: center;
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+@media (max-width: 420px) {
+  .cartao {
+    grid-template-columns: 1fr;
+  }
+}
+
+.texto {
+  display: grid;
+  gap: var(--espaco-xs);
+  justify-items: start;
+  min-width: 0;
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.apoio {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.link {
+  font-size: var(--texto-sm);
+  overflow-wrap: anywhere;
+}
+
+/* O QR sempre em fundo branco, nos dois temas: a câmera lê módulo
+   escuro sobre claro. */
+.qr {
+  width: 120px;
+  height: 120px;
+  padding: 4px;
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: #fff;
+}
+
+.qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.acao {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--espaco-xs);
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.acao:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}

@@ -1,0 +1,105 @@
+.janela {
+  width: min(720px, calc(100vw - 2 * var(--espaco-md)));
+  max-height: calc(100dvh - 2 * var(--espaco-md));
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  box-shadow: 0 6px 0 var(--cor-shadow);
+}
+
+.janela::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-md);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+/* QR grande à esquerda, ações à direita; no celular, um embaixo do
+   outro. */
+.corpo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--espaco-md);
+  align-items: start;
+}
+
+.qr {
+  justify-self: center;
+  width: 100%;
+  max-width: 280px;
+  aspect-ratio: 1;
+  padding: 6px;
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: #fff;
+}
+
+.qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.acoes {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.link {
+  font-size: var(--texto-sm);
+  overflow-wrap: anywhere;
+}
+
+.principal,
+.secundaria,
+.fechar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.principal {
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+}
+
+.secundaria,
+.fechar {
+  background: transparent;
+  color: var(--cor-ink);
+}
+
+.principal:focus-visible,
+.secundaria:focus-visible,
+.fechar:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.aviso {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

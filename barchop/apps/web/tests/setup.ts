@@ -28,3 +28,16 @@ vi.mock("next/navigation", () => ({
   usePathname: () => navegacaoFalsa.pathname,
   useRouter: () => rotadorFalso,
 }));
+
+// O jsdom não implementa o <dialog> modal: sem `showModal` e `close`, a
+// janela de compartilhar (painel v2, marco 4) quebraria em todo teste.
+// O dublê só abre e fecha — foco preso e Esc são do navegador.
+if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+    this.removeAttribute("open");
+    this.dispatchEvent(new Event("close"));
+  };
+}

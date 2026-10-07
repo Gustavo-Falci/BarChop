@@ -108,16 +108,18 @@ export function ListaDeServicos() {
           ) : null}
 
           <Tabela
-            cabecalho={["Nome", "Duração", "Preço", ""]}
+            // Na largura toda, com categoria e descrição (as telas usam a
+            // largura — pedido do dono).
+            cabecalho={["Nome", "Categoria", "Descrição", "Duração", "Preço", ""]}
             // A quarta coluna voltou, mas com outro conteúdo: antes era
             // o chip de "inativo" — vazio em toda linha ativa —, agora
             // é a seta de abrir, que está em TODAS as linhas. Coluna
             // estreita e sempre preenchida, e não 266px de nada no fim
             // da tabela.
-            larguras={["50%", "20%", "22%", "8%"]}
+            larguras={["26%", "14%", "32%", "10%", "10%", "8%"]}
             // Duração e preço são número: à direita, para a vírgula de
             // "R$ 40,00" e a de "R$ 180,00" caírem na mesma coluna.
-            alinhamentos={["inicio", "fim", "fim", "inicio"]}
+            alinhamentos={["inicio", "inicio", "inicio", "fim", "fim", "inicio"]}
             vazio="Nenhum serviço cadastrado ainda."
             dicaVazio="Sem serviço cadastrado ninguém consegue agendar — é ele que define quanto tempo o horário ocupa."
             acaoVazio={
@@ -146,6 +148,8 @@ export function ListaDeServicos() {
                   {servico.nome}
                   {servico.ativo ? null : <Chip tom="neutro">inativo</Chip>}
                 </span>,
+                servico.categoria ?? "—",
+                servico.descricao ?? "—",
                 `${servico.duracaoMinutos} min`,
                 formatarPreco(servico.preco),
                 // Sem a seta pra quem a linha não abre: ela prometeria

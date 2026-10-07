@@ -13,6 +13,7 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
+import { CamposLadoALado } from "../../componentes/Colunas";
 import {
   EMAIL_MAX,
   NOME_MAX,
@@ -177,63 +178,66 @@ export function CadastroDeCliente() {
           void cadastrar();
         }}
       >
-        <Campo
-          rotulo="Nome"
-          placeholder="Nome e sobrenome"
-          autoComplete="name"
-          maxLength={NOME_MAX}
-          // O foco começa aqui porque a tela existe pra uma coisa só:
-          // quem chegou pelo "+ Novo cliente" já quer digitar.
-          autoFocus
-          valor={nome}
-          onChange={(proximo) => {
-            setNome(proximo);
-            setErroNome(undefined);
-            limparRespostaDoServidor();
-          }}
-          onBlur={() => setErroNome(aoSair(nome, validarNomeDeCliente))}
-          erro={erroNome}
-        />
-        {/* `inputMode="tel"` e não `type="tel"`: o teclado do celular
-            abre numérico do mesmo jeito, e o campo continua uma string
-            comum — que é o que o formatarTelefoneParcial do Campo
-            reescreve a cada tecla.
+        {/* Os três campos numa linha: as telas usam a largura (pedido do dono). */}
+        <CamposLadoALado>
+          <Campo
+            rotulo="Nome"
+            placeholder="Nome e sobrenome"
+            autoComplete="name"
+            maxLength={NOME_MAX}
+            // O foco começa aqui porque a tela existe pra uma coisa só:
+            // quem chegou pelo "+ Novo cliente" já quer digitar.
+            autoFocus
+            valor={nome}
+            onChange={(proximo) => {
+              setNome(proximo);
+              setErroNome(undefined);
+              limparRespostaDoServidor();
+            }}
+            onBlur={() => setErroNome(aoSair(nome, validarNomeDeCliente))}
+            erro={erroNome}
+          />
+          {/* `inputMode="tel"` e não `type="tel"`: o teclado do celular
+              abre numérico do mesmo jeito, e o campo continua uma string
+              comum — que é o que o formatarTelefoneParcial do Campo
+              reescreve a cada tecla.
 
-            A regra de formato vai no `apoio`, que fica, e não só no
-            placeholder, que some na primeira tecla — bem quando a
-            pessoa quer conferir o que digitou contra o exemplo. */}
-        <Campo
-          rotulo="Telefone"
-          apoio="Com DDD, do jeito que for — a gente formata."
-          formato="telefone"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="(11) 99999-8888"
-          valor={telefone}
-          onChange={(proximo) => {
-            setTelefone(proximo);
-            setErroTelefone(undefined);
-            limparRespostaDoServidor();
-          }}
-          onBlur={() => setErroTelefone(aoSair(telefone, validarTelefone))}
-          erro={erroTelefone}
-        />
-        <Campo
-          rotulo="E-mail (opcional)"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          placeholder="ana@exemplo.com"
-          maxLength={EMAIL_MAX}
-          valor={email}
-          onChange={(proximo) => {
-            setEmail(proximo);
-            setErroEmail(undefined);
-            limparRespostaDoServidor();
-          }}
-          onBlur={() => setErroEmail(aoSair(email, validarEmailDeCliente))}
-          erro={erroEmail}
-        />
+              A regra de formato vai no `apoio`, que fica, e não só no
+              placeholder, que some na primeira tecla — bem quando a
+              pessoa quer conferir o que digitou contra o exemplo. */}
+          <Campo
+            rotulo="Telefone"
+            apoio="Com DDD, do jeito que for — a gente formata."
+            formato="telefone"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="(11) 99999-8888"
+            valor={telefone}
+            onChange={(proximo) => {
+              setTelefone(proximo);
+              setErroTelefone(undefined);
+              limparRespostaDoServidor();
+            }}
+            onBlur={() => setErroTelefone(aoSair(telefone, validarTelefone))}
+            erro={erroTelefone}
+          />
+          <Campo
+            rotulo="E-mail (opcional)"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="ana@exemplo.com"
+            maxLength={EMAIL_MAX}
+            valor={email}
+            onChange={(proximo) => {
+              setEmail(proximo);
+              setErroEmail(undefined);
+              limparRespostaDoServidor();
+            }}
+            onBlur={() => setErroEmail(aoSair(email, validarEmailDeCliente))}
+            erro={erroEmail}
+          />
+          </CamposLadoALado>
 
         {/* O 409 é o único erro desta tela que tem conserto de um
             clique: o cadastro procurado existe, só não é este. O link

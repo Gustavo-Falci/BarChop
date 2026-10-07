@@ -1,18 +1,9 @@
-/* Teto próprio, como toda outra tela do painel declara (560 nos
-   formulários, 680 nos detalhes, 1120 no Novo agendamento). Esta era a
-   única lista sem um, então herdava os 1180px do `.container` — e três
-   colunas curtas não têm o que fazer com eles: medido no harness, com
-   uma linha sobravam 977px entre o fim do nome e o começo do preço, os
-   dois dados que se lê junto. A 760 o vão cai pra 557 e a tabela lê
-   como um bloco, não como uma folha com um buraco no meio.
-
-   Clientes continua sem teto de propósito: lá são quatro colunas com
-   telefone, data por extenso e duas ações — 1180 é usado de verdade. */
+/* Na largura toda (pedido do dono): a tabela ganhou categoria e
+   descrição pra usar o espaço. */
 .pagina {
   display: grid;
   gap: var(--espaco-lg);
   align-content: start;
-  max-width: 760px;
 }
 
 /* A contagem acompanha a tabela, não o cabeçalho: ela fala do que está

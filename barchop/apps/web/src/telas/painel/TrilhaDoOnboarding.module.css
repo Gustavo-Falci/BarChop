@@ -29,16 +29,19 @@
   white-space: nowrap;
 }
 
+/* Os passos lado a lado, como cartões (as telas usam a largura — pedido
+   do dono); no celular, um embaixo do outro. */
 .passos {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: var(--espaco-sm);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* Marca, texto e ações numa linha no desktop; no celular as ações caem
-   pra baixo do texto, alinhadas com ele. */
+/* Marca e texto na linha de cima; as ações embaixo, na largura do
+   cartão. */
 .passo {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -48,13 +51,6 @@
   border: var(--borda-hairline) solid var(--cor-line);
   border-radius: var(--raio-md);
   background: var(--cor-paper-soft);
-}
-
-@media (min-width: 720px) {
-  .passo {
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-  }
 }
 
 .marca {
@@ -101,17 +97,10 @@
 }
 
 .acoes {
-  grid-column: 2;
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: var(--espaco-sm);
-}
-
-@media (min-width: 720px) {
-  .acoes {
-    grid-column: 3;
-    justify-content: flex-end;
-  }
 }
 
 /* A ação principal do passo: pílula com a cor de destaque, alvo de

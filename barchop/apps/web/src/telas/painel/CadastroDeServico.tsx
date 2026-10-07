@@ -6,6 +6,7 @@ import type { ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { CamposLadoALado, LadoALado } from "../../componentes/Colunas";
 import { CampoDeImagem } from "../../componentes/CampoDeImagem";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
@@ -202,89 +203,95 @@ export function CadastroDeServico() {
     <div className={estilos.pagina}>
       <h1>{id ? "Editar serviço" : "Novo serviço"}</h1>
 
-      <Campo
-        rotulo="Nome"
-        placeholder="Corte"
-        valor={nome}
-        onChange={(proximo) => {
-          setNome(proximo);
-          setErroNome(undefined);
-        }}
-        erro={erroNome}
-      />
-      {/* `inputMode` e não `type="number"`: o teclado do celular abre
-          numérico do mesmo jeito, e o campo continua uma string — que é
-          o que o `paraMinutos`/`paraDecimal` validam. `type="number"`
-          traria as setinhas, a roda do mouse mudando o valor sem querer
-          e um `value` que o navegador esvazia sozinho quando a
-          digitação é inválida. */}
-      <Campo
-        rotulo="Duração em minutos"
-        inputMode="numeric"
-        placeholder="30"
-        valor={duracao}
-        onChange={(proximo) => {
-          setDuracao(proximo);
-          setErroDuracao(undefined);
-        }}
-        erro={erroDuracao}
-      />
-      <Campo
-        rotulo="Preço"
-        inputMode="decimal"
-        placeholder="40,00"
-        valor={preco}
-        onChange={(proximo) => {
-          setPreco(proximo);
-          setErroPreco(undefined);
-        }}
-        erro={erroPreco}
-      />
-      <Campo
-        rotulo="Categoria (opcional)"
-        apoio="Agrupa os serviços na sua página. Exemplo: Cabelo, Barba."
-        placeholder="Cabelo"
-        maxLength={60}
-        valor={categoria}
-        onChange={setCategoria}
-      />
-
-      {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
-          desenho do "Sobre a barbearia" em ConfiguracoesDaBarbearia. */}
-      <div className={estilos.campoLongo}>
-        <label className={estilos.rotulo} htmlFor="descricao">
-          Descrição (opcional)
-        </label>
-        <span className={estilos.apoio} id="descricao-apoio">
-          Aparece no cartão do serviço, na hora de agendar. Exemplo: máquina e
-          tesoura, acabamento na navalha.
-        </span>
-        <textarea
-          id="descricao"
-          className={estilos.area}
-          aria-describedby="descricao-apoio"
-          rows={3}
-          maxLength={DESCRICAO_MAX}
-          value={descricao}
-          onChange={(evento) => setDescricao(evento.target.value)}
+      {/* Nome, duração, preço e categoria numa linha: as telas usam a largura (pedido do dono). */}
+      <CamposLadoALado>
+        <Campo
+          rotulo="Nome"
+          placeholder="Corte"
+          valor={nome}
+          onChange={(proximo) => {
+            setNome(proximo);
+            setErroNome(undefined);
+          }}
+          erro={erroNome}
         />
-        <span className={estilos.contador}>
-          {descricao.length} de {DESCRICAO_MAX}
-        </span>
-      </div>
-
-      {/* Só na edição: a foto precisa de um serviço que já exista, como a
-          do membro. Salva sozinha, sem passar pelo Salvar. */}
-      {atual ? (
-        <CampoDeImagem
-          rotulo="Foto"
-          alt={`Foto de ${atual.nome}`}
-          urlAtual={atual.fotoUrl}
-          formato="quadrado"
-          enviar={(arquivo) => api.barbeiro.enviarFotoDoServico(atual.id, arquivo)}
-          remover={() => api.barbeiro.removerFotoDoServico(atual.id)}
+        {/* `inputMode` e não `type="number"`: o teclado do celular abre
+            numérico do mesmo jeito, e o campo continua uma string — que é
+            o que o `paraMinutos`/`paraDecimal` validam. `type="number"`
+            traria as setinhas, a roda do mouse mudando o valor sem querer
+            e um `value` que o navegador esvazia sozinho quando a
+            digitação é inválida. */}
+        <Campo
+          rotulo="Duração em minutos"
+          inputMode="numeric"
+          placeholder="30"
+          valor={duracao}
+          onChange={(proximo) => {
+            setDuracao(proximo);
+            setErroDuracao(undefined);
+          }}
+          erro={erroDuracao}
         />
-      ) : null}
+        <Campo
+          rotulo="Preço"
+          inputMode="decimal"
+          placeholder="40,00"
+          valor={preco}
+          onChange={(proximo) => {
+            setPreco(proximo);
+            setErroPreco(undefined);
+          }}
+          erro={erroPreco}
+        />
+        <Campo
+          rotulo="Categoria (opcional)"
+          apoio="Agrupa os serviços na sua página. Exemplo: Cabelo, Barba."
+          placeholder="Cabelo"
+          maxLength={60}
+          valor={categoria}
+          onChange={setCategoria}
+        />
+      </CamposLadoALado>
+
+      {/* Descrição e foto lado a lado. */}
+      <LadoALado>
+        {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
+            desenho do "Sobre a barbearia" em ConfiguracoesDaBarbearia. */}
+        <div className={estilos.campoLongo}>
+          <label className={estilos.rotulo} htmlFor="descricao">
+            Descrição (opcional)
+          </label>
+          <span className={estilos.apoio} id="descricao-apoio">
+            Aparece no cartão do serviço, na hora de agendar. Exemplo: máquina e
+            tesoura, acabamento na navalha.
+          </span>
+          <textarea
+            id="descricao"
+            className={estilos.area}
+            aria-describedby="descricao-apoio"
+            rows={3}
+            maxLength={DESCRICAO_MAX}
+            value={descricao}
+            onChange={(evento) => setDescricao(evento.target.value)}
+          />
+          <span className={estilos.contador}>
+            {descricao.length} de {DESCRICAO_MAX}
+          </span>
+        </div>
+
+        {/* Só na edição: a foto precisa de um serviço que já exista, como a
+            do membro. Salva sozinha, sem passar pelo Salvar. */}
+        {atual ? (
+          <CampoDeImagem
+            rotulo="Foto"
+            alt={`Foto de ${atual.nome}`}
+            urlAtual={atual.fotoUrl}
+            formato="quadrado"
+            enviar={(arquivo) => api.barbeiro.enviarFotoDoServico(atual.id, arquivo)}
+            remover={() => api.barbeiro.removerFotoDoServico(atual.id)}
+          />
+        ) : null}
+      </LadoALado>
 
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 

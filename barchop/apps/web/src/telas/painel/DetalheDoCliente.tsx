@@ -12,6 +12,8 @@ import {
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { LadoALado } from "../../componentes/Colunas";
+import { Secao } from "../../componentes/Secao";
 import { Tabela } from "../../componentes/Tabela";
 import { useRequisicao } from "../../api/useRequisicao";
 import {
@@ -144,76 +146,85 @@ export function DetalheDoCliente() {
         </Aviso>
       ) : null}
 
-      <Campo
-        rotulo="Nome"
-        maxLength={NOME_MAX}
-        valor={nome}
-        onChange={(proximo) => {
-          setNome(proximo);
-          setErroNome(undefined);
-        }}
-        erro={erroNome}
-      />
-      <Campo
-        rotulo="Telefone"
-        apoio="Com DDD, do jeito que for — a gente formata."
-        formato="telefone"
-        inputMode="tel"
-        valor={telefone}
-        onChange={(proximo) => {
-          setTelefone(proximo);
-          setErroTelefone(undefined);
-          setTelefoneEmConflito(undefined);
-        }}
-        erro={erroTelefone}
-      />
-      <Campo
-        rotulo="E-mail (opcional)"
-        type="email"
-        inputMode="email"
-        maxLength={EMAIL_MAX}
-        valor={email}
-        onChange={(proximo) => {
-          setEmail(proximo);
-          setErroEmail(undefined);
-        }}
-        erro={erroEmail}
-      />
+      {/* Lado a lado: os dados à esquerda, o histórico à direita (as
+          telas usam a largura — pedido do dono). */}
+      <LadoALado>
+        <Secao
+          titulo="Dados"
+          acao={
+            <Botao carregando={salvando} onClick={salvar}>
+              Salvar
+            </Botao>
+          }
+        >
+          <Campo
+            rotulo="Nome"
+            maxLength={NOME_MAX}
+            valor={nome}
+            onChange={(proximo) => {
+              setNome(proximo);
+              setErroNome(undefined);
+            }}
+            erro={erroNome}
+          />
+          <Campo
+            rotulo="Telefone"
+            apoio="Com DDD, do jeito que for — a gente formata."
+            formato="telefone"
+            inputMode="tel"
+            valor={telefone}
+            onChange={(proximo) => {
+              setTelefone(proximo);
+              setErroTelefone(undefined);
+              setTelefoneEmConflito(undefined);
+            }}
+            erro={erroTelefone}
+          />
+          <Campo
+            rotulo="E-mail (opcional)"
+            type="email"
+            inputMode="email"
+            maxLength={EMAIL_MAX}
+            valor={email}
+            onChange={(proximo) => {
+              setEmail(proximo);
+              setErroEmail(undefined);
+            }}
+            erro={erroEmail}
+          />
 
-      {telefoneEmConflito ? (
-        <Aviso>
-          Esse telefone já é de outro cliente.{" "}
-          <Link
-            href={`/painel/clientes?busca=${encodeURIComponent(
-              apenasDigitos(telefoneEmConflito)
-            )}`}
-          >
-            Abrir o cadastro existente
-          </Link>
-        </Aviso>
-      ) : null}
+          {telefoneEmConflito ? (
+            <Aviso>
+              Esse telefone já é de outro cliente.{" "}
+              <Link
+                href={`/painel/clientes?busca=${encodeURIComponent(
+                  apenasDigitos(telefoneEmConflito)
+                )}`}
+              >
+                Abrir o cadastro existente
+              </Link>
+            </Aviso>
+          ) : null}
 
-      {aviso ? <Aviso>{aviso}</Aviso> : null}
-
-      <Botao carregando={salvando} onClick={salvar}>
-        Salvar
-      </Botao>
-
-      <h2>Histórico</h2>
-      <Tabela
-        cabecalho={["Data", "Horário", "Serviços", "Status"]}
-        vazio="Esse cliente ainda não tem agendamento."
-        aoAbrir={(agendamentoId) => router.push(`/painel/agendamentos/${agendamentoId}`)}
-        linhas={cliente.dados.agendamentos.map((agendamento) => ({
-          id: agendamento.id,
-          celulas: [
-            formatarDataLonga(agendamento.data),
-            agendamento.horaInicio,
-            agendamento.servicos.map((s) => s.nome).join(" + "),
-            rotuloDoStatus(agendamento.status),
-          ],
-        }))}
-      />
+          {aviso ? <Aviso>{aviso}</Aviso> : null}
+        </Secao>
+        <Secao titulo="Histórico">
+          <Tabela
+            cabecalho={["Data", "Horário", "Serviços", "Status"]}
+            vazio="Esse cliente ainda não tem agendamento."
+            aoAbrir={(agendamentoId) => router.push(`/painel/agendamentos/${agendamentoId}`)}
+            linhas={cliente.dados.agendamentos.map((agendamento) => ({
+              id: agendamento.id,
+              celulas: [
+                formatarDataLonga(agendamento.data),
+                agendamento.horaInicio,
+                agendamento.servicos.map((s) => s.nome).join(" + "),
+                rotuloDoStatus(agendamento.status),
+              ],
+            }))}
+          />
+        </Secao>
+      </LadoALado>
     </div>
   );
 }

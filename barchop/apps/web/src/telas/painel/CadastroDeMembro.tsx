@@ -8,6 +8,7 @@ import type { PapelMembro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { CamposLadoALado, LadoALado } from "../../componentes/Colunas";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
@@ -225,93 +226,99 @@ export function CadastroDeMembro() {
           void salvar();
         }}
       >
-        <Campo
-          rotulo="Nome"
-          name="nome"
-          autoComplete="off"
-          maxLength={NOME_MAX}
-          valor={nome}
-          onChange={(proximo) => {
-            setNome(proximo);
-            setErro((anterior) => ({ ...anterior, nome: undefined }));
-          }}
-          erro={erro.nome}
-        />
-
-        {/* Na edição o e-mail é só leitura: é a chave do login, e a API
-            não deixa trocá-lo por aqui. */}
-        {atual ? (
-          <p className={estilos.email}>
-            E-mail de acesso: <b>{atual.email}</b>
-          </p>
-        ) : (
+        {/* Nome, e-mail e telefone numa linha: as telas usam a largura (pedido do dono). */}
+        <CamposLadoALado>
           <Campo
-            rotulo="E-mail"
-            type="email"
-            name="email"
+            rotulo="Nome"
+            name="nome"
             autoComplete="off"
-            maxLength={EMAIL_MAX}
-            valor={email}
+            maxLength={NOME_MAX}
+            valor={nome}
             onChange={(proximo) => {
-              setEmail(proximo);
-              setErro((anterior) => ({ ...anterior, email: undefined }));
+              setNome(proximo);
+              setErro((anterior) => ({ ...anterior, nome: undefined }));
             }}
-            erro={erro.email}
+            erro={erro.nome}
           />
-        )}
 
-        <Campo
-          rotulo="Telefone (opcional)"
-          formato="telefone"
-          name="telefone"
-          valor={telefone}
-          onChange={(proximo) => {
-            setTelefone(proximo);
-            setErro((anterior) => ({ ...anterior, telefone: undefined }));
-          }}
-          erro={erro.telefone}
-        />
+          {/* Na edição o e-mail é só leitura: é a chave do login, e a API
+              não deixa trocá-lo por aqui. */}
+          {atual ? (
+            <p className={estilos.email}>
+              E-mail de acesso: <b>{atual.email}</b>
+            </p>
+          ) : (
+            <Campo
+              rotulo="E-mail"
+              type="email"
+              name="email"
+              autoComplete="off"
+              maxLength={EMAIL_MAX}
+              valor={email}
+              onChange={(proximo) => {
+                setEmail(proximo);
+                setErro((anterior) => ({ ...anterior, email: undefined }));
+              }}
+              erro={erro.email}
+            />
+          )}
 
-        <fieldset className={estilos.grupo}>
-          <legend>Papel</legend>
-          {PAPEIS.map(({ valor, descricao }) => (
-            <div className={estilos.opcao} key={valor}>
-              {/* A descrição fica fora do <label>: dentro, ela entraria
-                  no nome acessível, e "Marca na agenda de todos" do
-                  rádio da recepção não deve soar como o nome dele. */}
-              <input
-                type="radio"
-                id={`${idDoGrupo}-${valor}`}
-                name="papel"
-                value={valor}
-                checked={papel === valor}
-                onChange={() => escolherPapel(valor)}
-                aria-describedby={`${idDoGrupo}-${valor}-descricao`}
-              />
-              <label htmlFor={`${idDoGrupo}-${valor}`}>{ROTULO_DO_PAPEL[valor]}</label>
-              <span id={`${idDoGrupo}-${valor}-descricao`} className={estilos.descricao}>
-                {descricao}
-              </span>
-            </div>
-          ))}
-        </fieldset>
-
-        <div className={estilos.opcao}>
-          <input
-            type="checkbox"
-            id={`${idDoGrupo}-atende`}
-            checked={atende}
-            onChange={(evento) => {
-              setAtende(evento.target.checked);
-              setAtendeTocado(true);
+          <Campo
+            rotulo="Telefone (opcional)"
+            formato="telefone"
+            name="telefone"
+            valor={telefone}
+            onChange={(proximo) => {
+              setTelefone(proximo);
+              setErro((anterior) => ({ ...anterior, telefone: undefined }));
             }}
-            aria-describedby={`${idDoGrupo}-atende-descricao`}
+            erro={erro.telefone}
           />
-          <label htmlFor={`${idDoGrupo}-atende`}>Atende clientes</label>
-          <span id={`${idDoGrupo}-atende-descricao`} className={estilos.descricao}>
-            Aparece na agenda e pode receber agendamentos.
-          </span>
-        </div>
+        </CamposLadoALado>
+
+        {/* O papel e o atende lado a lado. */}
+        <LadoALado>
+          <fieldset className={estilos.grupo}>
+            <legend>Papel</legend>
+            {PAPEIS.map(({ valor, descricao }) => (
+              <div className={estilos.opcao} key={valor}>
+                {/* A descrição fica fora do <label>: dentro, ela entraria
+                    no nome acessível, e "Marca na agenda de todos" do
+                    rádio da recepção não deve soar como o nome dele. */}
+                <input
+                  type="radio"
+                  id={`${idDoGrupo}-${valor}`}
+                  name="papel"
+                  value={valor}
+                  checked={papel === valor}
+                  onChange={() => escolherPapel(valor)}
+                  aria-describedby={`${idDoGrupo}-${valor}-descricao`}
+                />
+                <label htmlFor={`${idDoGrupo}-${valor}`}>{ROTULO_DO_PAPEL[valor]}</label>
+                <span id={`${idDoGrupo}-${valor}-descricao`} className={estilos.descricao}>
+                  {descricao}
+                </span>
+              </div>
+            ))}
+          </fieldset>
+
+          <div className={estilos.opcao}>
+            <input
+              type="checkbox"
+              id={`${idDoGrupo}-atende`}
+              checked={atende}
+              onChange={(evento) => {
+                setAtende(evento.target.checked);
+                setAtendeTocado(true);
+              }}
+              aria-describedby={`${idDoGrupo}-atende-descricao`}
+            />
+            <label htmlFor={`${idDoGrupo}-atende`}>Atende clientes</label>
+            <span id={`${idDoGrupo}-atende-descricao`} className={estilos.descricao}>
+              Aparece na agenda e pode receber agendamentos.
+            </span>
+          </div>
+        </LadoALado>
 
         {aviso ? <Aviso>{aviso}</Aviso> : null}
         {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
@@ -332,20 +339,24 @@ export function CadastroDeMembro() {
           serviços (nascem com ele, pelo banco). Cada seção salva sozinha
           — trocar a jornada não exige reenviar o cadastro. */}
       {atual ? (
-        <>
-          {/* A foto que a página pública mostra na equipe. Salva sozinha,
-              como a jornada e os serviços. */}
-          <CampoDeImagem
-            rotulo="Foto"
-            alt={`Foto de ${atual.nome}`}
-            urlAtual={atual.fotoUrl}
-            formato="retrato"
-            enviar={(arquivo) => api.barbeiro.enviarFotoDoMembro(atual.id, arquivo)}
-            remover={() => api.barbeiro.removerFotoDoMembro(atual.id)}
-          />
+        // Lado a lado: foto e serviços à esquerda, a jornada (a mais
+        // alta) à direita — as telas usam a largura (pedido do dono).
+        <LadoALado>
+          <div className={estilos.pilha}>
+            {/* A foto que a página pública mostra na equipe. Salva sozinha,
+                como a jornada e os serviços. */}
+            <CampoDeImagem
+              rotulo="Foto"
+              alt={`Foto de ${atual.nome}`}
+              urlAtual={atual.fotoUrl}
+              formato="retrato"
+              enviar={(arquivo) => api.barbeiro.enviarFotoDoMembro(atual.id, arquivo)}
+              remover={() => api.barbeiro.removerFotoDoMembro(atual.id)}
+            />
+            <ServicosDoMembro membroId={atual.id} />
+          </div>
           <JornadaDoMembro membroId={atual.id} />
-          <ServicosDoMembro membroId={atual.id} />
-        </>
+        </LadoALado>
       ) : null}
 
       {/* Fora do formulário, como em CadastroDeServico: mudar o estado do

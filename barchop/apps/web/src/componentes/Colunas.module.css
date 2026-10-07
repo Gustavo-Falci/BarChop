@@ -1,0 +1,14 @@
+.ladoALado {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: var(--espaco-lg);
+  align-items: start;
+  max-width: 1240px;
+}
+
+.campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--espaco-lg);
+  align-items: end;
+}

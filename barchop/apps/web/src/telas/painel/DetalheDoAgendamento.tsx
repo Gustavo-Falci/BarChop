@@ -7,7 +7,9 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
 import { Chip } from "../../componentes/Chip";
+import { LadoALado } from "../../componentes/Colunas";
 import { formatarPreco } from "../../componentes/ItemDeServico";
+import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataLonga } from "../../formato/datas";
 import { rotuloDoStatus } from "../../formato/status";
@@ -88,59 +90,73 @@ export function DetalheDoAgendamento() {
   return (
     <div className={estilos.pagina}>
       <h1>{atual.cliente.nome}</h1>
-      <p>{atual.cliente.telefone}</p>
-      <p>
-        {formatarDataLonga(atual.data)} · {atual.horaInicio}–{atual.horaFim}
-      </p>
-      <p>
-        {atual.servicos.map((s) => s.nome).join(" + ")} ·{" "}
-        {/* precoNoMomento, não o preço de hoje: é o que foi combinado
-            com aquele cliente naquele dia. */}
-        <span className={estilos.preco}>{formatarPreco((total / 100).toFixed(2))}</span>
-      </p>
-      <Chip tom="neutro">agendado pelo {atual.origem}</Chip>
-      {atual.presencaConfirmadaEm ? <Chip>✓ confirmou presença</Chip> : null}
-
-      {/* noreferrer além do noopener: o WhatsApp não precisa saber de
-          qual tela do painel o link saiu. */}
-      {lembravel && whatsapp.dados ? (
-        <a
-          className={estilos.whatsapp}
-          href={whatsapp.dados}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Lembrar pelo WhatsApp
-        </a>
-      ) : null}
-
-      <section>
-        <h2>Status</h2>
-        <div className={estilos.status}>
-          {STATUS.map((status) => (
-            <Botao
-              key={status}
-              variante={status === atual.status ? "primario" : "contorno"}
-              onClick={() => aplicar({ status })}
-              carregando={salvando}
-            >
-              {rotuloDoStatus(status)}
-            </Botao>
-          ))}
-        </div>
-      </section>
-
-      <Campo rotulo="Observações" valor={observacoes} onChange={setObservacoes} />
-      <Botao onClick={() => aplicar({ observacoes })} carregando={salvando}>
-        Salvar observações
-      </Botao>
-
-      {/* A API não tem remarcar no escopo do barbeiro, e aceitar data e
-          hora no PATCH pularia a checagem de disponibilidade inteira.
-          Dizer isso é melhor do que um botão que voltaria erro. */}
-      <p className={estilos.nota}>Para mudar o horário, cancele e crie outro agendamento.</p>
-
       {aviso ? <Aviso>{aviso}</Aviso> : null}
+
+      {/* Lado a lado: o atendimento à esquerda, o que se muda nele à
+          direita (as telas usam a largura — pedido do dono). */}
+      <LadoALado>
+        <Secao titulo="O atendimento">
+          <p>{atual.cliente.telefone}</p>
+          <p>
+            {formatarDataLonga(atual.data)} · {atual.horaInicio}–{atual.horaFim}
+          </p>
+          <p>
+            {atual.servicos.map((s) => s.nome).join(" + ")} ·{" "}
+            {/* precoNoMomento, não o preço de hoje: é o que foi combinado
+                com aquele cliente naquele dia. */}
+            <span className={estilos.preco}>{formatarPreco((total / 100).toFixed(2))}</span>
+          </p>
+          <div className={estilos.status}>
+            <Chip tom="neutro">agendado pelo {atual.origem}</Chip>
+            {atual.presencaConfirmadaEm ? <Chip>✓ confirmou presença</Chip> : null}
+          </div>
+
+          {/* noreferrer além do noopener: o WhatsApp não precisa saber de
+              qual tela do painel o link saiu. */}
+          {lembravel && whatsapp.dados ? (
+            <a
+              className={estilos.whatsapp}
+              href={whatsapp.dados}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Lembrar pelo WhatsApp
+            </a>
+          ) : null}
+          {/* A API não tem remarcar no escopo do barbeiro, e aceitar data e
+              hora no PATCH pularia a checagem de disponibilidade inteira.
+              Dizer isso é melhor do que um botão que voltaria erro. */}
+          <p className={estilos.nota}>Para mudar o horário, cancele e crie outro agendamento.</p>
+        </Secao>
+
+        <div className={estilos.pilha}>
+          <Secao titulo="Status">
+            <div className={estilos.status}>
+              {STATUS.map((status) => (
+                <Botao
+                  key={status}
+                  variante={status === atual.status ? "primario" : "contorno"}
+                  onClick={() => aplicar({ status })}
+                  carregando={salvando}
+                >
+                  {rotuloDoStatus(status)}
+                </Botao>
+              ))}
+            </div>
+          </Secao>
+
+          <Secao
+            titulo="Anotações"
+            acao={
+              <Botao onClick={() => aplicar({ observacoes })} carregando={salvando}>
+                Salvar observações
+              </Botao>
+            }
+          >
+            <Campo rotulo="Observações" valor={observacoes} onChange={setObservacoes} />
+          </Secao>
+        </div>
+      </LadoALado>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type {
   AgendamentoComCliente,
   AgendamentoSerializado,
   AntecedenciaDoLembrete,
+  RegrasDeAgendamento,
   BarbeariaDoPainel,
   BloqueioSerializado,
   ClienteSerializado,
@@ -45,7 +46,10 @@ export interface EdicaoDoPerfil {
   telefone?: string | null;
 }
 
-export interface EdicaoDaBarbearia {
+// As regras de agendamento (painel v2, marco 3) entram no mesmo PATCH:
+// as opções são as de @barchop/formato/regras; `janelaDias: null` é sem
+// limite.
+export interface EdicaoDaBarbearia extends Partial<RegrasDeAgendamento> {
   nome?: string;
   telefone?: string | null;
   endereco?: string | null;

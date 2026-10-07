@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { REGRAS_PADRAO } from "@barchop/formato";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
 
@@ -31,6 +32,8 @@ describe("GET /barbearias/me", () => {
       lembreteAntecedenciaHoras: 24,
       lembreteAtivo: true,
       areasDecididas: [],
+      // As regras de agendamento, nos padrões (painel v2, marco 3).
+      ...REGRAS_PADRAO,
     });
 
     await app.close();

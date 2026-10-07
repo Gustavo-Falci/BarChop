@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Prisma } from "@barchop/database";
+import { REGRAS_PADRAO } from "@barchop/formato";
 import { dataParaDate, horaParaDate } from "../../src/lib/horas";
 import {
   serializarAgendamento,
@@ -150,7 +151,7 @@ describe("serializarCliente", () => {
 });
 
 describe("serializarBarbearia", () => {
-  it("devolve só os campos públicos", () => {
+  it("devolve só os campos públicos, com as regras de agendamento", () => {
     expect(
       serializarBarbearia({
         id: "b1",
@@ -165,6 +166,7 @@ describe("serializarBarbearia", () => {
         comodidades: ["wifi"],
         formasDePagamento: ["pix"],
         capaChave: "barbearias/b1/capa/c1.png",
+        ...REGRAS_PADRAO,
       }, (chave) => `https://img.exemplo/${chave}`)
     ).toEqual({
       id: "b1",
@@ -179,6 +181,7 @@ describe("serializarBarbearia", () => {
       comodidades: ["wifi"],
       formasDePagamento: ["pix"],
       capaUrl: "https://img.exemplo/barbearias/b1/capa/c1.png",
+      ...REGRAS_PADRAO,
     });
   });
 });

@@ -1,8 +1,12 @@
 import { prisma } from "@barchop/database";
 import {
+  ANTECEDENCIAS_MINUTOS,
   COMODIDADES,
   FORMAS_DE_PAGAMENTO,
+  INTERVALOS_MINUTOS,
+  JANELAS_DIAS,
   PADRAO_INSTAGRAM,
+  PRAZOS_HORAS,
   areasTocadas,
   juntarAreas,
 } from "@barchop/formato";
@@ -69,6 +73,16 @@ const corpoPatchBarbearia = {
       uniqueItems: true,
       items: { type: "string", enum: [...FORMAS_DE_PAGAMENTO] },
     },
+    // As regras de agendamento (painel v2, marco 3): listas fechadas de
+    // @barchop/formato/regras, com o CHECK do banco nos mesmos valores.
+    // `janelaDias: null` é sem limite.
+    intervaloMinutos: { type: "integer", enum: [...INTERVALOS_MINUTOS] },
+    antecedenciaMinutos: { type: "integer", enum: [...ANTECEDENCIAS_MINUTOS] },
+    aceitaMesmoDia: { type: "boolean" },
+    janelaDias: { type: ["integer", "null"], enum: [...JANELAS_DIAS, null] },
+    cabeAntesDeFechar: { type: "boolean" },
+    prazoRemarcarHoras: { type: "integer", enum: [...PRAZOS_HORAS] },
+    prazoCancelarHoras: { type: "integer", enum: [...PRAZOS_HORAS] },
   },
 } as const;
 

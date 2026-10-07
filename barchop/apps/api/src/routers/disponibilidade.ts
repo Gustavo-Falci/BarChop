@@ -1,4 +1,5 @@
 import { prisma } from "@barchop/database";
+import type { FastifyRequest } from "fastify";
 import {
   candidatosDoQualquerUm,
   carregarServicos,
@@ -12,6 +13,8 @@ import {
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate } from "../lib/horas";
 import { proximosHorarios } from "../lib/proximos-horarios";
+import { gradeDe, regrasDe, SELECT_REGRAS } from "../lib/regras";
+import { ehMembroDaBarbearia } from "../plugins/auth";
 import {
   PADRAO_DATA,
   PADRAO_MES,
@@ -94,6 +97,25 @@ async function agendaDe(
   return [barbeiroId];
 }
 
+// A barbearia do slug com as regras de quem pergunta: as do cliente, ou
+// nenhuma quando é um membro dela (o Novo agendamento do painel encaixa
+// livre). A grade sai daqui pros dois — o painel nunca vê menos que o
+// cliente (lib/regras.ts).
+async function barbeariaComRegras(request: FastifyRequest, slug: string) {
+  // findUniqueOrThrow: slug inexistente vira P2025 -> 404.
+  const barbearia = await prisma.barbearia.findUniqueOrThrow({
+    where: { slug },
+    select: { id: true, ...SELECT_REGRAS },
+  });
+  const regras = regrasDe(barbearia);
+  const paraCliente = !(await ehMembroDaBarbearia(request, barbearia.id));
+  return {
+    id: barbearia.id,
+    grade: gradeDe(regras, paraCliente),
+    regrasDoCliente: paraCliente ? regras : undefined,
+  };
+}
+
 // Públicas: são as telas de escolha de data e de horário, abertas pelo
 // link do WhatsApp. Ficam fora do escopo protegido do app.ts.
 export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos): void {
@@ -122,12 +144,7 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
     { schema: { params: paramsSlug, querystring: filtroDia } },
     async (request) => {
       const { barbeiroId, data, servicoIds } = request.query;
-
-      // findUniqueOrThrow: slug inexistente vira P2025 -> 404.
-      const barbearia = await prisma.barbearia.findUniqueOrThrow({
-        where: { slug: request.params.slug },
-        select: { id: true },
-      });
+      const barbearia = await barbeariaComRegras(request, request.params.slug);
 
       // Os serviços antes da agenda: serviço de outra barbearia ou
       // inativo é 422 também no "qualquer um".
@@ -144,6 +161,7 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
             barbeiroId: id,
             data: dataDate,
             duracaoTotalMinutos,
+            grade: barbearia.grade,
           })
         )
       );
@@ -151,7 +169,12 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
       const uniao = [...new Set(porProfissional.flat())].sort();
 
       return {
-        horarios: descartarPassados({ data, horarios: uniao, agora: agoraNaBarbearia() }),
+        horarios: descartarPassados({
+          data,
+          horarios: uniao,
+          agora: agoraNaBarbearia(),
+          regras: barbearia.regrasDoCliente,
+        }),
       };
     }
   );
@@ -161,11 +184,7 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
     { schema: { params: paramsSlug, querystring: filtroMes } },
     async (request) => {
       const { barbeiroId, mes, servicoIds } = request.query;
-
-      const barbearia = await prisma.barbearia.findUniqueOrThrow({
-        where: { slug: request.params.slug },
-        select: { id: true },
-      });
+      const barbearia = await barbeariaComRegras(request, request.params.slug);
 
       const { duracaoTotalMinutos } = await carregarServicos(prisma, barbearia.id, servicoIds);
       const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds);
@@ -187,6 +206,8 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
         ultimoDia,
         duracaoTotalMinutos,
         agora: agoraNaBarbearia(),
+        regras: barbearia.regrasDoCliente,
+        grade: barbearia.grade,
       });
 
       return { dias };

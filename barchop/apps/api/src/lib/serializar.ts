@@ -12,6 +12,7 @@ import type {
 } from "@barchop/types";
 import { juntarAreas } from "@barchop/formato";
 import { dateParaData, dateParaHora } from "./horas";
+import { regrasDe } from "./regras";
 
 // Reexportados porque routers/horarios.ts e os testes importam daqui. A
 // declaração agora mora em @barchop/types, junto do que as telas
@@ -47,7 +48,7 @@ export function serializarBarbearia(barbearia: {
   comodidades: string[];
   formasDePagamento: string[];
   capaChave: string | null;
-},
+} & Parameters<typeof regrasDe>[0],
 // A URL pública de uma chave do armazenamento (app.armazenamento.urlPublica).
 urlDaImagem: (chave: string) => string
 ): BarbeariaSerializada {
@@ -64,6 +65,9 @@ urlDaImagem: (chave: string) => string
     comodidades: barbearia.comodidades,
     formasDePagamento: barbearia.formasDePagamento,
     capaUrl: barbearia.capaChave ? urlDaImagem(barbearia.capaChave) : null,
+    // As regras de agendamento (painel v2, marco 3): a página pública
+    // também lê — a tela do cliente mostra os prazos.
+    ...regrasDe(barbearia),
   };
 }
 

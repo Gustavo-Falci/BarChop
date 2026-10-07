@@ -67,7 +67,13 @@ Listas fechadas em `@barchop/formato` (como `pagina.ts`), CHECK na migration com
 ### 3d — Exceções na tela de Horários — **feito (#63)**; seção "Datas especiais"; Aviso ganhou o tom atencao
 - Lista das próximas exceções; "Adicionar data": data, "Fechado o dia todo" ou horário; aviso com os agendamentos que ficam fora.
 
-### 3e — Regras (API) — **próximo**
+### 3e — Regras (API) — **feito (este PR)**. Diferenças do previsto:
+- A área `regras_de_agendamento` (N passa a 5) **foi pro 3f**: somá-la já quebrava o índice da web (`AREAS` + `switch` exaustivo). No 3e o PATCH grava as regras sem marcar área.
+- Painel mandar o token na disponibilidade (api-client + `NovoAgendamento`) **foi pro 3f**: a API já desliga as regras com token de membro (`ehMembroDaBarbearia`, nunca 401); ninguém muda regra antes da tela.
+- "Painel nunca vê menos que o cliente": painel usa grade 15 (contém 30/60) e o `cabeAntesDeFechar` da barbearia.
+- Limites: o minuto atual nunca serve; antecedência e prazo no limite exato ainda servem. Conta pura em `@barchop/formato/regras` (`regraQueRecusa`, `prazoDoClientePassou`) pra o 3g reaproveitar na tela.
+- Regras entram em `BarbeariaSerializada` (painel e página pública), campos planos como no PATCH.
+- Migration `20261009120000_regras_de_agendamento` (rodar `migrate deploy` nos 2 bancos).
 - Migration `regras_de_agendamento` com as colunas da tabela acima (padrões = hoje) e CHECKs.
 - `@barchop/formato/regras.ts`: listas e padrões; área nova `regras_de_agendamento` em `AREAS_DE_CONFIGURACAO` (N passa a 5) e os campos em `AREA_DO_CAMPO`.
 - `PATCH /barbearias/me` aceita os campos; `GET /barbearias/me` e o perfil público devolvem as regras (a tela do cliente precisa dos prazos).
@@ -77,7 +83,8 @@ Listas fechadas em `@barchop/formato` (como `pagina.ts`), CHECK na migration com
 - **Painel livre**: as rotas de disponibilidade são públicas e o Novo agendamento do painel usa as mesmas. Com token válido de membro da barbearia, a resposta sai sem as regras do cliente; sem token, com. Mostrar a mais não abre brecha: o POST do cliente aplica as regras de novo.
 - **Testes**: cada regra no dia, no mês, nos próximos e no POST; padrões = resultado de hoje (rodar a suíte de disponibilidade inteira sem mudar nenhum teste antigo); prazo de remarcar/cancelar no cliente e não no painel.
 
-### 3f — Tela Regras de agendamento
+### 3f — Tela Regras de agendamento — **próximo**
+- Inclui o que saiu do 3e: área `regras_de_agendamento` em `AREAS_DE_CONFIGURACAO`/`AREA_DO_CAMPO`/tipo/`AREAS` da web, e o `NovoAgendamento` do painel pedindo a disponibilidade com token (`comToken`).
 - 5ª área do índice (Operação, depois de Horários): pílulas pra cada regra, frase "Resultado: …" com o efeito pro cliente; "X de 5 decididas". Barbearias existentes passam a ver "4 de 5" com a consequência "Vale o padrão: …".
 
 ### 3g — Cliente obedece os prazos

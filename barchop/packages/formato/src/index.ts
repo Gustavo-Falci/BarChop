@@ -15,3 +15,16 @@ export {
   type Comodidade,
   type FormaDePagamento,
 } from "./pagina";
+export {
+  ANTECEDENCIAS_MINUTOS,
+  INTERVALOS_MINUTOS,
+  JANELAS_DIAS,
+  PRAZOS_HORAS,
+  REGRAS_PADRAO,
+  minutosAte,
+  prazoDoClientePassou,
+  regraQueRecusa,
+  type Agora,
+  type RecusaDeRegra,
+  type RegrasDeAgendamento,
+} from "./regras";

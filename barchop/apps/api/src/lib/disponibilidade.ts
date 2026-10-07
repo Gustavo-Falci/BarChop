@@ -1,7 +1,10 @@
 import type { Prisma } from "@barchop/database";
+import { REGRAS_PADRAO, regraQueRecusa } from "@barchop/formato";
 import { calcularHorariosDisponiveis } from "@barchop/scheduling";
+import type { RegrasDeAgendamento } from "@barchop/types";
 import { ErroDeNegocio } from "./erro-negocio";
 import { dateParaHora } from "./horas";
+import { GRADE_PADRAO, type Grade } from "./regras";
 
 // Aceita tanto o `prisma` quanto o `tx` de dentro de uma transação: as
 // rotas de leitura chamam direto, o criarAgendamento chama de dentro da
@@ -206,12 +209,13 @@ export async function candidatosDoQualquerUm(
 // Os horários de início livres de UM membro num dia, antes do filtro de
 // "já passou": janela efetiva, bloqueios e agendamentos. É a função que
 // a união do "qualquer um" e a escolha do POST usam — o horário que a
-// tela oferece tem que ser o que o POST aceita.
+// tela oferece tem que ser o que o POST aceita. A grade é a do cliente
+// ou a do painel (lib/regras.ts).
 export async function horariosDoProfissionalNoDia(
   db: ClientePrisma,
-  params: { barbeariaId: string; barbeiroId: string; data: Date; duracaoTotalMinutos: number }
+  params: { barbeariaId: string; barbeiroId: string; data: Date; duracaoTotalMinutos: number; grade?: Grade }
 ): Promise<string[]> {
-  const { barbeariaId, barbeiroId, data, duracaoTotalMinutos } = params;
+  const { barbeariaId, barbeiroId, data, duracaoTotalMinutos, grade } = params;
   const contexto = await contextoDoDia(db, { barbeariaId, barbeiroId, data });
   const { janela, ocupados: bloqueados } = aplicarBloqueios(contexto.janela, contexto.bloqueios, data);
   // Mesmo filtro da trava do banco: cancelado não ocupa.
@@ -223,6 +227,7 @@ export async function horariosDoProfissionalNoDia(
     janela,
     ocupados: [...ocupados, ...bloqueados, ...contexto.pausa],
     duracaoTotalMinutos,
+    grade,
   });
 }
 
@@ -239,10 +244,13 @@ export async function diasComVaga(
     ultimoDia: Date;
     duracaoTotalMinutos: number;
     agora: { data: string; hora: string };
+    // As do cliente; sem elas (o painel), só o "já passou".
+    regras?: RegrasDeAgendamento;
+    grade?: Grade;
   }
 ): Promise<Record<string, boolean>> {
-  const { barbeariaId, barbeiroIds, primeiroDia, ultimoDia, duracaoTotalMinutos, agora } = params;
-  const horariosDoDia = await agendaDoPeriodo(db, { barbeariaId, barbeiroIds, primeiroDia, ultimoDia });
+  const { barbeariaId, barbeiroIds, primeiroDia, ultimoDia, duracaoTotalMinutos, agora, regras, grade } = params;
+  const horariosDoDia = await agendaDoPeriodo(db, { barbeariaId, barbeiroIds, primeiroDia, ultimoDia, grade });
 
   const dias: Record<string, boolean> = {};
   for (
@@ -257,6 +265,7 @@ export async function diasComVaga(
           data: chave,
           horarios: horariosDoDia(barbeiroId, data, duracaoTotalMinutos),
           agora,
+          regras,
         }).length > 0
     );
   }
@@ -272,9 +281,9 @@ export async function diasComVaga(
 // horários da página pública.
 export async function agendaDoPeriodo(
   db: ClientePrisma,
-  params: { barbeariaId: string; barbeiroIds: string[]; primeiroDia: Date; ultimoDia: Date }
+  params: { barbeariaId: string; barbeiroIds: string[]; primeiroDia: Date; ultimoDia: Date; grade?: Grade }
 ): Promise<(barbeiroId: string, data: Date, duracaoTotalMinutos: number) => string[]> {
-  const { barbeariaId, barbeiroIds, primeiroDia, ultimoDia } = params;
+  const { barbeariaId, barbeiroIds, primeiroDia, ultimoDia, grade } = params;
 
   const [funcionamento, excecoes, jornadas, bloqueios, agendamentos] = await Promise.all([
     db.horarioFuncionamento.findMany({ where: { barbeariaId } }),
@@ -320,6 +329,7 @@ export async function agendaDoPeriodo(
       janela,
       ocupados: [...ocupados, ...bloqueados, ...pausaComoOcupado(jornada)],
       duracaoTotalMinutos,
+      grade,
     });
   };
 }
@@ -369,24 +379,30 @@ export async function garantirServicosDoProfissional(
 // minuto atual já não dá tempo de chegar). Puro, com o `agora` de
 // fora, pelo mesmo motivo do `garantirFuturo`: comparação de string no
 // formato do contrato, sem Date e sem fuso da máquina.
+//
+// Com as regras do cliente (painel v2, marco 3), tira também o mesmo
+// dia, o que está perto demais e o que passa da janela — a mesma conta
+// que o POST do cliente usa pra recusar. Sem elas (o painel), os
+// padrões: só o "já passou".
 export function descartarPassados(params: {
   data: string;
   horarios: string[];
   agora: { data: string; hora: string };
+  regras?: RegrasDeAgendamento;
 }): string[] {
-  const { data, horarios, agora } = params;
-
-  if (data < agora.data) return [];
-  if (data > agora.data) return horarios;
-  return horarios.filter((hora) => hora > agora.hora);
+  const { data, horarios, agora, regras = REGRAS_PADRAO } = params;
+  return horarios.filter((hora) => regraQueRecusa(regras, agora, data, hora) === null);
 }
 
 export function horariosLivres(params: {
   janela: LinhaDeHorario | null;
   ocupados: IntervaloOcupado[];
   duracaoTotalMinutos: number;
+  // A do cliente ou a do painel (lib/regras.ts); sem ela, a de antes
+  // das regras.
+  grade?: Grade;
 }): string[] {
-  const { janela, ocupados, duracaoTotalMinutos } = params;
+  const { janela, ocupados, duracaoTotalMinutos, grade = GRADE_PADRAO } = params;
 
   return calcularHorariosDisponiveis({
     horarioFuncionamento: {
@@ -405,6 +421,8 @@ export function horariosLivres(params: {
       horaFim: dateParaHora(ocupado.horaFim),
     })),
     duracaoTotalMinutos,
+    intervaloMinutos: grade.intervaloMinutos,
+    cabeAntesDeFechar: grade.cabeAntesDeFechar,
   });
 }
 

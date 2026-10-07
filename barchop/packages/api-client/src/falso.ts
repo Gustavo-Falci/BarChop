@@ -2,6 +2,7 @@ import {
   COMODIDADES,
   FORMAS_DE_PAGAMENTO,
   PADRAO_INSTAGRAM,
+  REGRAS_PADRAO,
   areasTocadas,
   juntarAreas,
   slugReservado,
@@ -180,6 +181,9 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
   comodidades: [],
   formasDePagamento: [],
   capaUrl: null,
+  // As regras de agendamento nos padrões; salvar grava no perfil, como
+  // a API (o dublê não aplica as regras: calcular a agenda é da API).
+  ...REGRAS_PADRAO,
   horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
     diaSemana,
     horaAbertura: diaSemana === 0 ? null : "09:00",

@@ -31,3 +31,21 @@
   font-size: var(--texto-sm);
   opacity: 0.8;
 }
+
+.documentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-md);
+}
+
+.link {
+  font-size: var(--texto-sm);
+  color: var(--cor-paper);
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 3px solid var(--cor-accent);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

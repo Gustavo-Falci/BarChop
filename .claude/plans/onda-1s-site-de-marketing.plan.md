@@ -70,7 +70,7 @@ ninguém.
 - **Mirror**: telas em `src/` + CSS Module; página em `app/` só monta. Server component: nada de `"use client"` no site.
 - **Validate**: `pnpm --filter ./apps/web test`; `tsc --noEmit` no web; `next build` mostra `/` como estática (○); Chrome em `localhost:3000/` desktop e celular, e `teste1.localhost:3000/` continua abrindo a barbearia.
 
-### Task 2 — Termos e privacidade + aceite no cadastro (PR `onda-1s-b`)
+### Task 2 — Termos e privacidade + aceite no cadastro (PR `onda-1s-b`) — **feito**: `src/site/{controlador,DocumentoLegal,Termos,Privacidade}`, rotas `/termos` e `/privacidade`, links no rodapé, aceite no cadastro com `enderecoNoSite` (host do site em produção, caminho em dev). Razão social, CNPJ e e-mail do DPO "a preencher" (dono ainda não tem, 2026-10-07)
 - **Action**: TDD. `DocumentoLegal` com aviso "texto em revisão" e data de vigência; `controlador.ts` com os dados a preencher; termos (serviço, conta do dono, responsabilidade pelos dados dos clientes da barbearia, disponibilidade, encerramento) e privacidade (LGPD: BarChop é **operador** dos dados dos clientes finais e **controlador** dos dados do dono; dados coletados, finalidade, Resend como suboperador de e-mail, OCI como hospedagem, retenção, direitos do titular, contato do encarregado). Cadastro ganha a linha de aceite com os dois links, abrindo em nova aba pra não perder o formulário.
 - **Mirror**: `tests/telas/painel/` pro cadastro; `DocumentoLegal` com h1/h2 navegáveis.
 - **Validate**: suíte web; Chrome nas duas páginas e no cadastro.

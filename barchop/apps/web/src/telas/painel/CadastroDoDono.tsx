@@ -11,7 +11,7 @@ import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { sessaoDaBarbearia, sessaoDoBarbeiro } from "../../sessao/armazenamento";
-import { enderecoDaBarbearia } from "../../tenant/endereco";
+import { enderecoDaBarbearia, enderecoNoSite } from "../../tenant/endereco";
 import estilos from "./CadastroDoDono.module.css";
 
 // O mesmo pattern e a mesma lista de reservados que a API usa (vêm do
@@ -331,6 +331,30 @@ export function CadastroDoDono() {
               />
 
               {aviso ? <Aviso>{aviso}</Aviso> : null}
+
+              {/* O aceite (onda 1s-b): os documentos moram no site, e abrem
+                  em outra aba pra voltar aqui não apagar o que foi digitado. */}
+              <p className={estilos.aceite}>
+                Ao criar a barbearia, você concorda com os{" "}
+                <a
+                  href={enderecoNoSite("/termos", process.env.NEXT_PUBLIC_URL_DO_SITE)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={estilos.link}
+                >
+                  Termos de uso
+                </a>{" "}
+                e com a{" "}
+                <a
+                  href={enderecoNoSite("/privacidade", process.env.NEXT_PUBLIC_URL_DO_SITE)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={estilos.link}
+                >
+                  Política de privacidade
+                </a>
+                .
+              </p>
 
               <Botao type="submit" carregando={enviando}>
                 Continuar

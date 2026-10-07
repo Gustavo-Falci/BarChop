@@ -1,0 +1,53 @@
+/* Texto corrido: uma coluna de leitura (~70 caracteres), centralizada. */
+.documento {
+  display: grid;
+  gap: var(--espaco-lg);
+  width: 100%;
+  max-width: 72ch;
+  margin-inline: auto;
+  padding: var(--espaco-xxl) var(--espaco-lg);
+  line-height: 1.6;
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-display);
+  line-height: 1.1;
+}
+
+.aviso {
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+  font-weight: 600;
+}
+
+.vigencia {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.secao {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.secao p,
+.secao ul {
+  margin: 0;
+}
+
+.secao ul {
+  padding-inline-start: var(--espaco-lg);
+}
+
+.subtitulo {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+}

@@ -160,6 +160,13 @@
 
 /* Sublinhado e não só a cor: é ele que diz que aquilo se clica pra quem
    não distingue as duas. Mesmo link do /painel/entrar. */
+/* A linha do aceite dos termos, logo acima do Continuar. */
+.aceite {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
 .link {
   padding: var(--espaco-xs) 0;
   color: var(--cor-ink);

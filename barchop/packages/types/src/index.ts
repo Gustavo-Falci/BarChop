@@ -359,6 +359,26 @@ export interface MembroDaEquipe {
   convitePendente: boolean;
 }
 
+// GET /barbearias/me/ocupacao?data= (painel v2, marco 4). Minutos de
+// trabalho (janela do dia − pausa − bloqueios) e minutos agendados
+// (sem cancelado e falta), por quem atende e somados na casa. O
+// profissional recebe só a própria linha, e a casa é ela.
+export interface MinutosDoDia {
+  minutosDeTrabalho: number;
+  minutosAgendados: number;
+}
+
+export interface OcupacaoDoProfissional extends MinutosDoDia {
+  id: string;
+  nome: string;
+}
+
+export interface OcupacaoDoDia {
+  data: string; // "YYYY-MM-DD"
+  casa: MinutosDoDia;
+  profissionais: OcupacaoDoProfissional[];
+}
+
 // GET /barbearias/:slug/disponibilidade — horários de início livres.
 export interface Disponibilidade {
   horarios: string[]; // "HH:mm"

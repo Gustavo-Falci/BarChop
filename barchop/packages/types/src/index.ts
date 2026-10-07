@@ -106,7 +106,15 @@ export interface AgendamentoDoLembrete {
   horaInicio: string;
   status: string;
   presencaConfirmadaEm: string | null;
-  barbearia: { nome: string; slug: string };
+  // O prazo de cancelar e o contato (painel v2, 3g): passado o prazo, a
+  // tela esconde o Cancelar e mostra com quem falar.
+  barbearia: {
+    nome: string;
+    slug: string;
+    prazoCancelarHoras: RegrasDeAgendamento["prazoCancelarHoras"];
+    whatsapp: string | null;
+    telefone: string | null;
+  };
   barbeiro: { nome: string };
   servicos: { nome: string }[];
 }

@@ -87,7 +87,7 @@ Listas fechadas em `@barchop/formato` (como `pagina.ts`), CHECK na migration com
 - Inclui o que saiu do 3e: área `regras_de_agendamento` em `AREAS_DE_CONFIGURACAO`/`AREA_DO_CAMPO`/tipo/`AREAS` da web, e o `NovoAgendamento` do painel pedindo a disponibilidade com token (`comToken`).
 - 5ª área do índice (Operação, depois de Horários): pílulas pra cada regra, frase "Resultado: …" com o efeito pro cliente; "X de 5 decididas". Barbearias existentes passam a ver "4 de 5" com a consequência "Vale o padrão: …".
 
-### 3g — Cliente obedece os prazos — **próximo**
+### 3g — Cliente obedece os prazos — **feito (este PR) — MARCO 3 COMPLETO**: `formato/prazos.ts` (relógio do aparelho; prazo 0 não esconde nada, a API recusa o que já passou como antes), `AvisoDoPrazo` com WhatsApp (ou telefone) da casa; o lembrete da API traz `prazoCancelarHoras`, `whatsapp`, `telefone`. As recusas novas no fluxo de agendar já saem com a mensagem da API (sem tela nova)
 - Telas do cliente (meus agendamentos, página do lembrete): sem Remarcar/Cancelar depois do prazo, com o aviso e o WhatsApp/telefone da casa; mensagens dos códigos novos no fluxo de agendar.
 
 **Fora deste marco:** prévia "o que o cliente vê" nos Horários (TBD no PRD), sombra da pausa na agenda (marco 6).

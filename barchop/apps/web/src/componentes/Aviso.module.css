@@ -49,3 +49,12 @@
   color: var(--cor-dark);
   font-weight: 600;
 }
+
+/* O mesmo par do "faltando" das Configurações (--cor-atencao sobre
+   --cor-atencao-fundo), que já tem valor por tema. */
+.atencao {
+  border-color: var(--cor-atencao);
+  background: var(--cor-atencao-fundo);
+  color: var(--cor-atencao);
+  font-weight: 600;
+}

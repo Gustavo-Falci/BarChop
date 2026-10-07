@@ -523,3 +523,46 @@
   justify-items: start;
   text-transform: capitalize;
 }
+
+/* Datas especiais (painel v2, marco 3): a lista usa a mesma moldura da
+   lista de áreas, com a data, o que vale nela e o "Remover" na ponta —
+   sem link, a linha não é clicável inteira. */
+.linhaDaData {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-height: 56px;
+  padding: var(--espaco-xs) var(--espaco-lg);
+}
+
+/* O formulário de uma data nova, abaixo da lista: os campos quebram
+   linha no celular, e o botão fica no fim. */
+.novaData {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espaco-md);
+  margin-block-start: var(--espaco-md);
+}
+
+.marcaDaData {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+  cursor: pointer;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+@media (max-width: 720px) {
+  .linhaDaData {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-inline: var(--espaco-md);
+  }
+
+  .linhaDaData .valor {
+    grid-column: 1;
+  }
+}

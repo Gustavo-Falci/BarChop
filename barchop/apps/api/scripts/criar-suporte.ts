@@ -4,6 +4,9 @@
 // Uso, na VM ou em desenvolvimento (de barchop/):
 //   SENHA_DO_SUPORTE='...' pnpm --filter @barchop/api criar-suporte "Nome" email@barchop.com.br
 //
+// Em produção o script vai no bundle (tsup.config.ts) e roda dentro do
+// contêiner da API, que não tem pnpm nem tsx: ver infra/README.md.
+//
 // A senha vem do ambiente, e não de um argumento, pra não ficar no
 // histórico do shell. Mínimo de 12 caracteres.
 import { prisma } from "@barchop/database";

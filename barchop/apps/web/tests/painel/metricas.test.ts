@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { AgendamentoComCliente, HorarioSerializado } from "@barchop/types";
-import {
-  minutosOcupados,
-  ocupacao,
-  previstoDoDia,
-} from "../../src/painel/metricas";
+import type { AgendamentoComCliente } from "@barchop/types";
+import { formatarHoras, percentual, previstoDoDia, proximos } from "../../src/painel/metricas";
 
 const CLIENTE = {
   id: "c1",
@@ -17,13 +13,14 @@ const CLIENTE = {
 function agendamento(
   status: string,
   minutos: number,
-  preco: string
+  preco: string,
+  { id, horaInicio = "09:00", horaFim = "09:30" }: { id?: string; horaInicio?: string; horaFim?: string } = {}
 ): AgendamentoComCliente {
   return {
-    id: `a-${status}-${minutos}`,
+    id: id ?? `a-${status}-${minutos}-${horaInicio}`,
     data: "2026-09-08",
-    horaInicio: "09:00",
-    horaFim: "09:30",
+    horaInicio,
+    horaFim,
     status,
     origem: "barbeiro",
     observacoes: null,
@@ -41,80 +38,95 @@ function agendamento(
   };
 }
 
-const ABERTO: HorarioSerializado = {
-  diaSemana: 2,
-  horaAbertura: "09:00",
-  horaFechamento: "18:00",
-  fechado: false,
-};
+// 2026-09-08 às 10:00 no fuso da barbearia (o vitest roda em
+// America/Sao_Paulo).
+const AGORA = new Date("2026-09-08T10:00:00-03:00");
 
-const FECHADO: HorarioSerializado = {
-  diaSemana: 0,
-  horaAbertura: null,
-  horaFechamento: null,
-  fechado: true,
-};
+describe("previsto do dia", () => {
+  it("soma o preço congelado, não o de hoje", () => {
+    const lista = [agendamento("pendente", 30, "40.00"), agendamento("confirmado", 20, "25.50")];
 
-describe("métricas do dia", () => {
-  it("soma minutos de pendente, confirmado e concluído", () => {
-    const lista = [
-      agendamento("pendente", 30, "40.00"),
-      agendamento("confirmado", 20, "25.00"),
-      agendamento("concluido", 45, "60.00"),
-    ];
-
-    expect(minutosOcupados(lista)).toBe(95);
+    expect(previstoDoDia(lista)).toBe("65.50");
   });
 
   it("ignora cancelado e no_show", () => {
-    // Horário que voltou a ficar livre não ocupa a agenda nem promete
-    // dinheiro.
+    // Horário que voltou a ficar livre não promete dinheiro.
     const lista = [
       agendamento("pendente", 30, "40.00"),
       agendamento("cancelado", 30, "40.00"),
       agendamento("no_show", 30, "40.00"),
     ];
 
-    expect(minutosOcupados(lista)).toBe(30);
     expect(previstoDoDia(lista)).toBe("40.00");
   });
+});
 
-  it("a ocupação é minutos agendados sobre minutos de funcionamento", () => {
-    // 09:00 às 18:00 são 540 minutos; 135 deles ocupados dão 25%.
-    const lista = [
-      agendamento("pendente", 90, "40.00"),
-      agendamento("confirmado", 45, "60.00"),
-    ];
-
-    expect(ocupacao(lista, ABERTO)).toBe(25);
+// A conta da ocupação é da API (painel v2, marco 4); a tela só divide.
+describe("percentual da ocupação", () => {
+  it("é agendado sobre trabalho", () => {
+    expect(percentual({ minutosDeTrabalho: 540, minutosAgendados: 135 })).toBe(25);
   });
 
-  it("a ocupação arredonda pro inteiro mais próximo, não pra cima", () => {
-    // Esta fixture existe pra prender o modo de arredondamento contra
-    // Math.ceil especificamente. 30/540 (5,5556%) arredonda e "tetoriza"
-    // pro mesmo 6; 135/540 é 25% exato — nenhuma das duas separa
-    // Math.round de Math.ceil. 60/540 = 11,1111%: Math.round dá 11,
-    // Math.ceil dá 12. Só esta fixture entrega valores diferentes pros
-    // dois, então é ela que prova que o código não está arredondando
-    // sempre pra cima.
-    const lista = [agendamento("confirmado", 60, "50.00")];
-
-    expect(ocupacao(lista, ABERTO)).toBe(11);
+  it("arredonda pro inteiro mais próximo, não pra cima", () => {
+    // 60/540 = 11,11%: Math.round dá 11, Math.ceil daria 12.
+    expect(percentual({ minutosDeTrabalho: 540, minutosAgendados: 60 })).toBe(11);
   });
 
-  it("dia fechado não tem ocupação, e não é zero", () => {
+  it("sem trabalho no dia não tem ocupação, e não é zero", () => {
     // Zero por cento diria "aberto e vazio". Dividir por zero seria o
     // outro erro.
-    expect(ocupacao([], FECHADO)).toBeNull();
-    expect(ocupacao([], undefined)).toBeNull();
+    expect(percentual({ minutosDeTrabalho: 0, minutosAgendados: 0 })).toBeNull();
+    expect(percentual({ minutosDeTrabalho: 0, minutosAgendados: 30 })).toBeNull();
   });
 
-  it("o previsto soma o preço congelado, não o de hoje", () => {
+  it("encaixe além do horário passa de 100, sem esconder", () => {
+    expect(percentual({ minutosDeTrabalho: 60, minutosAgendados: 90 })).toBe(150);
+  });
+});
+
+describe("próximos atendimentos", () => {
+  it("deixa de fora o que já terminou, e marca o que está em curso", () => {
     const lista = [
-      agendamento("pendente", 30, "40.00"),
-      agendamento("confirmado", 20, "25.50"),
+      agendamento("confirmado", 30, "40.00", { id: "passou", horaInicio: "08:00", horaFim: "08:30" }),
+      agendamento("confirmado", 45, "40.00", { id: "agora", horaInicio: "09:45", horaFim: "10:30" }),
+      agendamento("pendente", 30, "40.00", { id: "depois", horaInicio: "11:00", horaFim: "11:30" }),
     ];
 
-    expect(previstoDoDia(lista)).toBe("65.50");
+    expect(proximos(lista, AGORA).map(({ agendamento: a, emCurso }) => [a.id, emCurso])).toEqual([
+      ["agora", true],
+      ["depois", false],
+    ]);
+  });
+
+  it("termina às 10:00 em ponto já não é próximo; começa às 10:00 está em curso", () => {
+    const lista = [
+      agendamento("confirmado", 30, "40.00", { id: "acabou", horaInicio: "09:30", horaFim: "10:00" }),
+      agendamento("confirmado", 30, "40.00", { id: "comeca", horaInicio: "10:00", horaFim: "10:30" }),
+    ];
+
+    expect(proximos(lista, AGORA).map(({ agendamento: a, emCurso }) => [a.id, emCurso])).toEqual([
+      ["comeca", true],
+    ]);
+  });
+
+  it("só pendente e confirmado; em ordem de horário", () => {
+    const lista = [
+      agendamento("confirmado", 30, "40.00", { id: "c", horaInicio: "15:00", horaFim: "15:30" }),
+      agendamento("cancelado", 30, "40.00", { id: "x", horaInicio: "11:00", horaFim: "11:30" }),
+      agendamento("concluido", 30, "40.00", { id: "y", horaInicio: "12:00", horaFim: "12:30" }),
+      agendamento("pendente", 30, "40.00", { id: "a", horaInicio: "13:00", horaFim: "13:30" }),
+    ];
+
+    expect(proximos(lista, AGORA).map(({ agendamento: a }) => a.id)).toEqual(["a", "c"]);
+  });
+});
+
+describe("horas por extenso", () => {
+  it("minutos, horas cheias e horas com minutos", () => {
+    expect(formatarHoras(45)).toBe("45 min");
+    expect(formatarHoras(540)).toBe("9h");
+    expect(formatarHoras(270)).toBe("4h30");
+    expect(formatarHoras(65)).toBe("1h05");
+    expect(formatarHoras(0)).toBe("0 min");
   });
 });

@@ -332,10 +332,11 @@ config compartilhada em `packages/config/eslint.mjs`.
   outro critério. Um `cache()` do React compartilhado entre os dois
   deixaria uma chamada só.
 - **Os ícones que o navegador pede viram consulta de barbearia.**
-  `/favicon.png` e `/apple-touch-icon.png` na raiz não estão na lista
-  que o `proxy.ts` deixa passar: caem em `/[slug]`, e o servidor do Next
-  pede `GET /barbearias/favicon.png` à API (400 de slug inválido), a cada
-  página. Visto no primeiro dia em produção. Fecha com os ícones de
+  `/favicon.ico`, `/favicon.png` e `/apple-touch-icon.png` não existem
+  no app: caem em `/[slug]` (o `favicon.ico` também no host da
+  barbearia), e o servidor do Next pede `GET /barbearias/favicon.ico` à
+  API (400 de slug inválido), a cada página. Visto no primeiro dia em
+  produção. Fecha com os ícones de
   verdade no `app/` ou tirando esses caminhos do matcher.
 - **O backup fica no mesmo disco da VM.** O `pg_dump` diário
   (`infra/backup/backup.sh`) protege de erro e de migração ruim, não da

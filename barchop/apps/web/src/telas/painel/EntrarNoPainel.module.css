@@ -25,6 +25,45 @@
   padding: var(--espaco-xxl) var(--espaco-lg);
 }
 
+/* Desktop: tela dividida (as telas usam a largura — pedido do dono). A
+   metade esquerda é um painel escuro com a marca, fixo e decorativo — o
+   texto gerado tem alternativa vazia (`/ ""`), o leitor de tela não o
+   lê —, e o formulário fica na metade direita, na largura de leitura. */
+@media (min-width: 900px) {
+  .pagina {
+    width: 50%;
+    max-width: none;
+    margin-inline: 50% 0;
+    justify-items: center;
+  }
+
+  .pagina > * {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .pagina::before {
+    content: "BarChop\A Agenda online para barbearias." / "";
+    position: fixed;
+    inset: 0 50% 0 0;
+    display: grid;
+    align-content: center;
+    padding: var(--espaco-xxl);
+    white-space: pre-line;
+    background-color: var(--cor-dark);
+    background-image: radial-gradient(
+      color-mix(in srgb, var(--cor-accent) 18%, transparent) 1px,
+      transparent 1.5px
+    );
+    background-size: 22px 22px;
+    color: var(--cor-accent);
+    font-family: var(--fonte-display), system-ui, sans-serif;
+    font-size: clamp(2rem, 3.5vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1.1;
+  }
+}
+
 /* Repete o grid da página porque o <form> virou um item só dela: sem
    isto, os campos que eram filhos diretos de .pagina perderiam o gap e
    encostariam um no outro. */

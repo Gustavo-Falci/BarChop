@@ -2,7 +2,12 @@
   display: grid;
   gap: var(--espaco-lg);
   align-content: start;
-  max-width: 680px;
+}
+
+/* A coluna da direita: status em cima, observações embaixo. */
+.pilha {
+  display: grid;
+  gap: var(--espaco-lg);
 }
 .status { display: flex; flex-wrap: wrap; gap: var(--espaco-sm); }
 .preco { font-weight: 600; }

@@ -6,6 +6,7 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
+import { LadoALado } from "../../componentes/Colunas";
 import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
 import { hojeIso, somarDias } from "../../formato/datas";
@@ -117,111 +118,115 @@ export function FolgasEBloqueios({ agora: agoraFixo }: { agora?: Date } = {}) {
         apoio="Férias, almoço, consulta: o que tira alguém da agenda. O horário bloqueado some do agendamento online."
       />
 
-      <Secao
-        titulo="Novo bloqueio"
-        acao={
-          <Botao type="submit" form={idDoForm} carregando={salvando}>
-            Bloquear
-          </Botao>
-        }
-      >
-        <form
-          id={idDoForm}
-          className={estilos.formulario}
-          noValidate
-          onSubmit={(evento) => {
-            evento.preventDefault();
-            void bloquear();
-          }}
+      {/* Lado a lado: o formulário à esquerda, a lista à direita (as
+          telas usam a largura — pedido do dono). */}
+      <LadoALado>
+        <Secao
+          titulo="Novo bloqueio"
+          acao={
+            <Botao type="submit" form={idDoForm} carregando={salvando}>
+              Bloquear
+            </Botao>
+          }
         >
-          {/* `htmlFor`, e não o <label> embrulhando o <select>: embrulhado,
-              o texto das opções entraria no nome do campo. */}
-          {soOProprio ? null : (
-            <div className={estilos.campoSelect}>
-              <label htmlFor={`${idDoForm}-membro`}>Membro</label>
-              <select
-                id={`${idDoForm}-membro`}
-                value={barbeiroId}
-                onChange={(evento) => setBarbeiroId(evento.target.value)}
-              >
-                {podemSerBloqueados.map((membro) => (
-                  <option key={membro.id} value={membro.id}>
-                    {membro.nome}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className={estilos.linha}>
-            <Campo rotulo="De" type="date" valor={dataInicio} onChange={setDataInicio} />
-            <Campo rotulo="Até" type="date" valor={dataFim} onChange={setDataFim} />
-          </div>
-          <label className={estilos.opcao}>
-            <input
-              type="checkbox"
-              checked={diaInteiro}
-              onChange={(evento) => setDiaInteiro(evento.target.checked)}
-            />
-            Dia inteiro
-          </label>
-          {diaInteiro ? null : (
+          <form
+            id={idDoForm}
+            className={estilos.formulario}
+            noValidate
+            onSubmit={(evento) => {
+              evento.preventDefault();
+              void bloquear();
+            }}
+          >
+            {/* `htmlFor`, e não o <label> embrulhando o <select>: embrulhado,
+                o texto das opções entraria no nome do campo. */}
+            {soOProprio ? null : (
+              <div className={estilos.campoSelect}>
+                <label htmlFor={`${idDoForm}-membro`}>Membro</label>
+                <select
+                  id={`${idDoForm}-membro`}
+                  value={barbeiroId}
+                  onChange={(evento) => setBarbeiroId(evento.target.value)}
+                >
+                  {podemSerBloqueados.map((membro) => (
+                    <option key={membro.id} value={membro.id}>
+                      {membro.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className={estilos.linha}>
-              <Campo rotulo="Das" type="time" valor={horaInicio} onChange={setHoraInicio} />
-              <Campo rotulo="Às" type="time" valor={horaFim} onChange={setHoraFim} />
+              <Campo rotulo="De" type="date" valor={dataInicio} onChange={setDataInicio} />
+              <Campo rotulo="Até" type="date" valor={dataFim} onChange={setDataFim} />
             </div>
-          )}
-          <Campo
-            rotulo="Motivo (opcional)"
-            maxLength={MOTIVO_MAX}
-            placeholder="Férias, almoço, médico"
-            valor={motivo}
-            onChange={setMotivo}
-          />
-          {erro ? <Aviso>{erro}</Aviso> : null}
-        </form>
-      </Secao>
+            <label className={estilos.opcao}>
+              <input
+                type="checkbox"
+                checked={diaInteiro}
+                onChange={(evento) => setDiaInteiro(evento.target.checked)}
+              />
+              Dia inteiro
+            </label>
+            {diaInteiro ? null : (
+              <div className={estilos.linha}>
+                <Campo rotulo="Das" type="time" valor={horaInicio} onChange={setHoraInicio} />
+                <Campo rotulo="Às" type="time" valor={horaFim} onChange={setHoraFim} />
+              </div>
+            )}
+            <Campo
+              rotulo="Motivo (opcional)"
+              maxLength={MOTIVO_MAX}
+              placeholder="Férias, almoço, médico"
+              valor={motivo}
+              onChange={setMotivo}
+            />
+            {erro ? <Aviso>{erro}</Aviso> : null}
+          </form>
+        </Secao>
 
-      <Secao titulo={`Próximos ${DIAS_A_FRENTE} dias`}>
-        {falha ? (
-          <Aviso>{falha.mensagem || "Não foi possível carregar os bloqueios agora."}</Aviso>
-        ) : carregando ? (
-          <p>Carregando…</p>
-        ) : bloqueios.dados!.length === 0 ? (
-          <p className={estilos.vazio}>Nenhum bloqueio nos próximos {DIAS_A_FRENTE} dias.</p>
-        ) : (
-          <ul className={estilos.lista}>
-            {bloqueios.dados!.map((bloqueio) => {
-              const periodo =
-                bloqueio.dataInicio === bloqueio.dataFim
-                  ? diaCurto(bloqueio.dataInicio)
-                  : `${diaCurto(bloqueio.dataInicio)} a ${diaCurto(bloqueio.dataFim)}`;
-              const horas =
-                bloqueio.horaInicio && bloqueio.horaFim
-                  ? `${bloqueio.horaInicio} às ${bloqueio.horaFim}`
-                  : "dia inteiro";
-              return (
-                <li key={bloqueio.id} className={estilos.item}>
-                  <div className={estilos.texto}>
-                    <strong>{nomeDe(bloqueio.barbeiroId)}</strong>
-                    <span>
-                      {periodo} · <span>{horas}</span>
-                    </span>
-                    {bloqueio.motivo ? <span className={estilos.motivo}>{bloqueio.motivo}</span> : null}
-                  </div>
-                  <Botao
-                    type="button"
-                    variante="contorno"
-                    onClick={() => void remover(bloqueio.id)}
-                    aria-label={`Remover bloqueio de ${nomeDe(bloqueio.barbeiroId)} em ${periodo}`}
-                  >
-                    Remover
-                  </Botao>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Secao>
+        <Secao titulo={`Próximos ${DIAS_A_FRENTE} dias`}>
+          {falha ? (
+            <Aviso>{falha.mensagem || "Não foi possível carregar os bloqueios agora."}</Aviso>
+          ) : carregando ? (
+            <p>Carregando…</p>
+          ) : bloqueios.dados!.length === 0 ? (
+            <p className={estilos.vazio}>Nenhum bloqueio nos próximos {DIAS_A_FRENTE} dias.</p>
+          ) : (
+            <ul className={estilos.lista}>
+              {bloqueios.dados!.map((bloqueio) => {
+                const periodo =
+                  bloqueio.dataInicio === bloqueio.dataFim
+                    ? diaCurto(bloqueio.dataInicio)
+                    : `${diaCurto(bloqueio.dataInicio)} a ${diaCurto(bloqueio.dataFim)}`;
+                const horas =
+                  bloqueio.horaInicio && bloqueio.horaFim
+                    ? `${bloqueio.horaInicio} às ${bloqueio.horaFim}`
+                    : "dia inteiro";
+                return (
+                  <li key={bloqueio.id} className={estilos.item}>
+                    <div className={estilos.texto}>
+                      <strong>{nomeDe(bloqueio.barbeiroId)}</strong>
+                      <span>
+                        {periodo} · <span>{horas}</span>
+                      </span>
+                      {bloqueio.motivo ? <span className={estilos.motivo}>{bloqueio.motivo}</span> : null}
+                    </div>
+                    <Botao
+                      type="button"
+                      variante="contorno"
+                      onClick={() => void remover(bloqueio.id)}
+                      aria-label={`Remover bloqueio de ${nomeDe(bloqueio.barbeiroId)} em ${periodo}`}
+                    >
+                      Remover
+                    </Botao>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Secao>
+      </LadoALado>
     </div>
   );
 }

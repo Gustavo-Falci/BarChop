@@ -1,10 +1,9 @@
-/* O mesmo teto de ListaDeServicos: duas colunas curtas não têm o que
-   fazer com os 1180px do container. */
+/* Na largura toda (pedido do dono): a tabela ganhou contato e "atende"
+   pra usar o espaço. */
 .pagina {
   display: grid;
   gap: var(--espaco-lg);
   align-content: start;
-  max-width: 760px;
 }
 
 /* Nome e chips na mesma linha, encostados no nome — `inline-flex` pelo

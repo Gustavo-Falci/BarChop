@@ -1,9 +1,14 @@
-/* Mesmo teto dos formulários do painel (560px). */
 .pagina {
   display: grid;
   gap: var(--espaco-lg);
   align-content: start;
-  max-width: 560px;
+}
+
+/* A coluna da esquerda na edição: foto em cima, serviços embaixo. */
+.pilha {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
 }
 
 .apoio,

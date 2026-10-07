@@ -66,8 +66,10 @@ export function ListaDaEquipe() {
         <p>Carregando…</p>
       ) : (
         <Tabela
-          cabecalho={["Nome", "Papel", ""]}
-          larguras={["58%", "34%", "8%"]}
+          // Na largura toda, com o contato e se atende (as telas usam a
+          // largura — pedido do dono).
+          cabecalho={["Nome", "Papel", "E-mail", "Telefone", "Atende clientes", ""]}
+          larguras={["26%", "13%", "25%", "16%", "12%", "8%"]}
           vazio="Ninguém na equipe ainda."
           aoAbrir={(id) => router.push(`/painel/equipe/${id}`)}
           linhas={equipe.dados.map((membro) => ({
@@ -87,6 +89,9 @@ export function ListaDaEquipe() {
                 {membro.ativo ? null : <Chip tom="neutro">inativo</Chip>}
               </span>,
               ROTULO_DO_PAPEL[membro.papel],
+              membro.email,
+              membro.telefone ?? "—",
+              membro.atende ? "Sim" : "Não",
               <span className={estilos.abrir} key="abrir">
                 <IconeAbrir />
               </span>,

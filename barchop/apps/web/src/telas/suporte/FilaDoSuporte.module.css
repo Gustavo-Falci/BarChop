@@ -1,17 +1,19 @@
-/* A fila do suporte: uma coluna de cartões, larga o bastante pra ler o
-   link atual e o pedido lado a lado. Mesmos tokens do painel. */
+/* A fila do suporte: os pedidos em grade de cartões, na largura da tela
+   (as telas usam a largura — pedido do dono). Mesmos tokens do painel. */
 .pagina {
   display: grid;
   gap: var(--espaco-lg);
   align-content: start;
   width: 100%;
-  max-width: 760px;
+  max-width: 1240px;
   margin-inline: auto;
   padding: var(--espaco-xl) var(--espaco-lg);
 }
 
 .lista {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  align-items: start;
   gap: var(--espaco-md);
   margin: 0;
   padding: 0;

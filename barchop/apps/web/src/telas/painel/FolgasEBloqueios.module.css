@@ -1,9 +1,7 @@
-/* O teto dos detalhes do painel: formulário curto e uma lista. */
 .pagina {
   display: grid;
   gap: var(--espaco-lg);
   align-content: start;
-  max-width: 680px;
 }
 
 .formulario {

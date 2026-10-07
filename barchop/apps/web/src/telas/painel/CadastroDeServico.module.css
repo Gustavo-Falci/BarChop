@@ -2,7 +2,6 @@
   display: grid;
   gap: var(--espaco-lg);
   align-content: start;
-  max-width: 560px;
 }
 
 /* Os botões ficam do tamanho do texto: soltos no grid da página eles

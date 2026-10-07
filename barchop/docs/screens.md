@@ -75,10 +75,17 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 
 | Tela | O que faz | Referência |
 |---|---|---|
-| 🆕 Landing | Promessa, dor, como funciona, prova, preços, FAQ, CTA final — versão curta das 17 seções | Home |
-| 🆕 Preços | Seletor de profissionais, mensal/anual, planos e complementos | seção Preços |
-| 🆕 Plano grátis | O que o grátis faz e o que não faz | `/gratis` |
-| 🆕 Termos e privacidade | Legal e LGPD | `/terms`, `/privacy` |
+| ✅ Landing | Promessa, como funciona, "grátis durante o lançamento", CTA pro cadastro, em `/` (PR #40). Sem prova social até o piloto medir | Home |
+| ✅ Termos e privacidade | Rascunho LGPD "em revisão" em `/termos` e `/privacidade`, aceite no cadastro do dono (PR #70). Razão social, CNPJ e DPO a preencher | `/terms`, `/privacy` |
+
+`robots.txt` (fecha `/painel` e o link do lembrete), `sitemap.xml` (só
+`/`, `/termos`, `/privacidade`) e Open Graph da home saem de
+`NEXT_PUBLIC_URL_DO_SITE` (PR `onda-1s-c`).
+
+**Movidas pra Onda 2** (decisão do dono, 2026-10-05: o site não promete
+limite que a API não aplica): Preços (seletor de profissionais,
+mensal/anual, planos e complementos) e Plano grátis (`/gratis`), junto
+com a cobrança.
 
 Depois do mínimo: páginas de funcionalidade (template de 9 blocos),
 `/comparar`, blog, sobre e metodologia.

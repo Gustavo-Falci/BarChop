@@ -12,6 +12,7 @@ import { useRequisicao } from "../../../api/useRequisicao";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
+import { PausasDaEquipe } from "./PausasDaEquipe";
 import {
   aplicarRotina,
   difereDaRotina,
@@ -243,6 +244,8 @@ function Horarios() {
             </div>
           ))}
         </Secao>
+
+        <PausasDaEquipe />
       </div>
     </MolduraDaArea>
   );

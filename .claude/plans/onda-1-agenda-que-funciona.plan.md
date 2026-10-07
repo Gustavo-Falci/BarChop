@@ -4,7 +4,25 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-07, fim do dia — marco 3 do painel v2 pela metade) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-07, noite — marco 3 completo, tudo em produção) — vale mais que as seções abaixo
+
+**Estado:** `main` = produção = `e9f68f0` (VM atualizada e conferida). Nada pela metade em branch nenhuma.
+
+**Feito depois do bloco abaixo (PRs #65–#72):**
+- Marco 3 do painel v2 **completo**: 3e #65 regras na API (migration `20261009120000_regras_de_agendamento`), 3f #66 tela Regras + 5ª área + Novo agendamento com token, 3g #67 cliente obedece os prazos (botões somem + WhatsApp/telefone da casa).
+- Página pública sem a fita listrada, com ou sem capa (#68, #69).
+- **Todas as telas horizontais no desktop** (pedido do dono): Configurações (#66), painel (#71), fluxo do cliente (#72), termos/privacidade (#70). Peças `apps/web/src/componentes/Colunas` (`LadoALado`, `CamposLadoALado`). Tela nova já nasce assim.
+- **Onda 1s-b** (#70): `/termos`, `/privacidade`, links no rodapé, aceite no cadastro. Razão social, CNPJ e e-mail do DPO "a preencher" em `apps/web/src/site/controlador.ts` (o dono ainda não tem).
+
+**O que falta (perguntar ao dono a ordem):**
+1. `onda-1s-c` — robots, sitemap, description/Open Graph, docs (Task 3 do plano `onda-1s-site-de-marketing.plan.md`). Era o próximo.
+2. Marco 4 do painel v2 — Hoje (plano a criar com `ecc:plan` do PRD `painel-v2.prd.md`); depois marcos 5 e 6.
+3. G3 (GR Barber com `lembrete_ativo = false`) e G4 (docs).
+4. Soltas: dados legais a preencher; telas do 3g e várias horizontais não vistas no navegador; `barbearia-teste` em produção.
+
+**Combinados (atualizados):** um PR por item, TDD RED → GREEN, português; **push, PR e merge por mim** com testes verdes (o dono reafirmou em 2026-10-07); telas novas com aprovação visual antes do merge. Deploy: o dono roda na VM (PC de casa ou notebook, MobaXterm), **um comando por vez**: `git pull` → `docker compose build api` (+ `migrar` se tiver migration) → `build web` → `up -d`; eu confiro produção com curl.
+
+## RETOMAR AQUI (2026-10-07, fim do dia — marco 3 do painel v2 pela metade) — histórico
 
 **Estado:** `main` em #63, nada pela metade em branch nenhuma. Produção no ar (G1); na VM roda a `main` até o #61.
 

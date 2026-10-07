@@ -30,20 +30,9 @@
   position: relative;
   aspect-ratio: 2 / 1;
   background: var(--cor-dark);
-}
-
-/* A faixa listrada na base da vitrine — amarelo e preto, a "fita" da
-   casa — separa a capa do nome. Sem capa ela sai (.semCapa). */
-.vitrine::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0;
-  height: 10px;
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--cor-accent) 0 10px,
-    var(--cor-dark) 10px 20px
-  );
+  /* A linha que separa a capa (ou o monograma) do nome: a mesma borda
+     dos cartões. A fita listrada que fazia isso saiu (pedido do dono). */
+  border-block-end: var(--borda-padrao) solid var(--cor-ink);
 }
 
 @media (min-width: 900px) {
@@ -60,12 +49,6 @@
 .semCapa {
   aspect-ratio: auto;
   height: clamp(96px, 18vw, 200px);
-}
-
-/* Sem capa, sem a fita: ela separa a foto do nome, e sem foto sobrava
-   uma faixa listrada sem função no topo da página (pedido do dono). */
-.semCapa::after {
-  content: none;
 }
 
 .capa {

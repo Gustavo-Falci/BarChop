@@ -47,27 +47,27 @@ Listas fechadas em `@barchop/formato` (como `pagina.ts`), CHECK na migration com
 
 ## PRs (um por item, TDD)
 
-### 3a — Pausa na jornada (API + api-client + dublê)
+### 3a — Pausa na jornada (API + api-client + dublê) — **feito (#60)**; pausa mandada na folga é descartada (não 400), como as horas
 - Migration `jornada_pausa`: `pausa_inicio`, `pausa_fim` (TIME, nulas) em `jornada_profissional`; CHECK as duas ou nenhuma, início < fim, e nula na folga.
 - `GET/PUT /equipe/:id/jornada` com `pausaInicio`/`pausaFim`; 422 pausa fora da janela do dia não é erro (só não tem efeito) — **decidir na implementação**, o padrão é aceitar e recortar.
 - Disponibilidade: a pausa do membro vira intervalo ocupado em `contextoDoDia`/`agendaDoPeriodo` (os três caminhos). Vale pra cliente e painel.
 - Tipos (`DiaDaJornada`), api-client e dublê.
 - **Testes**: horário que cruza a pausa some do dia, do mês e dos próximos horários; POST no meio da pausa recusa; folga com pausa = 400.
 
-### 3b — Pausa nas telas
+### 3b — Pausa nas telas — **feito (#61)**; a pausa se edita só na jornada (Horários mostra e leva até lá, inclusive o dono)
 - `JornadaDoMembro`: pausa opcional por dia (início/fim), com atalho "mesma pausa em todos os dias".
 - Configurações › Horários: seção "Pausas da equipe" — cada membro que atende com o resumo ("12:00–13:00, seg a sex") e "Editar →" pra jornada dele. Dono que trabalha sozinho edita ali mesmo (é a jornada dele).
 
-### 3c — Exceções por dia (API)
+### 3c — Exceções por dia (API) — **feito (#62)**; o dublê não recusa data passada (sem relógio)
 - Tabela `excecao_horario` (`barbearia_id`, `data`, `fechado`, `hora_abertura`, `hora_fechamento`, `motivo`; único por barbearia+data; CHECK horas ↔ fechado).
 - `GET /horarios/excecoes` (de hoje em diante), `PUT /horarios/excecoes/:data`, `DELETE /horarios/excecoes/:data` — só dono; marca a área `horarios`.
 - Disponibilidade: a exceção da data substitui a linha do dia da semana antes do `janelaEfetiva` (três caminhos). Agendamentos já marcados na data **não** são mexidos; o PUT devolve quantos ficam fora do novo horário, pra tela avisar.
 - api-client e dublê.
 
-### 3d — Exceções na tela de Horários
+### 3d — Exceções na tela de Horários — **feito (#63)**; seção "Datas especiais"; Aviso ganhou o tom atencao
 - Lista das próximas exceções; "Adicionar data": data, "Fechado o dia todo" ou horário; aviso com os agendamentos que ficam fora.
 
-### 3e — Regras (API)
+### 3e — Regras (API) — **próximo**
 - Migration `regras_de_agendamento` com as colunas da tabela acima (padrões = hoje) e CHECKs.
 - `@barchop/formato/regras.ts`: listas e padrões; área nova `regras_de_agendamento` em `AREAS_DE_CONFIGURACAO` (N passa a 5) e os campos em `AREA_DO_CAMPO`.
 - `PATCH /barbearias/me` aceita os campos; `GET /barbearias/me` e o perfil público devolvem as regras (a tela do cliente precisa dos prazos).

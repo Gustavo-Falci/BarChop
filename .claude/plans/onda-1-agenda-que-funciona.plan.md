@@ -15,7 +15,7 @@
 - **Onda 1s-b** (#70): `/termos`, `/privacidade`, links no rodapé, aceite no cadastro. Razão social, CNPJ e e-mail do DPO "a preencher" em `apps/web/src/site/controlador.ts` (o dono ainda não tem).
 
 **O que falta (perguntar ao dono a ordem):**
-1. `onda-1s-c` — robots, sitemap, description/Open Graph, docs (Task 3 do plano `onda-1s-site-de-marketing.plan.md`). Era o próximo.
+1. ~~`onda-1s-c`~~ — **feito em 2026-10-07** (PR `onda-1s-c`): robots, sitemap, description/Open Graph, docs. **Onda 1s completa** no mínimo; precisa de deploy do web (sem migration).
 2. Marco 4 do painel v2 — Hoje (plano a criar com `ecc:plan` do PRD `painel-v2.prd.md`); depois marcos 5 e 6.
 3. G3 (GR Barber com `lembrete_ativo = false`) e G4 (docs).
 4. Soltas: dados legais a preencher; telas do 3g e várias horizontais não vistas no navegador; `barbearia-teste` em produção.

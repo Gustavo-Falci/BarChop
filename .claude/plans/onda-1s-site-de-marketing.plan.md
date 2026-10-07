@@ -75,7 +75,7 @@ ninguém.
 - **Mirror**: `tests/telas/painel/` pro cadastro; `DocumentoLegal` com h1/h2 navegáveis.
 - **Validate**: suíte web; Chrome nas duas páginas e no cadastro.
 
-### Task 3 — robots, sitemap, metadata e docs (PR `onda-1s-c`)
+### Task 3 — robots, sitemap, metadata e docs (PR `onda-1s-c`) — **feito**: `src/site/rastreadores.ts` (puro, testado) por trás de `app/robots.ts` e `app/sitemap.ts`; robots fecha também o link do lembrete (`/lembrete/`, `/*/lembrete/`), que leva token no caminho; `metadataBase` só no layout `(marketing)` (as barbearias moram em outro host); OG da home sem imagem por enquanto
 - **Action**: `robots.ts` e `sitemap.ts` com a base de `NEXT_PUBLIC_URL_DO_SITE` (sem ela, sitemap vazio e robots sem `Sitemap:`); `description` do layout raiz; Open Graph básico na home. Docs: `screens.md` (Landing, Termos e privacidade ✅; Preços e Plano grátis movidos pra Onda 2), roadmap e PRD.
 - **Mirror**: `siteDoAmbiente()` de `proxy.ts` pra ler a variável.
 - **Validate**: `curl localhost:3000/robots.txt` e `/sitemap.xml`; testes unitários das duas funções.

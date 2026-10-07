@@ -13,6 +13,7 @@ import type {
   HorarioSerializado,
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
+  OcupacaoDoDia,
   PaginaDeClientes,
   PapelMembro,
   PerfilBarbeiro,
@@ -433,6 +434,12 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
         agendamentos: AgendamentoComCliente[];
       }>("/agendamentos", { query: { data }, comToken: true });
       return resposta.agendamentos;
+    },
+
+    // A ocupação do Hoje (painel v2, marco 4): trabalho e agendado, em
+    // minutos, por profissional e da casa. A data é a de hoje da tela.
+    ocupacaoDoDia(data: string): Promise<OcupacaoDoDia> {
+      return requisicao("/barbearias/me/ocupacao", { query: { data }, comToken: true });
     },
 
     async agendamentosDoIntervalo(

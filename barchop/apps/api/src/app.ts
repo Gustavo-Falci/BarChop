@@ -32,6 +32,7 @@ import { registrarRotasHorarios } from "./routers/horarios";
 import { registrarRotaDeArquivos, registrarRotasImagens } from "./routers/imagens";
 import { ocultarTokenDoLembrete, registrarRotasLembretes } from "./routers/lembretes";
 import { registrarRotasMe } from "./routers/me";
+import { registrarRotasOcupacao } from "./routers/ocupacao";
 import {
   registrarRotasServicos,
   registrarRotasServicosPublicas,
@@ -178,6 +179,7 @@ export function buildApp(
     registrarRotasMe(protegidas);
     registrarRotasBarbeariasProtegidas(protegidas);
     registrarRotasHorarios(protegidas);
+    registrarRotasOcupacao(protegidas);
     registrarRotasServicos(protegidas);
     registrarRotasClientes(protegidas);
     registrarRotasAgendamentos(protegidas);

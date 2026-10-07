@@ -23,6 +23,7 @@ import type {
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
   NovoAgendamentoPublicoInput,
+  OcupacaoDoDia,
   PapelMembro,
   PerfilPublicoBarbearia,
   ProximosHorariosDoServico,
@@ -1121,6 +1122,46 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         return estado.agendamentos
           .filter((a) => a.data === data)
           .map(comCliente);
+      },
+      // Sem jornada, pausa nem bloqueio — a conta é da API: o trabalho é
+      // o horário da casa no dia, pra cada um que atende; o profissional
+      // (bb1) vê só a dele, como na rota.
+      async ocupacaoDoDia(data: string): Promise<OcupacaoDoDia> {
+        const minutos = (hora: string) => {
+          const [h, m] = hora.split(":").map(Number);
+          return h * 60 + m;
+        };
+        const doDia = estado.perfil.horarios.find(
+          (h) => h.diaSemana === new Date(`${data}T12:00:00Z`).getUTCDay()
+        );
+        const trabalho =
+          !doDia || doDia.fechado || !doDia.horaAbertura || !doDia.horaFechamento
+            ? 0
+            : minutos(doDia.horaFechamento) - minutos(doDia.horaAbertura);
+        const profissionais = equipe()
+          .filter((m) => m.atende && m.ativo && !m.convitePendente)
+          .filter((m) => estado.papel !== "profissional" || m.id === "bb1")
+          .map((m) => ({
+            id: m.id,
+            nome: m.nome,
+            minutosDeTrabalho: trabalho,
+            minutosAgendados: estado.agendamentos
+              .filter(
+                (a) =>
+                  a.data === data &&
+                  a.barbeiro.id === m.id &&
+                  ["pendente", "confirmado", "concluido"].includes(a.status)
+              )
+              .reduce((total, a) => total + minutos(a.horaFim) - minutos(a.horaInicio), 0),
+          }));
+        return {
+          data,
+          casa: {
+            minutosDeTrabalho: profissionais.reduce((t, p) => t + p.minutosDeTrabalho, 0),
+            minutosAgendados: profissionais.reduce((t, p) => t + p.minutosAgendados, 0),
+          },
+          profissionais,
+        };
       },
       async agendamentosDoIntervalo(de: string, ate: string) {
         return estado.agendamentos

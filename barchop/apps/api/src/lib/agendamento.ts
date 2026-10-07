@@ -2,6 +2,7 @@ import type { Prisma } from "@barchop/database";
 import {
   aplicarBloqueios,
   caiEmBloqueio,
+  caiNaPausa,
   candidatosDoQualquerUm,
   carregarServicos,
   contextoDoDia,
@@ -149,6 +150,12 @@ export async function criarAgendamento(
       "horario_bloqueado"
     );
   }
+  if (caiNaPausa(contexto.pausa, horaInicio, horaFim)) {
+    throw new ErroDeNegocio(
+      "esse horário cai na pausa do profissional",
+      "horario_na_pausa"
+    );
+  }
   const { janela, ocupados: bloqueados } = aplicarBloqueios(
     contexto.janela,
     contexto.bloqueios,
@@ -172,7 +179,7 @@ export async function criarAgendamento(
   if (
     !horariosLivres({
       janela,
-      ocupados: [...ocupados, ...bloqueados],
+      ocupados: [...ocupados, ...bloqueados, ...contexto.pausa],
       duracaoTotalMinutos,
     }).includes(horaInicio)
   ) {

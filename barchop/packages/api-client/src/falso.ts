@@ -306,6 +306,19 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     }
   }
 
+  // A pausa do dia com as recusas do PUT da API (routers/equipe.ts).
+  function pausaDoDia(dia: DiaDaJornada): { pausaInicio: string | null; pausaFim: string | null } {
+    const { pausaInicio, pausaFim } = dia;
+    if (dia.modo === "folga" || (!pausaInicio && !pausaFim)) return { pausaInicio: null, pausaFim: null };
+    if (!pausaInicio || !pausaFim) {
+      throw new ErroDaApi(422, "pausa_incompleta", "a pausa precisa de começo e fim");
+    }
+    if (pausaInicio >= pausaFim) {
+      throw new ErroDaApi(422, "pausa_invalida", "a pausa precisa começar antes de terminar");
+    }
+    return { pausaInicio, pausaFim };
+  }
+
   // O que o trigger da API dá a todo membro, criado na primeira leitura.
   function jornadaDe(id: string): DiaDaJornada[] {
     estado.jornadas![id] ??= [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
@@ -313,6 +326,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       modo: "barbearia",
       horaInicio: null,
       horaFim: null,
+      pausaInicio: null,
+      pausaFim: null,
     }));
     return estado.jornadas![id];
   }
@@ -771,18 +786,19 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         return jornadaDe(id).map((dia) => ({ ...dia }));
       },
       // As mesmas recusas do PUT da API; hora em dia que não é próprio
-      // é descartada, como lá.
+      // é descartada, como lá, e a pausa na folga também.
       async salvarJornada(id: string, jornada: DiaDaJornada[]) {
         membroOu404(id);
         const dias = jornada.map((dia) => {
-          if (dia.modo !== "proprio") return { ...dia, horaInicio: null, horaFim: null };
+          const pausa = pausaDoDia(dia);
+          if (dia.modo !== "proprio") return { ...dia, horaInicio: null, horaFim: null, ...pausa };
           if (!dia.horaInicio || !dia.horaFim) {
             throw new ErroDaApi(422, "horario_incompleto", "dia próprio sem entrada e saída");
           }
           if (dia.horaInicio >= dia.horaFim) {
             throw new ErroDaApi(422, "intervalo_invalido", "a entrada precisa ser antes da saída");
           }
-          return { ...dia };
+          return { ...dia, ...pausa };
         });
         estado.jornadas![id] = dias.sort((a, b) => a.diaSemana - b.diaSemana);
         return jornadaDe(id).map((dia) => ({ ...dia }));

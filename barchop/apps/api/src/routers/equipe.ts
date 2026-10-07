@@ -74,6 +74,9 @@ const corpoPutJornada = {
           modo: { type: "string", enum: ["barbearia", "proprio", "folga"] },
           horaInicio: { type: ["string", "null"], pattern: PADRAO_HORA },
           horaFim: { type: ["string", "null"], pattern: PADRAO_HORA },
+          // A pausa do almoço do dia (painel v2, marco 3).
+          pausaInicio: { type: ["string", "null"], pattern: PADRAO_HORA },
+          pausaFim: { type: ["string", "null"], pattern: PADRAO_HORA },
         },
       },
     },
@@ -98,13 +101,47 @@ function serializarDiaDaJornada(dia: {
   modo: string;
   horaInicio: Date | null;
   horaFim: Date | null;
+  pausaInicio: Date | null;
+  pausaFim: Date | null;
 }) {
   return {
     diaSemana: dia.diaSemana,
     modo: dia.modo,
     horaInicio: dia.horaInicio ? dateParaHora(dia.horaInicio) : null,
     horaFim: dia.horaFim ? dateParaHora(dia.horaFim) : null,
+    pausaInicio: dia.pausaInicio ? dateParaHora(dia.pausaInicio) : null,
+    pausaFim: dia.pausaFim ? dateParaHora(dia.pausaFim) : null,
   };
+}
+
+// A pausa do dia, validada e convertida. Folga não tem pausa: a que vier
+// é descartada, como as horas num dia que não é próprio — a tela manda o
+// que estava antes de trocar o modo. O CHECK `jornada_pausa_inteira`
+// exige o mesmo.
+function pausaDoDia(dia: {
+  diaSemana: number;
+  modo: string;
+  pausaInicio?: string | null;
+  pausaFim?: string | null;
+}): { pausaInicio: Date | null; pausaFim: Date | null } {
+  const { pausaInicio, pausaFim } = dia;
+  if (dia.modo === "folga" || (!pausaInicio && !pausaFim)) {
+    return { pausaInicio: null, pausaFim: null };
+  }
+  if (!pausaInicio || !pausaFim) {
+    throw new ErroDeNegocio(
+      `a pausa do dia ${dia.diaSemana} precisa de começo e fim`,
+      "pausa_incompleta"
+    );
+  }
+  // "HH:mm" compara como texto na ordem do relógio.
+  if (pausaInicio >= pausaFim) {
+    throw new ErroDeNegocio(
+      `no dia ${dia.diaSemana} a pausa precisa começar antes de terminar`,
+      "pausa_invalida"
+    );
+  }
+  return { pausaInicio: horaParaDate(pausaInicio), pausaFim: horaParaDate(pausaFim) };
 }
 
 // O membro existe nesta barbearia? Leitura e escrita da jornada e dos
@@ -356,8 +393,9 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         // tela costuma mandar as horas antigas depois de trocar o modo,
         // como no `fechado` do funcionamento. O CHECK do banco exige
         // que fiquem nulas.
+        const pausa = pausaDoDia(dia);
         if (dia.modo !== "proprio") {
-          return { diaSemana: dia.diaSemana, modo: dia.modo, horaInicio: null, horaFim: null };
+          return { diaSemana: dia.diaSemana, modo: dia.modo, horaInicio: null, horaFim: null, ...pausa };
         }
         if (!dia.horaInicio || !dia.horaFim) {
           throw new ErroDeNegocio(
@@ -377,6 +415,7 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
           modo: dia.modo,
           horaInicio: horaParaDate(dia.horaInicio),
           horaFim: horaParaDate(dia.horaFim),
+          ...pausa,
         };
       });
 

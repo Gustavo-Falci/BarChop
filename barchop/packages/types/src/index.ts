@@ -274,6 +274,10 @@ export interface DiaDaJornada {
   modo: ModoJornada;
   horaInicio: string | null; // "HH:mm"
   horaFim: string | null;
+  // A pausa do almoço do dia (painel v2, marco 3): as duas ou nenhuma, e
+  // nunca na folga. Opcional ao mandar; a API sempre devolve.
+  pausaInicio?: string | null;
+  pausaFim?: string | null;
 }
 
 // Folga, almoço ou horário fechado. Sem horas é o dia inteiro; com

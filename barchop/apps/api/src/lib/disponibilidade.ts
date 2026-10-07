@@ -137,9 +137,11 @@ export function caiEmBloqueio(
 }
 
 // O que um dia precisa pra calcular a agenda de um membro: a janela já
-// cruzada com a jornada, a pausa dele e os bloqueios que o tocam. Três
-// consultas, e a rota do mês tem a versão dela com uma consulta por
-// tabela.
+// cruzada com a jornada, a pausa dele e os bloqueios que o tocam. A
+// exceção da data (feriado, horário especial) substitui a linha do dia
+// da semana antes do cruzamento — vale pra toda a equipe, no link e no
+// painel. Quatro consultas, e a rota do mês tem a versão dela com uma
+// consulta por tabela.
 export async function contextoDoDia(
   db: ClientePrisma,
   params: { barbeariaId: string; barbeiroId: string; data: Date }
@@ -148,9 +150,13 @@ export async function contextoDoDia(
   // getUTCDay: a Date foi construída em UTC por dataParaDate.
   const diaSemana = data.getUTCDay();
 
-  const [funcionamento, jornada, bloqueios] = await Promise.all([
+  const [funcionamento, excecao, jornada, bloqueios] = await Promise.all([
     db.horarioFuncionamento.findUnique({
       where: { barbeariaId_diaSemana: { barbeariaId, diaSemana } },
+    }),
+    db.excecaoHorario.findUnique({
+      where: { barbeariaId_data: { barbeariaId, data } },
+      select: { horaAbertura: true, horaFechamento: true, fechado: true },
     }),
     db.jornadaProfissional.findUnique({
       where: { barbeiroId_diaSemana: { barbeiroId, diaSemana } },
@@ -161,7 +167,11 @@ export async function contextoDoDia(
     }),
   ]);
 
-  return { janela: janelaEfetiva(funcionamento, jornada), pausa: pausaComoOcupado(jornada), bloqueios };
+  return {
+    janela: janelaEfetiva(excecao ?? funcionamento, jornada),
+    pausa: pausaComoOcupado(jornada),
+    bloqueios,
+  };
 }
 
 // Quem pode receber cliente: ativo, que atende e que já entrou (aceitou
@@ -266,8 +276,12 @@ export async function agendaDoPeriodo(
 ): Promise<(barbeiroId: string, data: Date, duracaoTotalMinutos: number) => string[]> {
   const { barbeariaId, barbeiroIds, primeiroDia, ultimoDia } = params;
 
-  const [funcionamento, jornadas, bloqueios, agendamentos] = await Promise.all([
+  const [funcionamento, excecoes, jornadas, bloqueios, agendamentos] = await Promise.all([
     db.horarioFuncionamento.findMany({ where: { barbeariaId } }),
+    db.excecaoHorario.findMany({
+      where: { barbeariaId, data: { gte: primeiroDia, lte: ultimoDia } },
+      select: { data: true, horaAbertura: true, horaFechamento: true, fechado: true },
+    }),
     db.jornadaProfissional.findMany({ where: { barbeiroId: { in: barbeiroIds } } }),
     db.bloqueio.findMany({
       where: { barbeiroId: { in: barbeiroIds }, dataInicio: { lte: ultimoDia }, dataFim: { gte: primeiroDia } },
@@ -284,6 +298,9 @@ export async function agendaDoPeriodo(
   ]);
 
   const funcionamentoPorDia = new Map(funcionamento.map((linha) => [linha.diaSemana, linha]));
+  // A exceção da data ganha da linha do dia da semana, como no
+  // `contextoDoDia`.
+  const excecaoPorData = new Map(excecoes.map((excecao) => [excecao.data.getTime(), excecao]));
   const jornadaDe = (barbeiroId: string, diaSemana: number) =>
     jornadas.find((dia) => dia.barbeiroId === barbeiroId && dia.diaSemana === diaSemana) ?? null;
 
@@ -291,7 +308,7 @@ export async function agendaDoPeriodo(
     const diaSemana = data.getUTCDay();
     const jornada = jornadaDe(barbeiroId, diaSemana);
     const { janela, ocupados: bloqueados } = aplicarBloqueios(
-      janelaEfetiva(funcionamentoPorDia.get(diaSemana) ?? null, jornada),
+      janelaEfetiva(excecaoPorData.get(data.getTime()) ?? funcionamentoPorDia.get(diaSemana) ?? null, jornada),
       bloqueios.filter((bloqueio) => bloqueio.barbeiroId === barbeiroId),
       data
     );

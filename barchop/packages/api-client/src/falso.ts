@@ -16,6 +16,8 @@ import type {
   ClienteSerializado,
   BloqueioSerializado,
   DiaDaJornada,
+  EdicaoDeExcecao,
+  ExcecaoDeHorario,
   HorarioSerializado,
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
@@ -138,6 +140,8 @@ export interface EstadoFalso {
   jornadas?: Record<string, DiaDaJornada[]>;
   servicosPorMembro?: Record<string, string[]>;
   bloqueios?: BloqueioSerializado[];
+  // Exceções por data no horário (painel v2, marco 3).
+  excecoesDeHorario?: ExcecaoDeHorario[];
   // A configuração do lembrete, que só o painel lê. 24 h, como na API.
   lembreteAntecedenciaHoras?: AntecedenciaDoLembrete;
   // O interruptor do lembrete (G2c). Ligado, como nas barbearias novas.
@@ -244,6 +248,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     jornadas: { ...(semente.jornadas ?? {}) },
     servicosPorMembro: { ...(semente.servicosPorMembro ?? {}) },
     bloqueios: [...(semente.bloqueios ?? [])],
+    excecoesDeHorario: [...(semente.excecoesDeHorario ?? [])],
     lembreteAntecedenciaHoras: semente.lembreteAntecedenciaHoras ?? 24,
     lembreteAtivo: semente.lembreteAtivo ?? true,
     areasDecididas: [...(semente.areasDecididas ?? [])],
@@ -982,6 +987,41 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         estado.perfil = { ...estado.perfil, horarios };
         decidir(["horarios"]);
         return horarios;
+      },
+      async excecoesDeHorario() {
+        return estado.excecoesDeHorario!.map((excecao) => ({ ...excecao }));
+      },
+      // As recusas do PUT da API (routers/horarios.ts), menos a de data
+      // passada: o dublê não tem relógio. Sem agendamentos ligados ao
+      // horário, `foraDoHorario` sai sempre 0.
+      async salvarExcecaoDeHorario(data: string, edicao: EdicaoDeExcecao) {
+        exigirDono();
+        const { fechado, horaAbertura, horaFechamento } = edicao;
+        if (!fechado && (!horaAbertura || !horaFechamento)) {
+          throw new ErroDaApi(422, "horario_incompleto", "a data está aberta sem hora de abertura e de fechamento");
+        }
+        if (!fechado && horaAbertura! >= horaFechamento!) {
+          throw new ErroDaApi(422, "intervalo_invalido", "a abertura precisa ser antes do fechamento");
+        }
+        const excecao: ExcecaoDeHorario = {
+          data,
+          fechado,
+          horaAbertura: fechado ? null : horaAbertura!,
+          horaFechamento: fechado ? null : horaFechamento!,
+          motivo: edicao.motivo?.trim() || null,
+        };
+        estado.excecoesDeHorario = [...estado.excecoesDeHorario!.filter((e) => e.data !== data), excecao].sort(
+          (a, b) => a.data.localeCompare(b.data)
+        );
+        decidir(["horarios"]);
+        return { excecao: { ...excecao }, foraDoHorario: 0 };
+      },
+      async apagarExcecaoDeHorario(data: string) {
+        exigirDono();
+        if (!estado.excecoesDeHorario!.some((e) => e.data === data)) {
+          throw new ErroDaApi(404, "nao_encontrado", "não há exceção nessa data");
+        }
+        estado.excecoesDeHorario = estado.excecoesDeHorario!.filter((e) => e.data !== data);
       },
       async servicos() {
         return estado.servicos;

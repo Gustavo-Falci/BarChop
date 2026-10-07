@@ -280,6 +280,30 @@ export interface DiaDaJornada {
   pausaFim?: string | null;
 }
 
+// Exceção por data no horário da barbearia (painel v2, marco 3): fecha a
+// casa num feriado ou muda o horário de um dia, pra toda a equipe.
+export interface ExcecaoDeHorario {
+  data: string; // "YYYY-MM-DD"
+  fechado: boolean;
+  horaAbertura: string | null; // "HH:mm"; nulas quando fechado
+  horaFechamento: string | null;
+  motivo: string | null;
+}
+
+export interface EdicaoDeExcecao {
+  fechado: boolean;
+  horaAbertura?: string | null;
+  horaFechamento?: string | null;
+  motivo?: string | null;
+}
+
+// A exceção gravada e quantos agendamentos já marcados na data ficam
+// fora do horário novo — a API não mexe neles.
+export interface ExcecaoSalva {
+  excecao: ExcecaoDeHorario;
+  foraDoHorario: number;
+}
+
 // Folga, almoço ou horário fechado. Sem horas é o dia inteiro; com
 // horas, a mesma faixa em cada dia do período.
 export interface BloqueioSerializado {

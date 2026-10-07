@@ -6,6 +6,9 @@ import type {
   BloqueioSerializado,
   ClienteSerializado,
   DiaDaJornada,
+  EdicaoDeExcecao,
+  ExcecaoDeHorario,
+  ExcecaoSalva,
   HorarioSerializado,
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
@@ -308,6 +311,28 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
         { metodo: "PUT", corpo: { horarios }, comToken: true }
       );
       return resposta.horarios;
+    },
+
+    // Exceções por data (painel v2, marco 3), de hoje em diante.
+    async excecoesDeHorario(): Promise<ExcecaoDeHorario[]> {
+      const resposta = await requisicao<{ excecoes: ExcecaoDeHorario[] }>(
+        "/barbearias/me/horarios/excecoes",
+        { comToken: true }
+      );
+      return resposta.excecoes;
+    },
+
+    // Mandar de novo a mesma data substitui.
+    salvarExcecaoDeHorario(data: string, edicao: EdicaoDeExcecao): Promise<ExcecaoSalva> {
+      return requisicao(`/barbearias/me/horarios/excecoes/${data}`, {
+        metodo: "PUT",
+        corpo: edicao,
+        comToken: true,
+      });
+    },
+
+    async apagarExcecaoDeHorario(data: string): Promise<void> {
+      await requisicao(`/barbearias/me/horarios/excecoes/${data}`, { metodo: "DELETE", comToken: true });
     },
 
     // Inclui os inativos: é desta lista que sai a tela de Serviços,

@@ -88,6 +88,7 @@ model Barbearia {
   clientes              Cliente[]
   servicos              Servico[]
   horariosFuncionamento HorarioFuncionamento[]
+  excecoesDeHorario     ExcecaoHorario[]
   agendamentos          Agendamento[]
   codigosVerificacao    CodigoVerificacao[]
   bloqueios             Bloqueio[]
@@ -162,6 +163,25 @@ model HorarioFuncionamento {
 
   @@unique([barbeariaId, diaSemana])
   @@map("horario_funcionamento")
+}
+
+// Exceção por data no horário da barbearia (painel v2, marco 3): na data,
+// substitui a linha do dia da semana. CHECK `excecao_horas_do_estado`
+// (migration 20261008130000).
+model ExcecaoHorario {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId    String    @map("barbearia_id") @db.Uuid
+  data           DateTime  @db.Date
+  fechado        Boolean   @default(false)
+  horaAbertura   DateTime? @map("hora_abertura") @db.Time
+  horaFechamento DateTime? @map("hora_fechamento") @db.Time
+  motivo         String?   @db.VarChar(120)
+  criadoEm       DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@unique([barbeariaId, data])
+  @@map("excecao_horario")
 }
 
 model Barbeiro {

@@ -11,3 +11,17 @@
 .item { display: grid; gap: var(--espaco-sm); }
 .linha { display: flex; align-items: center; gap: var(--espaco-sm); }
 .acoes { display: flex; gap: var(--espaco-sm); }
+
+/* Desktop: os agendamentos em grade de cartões, na largura do fluxo (as
+   telas usam a largura — pedido do dono); título e avisos na linha toda. */
+@media (min-width: 900px) {
+  .pagina {
+    max-width: var(--fluxo-largura);
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    align-items: start;
+  }
+
+  .pagina > :not(:has(.item)) {
+    grid-column: 1 / -1;
+  }
+}

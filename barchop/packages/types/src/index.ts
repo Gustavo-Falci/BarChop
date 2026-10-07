@@ -51,7 +51,23 @@ export interface NovoAgendamentoPublicoInput {
 // do ClientePublico acima: o serializador importa o tipo, então
 // divergir os dois quebra o type-check em vez de quebrar uma tela.
 
-export interface BarbeariaSerializada {
+// As regras de agendamento da barbearia (painel v2, marco 3): como o
+// cliente marca, remarca e cancela pelo link — o painel encaixa livre.
+// Mesmos campos e opções de @barchop/formato/regras, que é quem valida
+// e decide; a página pública também lê (a tela do cliente mostra os
+// prazos).
+export interface RegrasDeAgendamento {
+  intervaloMinutos: 15 | 30 | 60;
+  antecedenciaMinutos: 0 | 30 | 60 | 120 | 240 | 1440;
+  aceitaMesmoDia: boolean;
+  // null = sem limite.
+  janelaDias: 7 | 14 | 30 | 60 | 90 | null;
+  cabeAntesDeFechar: boolean;
+  prazoRemarcarHoras: 0 | 1 | 2 | 6 | 12 | 24 | 48;
+  prazoCancelarHoras: 0 | 1 | 2 | 6 | 12 | 24 | 48;
+}
+
+export interface BarbeariaSerializada extends RegrasDeAgendamento {
   id: string;
   nome: string;
   slug: string;

@@ -199,7 +199,7 @@ describe("as regras na barbearia", () => {
     ["antecedenciaMinutos", 45],
     ["aceitaMesmoDia", "sim"],
     ["janelaDias", 10],
-    ["cabeAntesDeFechar", 1],
+    ["cabeAntesDeFechar", "talvez"],
     ["prazoRemarcarHoras", 3],
     ["prazoCancelarHoras", -1],
   ])("%s fora das opções dá 400", async (campo, valor) => {

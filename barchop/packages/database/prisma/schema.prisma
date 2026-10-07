@@ -82,6 +82,18 @@ model Barbearia {
   // deduzem do resto: o link copiado e o "trabalho sozinho".
   linkCompartilhadoEm       DateTime? @map("link_compartilhado_em") @db.Timestamptz
   trabalhaSozinho           Boolean  @default(false) @map("trabalha_sozinho")
+  // Regras de agendamento (painel v2, marco 3): só pro cliente, o
+  // painel encaixa livre. Listas fechadas em packages/formato/src/
+  // regras.ts, com o CHECK na migration 20261009120000_regras_de_agendamento.
+  // Os padrões são o comportamento de antes das regras.
+  intervaloMinutos          Int      @default(15) @map("intervalo_minutos") @db.SmallInt
+  antecedenciaMinutos       Int      @default(0) @map("antecedencia_minutos") @db.SmallInt
+  aceitaMesmoDia            Boolean  @default(true) @map("aceita_mesmo_dia")
+  // Nula = sem limite.
+  janelaDias                Int?     @map("janela_dias") @db.SmallInt
+  cabeAntesDeFechar         Boolean  @default(true) @map("cabe_antes_de_fechar")
+  prazoRemarcarHoras        Int      @default(0) @map("prazo_remarcar_horas") @db.SmallInt
+  prazoCancelarHoras        Int      @default(0) @map("prazo_cancelar_horas") @db.SmallInt
   criadoEm                  DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
   barbeiros             Barbeiro[]

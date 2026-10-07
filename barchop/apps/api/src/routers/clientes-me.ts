@@ -9,6 +9,7 @@ import {
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { dataParaDate } from "../lib/horas";
 import { agendarLembrete } from "../lib/lembrete";
+import { carregarRegras, garantirPrazoDoCliente } from "../lib/regras";
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { PADRAO_DATA, PADRAO_EMAIL, PADRAO_HORA, PADRAO_UUID } from "../lib/padroes";
 import { serializarAgendamento, serializarCliente } from "../lib/serializar";
@@ -154,6 +155,11 @@ export function registrarRotasClientesMe(app: App): void {
       });
 
       garantirAlteravel(agendamento);
+      garantirPrazoDoCliente(
+        agendamento,
+        await carregarRegras(prisma, agendamento.barbeariaId),
+        "cancelar"
+      );
 
       const cancelado = await prisma.agendamento.update({
         where: { id: agendamento.id },
@@ -186,6 +192,9 @@ export function registrarRotasClientesMe(app: App): void {
           });
 
           garantirAlteravel(antigo);
+          // O prazo é da origem; o destino passa pelas regras de marcar
+          // dentro do criarAgendamento (origem "cliente").
+          garantirPrazoDoCliente(antigo, await carregarRegras(tx, antigo.barbeariaId), "remarcar");
 
           // O cancelamento vem ANTES da criação, e é o que permite
           // remarcar pra um horário que sobrepõe o próprio agendamento

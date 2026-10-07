@@ -1,6 +1,7 @@
 import type { ProximosHorariosDoServico } from "@barchop/types";
 import { agendaDoPeriodo, descartarPassados, PODE_ATENDER, type ClientePrisma } from "./disponibilidade";
 import { dataParaDate, dateParaData } from "./horas";
+import { carregarRegras, gradeDe } from "./regras";
 
 type ProximosDoServico = ProximosHorariosDoServico;
 
@@ -10,7 +11,8 @@ const UM_DIA = 24 * 60 * 60 * 1000;
 // barbearia. Todo horário mostrado tem que ser marcável: é a união do
 // "qualquer um" — quem pode atender e faz o serviço —, com a mesma
 // conta por profissional e dia que a escolha de horário e o POST usam,
-// e o mesmo filtro de "já passou".
+// e o mesmo filtro de "já passou" — com as regras do cliente: a página é
+// do link, nunca do painel.
 //
 // É a rota pública mais pesada e a página mais aberta do produto: o
 // período inteiro sai de uma consulta por tabela (`agendaDoPeriodo`), e
@@ -28,7 +30,7 @@ export async function proximosHorarios(
 ): Promise<ProximosDoServico[]> {
   const { barbeariaId, agora, dias = 14, quantos = 3 } = params;
 
-  const [servicos, membros] = await Promise.all([
+  const [servicos, membros, regras] = await Promise.all([
     // A mesma lista e a mesma ordem da escolha de serviços pública.
     db.servico.findMany({
       where: { barbeariaId, ativo: true },
@@ -39,6 +41,7 @@ export async function proximosHorarios(
       where: { barbeariaId, ...PODE_ATENDER },
       select: { id: true, servicos: { select: { servicoId: true } } },
     }),
+    carregarRegras(db, barbeariaId),
   ]);
 
   const primeiroDia = dataParaDate(agora.data);
@@ -48,6 +51,7 @@ export async function proximosHorarios(
     barbeiroIds: membros.map((membro) => membro.id),
     primeiroDia,
     ultimoDia,
+    grade: gradeDe(regras, true),
   });
 
   return servicos.map((servico) => {
@@ -62,7 +66,7 @@ export async function proximosHorarios(
       const uniao = [
         ...new Set(candidatos.flatMap((id) => horariosDoDia(id, data, servico.duracaoMinutos))),
       ].sort();
-      for (const horaInicio of descartarPassados({ data: chave, horarios: uniao, agora })) {
+      for (const horaInicio of descartarPassados({ data: chave, horarios: uniao, agora, regras })) {
         horarios.push({ data: chave, horaInicio });
         if (horarios.length === quantos) break;
       }

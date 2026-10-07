@@ -13,6 +13,7 @@ import {
 } from "./disponibilidade";
 import { ErroDeNegocio } from "./erro-negocio";
 import { dataParaDate, horaParaDate, somarMinutos } from "./horas";
+import { carregarRegras, garantirRegrasDoCliente, gradeDe } from "./regras";
 
 // O que as rotas precisam junto do agendamento: o nome de cada serviço
 // (o preço vem congelado no AgendamentoServico) e o cliente, que a
@@ -29,7 +30,7 @@ export const INCLUDE_AGENDAMENTO = {
 // horário pedido, o que tem menos agendamentos no dia — espalha o
 // movimento pela equipe; empate fica com quem entrou primeiro. Roda
 // dentro da transação, depois de `travarQualquerUm`, e usa a mesma
-// função que montou os horários oferecidos.
+// função (e a mesma grade do cliente) que montou os horários oferecidos.
 export async function escolherProfissional(
   tx: Prisma.TransactionClient,
   params: { barbeariaId: string; servicoIds: string[]; data: string; horaInicio: string }
@@ -45,6 +46,7 @@ export async function escolherProfissional(
   }
 
   const candidatos = await candidatosDoQualquerUm(tx, barbeariaId, servicoIds);
+  const grade = gradeDe(await carregarRegras(tx, barbeariaId), true);
   const livres: string[] = [];
   for (const barbeiroId of candidatos) {
     const horarios = await horariosDoProfissionalNoDia(tx, {
@@ -52,6 +54,7 @@ export async function escolherProfissional(
       barbeiroId,
       data: dataDate,
       duracaoTotalMinutos,
+      grade,
     });
     if (horarios.includes(horaInicio)) livres.push(barbeiroId);
   }
@@ -139,6 +142,15 @@ export async function criarAgendamento(
     throw new ErroDeNegocio(`a data ${data} não existe`, "data_invalida");
   }
 
+  // As regras da barbearia valem só pro cliente (marcar ou remarcar pelo
+  // link). O painel encaixa livre: grade de 15 e nada de antecedência,
+  // mesmo dia ou janela — e registrar um walk-in depois do fato é
+  // legítimo. Antes da agenda: a recusa pela regra explica melhor que
+  // "indisponível".
+  const regras = await carregarRegras(tx, barbeariaId);
+  const paraCliente = origem === "cliente";
+  if (paraCliente) garantirRegrasDoCliente(regras, data, horaInicio);
+
   // A janela já cruzada com a jornada do membro, e os bloqueios do dia.
   const contexto = await contextoDoDia(tx, { barbeariaId, barbeiroId, data: dataDate });
 
@@ -181,6 +193,7 @@ export async function criarAgendamento(
       janela,
       ocupados: [...ocupados, ...bloqueados, ...contexto.pausa],
       duracaoTotalMinutos,
+      grade: gradeDe(regras, paraCliente),
     }).includes(horaInicio)
   ) {
     throw new ErroDeNegocio(

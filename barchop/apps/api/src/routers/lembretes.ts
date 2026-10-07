@@ -3,6 +3,7 @@ import type { AgendamentoDoLembrete } from "@barchop/types";
 import { garantirAlteravel } from "../lib/agendamento-alteravel";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
+import { carregarRegras, garantirPrazoDoCliente } from "../lib/regras";
 import { dateParaData, dateParaHora } from "../lib/horas";
 import type { PayloadBarbeiro, PayloadCliente, PayloadLembrete } from "../plugins/auth";
 import type { App } from "../tipos";
@@ -126,6 +127,9 @@ export function registrarRotasLembretes(app: App): void {
       // recusados pelo garantirAlteravel.
       if (antes.status === "cancelado") return serializar(antes);
       garantirAlteravel(antes);
+      // O prazo de cancelar da barbearia vale também aqui: o link é do
+      // cliente. Confirmar presença não tem prazo.
+      garantirPrazoDoCliente(antes, await carregarRegras(prisma, antes.barbeariaId), "cancelar");
 
       // Mesmo cuidado do remarcar: o status no WHERE faz a corrida com
       // outra mudança terminar num resultado só.

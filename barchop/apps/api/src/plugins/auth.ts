@@ -150,6 +150,34 @@ export async function autenticar(request: FastifyRequest): Promise<void> {
   };
 }
 
+// Nas rotas públicas de disponibilidade: quem pergunta é um membro desta
+// barbearia (o Novo agendamento do painel)? Então a resposta sai sem as
+// regras do cliente — o painel encaixa livre. Nunca recusa: sem token,
+// token torto, de outra barbearia, de membro desativado ou anterior à
+// troca de senha, a resposta é a do cliente. Mostrar a mais não abre
+// brecha: o POST do cliente aplica as regras de novo.
+export async function ehMembroDaBarbearia(request: FastifyRequest, barbeariaId: string): Promise<boolean> {
+  if (!request.headers.authorization) return false;
+
+  let payload: PayloadBarbeiro | PayloadCliente | PayloadSuporte;
+  try {
+    payload = await request.jwtVerify<PayloadBarbeiro | PayloadCliente | PayloadSuporte>();
+  } catch {
+    return false;
+  }
+  if (payload.tipo !== "barbeiro" || payload.barbeariaId !== barbeariaId) return false;
+
+  const barbeiro = await prisma.barbeiro.findUnique({
+    where: { id: payload.barbeiroId },
+    select: { ativo: true, barbeariaId: true, senhaAlteradaEm: true },
+  });
+  return (
+    !!barbeiro?.ativo &&
+    barbeiro.barbeariaId === barbeariaId &&
+    !emitidoAntesDaTroca(payload, barbeiro.senhaAlteradaEm)
+  );
+}
+
 // Lê o membro que o hook decorou — espelho do clienteDoToken.
 export function membroDoToken(request: FastifyRequest): Membro {
   if (!request.membro) {

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
+import { REGRAS_PADRAO } from "@barchop/formato";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../src/telas/PerfilDaBarbearia";
 import { sessaoDoCliente } from "../../src/sessao/armazenamento";
@@ -114,6 +115,7 @@ describe("perfil da barbearia", () => {
       comodidades: [],
       formasDePagamento: [],
       capaUrl: null,
+      ...REGRAS_PADRAO,
       horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
         diaSemana,
         horaAbertura: null,

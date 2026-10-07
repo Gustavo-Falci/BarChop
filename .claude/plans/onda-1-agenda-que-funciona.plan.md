@@ -4,7 +4,26 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-07, G1 no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-07, fim do dia — marco 3 do painel v2 pela metade) — vale mais que as seções abaixo
+
+**Estado:** `main` em #63, nada pela metade em branch nenhuma. Produção no ar (G1); na VM roda a `main` até o #61.
+
+**Feito hoje:** G1 (#56, #57, conferido de ponta a ponta, ver a seção abaixo); dívida dos ícones (#59: o que não pode ser link de barbearia não consulta a API); marco 3 do painel v2 (plano `painel-v2-regras-de-agendamento.plan.md`, decisões do dono lá dentro):
+- **3a** #60 — pausa do almoço na jornada de cada profissional (API; migration `20261008120000_jornada_pausa`; `horario_na_pausa`). **Em produção.**
+- **3b** #61 — pausa nas telas (jornada do membro + "Pausas da equipe" em Horários). **Em produção.**
+- **3c** #62 — exceções por data da barbearia (API; migration `20261008130000_excecao_horario`; `GET/PUT/DELETE /barbearias/me/horarios/excecoes[/:data]`, `foraDoHorario`). **Não está na VM.**
+- **3d** #63 — "Datas especiais" em Horários; `Aviso` ganhou o tom `atencao`. **Não está na VM** e o dono ainda não viu no navegador.
+
+**Primeiro amanhã:** levar 3c+3d pra VM, um build por vez (1 OCPU; o `--build` de tudo junto levou 413 s e arrisca memória):
+`cd ~/BarChop && git pull && cd barchop/infra && docker compose build migrar api && docker compose build web && docker compose up -d`; conferir `docker compose logs migrar | grep excecao_horario` e `curl -sI https://api.barchop.com.br/health`. Depois o dono olha Horários (pausas + datas especiais) em 375px e 1440px.
+
+**Próximo no código:** **3e** — Regras de agendamento na API, o maior PR do marco (7 colunas em `barbearia`, padrões = comportamento de hoje, só pra `origem = cliente`; token de membro desliga as regras na disponibilidade; prazos de remarcar/cancelar no `garantirAlteravel` dos caminhos do cliente). Depois **3f** (tela Regras, 5ª área, "X de 5") e **3g** (cliente obedece os prazos: botões somem + WhatsApp da casa). Fora do marco 3: G3 (GR Barber), `onda-1s-b`/`onda-1s-c`, dívidas do roadmap.
+
+**Ao trocar de máquina:** em `barchop/`: `git checkout main && git pull`; `pnpm install` (se pedir pra recriar o `node_modules`: `pnpm install --config.confirmModulesPurge=false`); `migrate deploy` nos bancos dev **e** test (`pnpm --filter @barchop/database migrate:deploy`, e o mesmo com o `DATABASE_URL` do `apps/api/.env.test`, que tem BOM) — migrations novas desde 06/10: `20261008120000_jornada_pausa`, `20261008130000_excecao_horario`; `pnpm --filter @barchop/database generate` com a API de dev **parada** (EPERM na DLL do Prisma — pedir ao dono pra parar). Subir: `pnpm dev` em `apps/api` (3333) e `apps/web` (3000).
+
+**Combinados (atualizados):** um PR por item, TDD com commit RED e depois GREEN, português; push e PR sem perguntar, mas **o merge é do dono** (o modo automático bloqueia `gh pr merge`: deixar o comando `! gh pr merge N --merge` pronto). Telas novas: aprovação visual do dono antes do merge. Rodar os testes afetados + tsc + lint, e a suíte inteira quando mexer em `lib/disponibilidade.ts` ou `lib/agendamento.ts`. Skills só do ECC.
+
+## RETOMAR AQUI (2026-10-07, G1 no ar) — histórico
 
 **Produção no ar** (G1, plano `onda-1-g1-infra.plan.md`): PRs #56 (G1a: web standalone, `criar-suporte` no bundle) e #57 (G1b: `barchop/infra/`) mergeados pelo dono (o modo automático bloqueia `gh pr merge`: pedir o merge ao dono). Na VM (`~/BarChop`, na `main`; atualizar = `git pull` + `docker compose up -d --build` em `barchop/infra`): compose com postgres 18, migrar, api, web, caddy e backup; certificados da raiz e do coringa emitidos; `api.`, raiz e `painel.` respondendo 200; log do Caddy com `/lembretes/***`. VM: Ubuntu 26.04 ARM, 1 OCPU, 5,8 GB + swap 4 GB; iptables com 80/443/443udp salvos; Docker 29.8. Bucket `barchop-imagens` (namespace `grljjvpwv9ed`, `sa-saopaulo-1`), Customer Secret Key e chave do Resend nos `infra/.env` e `infra/api.env` da VM (só lá). Token da Cloudflare com Zone:Read + DNS:Edit. Acesso à VM pelo MobaXterm do PC de casa; repo público, clone por HTTPS.
 

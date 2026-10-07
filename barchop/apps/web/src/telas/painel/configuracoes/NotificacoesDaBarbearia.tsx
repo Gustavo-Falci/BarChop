@@ -62,7 +62,7 @@ function Notificacoes() {
 
   return (
     <MolduraDaArea area="notificacoes" decididas={decididas} aviso={aviso}>
-      <div className={estilos.coluna}>
+      <div className={estilos.ladoALado}>
         <Secao
           titulo="Lembrete"
           descricao="O cliente com e-mail recebe um lembrete antes do horário, com um link pra confirmar a presença ou cancelar."
@@ -72,39 +72,45 @@ function Notificacoes() {
             </Botao>
           }
         >
-          {/* O interruptor (G2c). Ligar enfileira na API os agendamentos
-              futuros que ainda não têm lembrete. */}
-          <label className={estilos.chave}>
-            <input
-              type="checkbox"
-              aria-describedby="lembrete-ativo-apoio"
-              checked={lembreteAtivo}
-              onChange={(evento) => setLembreteAtivo(evento.target.checked)}
-            />
-            Enviar lembrete por e-mail
-          </label>
-          <span className={estilos.apoio} id="lembrete-ativo-apoio">
-            Ao ligar, os agendamentos já marcados também recebem o lembrete.
-          </span>
-          <div className={estilos.campoLongo}>
-            <SeletorEmPilulas
-              nome="antecedencia"
-              legenda="Quando o lembrete sai"
-              opcoes={ANTECEDENCIAS.map((horas) => ({ valor: String(horas), rotulo: `${horas} h antes` }))}
-              valor={String(antecedencia)}
-              aoTrocar={(valor) => setAntecedencia(Number(valor) as AntecedenciaDoLembrete)}
-              efeito={
-                lembreteAtivo
-                  ? `O cliente recebe o lembrete ${antecedencia} horas antes do horário.`
-                  : "Lembrete desligado: o cliente não recebe e-mail antes do horário."
-              }
-            />
-            {/* A antecedência é lida quando o lembrete é agendado, na hora
-                em que o cliente marca: trocar aqui não move os que já
-                estão programados. */}
-            <span className={estilos.apoio}>
-              Vale pros próximos agendamentos; os já marcados mantêm o lembrete que tinham.
-            </span>
+          {/* O interruptor à esquerda, a antecedência à direita: a seção
+              usa a largura (pedido do dono). */}
+          <div className={estilos.ladoALado}>
+            <div className={estilos.campoLongo}>
+              {/* O interruptor (G2c). Ligar enfileira na API os agendamentos
+                  futuros que ainda não têm lembrete. */}
+              <label className={estilos.chave}>
+                <input
+                  type="checkbox"
+                  aria-describedby="lembrete-ativo-apoio"
+                  checked={lembreteAtivo}
+                  onChange={(evento) => setLembreteAtivo(evento.target.checked)}
+                />
+                Enviar lembrete por e-mail
+              </label>
+              <span className={estilos.apoio} id="lembrete-ativo-apoio">
+                Ao ligar, os agendamentos já marcados também recebem o lembrete.
+              </span>
+            </div>
+            <div className={estilos.campoLongo}>
+              <SeletorEmPilulas
+                nome="antecedencia"
+                legenda="Quando o lembrete sai"
+                opcoes={ANTECEDENCIAS.map((horas) => ({ valor: String(horas), rotulo: `${horas} h antes` }))}
+                valor={String(antecedencia)}
+                aoTrocar={(valor) => setAntecedencia(Number(valor) as AntecedenciaDoLembrete)}
+                efeito={
+                  lembreteAtivo
+                    ? `O cliente recebe o lembrete ${antecedencia} horas antes do horário.`
+                    : "Lembrete desligado: o cliente não recebe e-mail antes do horário."
+                }
+              />
+              {/* A antecedência é lida quando o lembrete é agendado, na hora
+                  em que o cliente marca: trocar aqui não move os que já
+                  estão programados. */}
+              <span className={estilos.apoio}>
+                Vale pros próximos agendamentos; os já marcados mantêm o lembrete que tinham.
+              </span>
+            </div>
           </div>
         </Secao>
       </div>

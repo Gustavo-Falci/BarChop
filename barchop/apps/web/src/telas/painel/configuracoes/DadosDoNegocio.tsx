@@ -300,7 +300,9 @@ function Dados() {
         role="tabpanel"
         id={`${id}-painel`}
         aria-labelledby={`${id}-aba-${aba}`}
-        className={aba === "identidade" ? estilos.ladoALado : estilos.coluna}
+        // Toda aba na largura da tela (pedido do dono): a Identidade com os
+        // dois quadros lado a lado, Marca e Comodidades com a seção inteira.
+        className={estilos.ladoALado}
       >
         {aba === "identidade" ? (
           <>

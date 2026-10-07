@@ -50,19 +50,6 @@
    campo de texto ainda é confortável de ler; a do horário é mais larga
    porque a linha do dia precisa caber nome (7rem) + "fechado" (8rem) +
    dois campos de hora (7.5rem cada) sem quebrar. */
-.coluna {
-  display: grid;
-  gap: var(--espaco-lg);
-  align-content: start;
-  max-width: 680px;
-}
-
-.colunaLarga {
-  display: grid;
-  gap: var(--espaco-lg);
-  max-width: 860px;
-}
-
 /* Duas seções lado a lado (Identidade: apresentação | endereço da
    página). Cada coluna com no mínimo 380px; abaixo disso — tablet
    estreito, celular — `auto-fit` empilha sem media query. `min(100%, …)`
@@ -73,6 +60,67 @@
   gap: var(--espaco-lg);
   align-items: start;
   max-width: 1240px;
+}
+
+/* Campos de uma seção lado a lado (Comunicação, Notificações, Seu
+   perfil): a seção ocupa a largura e os campos dividem a linha em vez de
+   descer um embaixo do outro. Cada um com no mínimo 240px; mais estreito,
+   empilham. Alinhados pela base: um campo com frase de apoio (o do
+   Instagram) teria a caixa mais baixa que os vizinhos se alinhasse pelo
+   topo. */
+.camposLadoALado {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--espaco-lg);
+  align-items: end;
+}
+
+/* Horários em duas colunas: rotina, datas especiais e pausas à
+   esquerda; a semana, que é a mais alta, ocupa a direita inteira. A
+   última linha leva a sobra (`1fr`): sem isso a altura da semana se
+   repartia entre as três e abria buracos entre as seções da esquerda.
+   Estreito, uma coluna na ordem do DOM (rotina → semana → datas →
+   pausas): o "Aplicar à semana" preenche a semana logo embaixo. */
+.gradeDosHorarios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas:
+    "rotina semana"
+    "datas semana"
+    "pausas semana";
+  gap: var(--espaco-lg);
+  align-items: start;
+  max-width: 1240px;
+}
+
+.gradeDosHorarios > :nth-child(1) {
+  grid-area: rotina;
+}
+
+.gradeDosHorarios > :nth-child(2) {
+  grid-area: semana;
+}
+
+.gradeDosHorarios > :nth-child(3) {
+  grid-area: datas;
+}
+
+.gradeDosHorarios > :nth-child(4) {
+  grid-area: pausas;
+}
+
+/* Abaixo de duas colunas de ~380px com a navegação ao lado. */
+@media (max-width: 1040px) {
+  .gradeDosHorarios {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      "rotina"
+      "semana"
+      "datas"
+      "pausas";
+  }
 }
 
 /* ── Índice ─────────────────────────────────────────────────────────── */
@@ -259,7 +307,9 @@
    fechado o dia de cima. */
 .dia {
   display: grid;
-  grid-template-columns: 7rem 8rem 1fr;
+  /* O "fechado" no tamanho dele: com a semana numa das duas colunas da
+     tela, colunas fixas largas empurravam o "Fecha" pra baixo do "Abre". */
+  grid-template-columns: 6.5rem max-content 1fr;
   align-items: center;
   gap: var(--espaco-md);
   /* A altura não muda quando o dia é fechado e os campos somem: sem o

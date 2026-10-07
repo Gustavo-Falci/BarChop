@@ -71,6 +71,17 @@ describe("áreas decididas das Configurações", () => {
     await app.close();
   });
 
+  it("as regras de agendamento decidem a área delas, que vem logo depois de Horários", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+
+    await patch(app, um.token, { whatsapp: "11999998888" });
+    expect((await patch(app, um.token, { janelaDias: null })).statusCode).toBe(200);
+
+    expect(await areas(app, um.token)).toEqual(["regras_de_agendamento", "comunicacao"]);
+    await app.close();
+  });
+
   it("campos de áreas diferentes no mesmo PATCH decidem as duas", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");

@@ -8,6 +8,8 @@
 // fixa a lista.
 export const AREAS_DE_CONFIGURACAO = [
   "horarios",
+  // Painel v2, marco 3: como o cliente marca, remarca e cancela pelo link.
+  "regras_de_agendamento",
   "dados_do_negocio",
   "comunicacao",
   "notificacoes",
@@ -29,6 +31,13 @@ const AREA_DO_CAMPO: Record<string, AreaDeConfiguracao> = {
   instagram: "comunicacao",
   lembreteAtivo: "notificacoes",
   lembreteAntecedenciaHoras: "notificacoes",
+  intervaloMinutos: "regras_de_agendamento",
+  antecedenciaMinutos: "regras_de_agendamento",
+  aceitaMesmoDia: "regras_de_agendamento",
+  janelaDias: "regras_de_agendamento",
+  cabeAntesDeFechar: "regras_de_agendamento",
+  prazoRemarcarHoras: "regras_de_agendamento",
+  prazoCancelarHoras: "regras_de_agendamento",
 };
 
 function naOrdem(areas: Iterable<string>): AreaDeConfiguracao[] {

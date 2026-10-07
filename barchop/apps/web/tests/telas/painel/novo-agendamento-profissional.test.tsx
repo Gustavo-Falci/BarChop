@@ -79,6 +79,23 @@ describe("profissional no novo agendamento", () => {
     expect(doDia.mock.calls.at(-1)?.[1]).toMatchObject({ barbeiroId: "m2" });
   });
 
+  it("pede a disponibilidade com o token do painel: as regras do cliente não valem aqui", async () => {
+    // Painel v2, marco 3: com o token de membro, a API devolve os
+    // horários sem antecedência, mesmo dia e janela do link.
+    const falso = semear();
+    const doDia = vi.spyOn(falso.publico, "disponibilidadeDoDia");
+    const doMes = vi.spyOn(falso.publico, "disponibilidadeDoMes");
+    montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
+
+    await waitFor(() => expect(doDia).toHaveBeenCalled());
+    await waitFor(() => expect(doMes).toHaveBeenCalled());
+    expect(doDia.mock.calls.at(-1)?.[2]).toEqual({ comToken: true });
+    expect(doMes.mock.calls.at(-1)?.[2]).toEqual({ comToken: true });
+  });
+
   it("só oferece quem atende e já entrou", async () => {
     montarPainel(<NovoAgendamento agora={AGORA} />, semear("recepcao"));
 

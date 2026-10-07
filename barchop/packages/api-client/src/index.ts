@@ -48,6 +48,7 @@ export type {
   DestinoDoCodigo,
   FiltroDoDia,
   FiltroDoMes,
+  OpcoesDaDisponibilidade,
   DefinicaoDeSenhaDoCliente,
 } from "./publico";
 

@@ -55,6 +55,7 @@ import type {
   DestinoDoCodigo,
   FiltroDoDia,
   FiltroDoMes,
+  OpcoesDaDisponibilidade,
   DefinicaoDeSenhaDoCliente,
 } from "./publico";
 
@@ -677,11 +678,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       // O filtro entra na assinatura mesmo sem ser usado: um dublê com
       // menos parâmetros que o client real deixa a tela chamar de um
       // jeito que só quebra contra a API de verdade.
-      async disponibilidadeDoDia(slug: string, _filtro: FiltroDoDia) {
+      async disponibilidadeDoDia(slug: string, _filtro: FiltroDoDia, _opcoes?: OpcoesDaDisponibilidade) {
         exigirSlug(slug);
         return estado.horariosLivres;
       },
-      async disponibilidadeDoMes(slug: string, _filtro: FiltroDoMes) {
+      async disponibilidadeDoMes(slug: string, _filtro: FiltroDoMes, _opcoes?: OpcoesDaDisponibilidade) {
         exigirSlug(slug);
         return estado.diasComVaga;
       },

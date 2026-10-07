@@ -7,8 +7,14 @@ import { AREAS_DE_CONFIGURACAO, areasTocadas, juntarAreas } from "../src/areas";
 // a API de verdade não dá.
 
 describe("áreas das Configurações", () => {
-  it("ordem do índice: Horários, Dados do negócio, Comunicação, Notificações", () => {
-    expect(AREAS_DE_CONFIGURACAO).toEqual(["horarios", "dados_do_negocio", "comunicacao", "notificacoes"]);
+  it("ordem do índice: Horários, Regras de agendamento, Dados do negócio, Comunicação, Notificações", () => {
+    expect(AREAS_DE_CONFIGURACAO).toEqual([
+      "horarios",
+      "regras_de_agendamento",
+      "dados_do_negocio",
+      "comunicacao",
+      "notificacoes",
+    ]);
   });
 
   it.each([
@@ -23,6 +29,13 @@ describe("áreas das Configurações", () => {
     ["instagram", "comunicacao"],
     ["lembreteAtivo", "notificacoes"],
     ["lembreteAntecedenciaHoras", "notificacoes"],
+    ["intervaloMinutos", "regras_de_agendamento"],
+    ["antecedenciaMinutos", "regras_de_agendamento"],
+    ["aceitaMesmoDia", "regras_de_agendamento"],
+    ["janelaDias", "regras_de_agendamento"],
+    ["cabeAntesDeFechar", "regras_de_agendamento"],
+    ["prazoRemarcarHoras", "regras_de_agendamento"],
+    ["prazoCancelarHoras", "regras_de_agendamento"],
   ])("o campo %s decide %s", (campo, area) => {
     expect(areasTocadas({ [campo]: null })).toEqual([area]);
   });

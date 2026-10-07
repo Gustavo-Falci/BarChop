@@ -51,7 +51,14 @@ describe("jornada do membro", () => {
     const [id, semana] = salvar.mock.calls[0];
     expect(id).toBe("m2");
     expect(semana).toHaveLength(7);
-    expect(semana[1]).toEqual({ diaSemana: 1, modo: "proprio", horaInicio: "13:00", horaFim: "20:00" });
+    expect(semana[1]).toEqual({
+      diaSemana: 1,
+      modo: "proprio",
+      horaInicio: "13:00",
+      horaFim: "20:00",
+      pausaInicio: null,
+      pausaFim: null,
+    });
     expect(semana[2]).toMatchObject({ modo: "barbearia" });
     expect(await screen.findByText(/jornada salva/i)).toBeInTheDocument();
   });
@@ -75,6 +82,70 @@ describe("jornada do membro", () => {
     await userEvent.selectOptions(await screen.findByLabelText("Jornada no domingo"), "folga");
 
     expect(screen.queryByLabelText("Entrada no domingo")).not.toBeInTheDocument();
+  });
+});
+
+// Painel v2, marco 3: a pausa do almoço é de cada profissional, por dia
+// (decisão do dono, 2026-10-07).
+describe("pausa na jornada", () => {
+  it("aplica a pausa de sempre aos dias de trabalho, menos à folga, e salva", async () => {
+    const falso = comAna();
+    const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
+    montarPainel(<CadastroDeMembro />, falso);
+
+    await userEvent.selectOptions(await screen.findByLabelText("Jornada no domingo"), "folga");
+    fireEvent.change(screen.getByLabelText("Pausa de sempre: início"), { target: { value: "12:00" } });
+    fireEvent.change(screen.getByLabelText("Pausa de sempre: fim"), { target: { value: "13:00" } });
+    await userEvent.click(screen.getByRole("button", { name: /aplicar aos dias de trabalho/i }));
+    await userEvent.click(screen.getByRole("button", { name: /salvar jornada/i }));
+
+    await waitFor(() => expect(salvar).toHaveBeenCalled());
+    const [, semana] = salvar.mock.calls[0];
+    expect(semana[1]).toMatchObject({ pausaInicio: "12:00", pausaFim: "13:00" });
+    expect(semana[6]).toMatchObject({ pausaInicio: "12:00", pausaFim: "13:00" });
+    expect(semana[0]).toMatchObject({ modo: "folga", pausaInicio: null, pausaFim: null });
+  });
+
+  it("um dia ganha pausa própria e outro perde a dele", async () => {
+    const falso = comAna();
+    const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
+    montarPainel(<CadastroDeMembro />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Adicionar pausa na terça" }));
+    fireEvent.change(screen.getByLabelText("Início da pausa na terça"), { target: { value: "14:00" } });
+    fireEvent.change(screen.getByLabelText("Fim da pausa na terça"), { target: { value: "14:30" } });
+    await userEvent.click(screen.getByRole("button", { name: "Adicionar pausa na quarta" }));
+    await userEvent.click(screen.getByRole("button", { name: "Tirar pausa na quarta" }));
+    await userEvent.click(screen.getByRole("button", { name: /salvar jornada/i }));
+
+    await waitFor(() => expect(salvar).toHaveBeenCalled());
+    const [, semana] = salvar.mock.calls[0];
+    expect(semana[2]).toMatchObject({ pausaInicio: "14:00", pausaFim: "14:30" });
+    expect(semana[3]).toMatchObject({ pausaInicio: null, pausaFim: null });
+  });
+
+  it("pausa que termina antes de começar para na tela, sem chamar a API", async () => {
+    const falso = comAna();
+    const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
+    montarPainel(<CadastroDeMembro />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Adicionar pausa na segunda" }));
+    fireEvent.change(screen.getByLabelText("Início da pausa na segunda"), { target: { value: "13:00" } });
+    fireEvent.change(screen.getByLabelText("Fim da pausa na segunda"), { target: { value: "12:00" } });
+    await userEvent.click(screen.getByRole("button", { name: /salvar jornada/i }));
+
+    expect(await screen.findByText(/segunda.*pausa precisa começar antes de terminar/i)).toBeInTheDocument();
+    expect(salvar).not.toHaveBeenCalled();
+  });
+
+  it("folga não tem pausa: escolher folga tira a do dia", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    await userEvent.click(await screen.findByRole("button", { name: "Adicionar pausa na sexta" }));
+    await userEvent.selectOptions(screen.getByLabelText("Jornada na sexta"), "folga");
+
+    expect(screen.queryByLabelText("Início da pausa na sexta")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Adicionar pausa na sexta" })).not.toBeInTheDocument();
   });
 });
 

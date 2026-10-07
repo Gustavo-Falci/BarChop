@@ -10,6 +10,23 @@ import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./JornadaDoMembro.module.css";
+import { temPausa } from "./pausa";
+
+// A pausa que o "Adicionar pausa" e o "Aplicar" usam quando a pessoa
+// ainda não tem nenhuma: o almoço mais comum.
+const PAUSA_PADRAO = { inicio: "12:00", fim: "13:00" };
+
+// A pausa de sempre nasce da primeira que a semana salva já tem.
+function pausaDaSemana(semana: DiaDaJornada[]): { inicio: string; fim: string } {
+  const dia = semana.find(temPausa);
+  return dia ? { inicio: dia.pausaInicio!, fim: dia.pausaFim! } : PAUSA_PADRAO;
+}
+
+// O dia mostra os campos da pausa enquanto tiver alguma das duas horas:
+// apagar uma não pode sumir com o campo que a pessoa está editando.
+function pausaAberta(dia: DiaDaJornada): boolean {
+  return dia.modo !== "folga" && (dia.pausaInicio != null || dia.pausaFim != null);
+}
 
 // O nome do dia e a preposição que ele pede: "na segunda", "no sábado".
 // O nome acessível de cada controle carrega o dia — sete selects
@@ -36,12 +53,14 @@ function capitalizar(texto: string): string {
 
 // A semana de trabalho do membro: em cada dia ele acompanha o horário
 // da barbearia, tem o próprio, ou folga. O horário próprio é recortado
-// no da barbearia pela API — não atende com a porta fechada.
+// no da barbearia pela API — não atende com a porta fechada. Cada dia de
+// trabalho pode ter a pausa do almoço (painel v2, marco 3).
 export function JornadaDoMembro({ membroId }: { membroId: string }) {
   const api = useApiDoPainel();
   const salva = useRequisicao(() => api.barbeiro.jornada(membroId), [membroId]);
 
   const [semana, setSemana] = useState<DiaDaJornada[]>([]);
+  const [pausaDeSempre, setPausaDeSempre] = useState(PAUSA_PADRAO);
   const [erro, setErro] = useState<string | undefined>();
   const [confirmacao, setConfirmacao] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
@@ -52,6 +71,7 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
   if (salva.dados && salva.dados !== sincronizada) {
     setSincronizada(salva.dados);
     setSemana(salva.dados);
+    setPausaDeSempre(pausaDaSemana(salva.dados));
   }
 
   if (salva.erro) {
@@ -68,11 +88,28 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
   function escolherModo(dia: DiaDaJornada, modo: ModoJornada) {
     // Sair do próprio limpa as horas, como o "fechado" do funcionamento:
     // guardá-las seria um estado que a API descarta e a tela reexibiria.
-    trocarDia(
-      dia.diaSemana,
-      modo === "proprio"
-        ? { modo, horaInicio: dia.horaInicio, horaFim: dia.horaFim }
-        : { modo, horaInicio: null, horaFim: null }
+    // Folga limpa a pausa pelo mesmo motivo.
+    trocarDia(dia.diaSemana, {
+      modo,
+      ...(modo === "proprio"
+        ? { horaInicio: dia.horaInicio, horaFim: dia.horaFim }
+        : { horaInicio: null, horaFim: null }),
+      ...(modo === "folga" ? { pausaInicio: null, pausaFim: null } : {}),
+    });
+  }
+
+  // A pausa de sempre em todo dia de trabalho; a folga fica sem.
+  function aplicarPausa() {
+    if (!pausaDeSempre.inicio || !pausaDeSempre.fim || pausaDeSempre.inicio >= pausaDeSempre.fim) {
+      setErro("A pausa de sempre precisa começar antes de terminar.");
+      return;
+    }
+    setErro(undefined);
+    setConfirmacao(undefined);
+    setSemana((atual) =>
+      atual.map((dia) =>
+        dia.modo === "folga" ? dia : { ...dia, pausaInicio: pausaDeSempre.inicio, pausaFim: pausaDeSempre.fim }
+      )
     );
   }
 
@@ -83,8 +120,18 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
     // A mesma regra da API, antes da ida: as duas horas, e a entrada
     // antes da saída. "HH:mm" compara como texto na ordem do relógio.
     for (const dia of semana) {
-      if (dia.modo !== "proprio") continue;
       const nome = capitalizar(DIAS[dia.diaSemana].nome);
+      if (pausaAberta(dia)) {
+        if (!dia.pausaInicio || !dia.pausaFim) {
+          setErro(`${nome}: informe o começo e o fim da pausa.`);
+          return;
+        }
+        if (dia.pausaInicio >= dia.pausaFim) {
+          setErro(`${nome}: a pausa precisa começar antes de terminar.`);
+          return;
+        }
+      }
+      if (dia.modo !== "proprio") continue;
       if (!dia.horaInicio || !dia.horaFim) {
         setErro(`${nome}: informe a entrada e a saída do horário próprio.`);
         return;
@@ -111,7 +158,7 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
   return (
     <Secao
       titulo="Jornada"
-      descricao="Em que dias e horários a pessoa atende. O horário próprio vale só dentro do horário da barbearia."
+      descricao="Em que dias e horários a pessoa atende. O horário próprio vale só dentro do horário da barbearia; na pausa, ninguém marca com ela."
       acao={
         <Botao onClick={salvar} carregando={salvando} disabled={!salva.dados}>
           Salvar jornada
@@ -119,6 +166,27 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
       }
     >
       {!salva.dados ? <p>Carregando…</p> : null}
+      {/* Um atalho pra pausa de todo dia, como a rotina em Horários: a
+          pausa de cada dia continua editável aqui embaixo. */}
+      <div className={estilos.pausaDeSempre}>
+        <Campo
+          rotulo="Pausa de sempre: começa"
+          type="time"
+          aria-label="Pausa de sempre: início"
+          valor={pausaDeSempre.inicio}
+          onChange={(valor) => setPausaDeSempre((atual) => ({ ...atual, inicio: valor }))}
+        />
+        <Campo
+          rotulo="Termina"
+          type="time"
+          aria-label="Pausa de sempre: fim"
+          valor={pausaDeSempre.fim}
+          onChange={(valor) => setPausaDeSempre((atual) => ({ ...atual, fim: valor }))}
+        />
+        <Botao variante="contorno" onClick={aplicarPausa} disabled={!salva.dados}>
+          Aplicar aos dias de trabalho
+        </Botao>
+      </div>
       {semana.map((dia) => {
         const { nome, em } = DIAS[dia.diaSemana];
         return (
@@ -156,6 +224,41 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
                     onChange={(valor) => trocarDia(dia.diaSemana, { horaFim: valor || null })}
                   />
                 </>
+              ) : null}
+              {pausaAberta(dia) ? (
+                <>
+                  <Campo
+                    rotulo="Pausa"
+                    type="time"
+                    aria-label={`Início da pausa ${em} ${nome}`}
+                    valor={dia.pausaInicio ?? ""}
+                    onChange={(valor) => trocarDia(dia.diaSemana, { pausaInicio: valor || null })}
+                  />
+                  <Campo
+                    rotulo="até"
+                    type="time"
+                    aria-label={`Fim da pausa ${em} ${nome}`}
+                    valor={dia.pausaFim ?? ""}
+                    onChange={(valor) => trocarDia(dia.diaSemana, { pausaFim: valor || null })}
+                  />
+                  <Botao
+                    variante="fantasma"
+                    aria-label={`Tirar pausa ${em} ${nome}`}
+                    onClick={() => trocarDia(dia.diaSemana, { pausaInicio: null, pausaFim: null })}
+                  >
+                    Tirar pausa
+                  </Botao>
+                </>
+              ) : dia.modo !== "folga" ? (
+                <Botao
+                  variante="fantasma"
+                  aria-label={`Adicionar pausa ${em} ${nome}`}
+                  onClick={() =>
+                    trocarDia(dia.diaSemana, { pausaInicio: pausaDeSempre.inicio, pausaFim: pausaDeSempre.fim })
+                  }
+                >
+                  + Pausa
+                </Botao>
               ) : null}
             </div>
           </div>

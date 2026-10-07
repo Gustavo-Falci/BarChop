@@ -32,7 +32,19 @@
 .horas {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--espaco-md);
+}
+
+/* O atalho da pausa acima da semana, separado dela pela mesma régua
+   fina das linhas dos dias. */
+.pausaDeSempre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espaco-md);
+  padding-block-end: var(--espaco-md);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
 }
 
 @media (max-width: 560px) {

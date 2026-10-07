@@ -2,6 +2,9 @@
 .pagina {
   display: grid;
   justify-items: center;
+  /* Sem isto a sobra do 100dvh estica as linhas, e o botão vira uma
+     bola. */
+  align-content: start;
   gap: 24px;
   min-height: 100dvh;
   padding: 32px 16px;

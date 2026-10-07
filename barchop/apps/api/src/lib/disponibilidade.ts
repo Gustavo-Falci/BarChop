@@ -29,6 +29,10 @@ export interface DiaDaJornada {
   modo: "barbearia" | "proprio" | "folga";
   horaInicio: Date | null;
   horaFim: Date | null;
+  // A pausa do almoço (painel v2, marco 3): as duas ou nenhuma. Opcional
+  // porque a janela não depende dela — só o `pausaComoOcupado` lê.
+  pausaInicio?: Date | null;
+  pausaFim?: Date | null;
 }
 
 export interface BloqueioDoDia {
@@ -68,6 +72,23 @@ export function janelaEfetiva(
   if (inicio >= fim) return FECHADO;
 
   return { horaAbertura: new Date(inicio), horaFechamento: new Date(fim), fechado: false };
+}
+
+// A pausa do membro no dia vira o que o `horariosLivres` entende: um
+// intervalo ocupado, como o bloqueio de horas — fora da janela, não tem
+// efeito. Vale pro cliente e pro painel: é horário, não regra.
+export function pausaComoOcupado(jornada: DiaDaJornada | null): IntervaloOcupado[] {
+  if (!jornada || jornada.modo === "folga" || !jornada.pausaInicio || !jornada.pausaFim) return [];
+  return [{ horaInicio: jornada.pausaInicio, horaFim: jornada.pausaFim }];
+}
+
+// O horário pedido invade a pausa? Dá o código próprio na criação, pelo
+// mesmo motivo do `caiEmBloqueio`: sem isto a recusa sairia como
+// `horario_indisponivel`, sem dizer por quê.
+export function caiNaPausa(pausa: IntervaloOcupado[], horaInicio: string, horaFim: string): boolean {
+  return pausa.some(
+    (faixa) => dateParaHora(faixa.horaInicio) < horaFim && horaInicio < dateParaHora(faixa.horaFim)
+  );
 }
 
 function cobreODia(bloqueio: BloqueioDoDia, data: Date): boolean {
@@ -116,8 +137,9 @@ export function caiEmBloqueio(
 }
 
 // O que um dia precisa pra calcular a agenda de um membro: a janela já
-// cruzada com a jornada e os bloqueios que o tocam. Três consultas, e a
-// rota do mês tem a versão dela com uma consulta por tabela.
+// cruzada com a jornada, a pausa dele e os bloqueios que o tocam. Três
+// consultas, e a rota do mês tem a versão dela com uma consulta por
+// tabela.
 export async function contextoDoDia(
   db: ClientePrisma,
   params: { barbeariaId: string; barbeiroId: string; data: Date }
@@ -139,7 +161,7 @@ export async function contextoDoDia(
     }),
   ]);
 
-  return { janela: janelaEfetiva(funcionamento, jornada), bloqueios };
+  return { janela: janelaEfetiva(funcionamento, jornada), pausa: pausaComoOcupado(jornada), bloqueios };
 }
 
 // Quem pode receber cliente: ativo, que atende e que já entrou (aceitou
@@ -187,7 +209,11 @@ export async function horariosDoProfissionalNoDia(
     where: { barbeiroId, data, status: { not: "cancelado" } },
     select: { horaInicio: true, horaFim: true },
   });
-  return horariosLivres({ janela, ocupados: [...ocupados, ...bloqueados], duracaoTotalMinutos });
+  return horariosLivres({
+    janela,
+    ocupados: [...ocupados, ...bloqueados, ...contexto.pausa],
+    duracaoTotalMinutos,
+  });
 }
 
 // O calendário do mês pra uma lista de membros (um, ou os candidatos do
@@ -263,8 +289,9 @@ export async function agendaDoPeriodo(
 
   return (barbeiroId, data, duracaoTotalMinutos) => {
     const diaSemana = data.getUTCDay();
+    const jornada = jornadaDe(barbeiroId, diaSemana);
     const { janela, ocupados: bloqueados } = aplicarBloqueios(
-      janelaEfetiva(funcionamentoPorDia.get(diaSemana) ?? null, jornadaDe(barbeiroId, diaSemana)),
+      janelaEfetiva(funcionamentoPorDia.get(diaSemana) ?? null, jornada),
       bloqueios.filter((bloqueio) => bloqueio.barbeiroId === barbeiroId),
       data
     );
@@ -272,7 +299,11 @@ export async function agendaDoPeriodo(
       (agendamento) =>
         agendamento.barbeiroId === barbeiroId && agendamento.data.getTime() === data.getTime()
     );
-    return horariosLivres({ janela, ocupados: [...ocupados, ...bloqueados], duracaoTotalMinutos });
+    return horariosLivres({
+      janela,
+      ocupados: [...ocupados, ...bloqueados, ...pausaComoOcupado(jornada)],
+      duracaoTotalMinutos,
+    });
   };
 }
 

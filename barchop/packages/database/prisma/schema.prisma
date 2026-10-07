@@ -202,6 +202,10 @@ model JornadaProfissional {
   // Só no modo `proprio`, e as duas — CHECK `jornada_horas_do_modo`.
   horaInicio DateTime?   @map("hora_inicio") @db.Time
   horaFim    DateTime?   @map("hora_fim") @db.Time
+  // Pausa do almoço (painel v2, marco 3): as duas ou nenhuma, nunca na
+  // folga — CHECK `jornada_pausa_inteira` (migration 20261008120000).
+  pausaInicio DateTime?  @map("pausa_inicio") @db.Time
+  pausaFim    DateTime?  @map("pausa_fim") @db.Time
 
   barbeiro Barbeiro @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
 

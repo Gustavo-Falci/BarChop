@@ -38,7 +38,13 @@ describe("GET /equipe/:id/jornada", () => {
 
     expect(resposta.statusCode).toBe(200);
     expect(resposta.json().jornada).toEqual(
-      SEMANA_DA_BARBEARIA.map((dia) => ({ ...dia, horaInicio: null, horaFim: null }))
+      SEMANA_DA_BARBEARIA.map((dia) => ({
+        ...dia,
+        horaInicio: null,
+        horaFim: null,
+        pausaInicio: null,
+        pausaFim: null,
+      }))
     );
     await app.close();
   });
@@ -76,8 +82,22 @@ describe("PUT /equipe/:id/jornada", () => {
 
     expect(resposta.statusCode).toBe(200);
     const jornada = resposta.json().jornada;
-    expect(jornada[0]).toEqual({ diaSemana: 0, modo: "folga", horaInicio: null, horaFim: null });
-    expect(jornada[1]).toEqual({ diaSemana: 1, modo: "proprio", horaInicio: "13:00", horaFim: "20:00" });
+    expect(jornada[0]).toEqual({
+      diaSemana: 0,
+      modo: "folga",
+      horaInicio: null,
+      horaFim: null,
+      pausaInicio: null,
+      pausaFim: null,
+    });
+    expect(jornada[1]).toEqual({
+      diaSemana: 1,
+      modo: "proprio",
+      horaInicio: "13:00",
+      horaFim: "20:00",
+      pausaInicio: null,
+      pausaFim: null,
+    });
     expect(jornada[2]).toMatchObject({ modo: "barbearia" });
     await app.close();
   });
@@ -99,6 +119,8 @@ describe("PUT /equipe/:id/jornada", () => {
       modo: "folga",
       horaInicio: null,
       horaFim: null,
+      pausaInicio: null,
+      pausaFim: null,
     });
     await app.close();
   });
@@ -142,6 +164,86 @@ describe("PUT /equipe/:id/jornada", () => {
       headers: auth(dono.token),
     });
     expect(lida.json().jornada.every((dia: { modo: string }) => dia.modo === "barbearia")).toBe(true);
+    await app.close();
+  });
+
+  // Painel v2, marco 3: a pausa do almoço é de cada profissional, por
+  // dia, em qualquer modo que trabalhe (decisão do dono, 2026-10-07).
+  it("grava a pausa num dia da barbearia e num dia próprio", async () => {
+    const app = buildApp();
+    const dono = await criarBarbeariaComToken(app);
+    const semana = SEMANA_DA_BARBEARIA.map((dia) =>
+      dia.diaSemana === 1
+        ? { diaSemana: 1, modo: "barbearia", pausaInicio: "12:00", pausaFim: "13:00" }
+        : dia.diaSemana === 2
+          ? {
+              diaSemana: 2,
+              modo: "proprio",
+              horaInicio: "10:00",
+              horaFim: "19:00",
+              pausaInicio: "14:00",
+              pausaFim: "14:30",
+            }
+          : dia
+    );
+
+    const resposta = await putJornada(app, dono.token, dono.barbeiroId, semana);
+    const lida = await app.inject({
+      method: "GET",
+      url: `/equipe/${dono.barbeiroId}/jornada`,
+      headers: auth(dono.token),
+    });
+
+    expect(resposta.statusCode).toBe(200);
+    expect(lida.json().jornada[1]).toMatchObject({ modo: "barbearia", pausaInicio: "12:00", pausaFim: "13:00" });
+    expect(lida.json().jornada[2]).toMatchObject({ modo: "proprio", pausaInicio: "14:00", pausaFim: "14:30" });
+    expect(lida.json().jornada[3]).toMatchObject({ pausaInicio: null, pausaFim: null });
+    await app.close();
+  });
+
+  it("pausa mandada num dia de folga é descartada, como as horas", async () => {
+    const app = buildApp();
+    const dono = await criarBarbeariaComToken(app);
+
+    const resposta = await putJornada(
+      app,
+      dono.token,
+      dono.barbeiroId,
+      comDia({ diaSemana: 3, modo: "folga", pausaInicio: "12:00", pausaFim: "13:00" })
+    );
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json().jornada[3]).toMatchObject({ modo: "folga", pausaInicio: null, pausaFim: null });
+    await app.close();
+  });
+
+  it("pausa sem fim, ou com o fim antes do começo: 422, e nada é gravado", async () => {
+    const app = buildApp();
+    const dono = await criarBarbeariaComToken(app);
+
+    const semFim = await putJornada(
+      app,
+      dono.token,
+      dono.barbeiroId,
+      comDia({ diaSemana: 2, modo: "barbearia", pausaInicio: "12:00" })
+    );
+    const invertida = await putJornada(
+      app,
+      dono.token,
+      dono.barbeiroId,
+      comDia({ diaSemana: 2, modo: "barbearia", pausaInicio: "13:00", pausaFim: "12:00" })
+    );
+
+    expect(semFim.statusCode).toBe(422);
+    expect(semFim.json().erro).toBe("pausa_incompleta");
+    expect(invertida.statusCode).toBe(422);
+    expect(invertida.json().erro).toBe("pausa_invalida");
+    const lida = await app.inject({
+      method: "GET",
+      url: `/equipe/${dono.barbeiroId}/jornada`,
+      headers: auth(dono.token),
+    });
+    expect(lida.json().jornada[2]).toMatchObject({ pausaInicio: null, pausaFim: null });
     await app.close();
   });
 

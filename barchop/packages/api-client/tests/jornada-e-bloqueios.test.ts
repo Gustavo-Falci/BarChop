@@ -107,7 +107,29 @@ describe("dublê — jornada, serviços e bloqueios", () => {
       modo: "proprio",
       horaInicio: "13:00",
       horaFim: "20:00",
+      pausaInicio: null,
+      pausaFim: null,
     });
+  });
+
+  // Painel v2, marco 3: as mesmas regras da pausa que o PUT da API.
+  it("grava a pausa, descarta na folga e recusa pausa incompleta ou invertida", async () => {
+    const falso = criarApiClientFalso();
+    const comDia = (diaSemana: number, dia: object) =>
+      SEMANA.map((d) => (d.diaSemana === diaSemana ? { ...d, ...dia } : d));
+
+    await expect(
+      falso.barbeiro.salvarJornada("bb1", comDia(1, { pausaInicio: "12:00", pausaFim: null }))
+    ).rejects.toMatchObject({ status: 422, codigo: "pausa_incompleta" });
+    await expect(
+      falso.barbeiro.salvarJornada("bb1", comDia(1, { pausaInicio: "13:00", pausaFim: "12:00" }))
+    ).rejects.toMatchObject({ status: 422, codigo: "pausa_invalida" });
+
+    await falso.barbeiro.salvarJornada("bb1", comDia(1, { pausaInicio: "12:00", pausaFim: "13:00" }));
+    expect((await falso.barbeiro.jornada("bb1"))[1]).toMatchObject({ pausaInicio: "12:00", pausaFim: "13:00" });
+
+    await falso.barbeiro.salvarJornada("bb1", comDia(0, { modo: "folga", pausaInicio: "12:00", pausaFim: "13:00" }));
+    expect((await falso.barbeiro.jornada("bb1"))[0]).toMatchObject({ modo: "folga", pausaInicio: null, pausaFim: null });
   });
 
   it("cria, lista pelo período e apaga bloqueios; recusa período invertido", async () => {

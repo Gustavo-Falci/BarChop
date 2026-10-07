@@ -5,20 +5,25 @@ import { useState } from "react";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
+import { LadoALado } from "../../componentes/Colunas";
 import { Estatistica } from "../../componentes/Estatistica";
-import { Vazio } from "../../componentes/Vazio";
 import { formatarPreco } from "../../componentes/ItemDeServico";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
 import { linkDaBarbearia } from "../../painel/compartilhar";
-import { ocupacao, previstoDoDia } from "../../painel/metricas";
+import { previstoDoDia, proximos } from "../../painel/metricas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./DashboardDoDia.module.css";
+import { BarraDeOcupacao } from "./hoje/BarraDeOcupacao";
 import { CartaoDoLink } from "./hoje/CartaoDoLink";
 import { JanelaDeCompartilhar } from "./hoje/JanelaDeCompartilhar";
+import { ProximosAtendimentos } from "./hoje/ProximosAtendimentos";
 import { TrilhaDoOnboarding } from "./TrilhaDoOnboarding";
 
+// O Hoje (painel v2, marco 4). No desktop, os próximos atendimentos à
+// esquerda e o link e a ocupação à direita; no celular, uma coluna.
+//
 // `agora` por parâmetro, como toda tela que olhe relógio: fake timers
 // não entram nesta suíte, e teste que compara data fixa com o relógio
 // real falha sozinho depois.
@@ -29,9 +34,10 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
   const hoje = hojeIso(agora);
 
   const agendamentos = useRequisicao(() => api.barbeiro.agendamentosDoDia(hoje), [hoje]);
-  const horarios = useRequisicao(() => api.barbeiro.horarios(), []);
-  // O nome da casa vai na mensagem do WhatsApp. Sem ele o cartão do link
-  // não aparece — o resto do dia não depende disso.
+  // A ocupação e o nome da casa são complementos: se falharem, o cartão
+  // deles some e o resto do dia segue.
+  const ocupacao = useRequisicao(() => api.barbeiro.ocupacaoDoDia(hoje), [hoje]);
+  // O nome da casa vai na mensagem do WhatsApp.
   const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
   const [compartilhando, setCompartilhando] = useState(false);
   const [linkCompartilhado, setLinkCompartilhado] = useState(false);
@@ -51,16 +57,9 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
   if (agendamentos.erro) {
     return <Aviso>{agendamentos.erro.mensagem || "Não foi possível carregar o dia agora."}</Aviso>;
   }
-  if (!agendamentos.dados || !horarios.dados) return <p>Carregando…</p>;
+  if (!agendamentos.dados) return <p>Carregando…</p>;
 
   const doDia = agendamentos.dados;
-  const horarioDeHoje = horarios.dados.find(
-    (h) => h.diaSemana === new Date(`${hoje}T12:00:00`).getDay()
-  );
-  const percentual = ocupacao(doDia, horarioDeHoje);
-  // Com mais de um profissional no dia, cada linha diz com quem; com um
-  // só, o nome repetido em toda linha seria ruído.
-  const comEquipe = new Set(doDia.map((agendamento) => agendamento.barbeiro.id)).size > 1;
   // O endereço inteiro, que abre fora do painel (WhatsApp, QR).
   const link = slug ? linkDaBarbearia(slug, process.env.NEXT_PUBLIC_URL_DO_SITE, window.location.origin) : null;
 
@@ -85,7 +84,28 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
         />
       ) : null}
 
-      {link && barbearia.dados ? <CartaoDoLink link={link} aoCompartilhar={() => setCompartilhando(true)} /> : null}
+      <div className={estilos.numeros}>
+        <Estatistica numero={String(doDia.length)} legenda="agendamentos hoje" />
+        <Estatistica numero={String(proximos(doDia, agora).length)} legenda="ainda hoje" />
+        <Estatistica numero={formatarPreco(previstoDoDia(doDia))} legenda="previsto hoje" />
+      </div>
+
+      <LadoALado>
+        <ProximosAtendimentos
+          doDia={doDia}
+          agora={agora}
+          aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
+        />
+        <div className={estilos.lateral}>
+          {link && barbearia.dados ? (
+            <CartaoDoLink link={link} aoCompartilhar={() => setCompartilhando(true)} />
+          ) : null}
+          {ocupacao.dados ? (
+            <BarraDeOcupacao ocupacao={ocupacao.dados} soDoProfissional={perfil.papel === "profissional"} />
+          ) : null}
+        </div>
+      </LadoALado>
+
       {compartilhando && link && barbearia.dados ? (
         <JanelaDeCompartilhar
           link={link}
@@ -95,40 +115,6 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
           aoFechar={() => setCompartilhando(false)}
         />
       ) : null}
-
-      <div className={estilos.numeros}>
-        <Estatistica numero={String(doDia.length)} legenda="agendamentos hoje" />
-        <Estatistica
-          numero={percentual === null ? "—" : `${percentual}%`}
-          legenda="ocupação"
-        />
-        <Estatistica
-          numero={formatarPreco(previstoDoDia(doDia))}
-          legenda="previsto hoje"
-        />
-      </div>
-
-      {doDia.length === 0 ? (
-        <Vazio
-          mensagem="Nenhum agendamento hoje."
-          dica="Quando alguém marcar pelo seu link, o horário aparece aqui."
-        />
-      ) : (
-        <ul className={estilos.lista}>
-          {doDia.map((agendamento) => (
-            <li key={agendamento.id}>
-              <button
-                type="button"
-                onClick={() => router.push(`/painel/agendamentos/${agendamento.id}`)}
-              >
-                {agendamento.horaInicio} {agendamento.cliente.nome} ·{" "}
-                {agendamento.servicos.map((s) => s.nome).join(" + ")}
-                {comEquipe ? ` · com ${agendamento.barbeiro.nome}` : null}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

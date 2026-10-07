@@ -37,8 +37,10 @@ function semear(agendamentos = [marcado("a1", "11:00", "11:30")]) {
   return criarApiClientFalso({ clientes: CLIENTES, agendamentos });
 }
 
+// O número que fica acima da legenda. O espaço do "R$ 80,00" do Intl é
+// o não separável; aqui vira espaço comum.
 function numeroDe(legenda: RegExp) {
-  return screen.getByText(legenda).previousSibling?.textContent;
+  return screen.getByText(legenda).previousSibling?.textContent?.replace(/\s/g, " ");
 }
 
 async function proximosAtendimentos() {

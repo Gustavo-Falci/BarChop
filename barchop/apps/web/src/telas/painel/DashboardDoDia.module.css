@@ -13,36 +13,10 @@
   gap: var(--espaco-md);
 }
 
-.lista {
+/* A coluna da direita no desktop: o link e a ocupação, um embaixo do
+   outro. */
+.lateral {
   display: grid;
-  gap: var(--espaco-sm);
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.lista button {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-md);
-  width: 100%;
-  min-height: 52px;
-  text-align: left;
-  padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-md);
-  background: var(--cor-surface);
-  font-size: var(--texto-sm);
-  cursor: pointer;
-  transition: transform 80ms ease, box-shadow 80ms ease;
-}
-
-.lista button:hover {
-  background: var(--cor-paper-soft);
-  box-shadow: 0 3px 0 var(--cor-shadow);
-}
-
-.lista button:active {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 var(--cor-shadow);
+  gap: var(--espaco-lg);
+  align-content: start;
 }

@@ -96,7 +96,9 @@ function TelaDasRegras() {
 
   return (
     <MolduraDaArea area="regras_de_agendamento" decididas={decididas} aviso={aviso}>
-      <div className={estilos.coluna}>
+      {/* As duas seções lado a lado: a tela usa a largura em vez de virar
+          uma coluna comprida (pedido do dono). No celular, empilham. */}
+      <div className={estilos.ladoALado}>
         <Secao
           titulo="Como o cliente marca"
           descricao="Valem pro link da barbearia. Pelo painel você encaixa qualquer horário livre."

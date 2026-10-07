@@ -121,7 +121,9 @@ function Horarios() {
 
   return (
     <MolduraDaArea area="horarios" decididas={decididas} aviso={aviso}>
-      <div className={estilos.colunaLarga}>
+      {/* Em duas colunas: a tela usa a largura em vez de virar uma coluna
+          comprida (pedido do dono). No celular, empilham. */}
+      <div className={estilos.gradeDosHorarios}>
         <Secao
           titulo="A rotina da semana"
           descricao="Os dias em que abre e o horário de sempre. Aplicar preenche a semana aqui embaixo — os dias fora da rotina ficam fechados."

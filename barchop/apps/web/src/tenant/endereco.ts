@@ -10,6 +10,14 @@ export function enderecoDaBarbearia(slug: string, urlDoSite: string | undefined)
   return `${protocol}//${slug}.${host}`;
 }
 
+// Uma página do site (termos, privacidade) linkada de outro host — o
+// cadastro mora no `painel.`. Com o site configurado, o endereço inteiro
+// no host do site; sem ele (desenvolvimento), o caminho, que abre ali.
+export function enderecoNoSite(caminho: string, urlDoSite: string | undefined): string {
+  if (!urlDoSite) return caminho;
+  return new URL(caminho, urlDoSite).toString();
+}
+
 // "/gr-barber/agendar?x" → "/agendar?x"; "/gr-barber" → "/"; null
 // quando o caminho não começa pelo segmento inteiro do slug.
 function semOSlug(caminho: string, slug: string): string | null {

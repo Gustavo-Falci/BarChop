@@ -38,6 +38,23 @@ async function preencher({
   if (senha) await userEvent.type(screen.getByLabelText(/^senha/i), senha);
 }
 
+describe("aceite dos termos (onda 1s-b)", () => {
+  it("o cadastro diz que criar é concordar, com os dois documentos em outra aba", () => {
+    montar();
+
+    expect(screen.getByText(/ao criar a barbearia, você concorda com os/i)).toBeInTheDocument();
+    const termos = screen.getByRole("link", { name: /termos de uso/i });
+    const privacidade = screen.getByRole("link", { name: /política de privacidade/i });
+    expect(termos).toHaveAttribute("href", "/termos");
+    expect(privacidade).toHaveAttribute("href", "/privacidade");
+    // Outra aba: voltar pra cá não pode apagar o que já foi digitado.
+    for (const link of [termos, privacidade]) {
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    }
+  });
+});
+
 function continuar() {
   return userEvent.click(screen.getByRole("button", { name: /continuar/i }));
 }

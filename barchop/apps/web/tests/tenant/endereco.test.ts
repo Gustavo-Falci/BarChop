@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { destinoDoSlugAntigo, enderecoDaBarbearia, noHostDaBarbearia } from "../../src/tenant/endereco";
+import {
+  destinoDoSlugAntigo,
+  enderecoDaBarbearia,
+  enderecoNoSite,
+  noHostDaBarbearia,
+} from "../../src/tenant/endereco";
 
 // O endereço que o dono vê e divulga: o host próprio da barbearia
 // quando o site está configurado, o caminho /<slug> sem ele.
@@ -22,6 +27,18 @@ describe("enderecoDaBarbearia", () => {
 // As telas montam os caminhos com o slug na frente (`/gr-barber/agendar`).
 // No host da barbearia o slug já está no host, e o caminho limpo é o
 // que aparece na barra de endereço e no link copiado.
+// Uma página do site (termos, privacidade) linkada de fora dele — do
+// cadastro, que mora no host do painel (onda 1s-b).
+describe("enderecoNoSite", () => {
+  it("com o site configurado, o endereço inteiro no host do site", () => {
+    expect(enderecoNoSite("/termos", "https://barchop.com.br/")).toBe("https://barchop.com.br/termos");
+  });
+
+  it("sem ele, o caminho", () => {
+    expect(enderecoNoSite("/privacidade", undefined)).toBe("/privacidade");
+  });
+});
+
 describe("noHostDaBarbearia", () => {
   it("no host da barbearia, tira o slug da frente", () => {
     expect(noHostDaBarbearia("/gr-barber", "gr-barber", "gr-barber")).toBe("/");

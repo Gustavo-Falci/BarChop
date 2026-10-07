@@ -16,7 +16,7 @@
 
 **O que falta (perguntar ao dono a ordem):**
 1. ~~`onda-1s-c`~~ — **feito em 2026-10-07** (PR `onda-1s-c`): robots, sitemap, description/Open Graph, docs. **Onda 1s completa** no mínimo; precisa de deploy do web (sem migration).
-2. Marco 4 do painel v2 — Hoje (plano a criar com `ecc:plan` do PRD `painel-v2.prd.md`); depois marcos 5 e 6.
+2. ~~Marco 4 do painel v2 — Hoje~~ — **feito em 2026-10-07** (plano `painel-v2-hoje.plan.md`; PRs #75 ocupação na API, #76 link/QR/cartaz, `painel-v2-hoje-dia` próximos + ocupação + layout). Deploy: API e web, sem migration. Próximos: marcos 5 (Listas) e 6 (Agenda).
 3. G3 (GR Barber com `lembrete_ativo = false`) e G4 (docs).
 4. Soltas: dados legais a preencher; telas do 3g e várias horizontais não vistas no navegador; `barbearia-teste` em produção.
 

@@ -86,22 +86,22 @@ o painel não deve copiá-la.
 | `barchop/docs/screens.md`, PRD | UPDATE | Estado do marco 4 |
 
 ## Tasks
-### Task 4a — Ocupação do dia na API (PR `painel-v2-hoje-ocupacao`)
+### Task 4a — Ocupação do dia na API (PR `painel-v2-hoje-ocupacao`) — **feito** (#75)
 - **Action**: tipo em `@barchop/types`; `lib/ocupacao.ts` puro em cima de `janelaEfetiva`/`pausaComoOcupado`/`aplicarBloqueios`; rota `GET /barbearias/me/ocupacao?data=`; método no api-client real e falso. Uma consulta por tabela (funcionamento, exceção da data, jornadas, bloqueios, agendamentos), membros com `PODE_ATENDER`.
 - **Mirror**: `agendaDoPeriodo`, `agendaVisivel`, `excecoes-de-horario.test.ts`.
 - **Validate**: `pnpm --filter ./apps/api exec vitest run tests/lib/ocupacao.test.ts tests/routers/ocupacao.test.ts`; tsc da API e do api-client.
 
-### Task 4b — Cartão do link e janela de compartilhar (PR `painel-v2-hoje-link`)
+### Task 4b — Cartão do link e janela de compartilhar (PR `painel-v2-hoje-link`) — **feito** (#76; o cartaz ficou em `/painel/cartaz`, fora da barra do painel)
 - **Action**: dependência `qrcode`; `compartilhar.ts` puro; `CodigoQr`; `CartaoDoLink`; `JanelaDeCompartilhar` (copiar, WhatsApp, compartilhar se houver, baixar PNG, imprimir); página do cartaz; toda ação marca o passo do link; a trilha abre a janela. Entra no Hoje ainda no layout atual.
 - **Mirror**: `TrilhaDoOnboarding.copiarLink`, `enderecoDaBarbearia`.
 - **Validate**: testes de `compartilhar.ts`, da janela (botões, marcação do passo, fallback de cópia, "Compartilhar" some sem `navigator.share`) e do cartaz. **Aprovação visual do dono** (375 e 1440) antes do merge.
 
-### Task 4c — Próximos atendimentos, ocupação e layout horizontal (PR `painel-v2-hoje-dia`)
+### Task 4c — Próximos atendimentos, ocupação e layout horizontal (PR `painel-v2-hoje-dia`) — **feito**: os números viraram agendamentos hoje / ainda hoje / previsto (a ocupação saiu deles pro cartão próprio); `.pagina` com `minmax(0, 1fr)` pro LadoALado não vazar em 375px
 - **Action**: `proximos()` puro em `metricas.ts`; `ProximosAtendimentos`; `BarraDeOcupacao` lendo a API da 4a (casa + por profissional; "fechado" sem trabalho); `DashboardDoDia` remontado em `LadoALado`; a `ocupacao` antiga sai.
 - **Mirror**: `DashboardDoDia` (`agora` por parâmetro), `Colunas`, `Estatistica`, `Chip`.
 - **Validate**: testes das contas e da tela com a API falsa (com e sem equipe, profissional, dia fechado, nada pela frente). **Aprovação visual do dono** antes do merge.
 
-### Task 4d — Docs (junto do 4c ou PR curto)
+### Task 4d — Docs (junto do 4c ou PR curto) — **feito** junto do 4c
 - `screens.md` (Hoje ✅), PRD (marco 4 complete), RETOMAR AQUI.
 
 ## Validation

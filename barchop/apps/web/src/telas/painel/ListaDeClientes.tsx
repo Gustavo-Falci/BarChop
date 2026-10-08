@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { apenasDigitos } from "@barchop/formato";
 import { ErroDaApi } from "@barchop/api-client";
-import type { ClienteDaLista } from "@barchop/types";
+import type { ClienteDaLista, FaixaDeCliente } from "@barchop/types";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { CampoDeBusca } from "../../componentes/CampoDeBusca";
+import { PilulasDeFiltro } from "../../componentes/PilulasDeFiltro";
 import { Tabela } from "../../componentes/Tabela";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
@@ -24,17 +25,23 @@ const ESPERA_DA_BUSCA = 300;
 const SEM_REGISTRO = "Sem registro nos últimos 90 dias";
 
 // As três perguntas que o barbeiro faz sobre a carteira, nesta ordem:
-// quem é todo mundo, quem está vindo, e quem sumiu. Os números saem do
-// que ESTÁ carregado — a API devolve a página já filtrada pela busca, e
-// contar aqui um total da barbearia seria inventar um dado que a tela
-// não tem.
-type Faixa = "todos" | "recentes" | "sumidos";
+// quem é todo mundo, quem está vindo, e quem sumiu. Filtradas e
+// contadas na API, que vê a carteira inteira — a tela só tem a página
+// carregada, e um número tirado dela seria uma afirmação que ninguém
+// mediu.
+function lerFaixa(valor: string | null): FaixaDeCliente {
+  return valor === "recentes" || valor === "sumidos" ? valor : "todos";
+}
 
-const FAIXAS: { valor: Faixa; rotulo: string }[] = [
-  { valor: "todos", rotulo: "Todos" },
-  { valor: "recentes", rotulo: "Vieram em 30 dias" },
-  { valor: "sumidos", rotulo: "Sem registro em 90 dias" },
-];
+// O endereço da lista com o que estiver ativo. Busca e faixa moram na
+// URL pra lista filtrada ser linkável e sobreviver ao recarregar.
+function enderecoDaLista(busca: string, faixa: FaixaDeCliente): string {
+  const params = new URLSearchParams();
+  if (busca) params.set("busca", busca);
+  if (faixa !== "todos") params.set("faixa", faixa);
+  const query = params.toString();
+  return query ? `/painel/clientes?${query}` : "/painel/clientes";
+}
 
 // Zap abre no aplicativo com a conversa pronta. O 55 entra aqui porque o
 // telefone guardado é nacional — "(15) 99782-7833" vira 5515997827833.
@@ -82,13 +89,22 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
   const query = useSearchParams();
   const api = useApiDoPainel();
   const busca = query.get("busca") ?? "";
+  const faixaDaUrl = lerFaixa(query.get("faixa"));
   // Estado local, e nao o valor da URL direto no campo: o router.push do
   // Next e assincrono, e um campo cujo valor so volta pela URL trava
   // enquanto a navegacao nao acontece - a pessoa digita e nao ve letra.
   // O filtro continua saindo da URL, entao recarregar e o link valem.
-  const [faixa, setFaixa] = useState<Faixa>("todos");
+  // A faixa também vive em estado local pelo mesmo motivo do campo: a
+  // pílula responde na hora, e a URL acompanha por `replace`.
+  const [faixa, setFaixa] = useState<FaixaDeCliente>(faixaDaUrl);
   const [digitado, setDigitado] = useState(busca);
   useEffect(() => setDigitado(busca), [busca]);
+  useEffect(() => setFaixa(faixaDaUrl), [faixaDaUrl]);
+
+  function trocarFaixa(nova: FaixaDeCliente) {
+    setFaixa(nova);
+    router.replace(enderecoDaLista(busca, nova));
+  }
 
   // A busca espera a pessoa parar de digitar antes de virar navegação e,
   // por consequência, requisição: `?busca=` é dependência do
@@ -104,11 +120,7 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
       // deixaria quatro apertos de voltar só pra sair da tela. replace
       // mantém a busca linkável (o que o filtro na URL existe pra dar)
       // sem empilhar nada.
-      router.replace(
-        digitado
-          ? `/painel/clientes?busca=${encodeURIComponent(digitado)}`
-          : "/painel/clientes"
-      );
+      router.replace(enderecoDaLista(digitado, faixa));
     }, ESPERA_DA_BUSCA);
 
     return () => clearTimeout(id);
@@ -116,9 +128,12 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
     // navegação, e listá-lo remontaria o temporizador no meio da
     // digitação.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [digitado, busca]);
+  }, [digitado, busca, faixa]);
 
-  const clientes = useRequisicao(() => api.barbeiro.clientes(busca), [busca]);
+  const clientes = useRequisicao(
+    () => api.barbeiro.clientes(busca, undefined, faixa),
+    [busca, faixa]
+  );
 
   // As páginas seguintes moram fora do `useRequisicao`: ele é uma
   // requisição por chave, e o que se quer aqui é acumular. A chave dele
@@ -145,7 +160,7 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
     setSeguintes([]);
     setCursor(null);
     setErroDeMais(undefined);
-  }, [busca]);
+  }, [busca, faixa]);
 
   // E este anota o cursor que veio com a página.
   useEffect(() => {
@@ -163,7 +178,7 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
     setBuscandoMais(true);
     setErroDeMais(undefined);
     try {
-      const pagina = await api.barbeiro.clientes(busca, cursor);
+      const pagina = await api.barbeiro.clientes(busca, cursor, faixa);
       setSeguintes((anteriores) => [...anteriores, ...pagina.clientes]);
       setCursor(pagina.proximoCursor);
     } catch (erro) {
@@ -184,13 +199,8 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
     }
   }
 
-  // As duas fronteiras que a tela desenha sobre a data que a API manda.
-  // A API devolve o último agendamento de verdade, sem janela — quem
-  // sabe que dia é hoje é esta tela, e é ela que decide o que conta como
-  // "recente" e o que já é "sumido".
-  const trintaDiasAtras = hojeIso(
-    new Date(agora.getTime() - 30 * 24 * 60 * 60 * 1000)
-  );
+  // O corte da coluna "Último agendamento": a API manda a data real,
+  // sem janela, e é esta tela que decide que uma data velha não informa.
   const noventaDiasAtras = hojeIso(
     new Date(agora.getTime() - 90 * 24 * 60 * 60 * 1000)
   );
@@ -208,23 +218,11 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
   // segundo estado parcial pra alguém esquecer de tratar.
   const carregando = !clientes.dados;
 
-  // Um cliente por balde, a partir da data que veio na própria linha.
-  // "Sumido" inclui quem nunca veio: `null` e uma data velha respondem a
-  // mesma pergunta — esse cliente não aparece há pelo menos 90 dias.
-  const faixaDe = (ultima: string | null): Faixa => {
-    if (!ultima || ultima < noventaDiasAtras) return "sumidos";
-    return ultima >= trintaDiasAtras ? "recentes" : "todos";
-  };
-
-  const carregados = [...(clientes.dados?.clientes ?? []), ...seguintes];
+  // A página já vem filtrada pela faixa: o que veio é o que se mostra.
+  const listados = [...(clientes.dados?.clientes ?? []), ...seguintes];
   // Quantos existem de verdade no filtro atual — não quantos vieram.
   const total = clientes.dados?.total ?? 0;
-  const listados =
-    faixa === "todos"
-      ? carregados
-      : carregados.filter(
-          (cliente) => faixaDe(cliente.ultimoAgendamento) === faixa
-        );
+  const contagens = clientes.dados?.contagens;
 
   const quantos = listados.length;
   // Três frases, e a do meio é a que faltava: enquanto houver página
@@ -289,29 +287,19 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
               respondem a pergunta que a ordem alfabética não responde:
               quem está vindo e quem sumiu. Filtram o que já está na
               tela — nenhuma ida nova à API. */}
-          <div className={estilos.faixas} role="group" aria-label="Filtrar por frequência">
-            {FAIXAS.map((opcao) => (
-              <button
-                key={opcao.valor}
-                type="button"
-                className={estilos.faixa}
-                aria-pressed={faixa === opcao.valor}
-                onClick={() => setFaixa(opcao.valor)}
-              >
-                {opcao.rotulo}
-                {/* Número só em "Todos", e só porque agora ele é o
-                    `total` que a API contou. As outras duas faixas
-                    filtram o que ESTÁ carregado: com 100 de 260 na tela,
-                    um "67" ao lado de "Sem registro em 90 dias" seria
-                    uma afirmação sobre a carteira que ninguém mediu. A
-                    pílula sem número continua filtrando e não promete
-                    nada de falso — contar por faixa no servidor é o
-                    passo seguinte, não algo que a tela possa fingir. */}
-                {opcao.valor === "todos" ? (
-                  <span className={estilos.quantosNaFaixa}>{total}</span>
-                ) : null}
-              </button>
-            ))}
+          <div className={estilos.faixas}>
+            <PilulasDeFiltro
+              rotulo="Filtrar clientes"
+              valor={faixa}
+              aoTrocar={trocarFaixa}
+              opcoes={[
+                { valor: "todos", rotulo: "Todos", contagem: contagens?.todos },
+                // Verde pra quem está vindo, âmbar pra quem sumiu: é a
+                // faixa que pede uma mensagem.
+                { valor: "recentes", rotulo: "Vieram em 30 dias", contagem: contagens?.recentes, tom: "ok" },
+                { valor: "sumidos", rotulo: "Sem registro em 90 dias", contagem: contagens?.sumidos, tom: "atencao" },
+              ]}
+            />
           </div>
 
           {quantos > 0 ? (
@@ -350,7 +338,7 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
           }
           acaoVazio={
             !busca && faixa !== "todos" ? (
-              <Botao variante="contorno" onClick={() => setFaixa("todos")}>
+              <Botao variante="contorno" onClick={() => trocarFaixa("todos")}>
                 Ver todos
               </Botao>
             ) : busca ? (

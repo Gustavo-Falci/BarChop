@@ -106,8 +106,13 @@ Visual: Chrome DevTools do ECC, conta `teste1`, 375px e 1440px, tema escuro (e c
 | Clientes em produção mudar sem deploy da API junto | M | 5b entra antes; deploy da API e do web no mesmo ciclo do 5c |
 
 ## Acceptance
-- [ ] PRs 5a–5e mergeados
-- [ ] Testes tocados passando; tsc e lint limpos
-- [ ] Pílulas de Clientes com número de verdade nas três faixas
-- [ ] Aprovação visual do dono nas três telas (375 e 1440)
-- [ ] Patterns mirrored, not reinvented
+- [x] PRs 5a–5e mergeados (#79 serviços, #80 API das faixas, #81 clientes, #82 equipe, `docs-marco-5-listas`)
+- [x] Testes tocados passando; tsc e lint limpos (`packages/formato` já falhava no `tests/regras.test.ts` antes do marco — não mexido)
+- [x] Pílulas de Clientes com número de verdade nas três faixas
+- [x] Aprovação visual do dono nas três telas (375 e 1440)
+- [x] Patterns mirrored, not reinvented
+
+## Diferenças do previsto
+- Clientes: a coluna "Situação" não entrou — "Último agendamento" já diz "Sem registro nos últimos 90 dias", e o chip repetiria.
+- Serviços: com todos sem categoria, o grupo único "Sem categoria" continua com título (o dono não pediu pra esconder).
+- A faixa de Clientes vive em estado local semeado pela URL (como a busca): o dublê de navegação não devolve a query nova.

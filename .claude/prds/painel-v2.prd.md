@@ -58,7 +58,7 @@ We'll know we're right when **uma barbearia nova chega a "todas as decisões tom
 | 3 | Regras de agendamento | Dono decide intervalo, antecedência, janela da agenda e prazo para o cliente remarcar/cancelar; a página pública obedece. Inclui pausa do almoço e exceções por dia em Horários (movidos do marco 2: exigem mudar o modelo de horário) | in-progress | `.claude/plans/painel-v2-regras-de-agendamento.plan.md` |
 | 4 | Hoje | Dono compartilha o link (QR, WhatsApp) e vê próximos atendimentos e ocupação sem sair da tela | complete | `.claude/plans/painel-v2-hoje.plan.md` (PRs #75, #76, `painel-v2-hoje-dia`) |
 | 5 | Listas | Serviços por categoria, Clientes e Equipe com filtros em pílulas e tabela nova | complete | `.claude/plans/painel-v2-listas.plan.md` (PRs #79, #80, #81, #82) |
-| 6 | Agenda | Resumo do dia, "Agora" e "Bloquear" direto na agenda | pending | — |
+| 6 | Agenda | Resumo do dia, "Agora" e "Bloquear" direto na agenda | in-progress | `.claude/plans/painel-v2-agenda.plan.md` |
 
 ## Open Questions
 - [ ] Painel v2 entra antes ou depois do G1 (infra) e do piloto da GR Barber? Se antes, atrasa o piloto; se depois, o piloto vê o painel antigo.

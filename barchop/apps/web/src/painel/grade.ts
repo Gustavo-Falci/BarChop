@@ -257,9 +257,6 @@ export function gradeDeTempo(entrada: {
     const doDia = doPeriodo
       .filter((a) => a.data === data && (!barbeiroId || a.barbeiro.id === barbeiroId))
       .sort((um, outro) => um.horaInicio.localeCompare(outro.horaInicio));
-    const { posicionados, bloqueiaMinuto } = barbeiroId
-      ? bloqueiosNaColuna(data, barbeiroId)
-      : { posicionados: [], bloqueiaMinuto: () => false };
     const doExpediente = !expediente
       ? undefined
       : barbeiroId
@@ -267,6 +264,12 @@ export function gradeDeTempo(entrada: {
         : expediente.length === 1
           ? expediente[0]
           : undefined;
+    // A coluna única (quem trabalha sozinho) é de um profissional só: os
+    // bloqueios dele entram nela como entram nas colunas da equipe.
+    const donoDaColuna = barbeiroId ?? doExpediente?.id;
+    const { posicionados, bloqueiaMinuto } = donoDaColuna
+      ? bloqueiosNaColuna(data, donoDaColuna)
+      : { posicionados: [], bloqueiaMinuto: () => false };
 
     const eventos: EventoPosicionado[] = doDia.map((agendamento) => {
       const inicio = emMinutos(agendamento.horaInicio);

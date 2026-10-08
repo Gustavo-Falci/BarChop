@@ -87,3 +87,11 @@
     font-size: var(--texto-lg);
   }
 }
+
+/* A ação da tela e as vistas, juntas à direita. */
+.lado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+}

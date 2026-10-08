@@ -35,3 +35,15 @@
   display: grid;
   gap: var(--espaco-sm);
 }
+
+/* "Bloquear" na barra: o mesmo desenho dos botões "Hoje" e "Agora". */
+.acao {
+  min-height: 40px;
+  padding: var(--espaco-xs) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+}

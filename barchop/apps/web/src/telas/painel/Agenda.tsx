@@ -12,6 +12,7 @@ import { diasDaSemana, gradeDeTempo, gradeDoMes } from "../../painel/grade";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
+import { JanelaDeBloqueio } from "./agenda/JanelaDeBloqueio";
 import { ResumoDoPeriodo } from "./agenda/ResumoDoPeriodo";
 import estilos from "./Agenda.module.css";
 
@@ -117,6 +118,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   // primeiro e rola quando a grade de hoje aparecer.
   const hoje = hojeIso(agora);
   const [rolarQuandoCarregar, setRolarQuandoCarregar] = useState(false);
+  const [bloqueando, setBloqueando] = useState(false);
   function rolarAteAgora(): boolean {
     const regua = document.querySelector('[data-testid="regua-do-agora"]');
     regua?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -188,6 +190,20 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           }
           aoVoltarAHoje={() => irPara(vista, hojeIso(agora))}
           aoIrParaAgora={vista === "mes" ? undefined : irParaAgora}
+          acao={
+            vista === "mes" ? undefined : (
+              // "Bloquear" na tela, "Bloquear horário" pro leitor: o
+              // nome diz o quê sem ocupar a barra no celular.
+              <button
+                type="button"
+                className={estilos.acao}
+                aria-label="Bloquear horário"
+                onClick={() => setBloqueando(true)}
+              >
+                Bloquear
+              </button>
+            )
+          }
         />
 
         {vista === "mes" ? null : (
@@ -203,6 +219,17 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           />
         )}
       </div>
+
+      {bloqueando ? (
+        <JanelaDeBloqueio
+          data={data}
+          aoBloquear={() => {
+            bloqueios.recarregar();
+            ocupacao.recarregar();
+          }}
+          aoFechar={() => setBloqueando(false)}
+        />
+      ) : null}
 
       {vista === "mes" ? (
         <GradeDoMes

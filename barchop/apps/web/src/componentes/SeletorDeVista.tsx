@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import estilos from "./SeletorDeVista.module.css";
 
 export type Vista = "dia" | "semana" | "mes";
@@ -17,6 +18,7 @@ export function SeletorDeVista({
   aoAndar,
   aoVoltarAHoje,
   aoIrParaAgora,
+  acao,
 }: {
   vista: Vista;
   // O título do período mora aqui, e não num bloco acima: a barra gruda
@@ -30,6 +32,8 @@ export function SeletorDeVista({
   // Só nas vistas com régua do agora (dia e semana): vai pra hoje e rola
   // a grade até a hora atual. Ausente, o botão não aparece.
   aoIrParaAgora?: () => void;
+  // Uma ação da tela ao lado das vistas ("Bloquear").
+  acao?: ReactNode;
 }) {
   return (
     <div className={estilos.barra}>
@@ -61,20 +65,23 @@ export function SeletorDeVista({
         <h1 className={estilos.titulo}>{titulo}</h1>
       </div>
 
-      <div className={estilos.vistas} role="group" aria-label="Vista da agenda">
-        {VISTAS.map((opcao) => (
-          <button
-            key={opcao.valor}
-            type="button"
-            className={estilos.vista}
-            // aria-pressed e não aria-current: são botões que alternam um
-            // modo, não links para outro lugar.
-            aria-pressed={opcao.valor === vista}
-            onClick={() => aoTrocarVista(opcao.valor)}
-          >
-            {opcao.rotulo}
-          </button>
-        ))}
+      <div className={estilos.lado}>
+        {acao}
+        <div className={estilos.vistas} role="group" aria-label="Vista da agenda">
+          {VISTAS.map((opcao) => (
+            <button
+              key={opcao.valor}
+              type="button"
+              className={estilos.vista}
+              // aria-pressed e não aria-current: são botões que alternam um
+              // modo, não links para outro lugar.
+              aria-pressed={opcao.valor === vista}
+              onClick={() => aoTrocarVista(opcao.valor)}
+            >
+              {opcao.rotulo}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

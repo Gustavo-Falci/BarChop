@@ -129,6 +129,50 @@ describe("lista da equipe", () => {
     expect(within(rafael).getByText("Dono")).toBeInTheDocument();
   });
 
+  it("o cabeçalho diz quantas pessoas há e quantas atendem", async () => {
+    // Rafael (dono) e Ana atendem; Bia é recepção e está inativa.
+    montarPainel(<ListaDaEquipe />, comEquipe());
+
+    expect(await screen.findByText("3 pessoas · 2 atendem")).toBeInTheDocument();
+  });
+
+  it("as pílulas separam quem atende, quem não entrou e quem saiu", async () => {
+    montarPainel(<ListaDaEquipe />, comEquipe());
+
+    const filtros = await screen.findByRole("group", { name: "Filtrar equipe" });
+    expect(within(filtros).getByRole("button", { name: "Todos 3" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(filtros).getByRole("button", { name: "Atendem 2" })).toBeInTheDocument();
+    expect(within(filtros).getByRole("button", { name: "Convites pendentes 1" })).toBeInTheDocument();
+
+    await userEvent.click(within(filtros).getByRole("button", { name: "Inativos 1" }));
+
+    expect(screen.getByText("Bia")).toBeInTheDocument();
+    expect(screen.queryByText("Ana")).not.toBeInTheDocument();
+    expect(screen.queryByText("Rafael")).not.toBeInTheDocument();
+  });
+
+  it("cada linha diz a situação e mostra o e-mail embaixo do nome", async () => {
+    montarPainel(<ListaDaEquipe />, comEquipe());
+
+    const rafael = (await screen.findByText("Rafael")).closest("tr") as HTMLElement;
+    expect(within(rafael).getByText("Ativo")).toBeInTheDocument();
+    expect(within(rafael).getByText("rafael@gr.com")).toBeInTheDocument();
+
+    const ana = screen.getByText("Ana").closest("tr") as HTMLElement;
+    expect(within(ana).getByText("Convite pendente")).toBeInTheDocument();
+  });
+
+  it("filtro sem ninguém oferece ver todos", async () => {
+    // Só o dono, ninguém inativo.
+    montarPainel(<ListaDaEquipe />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Inativos 0" }));
+
+    expect(screen.getByText("Ninguém neste filtro.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Ver todos" }));
+    expect(screen.getByText("Rafael")).toBeInTheDocument();
+  });
+
   it("convidar leva ao cadastro; a linha abre o membro", async () => {
     montarPainel(<ListaDaEquipe />, comEquipe());
 

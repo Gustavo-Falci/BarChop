@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { ServicoSerializado } from "@barchop/types";
+import type { MembroDaEquipe, ServicoSerializado } from "@barchop/types";
 import {
   agruparPorCategoria,
   faixaDePreco,
   resumoDoGrupo,
   SEM_CATEGORIA,
+  situacaoDoMembro,
 } from "../../src/painel/listas";
 
 function servico(
@@ -105,5 +106,32 @@ describe("resumo do grupo", () => {
     expect(
       comEspacoComum(resumoDoGrupo([servico("1", null, "40.00"), servico("2", null, "25.00")]))
     ).toBe("2 serviços · R$ 25,00 a R$ 40,00");
+  });
+});
+
+describe("situação do membro", () => {
+  const membro = (ativo: boolean, convitePendente: boolean): MembroDaEquipe => ({
+    id: "m1",
+    nome: "Ana",
+    email: "ana@gr.com",
+    telefone: null,
+    papel: "profissional",
+    atende: true,
+    ativo,
+    fotoUrl: null,
+    convitePendente,
+  });
+
+  it("ativo que já entrou", () => {
+    expect(situacaoDoMembro(membro(true, false))).toBe("ativo");
+  });
+
+  it("ativo que ainda não aceitou o convite", () => {
+    expect(situacaoDoMembro(membro(true, true))).toBe("convite");
+  });
+
+  it("inativo pesa mais que o convite pendente", () => {
+    // Convite de quem foi desativado não é pendência: ele não entra.
+    expect(situacaoDoMembro(membro(false, true))).toBe("inativo");
   });
 });

@@ -1,4 +1,4 @@
-import type { ServicoSerializado } from "@barchop/types";
+import type { MembroDaEquipe, ServicoSerializado } from "@barchop/types";
 import { formatarPreco } from "../componentes/ItemDeServico";
 
 // As contas das listas do painel (marco 5), à parte da tela pelo mesmo
@@ -59,4 +59,13 @@ export function faixaDePreco(servicos: ServicoSerializado[]): string {
 export function resumoDoGrupo(servicos: ServicoSerializado[]): string {
   const quantos = `${servicos.length} ${servicos.length === 1 ? "serviço" : "serviços"}`;
   return `${quantos} · ${faixaDePreco(servicos)}`;
+}
+
+// Uma situação por membro, na ordem do que pesa mais: quem foi
+// desativado não entra, e um convite pendente dele não é pendência.
+export type SituacaoDoMembro = "ativo" | "convite" | "inativo";
+
+export function situacaoDoMembro(membro: MembroDaEquipe): SituacaoDoMembro {
+  if (!membro.ativo) return "inativo";
+  return membro.convitePendente ? "convite" : "ativo";
 }

@@ -229,6 +229,25 @@ export function GradeDeTempo({
 
               {/* Antes dos eventos no DOM: um agendamento que já existia
                   quando o bloqueio foi criado continua clicável por cima. */}
+              {/* O que está fechado no expediente (antes de abrir, depois
+                  de fechar, a pausa): hachura atrás de tudo, e só um
+                  rótulo curto. Agendamento que caia ali continua por
+                  cima — esconder um atendimento é a pior falha desta
+                  tela. */}
+              {coluna.fechadas.map((faixa, indice) => (
+                <div
+                  key={`fechada-${indice}`}
+                  className={estilos.fechada}
+                  style={
+                    {
+                      "--linha": faixa.linha,
+                      "--linhas": faixa.linhas,
+                    } as CSSProperties
+                  }
+                >
+                  {faixa.rotulo}
+                </div>
+              ))}
               {coluna.bloqueios.map((bloqueio, indice) => (
                 <span
                   key={`bloqueio-${indice}`}

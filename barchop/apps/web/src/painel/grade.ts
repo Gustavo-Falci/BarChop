@@ -2,6 +2,7 @@ import type {
   AgendamentoComCliente,
   BloqueioSerializado,
   HorarioSerializado,
+  OcupacaoDoProfissional,
 } from "@barchop/types";
 import { hojeIso, horaJaPassou } from "../formato/datas";
 
@@ -39,6 +40,19 @@ export interface BloqueioPosicionado {
   rotulo: string;
 }
 
+// O que está fechado dentro da janela da grade, numa coluna (painel v2,
+// marco 6): fora do expediente do profissional, ou a pausa do almoço.
+export interface FaixaFechada {
+  linha: number;
+  linhas: number;
+  rotulo: "Fechado" | "Pausa";
+}
+
+// O expediente do dia de um profissional, como a ocupação da API o
+// devolve: a janela efetiva e a pausa. A grade só desenha — a regra é
+// da API (janelaEfetiva).
+export type ExpedienteDoProfissional = Pick<OcupacaoDoProfissional, "id" | "janela" | "pausa">;
+
 // Uma coluna é um dia (semana, ou dia de quem trabalha sozinho) ou, na
 // vista de dia da equipe, um profissional nesse dia — aí ela tem o
 // `rotulo` (o nome) e o `barbeiroId`, que vai pro "novo agendamento".
@@ -51,6 +65,7 @@ export interface ColunaDeDia {
   eventos: EventoPosicionado[];
   livres: FaixaLivre[];
   bloqueios: BloqueioPosicionado[];
+  fechadas: FaixaFechada[];
 }
 
 export interface GradeDeTempo {
@@ -153,8 +168,14 @@ export function gradeDeTempo(entrada: {
   // o primeiro de `dias`), com os agendamentos e bloqueios de cada um.
   profissionais?: { id: string; nome: string }[];
   bloqueios?: BloqueioSerializado[];
+  // Só na vista de dia: o expediente de cada profissional. A coluna de
+  // um profissional usa o dele; a coluna única (quem trabalha sozinho,
+  // ou o profissional vendo a própria agenda) usa o único que vier.
+  // Ausente, a grade segue só o horário da casa, como antes.
+  expediente?: ExpedienteDoProfissional[];
 }): GradeDeTempo {
-  const { dias, horarios, agendamentos, agora, profissionais, bloqueios = [] } = entrada;
+  const { dias, horarios, agendamentos, agora, profissionais, bloqueios = [], expediente } = entrada;
+  const janelas = (expediente ?? []).flatMap((e) => (e.janela ? [e.janela] : []));
 
   // Só o que pertence aos dias mostrados: quem chama pode ter buscado um
   // intervalo maior (o mês busca a grade inteira).
@@ -168,12 +189,16 @@ export function gradeDeTempo(entrada: {
   // exista. Agendamento fora do horário acontece: PATCH /horarios não
   // valida contra os já marcados, e deixá-lo fora da janela o tornaria
   // invisível — a pior falha possível nesta tela.
+  // E o expediente do dia: uma data especial pode abrir antes ou fechar
+  // depois do horário da semana.
   const inicios = [
     ...aberturas.map((h) => emMinutos(h.horaAbertura)),
+    ...janelas.map((j) => emMinutos(j.abre)),
     ...doPeriodo.map((a) => emMinutos(a.horaInicio)),
   ];
   const fins = [
     ...aberturas.map((h) => emMinutos(h.horaFechamento)),
+    ...janelas.map((j) => emMinutos(j.fecha)),
     ...doPeriodo.map((a) => emMinutos(a.horaFim)),
   ];
 
@@ -235,6 +260,13 @@ export function gradeDeTempo(entrada: {
     const { posicionados, bloqueiaMinuto } = barbeiroId
       ? bloqueiosNaColuna(data, barbeiroId)
       : { posicionados: [], bloqueiaMinuto: () => false };
+    const doExpediente = !expediente
+      ? undefined
+      : barbeiroId
+        ? expediente.find((e) => e.id === barbeiroId)
+        : expediente.length === 1
+          ? expediente[0]
+          : undefined;
 
     const eventos: EventoPosicionado[] = doDia.map((agendamento) => {
       const inicio = emMinutos(agendamento.horaInicio);
@@ -250,10 +282,40 @@ export function gradeDeTempo(entrada: {
 
     distribuirEmPistas(eventos);
 
+    // A janela em que se oferece horário: o expediente, quando a API o
+    // mandou; senão, o horário da casa no dia da semana.
+    const janelaDaColuna = doExpediente
+      ? doExpediente.janela && {
+          abre: emMinutos(doExpediente.janela.abre),
+          fecha: emMinutos(doExpediente.janela.fecha),
+        }
+      : aberto(horario)
+        ? { abre: emMinutos(horario.horaAbertura), fecha: emMinutos(horario.horaFechamento) }
+        : null;
+    const pausa = doExpediente?.pausa
+      ? { inicio: emMinutos(doExpediente.pausa.inicio), fim: emMinutos(doExpediente.pausa.fim) }
+      : null;
+    const naPausa = (minuto: number) => pausa !== null && pausa.inicio <= minuto && minuto < pausa.fim;
+
+    // O que fica sombreado: antes de abrir, depois de fechar e a pausa,
+    // recortados na janela da grade. Sem expediente, nada (a semana).
+    const fechadas: FaixaFechada[] = [];
+    if (doExpediente && janelaDaColuna) {
+      const faixa = (de: number, ate: number, rotulo: FaixaFechada["rotulo"]) => {
+        const inicio = Math.max(de, minutoInicial);
+        const fim = Math.min(ate, fimDaJanela);
+        if (fim > inicio) {
+          fechadas.push({ linha: linhaDe(inicio), linhas: (fim - inicio) / MINUTOS_POR_LINHA, rotulo });
+        }
+      };
+      faixa(minutoInicial, janelaDaColuna.abre, "Fechado");
+      if (pausa) faixa(pausa.inicio, pausa.fim, "Pausa");
+      faixa(janelaDaColuna.fecha, fimDaJanela, "Fechado");
+    }
+
     const livres: FaixaLivre[] = [];
-    if (aberto(horario)) {
-      const abre = emMinutos(horario.horaAbertura);
-      const fecha = emMinutos(horario.horaFechamento);
+    if (janelaDaColuna) {
+      const { abre, fecha } = janelaDaColuna;
 
       for (let minuto = abre; minuto < fecha; minuto += PASSO_LIVRE) {
         // Ocupado é qualquer minuto entre início e fim, não só o início:
@@ -263,7 +325,7 @@ export function gradeDeTempo(entrada: {
           (a) =>
             emMinutos(a.horaInicio) <= minuto && minuto < emMinutos(a.horaFim)
         );
-        if (ocupado || bloqueiaMinuto(minuto)) continue;
+        if (ocupado || bloqueiaMinuto(minuto) || naPausa(minuto)) continue;
 
         const hora = emHora(minuto);
         livres.push({
@@ -280,10 +342,11 @@ export function gradeDeTempo(entrada: {
       data,
       rotulo,
       barbeiroId,
-      fechado: !aberto(horario),
+      fechado: janelaDaColuna === null,
       eventos,
       livres,
       bloqueios: posicionados,
+      fechadas,
     };
   });
 

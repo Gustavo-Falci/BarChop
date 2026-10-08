@@ -461,48 +461,89 @@ describe("serviços no painel", () => {
     ).toBeInTheDocument();
   });
 
-  // A contagem informa quando há o que contar. Com poucas linhas todas
-  // à vista ela só repete a tabela; com um inativo ela volta em
-  // qualquer tamanho, porque o inativo pode estar abaixo da dobra.
-  it("não conta uma lista curta sem inativo, mas conta quando há inativo", async () => {
-    const soAtivos = criarApiClientFalso({
-      servicos: [
-        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
-      ],
-    });
-    montarPainel(<ListaDeServicos />, soAtivos);
-
-    expect(await screen.findByText("Corte")).toBeInTheDocument();
-    expect(screen.queryByText(/^1 serviço$/)).not.toBeInTheDocument();
-  });
-
-  // O limiar em si: com 4 ativos a contagem volta, sem nenhum inativo
-  // pra disparar a outra metade da condição. Sem este caso, `> 3`
-  // poderia virar `> 30` sem nenhum teste reclamar.
-  it("conta a partir de quatro linhas mesmo sem inativo", async () => {
-    const quatro = criarApiClientFalso({
-      servicos: [1, 2, 3, 4].map((n) => ({
-        id: `s${n}`,
-        nome: `Serviço ${n}`,
-        duracaoMinutos: 30,
-        preco: "40.00",
-        ativo: true,
-        categoria: null,
-        descricao: null,
-        fotoUrl: null,
-      })),
-    });
-
-    montarPainel(<ListaDeServicos />, quatro);
-
-    expect(await screen.findByText(/^4 serviços$/)).toBeInTheDocument();
-  });
-
-  it("conta quando a lista curta tem um inativo", async () => {
+  // A contagem sobe pro apoio do cabeçalho e diz a coisa que importa:
+  // quantos o cliente consegue marcar. As pílulas abaixo detalham.
+  it("o cabeçalho diz quantos serviços há e quantos estão no agendamento", async () => {
     // `semear()` tem dois serviços, um deles inativo.
     montarPainel(<ListaDeServicos />, semear());
 
-    expect(await screen.findByText(/2 serviços · 1 inativo/)).toBeInTheDocument();
+    expect(await screen.findByText("2 serviços · 1 no agendamento")).toBeInTheDocument();
+  });
+
+  it("agrupa por categoria, com a faixa de preço de cada grupo", async () => {
+    // Do jeito que o cliente vê na página pública: por categoria, e
+    // "Sem categoria" no fim.
+    const comCategorias = criarApiClientFalso({
+      servicos: [
+        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cabelo", descricao: null, fotoUrl: null },
+        { id: "s2", nome: "Platinado", duracaoMinutos: 90, preco: "180.00", ativo: true, categoria: "Cabelo", descricao: null, fotoUrl: null },
+        { id: "s3", nome: "Sobrancelha", duracaoMinutos: 15, preco: "20.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
+      ],
+    });
+    montarPainel(<ListaDeServicos />, comCategorias);
+
+    await screen.findByText("Corte");
+    const grupos = screen.getAllByRole("rowheader");
+    expect(grupos.map((grupo) => grupo.textContent?.replace(/\s/g, " "))).toEqual([
+      "Cabelo2 serviços · R$ 40,00 a R$ 180,00",
+      "Sem categoria1 serviço · R$ 20,00",
+    ]);
+  });
+
+  it("as pílulas separam o que está no agendamento do que saiu dele", async () => {
+    montarPainel(<ListaDeServicos />, semear());
+
+    const filtros = await screen.findByRole("group", { name: "Filtrar serviços" });
+    expect(within(filtros).getByRole("button", { name: "Todos 2" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(filtros).getByRole("button", { name: "No agendamento 1" })).toBeInTheDocument();
+
+    await userEvent.click(within(filtros).getByRole("button", { name: "Fora do agendamento 1" }));
+
+    expect(screen.getByText("Barba")).toBeInTheDocument();
+    expect(screen.queryByText("Corte")).not.toBeInTheDocument();
+  });
+
+  it("a busca filtra por nome sem voltar à API", async () => {
+    // A lista inteira já está na tela: uma ida à API por tecla seria
+    // custo sem dado novo.
+    const falso = semear();
+    const buscar = vi.fn(falso.barbeiro.servicos);
+    falso.barbeiro.servicos = buscar;
+    montarPainel(<ListaDeServicos />, falso);
+
+    await screen.findByText("Corte");
+    await userEvent.type(screen.getByLabelText("Filtrar por nome"), "bar");
+
+    expect(screen.getByText("Barba")).toBeInTheDocument();
+    expect(screen.queryByText("Corte")).not.toBeInTheDocument();
+    expect(buscar).toHaveBeenCalledTimes(1);
+  });
+
+  it("filtro sem resultado não diz que não há serviço, e oferece ver todos", async () => {
+    // "Nenhum serviço cadastrado" aqui seria mentira: há dois, a busca
+    // é que não achou.
+    montarPainel(<ListaDeServicos />, semear());
+
+    await screen.findByText("Corte");
+    await userEvent.type(screen.getByLabelText("Filtrar por nome"), "xyz");
+
+    expect(screen.getByText("Nenhum serviço neste filtro.")).toBeInTheDocument();
+    expect(screen.queryByText(/nenhum serviço cadastrado ainda/i)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Ver todos" }));
+
+    expect(screen.getByText("Corte")).toBeInTheDocument();
+    expect(screen.getByText("Barba")).toBeInTheDocument();
+  });
+
+  it("cada linha diz onde o serviço aparece", async () => {
+    montarPainel(<ListaDeServicos />, semear());
+
+    const linhaDoAtivo = (await screen.findByText("Corte")).closest("tr") as HTMLElement;
+    const linhaDoInativo = screen.getByText("Barba").closest("tr") as HTMLElement;
+
+    expect(within(linhaDoAtivo).getByText("Site e painel")).toBeInTheDocument();
+    expect(within(linhaDoInativo).getByText("Fora do agendamento")).toBeInTheDocument();
   });
 
   // Com a lista vazia de verdade o estado vazio continua aparecendo —

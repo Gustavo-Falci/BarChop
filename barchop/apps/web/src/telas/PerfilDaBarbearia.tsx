@@ -108,21 +108,54 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                 {situacao}
               </p>
             ) : null}
-            {/* O mapa é uma busca pelo endereço, montada aqui — nada que
-                o dono escreva vira link sozinho. Outra aba, sem referrer. */}
-            {dados.endereco ? (
-              <p className={estilos.endereco}>
-                <span>{dados.endereco}</span>
-                <a
-                  className={estilos.mapa}
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dados.endereco)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <IconeMapa width={16} height={16} />
-                  Ver no mapa
-                </a>
-              </p>
+            {dados.endereco ? <p className={estilos.endereco}>{dados.endereco}</p> : null}
+            {/* Mapa e contatos juntos, logo abaixo do nome: é onde quem
+                chegou pelo link procura "onde fica" e "como falo". Links
+                montados aqui, de dados que a API validou — o mapa é uma
+                busca pelo endereço, o WhatsApp é o telefone normalizado,
+                o Instagram é só o @ (nunca uma URL digitada). Outra aba,
+                sem referrer. */}
+            {dados.endereco || dados.whatsapp || dados.instagram ? (
+              <ul className={estilos.atalhos} aria-label="Como chegar e falar com a barbearia">
+                {dados.endereco ? (
+                  <li>
+                    <a
+                      className={estilos.atalho}
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dados.endereco)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <IconeMapa width={16} height={16} />
+                      Ver no mapa
+                    </a>
+                  </li>
+                ) : null}
+                {dados.whatsapp ? (
+                  <li>
+                    <a
+                      className={estilos.atalho}
+                      href={`https://wa.me/55${dados.whatsapp.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <IconeConversa width={16} height={16} />
+                      WhatsApp
+                    </a>
+                  </li>
+                ) : null}
+                {dados.instagram ? (
+                  <li>
+                    <a
+                      className={estilos.atalho}
+                      href={`https://instagram.com/${dados.instagram}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <IconeCamera width={16} height={16} />@{dados.instagram}
+                    </a>
+                  </li>
+                ) : null}
+              </ul>
             ) : null}
           </div>
         </header>
@@ -285,41 +318,6 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
             </section>
           ) : null}
 
-          {/* Links montados aqui, de dados que a API validou: o WhatsApp
-              é o telefone normalizado, o Instagram é só o @ (nunca uma URL
-              digitada). Outra aba, sem referrer. O mapa mora na fachada,
-              junto do endereço. */}
-          {dados && (dados.whatsapp || dados.instagram) ? (
-            <section className={estilos.secao} aria-label="Contato">
-              <h2 className={estilos.titulo}>Contato</h2>
-              <ul className={estilos.contatos}>
-                {dados.whatsapp ? (
-                  <li>
-                    <a
-                      href={`https://wa.me/55${dados.whatsapp.replace(/\D/g, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <IconeConversa width={18} height={18} />
-                      Chamar no WhatsApp
-                    </a>
-                  </li>
-                ) : null}
-                {dados.instagram ? (
-                  <li>
-                    <a
-                      href={`https://instagram.com/${dados.instagram}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <IconeCamera width={18} height={18} />@{dados.instagram}
-                    </a>
-                  </li>
-                ) : null}
-              </ul>
-            </section>
-          ) : null}
-
           {/* Só quando há o que dizer, pelo mesmo motivo de Serviços. */}
           {dados && dados.comodidades.length > 0 ? (
             <section className={estilos.secao} aria-label="Comodidades">
@@ -348,7 +346,8 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
             abaixo da janela, então ele precisa vir depois de tudo. Assim o
             "Agendar" fica à vista desde a primeira tela e não some quando
             a pessoa rola pra ler serviços e horários — e no fim da página
-            assenta no próprio lugar. */}
+            assenta no próprio lugar. No desktop o CSS o sobe pro topo da
+            coluna lateral com `order`, sem mudar o DOM. */}
           <div className={estilos.acao}>
             <Botao
               onClick={() =>

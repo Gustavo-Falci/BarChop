@@ -51,6 +51,20 @@ describe("página da barbearia rica", () => {
     }
   });
 
+  it("mapa e contatos ficam juntos no topo, abaixo do nome", async () => {
+    montarPagina(await comPagina({ whatsapp: "(11) 98888-7777", instagram: "gr.barber" }));
+
+    await screen.findByRole("heading", { level: 1 });
+    const atalhos = within(screen.getByRole("banner")).getByRole("list", {
+      name: /como chegar e falar/i,
+    });
+    expect(within(atalhos).getAllByRole("link").map((link) => link.textContent)).toEqual([
+      "Ver no mapa",
+      "WhatsApp",
+      "@gr.barber",
+    ]);
+  });
+
   it("sem WhatsApp nem Instagram, sem esses links", async () => {
     montarPagina(criarApiClientFalso());
 

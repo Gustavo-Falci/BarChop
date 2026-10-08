@@ -35,9 +35,11 @@
   border-block-end: var(--borda-padrao) solid var(--cor-ink);
 }
 
+/* 4:1 no desktop: a 3:1 a capa ocupava a primeira tela inteira, e o
+   nome, o selo e o agendar ficavam abaixo da dobra. */
 @media (min-width: 900px) {
   .vitrine {
-    aspect-ratio: 3 / 1;
+    aspect-ratio: 4 / 1;
   }
 }
 
@@ -152,22 +154,45 @@
 /* --cor-ink-soft, e não o --cor-muted de antes: o muted reprova
    contraste no tema claro (3.76:1), e endereço é texto que se lê. */
 .endereco {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espaco-xs) var(--espaco-md);
   margin: 0;
   color: var(--cor-ink-soft);
 }
 
-.mapa {
+/* Mapa, WhatsApp e Instagram: pílulas de contorno numa linha só, logo
+   abaixo do endereço — antes o mapa morava aqui e os contatos no fim
+   do cartão lateral, longe um do outro. */
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+  margin: var(--espaco-xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.atalho {
   display: inline-flex;
   align-items: center;
   gap: var(--espaco-xs);
+  min-height: 40px;
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
   color: var(--cor-ink);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+.atalho:hover {
+  background: var(--cor-pale-yellow);
+}
+
+.atalho:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
 }
 
 /* ---------- Conteúdo ---------- */
@@ -203,6 +228,12 @@
   font-size: var(--texto-xl);
 }
 
+/* Na lateral, título de apoio: menor que os da coluna principal, pra
+   coluna não disputar com Serviços. */
+.lateral .titulo {
+  font-size: var(--texto-md);
+}
+
 .grupo { display: grid; gap: var(--espaco-sm); }
 .grupo + .grupo { margin-top: var(--espaco-md); }
 .subtitulo {
@@ -214,22 +245,23 @@
   letter-spacing: 0.04em;
 }
 
-/* Cada serviço é um cartão: nome, duração e preço juntos — antes o
-   preço ficava a 600px do nome no desktop —, e os próximos horários no
-   pé do mesmo cartão. */
+/* Os serviços numa lista só, como cardápio: uma moldura e linhas
+   separadas por fio, em vez de um cartão por serviço — com vários, a
+   pilha de caixas iguais pesava mais que o conteúdo. Nome, duração e
+   preço na mesma linha, os próximos horários logo abaixo. */
 .servicos {
   display: grid;
-  gap: var(--espaco-sm);
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.cartaoDeServico {
   border: var(--borda-padrao) solid var(--cor-ink);
   border-radius: var(--raio-md);
   background: var(--cor-surface);
   overflow: hidden;
+}
+
+.cartaoDeServico + .cartaoDeServico {
+  border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
 /* O serviço é link, mas lido como linha do cartão: sem sublinhado
@@ -335,7 +367,7 @@
   outline-offset: 2px;
 }
 
-/* Equipe em cartões: foto (ou iniciais), nome e o que a pessoa faz. */
+/* Equipe: foto (ou iniciais), nome e o que a pessoa faz. */
 .equipe {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
@@ -345,14 +377,12 @@
   list-style: none;
 }
 
+/* Sem moldura: a foto já marca cada pessoa, e cartão em volta de um
+   nome só fazia a seção parecer formulário. */
 .membro {
   display: flex;
   align-items: center;
   gap: var(--espaco-md);
-  padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-md);
-  background: var(--cor-surface);
 }
 
 .foto {
@@ -426,23 +456,6 @@
   white-space: nowrap;
 }
 
-.contatos {
-  display: grid;
-  gap: var(--espaco-sm);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.contatos a {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--espaco-sm);
-  color: var(--cor-ink);
-  font-weight: 600;
-  text-underline-offset: 3px;
-}
-
 .etiquetas {
   display: flex;
   flex-wrap: wrap;
@@ -501,32 +514,28 @@
     gap: var(--espaco-xl);
   }
 
-  /* Cartão lateral que acompanha a rolagem: quando abre e o botão de
-     agendar ficam à vista enquanto se lê a apresentação e os serviços.
-     `align-self: start` (herdado do align-items) é o que dá espaço pro
-     sticky andar — esticado até a altura da linha, ele não teria pra
-     onde. As seções dentro dele se separam por linha fina, não por
-     cartão dentro de cartão. */
+  /* Coluna lateral que acompanha a rolagem, sem moldura: o "Agendar"
+     no topo e, abaixo, quando abre e o que a casa oferece, separados por
+     fio. `align-self: start` (herdado do align-items) é o que dá espaço
+     pro sticky andar — esticada até a altura da linha, ela não teria pra
+     onde. */
   .lateral {
     display: grid;
     gap: var(--espaco-lg);
     position: sticky;
     top: var(--espaco-lg);
-    padding: var(--espaco-lg);
-    border: var(--borda-padrao) solid var(--cor-ink);
-    border-radius: var(--raio-md);
-    background: var(--cor-surface);
-    box-shadow: 0 6px 0 var(--cor-shadow);
   }
 
-  .lateral > .secao + .secao {
+  .lateral > .secao {
     padding-top: var(--espaco-lg);
     border-top: var(--borda-hairline) solid var(--cor-line);
   }
 
-  /* Dentro do cartão o botão não precisa grudar em nada: o cartão
-     inteiro já acompanha a rolagem. */
+  /* No desktop o botão sobe pro topo da coluna (`order`, sem mudar o
+     DOM: no celular ele precisa ser o último pra grudar no rodapé) e não
+     gruda em nada — a coluna inteira já acompanha a rolagem. */
   .acao {
+    order: -1;
     position: static;
     padding: 0;
     background: none;

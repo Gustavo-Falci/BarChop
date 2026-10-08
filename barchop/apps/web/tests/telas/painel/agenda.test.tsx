@@ -1,4 +1,4 @@
-import { act, screen } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
@@ -312,5 +312,91 @@ describe("agenda — resumo e agora", () => {
 
     await screen.findByRole("button", { name: "Mês" });
     expect(screen.queryByRole("button", { name: "Agora" })).not.toBeInTheDocument();
+  });
+});
+
+// Painel v2, marco 6: bloquear sem sair da agenda. A janela usa o
+// mesmo formulário de Folgas, já com a data à vista.
+describe("agenda — bloquear", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-08", vista: "dia" } });
+  });
+
+  async function abrirJanela() {
+    await userEvent.click(await screen.findByRole("button", { name: "Bloquear horário" }));
+    return screen.findByRole("dialog", { name: "Bloquear horário" });
+  }
+
+  it("abre a janela com a data à vista e bloqueia", async () => {
+    const falso = semear();
+    const original = falso.barbeiro.criarBloqueio;
+    const criar = vi.fn(original);
+    falso.barbeiro.criarBloqueio = criar;
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    const janela = await abrirJanela();
+    expect(within(janela).getByLabelText("De")).toHaveValue("2026-09-08");
+    expect(within(janela).getByLabelText("Até")).toHaveValue("2026-09-08");
+
+    await userEvent.click(within(janela).getByLabelText("Dia inteiro"));
+    await userEvent.type(within(janela).getByLabelText("Das"), "15:00");
+    await userEvent.type(within(janela).getByLabelText("Às"), "16:00");
+    await userEvent.type(within(janela).getByLabelText("Motivo (opcional)"), "Médico");
+    await userEvent.click(within(janela).getByRole("button", { name: "Bloquear" }));
+
+    await waitFor(() =>
+      expect(criar).toHaveBeenCalledWith({
+        barbeiroId: "bb1",
+        dataInicio: "2026-09-08",
+        dataFim: "2026-09-08",
+        horaInicio: "15:00",
+        horaFim: "16:00",
+        motivo: "Médico",
+      })
+    );
+    // Fecha e a faixa aparece na grade, sem recarregar a tela.
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(await screen.findByText("Médico")).toBeInTheDocument();
+  });
+
+  it("Cancelar fecha sem bloquear", async () => {
+    const falso = semear();
+    const criar = vi.fn(falso.barbeiro.criarBloqueio);
+    falso.barbeiro.criarBloqueio = criar;
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    const janela = await abrirJanela();
+    await userEvent.click(within(janela).getByRole("button", { name: "Cancelar" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(criar).not.toHaveBeenCalled();
+  });
+
+  it("erro de validação fica na janela", async () => {
+    // O mesmo formulário de Folgas: horário invertido não vai à API.
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    const janela = await abrirJanela();
+    await userEvent.click(within(janela).getByLabelText("Dia inteiro"));
+    await userEvent.type(within(janela).getByLabelText("Das"), "16:00");
+    await userEvent.type(within(janela).getByLabelText("Às"), "15:00");
+    await userEvent.click(within(janela).getByRole("button", { name: "Bloquear" }));
+
+    expect(await within(janela).findByText("O horário bloqueado termina antes de começar.")).toBeInTheDocument();
+  });
+
+  it("na semana também", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-08", vista: "semana" } });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+    expect(await screen.findByRole("button", { name: "Bloquear horário" })).toBeInTheDocument();
+  });
+
+  it("no mês não há Bloquear", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-08", vista: "mes" } });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    await screen.findByRole("button", { name: "Mês" });
+    expect(screen.queryByRole("button", { name: "Bloquear horário" })).not.toBeInTheDocument();
   });
 });

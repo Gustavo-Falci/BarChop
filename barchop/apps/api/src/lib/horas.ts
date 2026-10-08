@@ -50,6 +50,12 @@ export function dateParaData(d: Date): string {
   return `${ano}-${mes}-${dia}`;
 }
 
+// Dias de calendário, em UTC como o resto deste arquivo: um dia é sempre
+// 24h aqui, sem o dia de 23h da virada do horário de verão.
+export function somarDias(data: string, dias: number): string {
+  return dateParaData(new Date(dataParaDate(data).getTime() + dias * 24 * 60 * 60 * 1000));
+}
+
 export function somarMinutos(hora: string, minutos: number): string {
   const base = horaParaDate(hora);
   const total = base.getUTCHours() * 60 + base.getUTCMinutes() + minutos;

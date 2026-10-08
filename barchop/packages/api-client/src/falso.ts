@@ -9,6 +9,7 @@ import {
   type AreaDeConfiguracao,
 } from "@barchop/formato";
 import type {
+  FaixaDeCliente,
   AgendamentoComCliente,
   AgendamentoDoLembrete,
   AgendamentoSerializado,
@@ -131,6 +132,9 @@ export interface EstadoFalso {
   // precisaria de 101 cadastros pra ver a segunda página — com dois
   // clientes e um limite de 1, o mesmo caminho fica legível.
   limiteDaPagina?: number;
+  // "Hoje" no fuso da barbearia ("YYYY-MM-DD"), pras faixas de cliente.
+  // Na semente pra o teste fixar o dia; sem ela, o dia de verdade.
+  hoje: string;
   // O papel de quem está logado no painel (o membro "bb1"). Dono por
   // padrão, pra as telas de antes da Onda 1 verem tudo como viam.
   papel?: PapelMembro;
@@ -225,6 +229,18 @@ export type SementeFalsa = Partial<Omit<EstadoFalso, "agendamentos">> & {
   agendamentos?: AgendamentoSemeado[];
 };
 
+// O "hoje" da API (agoraNaBarbearia): o dia no fuso da barbearia, não
+// no da máquina. "sv-SE" formata em ISO.
+function hojeNaBarbearia(): string {
+  return new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo" }).format(new Date());
+}
+
+// Dias de calendário em UTC, como o somarDias da API.
+function somarDias(data: string, dias: number): string {
+  const [ano, mes, dia] = data.split("-").map(Number);
+  return new Date(Date.UTC(ano, mes - 1, dia + dias)).toISOString().slice(0, 10);
+}
+
 // Como a API: aparada, e vazia vira null (categoria e descrição).
 function limparTextoOpcional(texto: string | null | undefined): string | null {
   return texto?.trim() || null;
@@ -249,6 +265,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     clientes: [...(semente.clientes ?? [CLIENTE_PADRAO])],
     // O mesmo padrão da API (LIMITE_PADRAO em routers/clientes.ts).
     limiteDaPagina: semente.limiteDaPagina ?? 100,
+    hoje: semente.hoje ?? hojeNaBarbearia(),
     papel: semente.papel ?? "dono",
     equipe: (semente.equipe ?? equipePadrao(semente.papel ?? "dono")).map((m) => ({ ...m })),
     jornadas: { ...(semente.jornadas ?? {}) },
@@ -401,13 +418,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   }
 
   // A mesma regra do `comUltimoAgendamento` da API: a MAIOR data entre
-  // todos os agendamentos do cliente, sem janela de tempo nenhuma.
-  //
-  // É a ausência de janela que mantém este dublê honesto. Com uma, ele
-  // precisaria saber que dia é hoje — e como a API responde a partir do
-  // relógio do servidor e o teste fixa o seu, os dois passariam a
-  // discordar sem ninguém notar. Sem relógio aqui, não há como divergir:
-  // quem compara com hoje é a tela, e o teste já lhe passa o instante.
+  // todos os agendamentos do cliente, sem janela de tempo nenhuma. A
+  // janela das faixas mora em `naFaixa`, com o "hoje" da semente.
   function ultimoAgendamentoDe(clienteId: string): string | null {
     let maior: string | null = null;
     for (const agendamento of estado.agendamentos) {
@@ -416,6 +428,15 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       if (!maior || agendamento.data > maior) maior = agendamento.data;
     }
     return maior;
+  }
+
+  // A regra de `ondeDaFaixa` na API, sobre o último agendamento: ter
+  // algum de hoje − 30 em diante é o mesmo que o maior ser >= hoje − 30.
+  function naFaixa(clienteId: string, faixa: FaixaDeCliente): boolean {
+    if (faixa === "todos") return true;
+    const ultimo = ultimoAgendamentoDe(clienteId);
+    if (faixa === "recentes") return ultimo !== null && ultimo >= somarDias(estado.hoje, -30);
+    return ultimo === null || ultimo < somarDias(estado.hoje, -90);
   }
 
   function duracaoDe(servicoIds: string[]): number {
@@ -1062,9 +1083,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       // a tela de "carregar mais" sem como ser testada, que é
       // exatamente o tipo de folga que faz o dublê aceitar o que a API
       // recusa.
-      async clientes(busca?: string, cursor?: string) {
-        const filtrados = estado.clientes
-          .filter((c) => combina(c, busca ?? ""))
+      async clientes(busca?: string, cursor?: string, faixa: FaixaDeCliente = "todos") {
+        const buscados = estado.clientes.filter((c) => combina(c, busca ?? ""));
+        const contar = (qual: FaixaDeCliente) => buscados.filter((c) => naFaixa(c.id, qual)).length;
+        const filtrados = buscados
+          .filter((c) => naFaixa(c.id, faixa))
           .map((c) => ({ ...c, ultimoAgendamento: ultimoAgendamentoDe(c.id) }))
           .sort((a, b) => a.nome.localeCompare(b.nome) || a.id.localeCompare(b.id));
 
@@ -1080,6 +1103,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         return {
           clientes: pagina,
           total: filtrados.length,
+          contagens: { todos: contar("todos"), recentes: contar("recentes"), sumidos: contar("sumidos") },
           proximoCursor: fim < filtrados.length ? pagina[pagina.length - 1].id : null,
         };
       },

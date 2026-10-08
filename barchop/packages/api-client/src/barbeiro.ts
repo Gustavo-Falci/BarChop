@@ -14,6 +14,7 @@ import type {
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
   OcupacaoDoDia,
+  FaixaDeCliente,
   PaginaDeClientes,
   PapelMembro,
   PerfilBarbeiro,
@@ -382,7 +383,11 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // proximoCursor }`. Cada linha traz a data do último agendamento —
     // quem só quer o cadastro (a busca do Novo agendamento) lê
     // `.clientes` e ignora o resto.
-    async clientes(busca?: string, cursor?: string): Promise<PaginaDeClientes> {
+    async clientes(
+      busca?: string,
+      cursor?: string,
+      faixa: FaixaDeCliente = "todos"
+    ): Promise<PaginaDeClientes> {
       // Busca vazia vira `undefined`, que é o único valor que o
       // `montarQuery` omite — `""` ele serializa, e `?busca=` bate no
       // `minLength: 1` do schema da API (400 "querystring/busca must
@@ -399,7 +404,8 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       // receber a lista inteira de volta.
       const termo = busca?.trim() ? busca : undefined;
       return requisicao<PaginaDeClientes>("/clientes", {
-        query: { busca: termo, cursor },
+        // "todos" é o padrão da API: só as outras faixas vão na URL.
+        query: { busca: termo, cursor, faixa: faixa === "todos" ? undefined : faixa },
         comToken: true,
       });
     },

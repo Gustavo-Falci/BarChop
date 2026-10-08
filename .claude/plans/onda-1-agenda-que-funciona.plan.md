@@ -4,9 +4,13 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-07, noite — marco 3 completo, tudo em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-07, fim da noite — marco 4 completo na main) — vale mais que as seções abaixo
 
-**Estado:** `main` = produção = `e9f68f0` (VM atualizada e conferida). Nada pela metade em branch nenhuma.
+**Estado:** `main` = `8fff69d` (marco 4 do painel v2, Hoje, completo: #75 ocupação na API, #76 link/QR/cartaz, #77 próximos + ocupação + layout). **Produção = `3e3f80d`** (1s-c no ar, conferido com curl). **Primeiro:** deploy do marco 4 — API e web, sem migration: `git pull` → `docker compose build api` → `docker compose build web` → `docker compose up -d`, e conferir (`/health`; `GET /barbearias/me/ocupacao` sem login = 401; `/painel`). Nada pela metade em branch nenhuma.
+
+**Depois (perguntar ao dono a ordem):** marco 5 do painel v2 (Listas: serviços por categoria, clientes e equipe com pílulas e tabela nova — plano a criar com `ecc:plan` do PRD `painel-v2.prd.md`), marco 6 (Agenda), G3 (GR Barber com `lembrete_ativo = false`), G4 (docs) e as soltas do item 4 abaixo.
+
+### Bloco anterior (marco 3 completo)
 
 **Feito depois do bloco abaixo (PRs #65–#72):**
 - Marco 3 do painel v2 **completo**: 3e #65 regras na API (migration `20261009120000_regras_de_agendamento`), 3f #66 tela Regras + 5ª área + Novo agendamento com token, 3g #67 cliente obedece os prazos (botões somem + WhatsApp/telefone da casa).

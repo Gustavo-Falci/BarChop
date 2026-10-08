@@ -56,7 +56,7 @@ We'll know we're right when **uma barbearia nova chega a "todas as decisões tom
 | 1 | Peças comuns | Telas novas e antigas passam a falar a mesma língua visual (cabeçalho, selo, pílulas, seção, vazio, tabela) | complete | `.claude/plans/painel-v2-pecas-comuns.plan.md` (PRs #45, #46, #47) |
 | 2 | Configurações em decisões | Dono vê "X de N decididas", o que vale hoje e o que falta; Horários, Dados do negócio (3 abas), Comunicação e Notificações em subtelas | in-progress | `.claude/plans/painel-v2-configuracoes.plan.md` |
 | 3 | Regras de agendamento | Dono decide intervalo, antecedência, janela da agenda e prazo para o cliente remarcar/cancelar; a página pública obedece. Inclui pausa do almoço e exceções por dia em Horários (movidos do marco 2: exigem mudar o modelo de horário) | in-progress | `.claude/plans/painel-v2-regras-de-agendamento.plan.md` |
-| 4 | Hoje | Dono compartilha o link (QR, WhatsApp) e vê próximos atendimentos e ocupação sem sair da tela | in-progress | `.claude/plans/painel-v2-hoje.plan.md` |
+| 4 | Hoje | Dono compartilha o link (QR, WhatsApp) e vê próximos atendimentos e ocupação sem sair da tela | complete | `.claude/plans/painel-v2-hoje.plan.md` (PRs #75, #76, `painel-v2-hoje-dia`) |
 | 5 | Listas | Serviços por categoria, Clientes e Equipe com filtros em pílulas e tabela nova | pending | — |
 | 6 | Agenda | Resumo do dia, "Agora" e "Bloquear" direto na agenda | pending | — |
 

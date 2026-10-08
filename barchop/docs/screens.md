@@ -63,7 +63,7 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 | 🔧 Profissional | painel | Perfil, foto, papel (dono, profissional, recepção), serviços que faz, jornada da semana — perfil, papel e "atende" no bloco A; jornada e serviços no B4; falta a foto (bloco E, com o upload) | Equipe |
 | ✅ Folgas e bloqueios | painel | Férias, almoço, horário bloqueado por profissional (`/painel/bloqueios`, bloco B) | bloqueio de horários e folgas |
 | ✅ Aceitar convite | painel | Profissional convidado define a senha e entra (`/painel/convite`, bloco A) | — |
-| ✅ Painel do dia | painel | Previsto do dia, próximos clientes, por profissional (bloco C: "com quem" em cada linha; a ocupação ainda não soma a equipe) | painel do dia |
+| ✅ Painel do dia (Hoje) | painel | Painel v2, marco 4 (PRs #75, #76 e `painel-v2-hoje-dia`): agendamentos hoje, ainda hoje e previsto; próximos atendimentos (até 5, "Agora" no que está acontecendo, "com quem" com equipe); cartão do link com QR e janela de compartilhar (copiar, WhatsApp, compartilhar do celular, baixar QR, cartaz em `/painel/cartaz`); ocupação da API (`GET /barbearias/me/ocupacao`: jornada, pausa, data especial e bloqueios), da casa e por profissional | painel do dia |
 | ✅ Agenda | painel | Colunas por profissional; bloqueios visíveis; profissional vê só a própria (bloco C, na vista de dia) | agenda da equipe |
 | ✅ Novo agendamento | painel | Escolhe o profissional (bloco C) | — |
 | 🔧 Configurações | painel | Antecedência e canal do lembrete; comodidades; fotos; WhatsApp, Instagram, mapa; formas de pagamento | — |

@@ -1,0 +1,86 @@
+.secao {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.lista {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cada atendimento uma linha clicável, no idioma do painel: borda
+   cheia, sombra offset ao passar o mouse e o "afundar" no clique. */
+.item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font: inherit;
+  font-size: var(--texto-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 80ms ease, box-shadow 80ms ease;
+}
+
+.item:hover {
+  background: var(--cor-paper-soft);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+}
+
+.item:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--cor-shadow);
+}
+
+.item:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+/* O que está acontecendo agora ganha a borda de destaque. */
+.item[data-em-curso="true"] {
+  box-shadow: inset 6px 0 0 var(--cor-accent);
+}
+
+.hora {
+  font-family: var(--fonte-display);
+  font-size: var(--texto-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.quem {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cliente {
+  font-weight: 700;
+}
+
+.servicos {
+  color: var(--cor-ink-soft);
+}
+
+.agenda {
+  justify-self: start;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink);
+}

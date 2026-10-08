@@ -208,16 +208,35 @@ describe("GradeDeTempo", () => {
     );
   });
 
-  it("marca de meia em meia hora entre as pontas", () => {
-    // Só as horas cheias deixavam 30 minutos sem nenhuma referência: no
-    // meio de um vão de 144px, uma faixa vaga de 10h e pouco não se lê
-    // sem contar linha tracejada.
+  it("marca de hora em hora entre as pontas", () => {
+    // Pedido do dono (2026-10-08): a grade dividida por hora, não por 15
+    // minutos. O eixo acompanha as linhas: um rótulo por hora cheia.
     montar({ dias: [TERCA] });
 
-    expect(rotuloDoEixo("10:30")).toBeInTheDocument();
-    expect(rotuloDoEixo("17:30")).toBeInTheDocument();
-    // E não desce a 15: dois rótulos a 36px um do outro viram parede.
+    expect(rotuloDoEixo("10:00")).toBeInTheDocument();
+    expect(rotuloDoEixo("17:00")).toBeInTheDocument();
+    expect(rotuloDoEixo("10:30")).not.toBeInTheDocument();
     expect(rotuloDoEixo("10:15")).not.toBeInTheDocument();
+  });
+
+  it("divide a grade por hora: uma linha em cada hora cheia, e não a cada 15 minutos", () => {
+    // 09:00–18:00: linhas às 10, 11, …, 17 — o topo já tem a borda do
+    // cabeçalho, e o fim é a borda da grade.
+    montar({ dias: [TERCA] });
+
+    const linhas = screen.getAllByTestId("linha-da-hora");
+    expect(linhas.map((l) => l.style.getPropertyValue("--linha"))).toEqual(
+      ["10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"].map((hora) =>
+        String(((Number(hora.slice(0, 2)) - 9) * 60) / 5 + 1)
+      )
+    );
+  });
+
+  it("com abertura fora da hora cheia, a primeira linha é a da hora seguinte", () => {
+    // 09:30–18:30: linhas das 10 às 18.
+    montarCom(MEIA_HORA);
+
+    expect(screen.getAllByTestId("linha-da-hora")).toHaveLength(9);
   });
 
   it("não repete a hora cheia que coincide com uma ponta", () => {
@@ -270,11 +289,10 @@ describe("GradeDeTempo", () => {
 
     expect(rotuloDoEixo("08:00")).toHaveAttribute("data-no-topo", "true");
     expect(rotuloDoEixo("19:00")).toHaveAttribute("data-no-fim", "true");
-    // As horas da terça não viram ponta. Elas ainda aparecem — 09:30 e
-    // 18:30 caem na marcação de meia em meia hora —, mas como marca do
-    // meio, sem a medida de ponta que o CSS lê.
-    expect(rotuloDoEixo("09:30")).not.toHaveAttribute("data-no-topo");
-    expect(rotuloDoEixo("18:30")).not.toHaveAttribute("data-no-fim");
+    // As horas da terça não viram ponta, e com o eixo de hora em hora
+    // nem aparecem: 09:30 e 18:30 não são hora cheia.
+    expect(rotuloDoEixo("09:30")).not.toBeInTheDocument();
+    expect(rotuloDoEixo("18:30")).not.toBeInTheDocument();
   });
 
   it("põe o cabeçalho fora da área que rola, com o dia da semana", async () => {

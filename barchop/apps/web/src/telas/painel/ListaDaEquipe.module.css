@@ -1,19 +1,25 @@
-/* Na largura toda (pedido do dono): a tabela ganhou contato e "atende"
-   pra usar o espaço. */
+/* `minmax(0, 1fr)`: sem ele a tabela vazaria pro lado no celular
+   (mesmo conserto do Hoje e de Serviços). */
 .pagina {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--espaco-lg);
   align-content: start;
 }
 
-/* Nome e chips na mesma linha, encostados no nome — `inline-flex` pelo
-   mesmo motivo de ListaDeServicos: em bloco, o flex esticaria até a
-   borda da célula e jogaria o chip longe do nome que ele qualifica. */
+/* Nome em cima, e-mail embaixo, alinhados à esquerda da célula. */
 .nome {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espaco-sm);
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+
+/* `--cor-ink-soft` e não `--cor-muted`: é texto, e o piso é 4.5:1 —
+   o muted dá 3.76:1 no claro. */
+.email {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 400;
 }
 
 /* Ícone decorativo: o piso é 3:1, e `--cor-muted` dá 3.76:1 no claro. */

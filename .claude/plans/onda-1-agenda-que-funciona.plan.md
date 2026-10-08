@@ -4,7 +4,13 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-07, fim da noite — marco 4 completo na main) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-08 — marco 5 completo na main) — vale mais que as seções abaixo
+
+**Estado:** marco 5 do painel v2 (Listas) **completo** na `main` (plano `painel-v2-listas.plan.md`): #79 serviços por categoria + pílulas + busca; #80 `GET /clientes?faixa=recentes|sumidos` + `contagens` (API, types, api-client e dublê com `hoje` na semente); #81 clientes com pílulas contadas no servidor; #82 equipe com pílulas e Situação. **Produção = marco 4** (`8fff69d`). **Primeiro:** deploy do marco 5 — API e web, sem migration: `git pull` → `docker compose build api` → `docker compose build web` → `docker compose up -d`; conferir `/health`, `GET /clientes?faixa=sumidos` sem login = 401, `/painel/clientes`. Nada pela metade em branch nenhuma.
+
+**Depois (perguntar ao dono a ordem):** marco 6 do painel v2 (Agenda: resumo do dia, "Agora", "Bloquear" na agenda, almoço sombreado — plano a criar com `ecc:plan`), G3 (GR Barber com `lembrete_ativo = false`), G4 (docs), soltas (dados legais; `barbearia-teste` em produção; `packages/formato` com erro de tipo em `tests/regras.test.ts`, já na `main` antes do marco 5).
+
+## RETOMAR AQUI (2026-10-07, fim da noite — marco 4 completo na main) — histórico
 
 **Estado:** `main` = `8fff69d` (marco 4 do painel v2, Hoje, completo: #75 ocupação na API, #76 link/QR/cartaz, #77 próximos + ocupação + layout). **Produção = `3e3f80d`** (1s-c no ar, conferido com curl). **Primeiro:** deploy do marco 4 — API e web, sem migration: `git pull` → `docker compose build api` → `docker compose build web` → `docker compose up -d`, e conferir (`/health`; `GET /barbearias/me/ocupacao` sem login = 401; `/painel`). Nada pela metade em branch nenhuma.
 

@@ -25,10 +25,10 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 | `/painel/agenda` | Dia, semana e mês, com eixo de tempo | 🔧 Onda 1 (colunas por profissional, bloqueios) |
 | `/painel/agendamentos/novo` | Cliente, serviços, data e horário | 🔧 Onda 1 (escolhe o profissional) |
 | `/painel/agendamentos/[id]` | Status e observações | 🔧 Onda 2 (registrar pagamento) |
-| `/painel/clientes` | Lista com busca, filtro e paginação | — |
+| `/painel/clientes` | Lista com busca, pílulas Todos / Vieram em 30 dias / Sem registro em 90 dias contadas no servidor (`?faixa=`), faixa e busca na URL, "carregar mais" dentro da faixa (painel v2, marco 5) | 🔧 Onda 3 (ritmo, segmentos) |
 | `/painel/clientes/novo` | Nome, telefone e email | — |
 | `/painel/clientes/[id]` | Dados e histórico | 🔧 Onda 3 (pontos, assinatura) |
-| `/painel/servicos` | Lista, inativos inclusive | 🔧 Onda 1 (categorias) |
+| `/painel/servicos` | Lista agrupada por categoria (faixa de preço por grupo, "Sem categoria" no fim), pílulas Todos / No agendamento / Fora do agendamento, busca local, "Onde aparece"; inativos inclusive (painel v2, marco 5) | — |
 | `/painel/servicos/novo` | Nome, duração e preço | 🔧 Onda 1 (categoria, descrição, foto) |
 | `/painel/servicos/[id]` | Editar, desativar e reativar | 🔧 Onda 1 (idem) |
 | `/painel/configuracoes` | Barbearia, horários da semana e perfil | 🔧 Onda 0 (link/slug), 🔧 Onda 1 (lembretes, comodidades, fotos, contatos, pagamento) |
@@ -59,7 +59,7 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 |---|---|---|---|
 | ✅ Cadastro do dono | painel | Tela dividida: promessa e mini-painel à esquerda, formulário à direita, prévia do link — `/painel/cadastro` no F1, link sugerido pelo nome; código no e-mail antes de criar (F3) | `admin…/register` |
 | ✅ Onboarding | painel | Trilha de passos no topo do painel do dia, só pro dono: horário → serviço → equipe (ou "Trabalho sozinho") → copiar link → primeira reserva pelo link (bloco F2) | trilha de 6 passos da central de ajuda |
-| ✅ Equipe | painel | Lista de profissionais com papel e status, convidar (bloco A) | Equipe |
+| ✅ Equipe | painel | Lista com e-mail sob o nome, papel, situação (Ativo / Convite pendente / Inativo) e pílulas Todos / Atendem / Convites pendentes / Inativos; convidar (bloco A; painel v2, marco 5) | Equipe |
 | 🔧 Profissional | painel | Perfil, foto, papel (dono, profissional, recepção), serviços que faz, jornada da semana — perfil, papel e "atende" no bloco A; jornada e serviços no B4; falta a foto (bloco E, com o upload) | Equipe |
 | ✅ Folgas e bloqueios | painel | Férias, almoço, horário bloqueado por profissional (`/painel/bloqueios`, bloco B) | bloqueio de horários e folgas |
 | ✅ Aceitar convite | painel | Profissional convidado define a senha e entra (`/painel/convite`, bloco A) | — |

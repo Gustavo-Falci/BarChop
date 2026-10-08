@@ -190,7 +190,6 @@ button.diaDoCabecalho:hover .numeroDoDia {
   grid-row: var(--linha) / span var(--linhas);
   grid-column: 1;
   border: none;
-  border-block-start: var(--borda-hairline) dashed var(--cor-line);
   background: transparent;
   color: transparent;
   font-size: var(--texto-xs);
@@ -208,8 +207,17 @@ button.diaDoCabecalho:hover .numeroDoDia {
 .passada {
   grid-row: var(--linha) / span var(--linhas);
   grid-column: 1;
-  border-block-start: var(--borda-hairline) dashed var(--cor-line);
   background: var(--cor-paper-soft);
+}
+
+/* A divisão por hora (as faixas de 15 em 15 não têm mais linha própria).
+   Na mesma célula da grade, atrás das faixas e dos eventos. */
+.linhaDaHora {
+  grid-row: var(--linha);
+  grid-column: 1;
+  z-index: 1;
+  border-block-start: var(--borda-hairline) dashed var(--cor-line);
+  pointer-events: none;
 }
 
 /* O evento entra na mesma célula da grade que as faixas livres e fica

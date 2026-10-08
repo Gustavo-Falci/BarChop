@@ -22,11 +22,22 @@ function emHora(minuto: number): string {
   return `${h}:${m}`;
 }
 
-// De quanto em quanto tempo o eixo se marca entre as pontas. Em 30, a
-// distância entre dois rótulos é de 6 linhas — 72px em
-// `--altura-da-linha: 12px`, folgado para dois textos de --texto-xs.
-// Descer para 15 encostaria um no outro.
-const PASSO_DO_EIXO = 30;
+// De quanto em quanto tempo o eixo se marca entre as pontas, e de
+// quanto em quanto a grade se divide: uma hora (pedido do dono em
+// 2026-10-08 — a divisão de 15 em 15 virava uma parede de linhas). Os
+// horários livres continuam de 15 em 15: é o que a API aceita marcar.
+const PASSO_DO_EIXO = 60;
+
+// As horas cheias dentro da janela, menos a primeira linha (o topo já
+// tem a borda do cabeçalho) — onde a grade traça a divisão.
+function linhasDasHoras(grade: Grade): number[] {
+  const linhas: number[] = [];
+  const primeira = Math.floor(grade.minutoInicial / 60) * 60 + 60;
+  for (let minuto = primeira; minuto < grade.minutoFinal; minuto += 60) {
+    linhas.push((minuto - grade.minutoInicial) / MINUTOS_POR_LINHA + 1);
+  }
+  return linhas;
+}
 
 // Perto demais de uma ponta, o rótulo do meio colide com ela: em
 // `--altura-da-linha: 12px`, duas linhas são 24px para dois textos de
@@ -186,6 +197,17 @@ export function GradeDeTempo({
 
           {grade.colunas.map((coluna) => (
             <div key={coluna.chave} className={estilos.coluna}>
+              {/* A divisão por hora, atrás de tudo. Decorativa: quem
+                  diz a hora é o eixo. */}
+              {linhasDasHoras(grade).map((linha) => (
+                <span
+                  key={`hora-${linha}`}
+                  className={estilos.linhaDaHora}
+                  data-testid="linha-da-hora"
+                  aria-hidden="true"
+                  style={{ "--linha": linha } as CSSProperties}
+                />
+              ))}
               {coluna.fechado ? (
                 <p className={estilos.fechado}>Fechado neste dia.</p>
               ) : null}

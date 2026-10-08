@@ -5,6 +5,7 @@ import {
   dateParaData,
   dateParaHora,
   horaParaDate,
+  somarDias,
   somarMinutos,
 } from "../../src/lib/horas";
 
@@ -115,5 +116,22 @@ describe("agoraNaBarbearia", () => {
       data: "2026-09-03",
       hora: "23:30",
     });
+  });
+});
+
+describe("somarDias", () => {
+  it("anda pra trás e pra frente no calendário", () => {
+    expect(somarDias("2026-10-08", -30)).toBe("2026-09-08");
+    expect(somarDias("2026-10-08", 10)).toBe("2026-10-18");
+  });
+
+  it("atravessa mês, ano e fevereiro bissexto", () => {
+    expect(somarDias("2026-01-01", -1)).toBe("2025-12-31");
+    expect(somarDias("2028-02-28", 1)).toBe("2028-02-29");
+  });
+
+  it("não depende do horário de verão", () => {
+    // Conta em UTC: um dia é sempre 24h, sem o dia de 23h da virada.
+    expect(somarDias("2018-11-05", -1)).toBe("2018-11-04");
   });
 });

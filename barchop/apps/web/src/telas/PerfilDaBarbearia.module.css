@@ -116,6 +116,51 @@
   font-size: var(--texto-sm);
 }
 
+/* Com logo, ela ganha a primeira linha e o nome e a conta descem pra
+   segunda. */
+.identidade[data-com-logo] .nome,
+.identidade[data-com-logo] .conta {
+  grid-row: 2;
+}
+
+/* `relative` + z-index: a vitrine da capa é posicionada, e sem isto ela
+   pintaria por cima da metade da logo que sobe nela. */
+.logo {
+  position: relative;
+  z-index: 1;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: start;
+}
+
+/* Com moldura, a logo encaixa na borda de baixo da capa: metade sobre
+   ela, como foto de perfil — o --lado é o tamanho do LogoDaBarbearia, e
+   o recuo desfaz o padding de cima da identidade. A sombra offset é a
+   dos cartões, pra ela assentar sobre a capa. */
+.logo[data-formato="redonda"],
+.logo[data-formato="quadrada"] {
+  --lado: 96px;
+  margin-top: calc(var(--lado) * -0.5 - var(--espaco-lg));
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+/* Sem moldura, inteira aqui embaixo: solta sobre a foto da capa, ela
+   brigaria com a imagem. */
+.logo[data-formato="livre"] {
+  --lado: 64px;
+}
+
+@media (min-width: 900px) {
+  .logo[data-formato="redonda"],
+  .logo[data-formato="quadrada"] {
+    --lado: 120px;
+  }
+
+  .logo[data-formato="livre"] {
+    --lado: 80px;
+  }
+}
+
 /* "Aberto agora · fecha às 18:00" — a primeira pergunta de quem abre o
    link. Selo e não legenda: amarelo quando abre, apagado quando não. O
    ponto é ::before pra o texto do elemento continuar sendo só a frase. */

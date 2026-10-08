@@ -50,6 +50,34 @@ describe("fachada da página da barbearia", () => {
     expect(screen.queryByText("GB")).toBeNull();
   });
 
+  it("com logo, ela aparece na fachada, na moldura escolhida, junto do nome", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.enviarLogo(new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])]), "redonda");
+    montar(falso);
+
+    await screen.findByRole("heading", { level: 1, name: "GR Barber" });
+    const moldura = screen.getByRole("banner").querySelector('[data-formato="redonda"]');
+    expect(moldura).not.toBeNull();
+    // Decorativa: o nome já é o <h1> ao lado.
+    expect(moldura!.querySelector("img")).toHaveAttribute("alt", "");
+  });
+
+  it("com logo e sem capa, o monograma não repete as iniciais", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.enviarLogo(new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])]), "quadrada");
+    montar(falso);
+
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByText("GB")).toBeNull();
+  });
+
+  it("sem logo, a fachada não tem moldura de logo", async () => {
+    montar();
+
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.getByRole("banner").querySelector("[data-formato]")).toBeNull();
+  });
+
   it("o selo diz se está aberto", async () => {
     montar();
 

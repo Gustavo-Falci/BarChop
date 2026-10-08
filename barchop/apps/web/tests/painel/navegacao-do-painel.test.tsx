@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
@@ -28,8 +28,7 @@ function stubMatchMedia(prefereEscuro: boolean): void {
   })) as unknown as typeof window.matchMedia;
 }
 
-function montar() {
-  const falso = criarApiClientFalso();
+function montar(falso = criarApiClientFalso()) {
   render(
     <ProvedorDoPainel valor={{ barbeiro: falso.barbeiro, publico: falso.publico }}>
       <SessaoDoPainel>
@@ -48,6 +47,33 @@ describe("navegação do painel", () => {
     stubMatchMedia(false);
     sessaoDoBarbeiro.gravar("jwt");
     sessaoDaBarbearia.gravar("gr-barber");
+  });
+
+  it("com logo, a marca mostra a logo na moldura dela, e o nome continua escrito", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel" });
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.enviarLogo(new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])]), "redonda");
+
+    montar(falso);
+
+    const marca = await screen.findByText("gr-barber");
+    const moldura = await waitFor(() => {
+      const achada = document.querySelector<HTMLElement>('[data-formato="redonda"]');
+      expect(achada).not.toBeNull();
+      return achada!;
+    });
+    expect(marca.closest("strong")).toContainElement(moldura);
+    // Decorativa: o nome escrito ao lado já diz de quem é.
+    expect(moldura.querySelector("img")).toHaveAttribute("alt", "");
+  });
+
+  it("sem logo, a marca segue sendo o nome, sem imagem", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel" });
+
+    montar();
+
+    await screen.findByText("gr-barber");
+    expect(document.querySelector("[data-formato]")).toBeNull();
   });
 
   it("em /painel, marca Hoje como atual e mais nada", async () => {

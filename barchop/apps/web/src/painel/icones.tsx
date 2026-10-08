@@ -229,6 +229,15 @@ export function IconeCheck(props: Props) {
   );
 }
 
+// A seta das ações que levam a outra tela (trilha de primeiros passos).
+export function IconeSeta(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </Base>
+  );
+}
+
 // Os das comodidades e das formas de pagamento (Configurações → Dados do
 // negócio → Comodidades). Um por item, menos o cartão, que serve ao
 // débito e ao crédito — quem os separa é o nome.

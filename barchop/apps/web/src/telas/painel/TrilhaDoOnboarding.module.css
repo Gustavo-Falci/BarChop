@@ -115,7 +115,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--espaco-sm);
-  padding: var(--espaco-sm);
+  /* 12px: com 8 o botão amarelo e a sombra dele encostavam na borda. */
+  padding: calc(var(--espaco-sm) + var(--espaco-xs));
   border: var(--borda-hairline) solid var(--cor-line);
   border-radius: var(--raio-md);
   background: var(--cor-paper-soft);
@@ -229,55 +230,111 @@
   overflow-wrap: anywhere;
 }
 
+/* O rodapé do cartão: separado do texto por um fio, colado no pé (por
+   isso o margin-top: auto) e na largura toda — a ação faz parte do
+   cartão, não é um botão solto boiando embaixo da dica. */
 .acoes {
   margin-top: auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-xs) var(--espaco-sm);
+  display: grid;
+  gap: var(--espaco-xs);
+  padding-top: var(--espaco-sm);
+  border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
-/* A ação do passo: pílula, alvo de 44px de altura pro dedo. Amarela só
-   no passo atual; nos outros, contorno. */
+/* As duas formas da ação levam texto à esquerda e a seta à direita:
+   a seta diz "isto leva a outra tela" antes de ler o rótulo. */
 .acao,
-.secundaria {
-  display: inline-flex;
+.linkDoPasso {
+  display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  width: 100%;
   min-height: 44px;
-  padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-pill);
   font: inherit;
   font-size: var(--texto-sm);
   font-weight: 700;
+  text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition-property: transform, background-color;
+}
+
+/* Passo atual: o botão amarelo da casa, borda cheia e sombra offset. */
+.acao {
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+  transition-property: transform, box-shadow;
   transition-duration: 150ms;
   transition-timing-function: ease-out;
 }
 
-.acao {
-  background: var(--cor-accent);
-  color: var(--cor-dark);
+.acao:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 var(--cor-shadow);
 }
 
-.secundaria {
+.acao:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--cor-shadow);
+}
+
+/* Os outros passos pendentes: linha de link, sem moldura. Ainda dá pra
+   ir direto (a ordem é sugestão), mas não compete com o amarelo. */
+.linkDoPasso {
+  padding: 0 var(--espaco-sm);
+  margin: 0 calc(-1 * var(--espaco-sm));
+  width: calc(100% + 2 * var(--espaco-sm));
+  border: 0;
+  border-radius: var(--raio-sm);
   background: transparent;
   color: var(--cor-ink);
+  transition-property: background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
 }
 
-.secundaria:hover {
+.linkDoPasso:hover {
   background: var(--cor-pale-yellow);
 }
 
-.acao:active,
-.secundaria:active {
-  transform: scale(0.97);
+.seta {
+  flex: none;
+  transition: transform 150ms ease-out;
+}
+
+.acao:hover .seta,
+.linkDoPasso:hover .seta {
+  transform: translateX(3px);
+}
+
+/* "Trabalho sozinho": pular o passo, não fazê-lo — texto miúdo, sem
+   peso de botão, mas com alvo de 40px. */
+.pular {
+  justify-self: center;
+  min-height: 40px;
+  padding: 0 var(--espaco-sm);
+  border: 0;
+  background: transparent;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.pular:hover {
+  color: var(--cor-ink);
 }
 
 .acao:focus-visible,
-.secundaria:focus-visible,
+.linkDoPasso:focus-visible,
+.pular:focus-visible,
 .recolher:focus-visible {
   outline: 3px solid var(--cor-ink);
   outline-offset: 2px;
@@ -314,7 +371,8 @@
 @media (prefers-reduced-motion: reduce) {
   .preenchido,
   .acao,
-  .secundaria {
+  .linkDoPasso,
+  .seta {
     transition: none;
   }
 

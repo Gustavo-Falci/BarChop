@@ -31,18 +31,49 @@ export function aplicarTema(tema: Tema): void {
   document.documentElement.dataset.theme = ATRIBUTO[tema];
 }
 
+// O host do site de marketing ("barchop.com.br"), a partir de
+// NEXT_PUBLIC_URL_DO_SITE. Sem ele (desenvolvimento), undefined.
+export function hostDoSite(urlDoSite: string | undefined): string | undefined {
+  if (!urlDoSite) return undefined;
+  try {
+    return new URL(urlDoSite).host.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
 // Roda no <head>, antes da primeira pintura — daí ser string e não
-// componente. `location.pathname` é a única informação de rota
-// disponível antes de o React montar, e é o que evita o pisca.
+// componente. `location` é a única informação de rota disponível antes
+// de o React montar, e é o que evita o pisca.
+//
+// Três casos:
+// - painel: a escolha gravada do barbeiro, ou o sistema no 1º acesso;
+// - site de marketing (o host raiz e o www; sem site configurado, as
+//   rotas "/", "/privacidade" e "/termos"): sempre claro;
+// - página da barbearia e o fluxo do cliente: nenhum atributo — o CSS
+//   dos tokens segue o prefers-color-scheme do sistema, e acompanha ao
+//   vivo se a pessoa trocar o tema com a página aberta. Nenhuma escolha
+//   do barbeiro (o localStorage do painel) vaza pra cá.
 //
 // Usa setAttribute("data-theme", ...) em vez de .dataset.theme de
 // propósito: isto é uma string que vira <script> literal no HTML, e o
 // teste verifica o texto "data-theme" nela. .dataset.theme faz a mesma
 // coisa no DOM, mas nunca produz essa substring — não troque um pelo
 // outro achando que é limpeza.
-export const SCRIPT_DE_TEMA = `(function(){try{
-  var noPainel = location.pathname === "/painel" || location.pathname.indexOf("/painel/") === 0;
-  if (!noPainel) { document.documentElement.setAttribute("data-theme", "light"); return; }
+export function scriptDeTema(site: string | undefined): string {
+  return `(function(){try{
+  var p = location.pathname;
+  var noPainel = p === "/painel" || p.indexOf("/painel/") === 0;
+  if (!noPainel) {
+    var site = ${JSON.stringify(site ?? "")};
+    var h = location.host.toLowerCase();
+    var noSite = site
+      ? h === site || h === "www." + site
+      : p === "/" || p === "/privacidade" || p === "/termos";
+    if (noSite) document.documentElement.setAttribute("data-theme", "light");
+    else document.documentElement.removeAttribute("data-theme");
+    return;
+  }
   var guardado = localStorage.getItem("${CHAVE_DO_TEMA}");
   var tema = guardado === "claro" || guardado === "escuro" ? guardado : null;
   if (!tema) {
@@ -51,3 +82,6 @@ export const SCRIPT_DE_TEMA = `(function(){try{
   }
   document.documentElement.setAttribute("data-theme", tema === "escuro" ? "dark" : "light");
 }catch(e){}})();`;
+}
+
+export const SCRIPT_DE_TEMA = scriptDeTema(hostDoSite(process.env.NEXT_PUBLIC_URL_DO_SITE));

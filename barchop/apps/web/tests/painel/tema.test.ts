@@ -3,8 +3,10 @@ import {
   aplicarTema,
   CHAVE_DO_TEMA,
   gravarTema,
+  hostDoSite,
   lerTema,
   SCRIPT_DE_TEMA,
+  scriptDeTema,
 } from "../../src/painel/tema";
 
 // jsdom não implementa matchMedia. O stub fica local a este arquivo
@@ -123,17 +125,49 @@ describe("tema do painel", () => {
       expect(localStorage.getItem(CHAVE_DO_TEMA)).toBe("escuro");
     });
 
-    it("fora do painel, escreve light mesmo com 'escuro' gravado", () => {
-      // Esta é a garantia de que o fluxo do cliente depende: nenhuma
-      // escolha do barbeiro escurece a página de quem chega por
-      // WhatsApp.
+    it("na página da barbearia, não escreve tema: o CSS segue o sistema", () => {
+      // Sem atributo, os tokens caem no prefers-color-scheme — e nenhuma
+      // escolha do barbeiro (o localStorage do painel) vaza pra cá.
       irParaCaminho("/gr-barber");
+      document.documentElement.setAttribute("data-theme", "dark");
       localStorage.setItem(CHAVE_DO_TEMA, "escuro");
-      stubMatchMedia(true);
+      stubMatchMedia(false);
 
       rodarScriptDeTema();
 
+      expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
+    });
+
+    it("sem site configurado, as rotas do site ficam claras", () => {
+      stubMatchMedia(true);
+      for (const caminho of ["/", "/privacidade", "/termos"]) {
+        document.documentElement.removeAttribute("data-theme");
+        irParaCaminho(caminho);
+
+        new Function(scriptDeTema(undefined))();
+
+        expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+      }
+    });
+
+    it("com site configurado, claro é o host do site, não o caminho", () => {
+      stubMatchMedia(true);
+      irParaCaminho("/");
+
+      // No host da barbearia, "/" é a página dela: segue o sistema.
+      new Function(scriptDeTema("barchop.com.br"))();
+      expect(document.documentElement.hasAttribute("data-theme")).toBe(false);
+
+      // No host do site, qualquer caminho é o site: claro.
+      new Function(scriptDeTema(location.host))();
       expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    });
+
+    it("hostDoSite tira o host da URL do site, e ignora o que não é URL", () => {
+      expect(hostDoSite("https://BarChop.com.br")).toBe("barchop.com.br");
+      expect(hostDoSite("http://localhost:3000")).toBe("localhost:3000");
+      expect(hostDoSite(undefined)).toBeUndefined();
+      expect(hostDoSite("não é url")).toBeUndefined();
     });
   });
 });

@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import type { EstadoDoOnboarding, PassoDoOnboarding } from "@barchop/types";
 import { useRequisicao } from "../../api/useRequisicao";
+import { IconeSeta } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./TrilhaDoOnboarding.module.css";
 
@@ -27,6 +28,7 @@ const TEXTOS: Record<PassoDoOnboarding, { titulo: string; dica: string; destino?
     titulo: "Equipe",
     dica: "Convide quem atende com você — cada um com a própria agenda.",
     destino: "/painel/equipe/novo",
+    acao: "Convidar alguém",
   },
   link: {
     titulo: "Seu link",
@@ -110,6 +112,42 @@ export function TrilhaDoOnboarding({
     setAtualizado(await api.barbeiro.marcarTrabalhoSozinho(true));
   }
 
+  // Cada passo tem no máximo uma ação de verdade, que vira o rodapé do
+  // cartão: no passo atual, o botão amarelo de largura cheia; nos outros,
+  // uma linha de link com seta, que lê como "vá por aqui" sem disputar
+  // com o atual. A equipe tem ainda a saída de quem trabalha sozinho,
+  // como texto miúdo embaixo — é pular o passo, não fazê-lo.
+  function acaoDoPasso(id: PassoDoOnboarding, atual: boolean): React.ReactNode {
+    const classe = atual ? estilos.acao : estilos.linkDoPasso;
+    const conteudo = (rotulo: string) => (
+      <>
+        <span>{rotulo}</span>
+        <IconeSeta className={estilos.seta} width={18} height={18} />
+      </>
+    );
+    const principal =
+      id === "link" ? (
+        <button type="button" className={classe} onClick={aoCompartilharLink}>
+          {conteudo("Compartilhar link")}
+        </button>
+      ) : TEXTOS[id].destino ? (
+        <Link className={classe} href={TEXTOS[id].destino!}>
+          {conteudo(TEXTOS[id].acao!)}
+        </Link>
+      ) : null;
+    if (!principal) return null;
+    return (
+      <>
+        {principal}
+        {id === "equipe" ? (
+          <button type="button" className={estilos.pular} onClick={() => void trabalhoSozinho()}>
+            Trabalho sozinho
+          </button>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <section className={estilos.trilha} aria-labelledby={titulo}>
       <div className={estilos.topo}>
@@ -155,37 +193,12 @@ export function TrilhaDoOnboarding({
             feito={passo.feito}
             atual={passo.id === proximo}
             aguardando={passo.id === "primeira_reserva" && linkFeito}
-            acao={
-              passo.feito ? null : passo.id === "equipe" ? (
-                <>
-                  <Link className={classeDaAcao(passo.id === proximo)} href={TEXTOS.equipe.destino!}>
-                    Convidar
-                  </Link>
-                  <button type="button" className={estilos.secundaria} onClick={() => void trabalhoSozinho()}>
-                    Trabalho sozinho
-                  </button>
-                </>
-              ) : passo.id === "link" ? (
-                <button type="button" className={classeDaAcao(passo.id === proximo)} onClick={aoCompartilharLink}>
-                  Compartilhar link
-                </button>
-              ) : TEXTOS[passo.id].destino ? (
-                <Link className={classeDaAcao(passo.id === proximo)} href={TEXTOS[passo.id].destino!}>
-                  {TEXTOS[passo.id].acao}
-                </Link>
-              ) : null
-            }
+            acao={passo.feito ? null : acaoDoPasso(passo.id, passo.id === proximo)}
           />
         ))}
       </ol>
     </section>
   );
-}
-
-// O botão amarelo é do passo atual; os outros pendentes ficam com o
-// contorno, ainda clicáveis — a ordem é sugestão, não trava.
-function classeDaAcao(atual: boolean) {
-  return atual ? estilos.acao : estilos.secundaria;
 }
 
 function Passo({

@@ -1,19 +1,18 @@
-/* Na largura toda (pedido do dono): a tabela ganhou categoria e
-   descrição pra usar o espaço. */
+/* `minmax(0, 1fr)`: sem ele a coluna da grade cresce até o conteúdo
+   mais largo, e a tabela vazaria pro lado no celular (mesmo conserto do
+   Hoje). */
 .pagina {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--espaco-lg);
   align-content: start;
 }
 
-/* A contagem acompanha a tabela, não o cabeçalho: ela fala do que está
-   listado abaixo. Negativa na grade da página para encostar na tabela
-   em vez de flutuar no meio do vão — mesma medida de ListaDeClientes. */
-.contagem {
-  margin: 0;
-  margin-block-end: calc(var(--espaco-lg) * -1 + var(--espaco-xs));
-  color: var(--cor-muted);
-  font-size: var(--texto-sm);
+/* Busca e pílulas numa franja só acima da tabela. Empilhadas: a busca
+   ocupa a largura, e as pílulas quebram linha sozinhas no celular. */
+.filtros {
+  display: grid;
+  gap: var(--espaco-md);
 }
 
 /* Nome e o chip de "inativo" na mesma linha. `inline-flex` e não

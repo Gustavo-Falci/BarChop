@@ -115,3 +115,114 @@ describe("gradeDeTempo por profissional", () => {
     expect(grade.colunas[0].bloqueios).toEqual([]);
   });
 });
+
+// Painel v2, marco 6: o expediente de cada profissional (da ocupação na
+// API) sombreia o que está fechado e tira dali os horários livres — a
+// API recusaria marcar no almoço (`horario_na_pausa`).
+describe("gradeDeTempo com o expediente", () => {
+  const linhaDe = (hora: string) => {
+    const [h, m] = hora.split(":").map(Number);
+    return (h * 60 + m - 9 * 60) / MINUTOS_POR_LINHA + 1;
+  };
+  const aberto = { abre: "09:00", fecha: "18:00" };
+
+  it("a pausa vira faixa e some dos horários livres", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      profissionais: EQUIPE,
+      expediente: [
+        { id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } },
+        { id: "m2", janela: aberto, pausa: null },
+      ],
+    });
+
+    const [rafael, ana] = grade.colunas;
+    expect(rafael.fechadas).toEqual([{ linha: linhaDe("12:00"), linhas: 60 / MINUTOS_POR_LINHA, rotulo: "Pausa" }]);
+    expect(rafael.livres.map((f) => f.hora)).not.toContain("12:00");
+    expect(rafael.livres.map((f) => f.hora)).not.toContain("12:45");
+    expect(rafael.livres.map((f) => f.hora)).toContain("13:00");
+    expect(ana.fechadas).toEqual([]);
+    expect(ana.livres.map((f) => f.hora)).toContain("12:00");
+  });
+
+  it("fora da jornada é fechado, antes e depois", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      profissionais: EQUIPE,
+      expediente: [
+        { id: "bb1", janela: aberto, pausa: null },
+        { id: "m2", janela: { abre: "13:00", fecha: "17:00" }, pausa: null },
+      ],
+    });
+
+    const ana = grade.colunas[1];
+    expect(ana.fechadas).toEqual([
+      { linha: 1, linhas: (13 - 9) * 60 / MINUTOS_POR_LINHA, rotulo: "Fechado" },
+      { linha: linhaDe("17:00"), linhas: 60 / MINUTOS_POR_LINHA, rotulo: "Fechado" },
+    ]);
+    expect(ana.livres[0].hora).toBe("13:00");
+    expect(ana.livres.at(-1)?.hora).toBe("16:45");
+  });
+
+  it("sem janela, a coluna fica fechada e sem horário livre", () => {
+    // Folga da Ana, ou data especial com a casa fechada.
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      profissionais: EQUIPE,
+      expediente: [
+        { id: "bb1", janela: aberto, pausa: null },
+        { id: "m2", janela: null, pausa: null },
+      ],
+    });
+
+    expect(grade.colunas[1].fechado).toBe(true);
+    expect(grade.colunas[1].livres).toEqual([]);
+    expect(grade.colunas[0].fechado).toBe(false);
+  });
+
+  it("data especial que abre mais cedo estica a grade", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      profissionais: EQUIPE,
+      expediente: [
+        { id: "bb1", janela: { abre: "08:00", fecha: "18:00" }, pausa: null },
+        { id: "m2", janela: { abre: "08:00", fecha: "18:00" }, pausa: null },
+      ],
+    });
+
+    expect(grade.minutoInicial).toBe(8 * 60);
+    expect(grade.colunas[0].livres[0].hora).toBe("08:00");
+  });
+
+  it("a coluna única (quem trabalha sozinho) usa o único expediente", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: [{ id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } }],
+    });
+
+    expect(grade.colunas[0].fechadas.map((f) => f.rotulo)).toEqual(["Pausa"]);
+    expect(grade.colunas[0].livres.map((f) => f.hora)).not.toContain("12:30");
+  });
+
+  it("sem expediente (vista de semana), nada muda", () => {
+    const grade = gradeDeTempo({ dias: [TERCA], horarios: HORARIOS, agendamentos: [], agora: AGORA });
+
+    expect(grade.colunas[0].fechadas).toEqual([]);
+    expect(grade.colunas[0].livres.map((f) => f.hora)).toContain("12:00");
+  });
+});

@@ -78,6 +78,25 @@ describe("agenda da equipe", () => {
     );
   });
 
+  it("a pausa do Rafael fica sombreada e sem horário livre na coluna dele", async () => {
+    // Terça (dia 2) com pausa das 14:00 às 15:00 na jornada do Rafael. A
+    // API recusaria marcar ali; a grade não pode oferecer.
+    const falso = semear();
+    falso.estado.jornadas!.bb1 = [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+      diaSemana,
+      modo: "barbearia" as const,
+      horaInicio: null,
+      horaFim: null,
+      pausaInicio: diaSemana === 2 ? "14:00" : null,
+      pausaFim: diaSemana === 2 ? "15:00" : null,
+    }));
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    expect(await screen.findByText("Pausa")).toBeInTheDocument();
+    // Um "14:00" só: o da Ana.
+    expect(screen.getAllByRole("button", { name: "14:00" })).toHaveLength(1);
+  });
+
   it("o profissional vê só a própria agenda: uma coluna, sem divisão", async () => {
     montarPainel(<Agenda agora={AGORA} />, semear("profissional"));
 

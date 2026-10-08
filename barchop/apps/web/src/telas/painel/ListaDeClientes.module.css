@@ -60,49 +60,10 @@
   font-size: var(--texto-sm);
 }
 
-/* As faixas: mesma gramática do seletor de vista da agenda — pílulas
-   lado a lado, a ativa preenchida. `flex-wrap` porque o rótulo mais
-   longo ("Sem registro em 90 dias") não cabe ao lado dos outros dois
-   numa janela estreita. */
+/* As pílulas das faixas (PilulasDeFiltro): só o encaixe na página,
+   encostadas na contagem logo abaixo — o desenho é do componente. */
 .faixas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-sm);
   margin-block-end: calc(var(--espaco-lg) * -1 + var(--espaco-md));
-}
-
-.faixa {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-sm);
-  padding: var(--espaco-xs) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-pill);
-  background: var(--cor-surface);
-  color: inherit;
-  font-size: var(--texto-sm);
-  cursor: pointer;
-}
-
-.faixa[aria-pressed="true"] {
-  background: var(--cor-accent);
-  color: var(--cor-dark);
-}
-
-/* O número é dado, não rótulo: fica menor e em caixa própria pra ser
-   lido de relance sem competir com a palavra. */
-.quantosNaFaixa {
-  padding-inline: 6px;
-  border-radius: var(--raio-pill);
-  background: var(--cor-paper-soft);
-  color: var(--cor-ink-soft);
-  font-size: var(--texto-xs);
-  font-weight: 700;
-}
-
-.faixa[aria-pressed="true"] .quantosNaFaixa {
-  background: rgb(0 0 0 / 0.12);
-  color: inherit;
 }
 
 /* As ações moram na última coluna e ficam encostadas na direita: é o

@@ -4,7 +4,29 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-08, tarde — painel v2 completo na main) — vale mais que as seções abaixo
+## RETOMAR AQUI (fim de 2026-10-08 — painel v2 completo e em produção) — vale mais que as seções abaixo
+
+**Estado:** `main` = **produção** (até o #90, conferido no ar com curl e grep no bundle do painel). Nada pela metade em branch nenhuma. **Painel v2 completo** (os 6 marcos do PRD `painel-v2.prd.md`).
+
+**Feito em 2026-10-08 (#79–#90):**
+- Marco 5 — Listas (`painel-v2-listas.plan.md`): #79 serviços por categoria + pílulas + busca; #80 `GET /clientes?faixa=recentes|sumidos` + `contagens`; #81 clientes com pílulas contadas no servidor (faixa na URL); #82 equipe com pílulas e Situação; #83 docs.
+- Marco 6 — Agenda (`painel-v2-agenda.plan.md`): #84 a ocupação devolve `janela`/`pausa` de cada profissional; #85 vista de dia sombreia fora do expediente e a pausa, sem horário livre ali; #86 faixa de resumo + "Agora"; #87 "Bloquear" na agenda (formulário extraído de Folgas; coluna única desenha bloqueios); #88 docs.
+- #89 grade da agenda dividida por hora (pedido do dono): uma linha por hora cheia, eixo de hora em hora; o clique continua de 15 em 15.
+- #90 tipo do `packages/formato/tests/regras.test.ts` corrigido: `pnpm -r --no-bail type-check` limpo nos 6 pacotes.
+
+**G3 adiado:** o dono decidiu (2026-10-08) que a GR Barber ainda não entra em produção. Não propor até ele pedir.
+
+**O que falta (perguntar ao dono a ordem):**
+1. G4 — docs da onda 1.
+2. Sombrear também a vista de semana (hoje só o dia; precisa de 7 consultas ou rota de período).
+3. `barbearia-teste` em produção: apagar ou manter.
+4. Onda 2 (dinheiro): caixa, cobrança, planos — começar pelo PRD (`ecc:plan-prd`); preços/plano grátis do site entram aqui.
+5. Soltas: razão social/CNPJ/DPO "a preencher" (`apps/web/src/site/controlador.ts`); imagem de Open Graph da home; telas do 3g e várias horizontais não vistas no navegador; cartaz/janela não vistos no tema claro e cartaz no celular.
+6. Pergunta em aberto (#89): na grade, só hora cheia clicável?
+
+**Combinados:** um PR por item, TDD RED → GREEN, português; push, PR e merge por mim com "pode mergear" do dono no turno; telas novas com aprovação visual (375 e 1440). Deploy: o dono roda na VM, **um comando por vez** (`git pull` → `docker compose build api` (+ `migrar`) → `build web` → `up -d`); eu confiro com curl e grep no bundle.
+
+## RETOMAR AQUI (2026-10-08, tarde — painel v2 completo na main) — histórico
 
 **Estado:** **painel v2 completo** (os 6 marcos do PRD `painel-v2.prd.md`). Hoje entraram o marco 5 (Listas, #79–#83) e o marco 6 (Agenda, plano `painel-v2-agenda.plan.md`): #84 a ocupação devolve `janela`/`pausa` de cada profissional; #85 a vista de dia sombreia fora do expediente e a pausa e não oferece horário livre ali; #86 faixa de resumo + "Agora"; #87 "Bloquear" na agenda (janela com o formulário extraído de Folgas; coluna única passa a desenhar bloqueios). **Produção = marco 4** (`8fff69d`, último conferido). **Primeiro:** deploy dos marcos 5 e 6 juntos — API e web, sem migration: `git pull` → `docker compose build api` → `docker compose build web` → `docker compose up -d`; conferir `/health`, `GET /clientes?faixa=sumidos` e `GET /barbearias/me/ocupacao?data=` sem login = 401, `/painel/agenda`. Nada pela metade em branch nenhuma.
 

@@ -238,3 +238,79 @@ describe("agenda — régua do agora com o relógio de verdade", () => {
     expect(depois.style.getPropertyValue("--fracao")).toBe("0");
   });
 });
+
+// Painel v2, marco 6: a faixa de resumo e o botão "Agora".
+describe("agenda — resumo e agora", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function resumo() {
+    return screen.findByRole("list", { name: /resumo/i });
+  }
+
+  it("o dia de hoje resume agendamentos, o que falta, o previsto e a ocupação", async () => {
+    // Um corte das 11:00 (R$ 40) às 10:00: ainda vem. Ocupação: 30 min
+    // de 540 de trabalho no dublê → 6%.
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-08", vista: "dia" } });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    const itens = (await resumo()).textContent?.replace(/\s/g, " ");
+    expect(itens).toContain("1 agendamento");
+    expect(itens).toContain("1 ainda hoje");
+    expect(itens).toContain("Previsto R$ 40,00");
+    expect(await screen.findByText("Ocupação 6%")).toBeInTheDocument();
+  });
+
+  it("outro dia não diz 'ainda hoje'", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-09", vista: "dia" } });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    const lista = await resumo();
+    expect(lista.textContent).toContain("Nenhum agendamento");
+    expect(lista.textContent).not.toMatch(/ainda hoje/);
+  });
+
+  it("a semana resume agendamentos e previsto, sem ocupação", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-08", vista: "semana" } });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    const lista = await screen.findByRole("list", { name: "Resumo da semana" });
+    expect(lista.textContent?.replace(/\s/g, " ")).toContain("Previsto R$ 40,00");
+    expect(lista.textContent).not.toMatch(/ocupação/i);
+  });
+
+  it("Agora, já em hoje, rola até a régua do agora", async () => {
+    const rolar = vi.fn();
+    Element.prototype.scrollIntoView = rolar;
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-08", vista: "dia" } });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    await screen.findByTestId("regua-do-agora");
+    await userEvent.click(screen.getByRole("button", { name: "Agora" }));
+
+    expect(rolar).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+  });
+
+  it("Agora, em outro dia, volta pra hoje na mesma vista", async () => {
+    Element.prototype.scrollIntoView = vi.fn();
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-20", vista: "dia" } });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    await userEvent.click(await screen.findByRole("button", { name: "Agora" }));
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=dia&data=2026-09-08");
+  });
+
+  it("no mês não há Agora", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { data: "2026-09-08", vista: "mes" } });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    await screen.findByRole("button", { name: "Mês" });
+    expect(screen.queryByRole("button", { name: "Agora" })).not.toBeInTheDocument();
+  });
+});

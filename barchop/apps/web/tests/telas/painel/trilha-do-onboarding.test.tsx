@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
@@ -62,6 +62,42 @@ describe("trilha de primeiros passos", () => {
 
     await waitFor(() => expect(within(passo(regiao, /equipe/i)).getByText(/feito/i)).toBeInTheDocument());
     expect(regiao).toHaveTextContent(/1 de 5/);
+  });
+
+  it("aponta o próximo passo: o primeiro que falta, na ordem", async () => {
+    montarPainel(<DashboardDoDia agora={AGORA} />, criarApiClientFalso({ onboarding: { horarios: true } }));
+
+    const regiao = await trilha();
+
+    expect(within(passo(regiao, /serviço/i)).getByText(/próximo passo/i)).toBeInTheDocument();
+    expect(within(passo(regiao, /equipe/i)).queryByText(/próximo passo/i)).toBeNull();
+    expect(within(regiao).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+  });
+
+  it("recolher esconde os passos, diz o próximo e lembra na volta", async () => {
+    montarPainel(<DashboardDoDia agora={AGORA} />, criarApiClientFalso({ onboarding: { horarios: true } }));
+    const regiao = await trilha();
+
+    await userEvent.click(within(regiao).getByRole("button", { name: /recolher/i }));
+
+    expect(within(regiao).queryByRole("list")).toBeNull();
+    expect(regiao).toHaveTextContent(/próximo: primeiro serviço/i);
+    cleanup();
+
+    montarPainel(<DashboardDoDia agora={AGORA} />, criarApiClientFalso({ onboarding: { horarios: true } }));
+    const deNovo = await trilha();
+    expect(within(deNovo).queryByRole("list")).toBeNull();
+
+    await userEvent.click(within(deNovo).getByRole("button", { name: /mostrar/i }));
+    expect(within(deNovo).getByRole("list")).toBeInTheDocument();
+  });
+
+  it("com o link mandado, a primeira reserva diz que está esperando", async () => {
+    montarPainel(<DashboardDoDia agora={AGORA} />, criarApiClientFalso({ onboarding: { link: true } }));
+
+    const regiao = await trilha();
+
+    expect(within(passo(regiao, /primeira reserva/i)).getByText(/esperando o primeiro cliente/i)).toBeInTheDocument();
   });
 
   it("some quando os cinco passos estão feitos", async () => {

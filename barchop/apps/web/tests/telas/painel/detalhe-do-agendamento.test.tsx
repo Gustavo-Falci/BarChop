@@ -59,24 +59,67 @@ describe("detalhe do agendamento", () => {
     expect(screen.getByRole("link", { name: "(11) 99999-0001" })).toHaveAttribute("href", "tel:+5511999990001");
   });
 
-  it("marca o status atual como pressionado", async () => {
+  it("mostra onde o atendimento está e só as ações que fazem sentido agora", async () => {
     montarPainel(<DetalheDoAgendamento />, semear());
 
-    expect(await screen.findByRole("button", { name: /pendente/i })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: /confirmado/i })).toHaveAttribute("aria-pressed", "false");
+    const atual = await screen.findByText("Pendente", { selector: "li" });
+    expect(atual).toHaveAttribute("aria-current", "step");
+    expect(screen.getByRole("button", { name: /^confirmar$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /marcar falta/i })).toBeInTheDocument();
+    // Não oferece ir pro status em que já está.
+    expect(screen.queryByRole("button", { name: /pendente/i })).not.toBeInTheDocument();
   });
 
-  it("só deixa salvar observações quando mudam, e avisa que salvou", async () => {
+  it("cancelar pede um segundo clique antes de liberar o horário", async () => {
+    const falso = semear();
+    const original = falso.barbeiro.atualizarAgendamento;
+    const atualizar = vi.fn(async (id: string, edicao: EdicaoDoAgendamento) => original(id, edicao));
+    falso.barbeiro.atualizarAgendamento = atualizar;
+    montarPainel(<DetalheDoAgendamento />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: /cancelar agendamento/i }));
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(screen.getByText(/horário volta a ficar livre/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /^não$/i }));
+    expect(screen.getByRole("button", { name: /cancelar agendamento/i })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /cancelar agendamento/i }));
+    await userEvent.click(screen.getByRole("button", { name: /sim, cancelar/i }));
+    await waitFor(() => expect(atualizar).toHaveBeenCalledWith("a1", { status: "cancelado" }));
+  });
+
+  it("atendimento concluído oferece reabrir, e não os passos de antes", async () => {
+    const falso = semear();
+    await falso.barbeiro.atualizarAgendamento("a1", { status: "concluido" });
+    montarPainel(<DetalheDoAgendamento />, falso);
+
+    expect(await screen.findByRole("button", { name: /reabrir/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^confirmar$/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/atendimento feito/i)).toBeInTheDocument();
+  });
+
+  it("só oferece salvar observações quando mudam, e avisa que salvou", async () => {
     montarPainel(<DetalheDoAgendamento />, semear());
 
-    const salvar = await screen.findByRole("button", { name: /salvar observações/i });
-    expect(salvar).toBeDisabled();
+    const campo = await screen.findByLabelText(/observações/i);
+    expect(screen.queryByRole("button", { name: /salvar observações/i })).not.toBeInTheDocument();
 
-    await userEvent.type(screen.getByLabelText(/observações/i), "cliente atrasa");
-    expect(salvar).toBeEnabled();
-    await userEvent.click(salvar);
+    await userEvent.type(campo, "cliente atrasa");
+    await userEvent.click(screen.getByRole("button", { name: /salvar observações/i }));
 
     expect(await screen.findByRole("status")).toHaveTextContent(/salvo/i);
+  });
+
+  it("descartar volta as observações ao que estava salvo", async () => {
+    montarPainel(<DetalheDoAgendamento />, semear());
+
+    const campo = await screen.findByLabelText(/observações/i);
+    await userEvent.type(campo, "rascunho");
+    await userEvent.click(screen.getByRole("button", { name: /descartar/i }));
+
+    expect(campo).toHaveValue("");
+    expect(screen.queryByRole("button", { name: /salvar observações/i })).not.toBeInTheDocument();
   });
 
   it("muda o status", async () => {
@@ -95,7 +138,7 @@ describe("detalhe do agendamento", () => {
 
     montarPainel(<DetalheDoAgendamento />, falso);
 
-    await userEvent.click(await screen.findByRole("button", { name: /confirmado/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^confirmar$/i }));
 
     await waitFor(() => expect(atualizar).toHaveBeenCalledWith("a1", { status: "confirmado" }));
   });
@@ -193,7 +236,7 @@ describe("detalhe do agendamento", () => {
 
     montarPainel(<DetalheDoAgendamento />, falso);
 
-    await userEvent.click(await screen.findByRole("button", { name: /confirmado/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^confirmar$/i }));
 
     // `aplicar` chama `agendamento.recarregar()` depois do PATCH: o
     // objeto que `comCliente` devolve é sempre novo, então o
@@ -269,13 +312,12 @@ describe("detalhe do agendamento", () => {
     );
   });
 
-  it("os botões de status mostram o rótulo traduzido, não o enum cru", async () => {
+  it("o caminho do atendimento mostra o rótulo traduzido, não o enum cru", async () => {
     montarPainel(<DetalheDoAgendamento />, semear());
 
-    expect(await screen.findByRole("button", { name: "concluído" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "não compareceu" })).toBeInTheDocument();
-    // O enum cru não pode aparecer em nenhum botão.
-    expect(screen.queryByRole("button", { name: "concluido" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "no_show" })).not.toBeInTheDocument();
+    expect(await screen.findByText("Concluído", { selector: "li" })).toBeInTheDocument();
+    // O enum cru não pode aparecer em lugar nenhum da tela.
+    expect(screen.queryByText("concluido")).not.toBeInTheDocument();
+    expect(screen.queryByText("no_show")).not.toBeInTheDocument();
   });
 });

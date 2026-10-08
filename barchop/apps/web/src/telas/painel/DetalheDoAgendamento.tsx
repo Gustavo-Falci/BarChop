@@ -8,22 +8,22 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Chip } from "../../componentes/Chip";
-import { LadoALado } from "../../componentes/Colunas";
 import { formatarPreco } from "../../componentes/ItemDeServico";
-import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataComSemana } from "../../formato/datas";
 import { rotuloDoStatus } from "../../formato/status";
-import { IconeConversa } from "../../painel/icones";
+import { IconeCheck, IconeConversa } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./DetalheDoAgendamento.module.css";
 
-// Qualquer transição é aceita pela API: o barbeiro é a autoridade sobre
-// o que aconteceu no salão.
-const STATUS = ["pendente", "confirmado", "concluido", "cancelado", "no_show"] as const;
+type Status = "pendente" | "confirmado" | "concluido" | "cancelado" | "no_show";
 
-// O tom de cada status, o mesmo nos botões e no selo do cabeçalho: dá
-// pra ler a situação pela cor antes de ler a palavra.
+// O caminho normal de um atendimento. Cancelado e falta saem dele — não
+// são um quarto passo, são o caminho interrompido.
+const CAMINHO: Status[] = ["pendente", "confirmado", "concluido"];
+
+// O tom de cada status no selo do cabeçalho: dá pra ler a situação pela
+// cor antes de ler a palavra.
 const TOM_DO_STATUS: Record<string, "acento" | "neutro" | "ok" | "atencao" | "erro"> = {
   pendente: "atencao",
   confirmado: "acento",
@@ -32,18 +32,51 @@ const TOM_DO_STATUS: Record<string, "acento" | "neutro" | "ok" | "atencao" | "er
   no_show: "erro",
 };
 
-// Uma linha de apoio por botão: "cancelado" e "não compareceu" parecem
-// a mesma coisa até alguém dizer que um é aviso e o outro é falta.
-const APOIO_DO_STATUS: Record<string, string> = {
-  pendente: "Ainda não combinado",
-  confirmado: "Combinado com o cliente",
-  concluido: "Atendimento feito",
-  cancelado: "Desmarcado com aviso",
-  no_show: "Faltou sem avisar",
+// A API aceita qualquer transição (o barbeiro é a autoridade sobre o
+// próprio dia), mas a tela oferece só o que faz sentido a partir de
+// cada estado, com verbo: "Confirmar", não "confirmado". Cinco botões
+// iguais obrigavam a ler todos pra achar o próximo passo.
+type Acao = { para: Status; rotulo: string; peso: "principal" | "secundaria" | "perigo" };
+const ACOES: Record<string, Acao[]> = {
+  pendente: [
+    { para: "confirmado", rotulo: "Confirmar", peso: "principal" },
+    { para: "concluido", rotulo: "Concluir", peso: "secundaria" },
+    { para: "no_show", rotulo: "Marcar falta", peso: "secundaria" },
+    { para: "cancelado", rotulo: "Cancelar agendamento", peso: "perigo" },
+  ],
+  confirmado: [
+    { para: "concluido", rotulo: "Concluir atendimento", peso: "principal" },
+    { para: "no_show", rotulo: "Marcar falta", peso: "secundaria" },
+    { para: "cancelado", rotulo: "Cancelar agendamento", peso: "perigo" },
+  ],
+  concluido: [{ para: "confirmado", rotulo: "Reabrir", peso: "secundaria" }],
+  // Reativar devolve o horário à agenda; se alguém já o pegou, a API
+  // responde 409 e a mensagem dela aparece no aviso.
+  cancelado: [{ para: "confirmado", rotulo: "Reativar agendamento", peso: "secundaria" }],
+  no_show: [{ para: "confirmado", rotulo: "Desfazer falta", peso: "secundaria" }],
 };
 
 function maiuscula(texto: string) {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+function frase(status: string, presencaConfirmada: boolean): string {
+  switch (status) {
+    case "pendente":
+      return "Ainda não combinado com o cliente.";
+    case "confirmado":
+      return presencaConfirmada
+        ? "O cliente confirmou presença pelo link."
+        : "Combinado com o cliente.";
+    case "concluido":
+      return "Atendimento feito.";
+    case "cancelado":
+      return "Cancelado — o horário ficou livre na agenda.";
+    case "no_show":
+      return "O cliente faltou sem avisar.";
+    default:
+      return "";
+  }
 }
 
 export function DetalheDoAgendamento() {
@@ -65,11 +98,14 @@ export function DetalheDoAgendamento() {
 
   const [observacoes, setObservacoes] = useState("");
   const [aviso, setAviso] = useState<string | undefined>();
-  // Qual ação está no ar: o status clicado ou as observações. Um
-  // booleano só travava os cinco botões e o Salvar juntos, e não dava
-  // pra saber qual clique estava sendo salvo.
+  // Qual ação está no ar: o status de destino ou as observações. Um
+  // booleano só travava tudo junto, e não dava pra saber qual clique
+  // estava sendo salvo.
   const [salvando, setSalvando] = useState<string | null>(null);
   const [observacoesSalvas, setObservacoesSalvas] = useState(false);
+  // Cancelar libera o horário pra outro cliente: pede um segundo clique,
+  // ali mesmo, em vez de um modal.
+  const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
 
   // Sincronizado durante a renderização, e não num `useEffect`: mesmo
   // mecanismo do fix em ConfiguracoesDaBarbearia (181514d). A trava
@@ -105,6 +141,7 @@ export function DetalheDoAgendamento() {
   async function aplicar(edicao: EdicaoDoAgendamento, qual: string) {
     setAviso(undefined);
     setObservacoesSalvas(false);
+    setConfirmandoCancelar(false);
     setSalvando(qual);
     try {
       await api.barbeiro.atualizarAgendamento(id, edicao);
@@ -120,8 +157,10 @@ export function DetalheDoAgendamento() {
     (soma, s) => soma + Math.round(Number(s.precoNoMomento) * 100),
     0
   );
+  const duracao = atual.servicos.reduce((soma, s) => soma + s.duracaoNoMomento, 0);
   const telefoneDiscavel = atual.cliente.telefone.replace(/\D/g, "");
-  const quando = maiuscula(formatarDataComSemana(atual.data));
+  const acoes = ACOES[atual.status] ?? [];
+  const noCaminho = CAMINHO.indexOf(atual.status as Status);
 
   return (
     <div className={estilos.pagina}>
@@ -133,7 +172,7 @@ export function DetalheDoAgendamento() {
             {maiuscula(rotuloDoStatus(atual.status))}
           </Chip>
         }
-        apoio={`${quando} · ${atual.horaInicio}–${atual.horaFim}`}
+        apoio={`${maiuscula(formatarDataComSemana(atual.data))} · ${atual.horaInicio}–${atual.horaFim} · com ${atual.barbeiro.nome}`}
         acao={
           // noreferrer além do noopener: o WhatsApp não precisa saber de
           // qual tela do painel o link saiu.
@@ -152,156 +191,196 @@ export function DetalheDoAgendamento() {
       />
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
-      {/* Lado a lado: o atendimento à esquerda, o que se muda nele à
-          direita (as telas usam a largura — pedido do dono). */}
-      <LadoALado>
-        <Secao titulo="O atendimento">
-          {/* Rótulo e valor, em vez de parágrafos soltos: telefone, data
-              e serviço eram três linhas sem nome, com um vão entre cada. */}
-          <dl className={estilos.ficha}>
-            <div className={estilos.linha}>
-              <dt>Cliente</dt>
-              <dd>
+      {/* A faixa do próximo passo: onde o atendimento está e o que fazer
+          agora. É o motivo de abrir esta tela, por isso vem antes dos
+          dados e é a única coisa com moldura. */}
+      <section className={estilos.faixa} aria-label="Situação do atendimento" data-tom={TOM_DO_STATUS[atual.status]}>
+        <div className={estilos.situacao}>
+          {noCaminho >= 0 ? (
+            <ol className={estilos.caminho}>
+              {CAMINHO.map((passo, indice) => {
+                const estado = indice < noCaminho ? "feito" : indice === noCaminho ? "atual" : "falta";
+                return (
+                  <li
+                    key={passo}
+                    className={estilos.etapa}
+                    data-estado={estado}
+                    aria-current={estado === "atual" ? "step" : undefined}
+                  >
+                    <span className={estilos.marca} aria-hidden="true">
+                      {estado === "feito" ? <IconeCheck width={14} height={14} /> : null}
+                    </span>
+                    {maiuscula(rotuloDoStatus(passo))}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : null}
+          <p className={estilos.frase}>{frase(atual.status, Boolean(atual.presencaConfirmadaEm))}</p>
+        </div>
+
+        <div className={estilos.acoes}>
+          {confirmandoCancelar ? (
+            <div className={estilos.confirmar} role="group" aria-label="Confirmar cancelamento">
+              <span>Cancelar? O horário volta a ficar livre.</span>
+              <button
+                type="button"
+                className={estilos.perigo}
+                aria-busy={salvando === "cancelado" || undefined}
+                disabled={salvando !== null}
+                onClick={() => void aplicar({ status: "cancelado" }, "cancelado")}
+              >
+                Sim, cancelar
+              </button>
+              <button type="button" className={estilos.discreta} onClick={() => setConfirmandoCancelar(false)}>
+                Não
+              </button>
+            </div>
+          ) : (
+            acoes.map((acao) => (
+              <button
+                key={acao.para}
+                type="button"
+                className={
+                  acao.peso === "principal"
+                    ? estilos.principal
+                    : acao.peso === "perigo"
+                      ? estilos.discretaPerigo
+                      : estilos.secundaria
+                }
+                aria-busy={salvando === acao.para || undefined}
+                disabled={salvando !== null}
+                onClick={() =>
+                  acao.para === "cancelado"
+                    ? setConfirmandoCancelar(true)
+                    : void aplicar({ status: acao.para }, acao.para)
+                }
+              >
+                {salvando === acao.para ? "Salvando…" : acao.rotulo}
+              </button>
+            ))
+          )}
+        </div>
+        {/* A API não tem remarcar no escopo do barbeiro, e aceitar data e
+            hora no PATCH pularia a checagem de disponibilidade inteira.
+            Dizer isso — perto do Cancelar, que é o caminho — é melhor do
+            que um botão que voltaria erro. */}
+        {lembravel ? (
+          <p className={estilos.nota}>Para mudar o horário, cancele e crie outro agendamento.</p>
+        ) : null}
+      </section>
+
+      {/* O resto sem caixas: duas colunas separadas por um fio, cada
+          grupo com um rótulo miúdo em vez de título de bloco. */}
+      <div className={estilos.corpo}>
+        <div className={estilos.coluna}>
+          <section className={estilos.grupo} aria-labelledby={`${idDoCampo}-servicos`}>
+            <h2 id={`${idDoCampo}-servicos`} className={estilos.rotuloDoGrupo}>
+              Serviços
+            </h2>
+            <ul className={estilos.servicos}>
+              {atual.servicos.map((s) => (
+                <li key={s.servicoId}>
+                  <span>
+                    {s.nome}
+                    <span className={estilos.secundario}> · {s.duracaoNoMomento} min</span>
+                  </span>
+                  <span className={estilos.valor}>{formatarPreco(s.precoNoMomento)}</span>
+                </li>
+              ))}
+              {/* Com um serviço só, o total repetiria a linha de cima. */}
+              {atual.servicos.length > 1 ? (
+                <li className={estilos.total}>
+                  <span>
+                    Total<span className={estilos.secundario}> · {duracao} min</span>
+                  </span>
+                  {/* precoNoMomento, não o preço de hoje: é o que foi
+                      combinado com aquele cliente naquele dia. */}
+                  <span className={estilos.valor}>{formatarPreco((total / 100).toFixed(2))}</span>
+                </li>
+              ) : null}
+            </ul>
+          </section>
+
+          <section className={estilos.grupo} aria-labelledby={`${idDoCampo}-cliente`}>
+            <h2 id={`${idDoCampo}-cliente`} className={estilos.rotuloDoGrupo}>
+              Cliente
+            </h2>
+            <div className={estilos.cliente}>
+              <span className={estilos.inicial} aria-hidden="true">
+                {atual.cliente.nome.trim().charAt(0).toUpperCase()}
+              </span>
+              <div className={estilos.dadosDoCliente}>
                 <Link className={estilos.link} href={`/painel/clientes/${atual.cliente.id}`}>
                   {atual.cliente.nome}
                 </Link>
                 {telefoneDiscavel ? (
-                  <a className={estilos.secundario} href={`tel:+55${telefoneDiscavel}`}>
+                  <a className={estilos.telefone} href={`tel:+55${telefoneDiscavel}`}>
                     {atual.cliente.telefone}
                   </a>
                 ) : null}
-              </dd>
-            </div>
-            <div className={estilos.linha}>
-              <dt>Quando</dt>
-              <dd>
-                {quando}
-                <span className={estilos.secundario}>
-                  {atual.horaInicio}–{atual.horaFim}
-                </span>
-              </dd>
-            </div>
-            <div className={estilos.linha}>
-              <dt>Com</dt>
-              <dd>{atual.barbeiro.nome}</dd>
-            </div>
-            <div className={estilos.linha}>
-              <dt>Serviços</dt>
-              <dd>
-                <ul className={estilos.servicos}>
-                  {atual.servicos.map((s) => (
-                    <li key={s.servicoId}>
-                      <span>
-                        {s.nome}
-                        <span className={estilos.secundario}> · {s.duracaoNoMomento} min</span>
-                      </span>
-                      <span className={estilos.valor}>{formatarPreco(s.precoNoMomento)}</span>
-                    </li>
-                  ))}
-                  {atual.servicos.length > 1 ? (
-                    <li className={estilos.total}>
-                      <span>Total</span>
-                      {/* precoNoMomento, não o preço de hoje: é o que foi
-                          combinado com aquele cliente naquele dia. */}
-                      <span className={estilos.valor}>{formatarPreco((total / 100).toFixed(2))}</span>
-                    </li>
-                  ) : null}
-                </ul>
-              </dd>
-            </div>
-          </dl>
-
-          <div className={estilos.selos}>
-            <Chip tom="neutro" tamanho="pequeno">
-              Agendado pelo {atual.origem}
-            </Chip>
-            {atual.presencaConfirmadaEm ? (
-              <Chip tom="ok" tamanho="pequeno">
-                ✓ Confirmou presença
-              </Chip>
-            ) : null}
-          </div>
-
-          {/* A API não tem remarcar no escopo do barbeiro, e aceitar data e
-              hora no PATCH pularia a checagem de disponibilidade inteira.
-              Dizer isso é melhor do que um botão que voltaria erro. */}
-          <p className={estilos.nota}>Para mudar o horário, cancele e crie outro agendamento.</p>
-        </Secao>
-
-        <div className={estilos.pilha}>
-          <Secao titulo="Status" descricao="Marque o que aconteceu com este atendimento.">
-            <div className={estilos.opcoes}>
-              {STATUS.map((opcao) => {
-                const marcado = opcao === atual.status;
-                return (
-                  <button
-                    key={opcao}
-                    type="button"
-                    className={estilos.opcao}
-                    data-tom={TOM_DO_STATUS[opcao]}
-                    aria-pressed={marcado}
-                    aria-busy={salvando === opcao || undefined}
-                    disabled={salvando !== null}
-                    onClick={() => {
-                      if (!marcado) void aplicar({ status: opcao }, opcao);
-                    }}
-                  >
-                    <span className={estilos.ponto} aria-hidden="true" />
-                    <span className={estilos.rotuloDaOpcao}>{rotuloDoStatus(opcao)}</span>
-                    {/* Fora do nome acessível: o botão se chama pelo
-                        status, e o leitor de tela já ouve o "pressionado". */}
-                    <span className={estilos.apoioDaOpcao} aria-hidden="true">
-                      {salvando === opcao ? "Salvando…" : APOIO_DO_STATUS[opcao]}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </Secao>
-
-          <Secao
-            titulo="Anotações"
-            acao={
-              <div className={estilos.rodape}>
-                {observacoesSalvas && !observacoesMudaram ? (
-                  <span className={estilos.salvo} role="status">
-                    ✓ Salvo
-                  </span>
-                ) : null}
-                <Botao
-                  onClick={() => aplicar({ observacoes }, "observacoes")}
-                  carregando={salvando === "observacoes"}
-                  disabled={!observacoesMudaram || salvando !== null}
-                >
-                  Salvar observações
-                </Botao>
               </div>
-            }
-          >
-            {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
-                desenho da descrição em CadastroDeServico. */}
-            <div className={estilos.campoLongo}>
-              <label className={estilos.rotulo} htmlFor={idDoCampo}>
-                Observações
-              </label>
-              <span className={estilos.apoio} id={`${idDoCampo}-apoio`}>
-                Só a equipe vê. Ex.: prefere máquina 2, costuma atrasar.
-              </span>
-              <textarea
-                id={idDoCampo}
-                className={estilos.area}
-                aria-describedby={`${idDoCampo}-apoio`}
-                rows={4}
-                value={observacoes}
-                onChange={(evento) => {
-                  setObservacoes(evento.target.value);
-                  setObservacoesSalvas(false);
-                }}
-              />
             </div>
-          </Secao>
+            {/* A presença confirmada não repete aqui: a frase da faixa já
+                diz, no lugar onde se decide o próximo passo. */}
+            <div className={estilos.selos}>
+              <Chip tom="neutro" tamanho="pequeno">
+                Agendado pelo {atual.origem}
+              </Chip>
+            </div>
+          </section>
         </div>
-      </LadoALado>
+
+        <div className={estilos.coluna}>
+          <section className={estilos.grupo}>
+            {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
+                desenho da descrição em CadastroDeServico. O rótulo do
+                campo faz as vezes do rótulo do grupo. */}
+            <label className={estilos.rotuloDoGrupo} htmlFor={idDoCampo}>
+              Observações
+            </label>
+            <textarea
+              id={idDoCampo}
+              className={estilos.area}
+              aria-describedby={`${idDoCampo}-apoio`}
+              placeholder="Ex.: prefere máquina 2 nas laterais."
+              rows={5}
+              value={observacoes}
+              onChange={(evento) => {
+                setObservacoes(evento.target.value);
+                setObservacoesSalvas(false);
+              }}
+            />
+            <div className={estilos.rodapeDoCampo}>
+              <span className={estilos.secundario} id={`${idDoCampo}-apoio`}>
+                Só a equipe vê.
+              </span>
+              {observacoesMudaram ? (
+                <div className={estilos.botoesDoCampo}>
+                  <Botao
+                    variante="fantasma"
+                    onClick={() => setObservacoes(atual.observacoes ?? "")}
+                    disabled={salvando !== null}
+                  >
+                    Descartar
+                  </Botao>
+                  <Botao
+                    onClick={() => aplicar({ observacoes }, "observacoes")}
+                    carregando={salvando === "observacoes"}
+                    disabled={salvando !== null}
+                  >
+                    Salvar observações
+                  </Botao>
+                </div>
+              ) : observacoesSalvas ? (
+                <span className={estilos.salvo} role="status">
+                  ✓ Salvo
+                </span>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

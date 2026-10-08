@@ -17,7 +17,6 @@ describe("PATCH /barbearias/me", () => {
         nome: "Barbearia do Gu",
         telefone: "1133334444",
         endereco: "Rua das Tesouras, 100",
-        logoUrl: "https://exemplo.com/logo.png",
         sobre: "Corte na tesoura e barba na navalha.",
       },
     });
@@ -29,7 +28,10 @@ describe("PATCH /barbearias/me", () => {
       slug: "barbearia-um",
       telefone: "(11) 3333-4444",
       endereco: "Rua das Tesouras, 100",
-      logoUrl: "https://exemplo.com/logo.png",
+      // A logo entra pela rota de imagem (POST /barbearias/me/logo), não
+      // por URL digitada: aqui ela só aparece vazia.
+      logoUrl: null,
+      logoFormato: null,
       sobre: "Corte na tesoura e barba na navalha.",
       whatsapp: null,
       instagram: null,
@@ -38,7 +40,7 @@ describe("PATCH /barbearias/me", () => {
       capaUrl: null,
       lembreteAntecedenciaHoras: 24,
       lembreteAtivo: true,
-      // Nome, endereço, logo e sobre são Dados do negócio; telefone é
+      // Nome, endereço e sobre são Dados do negócio; telefone é
       // Comunicação (painel v2).
       areasDecididas: ["dados_do_negocio", "comunicacao"],
       // As regras de agendamento, nos padrões (painel v2, marco 3).
@@ -107,7 +109,7 @@ describe("PATCH /barbearias/me", () => {
     await app.close();
   });
 
-  it("recusa logoUrl que não é http(s) com 400", async () => {
+  it("não aceita mais logoUrl digitada: a logo é arquivo, pela rota de imagem", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
 
@@ -115,7 +117,23 @@ describe("PATCH /barbearias/me", () => {
       method: "PATCH",
       url: "/barbearias/me",
       headers: auth(um.token),
-      payload: { logoUrl: "javascript:alert(1)" },
+      payload: { logoUrl: "https://exemplo.com/logo.png" },
+    });
+
+    expect(resposta.statusCode).toBe(400);
+
+    await app.close();
+  });
+
+  it("recusa logoFormato fora da lista com 400", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+
+    const resposta = await app.inject({
+      method: "PATCH",
+      url: "/barbearias/me",
+      headers: auth(um.token),
+      payload: { logoFormato: "oval" },
     });
 
     expect(resposta.statusCode).toBe(400);

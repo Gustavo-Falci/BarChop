@@ -114,20 +114,27 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
               <LinkDaConta slug={slug} />
             </nav>
             <h1 className={estilos.nome}>{dados.nome}</h1>
-            {/* O estado sai do texto de situacaoAgora, que é a fonte
-                única: "Aberto agora…" ou "Fechado agora…". O atributo é
-                só o que o CSS lê pra pintar o selo. */}
-            {situacao ? (
-              <p
-                className={estilos.selo}
-                data-estado={situacao.startsWith("Aberto") ? "aberto" : "fechado"}
-              >
-                {situacao}
-              </p>
+            {/* Situação e endereço numa linha só de informação, logo sob o
+                nome: o "está aberto?" e o "onde fica?" são lidos juntos.
+                O estado sai do texto de situacaoAgora, que é a fonte única:
+                "Aberto agora…" ou "Fechado agora…". O atributo é só o que
+                o CSS lê pra pintar o selo. */}
+            {situacao || dados.endereco ? (
+              <div className={estilos.meta}>
+                {situacao ? (
+                  <p
+                    className={estilos.selo}
+                    data-estado={situacao.startsWith("Aberto") ? "aberto" : "fechado"}
+                  >
+                    {situacao}
+                  </p>
+                ) : null}
+                {dados.endereco ? <p className={estilos.endereco}>{dados.endereco}</p> : null}
+              </div>
             ) : null}
-            {dados.endereco ? <p className={estilos.endereco}>{dados.endereco}</p> : null}
-            {/* Mapa e contatos juntos, logo abaixo do nome: é onde quem
-                chegou pelo link procura "onde fica" e "como falo". Links
+            {/* Mapa e contatos juntos — no desktop, à direita, na linha da
+                situação; no celular, logo abaixo dela. É onde quem chegou
+                pelo link procura "onde fica" e "como falo". Links
                 montados aqui, de dados que a API validou — o mapa é uma
                 busca pelo endereço, o WhatsApp é o telefone normalizado,
                 o Instagram é só o @ (nunca uma URL digitada). Outra aba,

@@ -81,23 +81,66 @@
   letter-spacing: -0.04em;
 }
 
+/* A identidade em áreas: o nome com o atalho da conta no canto, a linha
+   de informação (situação e endereço) e os atalhos de contato. Com logo,
+   uma linha a mais em cima. No desktop os atalhos sobem pra direita da
+   linha de informação — antes tudo se empilhava à esquerda e a metade
+   direita do cartão ficava vazia. */
 .identidade {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "nome conta"
+    "meta meta"
+    "atalhos atalhos";
   gap: var(--espaco-sm) var(--espaco-md);
   padding: var(--espaco-lg);
 }
 
-.identidade > * {
-  grid-column: 1 / -1;
+.identidade[data-com-logo] {
+  grid-template-areas:
+    "logo logo"
+    "nome conta"
+    "meta meta"
+    "atalhos atalhos";
+}
+
+@media (min-width: 900px) {
+  .identidade {
+    grid-template-areas:
+      "nome conta"
+      "meta atalhos";
+    row-gap: var(--espaco-md);
+  }
+
+  .identidade[data-com-logo] {
+    grid-template-areas:
+      "logo logo"
+      "nome conta"
+      "meta atalhos";
+  }
+
+  .atalhos {
+    justify-self: end;
+    align-self: end;
+    justify-content: flex-end;
+  }
+}
+
+.meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm) var(--espaco-md);
+  min-width: 0;
 }
 
 /* O nome e o atalho da conta dividem a primeira linha: o atalho no
    canto, fora do caminho do "Agendar" — é pra quem já tem conta, não a
    ação da página. */
 .nome {
-  grid-column: 1;
-  grid-row: 1;
+  grid-area: nome;
   margin: 0;
   font-size: clamp(var(--texto-xl), 5vw, var(--texto-display));
   line-height: 1.05;
@@ -109,18 +152,13 @@
 }
 
 .conta {
-  grid-column: 2;
-  grid-row: 1;
+  grid-area: conta;
   align-self: start;
+  /* No canto: no desktop a coluna da direita tem a largura dos atalhos,
+     e sem isto o "Entrar" ficaria no começo dela, no meio do cartão. */
+  justify-self: end;
   padding-top: var(--espaco-xs);
   font-size: var(--texto-sm);
-}
-
-/* Com logo, ela ganha a primeira linha e o nome e a conta descem pra
-   segunda. */
-.identidade[data-com-logo] .nome,
-.identidade[data-com-logo] .conta {
-  grid-row: 2;
 }
 
 /* `relative` + z-index: a vitrine da capa é posicionada, e sem isto ela
@@ -128,8 +166,7 @@
 .logo {
   position: relative;
   z-index: 1;
-  grid-column: 1 / -1;
-  grid-row: 1;
+  grid-area: logo;
   justify-self: start;
 }
 
@@ -207,10 +244,11 @@
    abaixo do endereço — antes o mapa morava aqui e os contatos no fim
    do cartão lateral, longe um do outro. */
 .atalhos {
+  grid-area: atalhos;
   display: flex;
   flex-wrap: wrap;
   gap: var(--espaco-sm);
-  margin: var(--espaco-xs) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }

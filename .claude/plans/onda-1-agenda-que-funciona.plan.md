@@ -4,7 +4,13 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-08 — marco 5 completo na main) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-08, tarde — painel v2 completo na main) — vale mais que as seções abaixo
+
+**Estado:** **painel v2 completo** (os 6 marcos do PRD `painel-v2.prd.md`). Hoje entraram o marco 5 (Listas, #79–#83) e o marco 6 (Agenda, plano `painel-v2-agenda.plan.md`): #84 a ocupação devolve `janela`/`pausa` de cada profissional; #85 a vista de dia sombreia fora do expediente e a pausa e não oferece horário livre ali; #86 faixa de resumo + "Agora"; #87 "Bloquear" na agenda (janela com o formulário extraído de Folgas; coluna única passa a desenhar bloqueios). **Produção = marco 4** (`8fff69d`, último conferido). **Primeiro:** deploy dos marcos 5 e 6 juntos — API e web, sem migration: `git pull` → `docker compose build api` → `docker compose build web` → `docker compose up -d`; conferir `/health`, `GET /clientes?faixa=sumidos` e `GET /barbearias/me/ocupacao?data=` sem login = 401, `/painel/agenda`. Nada pela metade em branch nenhuma.
+
+**Depois (perguntar ao dono a ordem):** G3 (GR Barber em produção com `lembrete_ativo = false`), G4 (docs da onda 1), soltas: dados legais (razão social/CNPJ/DPO); `barbearia-teste` em produção; `packages/formato` com erro de tipo em `tests/regras.test.ts` (já na `main` antes do marco 5); sombrear a semana também (marco 6 deixou só no dia).
+
+## RETOMAR AQUI (2026-10-08 — marco 5 completo na main) — histórico
 
 **Estado:** marco 5 do painel v2 (Listas) **completo** na `main` (plano `painel-v2-listas.plan.md`): #79 serviços por categoria + pílulas + busca; #80 `GET /clientes?faixa=recentes|sumidos` + `contagens` (API, types, api-client e dublê com `hoje` na semente); #81 clientes com pílulas contadas no servidor; #82 equipe com pílulas e Situação. **Produção = marco 4** (`8fff69d`). **Primeiro:** deploy do marco 5 — API e web, sem migration: `git pull` → `docker compose build api` → `docker compose build web` → `docker compose up -d`; conferir `/health`, `GET /clientes?faixa=sumidos` sem login = 401, `/painel/clientes`. Nada pela metade em branch nenhuma.
 

@@ -1162,12 +1162,35 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           !doDia || doDia.fechado || !doDia.horaAbertura || !doDia.horaFechamento
             ? 0
             : minutos(doDia.horaFechamento) - minutos(doDia.horaAbertura);
+        // O expediente na regra da API (janelaEfetiva): data especial >
+        // horário da casa, recortado pela jornada; pausa da jornada.
+        const diaSemana = new Date(`${data}T12:00:00Z`).getUTCDay();
+        const especial = estado.excecoesDeHorario!.find((e) => e.data === data);
+        const casa = especial ?? doDia;
+        const casaAberta =
+          casa && !casa.fechado && casa.horaAbertura && casa.horaFechamento
+            ? { abre: casa.horaAbertura, fecha: casa.horaFechamento }
+            : null;
+        const expedienteDe = (id: string) => {
+          const dia = jornadaDe(id).find((j) => j.diaSemana === diaSemana);
+          if (!casaAberta || dia?.modo === "folga") return { janela: null, pausa: null };
+          let janela: { abre: string; fecha: string } | null = casaAberta;
+          if (dia?.modo === "proprio" && dia.horaInicio && dia.horaFim) {
+            const abre = dia.horaInicio > casaAberta.abre ? dia.horaInicio : casaAberta.abre;
+            const fecha = dia.horaFim < casaAberta.fecha ? dia.horaFim : casaAberta.fecha;
+            janela = abre < fecha ? { abre, fecha } : null;
+          }
+          const pausa =
+            janela && dia?.pausaInicio && dia.pausaFim ? { inicio: dia.pausaInicio, fim: dia.pausaFim } : null;
+          return { janela, pausa };
+        };
         const profissionais = equipe()
           .filter((m) => m.atende && m.ativo && !m.convitePendente)
           .filter((m) => estado.papel !== "profissional" || m.id === "bb1")
           .map((m) => ({
             id: m.id,
             nome: m.nome,
+            ...expedienteDe(m.id),
             minutosDeTrabalho: trabalho,
             minutosAgendados: estado.agendamentos
               .filter(

@@ -99,7 +99,7 @@ describe("dublê — ocupação do dia", () => {
   // horário da casa, recortado pela jornada; a pausa vem da jornada.
   it("o expediente segue data especial, jornada e pausa", async () => {
     const falso = criarApiClientFalso({
-      excecoesDeHorario: [{ data: QUINTA, fechado: false, horaAbertura: "10:00", horaFechamento: "16:00" }],
+      excecoesDeHorario: [{ data: QUINTA, fechado: false, horaAbertura: "10:00", horaFechamento: "16:00", motivo: null }],
       jornadas: {
         bb1: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) =>
           diaSemana === 4

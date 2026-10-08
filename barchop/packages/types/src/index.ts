@@ -380,6 +380,12 @@ export interface MinutosDoDia {
 export interface OcupacaoDoProfissional extends MinutosDoDia {
   id: string;
   nome: string;
+  // O expediente do dia (painel v2, marco 6), pra agenda sombrear o que
+  // está fechado: a janela efetiva (data especial > horário da casa, ∩
+  // jornada) e a pausa da jornada. `null` = fechado / sem pausa. Bloqueio
+  // fica de fora: a agenda o desenha à parte, com o motivo.
+  janela: { abre: string; fecha: string } | null;
+  pausa: { inicio: string; fim: string } | null;
 }
 
 export interface OcupacaoDoDia {

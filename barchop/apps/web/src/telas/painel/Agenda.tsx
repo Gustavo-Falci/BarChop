@@ -168,36 +168,41 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           agendamentos saiu junto com o cabeçalho de página — a agenda
           mostra os agendamentos, e contar o que está à vista é
           informação repetida. */}
-      <SeletorDeVista
-        vista={vista}
-        titulo={titulo}
-        aoTrocarVista={(proxima) => irPara(proxima, data)}
-        aoAndar={(passos) =>
-          irPara(
-            vista,
-            vista === "dia"
-              ? somarDias(data, passos)
-              : vista === "semana"
-                ? somarDias(data, passos * 7)
-                : somarMeses(data, passos)
-          )
-        }
-        aoVoltarAHoje={() => irPara(vista, hojeIso(agora))}
-        aoIrParaAgora={vista === "mes" ? undefined : irParaAgora}
-      />
-
-      {vista === "mes" ? null : (
-        <ResumoDoPeriodo
-          periodo={vista === "dia" ? "dia" : "semana"}
-          agendamentos={agendamentos.dados.filter((a) =>
-            vista === "dia" ? a.data === data : semana.includes(a.data)
-          )}
-          agora={agora}
-          ehHoje={vista === "dia" && data === hoje}
-          ocupacao={vista === "dia" ? ocupacao.dados : undefined}
-          soDoProfissional={!daEquipe}
+      {/* Barra e resumo num bloco só: a página é uma grade de duas
+          linhas (topo e agenda), e a agenda tem que ficar com a linha que
+          sobra — um terceiro filho roubaria dela. */}
+      <div className={estilos.topo}>
+        <SeletorDeVista
+          vista={vista}
+          titulo={titulo}
+          aoTrocarVista={(proxima) => irPara(proxima, data)}
+          aoAndar={(passos) =>
+            irPara(
+              vista,
+              vista === "dia"
+                ? somarDias(data, passos)
+                : vista === "semana"
+                  ? somarDias(data, passos * 7)
+                  : somarMeses(data, passos)
+            )
+          }
+          aoVoltarAHoje={() => irPara(vista, hojeIso(agora))}
+          aoIrParaAgora={vista === "mes" ? undefined : irParaAgora}
         />
-      )}
+
+        {vista === "mes" ? null : (
+          <ResumoDoPeriodo
+            periodo={vista === "dia" ? "dia" : "semana"}
+            agendamentos={agendamentos.dados.filter((a) =>
+              vista === "dia" ? a.data === data : semana.includes(a.data)
+            )}
+            agora={agora}
+            ehHoje={vista === "dia" && data === hoje}
+            ocupacao={vista === "dia" ? ocupacao.dados : undefined}
+            soDoProfissional={!daEquipe}
+          />
+        )}
+      </div>
 
       {vista === "mes" ? (
         <GradeDoMes

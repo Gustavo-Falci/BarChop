@@ -11,8 +11,10 @@
   font-size: var(--texto-sm);
 }
 
-.faixa li + li::before {
+/* O ponto vai no FIM de cada item, e não no começo: quando a faixa
+   quebra no celular, a linha nova não começa com um ponto solto. */
+.faixa li:not(:last-child)::after {
   content: "·";
-  margin-inline-end: var(--espaco-md);
+  margin-inline-start: var(--espaco-md);
   color: var(--cor-muted);
 }

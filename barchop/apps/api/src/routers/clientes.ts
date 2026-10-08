@@ -1,7 +1,7 @@
 import { prisma } from "@barchop/database";
 import { normalizarEmail } from "@barchop/formato";
-import type { ClienteDaLista } from "@barchop/types";
-import { dateParaData } from "../lib/horas";
+import type { ClienteDaLista, FaixaDeCliente } from "@barchop/types";
+import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "../lib/horas";
 import { PADRAO_EMAIL, PADRAO_TELEFONE, PADRAO_UUID } from "../lib/padroes";
 import { serializarAgendamento, serializarCliente } from "../lib/serializar";
 import {
@@ -58,8 +58,34 @@ const buscaClientes = {
     // O id do último cliente da página anterior.
     cursor: { type: "string", pattern: PADRAO_UUID },
     limite: { type: "integer", minimum: 1, maximum: 200 },
+    faixa: { type: "string", enum: ["todos", "recentes", "sumidos"] },
   },
 } as const;
+
+// As faixas das pílulas da lista de clientes, contadas aqui e não na
+// tela: a tela só tem a página carregada, e um número de faixa tirado
+// dela seria uma afirmação sobre a carteira que ninguém mediu. A regra
+// é a que a tela já aplicava sobre o `ultimoAgendamento` (qualquer
+// status, futuro incluso): recentes = algum agendamento de hoje − 30 em
+// diante; sumidos = nenhum de hoje − 90 em diante, o que inclui quem
+// nunca veio. "Hoje" é o da barbearia, não o do servidor.
+function ondeDaFaixa(faixa: FaixaDeCliente, barbeariaId: string, hoje: string) {
+  if (faixa === "recentes") {
+    return {
+      agendamentos: {
+        some: { barbeariaId, data: { gte: dataParaDate(somarDias(hoje, -30)) } },
+      },
+    };
+  }
+  if (faixa === "sumidos") {
+    return {
+      agendamentos: {
+        none: { barbeariaId, data: { gte: dataParaDate(somarDias(hoje, -90)) } },
+      },
+    };
+  }
+  return {};
+}
 
 // A data do último agendamento de cada cliente da página, numa
 // agregação só. Antes a lista do painel descobria isto baixando os
@@ -153,13 +179,25 @@ export function registrarRotasClientes(app: App): void {
           : {}),
       };
 
+      const faixa = request.query.faixa ?? "todos";
+      const hoje = agoraNaBarbearia().data;
+      const naFaixa = (qual: FaixaDeCliente) => ({
+        ...onde,
+        ...ondeDaFaixa(qual, request.user.barbeariaId, hoje),
+      });
+
       // `count` com o MESMO `onde` da página: o total precisa falar do
-      // que a busca selecionou, senão "3 de 260" apareceria numa busca
-      // que achou três pessoas.
-      const [total, pagina] = await Promise.all([
-        prisma.cliente.count({ where: onde }),
+      // que a busca e a faixa selecionaram, senão "3 de 260" apareceria
+      // numa busca que achou três pessoas. As três contagens levam a
+      // busca e ignoram a faixa pedida: as pílulas mostram as três ao
+      // mesmo tempo.
+      const [total, todos, recentes, sumidos, pagina] = await Promise.all([
+        prisma.cliente.count({ where: naFaixa(faixa) }),
+        prisma.cliente.count({ where: naFaixa("todos") }),
+        prisma.cliente.count({ where: naFaixa("recentes") }),
+        prisma.cliente.count({ where: naFaixa("sumidos") }),
         prisma.cliente.findMany({
-          where: onde,
+          where: naFaixa(faixa),
           // O `id` como segundo critério não é enfeite: `nome` não é
           // único, e o cursor do Prisma precisa de uma ordem total pra
           // não pular nem repetir dois "João Silva" na virada da página.
@@ -178,6 +216,7 @@ export function registrarRotasClientes(app: App): void {
       return {
         clientes: await comUltimoAgendamento(clientes, request.user.barbeariaId),
         total,
+        contagens: { todos, recentes, sumidos },
         proximoCursor: temMais ? clientes[clientes.length - 1].id : null,
       };
     }

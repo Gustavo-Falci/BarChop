@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
+import { agoraNaBarbearia, dataParaDate, horaParaDate, somarDias } from "../../src/lib/horas";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
 import type { App } from "../../src/tipos";
 
@@ -602,6 +604,184 @@ describe("GET /clientes: páginas", () => {
 
     // O teto é de resposta, não de carteira: quem quiser tudo pagina.
     expect(resposta.statusCode).toBe(400);
+
+    await app.close();
+  });
+});
+
+describe("GET /clientes: faixa", () => {
+  // As pílulas da lista de clientes contam no servidor. Antes a tela
+  // filtrava só o que estava carregado, e um "67" ao lado de "Sem
+  // registro em 90 dias" com 100 de 260 na tela seria um número que
+  // ninguém mediu. A regra é a mesma que a tela usava sobre o
+  // `ultimoAgendamento`: recentes = algum agendamento de hoje − 30 em
+  // diante (futuro incluso); sumidos = nenhum de hoje − 90 em diante.
+  async function cadastrar(app: App, token: string, nome: string, telefone: string) {
+    return (
+      await app.inject({
+        method: "POST",
+        url: "/clientes",
+        headers: auth(token),
+        payload: { nome, telefone },
+      })
+    ).json() as { id: string };
+  }
+
+  // Direto no banco: as rotas de agendamento recusam o passado, e o
+  // passado é justamente o que esta regra mede.
+  async function agendarHa(
+    barbearia: { barbeariaId: string; barbeiroId: string },
+    clienteId: string,
+    dias: number
+  ) {
+    const data = somarDias(agoraNaBarbearia().data, -dias);
+    await prisma.agendamento.create({
+      data: {
+        barbeariaId: barbearia.barbeariaId,
+        barbeiroId: barbearia.barbeiroId,
+        clienteId,
+        data: dataParaDate(data),
+        horaInicio: horaParaDate("10:00"),
+        horaFim: horaParaDate("10:30"),
+      },
+    });
+  }
+
+  // Seis clientes, um em cada lado de cada borda.
+  async function carteira(app: App, sufixo = "um") {
+    const barbearia = await criarBarbeariaComToken(app, sufixo);
+    const ana = await cadastrar(app, barbearia.token, "Ana", "11977770001");
+    const bruno = await cadastrar(app, barbearia.token, "Bruno", "11977770002");
+    const carla = await cadastrar(app, barbearia.token, "Carla", "11977770003");
+    const davi = await cadastrar(app, barbearia.token, "Davi", "11977770004");
+    await cadastrar(app, barbearia.token, "Edu", "11977770005");
+    const fabio = await cadastrar(app, barbearia.token, "Fábio", "11977770006");
+
+    await agendarHa(barbearia, ana.id, 30); // recente, no limite exato
+    await agendarHa(barbearia, bruno.id, 31); // nem recente nem sumido
+    await agendarHa(barbearia, carla.id, 90); // ainda não sumiu, no limite
+    await agendarHa(barbearia, davi.id, 91); // sumido
+    // Edu nunca veio: sumido.
+    await agendarHa(barbearia, fabio.id, -10); // marcado pro futuro: recente
+
+    return barbearia;
+  }
+
+  async function listar(app: App, token: string, query = "") {
+    const resposta = await app.inject({
+      method: "GET",
+      url: `/clientes${query}`,
+      headers: auth(token),
+    });
+    expect(resposta.statusCode).toBe(200);
+    return resposta.json();
+  }
+
+  const nomes = (pagina: { clientes: { nome: string }[] }) =>
+    pagina.clientes.map((cliente) => cliente.nome);
+
+  it("recentes: agendamento de 30 dias pra cá, futuro incluso", async () => {
+    const app = buildApp();
+    const um = await carteira(app);
+
+    const pagina = await listar(app, um.token, "?faixa=recentes");
+
+    expect(nomes(pagina)).toEqual(["Ana", "Fábio"]);
+    expect(pagina.total).toBe(2);
+
+    await app.close();
+  });
+
+  it("sumidos: nada de 90 dias pra cá, inclusive quem nunca veio", async () => {
+    const app = buildApp();
+    const um = await carteira(app);
+
+    const pagina = await listar(app, um.token, "?faixa=sumidos");
+
+    expect(nomes(pagina)).toEqual(["Davi", "Edu"]);
+    expect(pagina.total).toBe(2);
+
+    await app.close();
+  });
+
+  it("devolve as três contagens, qualquer que seja a faixa pedida", async () => {
+    // As pílulas mostram os três números ao mesmo tempo; a página é
+    // de uma faixa só.
+    const app = buildApp();
+    const um = await carteira(app);
+
+    const semFaixa = await listar(app, um.token);
+    const comFaixa = await listar(app, um.token, "?faixa=sumidos");
+
+    const esperado = { todos: 6, recentes: 2, sumidos: 2 };
+    expect(semFaixa.contagens).toEqual(esperado);
+    expect(comFaixa.contagens).toEqual(esperado);
+    expect(semFaixa.total).toBe(6);
+
+    await app.close();
+  });
+
+  it("as contagens acompanham a busca", async () => {
+    // Senão "Sem registro 2" apareceria numa busca que achou só a Ana.
+    const app = buildApp();
+    const um = await carteira(app);
+
+    const pagina = await listar(app, um.token, "?busca=Ana");
+
+    expect(pagina.contagens).toEqual({ todos: 1, recentes: 1, sumidos: 0 });
+
+    await app.close();
+  });
+
+  it("não conta cliente de outra barbearia", async () => {
+    const app = buildApp();
+    const um = await carteira(app, "um");
+    await carteira(app, "outra");
+
+    const pagina = await listar(app, um.token);
+
+    expect(pagina.contagens).toEqual({ todos: 6, recentes: 2, sumidos: 2 });
+
+    await app.close();
+  });
+
+  it("o cursor anda dentro da faixa", async () => {
+    // "Carregar mais" com uma faixa ativa traz o próximo da faixa, não
+    // o próximo da carteira.
+    const app = buildApp();
+    const um = await carteira(app);
+
+    const primeira = await listar(app, um.token, "?faixa=sumidos&limite=1");
+    const segunda = await listar(
+      app,
+      um.token,
+      `?faixa=sumidos&limite=1&cursor=${primeira.proximoCursor}`
+    );
+
+    expect(nomes(primeira)).toEqual(["Davi"]);
+    expect(nomes(segunda)).toEqual(["Edu"]);
+    expect(segunda.proximoCursor).toBeNull();
+
+    await app.close();
+  });
+
+  it("aceita faixa=todos e recusa faixa desconhecida", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+
+    const todos = await app.inject({
+      method: "GET",
+      url: "/clientes?faixa=todos",
+      headers: auth(um.token),
+    });
+    const outra = await app.inject({
+      method: "GET",
+      url: "/clientes?faixa=atrasados",
+      headers: auth(um.token),
+    });
+
+    expect(todos.statusCode).toBe(200);
+    expect(outra.statusCode).toBe(400);
 
     await app.close();
   });

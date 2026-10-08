@@ -230,6 +230,19 @@ describe("api do barbeiro", () => {
     );
   });
 
+  it("manda a faixa na query, e omite a faixa todos", async () => {
+    // "todos" é o padrão da API: mandar seria barulho na URL.
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({ clientes: [] }));
+    const client = clientAutenticado(fetchFalso);
+
+    await client.barbeiro.clientes(undefined, undefined, "sumidos");
+    expect(urlEInit(fetchFalso).url).toBe("https://api.exemplo.br/clientes?faixa=sumidos");
+
+    fetchFalso.mockClear();
+    await client.barbeiro.clientes(undefined, undefined, "todos");
+    expect(urlEInit(fetchFalso).url).toBe("https://api.exemplo.br/clientes");
+  });
+
   it("omite a busca vazia em vez de mandar ?busca=", async () => {
     // O schema da API tem minLength: 1 no `busca` — o contrato é "se
     // mandar o parâmetro, mande com conteúdo". A lista de clientes abre

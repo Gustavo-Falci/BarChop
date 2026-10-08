@@ -251,3 +251,58 @@ describe("dublê — escopo do barbeiro", () => {
     expect(sessao.cliente.temConta).toBe(true);
   });
 });
+
+describe("dublê — faixas de cliente", () => {
+  // Mesma regra da API: recentes = algum agendamento de hoje − 30 em
+  // diante; sumidos = nenhum de hoje − 90 em diante. O "hoje" vem da
+  // semente pra o teste não mudar de resultado a cada dia.
+  function agendamentoEm(id: string, clienteId: string, data: string) {
+    return {
+      id,
+      clienteId,
+      data,
+      horaInicio: "10:00",
+      horaFim: "10:30",
+      status: "concluido",
+      origem: "cliente" as const,
+      observacoes: null,
+      servicos: [],
+    };
+  }
+
+  function semear() {
+    return criarApiClientFalso({
+      hoje: "2026-10-08",
+      clientes: [
+        { id: "c1", nome: "Ana", telefone: "(11) 99999-0001", email: null, temConta: false },
+        { id: "c2", nome: "Bruno", telefone: "(11) 99999-0002", email: null, temConta: false },
+        { id: "c3", nome: "Carla", telefone: "(11) 99999-0003", email: null, temConta: false },
+        { id: "c4", nome: "Davi", telefone: "(11) 99999-0004", email: null, temConta: false },
+      ],
+      agendamentos: [
+        agendamentoEm("a1", "c1", "2026-09-08"), // 30 dias: recente
+        agendamentoEm("a2", "c2", "2026-09-07"), // 31 dias: meio
+        agendamentoEm("a3", "c3", "2026-07-09"), // 91 dias: sumido
+        // Davi nunca veio: sumido.
+      ],
+    });
+  }
+
+  it("filtra pela faixa e conta as três", async () => {
+    const falso = semear();
+
+    const recentes = await falso.barbeiro.clientes(undefined, undefined, "recentes");
+    const sumidos = await falso.barbeiro.clientes(undefined, undefined, "sumidos");
+
+    expect(recentes.clientes.map((c) => c.id)).toEqual(["c1"]);
+    expect(sumidos.clientes.map((c) => c.id)).toEqual(["c3", "c4"]);
+    expect(sumidos.total).toBe(2);
+    expect(sumidos.contagens).toEqual({ todos: 4, recentes: 1, sumidos: 2 });
+  });
+
+  it("as contagens acompanham a busca", async () => {
+    const achados = await semear().barbeiro.clientes("ana");
+
+    expect(achados.contagens).toEqual({ todos: 1, recentes: 1, sumidos: 0 });
+  });
+});

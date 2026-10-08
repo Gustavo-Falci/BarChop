@@ -192,9 +192,18 @@ export interface ClienteDaLista extends ClientePublico {
 // nenhuma. O cursor não se move quando a vizinhança muda.
 export interface PaginaDeClientes {
   clientes: ClienteDaLista[];
+  // Quantos há na faixa pedida (com a busca): o "X de Y" do carregar mais.
   total: number;
+  // As três faixas das pílulas, com a busca e sem a faixa pedida —
+  // contadas no servidor, que vê a carteira inteira.
+  contagens: Record<FaixaDeCliente, number>;
   proximoCursor: string | null;
 }
+
+// As faixas da lista de clientes. Recentes = algum agendamento de 30
+// dias pra cá (futuro incluso); sumidos = nenhum de 90 dias pra cá,
+// inclusive quem nunca veio. "Hoje" é o da barbearia.
+export type FaixaDeCliente = "todos" | "recentes" | "sumidos";
 
 export interface AgendamentoServicoSerializado {
   servicoId: string;

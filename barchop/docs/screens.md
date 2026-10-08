@@ -22,7 +22,7 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 |---|---|---|
 | `/painel/entrar` | Entrar, e criar a barbearia no primeiro acesso | 🔧 Onda 0 (esqueci a senha), 🔧 Onda 1 (cadastro vira tela própria) |
 | `/painel` | Dashboard: contagem, ocupação, previsto e a lista do dia | 🔧 Onda 1 (painel do dia por profissional) |
-| `/painel/agenda` | Dia, semana e mês, com eixo de tempo | 🔧 Onda 1 (colunas por profissional, bloqueios) |
+| `/painel/agenda` | Dia, semana e mês, com eixo de tempo; colunas por profissional e bloqueios no dia. Painel v2, marco 6 (#84–#87): no dia, fora do expediente e pausa sombreados e sem horário livre (expediente da `GET /barbearias/me/ocupacao`); faixa de resumo (agendamentos, ainda hoje, previsto, ocupação; na semana, agendamentos e previsto); "Agora" (dia e semana); "Bloquear" abre janela com o formulário de Folgas | — |
 | `/painel/agendamentos/novo` | Cliente, serviços, data e horário | 🔧 Onda 1 (escolhe o profissional) |
 | `/painel/agendamentos/[id]` | Status e observações | 🔧 Onda 2 (registrar pagamento) |
 | `/painel/clientes` | Lista com busca, pílulas Todos / Vieram em 30 dias / Sem registro em 90 dias contadas no servidor (`?faixa=`), faixa e busca na URL, "carregar mais" dentro da faixa (painel v2, marco 5) | 🔧 Onda 3 (ritmo, segmentos) |

@@ -54,11 +54,11 @@ We'll know we're right when **uma barbearia nova chega a "todas as decisões tom
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
 | 1 | Peças comuns | Telas novas e antigas passam a falar a mesma língua visual (cabeçalho, selo, pílulas, seção, vazio, tabela) | complete | `.claude/plans/painel-v2-pecas-comuns.plan.md` (PRs #45, #46, #47) |
-| 2 | Configurações em decisões | Dono vê "X de N decididas", o que vale hoje e o que falta; Horários, Dados do negócio (3 abas), Comunicação e Notificações em subtelas | in-progress | `.claude/plans/painel-v2-configuracoes.plan.md` |
-| 3 | Regras de agendamento | Dono decide intervalo, antecedência, janela da agenda e prazo para o cliente remarcar/cancelar; a página pública obedece. Inclui pausa do almoço e exceções por dia em Horários (movidos do marco 2: exigem mudar o modelo de horário) | in-progress | `.claude/plans/painel-v2-regras-de-agendamento.plan.md` |
+| 2 | Configurações em decisões | Dono vê "X de N decididas", o que vale hoje e o que falta; Horários, Dados do negócio (3 abas), Comunicação e Notificações em subtelas | complete | `.claude/plans/painel-v2-configuracoes.plan.md` (PRs #48–#54) |
+| 3 | Regras de agendamento | Dono decide intervalo, antecedência, janela da agenda e prazo para o cliente remarcar/cancelar; a página pública obedece. Inclui pausa do almoço e exceções por dia em Horários (movidos do marco 2: exigem mudar o modelo de horário) | complete | `.claude/plans/painel-v2-regras-de-agendamento.plan.md` (PRs #60–#67) |
 | 4 | Hoje | Dono compartilha o link (QR, WhatsApp) e vê próximos atendimentos e ocupação sem sair da tela | complete | `.claude/plans/painel-v2-hoje.plan.md` (PRs #75, #76, `painel-v2-hoje-dia`) |
 | 5 | Listas | Serviços por categoria, Clientes e Equipe com filtros em pílulas e tabela nova | complete | `.claude/plans/painel-v2-listas.plan.md` (PRs #79, #80, #81, #82) |
-| 6 | Agenda | Resumo do dia, "Agora" e "Bloquear" direto na agenda | in-progress | `.claude/plans/painel-v2-agenda.plan.md` |
+| 6 | Agenda | Resumo do dia, "Agora" e "Bloquear" direto na agenda | complete | `.claude/plans/painel-v2-agenda.plan.md` (PRs #84, #85, #86, #87) |
 
 ## Open Questions
 - [ ] Painel v2 entra antes ou depois do G1 (infra) e do piloto da GR Barber? Se antes, atrasa o piloto; se depois, o piloto vê o painel antigo.
@@ -66,7 +66,7 @@ We'll know we're right when **uma barbearia nova chega a "todas as decisões tom
 - [x] Regras de agendamento: valores padrão para barbearias existentes (GR Barber) sem mudar o comportamento de hoje? — sim, todos os padrões reproduzem hoje (plano do marco 3).
 - [x] Prazo de cancelamento/remarcação: o que o cliente vê quando passou do prazo? — botões somem, aviso + WhatsApp da casa (dono, 2026-10-07).
 - [ ] Dados de exemplo no painel vazio valem a complexidade, ou basta estado vazio bom?
-- [ ] "Fechado" na agenda e na prévia: só o intervalo do almoço ou também bloqueios/folgas?
+- [x] "Fechado" na agenda: pausa + fora da jornada + data especial fechada, sombreados; bloqueios seguem como faixa com o motivo (marco 6, aprovado pelo dono em 2026-10-08).
 - [ ] Comodidades: a lista atual do banco cobre as opções desejadas ou precisa crescer (o concorrente tem 23)?
 
 ## Risks

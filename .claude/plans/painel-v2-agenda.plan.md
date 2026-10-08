@@ -89,8 +89,14 @@ Visual: Chrome DevTools, `teste1`, 375 e 1440; pausa e data especial de demo cri
 | Semana sem sombreado parecer inconsistente | M | decisão 2 explícita; perguntar ao dono no visual |
 
 ## Acceptance
-- [ ] PRs 6a–6e mergeados
-- [ ] Testes tocados passando; tsc e lint limpos
-- [ ] Vista de dia não oferece horário livre na pausa nem fora da jornada
-- [ ] Aprovação visual do dono (375 e 1440)
-- [ ] Patterns mirrored, not reinvented
+- [x] PRs 6a–6e mergeados (#84 expediente na ocupação, #85 grade sombreada, #86 resumo + Agora, #87 Bloquear, `docs-marco-6-agenda`)
+- [x] Testes tocados passando; tsc e lint limpos (`packages/formato` já falhava antes do marco)
+- [x] Vista de dia não oferece horário livre na pausa nem fora da jornada
+- [x] Aprovação visual do dono (375 e 1440)
+- [x] Patterns mirrored, not reinvented
+
+## Diferenças do previsto
+- O componente do resumo virou `agenda/ResumoDoPeriodo` (dia e semana), não `ResumoDoDia`.
+- O formulário extraído é um hook (`useFormularioDeBloqueio`: estado + validação) + `FormularioDeBloqueio` (campos): Folgas põe o botão no cabeçalho da seção e a janela no rodapé, os dois precisam do `salvando` fora do form.
+- Conserto junto no 6d: a coluna única (quem trabalha sozinho) não desenhava bloqueio nenhum; passou a usar o id do único expediente.
+- Janela da ocupação: o expediente vem ANTES dos bloqueios (bloqueio do dia inteiro não apaga a janela), pra agenda desenhar o bloqueio por cima com o motivo.

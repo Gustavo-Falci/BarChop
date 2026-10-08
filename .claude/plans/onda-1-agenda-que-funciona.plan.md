@@ -4,7 +4,34 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (fim de 2026-10-08 — painel v2 completo e em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (fim de 2026-10-08, noite — polimento de UI/UX e logo, tudo em produção) — vale mais que as seções abaixo
+
+**Estado:** `main` = **produção** = `4cc2296` (até o #99, conferido no ar com curl e grep no bundle e no CSS). Nada pela metade em branch nenhuma. A migração `20261010120000_logo_da_barbearia` está aplicada em produção e no banco local de desenvolvimento.
+
+**Feito em 2026-10-08 à tarde (#92–#99, UI/UX pedido pelo dono, print por print):**
+- #92 trilha "Primeiros passos": barra de progresso, próximo passo destacado (único botão amarelo), número no círculo, feitos viram selo, Recolher/Mostrar (`localStorage` `painel.trilha`), "Esperando o primeiro cliente". #93 as ações viram rodapé do cartão (`IconeSeta` novo).
+- #94 detalhe do agendamento **sem blocos**: faixa do próximo passo (caminho Pendente → Confirmado → Concluído; só as ações do estado, com verbo; Cancelar com confirmação inline; Reabrir/Reativar/Desfazer falta), corpo em duas colunas sem caixas, observações com Salvar/Descartar só quando mudam.
+- #95 página pública: capa 4:1 no desktop, atalhos Mapa/WhatsApp/Instagram no topo, lateral sem moldura com "Agendar agora" no topo (no celular segue grudado no rodapé), serviços em lista única, equipe sem cartões. #99 selo de aberto + endereço numa linha; no desktop os atalhos à direita.
+- #96 página pública e fluxo do cliente seguem o tema do sistema; o site de marketing segue claro pelo host (`scriptDeTema(hostDoSite(NEXT_PUBLIC_URL_DO_SITE))` em `src/painel/tema.ts`).
+- #97 (API, **migração**) logo: `logo_chave` + `logo_formato` (redonda/quadrada/livre), `logo_url` apagada; `POST /barbearias/me/logo?formato=` e `DELETE`; PATCH só `logoFormato`. #98 (telas) `painel/logo.ts` (sugere a moldura pelos pixels; 512px WebP com alfa — a capa segue em JPEG), `LogoDaBarbearia`, `CampoDaLogo` na aba Marca, logo na fachada (metade sobre a capa), no topo do fluxo e na marca do painel.
+- **Lição do deploy do #97:** o `migrar` tem imagem própria (target `migrar` do `api.Dockerfile`). Buildar só a `api` deixou o `migrar` velho ("No pending migrations") e a API nova deu 500 (`column barbearia.logo_chave does not exist`). Com migração: `docker compose build migrar` + `docker compose up migrar`.
+
+**G3 adiado:** o dono decidiu (2026-10-08) que a GR Barber ainda não entra em produção. Não propor até ele pedir (`/barbearias/gr-barber` dá 404 em produção — esperado).
+
+**Ambiente local:** a API de dev ficou fora do ar depois do `prisma generate` do #97 (o `tsx watch` vivo, sem servidor) — reiniciar `pnpm dev` em `apps/api`. Ao trocar de máquina, rodar `migrate deploy` nos bancos dev e test (migração nova: `20261010120000_logo_da_barbearia`).
+
+**O que falta (perguntar ao dono a ordem):**
+1. Conferir a logo no painel em produção (aba Marca e barra lateral): só os testes cobriram; a sessão local do painel tinha caído.
+2. Mais telas de UI/UX — o dono vinha mandando print por print.
+3. G4 — docs da onda 1.
+4. Sombrear também a vista de semana (hoje só o dia; precisa de 7 consultas ou rota de período).
+5. `barbearia-teste` em produção: apagar ou manter.
+6. Onda 2 (dinheiro): caixa, cobrança, planos — começar pelo PRD (`ecc:plan-prd`); preços/plano grátis do site entram aqui.
+7. Soltas: categoria "CEBELO" nos dados do dono (aparece na página pública); razão social/CNPJ/DPO "a preencher" (`apps/web/src/site/controlador.ts`); imagem de Open Graph da home; pergunta do #89 (só hora cheia clicável na grade?).
+
+**Combinados:** um PR por item, TDD RED → GREEN, português; push, PR e merge por mim com "pode mergear" do dono no turno. Telas sem pilha de caixas com título: ação principal em destaque, resto sem moldura. Deploy: o dono roda na VM sozinho e já sabe os comandos (não passar), rebuildando o `migrar` quando houver migração; eu confiro com curl e grep no bundle.
+
+## RETOMAR AQUI (fim de 2026-10-08 — painel v2 completo e em produção) — histórico
 
 **Estado:** `main` = **produção** (até o #90, conferido no ar com curl e grep no bundle do painel). Nada pela metade em branch nenhuma. **Painel v2 completo** (os 6 marcos do PRD `painel-v2.prd.md`).
 

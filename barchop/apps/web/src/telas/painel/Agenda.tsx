@@ -92,6 +92,14 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     () => (vista === "dia" ? api.barbeiro.bloqueios(data, data) : Promise.resolve([])),
     [vista, data]
   );
+  // O expediente de cada um (janela e pausa), pra sombrear o fechado e
+  // não oferecer horário livre no almoço. Vem da ocupação, que já faz a
+  // conta da API. Falhou, a grade segue só o horário da casa — a agenda
+  // não cai por um dado de apoio.
+  const ocupacao = useRequisicao(
+    () => (vista === "dia" ? api.barbeiro.ocupacaoDoDia(data) : Promise.resolve(null)),
+    [vista, data]
+  );
   const atendentes = (equipe.dados ?? [])
     .filter((membro) => membro.ativo && membro.atende && !membro.convitePendente)
     .map((membro) => ({ id: membro.id, nome: membro.nome }));
@@ -173,6 +181,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             agora,
             profissionais,
             bloqueios: bloqueios.dados ?? [],
+            expediente: vista === "dia" ? ocupacao.dados?.profissionais : undefined,
           })}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
           aoCriar={(dia, hora, barbeiroId) =>

@@ -359,3 +359,24 @@ button.diaDoCabecalho:hover .numeroDoDia {
   white-space: nowrap;
   border: 0;
 }
+
+/* Fechado no expediente do profissional (painel v2, marco 6): a mesma
+   hachura do dia fechado, numa faixa. Atrás dos eventos e sem receber
+   clique — não há o que fazer ali. */
+.fechada {
+  grid-row: var(--linha) / span var(--linhas);
+  grid-column: 1;
+  z-index: 0;
+  padding: var(--espaco-xs);
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    var(--cor-line) 6px,
+    var(--cor-line) 7px
+  );
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  pointer-events: none;
+}

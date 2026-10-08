@@ -1,18 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { EdicaoDoAgendamento, ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
-import { Campo } from "../../componentes/Campo";
+import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Chip } from "../../componentes/Chip";
 import { LadoALado } from "../../componentes/Colunas";
 import { formatarPreco } from "../../componentes/ItemDeServico";
 import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
-import { formatarDataLonga } from "../../formato/datas";
+import { formatarDataComSemana } from "../../formato/datas";
 import { rotuloDoStatus } from "../../formato/status";
+import { IconeConversa } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./DetalheDoAgendamento.module.css";
 
@@ -20,10 +22,35 @@ import estilos from "./DetalheDoAgendamento.module.css";
 // o que aconteceu no salão.
 const STATUS = ["pendente", "confirmado", "concluido", "cancelado", "no_show"] as const;
 
+// O tom de cada status, o mesmo nos botões e no selo do cabeçalho: dá
+// pra ler a situação pela cor antes de ler a palavra.
+const TOM_DO_STATUS: Record<string, "acento" | "neutro" | "ok" | "atencao" | "erro"> = {
+  pendente: "atencao",
+  confirmado: "acento",
+  concluido: "ok",
+  cancelado: "erro",
+  no_show: "erro",
+};
+
+// Uma linha de apoio por botão: "cancelado" e "não compareceu" parecem
+// a mesma coisa até alguém dizer que um é aviso e o outro é falta.
+const APOIO_DO_STATUS: Record<string, string> = {
+  pendente: "Ainda não combinado",
+  confirmado: "Combinado com o cliente",
+  concluido: "Atendimento feito",
+  cancelado: "Desmarcado com aviso",
+  no_show: "Faltou sem avisar",
+};
+
+function maiuscula(texto: string) {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 export function DetalheDoAgendamento() {
   const { id } = useParams<{ id: string }>();
   const api = useApiDoPainel();
   const agendamento = useRequisicao(() => api.barbeiro.agendamento(id), [id]);
+  const idDoCampo = useId();
 
   // O wa.me do "lembrar pelo WhatsApp", buscado já ao carregar: vira um
   // <a> de verdade. Buscar no clique e abrir com window.open depois do
@@ -38,7 +65,11 @@ export function DetalheDoAgendamento() {
 
   const [observacoes, setObservacoes] = useState("");
   const [aviso, setAviso] = useState<string | undefined>();
-  const [salvando, setSalvando] = useState(false);
+  // Qual ação está no ar: o status clicado ou as observações. Um
+  // booleano só travava os cinco botões e o Salvar juntos, e não dava
+  // pra saber qual clique estava sendo salvo.
+  const [salvando, setSalvando] = useState<string | null>(null);
+  const [observacoesSalvas, setObservacoesSalvas] = useState(false);
 
   // Sincronizado durante a renderização, e não num `useEffect`: mesmo
   // mecanismo do fix em ConfiguracoesDaBarbearia (181514d). A trava
@@ -69,60 +100,128 @@ export function DetalheDoAgendamento() {
   if (!agendamento.dados) return <p>Carregando…</p>;
 
   const atual = agendamento.dados;
+  const observacoesMudaram = observacoes !== (atual.observacoes ?? "");
 
-  async function aplicar(edicao: EdicaoDoAgendamento) {
+  async function aplicar(edicao: EdicaoDoAgendamento, qual: string) {
     setAviso(undefined);
-    setSalvando(true);
+    setObservacoesSalvas(false);
+    setSalvando(qual);
     try {
       await api.barbeiro.atualizarAgendamento(id, edicao);
+      if (qual === "observacoes") setObservacoesSalvas(true);
       agendamento.recarregar();
     } catch (causa) {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
     }
-    setSalvando(false);
+    setSalvando(null);
   }
 
   const total = atual.servicos.reduce(
     (soma, s) => soma + Math.round(Number(s.precoNoMomento) * 100),
     0
   );
+  const telefoneDiscavel = atual.cliente.telefone.replace(/\D/g, "");
+  const quando = maiuscula(formatarDataComSemana(atual.data));
 
   return (
     <div className={estilos.pagina}>
-      <h1>{atual.cliente.nome}</h1>
-      {aviso ? <Aviso>{aviso}</Aviso> : null}
-
-      {/* Lado a lado: o atendimento à esquerda, o que se muda nele à
-          direita (as telas usam a largura — pedido do dono). */}
-      <LadoALado>
-        <Secao titulo="O atendimento">
-          <p>{atual.cliente.telefone}</p>
-          <p>
-            {formatarDataLonga(atual.data)} · {atual.horaInicio}–{atual.horaFim}
-          </p>
-          <p>
-            {atual.servicos.map((s) => s.nome).join(" + ")} ·{" "}
-            {/* precoNoMomento, não o preço de hoje: é o que foi combinado
-                com aquele cliente naquele dia. */}
-            <span className={estilos.preco}>{formatarPreco((total / 100).toFixed(2))}</span>
-          </p>
-          <div className={estilos.status}>
-            <Chip tom="neutro">agendado pelo {atual.origem}</Chip>
-            {atual.presencaConfirmadaEm ? <Chip>✓ confirmou presença</Chip> : null}
-          </div>
-
-          {/* noreferrer além do noopener: o WhatsApp não precisa saber de
-              qual tela do painel o link saiu. */}
-          {lembravel && whatsapp.dados ? (
+      <CabecalhoDaPagina
+        titulo={atual.cliente.nome}
+        voltar={{ href: `/painel/agenda?vista=dia&data=${atual.data}`, rotulo: "Agenda" }}
+        selo={
+          <Chip tom={TOM_DO_STATUS[atual.status] ?? "neutro"} tamanho="pequeno">
+            {maiuscula(rotuloDoStatus(atual.status))}
+          </Chip>
+        }
+        apoio={`${quando} · ${atual.horaInicio}–${atual.horaFim}`}
+        acao={
+          // noreferrer além do noopener: o WhatsApp não precisa saber de
+          // qual tela do painel o link saiu.
+          lembravel && whatsapp.dados ? (
             <a
               className={estilos.whatsapp}
               href={whatsapp.dados}
               target="_blank"
               rel="noopener noreferrer"
             >
+              <IconeConversa width={18} height={18} />
               Lembrar pelo WhatsApp
             </a>
-          ) : null}
+          ) : null
+        }
+      />
+      {aviso ? <Aviso>{aviso}</Aviso> : null}
+
+      {/* Lado a lado: o atendimento à esquerda, o que se muda nele à
+          direita (as telas usam a largura — pedido do dono). */}
+      <LadoALado>
+        <Secao titulo="O atendimento">
+          {/* Rótulo e valor, em vez de parágrafos soltos: telefone, data
+              e serviço eram três linhas sem nome, com um vão entre cada. */}
+          <dl className={estilos.ficha}>
+            <div className={estilos.linha}>
+              <dt>Cliente</dt>
+              <dd>
+                <Link className={estilos.link} href={`/painel/clientes/${atual.cliente.id}`}>
+                  {atual.cliente.nome}
+                </Link>
+                {telefoneDiscavel ? (
+                  <a className={estilos.secundario} href={`tel:+55${telefoneDiscavel}`}>
+                    {atual.cliente.telefone}
+                  </a>
+                ) : null}
+              </dd>
+            </div>
+            <div className={estilos.linha}>
+              <dt>Quando</dt>
+              <dd>
+                {quando}
+                <span className={estilos.secundario}>
+                  {atual.horaInicio}–{atual.horaFim}
+                </span>
+              </dd>
+            </div>
+            <div className={estilos.linha}>
+              <dt>Com</dt>
+              <dd>{atual.barbeiro.nome}</dd>
+            </div>
+            <div className={estilos.linha}>
+              <dt>Serviços</dt>
+              <dd>
+                <ul className={estilos.servicos}>
+                  {atual.servicos.map((s) => (
+                    <li key={s.servicoId}>
+                      <span>
+                        {s.nome}
+                        <span className={estilos.secundario}> · {s.duracaoNoMomento} min</span>
+                      </span>
+                      <span className={estilos.valor}>{formatarPreco(s.precoNoMomento)}</span>
+                    </li>
+                  ))}
+                  {atual.servicos.length > 1 ? (
+                    <li className={estilos.total}>
+                      <span>Total</span>
+                      {/* precoNoMomento, não o preço de hoje: é o que foi
+                          combinado com aquele cliente naquele dia. */}
+                      <span className={estilos.valor}>{formatarPreco((total / 100).toFixed(2))}</span>
+                    </li>
+                  ) : null}
+                </ul>
+              </dd>
+            </div>
+          </dl>
+
+          <div className={estilos.selos}>
+            <Chip tom="neutro" tamanho="pequeno">
+              Agendado pelo {atual.origem}
+            </Chip>
+            {atual.presencaConfirmadaEm ? (
+              <Chip tom="ok" tamanho="pequeno">
+                ✓ Confirmou presença
+              </Chip>
+            ) : null}
+          </div>
+
           {/* A API não tem remarcar no escopo do barbeiro, e aceitar data e
               hora no PATCH pularia a checagem de disponibilidade inteira.
               Dizer isso é melhor do que um botão que voltaria erro. */}
@@ -130,30 +229,76 @@ export function DetalheDoAgendamento() {
         </Secao>
 
         <div className={estilos.pilha}>
-          <Secao titulo="Status">
-            <div className={estilos.status}>
-              {STATUS.map((status) => (
-                <Botao
-                  key={status}
-                  variante={status === atual.status ? "primario" : "contorno"}
-                  onClick={() => aplicar({ status })}
-                  carregando={salvando}
-                >
-                  {rotuloDoStatus(status)}
-                </Botao>
-              ))}
+          <Secao titulo="Status" descricao="Marque o que aconteceu com este atendimento.">
+            <div className={estilos.opcoes}>
+              {STATUS.map((opcao) => {
+                const marcado = opcao === atual.status;
+                return (
+                  <button
+                    key={opcao}
+                    type="button"
+                    className={estilos.opcao}
+                    data-tom={TOM_DO_STATUS[opcao]}
+                    aria-pressed={marcado}
+                    aria-busy={salvando === opcao || undefined}
+                    disabled={salvando !== null}
+                    onClick={() => {
+                      if (!marcado) void aplicar({ status: opcao }, opcao);
+                    }}
+                  >
+                    <span className={estilos.ponto} aria-hidden="true" />
+                    <span className={estilos.rotuloDaOpcao}>{rotuloDoStatus(opcao)}</span>
+                    {/* Fora do nome acessível: o botão se chama pelo
+                        status, e o leitor de tela já ouve o "pressionado". */}
+                    <span className={estilos.apoioDaOpcao} aria-hidden="true">
+                      {salvando === opcao ? "Salvando…" : APOIO_DO_STATUS[opcao]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </Secao>
 
           <Secao
             titulo="Anotações"
             acao={
-              <Botao onClick={() => aplicar({ observacoes })} carregando={salvando}>
-                Salvar observações
-              </Botao>
+              <div className={estilos.rodape}>
+                {observacoesSalvas && !observacoesMudaram ? (
+                  <span className={estilos.salvo} role="status">
+                    ✓ Salvo
+                  </span>
+                ) : null}
+                <Botao
+                  onClick={() => aplicar({ observacoes }, "observacoes")}
+                  carregando={salvando === "observacoes"}
+                  disabled={!observacoesMudaram || salvando !== null}
+                >
+                  Salvar observações
+                </Botao>
+              </div>
             }
           >
-            <Campo rotulo="Observações" valor={observacoes} onChange={setObservacoes} />
+            {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
+                desenho da descrição em CadastroDeServico. */}
+            <div className={estilos.campoLongo}>
+              <label className={estilos.rotulo} htmlFor={idDoCampo}>
+                Observações
+              </label>
+              <span className={estilos.apoio} id={`${idDoCampo}-apoio`}>
+                Só a equipe vê. Ex.: prefere máquina 2, costuma atrasar.
+              </span>
+              <textarea
+                id={idDoCampo}
+                className={estilos.area}
+                aria-describedby={`${idDoCampo}-apoio`}
+                rows={4}
+                value={observacoes}
+                onChange={(evento) => {
+                  setObservacoes(evento.target.value);
+                  setObservacoesSalvas(false);
+                }}
+              />
+            </div>
           </Secao>
         </div>
       </LadoALado>

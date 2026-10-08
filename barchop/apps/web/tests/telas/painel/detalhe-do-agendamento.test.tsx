@@ -42,10 +42,41 @@ describe("detalhe do agendamento", () => {
   it("mostra cliente, serviços e o preço congelado", async () => {
     montarPainel(<DetalheDoAgendamento />, semear());
 
-    expect(await screen.findByText(/João Silva/)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: /João Silva/ })).toBeInTheDocument();
     // precoNoMomento, não o preço de hoje: é o que foi combinado com
     // aquele cliente naquele dia.
     expect(screen.getByText("R$ 40,00")).toBeInTheDocument();
+  });
+
+  it("leva de volta pra agenda do dia e liga a ficha ao cliente e ao telefone", async () => {
+    montarPainel(<DetalheDoAgendamento />, semear());
+
+    expect(await screen.findByRole("link", { name: /agenda/i })).toHaveAttribute(
+      "href",
+      "/painel/agenda?vista=dia&data=2026-09-08"
+    );
+    expect(screen.getByRole("link", { name: "João Silva" })).toHaveAttribute("href", "/painel/clientes/c1");
+    expect(screen.getByRole("link", { name: "(11) 99999-0001" })).toHaveAttribute("href", "tel:+5511999990001");
+  });
+
+  it("marca o status atual como pressionado", async () => {
+    montarPainel(<DetalheDoAgendamento />, semear());
+
+    expect(await screen.findByRole("button", { name: /pendente/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /confirmado/i })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("só deixa salvar observações quando mudam, e avisa que salvou", async () => {
+    montarPainel(<DetalheDoAgendamento />, semear());
+
+    const salvar = await screen.findByRole("button", { name: /salvar observações/i });
+    expect(salvar).toBeDisabled();
+
+    await userEvent.type(screen.getByLabelText(/observações/i), "cliente atrasa");
+    expect(salvar).toBeEnabled();
+    await userEvent.click(salvar);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(/salvo/i);
   });
 
   it("muda o status", async () => {

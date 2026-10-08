@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
@@ -15,8 +15,12 @@ import { montarPainelComSonda } from "../../ajudantes/sondaDeCorrida";
 // dublê têm janela, os dois devolvem a data real do último agendamento.
 const AGORA = new Date("2026-09-08T10:00:00-03:00");
 
-function semear() {
+function semear(extra: Parameters<typeof criarApiClientFalso>[0] = {}) {
   return criarApiClientFalso({
+    // O "hoje" do dublê é o mesmo dia de AGORA: as faixas agora são
+    // contadas lá (como na API), e a coluna continua cortando aqui.
+    hoje: "2026-09-08",
+    ...extra,
     clientes: [
       { id: "c1", nome: "João Silva", telefone: "(11) 99999-0001", email: null, temConta: false },
       { id: "c2", nome: "Marcos Reis", telefone: "(11) 99999-0002", email: null, temConta: false },
@@ -270,6 +274,54 @@ describe("clientes no painel", () => {
     await userEvent.click(screen.getByRole("button", { name: /^todos/i }));
     expect(screen.getByText("João Silva")).toBeInTheDocument();
     expect(screen.getByText("Marcos Reis")).toBeInTheDocument();
+  });
+
+  it("as pílulas contam a carteira inteira, não só o que está carregado", async () => {
+    // Uma página de um cliente sobre dois: antes, as faixas filtravam o
+    // carregado e não podiam ter número. Agora o número vem da API.
+    montarPainel(<ListaDeClientes agora={AGORA} />, semear({ limiteDaPagina: 1 }));
+
+    const filtros = await screen.findByRole("group", { name: "Filtrar clientes" });
+    expect(within(filtros).getByRole("button", { name: "Todos 2" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(filtros).getByRole("button", { name: "Vieram em 30 dias 1" })).toBeInTheDocument();
+    expect(within(filtros).getByRole("button", { name: "Sem registro em 90 dias 1" })).toBeInTheDocument();
+  });
+
+  it("trocar a faixa pede a faixa à API e põe na URL", async () => {
+    // Filtrar no servidor é o que faz o "carregar mais" trazer o
+    // próximo da faixa, e não o próximo da carteira.
+    const falso = semear();
+    const buscar = vi.fn(falso.barbeiro.clientes);
+    falso.barbeiro.clientes = buscar;
+    montarPainel(<ListaDeClientes agora={AGORA} />, falso);
+
+    await screen.findByText("João Silva");
+    await userEvent.click(screen.getByRole("button", { name: /sem registro em 90 dias/i }));
+
+    expect(await screen.findByText("Marcos Reis")).toBeInTheDocument();
+    expect(screen.queryByText("João Silva")).not.toBeInTheDocument();
+    expect(buscar).toHaveBeenLastCalledWith("", undefined, "sumidos");
+    // replace, como a busca: linkável sem empilhar histórico.
+    expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/painel/clientes?faixa=sumidos");
+  });
+
+  it("a faixa da URL chega na chamada e na pílula", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes", query: { faixa: "recentes" } });
+    montarPainel(<ListaDeClientes agora={AGORA} />, semear());
+
+    expect(await screen.findByText("João Silva")).toBeInTheDocument();
+    expect(screen.queryByText("Marcos Reis")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /vieram em 30 dias/i })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("a faixa vai pra URL junto da busca", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes", query: { busca: "silva" } });
+    montarPainel(<ListaDeClientes agora={AGORA} />, semear());
+
+    await screen.findByText("João Silva");
+    await userEvent.click(screen.getByRole("button", { name: /vieram em 30 dias/i }));
+
+    expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/painel/clientes?busca=silva&faixa=recentes");
   });
 
   it("cadastra cliente e vai pro detalhe dele", async () => {
@@ -806,6 +858,7 @@ describe("clientes no painel", () => {
 function semearPaginado() {
   return criarApiClientFalso({
     limiteDaPagina: 1,
+    hoje: "2026-09-08",
     clientes: [
       { id: "c1", nome: "João Silva", telefone: "(11) 99999-0001", email: null, temConta: false },
       { id: "c2", nome: "Marcos Reis", telefone: "(11) 99999-0002", email: null, temConta: false },
@@ -869,6 +922,22 @@ describe("clientes no painel: páginas", () => {
     ).toBeInTheDocument();
     // O aviso fica ao lado do botão; a lista carregada continua válida.
     expect(screen.getByText("João Silva")).toBeInTheDocument();
+  });
+
+  it("carregar mais continua dentro da faixa", async () => {
+    const falso = semearPaginado();
+    const buscar = vi.fn(falso.barbeiro.clientes);
+    falso.barbeiro.clientes = buscar;
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes", query: { faixa: "sumidos" } });
+    montarPainel(<ListaDeClientes agora={AGORA} />, falso);
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: /carregar mais clientes/i })
+    );
+
+    await waitFor(() =>
+      expect(buscar).toHaveBeenLastCalledWith("", expect.any(String), "sumidos")
+    );
   });
 
   // SEM COBERTURA, e não por esquecimento: trocar a busca precisa

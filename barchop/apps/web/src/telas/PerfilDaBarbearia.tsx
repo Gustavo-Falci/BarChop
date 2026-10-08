@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
 import { Botao } from "../componentes/Botao";
+import { LogoDaBarbearia } from "../componentes/LogoDaBarbearia";
 import { formatarPreco } from "../componentes/ItemDeServico";
 import { agruparPorCategoria } from "../fluxo/categorias";
 import { agruparSemana, situacaoAgora } from "../fluxo/funcionamento";
@@ -64,6 +65,7 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
   // de "Fechado" numa barbearia recém-criada leria como fechada de vez.
   const temDiaAberto = horarios.some((dia) => !dia.fechado);
   const situacao = situacaoAgora(horarios, agora);
+  const temLogo = Boolean(dados?.logoUrl && dados.logoFormato);
 
   // O nome de cada serviço ativo, pra dizer o que cada profissional faz.
   // Serviço inativo não está na lista pública, e por isso some daqui
@@ -85,12 +87,27 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
             {dados.capaUrl ? (
               <img className={estilos.capa} src={dados.capaUrl} alt={`Capa da ${dados.nome}`} />
             ) : (
+              // Com logo, a trama fica sem as iniciais: a marca já está
+              // logo abaixo, e as duas juntas diriam o mesmo duas vezes.
               <div className={estilos.monograma} aria-hidden="true">
-                <span>{iniciais(dados.nome)}</span>
+                {temLogo ? null : <span>{iniciais(dados.nome)}</span>}
               </div>
             )}
           </div>
-          <div className={estilos.identidade}>
+          <div className={estilos.identidade} data-com-logo={temLogo ? "" : undefined}>
+            {/* A logo encaixada na borda de baixo da capa, como foto de
+                perfil — com moldura (redonda ou quadrada), metade sobre a
+                capa; sem moldura, inteira aqui embaixo, que uma logo solta
+                sobre a foto brigaria com ela. Decorativa: o nome é o <h1>. */}
+            {temLogo ? (
+              <LogoDaBarbearia
+                url={dados.logoUrl!}
+                formato={dados.logoFormato!}
+                nome={dados.nome}
+                decorativa
+                className={estilos.logo}
+              />
+            ) : null}
             {/* Aqui a barra da barbearia não aparece (o nome já é o
                 título), então o caminho até a conta mora na fachada. */}
             <nav className={estilos.conta} aria-label="Sua conta">

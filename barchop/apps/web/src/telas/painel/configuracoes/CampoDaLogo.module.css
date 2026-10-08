@@ -1,0 +1,50 @@
+/* A prévia à esquerda, num quadro do tamanho da maior logo, e os
+   controles à direita; no celular, um embaixo do outro. */
+.campo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--espaco-lg);
+  align-items: start;
+}
+
+.vitrine {
+  display: grid;
+  place-items: center;
+  width: 176px;
+  height: 176px;
+  border: var(--borda-hairline) dashed var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+}
+
+.vazia {
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.controles {
+  display: grid;
+  gap: var(--espaco-sm);
+  justify-items: start;
+}
+
+.escolher {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
+.arquivo {
+  font-size: var(--texto-sm);
+}
+
+.apoio {
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+}
+
+@media (max-width: 640px) {
+  .campo {
+    grid-template-columns: 1fr;
+  }
+}

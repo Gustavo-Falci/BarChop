@@ -1,0 +1,64 @@
+/* O tamanho é a altura da moldura; nas molduras redonda e quadrada a
+   largura é a mesma. Sem moldura, a largura acompanha a imagem até três
+   vezes a altura — uma logo larga cabe sem virar um selo minúsculo. */
+.moldura {
+  --lado: 56px;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  height: var(--lado);
+  overflow: hidden;
+}
+
+.p {
+  --lado: 32px;
+}
+
+.m {
+  --lado: 56px;
+}
+
+.g {
+  --lado: 112px;
+}
+
+/* Redonda e quadrada: a moldura do idioma da casa (borda cheia), com o
+   fundo da superfície por trás de uma logo transparente. `cover`: o
+   desenho preenche a moldura, como numa foto de perfil. */
+.redonda,
+.quadrada {
+  width: var(--lado);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  background: var(--cor-surface);
+}
+
+.redonda {
+  border-radius: 50%;
+}
+
+.quadrada {
+  border-radius: calc(var(--lado) * 0.22);
+}
+
+.redonda .imagem,
+.quadrada .imagem {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Sem moldura: nada de borda nem fundo — o formato é o do desenho.
+   `contain` pra nunca cortar uma ponta da logo. */
+.livre {
+  max-width: calc(var(--lado) * 3);
+}
+
+.livre .imagem {
+  max-width: 100%;
+  max-height: var(--lado);
+  object-fit: contain;
+}
+
+.imagem {
+  display: block;
+}

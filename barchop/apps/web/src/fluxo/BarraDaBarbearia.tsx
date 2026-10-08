@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
+import { LogoDaBarbearia } from "../componentes/LogoDaBarbearia";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { LinkDaConta } from "./LinkDaConta";
 import estilos from "./BarraDaBarbearia.module.css";
@@ -69,6 +70,17 @@ function Marca({ slug }: { slug: string }) {
   return (
     <>
       <Link href={noHost(`/${slug}`)} className={estilos.marca}>
+        {/* A logo antes do nome, decorativa: o nome escrito já é o que o
+            link diz. */}
+        {dados.logoUrl && dados.logoFormato ? (
+          <LogoDaBarbearia
+            url={dados.logoUrl}
+            formato={dados.logoFormato}
+            nome={dados.nome}
+            tamanho="p"
+            decorativa
+          />
+        ) : null}
         {dados.nome}
       </Link>
       <LinkDaConta slug={slug} />

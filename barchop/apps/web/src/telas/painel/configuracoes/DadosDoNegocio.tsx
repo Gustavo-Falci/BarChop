@@ -36,6 +36,7 @@ import {
   IconeXicara,
 } from "../../../painel/icones";
 import { enderecoDaBarbearia } from "../../../tenant/endereco";
+import { CampoDaLogo } from "./CampoDaLogo";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import estilos from "./Configuracoes.module.css";
 
@@ -118,6 +119,7 @@ export function DadosDoNegocio() {
 
 function Dados() {
   const api = useApiDoPainel();
+  const { atualizarMarca } = usePainel();
   const id = useId();
   // A aba pode vir na URL (?aba=marca) — é como o índice e a "próxima
   // área" podem apontar direto pra ela.
@@ -402,8 +404,20 @@ function Dados() {
         {aba === "marca" ? (
           <Secao
             titulo="Como sua página abre"
-            descricao="A capa é a faixa larga no topo da sua página pública. Salva assim que você escolhe a imagem."
+            descricao="A logo aparece na sua página, no agendamento e aqui no painel; a capa é a faixa larga no topo da página. As duas salvam assim que você escolhe a imagem."
           >
+            <CampoDaLogo
+              nome={barbearia.dados.nome}
+              inicial={
+                barbearia.dados.logoUrl && barbearia.dados.logoFormato
+                  ? { logoUrl: barbearia.dados.logoUrl, logoFormato: barbearia.dados.logoFormato }
+                  : null
+              }
+              aoMudar={(nova) => {
+                marcar("dados_do_negocio");
+                atualizarMarca(nova);
+              }}
+            />
             <CampoDeImagem
               rotulo="Capa"
               alt="Capa da barbearia"

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Botao } from "../componentes/Botao";
+import { LogoDaBarbearia } from "../componentes/LogoDaBarbearia";
 import { aplicarBarra, gravarBarra, lerBarra } from "./barra";
 import {
   IconeBloqueio,
@@ -40,7 +41,7 @@ const LINKS = [
 const ID_DAS_SECOES = "secoes-do-painel";
 
 export function NavegacaoDoPainel() {
-  const { slug, sair, perfil } = usePainel();
+  const { slug, sair, perfil, marca } = usePainel();
   const links = LINKS.filter((link) => !link.soDoDono || perfil.papel === "dono");
   const caminho = usePathname();
   const [tema, setTema] = useState<Tema>("claro");
@@ -77,8 +78,23 @@ export function NavegacaoDoPainel() {
       {/* A inicial fica num atributo, e não num segundo elemento, pro
           CSS poder trocar o slug por ela quando a barra encolhe sem que
           exista um nó a mais pro leitor de tela anunciar. */}
-      <strong className={estilos.marca} data-inicial={slug.slice(0, 1).toUpperCase()}>
-        {slug}
+      {/* Com logo, ela vem antes do nome, na moldura que o dono escolheu;
+          recolhida a barra, fica só ela (o nome some só da vista). */}
+      <strong
+        className={estilos.marca}
+        data-inicial={slug.slice(0, 1).toUpperCase()}
+        data-com-logo={marca ? "" : undefined}
+      >
+        {marca ? (
+          <LogoDaBarbearia
+            url={marca.logoUrl}
+            formato={marca.logoFormato}
+            nome={slug}
+            tamanho="p"
+            decorativa
+          />
+        ) : null}
+        <span className={estilos.nomeDaMarca}>{slug}</span>
       </strong>
 
       <button

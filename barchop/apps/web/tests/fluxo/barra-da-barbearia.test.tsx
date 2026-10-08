@@ -35,6 +35,19 @@ describe("barra da barbearia", () => {
     expect(marca).toHaveAttribute("href", "/gr-barber");
   });
 
+  it("com logo, ela vem antes do nome, na moldura escolhida, sem mudar o nome do link", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.enviarLogo(new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])]), "quadrada");
+    montar(falso);
+
+    // Decorativa: o link continua se chamando "GR Barber", não "Logo da
+    // GR Barber GR Barber".
+    const marca = await screen.findByRole("link", { name: "GR Barber" });
+    const moldura = marca.querySelector('[data-formato="quadrada"]');
+    expect(moldura).not.toBeNull();
+    expect(moldura!.querySelector("img")).toHaveAttribute("alt", "");
+  });
+
   it("some na página da própria barbearia, onde o nome já é o título", () => {
     // Lá o <h1> é o nome. Com a barra, o mesmo texto apareceria duas
     // vezes, um colado no outro — o que se lê como defeito.

@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import type { PerfilBarbeiro } from "@barchop/types";
+import type { FormatoDaLogo, PerfilBarbeiro } from "@barchop/types";
 import {
   encerrarSessaoDoBarbeiro,
   EVENTO_DE_SESSAO,
@@ -19,9 +19,17 @@ import {
 import { registrarSaidaDoPainel } from "../sessao/cliente-da-api";
 import { useApiDoPainel } from "./ProvedorDoPainel";
 
+// A logo da barbearia, pra marca da barra lateral. Nula sem logo — e
+// enquanto a barbearia não chegou: a barra mostra a inicial até lá.
+export type MarcaDoPainel = { logoUrl: string; logoFormato: FormatoDaLogo } | null;
+
 interface Painel {
   perfil: PerfilBarbeiro;
   slug: string;
+  marca: MarcaDoPainel;
+  // A aba Marca troca a logo e avisa por aqui: a barra muda na hora, sem
+  // esperar a próxima leitura da barbearia.
+  atualizarMarca: (marca: MarcaDoPainel) => void;
   sair: () => void;
   // O perfil é lido uma vez, ao abrir o painel. Quem muda o próprio
   // papel (Equipe) relê, senão a barra seguiria mostrando o que o papel
@@ -44,6 +52,7 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
   // depois de montar — sem acompanhar o evento, o novo agendamento
   // seguiria consultando a disponibilidade pelo endereço velho.
   const [slug, setSlug] = useState(() => sessaoDaBarbearia.ler() ?? "");
+  const [marca, setMarca] = useState<MarcaDoPainel>(null);
 
   useEffect(() => {
     const acompanhar = () => setSlug(sessaoDaBarbearia.ler() ?? "");
@@ -97,6 +106,9 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
     api.barbeiro
       .minhaBarbearia()
       .then((barbearia) => {
+        if (vivo && barbearia.logoUrl && barbearia.logoFormato) {
+          setMarca({ logoUrl: barbearia.logoUrl, logoFormato: barbearia.logoFormato });
+        }
         if (vivo && sessaoDoBarbeiro.ler() && barbearia.slug !== sessaoDaBarbearia.ler()) {
           sessaoDaBarbearia.gravar(barbearia.slug);
         }
@@ -124,7 +136,7 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
 
   return (
     <Contexto.Provider
-      value={{ perfil, slug, sair, recarregarPerfil }}
+      value={{ perfil, slug, marca, atualizarMarca: setMarca, sair, recarregarPerfil }}
     >
       {children}
     </Contexto.Provider>

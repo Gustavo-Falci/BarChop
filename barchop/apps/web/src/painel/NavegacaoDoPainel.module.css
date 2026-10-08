@@ -55,6 +55,26 @@
   text-overflow: ellipsis;
 }
 
+/* O nome dentro da marca: é ele que corta com reticências, agora que a
+   marca pode ter a logo ao lado. */
+.nomeDaMarca {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Com logo, a marca deixa de ser o selo amarelo: a logo já é a cor da
+   barbearia, e ela dentro de um selo amarelo virava adesivo em cima de
+   adesivo. Fica a logo e o nome, lado a lado. */
+.marca[data-com-logo] {
+  gap: var(--espaco-sm);
+  padding: var(--espaco-xs) 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--cor-ink);
+}
+
 .links {
   display: flex;
   flex-direction: column;
@@ -242,6 +262,27 @@
   padding: 0;
   font-size: var(--texto-lg);
   color: transparent;
+}
+
+/* Recolhida e com logo: só a logo, centrada. O nome sai da vista mas
+   fica pro leitor de tela; a inicial do ::after não aparece. */
+:global(html[data-barra="recolhida"]) .marca[data-com-logo] {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+:global(html[data-barra="recolhida"]) .marca[data-com-logo] .nomeDaMarca {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:global(html[data-barra="recolhida"]) .marca[data-com-logo]::after {
+  content: none;
 }
 
 :global(html[data-barra="recolhida"]) .marca::after {

@@ -20,6 +20,13 @@
   gap: var(--espaco-xs);
 }
 
+/* Com "Hoje" e "Agora" lado a lado, no celular o título não cabe na
+   mesma linha: desce, em vez de passar da borda. */
+.navegacao {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .titulo {
   margin-inline-start: var(--espaco-sm);
   font-size: var(--texto-xl);

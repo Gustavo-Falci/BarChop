@@ -29,3 +29,9 @@
     flex: 0 1 auto;
   }
 }
+
+/* A barra e, embaixo, a faixa de resumo (painel v2, marco 6). */
+.topo {
+  display: grid;
+  gap: var(--espaco-sm);
+}

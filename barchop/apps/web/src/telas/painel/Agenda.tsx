@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Aviso } from "../../componentes/Aviso";
 import { GradeDeTempo } from "../../componentes/GradeDeTempo";
@@ -11,6 +12,7 @@ import { diasDaSemana, gradeDeTempo, gradeDoMes } from "../../painel/grade";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
+import { ResumoDoPeriodo } from "./agenda/ResumoDoPeriodo";
 import estilos from "./Agenda.module.css";
 
 const VISTAS: Vista[] = ["dia", "semana", "mes"];
@@ -111,6 +113,27 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     router.push(`/painel/agenda?vista=${proxima}&data=${proximaData}`);
   }
 
+  // "Agora": a régua do agora no centro da grade. Fora de hoje, navega
+  // primeiro e rola quando a grade de hoje aparecer.
+  const hoje = hojeIso(agora);
+  const [rolarQuandoCarregar, setRolarQuandoCarregar] = useState(false);
+  function rolarAteAgora(): boolean {
+    const regua = document.querySelector('[data-testid="regua-do-agora"]');
+    regua?.scrollIntoView({ block: "center", behavior: "smooth" });
+    return regua !== null;
+  }
+  function irParaAgora() {
+    if (data === hoje) {
+      rolarAteAgora();
+      return;
+    }
+    setRolarQuandoCarregar(true);
+    irPara(vista, hoje);
+  }
+  useEffect(() => {
+    if (rolarQuandoCarregar && data === hoje && rolarAteAgora()) setRolarQuandoCarregar(false);
+  }, [rolarQuandoCarregar, data, hoje, agendamentos.dados]);
+
   if (agendamentos.erro) {
     return (
       <Aviso>
@@ -145,22 +168,41 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           agendamentos saiu junto com o cabeçalho de página — a agenda
           mostra os agendamentos, e contar o que está à vista é
           informação repetida. */}
-      <SeletorDeVista
-        vista={vista}
-        titulo={titulo}
-        aoTrocarVista={(proxima) => irPara(proxima, data)}
-        aoAndar={(passos) =>
-          irPara(
-            vista,
-            vista === "dia"
-              ? somarDias(data, passos)
-              : vista === "semana"
-                ? somarDias(data, passos * 7)
-                : somarMeses(data, passos)
-          )
-        }
-        aoVoltarAHoje={() => irPara(vista, hojeIso(agora))}
-      />
+      {/* Barra e resumo num bloco só: a página é uma grade de duas
+          linhas (topo e agenda), e a agenda tem que ficar com a linha que
+          sobra — um terceiro filho roubaria dela. */}
+      <div className={estilos.topo}>
+        <SeletorDeVista
+          vista={vista}
+          titulo={titulo}
+          aoTrocarVista={(proxima) => irPara(proxima, data)}
+          aoAndar={(passos) =>
+            irPara(
+              vista,
+              vista === "dia"
+                ? somarDias(data, passos)
+                : vista === "semana"
+                  ? somarDias(data, passos * 7)
+                  : somarMeses(data, passos)
+            )
+          }
+          aoVoltarAHoje={() => irPara(vista, hojeIso(agora))}
+          aoIrParaAgora={vista === "mes" ? undefined : irParaAgora}
+        />
+
+        {vista === "mes" ? null : (
+          <ResumoDoPeriodo
+            periodo={vista === "dia" ? "dia" : "semana"}
+            agendamentos={agendamentos.dados.filter((a) =>
+              vista === "dia" ? a.data === data : semana.includes(a.data)
+            )}
+            agora={agora}
+            ehHoje={vista === "dia" && data === hoje}
+            ocupacao={vista === "dia" ? ocupacao.dados : undefined}
+            soDoProfissional={!daEquipe}
+          />
+        )}
+      </div>
 
       {vista === "mes" ? (
         <GradeDoMes

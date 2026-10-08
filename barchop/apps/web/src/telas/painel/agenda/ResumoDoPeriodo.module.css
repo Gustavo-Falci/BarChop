@@ -1,0 +1,20 @@
+/* Uma linha de números acima da grade, separados por ponto médio — lê
+   de relance e quebra sozinha no celular. */
+.faixa {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs) var(--espaco-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+/* O ponto vai no FIM de cada item, e não no começo: quando a faixa
+   quebra no celular, a linha nova não começa com um ponto solto. */
+.faixa li:not(:last-child)::after {
+  content: "·";
+  margin-inline-start: var(--espaco-md);
+  color: var(--cor-muted);
+}

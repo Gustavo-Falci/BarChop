@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { prisma } from "@barchop/database";
+import { FORMATOS_DA_LOGO } from "@barchop/formato";
 import { buildApp } from "../../src/app";
 import type { App } from "../../src/tipos";
 import { auth, criarMembroComToken } from "../helpers/barbearia";
@@ -207,6 +209,21 @@ describe("logo da barbearia", () => {
     expect(publico.logoUrl).toBeNull();
     expect(publico.logoFormato).toBeNull();
     expect((await app.inject({ method: "GET", url: caminho(logoUrl) })).statusCode).toBe(404);
+  });
+
+  it("o banco aceita toda a lista de formatos do código, e nada fora dela", async () => {
+    // A lista mora no @barchop/formato e o CHECK na migration
+    // 20261010120000_logo_da_barbearia: este teste impede os dois de
+    // divergirem.
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    for (const formato of FORMATOS_DA_LOGO) {
+      await prisma.barbearia.update({ where: { id: agenda.barbeariaId }, data: { logoFormato: formato } });
+    }
+    await expect(
+      prisma.barbearia.update({ where: { id: agenda.barbeariaId }, data: { logoFormato: "oval" } })
+    ).rejects.toThrow();
   });
 
   it("o formato troca pelo PATCH, sem reenviar a imagem", async () => {

@@ -109,6 +109,7 @@ describe("perfil da barbearia", () => {
       telefone: null,
       endereco: null,
       logoUrl: null,
+      logoFormato: null,
       sobre: null,
       whatsapp: null,
       instagram: null,

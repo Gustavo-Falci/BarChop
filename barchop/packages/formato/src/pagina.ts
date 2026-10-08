@@ -26,3 +26,11 @@ export type FormaDePagamento = (typeof FORMAS_DE_PAGAMENTO)[number];
 // produto. Letras, números, ponto e sublinhado, até 30 — a regra do
 // próprio Instagram.
 export const PADRAO_INSTAGRAM = "^[A-Za-z0-9._]{1,30}$";
+
+// A moldura da logo na página e no painel. "livre" é sem moldura: a
+// imagem inteira, no formato que o dono desenhou. O navegador sugere pelo
+// arquivo e o dono confirma; o banco tem um CHECK com os mesmos valores
+// (migration 20261010120000_logo_da_barbearia).
+export const FORMATOS_DA_LOGO = ["redonda", "quadrada", "livre"] as const;
+
+export type FormatoDaLogo = (typeof FORMATOS_DA_LOGO)[number];

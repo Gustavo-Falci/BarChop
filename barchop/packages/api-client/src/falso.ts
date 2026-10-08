@@ -20,6 +20,7 @@ import type {
   DiaDaJornada,
   EdicaoDeExcecao,
   ExcecaoDeHorario,
+  FormatoDaLogo,
   HorarioSerializado,
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
@@ -181,6 +182,7 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
   telefone: "(11) 3333-4444",
   endereco: "Rua das Tesouras, 123",
   logoUrl: null,
+  logoFormato: null,
   sobre: "Barbearia de bairro desde 2012. Corte na tesoura e barba na navalha.",
   whatsapp: null,
   instagram: null,
@@ -1010,6 +1012,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           estado.lembreteAntecedenciaHoras = lembreteAntecedenciaHoras;
         }
         estado.perfil = { ...estado.perfil, ...doPerfil };
+        // Como a API: sem arquivo não há moldura.
+        if (!estado.perfil.logoUrl) estado.perfil = { ...estado.perfil, logoFormato: null };
         decidir(areasTocadas(edicao));
         return barbeariaDoPainel();
       },
@@ -1238,6 +1242,19 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async removerCapa() {
         estado.perfil = { ...estado.perfil, capaUrl: null };
+      },
+      async enviarLogo(arquivo: Blob, formato: FormatoDaLogo) {
+        await exigirImagem(arquivo, 2 * 1024 * 1024);
+        if (!["redonda", "quadrada", "livre"].includes(formato)) {
+          throw new ErroDaApi(400, "requisicao_invalida", "formato da logo fora da lista");
+        }
+        const logoUrl = urlFalsa("logo");
+        estado.perfil = { ...estado.perfil, logoUrl, logoFormato: formato };
+        decidir(["dados_do_negocio"]);
+        return { logoUrl, logoFormato: formato };
+      },
+      async removerLogo() {
+        estado.perfil = { ...estado.perfil, logoUrl: null, logoFormato: null };
       },
       async enviarFotoDoMembro(id: string, arquivo: Blob) {
         membroOu404(id);

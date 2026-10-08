@@ -55,7 +55,6 @@ model Barbearia {
   slug                      String   @unique @db.VarChar(80)
   telefone                  String?  @db.VarChar(20)
   endereco                  String?  @db.VarChar(255)
-  logoUrl                   String?  @map("logo_url")
   // Texto de apresentação da home pública: o que a barbearia diz de si
   // pra quem abriu o link no WhatsApp. Anulável porque toda barbearia
   // já cadastrada nasce sem ele, e porque a home tem que funcionar sem
@@ -78,6 +77,11 @@ model Barbearia {
   formasDePagamento         String[] @default([]) @map("formas_pagamento")
   // Chave da capa no armazenamento (bloco E2); a URL sai da config.
   capaChave                 String?  @map("capa_chave") @db.VarChar(200)
+  // A logo, como a capa: a chave no armazenamento, e o formato da
+  // moldura (redonda, quadrada ou livre — CHECK na migration
+  // 20261010120000_logo_da_barbearia, lista em @barchop/formato).
+  logoChave                 String?  @map("logo_chave") @db.VarChar(200)
+  logoFormato               String?  @map("logo_formato")
   // As duas marcas da trilha de primeiros passos (bloco F2) que não se
   // deduzem do resto: o link copiado e o "trabalho sozinho".
   linkCompartilhadoEm       DateTime? @map("link_compartilhado_em") @db.Timestamptz

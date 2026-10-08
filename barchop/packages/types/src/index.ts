@@ -73,7 +73,10 @@ export interface BarbeariaSerializada extends RegrasDeAgendamento {
   slug: string;
   telefone: string | null;
   endereco: string | null;
+  // A logo (bloco da marca), montada da chave guardada como a capa, e a
+  // moldura em que ela aparece. Os dois nulos juntos: sem logo.
   logoUrl: string | null;
+  logoFormato: FormatoDaLogo | null;
   // Texto de apresentação da home pública. Anulável porque toda
   // barbearia nasce sem ele — a home tem que funcionar assim.
   sobre: string | null;
@@ -87,6 +90,10 @@ export interface BarbeariaSerializada extends RegrasDeAgendamento {
   // A capa da página pública (bloco E2), montada da chave guardada.
   capaUrl: string | null;
 }
+
+// A moldura da logo. Mesmos valores de FORMATOS_DA_LOGO em
+// @barchop/formato (o banco tem o CHECK).
+export type FormatoDaLogo = "redonda" | "quadrada" | "livre";
 
 export type AntecedenciaDoLembrete = 2 | 12 | 24;
 

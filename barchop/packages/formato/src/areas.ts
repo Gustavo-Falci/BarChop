@@ -18,12 +18,13 @@ export const AREAS_DE_CONFIGURACAO = [
 export type AreaDeConfiguracao = (typeof AREAS_DE_CONFIGURACAO)[number];
 
 // Campo do PATCH /barbearias/me → a área que ele decide. Os horários e
-// a capa têm rota própria e marcam a área deles direto.
+// as imagens (capa e logo) têm rota própria e marcam a área deles direto;
+// trocar só o formato da logo vem por aqui.
 const AREA_DO_CAMPO: Record<string, AreaDeConfiguracao> = {
   nome: "dados_do_negocio",
   endereco: "dados_do_negocio",
   sobre: "dados_do_negocio",
-  logoUrl: "dados_do_negocio",
+  logoFormato: "dados_do_negocio",
   comodidades: "dados_do_negocio",
   formasDePagamento: "dados_do_negocio",
   telefone: "comunicacao",

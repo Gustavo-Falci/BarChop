@@ -3,6 +3,7 @@ import {
   ANTECEDENCIAS_MINUTOS,
   COMODIDADES,
   FORMAS_DE_PAGAMENTO,
+  FORMATOS_DA_LOGO,
   INTERVALOS_MINUTOS,
   JANELAS_DIAS,
   PADRAO_INSTAGRAM,
@@ -46,13 +47,10 @@ const corpoPatchBarbearia = {
     // com dangerouslySetInnerHTML, que transformaria este campo num
     // XSS armazenado servido na página mais pública do produto.
     sobre: { type: ["string", "null"], maxLength: 1000 },
-    // Só http(s): o campo vai direto pro `src` de uma imagem nas telas,
-    // e um "javascript:" ali seria XSS servido pela nossa API.
-    logoUrl: {
-      type: ["string", "null"],
-      pattern: "^https?://",
-      maxLength: 500,
-    },
+    // Só a moldura da logo: o arquivo entra por POST /barbearias/me/logo
+    // (routers/imagens.ts), nunca como URL digitada — `logoUrl` aqui vira
+    // 400 pelo additionalProperties.
+    logoFormato: { type: "string", enum: [...FORMATOS_DA_LOGO] },
     // Quanto antes do horário sai o lembrete. Mudar não move os que já
     // estão na fila: a antecedência é lida quando o lembrete é agendado.
     lembreteAntecedenciaHoras: { type: "integer", enum: [2, 12, 24] },

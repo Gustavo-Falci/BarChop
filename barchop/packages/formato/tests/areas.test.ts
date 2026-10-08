@@ -21,7 +21,7 @@ describe("áreas das Configurações", () => {
     ["nome", "dados_do_negocio"],
     ["endereco", "dados_do_negocio"],
     ["sobre", "dados_do_negocio"],
-    ["logoUrl", "dados_do_negocio"],
+    ["logoFormato", "dados_do_negocio"],
     ["comodidades", "dados_do_negocio"],
     ["formasDePagamento", "dados_do_negocio"],
     ["telefone", "comunicacao"],

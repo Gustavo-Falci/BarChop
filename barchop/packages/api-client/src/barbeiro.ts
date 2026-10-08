@@ -2,6 +2,7 @@ import type {
   AgendamentoComCliente,
   AgendamentoSerializado,
   AntecedenciaDoLembrete,
+  FormatoDaLogo,
   RegrasDeAgendamento,
   BarbeariaDoPainel,
   BloqueioSerializado,
@@ -55,7 +56,8 @@ export interface EdicaoDaBarbearia extends Partial<RegrasDeAgendamento> {
   nome?: string;
   telefone?: string | null;
   endereco?: string | null;
-  logoUrl?: string | null;
+  // Só a moldura da logo; o arquivo vai por `enviarLogo`.
+  logoFormato?: FormatoDaLogo;
   // Texto de apresentação da home pública; `null` limpa.
   sobre?: string | null;
   // Quanto antes do horário sai o lembrete. Não move os já agendados.
@@ -477,6 +479,27 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     async removerCapa(): Promise<void> {
       await requisicao("/barbearias/me/capa", { metodo: "DELETE", comToken: true });
+    },
+
+    // A logo e a moldura dela juntas: o formato que o navegador sugeriu e
+    // o dono confirmou vai na query. Quem chama já reduziu a imagem,
+    // mantendo a transparência.
+    async enviarLogo(
+      arquivo: Blob,
+      formato: FormatoDaLogo
+    ): Promise<{ logoUrl: string; logoFormato: FormatoDaLogo }> {
+      const formulario = new FormData();
+      formulario.append("arquivo", arquivo, "logo");
+      return requisicao("/barbearias/me/logo", {
+        metodo: "POST",
+        query: { formato },
+        formulario,
+        comToken: true,
+      });
+    },
+
+    async removerLogo(): Promise<void> {
+      await requisicao("/barbearias/me/logo", { metodo: "DELETE", comToken: true });
     },
 
     async enviarFotoDoMembro(id: string, arquivo: Blob): Promise<string> {

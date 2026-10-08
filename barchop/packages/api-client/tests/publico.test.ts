@@ -25,6 +25,7 @@ describe("api pública", () => {
         telefone: null,
         endereco: null,
         logoUrl: null,
+        logoFormato: null,
         horarios: [],
         barbeiros: [{ id: "bb1", nome: "Rafael" }],
       })

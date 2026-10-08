@@ -4,16 +4,456 @@
   align-content: start;
 }
 
-/* A coluna da direita: status em cima, observações embaixo. */
-.pilha {
-  display: grid;
-  gap: var(--espaco-lg);
-}
-.status { display: flex; flex-wrap: wrap; gap: var(--espaco-sm); }
-.preco { font-weight: 600; }
-.nota { font-size: var(--texto-sm); }
+/* O lembrete é a ação de contato da tela: pílula de contorno com o
+   ícone, no canto do cabeçalho. */
 .whatsapp {
-  justify-self: start;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
   color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 var(--cor-shadow);
+  transition-property: transform, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.whatsapp:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+.whatsapp:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--cor-shadow);
+}
+
+/* ---------- A faixa do próximo passo ---------- */
+
+/* A única moldura da tela. A borda esquerda grossa leva a cor do status:
+   dá pra saber a situação de longe, antes de ler. */
+.faixa {
+  --tom: var(--cor-ink-soft);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaco-md) var(--espaco-lg);
+  padding: var(--espaco-md) var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-left-width: 8px;
+  border-left-color: var(--tom);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+.faixa[data-tom="atencao"] {
+  --tom: var(--cor-atencao);
+}
+
+.faixa[data-tom="acento"] {
+  --tom: var(--cor-accent);
+}
+
+.faixa[data-tom="ok"] {
+  --tom: var(--cor-ok);
+}
+
+.faixa[data-tom="erro"] {
+  --tom: var(--cor-erro);
+}
+
+.situacao {
+  display: grid;
+  gap: var(--espaco-xs);
+  min-width: 0;
+}
+
+/* Pendente → Confirmado → Concluído: o caminho do atendimento, com o
+   passo atual em destaque e os feitos marcados. */
+.caminho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.etapa {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink-soft);
+}
+
+/* O traço entre etapas, desenhado antes de cada uma menos a primeira. */
+.etapa + .etapa::before {
+  content: "";
+  width: 2rem;
+  height: 2px;
+  margin-right: var(--espaco-xs);
+  border-radius: var(--raio-pill);
+  background: var(--cor-line);
+}
+
+.etapa[data-estado="feito"] + .etapa::before {
+  background: var(--cor-ink);
+}
+
+.etapa[data-estado="atual"] {
+  color: var(--cor-ink);
+}
+
+.marca {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-pill);
+}
+
+.etapa[data-estado="feito"] .marca {
+  border-color: var(--cor-ink);
+  background: var(--cor-ink);
+  color: var(--cor-surface);
+}
+
+.etapa[data-estado="atual"] .marca {
+  border-color: var(--cor-ink);
+  background: var(--tom);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tom) 30%, transparent);
+}
+
+.frase {
+  margin: 0;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.principal,
+.secundaria,
+.perigo,
+.discreta,
+.discretaPerigo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition-property: transform, box-shadow, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* O próximo passo: o amarelo da casa, com a sombra offset. */
+.principal {
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+}
+
+.principal:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+.principal:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--cor-shadow);
+}
+
+.secundaria {
+  background: transparent;
+  color: var(--cor-ink);
+}
+
+.secundaria:hover:not(:disabled) {
+  background: var(--cor-pale-yellow);
+}
+
+/* Cancelar fica sem moldura, em vermelho: disponível, mas sem competir
+   com o próximo passo. */
+.discreta,
+.discretaPerigo {
+  border-color: transparent;
+  background: transparent;
+  color: var(--cor-ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.discretaPerigo {
+  color: var(--cor-erro);
+}
+
+.discreta:hover,
+.discretaPerigo:hover {
+  color: var(--cor-ink);
+}
+
+.perigo {
+  border-color: var(--cor-erro);
+  background: var(--cor-erro);
+  color: var(--cor-surface);
+}
+
+.principal:disabled,
+.secundaria:disabled,
+.perigo:disabled,
+.discretaPerigo:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.principal:focus-visible,
+.secundaria:focus-visible,
+.perigo:focus-visible,
+.discreta:focus-visible,
+.discretaPerigo:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.confirmar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espaco-sm);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}
+
+.nota {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: var(--espaco-sm);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+/* ---------- O corpo, sem caixas ---------- */
+
+/* Duas colunas separadas por um fio vertical; no celular, uma só, com
+   o fio deitado entre elas. */
+.corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.coluna {
+  display: grid;
+  gap: var(--espaco-xl);
+  align-content: start;
+  padding: var(--espaco-sm) var(--espaco-xl);
+}
+
+.coluna:first-child {
+  padding-left: 0;
+}
+
+.coluna + .coluna {
+  border-left: var(--borda-hairline) solid var(--cor-line);
+  padding-right: 0;
+}
+
+.grupo {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+/* Rótulo miúdo no lugar do título de bloco: organiza sem pesar. */
+.rotuloDoGrupo {
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+.servicos {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.servicos li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+}
+
+.valor {
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  padding-top: var(--espaco-sm);
+  border-top: var(--borda-hairline) dashed var(--cor-line);
+  font-weight: 700;
+}
+
+.secundario {
+  font-size: var(--texto-sm);
+  font-weight: 400;
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.cliente {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+}
+
+.inicial {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-pale-yellow);
+  color: var(--cor-ink);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.dadosDoCliente {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.link {
+  justify-self: start;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.telefone {
+  justify-self: start;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.selos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+.area {
+  min-height: 7.5rem;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-family: var(--fonte-corpo), system-ui, sans-serif;
+  font-size: var(--texto-md);
+  resize: vertical;
+}
+
+.area::placeholder {
+  color: var(--cor-placeholder);
+}
+
+.area:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.rodapeDoCampo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+}
+
+.botoesDoCampo {
+  display: flex;
+  gap: var(--espaco-sm);
+}
+
+.salvo {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ok);
+}
+
+@media (max-width: 800px) {
+  .faixa {
+    grid-template-columns: 1fr;
+  }
+
+  .acoes,
+  .confirmar {
+    justify-content: flex-start;
+  }
+
+  .corpo {
+    grid-template-columns: 1fr;
+  }
+
+  .coluna,
+  .coluna:first-child {
+    padding: var(--espaco-md) 0;
+  }
+
+  .coluna + .coluna {
+    border-left: 0;
+    border-top: var(--borda-hairline) solid var(--cor-line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp,
+  .principal,
+  .secundaria,
+  .perigo {
+    transition: none;
+  }
 }

@@ -46,7 +46,7 @@ describe("lembrete no detalhe do agendamento", () => {
   it("sem confirmação, sem selo", async () => {
     montarPainel(<DetalheDoAgendamento />, semear());
 
-    await screen.findByText(/João Silva/);
+    await screen.findByRole("heading", { level: 1, name: /João Silva/ });
     expect(screen.queryByText(/confirmou presença/i)).toBeNull();
   });
 
@@ -66,7 +66,7 @@ describe("lembrete no detalhe do agendamento", () => {
   it("cancelado não oferece lembrete", async () => {
     montarPainel(<DetalheDoAgendamento />, semear("cancelado"));
 
-    await screen.findByText(/João Silva/);
+    await screen.findByRole("heading", { level: 1, name: /João Silva/ });
     await waitFor(() => expect(screen.queryByRole("link", { name: /whatsapp/i })).toBeNull());
   });
 });

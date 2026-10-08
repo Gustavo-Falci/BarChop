@@ -219,6 +219,22 @@ describe("gradeDeTempo com o expediente", () => {
     expect(grade.colunas[0].livres.map((f) => f.hora)).not.toContain("12:30");
   });
 
+  it("a coluna única desenha o bloqueio do único profissional", () => {
+    // Quem trabalha sozinho: uma coluna sem barbeiroId. Antes os
+    // bloqueios só apareciam nas colunas da equipe.
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: [{ id: "m2", janela: aberto, pausa: null }],
+      bloqueios: [bloqueio({ horaInicio: "15:00", horaFim: "16:00", motivo: "Médico" })],
+    });
+
+    expect(grade.colunas[0].bloqueios.map((b) => b.rotulo)).toEqual(["Médico"]);
+    expect(grade.colunas[0].livres.map((f) => f.hora)).not.toContain("15:00");
+  });
+
   it("sem expediente (vista de semana), nada muda", () => {
     const grade = gradeDeTempo({ dias: [TERCA], horarios: HORARIOS, agendamentos: [], agora: AGORA });
 

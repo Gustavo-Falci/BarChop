@@ -1,0 +1,28 @@
+/* Mesma moldura da janela de compartilhar do Hoje. */
+.janela {
+  width: min(480px, calc(100vw - 2 * var(--espaco-md)));
+  max-height: calc(100dvh - 2 * var(--espaco-md));
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  box-shadow: 0 6px 0 var(--cor-shadow);
+}
+
+.janela::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.titulo {
+  margin: 0 0 var(--espaco-md);
+  font-size: var(--texto-lg);
+}
+
+/* Cancelar e Bloquear no pé, à direita: o lugar do "confirmar". */
+.rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaco-sm);
+  margin-top: var(--espaco-md);
+}

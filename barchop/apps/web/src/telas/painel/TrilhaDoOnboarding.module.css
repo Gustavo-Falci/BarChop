@@ -2,7 +2,7 @@
    sombra offset sem desfoque. */
 .trilha {
   display: grid;
-  gap: var(--espaco-md);
+  gap: var(--espaco-sm);
   padding: var(--espaco-md);
   border: var(--borda-padrao) solid var(--cor-ink);
   border-radius: var(--raio-lg);
@@ -12,14 +12,26 @@
 
 .topo {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--espaco-sm);
 }
 
+.cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--espaco-sm);
+  min-width: 0;
+}
+
+/* O display com -0.02em grudava as duas palavras no tamanho pequeno
+   ("Primeirospassos"); aqui o espaçamento volta ao natural. */
 .titulo {
   margin: 0;
   font-size: var(--texto-lg);
+  letter-spacing: 0;
+  word-spacing: 0.08em;
 }
 
 .progresso {
@@ -27,30 +39,126 @@
   font-weight: 700;
   color: var(--cor-ink-soft);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Os passos lado a lado, como cartões (as telas usam a largura — pedido
-   do dono); no celular, um embaixo do outro. */
-.passos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
-  gap: var(--espaco-sm);
+/* Recolher é ação de canto, discreta: o cartão é ajuda, não a tela. */
+.recolher {
+  flex: none;
+  min-height: 40px;
+  padding: 0 var(--espaco-sm);
+  border: 0;
+  border-radius: var(--raio-pill);
+  background: transparent;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.recolher:hover {
+  color: var(--cor-ink);
+}
+
+/* A barra de progresso: o "2 de 5" em forma de coisa que enche. */
+.barra {
+  height: 8px;
+  border: var(--borda-hairline) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-paper-soft);
+  overflow: hidden;
+}
+
+.preenchido {
+  display: block;
+  height: 100%;
+  background: var(--cor-accent);
+  transition: width 300ms ease-out;
+}
+
+.resumo {
   margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.resumo strong {
+  color: var(--cor-ink);
+}
+
+/* Os passos lado a lado (as telas usam a largura — pedido do dono); no
+   celular, um embaixo do outro. Flex e não grade: o passo feito encolhe
+   pro tamanho do selo e cede a largura aos que faltam, em vez de virar
+   um cartão vazio esticado até a altura do vizinho. */
+.passos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--espaco-sm);
+  margin: var(--espaco-xs) 0 0;
   padding: 0;
   list-style: none;
 }
 
-/* Marca e texto na linha de cima; as ações embaixo, na largura do
-   cartão. */
+.passos[hidden] {
+  display: none;
+}
+
+/* Cartão em coluna: marca e texto em cima, ações empurradas pro pé —
+   assim os botões dos cartões vizinhos ficam na mesma linha, por mais
+   que a dica de um seja mais longa que a do outro. */
 .passo {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--espaco-xs) var(--espaco-sm);
-  align-items: start;
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-sm);
   padding: var(--espaco-sm);
   border: var(--borda-hairline) solid var(--cor-line);
   border-radius: var(--raio-md);
   background: var(--cor-paper-soft);
+}
+
+/* O passo atual ganha a borda cheia e a sombra do idioma do painel: é
+   pra onde o olho vai primeiro. */
+.passo[data-atual="true"] {
+  border: var(--borda-padrao) solid var(--cor-ink);
+  background: var(--cor-surface);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+}
+
+/* Feito sai do caminho: vira selo do tamanho do texto, sem fundo, no
+   alto da linha. */
+.passo[data-feito="true"] {
+  flex: 0 1 auto;
+  align-self: flex-start;
+  max-width: 220px;
+  background: transparent;
+  border-style: dashed;
+}
+
+/* No celular, uma coluna só: selo e cartão misturados na mesma linha
+   embaralhavam a ordem dos passos. */
+@media (max-width: 640px) {
+  .passos {
+    flex-direction: column;
+  }
+
+  .passo,
+  .passo[data-feito="true"] {
+    flex: none;
+    align-self: stretch;
+    max-width: none;
+  }
+}
+
+.linha {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--espaco-sm);
+  align-items: start;
 }
 
 .marca {
@@ -62,6 +170,12 @@
   border-radius: var(--raio-pill);
   font-size: var(--texto-xs);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-ink-soft);
+}
+
+.passo[data-atual="true"] .marca {
+  color: var(--cor-ink);
 }
 
 .passo[data-feito="true"] .marca {
@@ -75,8 +189,21 @@
   min-width: 0;
 }
 
+.etiqueta {
+  justify-self: start;
+  padding: 0 var(--espaco-sm);
+  border-radius: var(--raio-pill);
+  background: var(--cor-pale-yellow);
+  color: var(--cor-ink);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .nome {
   font-weight: 700;
+  text-wrap: balance;
 }
 
 .passo[data-feito="true"] .nome {
@@ -89,6 +216,12 @@
 .feito {
   font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
+  text-wrap: pretty;
+}
+
+.feito {
+  font-weight: 700;
+  color: var(--cor-ok);
 }
 
 .dica strong {
@@ -97,18 +230,19 @@
 }
 
 .acoes {
-  grid-column: 1 / -1;
+  margin-top: auto;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--espaco-sm);
+  gap: var(--espaco-xs) var(--espaco-sm);
 }
 
-/* A ação principal do passo: pílula com a cor de destaque, alvo de
-   44px de altura pro dedo. */
+/* A ação do passo: pílula, alvo de 44px de altura pro dedo. Amarela só
+   no passo atual; nos outros, contorno. */
 .acao,
 .secundaria {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 44px;
   padding: 0 var(--espaco-md);
   border: var(--borda-padrao) solid var(--cor-ink);
@@ -118,6 +252,9 @@
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
+  transition-property: transform, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
 }
 
 .acao {
@@ -130,8 +267,58 @@
   color: var(--cor-ink);
 }
 
+.secundaria:hover {
+  background: var(--cor-pale-yellow);
+}
+
+.acao:active,
+.secundaria:active {
+  transform: scale(0.97);
+}
+
 .acao:focus-visible,
-.secundaria:focus-visible {
+.secundaria:focus-visible,
+.recolher:focus-visible {
   outline: 3px solid var(--cor-ink);
   outline-offset: 2px;
+}
+
+/* A primeira reserva não tem botão: se marca sozinha. Com o link já
+   mandado, o cartão diz que está de olho, em vez de ficar mudo. */
+.aguardando {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink-soft);
+}
+
+.pulso {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+  animation: pulso 1.6s ease-out infinite;
+}
+
+@keyframes pulso {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--cor-accent) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preenchido,
+  .acao,
+  .secundaria {
+    transition: none;
+  }
+
+  .pulso {
+    animation: none;
+  }
 }

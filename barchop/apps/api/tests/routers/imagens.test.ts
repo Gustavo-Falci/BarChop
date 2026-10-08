@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { prisma } from "@barchop/database";
+import { FORMATOS_DA_LOGO } from "@barchop/formato";
 import { buildApp } from "../../src/app";
 import type { App } from "../../src/tipos";
 import { auth, criarMembroComToken } from "../helpers/barbearia";
@@ -130,6 +132,115 @@ describe("capa da barbearia", () => {
     const publico = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}` })).json();
     expect(publico.capaUrl).toBeNull();
     expect((await app.inject({ method: "GET", url: caminho(capaUrl) })).statusCode).toBe(404);
+  });
+});
+
+// A logo (bloco da marca): mesmo caminho da capa, com o formato da
+// moldura na query — o navegador detecta, o dono confirma, a API guarda.
+describe("logo da barbearia", () => {
+  it("o dono envia com o formato; a página pública mostra os dois", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const resposta = await enviar(app, "/barbearias/me/logo?formato=redonda", agenda.token, PNG);
+
+    expect(resposta.statusCode).toBe(200);
+    const { logoUrl, logoFormato } = resposta.json();
+    expect(logoUrl).toMatch(/\/arquivos\/barbearias\/[0-9a-f-]+\/logo\/[0-9a-f-]+\.png$/);
+    expect(logoFormato).toBe("redonda");
+    const publico = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}` })).json();
+    expect(publico.logoUrl).toBe(logoUrl);
+    expect(publico.logoFormato).toBe("redonda");
+
+    const servido = await app.inject({ method: "GET", url: caminho(logoUrl) });
+    expect(servido.statusCode).toBe(200);
+    expect(servido.rawPayload.equals(PNG)).toBe(true);
+  });
+
+  it("formato fora da lista, ou sem formato, é 400 — e nada é guardado", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    expect((await enviar(app, "/barbearias/me/logo?formato=oval", agenda.token, PNG)).statusCode).toBe(400);
+    expect((await enviar(app, "/barbearias/me/logo", agenda.token, PNG)).statusCode).toBe(400);
+    const publico = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}` })).json();
+    expect(publico.logoUrl).toBeNull();
+    expect(publico.logoFormato).toBeNull();
+  });
+
+  it("arquivo que não é imagem é 422; grande demais é 413", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const grande = Buffer.concat([PNG, Buffer.alloc(3 * 1024 * 1024)]);
+
+    const svg = await enviar(app, "/barbearias/me/logo?formato=livre", agenda.token, Buffer.from("<svg/>"), "x.png");
+    expect(svg.statusCode).toBe(422);
+    expect((await enviar(app, "/barbearias/me/logo?formato=livre", agenda.token, grande)).statusCode).toBe(413);
+  });
+
+  it("sem token é 401; profissional é 403", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const profissional = await criarMembroComToken(app, agenda.barbeariaId, "profissional", "p");
+
+    expect((await enviar(app, "/barbearias/me/logo?formato=livre", null, PNG)).statusCode).toBe(401);
+    expect((await enviar(app, "/barbearias/me/logo?formato=livre", profissional.token, PNG)).statusCode).toBe(403);
+  });
+
+  it("trocar a logo apaga a antiga", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const antiga = (await enviar(app, "/barbearias/me/logo?formato=quadrada", agenda.token, PNG)).json().logoUrl;
+
+    await enviar(app, "/barbearias/me/logo?formato=redonda", agenda.token, WEBP);
+
+    expect((await app.inject({ method: "GET", url: caminho(antiga) })).statusCode).toBe(404);
+  });
+
+  it("tirar a logo limpa a imagem e o formato, e apaga o arquivo", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const logoUrl = (await enviar(app, "/barbearias/me/logo?formato=redonda", agenda.token, PNG)).json().logoUrl;
+
+    const resposta = await app.inject({ method: "DELETE", url: "/barbearias/me/logo", headers: auth(agenda.token) });
+
+    expect(resposta.statusCode).toBe(204);
+    const publico = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}` })).json();
+    expect(publico.logoUrl).toBeNull();
+    expect(publico.logoFormato).toBeNull();
+    expect((await app.inject({ method: "GET", url: caminho(logoUrl) })).statusCode).toBe(404);
+  });
+
+  it("o banco aceita toda a lista de formatos do código, e nada fora dela", async () => {
+    // A lista mora no @barchop/formato e o CHECK na migration
+    // 20261010120000_logo_da_barbearia: este teste impede os dois de
+    // divergirem.
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    for (const formato of FORMATOS_DA_LOGO) {
+      await prisma.barbearia.update({ where: { id: agenda.barbeariaId }, data: { logoFormato: formato } });
+    }
+    await expect(
+      prisma.barbearia.update({ where: { id: agenda.barbeariaId }, data: { logoFormato: "oval" } })
+    ).rejects.toThrow();
+  });
+
+  it("o formato troca pelo PATCH, sem reenviar a imagem", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const logoUrl = (await enviar(app, "/barbearias/me/logo?formato=redonda", agenda.token, PNG)).json().logoUrl;
+
+    const patch = await app.inject({
+      method: "PATCH",
+      url: "/barbearias/me",
+      headers: auth(agenda.token),
+      payload: { logoFormato: "livre" },
+    });
+
+    expect(patch.statusCode).toBe(200);
+    expect(patch.json().logoFormato).toBe("livre");
+    expect(patch.json().logoUrl).toBe(logoUrl);
   });
 });
 

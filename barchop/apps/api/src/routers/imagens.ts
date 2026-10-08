@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyRequest } from "fastify";
 import { prisma } from "@barchop/database";
+import { FORMATOS_DA_LOGO, type FormatoDaLogo } from "@barchop/formato";
 import { marcarAreas } from "../lib/areas";
 import { EXTENSAO_DO_TIPO, tipoPelosBytes } from "../lib/armazenamento";
 import { ErroDeNegocio } from "../lib/erro-negocio";
@@ -23,6 +24,19 @@ import type { App } from "../tipos";
 // disto; o teto é pra quem pula a tela.
 const LIMITE_DA_CAPA = 4 * 1024 * 1024;
 const LIMITE_DA_FOTO = 2 * 1024 * 1024;
+// A logo chega já reduzida (512px, WebP/PNG com transparência): o teto
+// é o da foto.
+const LIMITE_DA_LOGO = LIMITE_DA_FOTO;
+
+// O formato da moldura vai na query, e não como campo do multipart: o
+// schema valida antes de qualquer byte do arquivo ser lido, e a ordem
+// das partes do formulário deixa de importar.
+const queryDaLogo = {
+  type: "object",
+  required: ["formato"],
+  additionalProperties: false,
+  properties: { formato: { type: "string", enum: [...FORMATOS_DA_LOGO] } },
+} as const;
 
 const paramsComId = {
   type: "object",
@@ -85,6 +99,46 @@ export function registrarRotasImagens(app: App): void {
     await marcarAreas(barbeariaId, ["dados_do_negocio"]);
 
     return { capaUrl: app.armazenamento.urlPublica(chave) };
+  });
+
+  app.post<{ Querystring: { formato: FormatoDaLogo } }>(
+    "/barbearias/me/logo",
+    { schema: { querystring: queryDaLogo }, onRequest: exigirPapel("dono") },
+    async (request) => {
+      const barbeariaId = request.user.barbeariaId;
+      const { bytes, tipo } = await lerImagem(request, LIMITE_DA_LOGO);
+      const chave = `barbearias/${barbeariaId}/logo/${randomUUID()}.${EXTENSAO_DO_TIPO[tipo]}`;
+      const formato = request.query.formato;
+
+      await app.armazenamento.guardar(chave, bytes, tipo);
+      const antes = await prisma.barbearia.findUniqueOrThrow({
+        where: { id: barbeariaId },
+        select: { logoChave: true },
+      });
+      await prisma.barbearia.update({
+        where: { id: barbeariaId },
+        data: { logoChave: chave, logoFormato: formato },
+      });
+      await apagarSemFalhar(app, antes.logoChave);
+      // A logo é da aba Marca, em Dados do negócio, como a capa.
+      await marcarAreas(barbeariaId, ["dados_do_negocio"]);
+
+      return { logoUrl: app.armazenamento.urlPublica(chave), logoFormato: formato };
+    }
+  );
+
+  app.delete("/barbearias/me/logo", { onRequest: exigirPapel("dono") }, async (request, reply) => {
+    const barbeariaId = request.user.barbeariaId;
+    const antes = await prisma.barbearia.findUniqueOrThrow({
+      where: { id: barbeariaId },
+      select: { logoChave: true },
+    });
+    await prisma.barbearia.update({
+      where: { id: barbeariaId },
+      data: { logoChave: null, logoFormato: null },
+    });
+    await apagarSemFalhar(app, antes.logoChave);
+    return reply.code(204).send();
   });
 
   app.delete("/barbearias/me/capa", { onRequest: exigirPapel("dono") }, async (request, reply) => {
@@ -179,7 +233,7 @@ export function registrarRotasImagens(app: App): void {
 // O formato exato das chaves que a API sorteia. Validada antes de chegar
 // perto do disco: é o que impede `../` de virar leitura de arquivo.
 const FORMATO_DA_CHAVE =
-  /^barbearias\/[0-9a-f-]{36}\/(capa|(equipe|servicos)\/[0-9a-f-]{36})\/[0-9a-f-]{36}\.(png|jpg|webp)$/;
+  /^barbearias\/[0-9a-f-]{36}\/(capa|logo|(equipe|servicos)\/[0-9a-f-]{36})\/[0-9a-f-]{36}\.(png|jpg|webp)$/;
 
 // Só no armazenamento local (desenvolvimento e testes): no S3 quem serve
 // é o bucket. Pública, porque a imagem é da página pública.

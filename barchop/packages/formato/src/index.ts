@@ -11,9 +11,11 @@ export { PADRAO_SLUG, slugReservado, sugerirSlug } from "./slug";
 export {
   COMODIDADES,
   FORMAS_DE_PAGAMENTO,
+  FORMATOS_DA_LOGO,
   PADRAO_INSTAGRAM,
   type Comodidade,
   type FormaDePagamento,
+  type FormatoDaLogo,
 } from "./pagina";
 export {
   ANTECEDENCIAS_MINUTOS,

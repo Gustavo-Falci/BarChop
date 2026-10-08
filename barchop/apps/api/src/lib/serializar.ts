@@ -7,6 +7,7 @@ import type {
   BarbeariaDoPainel,
   BarbeariaSerializada,
   ClienteSerializado,
+  FormatoDaLogo,
   HorarioSerializado,
   ServicoSerializado,
 } from "@barchop/types";
@@ -41,7 +42,8 @@ export function serializarBarbearia(barbearia: {
   slug: string;
   telefone: string | null;
   endereco: string | null;
-  logoUrl: string | null;
+  logoChave: string | null;
+  logoFormato: string | null;
   sobre: string | null;
   whatsapp: string | null;
   instagram: string | null;
@@ -58,7 +60,12 @@ urlDaImagem: (chave: string) => string
     slug: barbearia.slug,
     telefone: barbearia.telefone,
     endereco: barbearia.endereco,
-    logoUrl: barbearia.logoUrl,
+    // Como a capa: o banco guarda a chave, a URL sai da config. Sem
+    // arquivo não há moldura, mesmo que um formato tenha ficado gravado.
+    logoUrl: barbearia.logoChave ? urlDaImagem(barbearia.logoChave) : null,
+    logoFormato: barbearia.logoChave
+      ? ((barbearia.logoFormato ?? "livre") as FormatoDaLogo)
+      : null,
     sobre: barbearia.sobre,
     whatsapp: barbearia.whatsapp,
     instagram: barbearia.instagram,

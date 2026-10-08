@@ -16,6 +16,7 @@ export function SeletorDeVista({
   aoTrocarVista,
   aoAndar,
   aoVoltarAHoje,
+  aoIrParaAgora,
 }: {
   vista: Vista;
   // O título do período mora aqui, e não num bloco acima: a barra gruda
@@ -26,6 +27,9 @@ export function SeletorDeVista({
   // Passos na unidade da vista corrente: um dia, uma semana ou um mês.
   aoAndar: (passos: number) => void;
   aoVoltarAHoje: () => void;
+  // Só nas vistas com régua do agora (dia e semana): vai pra hoje e rola
+  // a grade até a hora atual. Ausente, o botão não aparece.
+  aoIrParaAgora?: () => void;
 }) {
   return (
     <div className={estilos.barra}>
@@ -33,6 +37,11 @@ export function SeletorDeVista({
         <button type="button" className={estilos.hoje} onClick={aoVoltarAHoje}>
           Hoje
         </button>
+        {aoIrParaAgora ? (
+          <button type="button" className={estilos.hoje} onClick={aoIrParaAgora}>
+            Agora
+          </button>
+        ) : null}
         <button
           type="button"
           className={estilos.passo}

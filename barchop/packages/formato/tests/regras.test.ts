@@ -65,23 +65,23 @@ describe("regraQueRecusa", () => {
   });
 
   it("a antecedência conta do agora, no limite ainda dá, e atravessa a meia-noite", () => {
-    const regras = { ...REGRAS_PADRAO, antecedenciaMinutos: 120 };
+    const regras = { ...REGRAS_PADRAO, antecedenciaMinutos: 120 as const };
     expect(regraQueRecusa(regras, AGORA, "2026-11-12", "11:45")).toBe("fora_da_antecedencia");
     expect(regraQueRecusa(regras, AGORA, "2026-11-12", "12:00")).toBeNull();
 
-    const umDia = { ...REGRAS_PADRAO, antecedenciaMinutos: 1440 };
+    const umDia = { ...REGRAS_PADRAO, antecedenciaMinutos: 1440 as const };
     expect(regraQueRecusa(umDia, AGORA, "2026-11-13", "09:45")).toBe("fora_da_antecedencia");
     expect(regraQueRecusa(umDia, AGORA, "2026-11-13", "10:00")).toBeNull();
   });
 
   it("a janela conta dias de calendário a partir de hoje", () => {
-    const regras = { ...REGRAS_PADRAO, janelaDias: 7 };
+    const regras = { ...REGRAS_PADRAO, janelaDias: 7 as const };
     expect(regraQueRecusa(regras, AGORA, "2026-11-19", "18:00")).toBeNull();
     expect(regraQueRecusa(regras, AGORA, "2026-11-20", "09:00")).toBe("fora_da_janela");
   });
 
   it("o passado ganha das outras recusas", () => {
-    const regras = { ...REGRAS_PADRAO, aceitaMesmoDia: false, antecedenciaMinutos: 60 };
+    const regras = { ...REGRAS_PADRAO, aceitaMesmoDia: false, antecedenciaMinutos: 60 as const };
     expect(regraQueRecusa(regras, AGORA, "2026-11-12", "09:00")).toBe("horario_passado");
   });
 });

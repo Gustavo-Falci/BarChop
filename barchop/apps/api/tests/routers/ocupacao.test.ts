@@ -56,7 +56,7 @@ describe("GET /barbearias/me/ocupacao", () => {
       data: QUINTA,
       casa: { minutosDeTrabalho: 540, minutosAgendados: 45 },
       profissionais: [
-        { id: agenda.barbeiroId, nome: "Barbeiro um", minutosDeTrabalho: 540, minutosAgendados: 45 },
+        { id: agenda.barbeiroId, nome: "Barbeiro um", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausa: null },
       ],
     });
     await app.close();
@@ -135,8 +135,16 @@ describe("GET /barbearias/me/ocupacao", () => {
     const resposta = await lerOcupacao(app, agenda.token, QUINTA);
 
     expect(resposta.json().profissionais).toEqual([
-      { id: agenda.barbeiroId, nome: "Barbeiro um", minutosDeTrabalho: 540, minutosAgendados: 0 },
-      { id: profissional.barbeiroId, nome: "Membro p1", minutosDeTrabalho: 300, minutosAgendados: 0 },
+      { id: agenda.barbeiroId, nome: "Barbeiro um", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausa: null },
+      {
+        id: profissional.barbeiroId,
+        nome: "Membro p1",
+        minutosDeTrabalho: 300,
+        minutosAgendados: 0,
+        // A janela é a da jornada dele, não a da casa.
+        janela: { abre: "13:00", fecha: "18:00" },
+        pausa: null,
+      },
     ]);
     expect(resposta.json().casa).toEqual({ minutosDeTrabalho: 840, minutosAgendados: 0 });
     await app.close();
@@ -152,7 +160,7 @@ describe("GET /barbearias/me/ocupacao", () => {
 
     expect(resposta.statusCode).toBe(200);
     expect(resposta.json().profissionais).toEqual([
-      { id: profissional.barbeiroId, nome: "Membro p1", minutosDeTrabalho: 540, minutosAgendados: 0 },
+      { id: profissional.barbeiroId, nome: "Membro p1", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausa: null },
     ]);
     expect(resposta.json().casa).toEqual({ minutosDeTrabalho: 540, minutosAgendados: 0 });
     await app.close();
@@ -184,5 +192,70 @@ describe("GET /barbearias/me/ocupacao", () => {
 
     expect(resposta.statusCode).toBe(401);
     await app.close();
+  });
+
+  // Painel v2, marco 6: a agenda sombreia o que está fechado de cada
+  // profissional. A janela é o expediente (data especial > horário da
+  // casa, ∩ jornada); bloqueio fica de fora — a agenda já o desenha
+  // como faixa própria, com o motivo.
+  describe("expediente de cada profissional", () => {
+    it("devolve a pausa do almoço da jornada", async () => {
+      const app = buildApp();
+      const agenda = await prepararAgenda(app);
+      await jornadaComQuinta(app, agenda, agenda.barbeiroId, {
+        modo: "barbearia",
+        pausaInicio: "12:00",
+        pausaFim: "13:00",
+      });
+
+      const [profissional] = (await lerOcupacao(app, agenda.token, QUINTA)).json().profissionais;
+
+      expect(profissional.janela).toEqual({ abre: "09:00", fecha: "18:00" });
+      expect(profissional.pausa).toEqual({ inicio: "12:00", fim: "13:00" });
+      await app.close();
+    });
+
+    it("a data especial troca a janela", async () => {
+      const app = buildApp();
+      const agenda = await prepararAgenda(app);
+      await app.inject({
+        method: "PUT",
+        url: `/barbearias/me/horarios/excecoes/${QUINTA}`,
+        headers: auth(agenda.token),
+        payload: { fechado: false, horaAbertura: "10:00", horaFechamento: "14:00" },
+      });
+
+      const [profissional] = (await lerOcupacao(app, agenda.token, QUINTA)).json().profissionais;
+
+      expect(profissional.janela).toEqual({ abre: "10:00", fecha: "14:00" });
+      await app.close();
+    });
+
+    it("dia fechado e folga não têm janela nem pausa", async () => {
+      const app = buildApp();
+      const agenda = await prepararAgenda(app);
+      await jornadaComQuinta(app, agenda, agenda.barbeiroId, { modo: "folga" });
+
+      const [quinta] = (await lerOcupacao(app, agenda.token, QUINTA)).json().profissionais;
+      const [domingo] = (await lerOcupacao(app, agenda.token, DOMINGO)).json().profissionais;
+
+      expect(quinta).toMatchObject({ janela: null, pausa: null });
+      expect(domingo).toMatchObject({ janela: null, pausa: null });
+      await app.close();
+    });
+
+    it("bloqueio do dia inteiro não apaga a janela", async () => {
+      // O trabalho cai a zero (a ocupação desconta), mas o expediente é o
+      // mesmo: a agenda desenha o bloqueio por cima, com o motivo.
+      const app = buildApp();
+      const agenda = await prepararAgenda(app);
+      await bloquear(app, agenda, {});
+
+      const [profissional] = (await lerOcupacao(app, agenda.token, QUINTA)).json().profissionais;
+
+      expect(profissional.minutosDeTrabalho).toBe(0);
+      expect(profissional.janela).toEqual({ abre: "09:00", fecha: "18:00" });
+      await app.close();
+    });
   });
 });

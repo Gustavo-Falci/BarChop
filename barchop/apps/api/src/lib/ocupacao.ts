@@ -1,4 +1,5 @@
 import type { OcupacaoDoDia } from "@barchop/types";
+import { dateParaHora } from "./horas";
 import {
   aplicarBloqueios,
   janelaEfetiva,
@@ -95,11 +96,14 @@ export async function ocupacaoDoDia(
 
   const profissionais = membros.map((membro) => {
     const jornada = jornadas.find((dia) => dia.barbeiroId === membro.id) ?? null;
+    const expediente = janelaEfetiva(excecao ?? funcionamento, jornada);
     const { janela, ocupados: bloqueados } = aplicarBloqueios(
-      janelaEfetiva(excecao ?? funcionamento, jornada),
+      expediente,
       bloqueios.filter((bloqueio) => bloqueio.barbeiroId === membro.id),
       data
     );
+    const [pausa] = pausaComoOcupado(jornada);
+    const aberto = !expediente.fechado && expediente.horaAbertura && expediente.horaFechamento;
     return {
       id: membro.id,
       nome: membro.nome,
@@ -107,6 +111,12 @@ export async function ocupacaoDoDia(
       minutosAgendados: minutosAgendados(
         agendamentos.filter((agendamento) => agendamento.barbeiroId === membro.id)
       ),
+      // O expediente ANTES dos bloqueios: a agenda desenha o bloqueio
+      // por cima, com o motivo, e sombreia só o que é fechado de fato.
+      janela: aberto
+        ? { abre: dateParaHora(expediente.horaAbertura!), fecha: dateParaHora(expediente.horaFechamento!) }
+        : null,
+      pausa: aberto && pausa ? { inicio: dateParaHora(pausa.horaInicio), fim: dateParaHora(pausa.horaFim) } : null,
     };
   });
 

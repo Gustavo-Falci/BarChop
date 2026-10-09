@@ -1,4 +1,5 @@
 import {
+  CATEGORIAS_DE_SERVICO,
   COMODIDADES,
   FORMAS_DE_PAGAMENTO,
   PADRAO_INSTAGRAM,
@@ -13,6 +14,7 @@ import type {
   AgendamentoComCliente,
   AgendamentoDoLembrete,
   AgendamentoSerializado,
+  CategoriaDeServico,
   AntecedenciaDoLembrete,
   BarbeariaDoPainel,
   ClienteSerializado,
@@ -243,9 +245,20 @@ function somarDias(data: string, dias: number): string {
   return new Date(Date.UTC(ano, mes - 1, dia + dias)).toISOString().slice(0, 10);
 }
 
-// Como a API: aparada, e vazia vira null (categoria e descrição).
+// Como a API: aparada, e vazia vira null (a descrição).
 function limparTextoOpcional(texto: string | null | undefined): string | null {
   return texto?.trim() || null;
+}
+
+// Como o schema da API: só valor da lista fechada, ou null; fora dela, 400.
+// O tipo já barra valor de fora; a checagem é pra quem chega com `as`
+// (ou de um teste que testa a recusa).
+function categoriaValida(categoria: CategoriaDeServico | null | undefined): CategoriaDeServico | null {
+  if (categoria == null) return null;
+  if (!(CATEGORIAS_DE_SERVICO as readonly string[]).includes(categoria)) {
+    throw new ErroDaApi(400, "requisicao_invalida", "categoria fora da lista");
+  }
+  return categoria;
 }
 
 export function criarApiClientFalso(semente: SementeFalsa = {}) {
@@ -538,7 +551,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     estado.servicos[indice] = {
       ...estado.servicos[indice],
       ...resto,
-      ...(categoria !== undefined ? { categoria: limparTextoOpcional(categoria) } : {}),
+      ...(categoria !== undefined ? { categoria: categoriaValida(categoria) } : {}),
       ...(descricao !== undefined ? { descricao: limparTextoOpcional(descricao) } : {}),
     };
     return estado.servicos[indice];
@@ -1068,7 +1081,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           id: `s${estado.servicos.length + 1}`,
           ...novo,
           ativo: true,
-          categoria: limparTextoOpcional(novo.categoria),
+          categoria: categoriaValida(novo.categoria),
           descricao: limparTextoOpcional(novo.descricao),
           fotoUrl: null,
         };

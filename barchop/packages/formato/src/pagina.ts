@@ -34,3 +34,19 @@ export const PADRAO_INSTAGRAM = "^[A-Za-z0-9._]{1,30}$";
 export const FORMATOS_DA_LOGO = ["redonda", "quadrada", "livre"] as const;
 
 export type FormatoDaLogo = (typeof FORMATOS_DA_LOGO)[number];
+
+// A categoria do serviço. Era texto livre e um erro de digitação foi
+// parar na página pública como seção ("CEBELO"); agora o dono escolhe
+// desta lista. A ordem é a das seções na página. O banco tem um CHECK
+// com os mesmos valores (migration 20261011120000_categoria_fechada, que
+// converteu o texto antigo).
+export const CATEGORIAS_DE_SERVICO = [
+  "cabelo",
+  "barba",
+  "combo",
+  "sobrancelha",
+  "quimica",
+  "infantil",
+] as const;
+
+export type CategoriaDeServico = (typeof CATEGORIAS_DE_SERVICO)[number];

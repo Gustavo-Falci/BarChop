@@ -313,7 +313,9 @@ model Servico {
   preco          Decimal  @db.Decimal(10, 2)
   ativo          Boolean  @default(true)
   criadoEm       DateTime @default(now()) @map("criado_em") @db.Timestamptz
-  // Agrupa os serviços na página pública. Texto livre e opcional.
+  // Agrupa os serviços na página pública. Opcional; só valor de
+  // CATEGORIAS_DE_SERVICO em @barchop/formato (CHECK na migration
+  // 20261011120000_categoria_fechada).
   categoria      String?  @db.VarChar(60)
   // Texto curto do cartão na página pública. Opcional.
   descricao      String?  @db.VarChar(300)

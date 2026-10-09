@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
-import { COMODIDADES, FORMAS_DE_PAGAMENTO } from "@barchop/formato";
+import { CATEGORIAS_DE_SERVICO, COMODIDADES, FORMAS_DE_PAGAMENTO } from "@barchop/formato";
 import { buildApp } from "../../src/app";
 import { agoraNaBarbearia } from "../../src/lib/horas";
 import type { App } from "../../src/tipos";
@@ -86,7 +86,7 @@ describe("contatos, comodidades e pagamento", () => {
 });
 
 describe("categoria do serviço", () => {
-  it("o serviço guarda a categoria, sem espaços nas pontas, e a lista pública a devolve", async () => {
+  it("o serviço guarda a categoria da lista, e a lista pública a devolve", async () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
 
@@ -94,14 +94,54 @@ describe("categoria do serviço", () => {
       method: "POST",
       url: "/servicos",
       headers: auth(agenda.token),
-      payload: { nome: "Barba", duracaoMinutos: 30, preco: "30.00", categoria: "  Barba e bigode " },
+      payload: { nome: "Barba", duracaoMinutos: 30, preco: "30.00", categoria: "barba" },
     });
 
     expect(criado.statusCode).toBe(201);
-    expect(criado.json().categoria).toBe("Barba e bigode");
+    expect(criado.json().categoria).toBe("barba");
     const publicos = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}/servicos` })).json().servicos;
-    expect(publicos.find((s: { nome: string }) => s.nome === "Barba").categoria).toBe("Barba e bigode");
+    expect(publicos.find((s: { nome: string }) => s.nome === "Barba").categoria).toBe("barba");
     expect(publicos.find((s: { nome: string }) => s.nome === "Corte").categoria).toBeNull();
+  });
+
+  it("categoria fora da lista é 400, no cadastro e na edição", async () => {
+    // A categoria era texto livre e virou "CEBELO" na página pública: a
+    // lista fechada é a correção, então texto à mão, mesmo parecido com
+    // um valor ("Cabelo", com maiúscula), não passa.
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    for (const categoria of ["CEBELO", "Cabelo", "", " cabelo "]) {
+      const criado = await app.inject({
+        method: "POST",
+        url: "/servicos",
+        headers: auth(agenda.token),
+        payload: { nome: "Novo", duracaoMinutos: 30, preco: "30.00", categoria },
+      });
+      expect(criado.statusCode).toBe(400);
+
+      const editado = await app.inject({
+        method: "PATCH",
+        url: `/servicos/${agenda.servico.id}`,
+        headers: auth(agenda.token),
+        payload: { categoria },
+      });
+      expect(editado.statusCode).toBe(400);
+    }
+  });
+
+  it("o banco aceita toda a lista do código, e nada fora dela", async () => {
+    // A lista mora no @barchop/formato e o CHECK na migration: este teste
+    // é o que impede os dois de divergirem.
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    for (const categoria of CATEGORIAS_DE_SERVICO) {
+      await prisma.servico.update({ where: { id: agenda.servico.id }, data: { categoria } });
+    }
+    await expect(
+      prisma.servico.update({ where: { id: agenda.servico.id }, data: { categoria: "Cabelo" } })
+    ).rejects.toThrow();
   });
 
   it("o dono troca ou limpa a categoria", async () => {
@@ -112,9 +152,9 @@ describe("categoria do serviço", () => {
       method: "PATCH",
       url: `/servicos/${agenda.servico.id}`,
       headers: auth(agenda.token),
-      payload: { categoria: "Cabelo" },
+      payload: { categoria: "cabelo" },
     });
-    expect(trocado.json().categoria).toBe("Cabelo");
+    expect(trocado.json().categoria).toBe("cabelo");
 
     const limpo = await app.inject({
       method: "PATCH",

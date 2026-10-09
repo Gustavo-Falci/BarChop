@@ -1,4 +1,4 @@
-import type { Comodidade, FormaDePagamento } from "@barchop/formato";
+import type { CategoriaDeServico, Comodidade, FormaDePagamento } from "@barchop/formato";
 
 // Os nomes de gente das listas de @barchop/formato. `Record` com a
 // união dos valores: valor novo na lista sem rótulo aqui é erro de
@@ -12,6 +12,15 @@ export const ROTULO_DA_COMODIDADE: Record<Comodidade, string> = {
   bebidas: "Bebidas",
   tv: "TV",
   espaco_kids: "Espaço kids",
+};
+
+export const ROTULO_DA_CATEGORIA: Record<CategoriaDeServico, string> = {
+  cabelo: "Cabelo",
+  barba: "Barba",
+  combo: "Combo",
+  sobrancelha: "Sobrancelha",
+  quimica: "Química e tratamentos",
+  infantil: "Infantil",
 };
 
 export const ROTULO_DO_PAGAMENTO: Record<FormaDePagamento, string> = {

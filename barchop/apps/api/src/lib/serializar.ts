@@ -6,6 +6,7 @@ import type {
   AntecedenciaDoLembrete,
   BarbeariaDoPainel,
   BarbeariaSerializada,
+  CategoriaDeServico,
   ClienteSerializado,
   FormatoDaLogo,
   HorarioSerializado,
@@ -137,7 +138,8 @@ urlDaImagem: (chave: string) => string
     // não passa por float em momento nenhum.
     preco: servico.preco.toFixed(2),
     ativo: servico.ativo,
-    categoria: servico.categoria,
+    // O Prisma tipa como string; o CHECK do banco garante a lista.
+    categoria: servico.categoria as CategoriaDeServico | null,
     descricao: servico.descricao,
     fotoUrl: servico.fotoChave ? urlDaImagem(servico.fotoChave) : null,
   };

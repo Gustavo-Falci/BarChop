@@ -139,7 +139,7 @@ export function EscolhaDeServicos({ agora = new Date() }: { agora?: Date }) {
             </ul>
           );
           if (!grupo.titulo) return <div key="todos">{lista}</div>;
-          const Icone = iconeDaCategoria(grupo.titulo);
+          const Icone = iconeDaCategoria(grupo.categoria);
           return (
             <section key={grupo.titulo} className={estilos.grupo} aria-label={grupo.titulo}>
               <h2 className={estilos.subtitulo}>

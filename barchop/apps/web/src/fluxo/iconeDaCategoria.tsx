@@ -1,4 +1,5 @@
 import type { ComponentType, SVGProps } from "react";
+import type { CategoriaDeServico } from "@barchop/formato";
 import {
   IconeBrilho,
   IconeCoroa,
@@ -7,21 +8,20 @@ import {
   IconeTesoura,
 } from "../painel/icones";
 
-// A categoria é texto livre, então o ícone sai de palavra-chave, sem
-// acento e sem caixa: "Cortes", "Cabelo e barba", "Tratamentos". A
-// primeira regra que casa ganha, e "Cabelo e barba" fica com a tesoura.
-// Nada casou: o brilho, neutro.
-const REGRAS: [RegExp, ComponentType<SVGProps<SVGSVGElement>>][] = [
-  [/corte|cabelo|degrade|infantil|tesoura/, IconeTesoura],
-  [/barba|bigode|navalha/, IconeNavalha],
-  [/tratamento|hidrata|sobrancelha|pigment|platinad|luzes|quimica|estetica|pele/, IconeGota],
-  [/especia|pacote|combo|noivo|dia do|premium|vip/, IconeCoroa],
-];
+type Icone = ComponentType<SVGProps<SVGSVGElement>>;
 
-export function iconeDaCategoria(categoria: string): ComponentType<SVGProps<SVGSVGElement>> {
-  const chave = categoria
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
-  return REGRAS.find(([padrao]) => padrao.test(chave))?.[1] ?? IconeBrilho;
+// Um ícone por categoria da lista; `Record` faz categoria nova sem ícone
+// ser erro de type-check. Sem categoria ("Outros serviços"): o brilho,
+// neutro.
+const ICONES: Record<CategoriaDeServico, Icone> = {
+  cabelo: IconeTesoura,
+  barba: IconeNavalha,
+  combo: IconeCoroa,
+  sobrancelha: IconeGota,
+  quimica: IconeGota,
+  infantil: IconeTesoura,
+};
+
+export function iconeDaCategoria(categoria: CategoriaDeServico | null): Icone {
+  return categoria ? ICONES[categoria] : IconeBrilho;
 }

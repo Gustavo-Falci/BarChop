@@ -28,8 +28,8 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 | `/painel/clientes` | Lista com busca, pílulas Todos / Vieram em 30 dias / Sem registro em 90 dias contadas no servidor (`?faixa=`), faixa e busca na URL, "carregar mais" dentro da faixa (painel v2, marco 5) | 🔧 Onda 3 (ritmo, segmentos) |
 | `/painel/clientes/novo` | Nome, telefone e email | — |
 | `/painel/clientes/[id]` | Dados e histórico | 🔧 Onda 3 (pontos, assinatura) |
-| `/painel/servicos` | Lista agrupada por categoria (faixa de preço por grupo, "Sem categoria" no fim), pílulas Todos / No agendamento / Fora do agendamento, busca local, "Onde aparece"; inativos inclusive (painel v2, marco 5) | — |
-| `/painel/servicos/novo` | Nome, duração e preço | 🔧 Onda 1 (categoria, descrição, foto) |
+| `/painel/servicos` | Lista agrupada por categoria, na ordem da lista fechada (faixa de preço por grupo, "Sem categoria" no fim), pílulas Todos / No agendamento / Fora do agendamento, busca local, "Onde aparece"; inativos inclusive (painel v2, marco 5) | — |
+| `/painel/servicos/novo` | Nome, duração e preço; categoria em pílulas (Sem categoria, Cabelo, Barba, Combo, Sobrancelha, Química e tratamentos, Infantil — lista fechada, 2026-10-09) | 🔧 Onda 1 (categoria, descrição, foto) |
 | `/painel/servicos/[id]` | Editar, desativar e reativar | 🔧 Onda 1 (idem) |
 | `/painel/configuracoes` | Barbearia, horários da semana e perfil | 🔧 Onda 0 (link/slug), 🔧 Onda 1 (lembretes, comodidades, fotos, contatos, pagamento) |
 

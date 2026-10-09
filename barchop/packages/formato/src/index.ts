@@ -9,10 +9,12 @@ export { normalizarEmail } from "./email";
 export { AREAS_DE_CONFIGURACAO, areasTocadas, juntarAreas, type AreaDeConfiguracao } from "./areas";
 export { PADRAO_SLUG, slugReservado, sugerirSlug } from "./slug";
 export {
+  CATEGORIAS_DE_SERVICO,
   COMODIDADES,
   FORMAS_DE_PAGAMENTO,
   FORMATOS_DA_LOGO,
   PADRAO_INSTAGRAM,
+  type CategoriaDeServico,
   type Comodidade,
   type FormaDePagamento,
   type FormatoDaLogo,

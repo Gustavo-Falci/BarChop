@@ -1,4 +1,5 @@
 import { prisma } from "@barchop/database";
+import { CATEGORIAS_DE_SERVICO } from "@barchop/formato";
 import { PADRAO_PRECO, PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
 import { serializarServico } from "../lib/serializar";
 import { exigirPapel } from "../plugins/auth";
@@ -26,8 +27,8 @@ const corpoNovoServico = {
       multipleOf: 5,
     },
     preco: { type: "string", pattern: PADRAO_PRECO },
-    // Agrupa na página pública. Vazio ou só espaço vira null.
-    categoria: { type: ["string", "null"], maxLength: 60 },
+    // Agrupa na página pública. Só valor da lista; null = sem categoria.
+    categoria: { type: ["string", "null"], enum: [...CATEGORIAS_DE_SERVICO, null] },
     // O texto curto do cartão na página pública. Vazio vira null.
     descricao: { type: ["string", "null"], maxLength: 300 },
   },
@@ -56,14 +57,14 @@ const corpoPatchServico = {
     },
     preco: { type: "string", pattern: PADRAO_PRECO },
     ativo: { type: "boolean" },
-    categoria: { type: ["string", "null"], maxLength: 60 },
+    categoria: { type: ["string", "null"], enum: [...CATEGORIAS_DE_SERVICO, null] },
     // O texto curto do cartão na página pública. Vazio vira null.
     descricao: { type: ["string", "null"], maxLength: 300 },
   },
 } as const;
 
-// Texto livre opcional (categoria, descrição): "  Barba " e "Barba" têm
-// que cair na mesma seção da página, e só espaço é o mesmo que nada.
+// Texto livre opcional (a descrição): "  Corte " e "Corte" são o mesmo
+// texto, e só espaço é o mesmo que nada.
 // undefined passa como undefined — no PATCH, campo ausente não mexe.
 function limparTextoOpcional(texto: string | null | undefined): string | null | undefined {
   if (texto === undefined) return undefined;
@@ -99,7 +100,6 @@ export function registrarRotasServicos(app: App): void {
         data: {
           barbeariaId: request.user.barbeariaId,
           ...request.body,
-          categoria: limparTextoOpcional(request.body.categoria) ?? null,
           descricao: limparTextoOpcional(request.body.descricao) ?? null,
         },
       });
@@ -123,7 +123,6 @@ export function registrarRotasServicos(app: App): void {
         where: { id: request.params.id, barbeariaId: request.user.barbeariaId },
         data: {
           ...request.body,
-          categoria: limparTextoOpcional(request.body.categoria),
           descricao: limparTextoOpcional(request.body.descricao),
         },
       });

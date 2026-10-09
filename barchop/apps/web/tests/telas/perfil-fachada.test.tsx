@@ -109,6 +109,16 @@ describe("fachada da página da barbearia", () => {
     expect(await within(equipe).findByText("Corte · Barba")).toBeInTheDocument();
   });
 
+  it("a equipe vem logo abaixo do horário de funcionamento (pedido do dono)", async () => {
+    montar();
+
+    const equipe = await screen.findByRole("region", { name: "Equipe" });
+    const horario = screen.getByRole("heading", { name: "Horário de funcionamento" }).closest("section")!;
+    // Mesma coluna, e a equipe é a seção seguinte ao horário.
+    expect(horario.parentElement).toBe(equipe.parentElement);
+    expect(horario.nextElementSibling).toBe(equipe);
+  });
+
   it("os próximos horários vêm rotulados", async () => {
     montar(
       criarApiClientFalso({

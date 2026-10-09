@@ -289,9 +289,31 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
               })}
             </section>
           ) : null}
+        </div>
 
-          {/* Quem atende, com foto quando o dono pôs uma; sem foto, as
-              iniciais no lugar (decorativas: o nome vem ao lado). */}
+        <div className={estilos.lateral}>
+          {temDiaAberto ? (
+            <section className={estilos.secao}>
+              <h2 className={estilos.titulo}>Horário de funcionamento</h2>
+              <ul className={estilos.lista}>
+                {agruparSemana(horarios, agora).map((linha) => (
+                  <li
+                    key={linha.dias}
+                    className={`${estilos.linha} ${linha.hoje ? estilos.hoje : ""}`}
+                    aria-current={linha.hoje ? "date" : undefined}
+                  >
+                    <span>{linha.dias}</span>
+                    <span className={estilos.valor}>{linha.horario}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {/* Quem atende, logo abaixo do horário (pedido do dono): quando
+              abre e com quem, juntos na lateral. Com foto quando o dono pôs
+              uma; sem foto, as iniciais no lugar (decorativas: o nome vem
+              ao lado). */}
           {dados && dados.barbeiros.length > 0 ? (
             <section className={estilos.secao} aria-label="Equipe">
               <h2 className={estilos.titulo}>Equipe</h2>
@@ -318,26 +340,6 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                     </li>
                   );
                 })}
-              </ul>
-            </section>
-          ) : null}
-        </div>
-
-        <div className={estilos.lateral}>
-          {temDiaAberto ? (
-            <section className={estilos.secao}>
-              <h2 className={estilos.titulo}>Horário de funcionamento</h2>
-              <ul className={estilos.lista}>
-                {agruparSemana(horarios, agora).map((linha) => (
-                  <li
-                    key={linha.dias}
-                    className={`${estilos.linha} ${linha.hoje ? estilos.hoje : ""}`}
-                    aria-current={linha.hoje ? "date" : undefined}
-                  >
-                    <span>{linha.dias}</span>
-                    <span className={estilos.valor}>{linha.horario}</span>
-                  </li>
-                ))}
               </ul>
             </section>
           ) : null}

@@ -483,6 +483,13 @@
   font-size: var(--texto-lg);
 }
 
+/* Na lateral a coluna é estreita: foto um pouco menor, como os
+   títulos de lá. */
+.lateral .foto {
+  width: 44px;
+  height: 44px;
+}
+
 .membroTexto {
   display: grid;
   min-width: 0;

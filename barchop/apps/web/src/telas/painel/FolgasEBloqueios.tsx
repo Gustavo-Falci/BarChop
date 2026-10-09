@@ -5,10 +5,8 @@ import type { ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
-import { LadoALado } from "../../componentes/Colunas";
-import { Secao } from "../../componentes/Secao";
 import { useRequisicao } from "../../api/useRequisicao";
-import { hojeIso, somarDias } from "../../formato/datas";
+import { formatarPeriodo, hojeIso, somarDias } from "../../formato/datas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
@@ -18,11 +16,6 @@ import estilos from "./FolgasEBloqueios.module.css";
 // Quantos dias à frente a lista mostra. Bloqueio mais longe que isso
 // existe e vale; só não aparece aqui.
 const DIAS_A_FRENTE = 90;
-
-// "2037-01-05" → "05/01". O ano fica de fora: a lista cobre 90 dias.
-function diaCurto(data: string): string {
-  return `${data.slice(8, 10)}/${data.slice(5, 7)}`;
-}
 
 // Folga, almoço, médico: o que tira o membro da agenda. Dono e recepção
 // bloqueiam qualquer um; o profissional, só a própria agenda — pra ele o
@@ -71,55 +64,62 @@ export function FolgasEBloqueios({ agora: agoraFixo }: { agora?: Date } = {}) {
         apoio="Férias, almoço, consulta: o que tira alguém da agenda. O horário bloqueado some do agendamento online."
       />
 
-      {/* Lado a lado: o formulário à esquerda, a lista à direita (as
-          telas usam a largura — pedido do dono). */}
-      <LadoALado>
-        <Secao
-          titulo="Novo bloqueio"
-          acao={
-            <Botao type="submit" form={idDoForm} carregando={formulario.salvando}>
-              Bloquear
-            </Botao>
-          }
-        >
+      {/* Sem as caixas "Novo bloqueio" e "Próximos 90 dias" (pedido do
+          dono): o formulário à esquerda, com o Bloquear embaixo dele; a
+          lista à direita. No celular, um embaixo do outro. */}
+      <div className={estilos.corpo}>
+        <section className={estilos.coluna} aria-labelledby={`${idDoForm}-titulo`}>
+          <h2 id={`${idDoForm}-titulo`} className={estilos.rotuloDoGrupo}>
+            Novo bloqueio
+          </h2>
           <FormularioDeBloqueio
             id={idDoForm}
             formulario={formulario}
             membros={podemSerBloqueados}
             soOProprio={soOProprio}
           />
-        </Secao>
+          <div className={estilos.acoes}>
+            <Botao type="submit" form={idDoForm} carregando={formulario.salvando}>
+              Bloquear
+            </Botao>
+          </div>
+        </section>
 
-        <Secao titulo={`Próximos ${DIAS_A_FRENTE} dias`}>
+        <section className={estilos.coluna} aria-labelledby={`${idDoForm}-lista`}>
+          <h2 id={`${idDoForm}-lista`} className={estilos.rotuloDoGrupo}>
+            Próximos {DIAS_A_FRENTE} dias
+          </h2>
           {falha ? (
             <Aviso>{falha.mensagem || "Não foi possível carregar os bloqueios agora."}</Aviso>
           ) : carregando ? (
-            <p>Carregando…</p>
+            <p className={estilos.vazio}>Carregando…</p>
           ) : bloqueios.dados!.length === 0 ? (
-            <p className={estilos.vazio}>Nenhum bloqueio nos próximos {DIAS_A_FRENTE} dias.</p>
+            <p className={estilos.vazio}>
+              Ninguém fora da agenda nos próximos {DIAS_A_FRENTE} dias.
+            </p>
           ) : (
             <ul className={estilos.lista}>
               {bloqueios.dados!.map((bloqueio) => {
-                const periodo =
-                  bloqueio.dataInicio === bloqueio.dataFim
-                    ? diaCurto(bloqueio.dataInicio)
-                    : `${diaCurto(bloqueio.dataInicio)} a ${diaCurto(bloqueio.dataFim)}`;
+                const periodo = formatarPeriodo(bloqueio.dataInicio, bloqueio.dataFim);
                 const horas =
                   bloqueio.horaInicio && bloqueio.horaFim
                     ? `${bloqueio.horaInicio} às ${bloqueio.horaFim}`
                     : "dia inteiro";
                 return (
                   <li key={bloqueio.id} className={estilos.item}>
-                    <div className={estilos.texto}>
-                      <strong>{nomeDe(bloqueio.barbeiroId)}</strong>
-                      <span>
-                        {periodo} · <span>{horas}</span>
-                      </span>
-                      {bloqueio.motivo ? <span className={estilos.motivo}>{bloqueio.motivo}</span> : null}
-                    </div>
+                    <span className={estilos.quando}>
+                      <strong>{periodo}</strong>
+                      <span className={estilos.secundario}>{horas}</span>
+                    </span>
+                    <span className={estilos.quem}>
+                      {nomeDe(bloqueio.barbeiroId)}
+                      {bloqueio.motivo ? (
+                        <span className={estilos.secundario}>{bloqueio.motivo}</span>
+                      ) : null}
+                    </span>
                     <Botao
                       type="button"
-                      variante="contorno"
+                      variante="fantasma"
                       onClick={() => void remover(bloqueio.id)}
                       aria-label={`Remover bloqueio de ${nomeDe(bloqueio.barbeiroId)} em ${periodo}`}
                     >
@@ -130,8 +130,8 @@ export function FolgasEBloqueios({ agora: agoraFixo }: { agora?: Date } = {}) {
               })}
             </ul>
           )}
-        </Secao>
-      </LadoALado>
+        </section>
+      </div>
     </div>
   );
 }

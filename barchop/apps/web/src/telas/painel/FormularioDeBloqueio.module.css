@@ -10,39 +10,53 @@
   gap: var(--espaco-md);
 }
 
-.campoSelect {
+.motivo {
   display: grid;
   gap: var(--espaco-xs);
-  font-weight: 600;
 }
 
-.campoSelect select {
-  min-height: 44px;
-  padding-inline: var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-sm);
-  background: var(--cor-surface);
-  color: var(--cor-ink);
+/* Os motivos comuns: pequenos, abaixo do campo, pra não competir com
+   ele. O marcado é o que está escrito no campo. */
+.atalhos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
+}
+
+.atalho {
+  min-height: 32px;
+  padding: 0 var(--espaco-sm);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cor-ink-soft);
   font: inherit;
-  font-weight: 400;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+  transition-property: background-color, color, border-color;
+  transition-duration: 120ms;
 }
 
-.campoSelect select:focus-visible {
+.atalho:hover {
+  color: var(--cor-ink);
+  border-color: var(--cor-ink);
+}
+
+.atalho[aria-pressed="true"] {
+  background: var(--cor-ink);
+  border-color: var(--cor-ink);
+  color: var(--cor-surface);
+}
+
+.atalho:focus-visible {
   outline: 3px solid var(--cor-ink);
   outline-offset: 2px;
 }
 
-.opcao {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-sm);
-  min-height: 44px;
-  cursor: pointer;
-}
-
-.opcao input {
-  width: 20px;
-  height: 20px;
+/* A frase do efeito: o texto que se confere antes de bloquear. */
+.frase {
   margin: 0;
-  accent-color: var(--cor-ink);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
 }

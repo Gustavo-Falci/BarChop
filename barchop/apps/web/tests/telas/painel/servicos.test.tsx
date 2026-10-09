@@ -475,8 +475,8 @@ describe("serviços no painel", () => {
     // "Sem categoria" no fim.
     const comCategorias = criarApiClientFalso({
       servicos: [
-        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cabelo", descricao: null, fotoUrl: null },
-        { id: "s2", nome: "Platinado", duracaoMinutos: 90, preco: "180.00", ativo: true, categoria: "Cabelo", descricao: null, fotoUrl: null },
+        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "cabelo", descricao: null, fotoUrl: null },
+        { id: "s2", nome: "Platinado", duracaoMinutos: 90, preco: "180.00", ativo: true, categoria: "cabelo", descricao: null, fotoUrl: null },
         { id: "s3", nome: "Sobrancelha", duracaoMinutos: 15, preco: "20.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
       ],
     });

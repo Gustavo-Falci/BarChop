@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { CategoriaDeServico } from "@barchop/types";
 import { criarApiClient, criarApiClientFalso } from "../src/index";
 
 function respostaJson(corpo: unknown, status = 200): Response {
@@ -79,12 +80,13 @@ describe("dublê — página rica", () => {
   });
 
   it("categoria fora da lista é 400, como na API", async () => {
+    // O tipo já recusa; o `as` é quem burla o tipo, e o dublê recusa igual.
     const falso = criarApiClientFalso();
 
     await expect(
-      falso.barbeiro.criarServico({ nome: "Corte", duracaoMinutos: 30, preco: "30.00", categoria: "CEBELO" })
+      falso.barbeiro.criarServico({ nome: "Corte", duracaoMinutos: 30, preco: "30.00", categoria: "CEBELO" as CategoriaDeServico })
     ).rejects.toMatchObject({ status: 400 });
-    await expect(falso.barbeiro.atualizarServico("s1", { categoria: "Cabelo" })).rejects.toMatchObject({
+    await expect(falso.barbeiro.atualizarServico("s1", { categoria: "Cabelo" as CategoriaDeServico })).rejects.toMatchObject({
       status: 400,
     });
   });

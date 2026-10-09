@@ -119,9 +119,9 @@ describe("escolha dos serviços — o cartão e a página", () => {
     montar(
       criarApiClientFalso({
         servicos: [
-          servico({ id: "s1", nome: "Corte", categoria: "Cabelo" }),
-          servico({ id: "s2", nome: "Platinado", categoria: "Cabelo" }),
-          servico({ id: "s3", nome: "Barba", categoria: "Barba" }),
+          servico({ id: "s1", nome: "Corte", categoria: "cabelo" }),
+          servico({ id: "s2", nome: "Platinado", categoria: "cabelo" }),
+          servico({ id: "s3", nome: "Barba", categoria: "barba" }),
         ],
       })
     );

@@ -3,11 +3,14 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
+import { CATEGORIAS_DE_SERVICO, type CategoriaDeServico } from "@barchop/formato";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
 import { CamposLadoALado, LadoALado } from "../../componentes/Colunas";
 import { CampoDeImagem } from "../../componentes/CampoDeImagem";
+import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
+import { ROTULO_DA_CATEGORIA } from "../../formato/pagina";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./CadastroDeServico.module.css";
@@ -28,6 +31,14 @@ const DURACAO_MAX = 480;
 const DURACAO_PASSO = 5;
 // PADRAO_PRECO aceita no máximo 8 dígitos na parte inteira.
 const PRECO_INTEIRO_MAX = 8;
+
+// A categoria é escolhida da lista (era texto livre, e um erro de
+// digitação virou seção na página pública). "" é o rádio de "Sem
+// categoria": o rádio precisa de um valor, e o corpo manda null.
+const OPCOES_DE_CATEGORIA: { valor: CategoriaDeServico | ""; rotulo: string }[] = [
+  { valor: "", rotulo: "Sem categoria" },
+  ...CATEGORIAS_DE_SERVICO.map((valor) => ({ valor, rotulo: ROTULO_DA_CATEGORIA[valor] })),
+];
 // O mesmo teto da coluna `servico.descricao` e do schema da API. Cortar
 // na digitação evita o 400 depois do texto escrito.
 const DESCRICAO_MAX = 300;
@@ -88,7 +99,7 @@ export function CadastroDeServico() {
   const [nome, setNome] = useState("");
   const [duracao, setDuracao] = useState("");
   const [preco, setPreco] = useState("");
-  const [categoria, setCategoria] = useState("");
+  const [categoria, setCategoria] = useState<CategoriaDeServico | "">("");
   const [descricao, setDescricao] = useState("");
   const [erroNome, setErroNome] = useState<string | undefined>();
   const [erroDuracao, setErroDuracao] = useState<string | undefined>();
@@ -169,10 +180,10 @@ export function CadastroDeServico() {
         nome: comNome.valor,
         duracaoMinutos: comMinutos.valor,
         preco: comDecimal.valor,
-        // Na edição vai sempre: apagar o campo é tirar a categoria (null).
-        // No cadastro, só se preenchida.
-        ...(id || categoria.trim() ? { categoria: categoria.trim() || null } : {}),
-        // Mesma regra da categoria.
+        // Na edição vai sempre: "Sem categoria" é tirar a categoria (null).
+        // No cadastro, só se escolhida.
+        ...(id || categoria ? { categoria: categoria || null } : {}),
+        // Na edição vai sempre: apagar o campo é tirar a descrição (null).
         ...(id || descricao.trim() ? { descricao: descricao.trim() || null } : {}),
       };
       if (id) await api.barbeiro.atualizarServico(id, corpo);
@@ -203,7 +214,7 @@ export function CadastroDeServico() {
     <div className={estilos.pagina}>
       <h1>{id ? "Editar serviço" : "Novo serviço"}</h1>
 
-      {/* Nome, duração, preço e categoria numa linha: as telas usam a largura (pedido do dono). */}
+      {/* Nome, duração e preço numa linha: as telas usam a largura (pedido do dono). */}
       <CamposLadoALado>
         <Campo
           rotulo="Nome"
@@ -243,15 +254,20 @@ export function CadastroDeServico() {
           }}
           erro={erroPreco}
         />
-        <Campo
-          rotulo="Categoria (opcional)"
-          apoio="Agrupa os serviços na sua página. Exemplo: Cabelo, Barba."
-          placeholder="Cabelo"
-          maxLength={60}
-          valor={categoria}
-          onChange={setCategoria}
-        />
       </CamposLadoALado>
+
+      <SeletorEmPilulas
+        nome="categoria"
+        legenda="Categoria (opcional)"
+        opcoes={OPCOES_DE_CATEGORIA}
+        valor={categoria}
+        aoTrocar={setCategoria}
+        efeito={
+          categoria
+            ? `Na sua página, aparece em “${ROTULO_DA_CATEGORIA[categoria]}”.`
+            : "Sem categoria, aparece no fim da sua página."
+        }
+      />
 
       {/* Descrição e foto lado a lado. */}
       <LadoALado>

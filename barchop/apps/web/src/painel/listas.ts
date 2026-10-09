@@ -1,5 +1,7 @@
+import { CATEGORIAS_DE_SERVICO } from "@barchop/formato";
 import type { MembroDaEquipe, ServicoSerializado } from "@barchop/types";
 import { formatarPreco } from "../componentes/ItemDeServico";
+import { ROTULO_DA_CATEGORIA } from "../formato/pagina";
 
 // As contas das listas do painel (marco 5), à parte da tela pelo mesmo
 // motivo de metricas.ts: a regra se testa sem montar nada, e a tela só
@@ -13,31 +15,18 @@ export interface GrupoDeServicos {
   servicos: ServicoSerializado[];
 }
 
-// Junta por categoria na ordem em que cada uma aparece pela primeira vez
-// — a API já ordena (ativos antes, nome asc), e a tela não reordena.
-// Quem não tem categoria vai pro fim: é a sobra, não uma categoria que
-// o dono escolheu.
+// Junta por categoria na ordem de CATEGORIAS_DE_SERVICO, a mesma das
+// seções da página pública. Dentro do grupo, a ordem da API (ativos
+// antes, nome asc) fica. Quem não tem categoria vai pro fim: é a sobra,
+// não uma categoria que o dono escolheu.
 export function agruparPorCategoria(servicos: ServicoSerializado[]): GrupoDeServicos[] {
-  const porCategoria = new Map<string, ServicoSerializado[]>();
-  const semCategoria: ServicoSerializado[] = [];
-
-  for (const servico of servicos) {
-    if (servico.categoria === null) {
-      semCategoria.push(servico);
-      continue;
-    }
-    const doGrupo = porCategoria.get(servico.categoria);
-    if (doGrupo) doGrupo.push(servico);
-    else porCategoria.set(servico.categoria, [servico]);
-  }
-
-  // O id leva um prefixo pra uma categoria chamada "Sem categoria" (o
-  // dono pode digitar isso) não colidir com o grupo da sobra.
-  const grupos = [...porCategoria].map(([categoria, doGrupo]) => ({
+  const grupos = CATEGORIAS_DE_SERVICO.map((categoria) => ({
     id: `categoria:${categoria}`,
-    titulo: categoria,
-    servicos: doGrupo,
-  }));
+    titulo: ROTULO_DA_CATEGORIA[categoria],
+    servicos: servicos.filter((servico) => servico.categoria === categoria),
+  })).filter((grupo) => grupo.servicos.length > 0);
+
+  const semCategoria = servicos.filter((servico) => servico.categoria === null);
   if (semCategoria.length > 0) {
     grupos.push({ id: "sem-categoria", titulo: SEM_CATEGORIA, servicos: semCategoria });
   }

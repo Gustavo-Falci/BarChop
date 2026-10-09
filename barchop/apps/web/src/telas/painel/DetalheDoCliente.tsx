@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useId, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
+import type { AgendamentoSerializado } from "@barchop/types";
 import Link from "next/link";
 import {
   apenasDigitos,
@@ -10,11 +11,11 @@ import {
   TelefoneInvalido,
 } from "@barchop/formato";
 import { Aviso } from "../../componentes/Aviso";
-import { Botao } from "../../componentes/Botao";
+import { Botao, BotaoLink } from "../../componentes/Botao";
+import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
-import { LadoALado } from "../../componentes/Colunas";
-import { Secao } from "../../componentes/Secao";
-import { Tabela } from "../../componentes/Tabela";
+import { Chip } from "../../componentes/Chip";
+import { formatarPreco } from "../../componentes/ItemDeServico";
 import { useRequisicao } from "../../api/useRequisicao";
 import {
   EMAIL_MAX,
@@ -22,14 +23,102 @@ import {
   validarEmailDeCliente,
   validarNomeDeCliente,
 } from "../../formato/cliente";
-import { formatarDataLonga } from "../../formato/datas";
+import { formatarDataLonga, hojeIso } from "../../formato/datas";
 import { rotuloDoStatus } from "../../formato/status";
+import { IconeSeta } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { linkDoZap } from "../../painel/whatsapp";
 import estilos from "./DetalheDoCliente.module.css";
 
-export function DetalheDoCliente() {
+// Quem não vai (cancelado, não compareceu) não conta como "próximo" nem
+// como "último" no resumo — continua na lista, com o status.
+const NAO_ACONTECE = new Set(["cancelado", "no_show"]);
+
+// "2 agendamentos · próximo em 15 de setembro · último em 30 de agosto":
+// o que o dono quer saber antes de chamar ou marcar alguém.
+function resumoDoHistorico(agendamentos: AgendamentoSerializado[], hoje: string): string {
+  if (agendamentos.length === 0) return "Ainda sem agendamento";
+  const partes = [
+    `${agendamentos.length} ${agendamentos.length === 1 ? "agendamento" : "agendamentos"}`,
+  ];
+  const valem = agendamentos.filter((a) => !NAO_ACONTECE.has(a.status));
+  // A API manda do mais novo pro mais velho.
+  const proximo = valem.filter((a) => a.data >= hoje).at(-1);
+  const ultimo = valem.find((a) => a.data < hoje);
+  if (proximo) partes.push(`próximo em ${formatarDataLonga(proximo.data)}`);
+  if (ultimo) partes.push(`último em ${formatarDataLonga(ultimo.data)}`);
+  return partes.join(" · ");
+}
+
+const TOM_DO_STATUS: Record<string, "ok" | "atencao" | "neutro" | "erro"> = {
+  confirmado: "ok",
+  pendente: "atencao",
+  concluido: "neutro",
+  cancelado: "erro",
+  no_show: "erro",
+};
+
+// Soma em centavos: somar os preços como número passaria por float.
+function totalDe(agendamento: AgendamentoSerializado): string {
+  const centavos = agendamento.servicos.reduce(
+    (soma, s) => soma + Math.round(Number(s.precoNoMomento) * 100),
+    0
+  );
+  return formatarPreco((centavos / 100).toFixed(2));
+}
+
+// Um grupo do histórico ("Próximos", "Anteriores"): título pequeno e as
+// linhas, sem caixa em volta. Cada linha é um link pro agendamento.
+function GrupoDoHistorico({
+  titulo,
+  agendamentos,
+}: {
+  titulo: string;
+  agendamentos: AgendamentoSerializado[];
+}) {
+  const id = useId();
+  if (agendamentos.length === 0) return null;
+  return (
+    <section className={estilos.grupo} aria-labelledby={id}>
+      <h2 id={id} className={estilos.rotuloDoGrupo}>
+        {titulo}
+      </h2>
+      <ul className={estilos.linhas}>
+        {agendamentos.map((agendamento) => (
+          <li key={agendamento.id}>
+            <Link
+              className={`${estilos.linha} ${NAO_ACONTECE.has(agendamento.status) ? estilos.naoAconteceu : ""}`}
+              href={`/painel/agendamentos/${agendamento.id}`}
+            >
+              <span className={estilos.quando}>
+                <strong>{formatarDataLonga(agendamento.data)}</strong>
+                <span className={estilos.secundario}>{agendamento.horaInicio}</span>
+              </span>
+              <span className={estilos.oque}>
+                {agendamento.servicos.map((s) => s.nome).join(" + ")}
+                {agendamento.barbeiro?.nome ? (
+                  <span className={estilos.secundario}> com {agendamento.barbeiro.nome}</span>
+                ) : null}
+              </span>
+              <span className={estilos.valor}>{totalDe(agendamento)}</span>
+              <span className={estilos.status}>
+                <Chip tom={TOM_DO_STATUS[agendamento.status] ?? "neutro"} tamanho="pequeno">
+                  {rotuloDoStatus(agendamento.status)}
+                </Chip>
+              </span>
+              <IconeSeta className={estilos.seta} width={18} height={18} aria-hidden="true" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// `agora` por parâmetro, como na ListaDeClientes: o corte entre próximos
+// e anteriores é "hoje", e o teste fixa o dia.
+export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
   const api = useApiDoPainel();
 
   // Quem chega aqui vindo do "Cadastrar" precisa ouvir que deu certo:
@@ -136,9 +225,44 @@ export function DetalheDoCliente() {
     setSalvando(false);
   }
 
+  const dados = cliente.dados;
+  const mudou =
+    nome !== dados.nome || telefone !== dados.telefone || email !== (dados.email ?? "");
+
+  function descartar() {
+    setNome(dados.nome);
+    setTelefone(dados.telefone);
+    setEmail(dados.email ?? "");
+    setErroNome(undefined);
+    setErroTelefone(undefined);
+    setErroEmail(undefined);
+    setTelefoneEmConflito(undefined);
+    setAviso(undefined);
+  }
+
+  const hoje = hojeIso(agora);
+  // A API manda do mais novo pro mais velho; os próximos leem melhor do
+  // mais perto pro mais longe.
+  const proximos = dados.agendamentos.filter((a) => a.data >= hoje).reverse();
+  const anteriores = dados.agendamentos.filter((a) => a.data < hoje);
+
   return (
     <div className={estilos.pagina}>
-      <h1>{cliente.dados.nome}</h1>
+      {/* As duas coisas que se faz com um cliente — chamar e marcar — no
+          topo, e o resumo do histórico como linha de apoio. */}
+      <CabecalhoDaPagina
+        voltar={{ href: "/painel/clientes", rotulo: "Clientes" }}
+        titulo={dados.nome}
+        apoio={resumoDoHistorico(dados.agendamentos, hoje)}
+        acao={
+          <div className={estilos.acoesDoTopo}>
+            <BotaoLink href={linkDoZap(dados.telefone)} variante="contorno" externo>
+              WhatsApp
+            </BotaoLink>
+            <BotaoLink href={`/painel/agendamentos/novo?cliente=${dados.id}`}>Agendar</BotaoLink>
+          </div>
+        }
+      />
 
       {recemCadastrado ? (
         <Aviso tom="sucesso">
@@ -146,17 +270,28 @@ export function DetalheDoCliente() {
         </Aviso>
       ) : null}
 
-      {/* Lado a lado: os dados à esquerda, o histórico à direita (as
-          telas usam a largura — pedido do dono). */}
-      <LadoALado>
-        <Secao
-          titulo="Dados"
-          acao={
-            <Botao carregando={salvando} onClick={salvar}>
-              Salvar
-            </Botao>
-          }
-        >
+      {/* Sem as caixas "Dados" e "Histórico" (pedido do dono): o
+          histórico, que é o que se olha, à esquerda e largo; os dados à
+          direita, editáveis ali mesmo. No celular, um embaixo do outro. */}
+      <div className={estilos.corpo}>
+        <div className={estilos.historico}>
+          {dados.agendamentos.length === 0 ? (
+            <p className={estilos.vazio}>
+              Esse cliente ainda não tem agendamento. Use o Agendar lá em cima pra marcar o
+              primeiro.
+            </p>
+          ) : (
+            <>
+              <GrupoDoHistorico titulo="Próximos" agendamentos={proximos} />
+              <GrupoDoHistorico titulo="Anteriores" agendamentos={anteriores} />
+            </>
+          )}
+        </div>
+
+        <section className={estilos.dados} aria-labelledby="dados-do-cliente">
+          <h2 id="dados-do-cliente" className={estilos.rotuloDoGrupo}>
+            Dados
+          </h2>
           <Campo
             rotulo="Nome"
             maxLength={NOME_MAX}
@@ -207,24 +342,22 @@ export function DetalheDoCliente() {
           ) : null}
 
           {aviso ? <Aviso>{aviso}</Aviso> : null}
-        </Secao>
-        <Secao titulo="Histórico">
-          <Tabela
-            cabecalho={["Data", "Horário", "Serviços", "Status"]}
-            vazio="Esse cliente ainda não tem agendamento."
-            aoAbrir={(agendamentoId) => router.push(`/painel/agendamentos/${agendamentoId}`)}
-            linhas={cliente.dados.agendamentos.map((agendamento) => ({
-              id: agendamento.id,
-              celulas: [
-                formatarDataLonga(agendamento.data),
-                agendamento.horaInicio,
-                agendamento.servicos.map((s) => s.nome).join(" + "),
-                rotuloDoStatus(agendamento.status),
-              ],
-            }))}
-          />
-        </Secao>
-      </LadoALado>
+
+          {/* Mesmo jeito das observações no detalhe do agendamento: os
+              botões só aparecem quando há o que salvar — um Salvar sempre
+              aceso não diz se algo mudou. */}
+          {mudou ? (
+            <div className={estilos.botoesDosDados}>
+              <Botao variante="fantasma" onClick={descartar} disabled={salvando}>
+                Descartar
+              </Botao>
+              <Botao carregando={salvando} onClick={salvar}>
+                Salvar
+              </Botao>
+            </div>
+          ) : null}
+        </section>
+      </div>
     </div>
   );
 }

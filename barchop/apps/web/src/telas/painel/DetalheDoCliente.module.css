@@ -3,3 +3,158 @@
   gap: var(--espaco-lg);
   align-content: start;
 }
+
+.acoesDoTopo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+/* Histórico largo à esquerda, dados à direita; no celular, um embaixo do
+   outro, com o histórico primeiro. Sem caixas em volta (pedido do dono):
+   o que separa as duas colunas é o espaço. */
+.corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-xl);
+  align-items: start;
+}
+
+@media (min-width: 1000px) {
+  .corpo {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  }
+}
+
+.historico {
+  display: grid;
+  gap: var(--espaco-xl);
+  min-width: 0;
+}
+
+.grupo {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+/* O título de grupo pequeno, em caixa alta: o mesmo do detalhe do
+   agendamento. */
+.rotuloDoGrupo {
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+.linhas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linhas li + li {
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* A linha inteira é o link pro agendamento. No desktop, as colunas
+   alinham de uma linha pra outra (quando · o quê · valor · status). */
+.linha {
+  display: grid;
+  grid-template-columns: 12.5rem minmax(0, 1fr) auto 8.5rem auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  padding: var(--espaco-sm) var(--espaco-sm);
+  margin: 0 calc(-1 * var(--espaco-sm));
+  border-radius: var(--raio-sm);
+  color: var(--cor-ink);
+  text-decoration: none;
+  transition-property: background-color;
+  transition-duration: 120ms;
+}
+
+.linha:hover {
+  background: var(--cor-paper-soft);
+}
+
+.linha:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: -3px;
+}
+
+.quando {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaco-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Cancelado e não compareceu ficam na lista, mas apagados: o olho acha
+   primeiro o que aconteceu. O selo do status continua com a cor cheia. */
+.naoAconteceu .quando,
+.naoAconteceu .oque,
+.naoAconteceu .valor {
+  opacity: 0.55;
+}
+
+.oque {
+  min-width: 0;
+  text-wrap: pretty;
+}
+
+.secundario {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.valor {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.status {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.seta {
+  color: var(--cor-ink-soft);
+}
+
+/* No celular: quando e status na primeira linha, o quê e o valor na
+   segunda. A seta sai: a linha inteira já é toque. */
+@media (max-width: 640px) {
+  .linha {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "quando status"
+      "oque valor";
+    row-gap: var(--espaco-xs);
+  }
+
+  .quando { grid-area: quando; }
+  .status { grid-area: status; }
+  .oque { grid-area: oque; }
+  .valor { grid-area: valor; }
+  .seta { display: none; }
+}
+
+.vazio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+.dados {
+  display: grid;
+  gap: var(--espaco-md);
+  min-width: 0;
+}
+
+.botoesDosDados {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaco-sm);
+}

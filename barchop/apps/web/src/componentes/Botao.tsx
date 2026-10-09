@@ -1,6 +1,7 @@
 "use client";
 
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import Link from "next/link";
 import estilos from "./Botao.module.css";
 
 type Variante = "primario" | "fantasma" | "contorno";
@@ -29,5 +30,35 @@ export function Botao({
     >
       {children}
     </button>
+  );
+}
+
+// Um link com a cara do Botao: ações que levam a outro lugar (agendar pra
+// este cliente, abrir o WhatsApp) são <a>, não <button> — abrem em outra
+// aba, o leitor de tela anuncia como link, e o endereço aparece no hover.
+// `externo` sai do app: abre em outra aba, sem passar o referrer.
+export function BotaoLink({
+  href,
+  variante = "primario",
+  externo = false,
+  children,
+}: {
+  href: string;
+  variante?: Variante;
+  externo?: boolean;
+  children: ReactNode;
+}) {
+  const classes = `${estilos.botao} ${estilos[variante]}`;
+  if (externo) {
+    return (
+      <a className={classes} href={href} target="_blank" rel="noreferrer">
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link className={classes} href={href}>
+      {children}
+    </Link>
   );
 }

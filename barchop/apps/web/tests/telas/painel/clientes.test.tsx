@@ -366,7 +366,8 @@ describe("clientes no painel", () => {
     montarPainel(<DetalheDoCliente />, semear());
 
     expect(await screen.findByDisplayValue("João Silva")).toBeInTheDocument();
-    expect(screen.getByText(/30 de agosto/i)).toBeInTheDocument();
+    const anteriores = screen.getByRole("region", { name: "Anteriores" });
+    expect(within(anteriores).getByText(/30 de agosto/i)).toBeInTheDocument();
   });
 
   it("o detalhe salva a edição", async () => {
@@ -803,6 +804,11 @@ describe("clientes no painel", () => {
     montarPainel(<DetalheDoCliente />, falso);
 
     await screen.findByDisplayValue("João Silva");
+    // O conflito vem de trocar o telefone pelo de outro cliente — e só
+    // com algo mudado o Salvar aparece.
+    const telefone = screen.getByLabelText(/^telefone/i);
+    await userEvent.clear(telefone);
+    await userEvent.type(telefone, "11999990002");
     await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
     expect(await screen.findByText(/já é de outro cliente/i)).toBeInTheDocument();

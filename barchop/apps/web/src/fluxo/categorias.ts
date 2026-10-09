@@ -1,6 +1,6 @@
 import { CATEGORIAS_DE_SERVICO, type CategoriaDeServico } from "@barchop/formato";
 import type { ServicoSerializado } from "@barchop/types";
-import { ROTULO_DA_CATEGORIA } from "../formato/pagina";
+import { categoriaConhecida, ROTULO_DA_CATEGORIA } from "../formato/pagina";
 
 export interface GrupoDeServicos {
   // null só quando nenhum serviço tem categoria: aí a lista é uma só,
@@ -13,9 +13,10 @@ export interface GrupoDeServicos {
 
 // Agrupa na ordem de CATEGORIAS_DE_SERVICO, que é a ordem das seções na
 // página; dentro de cada seção, a ordem da API fica. Os sem categoria
-// vão por último, em "Outros serviços".
+// vão por último, em "Outros serviços" — com eles, os de categoria fora
+// da lista (ver categoriaConhecida).
 export function agruparPorCategoria(servicos: ServicoSerializado[]): GrupoDeServicos[] {
-  if (servicos.every((servico) => !servico.categoria)) {
+  if (servicos.every((servico) => !categoriaConhecida(servico.categoria))) {
     return servicos.length > 0 ? [{ titulo: null, categoria: null, servicos }] : [];
   }
 
@@ -24,7 +25,7 @@ export function agruparPorCategoria(servicos: ServicoSerializado[]): GrupoDeServ
     categoria,
     servicos: servicos.filter((servico) => servico.categoria === categoria),
   }));
-  const semCategoria = servicos.filter((servico) => !servico.categoria);
+  const semCategoria = servicos.filter((servico) => !categoriaConhecida(servico.categoria));
   return [
     ...grupos.filter((grupo) => grupo.servicos.length > 0),
     ...(semCategoria.length > 0

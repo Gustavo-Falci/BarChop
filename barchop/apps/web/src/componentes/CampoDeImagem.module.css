@@ -42,6 +42,10 @@
   display: grid;
   gap: var(--espaco-xs);
   justify-items: start;
+  /* Cabe ao lado da imagem quadrada ou redonda mesmo numa coluna
+     estreita; a capa, que ocupa a linha, empurra pra baixo. */
+  flex: 1 1 11rem;
+  min-width: 0;
 }
 
 /* Escondido da vista, não do teclado nem do leitor de tela. */

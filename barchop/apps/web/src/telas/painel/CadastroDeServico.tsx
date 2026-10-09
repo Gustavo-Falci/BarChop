@@ -145,7 +145,9 @@ export function CadastroDeServico() {
     setAtualSincronizado(atual);
     setNome(atual.nome);
     setDuracao(String(atual.duracaoMinutos));
-    setPreco(atual.preco);
+    // Com vírgula, como o dono digita e como a lista mostra ("50,00");
+    // o paraDecimal aceita os dois.
+    setPreco(atual.preco.replace(".", ","));
     // Fora da lista abre como "Sem categoria": nenhuma pílula marcada e
     // o valor velho voltaria no salvar, que a API recusa.
     setCategoria(categoriaConhecida(atual.categoria) ?? "");

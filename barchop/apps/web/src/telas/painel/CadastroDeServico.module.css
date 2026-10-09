@@ -33,6 +33,14 @@
   gap: var(--espaco-xs);
 }
 
+/* Sem a margem padrão do <p>: o título da prévia alinha com o "Nome" da
+   coluna ao lado, e as frases de apoio ficam coladas no que explicam. */
+.previa p,
+.lateral > p,
+.acaoDoEstado p {
+  margin: 0;
+}
+
 /* O <ul> em volta do cartão (ele é um <li>): sem marcador nem recuo. */
 .cartao {
   margin: 0;

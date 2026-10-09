@@ -4,26 +4,98 @@
   align-content: start;
 }
 
-/* Os botões ficam do tamanho do texto: soltos no grid da página eles
-   herdariam o `stretch` e ocupariam os 560px inteiros — largura que
-   nenhuma outra ação do painel tem. Mesma regra de CadastroDeCliente.
+/* Formulário à esquerda, prévia e foto à direita: a tela usa a largura
+   (pedido do dono) e a coluna da direita deixa de ser um vão vazio. No
+   celular, uma coluna só, com a prévia depois dos campos. */
+.corpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-xl);
+  align-items: start;
+}
 
-   O `.acaoDoEstado` recebe a mesma regra por um motivo específico:
-   antes deste grupo existir, Salvar e Desativar eram os dois filhos
-   diretos do grid e esticavam IGUAL. Encolher só o primeiro par deixava
-   o Desativar como o botão mais largo da tela — peso visual de ação
-   principal numa ação que não é. */
+@media (min-width: 1000px) {
+  .corpo {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  }
+}
+
+.formulario,
+.lateral {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+  min-width: 0;
+}
+
+.previa {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+/* Sem a margem padrão do <p>: o título da prévia alinha com o "Nome" da
+   coluna ao lado, e as frases de apoio ficam coladas no que explicam. */
+.previa p,
+.lateral > p,
+.acaoDoEstado p {
+  margin: 0;
+}
+
+/* O <ul> em volta do cartão (ele é um <li>): sem marcador nem recuo. */
+.cartao {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Salvar e Cancelar numa ponta, o Desativar na outra, separados por uma
+   linha fina: o fim do formulário fica marcado sem virar caixa. No
+   celular, um embaixo do outro. */
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  padding-top: var(--espaco-lg);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* Os botões ficam do tamanho do texto: soltos num grid eles herdariam o
+   `stretch` e o Desativar viraria o botão mais largo da tela — peso de
+   ação principal numa ação que não é. */
 .acoes,
 .acaoDoEstado {
   display: flex;
+  align-items: center;
   gap: var(--espaco-sm);
+}
+
+.acaoDoEstado .apoio {
+  max-width: 34ch;
+  text-align: right;
+  text-wrap: pretty;
 }
 
 /* Onde a coluna já é estreita, o alvo largo vale mais que a proporção. */
 @media (max-width: 560px) {
+  .acoes,
+  .acaoDoEstado {
+    width: 100%;
+  }
+
   .acoes button,
   .acaoDoEstado button {
     flex: 1;
+  }
+
+  .acaoDoEstado {
+    flex-wrap: wrap;
+  }
+
+  .acaoDoEstado .apoio {
+    max-width: none;
+    text-align: left;
   }
 }
 

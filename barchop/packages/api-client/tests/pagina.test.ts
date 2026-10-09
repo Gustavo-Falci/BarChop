@@ -63,19 +63,30 @@ describe("dublê — página rica", () => {
     }
   });
 
-  it("serviço com categoria aparada; vazia vira null", async () => {
+  it("serviço com categoria da lista; null tira", async () => {
     const falso = criarApiClientFalso();
 
     const barba = await falso.barbeiro.criarServico({
       nome: "Barba",
       duracaoMinutos: 30,
       preco: "30.00",
-      categoria: "  Barba ",
+      categoria: "barba",
     });
-    const limpo = await falso.barbeiro.atualizarServico(barba.id, { categoria: "  " });
+    const limpo = await falso.barbeiro.atualizarServico(barba.id, { categoria: null });
 
-    expect(barba.categoria).toBe("Barba");
+    expect(barba.categoria).toBe("barba");
     expect(limpo.categoria).toBeNull();
+  });
+
+  it("categoria fora da lista é 400, como na API", async () => {
+    const falso = criarApiClientFalso();
+
+    await expect(
+      falso.barbeiro.criarServico({ nome: "Corte", duracaoMinutos: 30, preco: "30.00", categoria: "CEBELO" })
+    ).rejects.toMatchObject({ status: 400 });
+    await expect(falso.barbeiro.atualizarServico("s1", { categoria: "Cabelo" })).rejects.toMatchObject({
+      status: 400,
+    });
   });
 
   it("próximos horários: os semeados, ou lista vazia por serviço ativo", async () => {

@@ -95,6 +95,10 @@ export interface BarbeariaSerializada extends RegrasDeAgendamento {
 // @barchop/formato (o banco tem o CHECK).
 export type FormatoDaLogo = "redonda" | "quadrada" | "livre";
 
+// A categoria do serviço. Mesmos valores de CATEGORIAS_DE_SERVICO em
+// @barchop/formato (o banco tem o CHECK).
+export type CategoriaDeServico = "cabelo" | "barba" | "combo" | "sobrancelha" | "quimica" | "infantil";
+
 export type AntecedenciaDoLembrete = 2 | 12 | 24;
 
 // Os próximos horários livres de um serviço, na página pública: a união
@@ -161,7 +165,7 @@ export interface ServicoSerializado {
   preco: string;
   ativo: boolean;
   // Agrupa os serviços na página pública; null = sem categoria.
-  categoria: string | null;
+  categoria: CategoriaDeServico | null;
   // O texto curto do cartão na página pública; null = sem descrição.
   descricao: string | null;
   // URL pública da foto (a chave fica na API); null = sem foto.

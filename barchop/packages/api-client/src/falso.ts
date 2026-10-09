@@ -14,6 +14,7 @@ import type {
   AgendamentoComCliente,
   AgendamentoDoLembrete,
   AgendamentoSerializado,
+  CategoriaDeServico,
   AntecedenciaDoLembrete,
   BarbeariaDoPainel,
   ClienteSerializado,
@@ -250,7 +251,9 @@ function limparTextoOpcional(texto: string | null | undefined): string | null {
 }
 
 // Como o schema da API: só valor da lista fechada, ou null; fora dela, 400.
-function categoriaValida(categoria: string | null | undefined): string | null {
+// O tipo já barra valor de fora; a checagem é pra quem chega com `as`
+// (ou de um teste que testa a recusa).
+function categoriaValida(categoria: CategoriaDeServico | null | undefined): CategoriaDeServico | null {
   if (categoria == null) return null;
   if (!(CATEGORIAS_DE_SERVICO as readonly string[]).includes(categoria)) {
     throw new ErroDaApi(400, "requisicao_invalida", "categoria fora da lista");

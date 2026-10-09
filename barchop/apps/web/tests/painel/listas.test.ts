@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MembroDaEquipe, ServicoSerializado } from "@barchop/types";
+import type { CategoriaDeServico, MembroDaEquipe, ServicoSerializado } from "@barchop/types";
 import {
   agruparPorCategoria,
   faixaDePreco,
@@ -10,7 +10,7 @@ import {
 
 function servico(
   id: string,
-  categoria: string | null,
+  categoria: CategoriaDeServico | null,
   preco = "40.00",
   ativo = true
 ): ServicoSerializado {

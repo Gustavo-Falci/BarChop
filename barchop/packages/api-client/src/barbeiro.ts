@@ -2,6 +2,7 @@ import type {
   AgendamentoComCliente,
   AgendamentoSerializado,
   AntecedenciaDoLembrete,
+  CategoriaDeServico,
   FormatoDaLogo,
   RegrasDeAgendamento,
   BarbeariaDoPainel,
@@ -76,8 +77,8 @@ export interface NovoServico {
   nome: string;
   duracaoMinutos: number;
   preco: string; // string, nunca number — ver ServicoSerializado
-  // Agrupa na página pública; vazio vira null na API.
-  categoria?: string | null;
+  // Agrupa na página pública; só valor da lista, null = sem categoria.
+  categoria?: CategoriaDeServico | null;
   // O texto curto do cartão na página pública; vazio vira null na API.
   descricao?: string | null;
 }

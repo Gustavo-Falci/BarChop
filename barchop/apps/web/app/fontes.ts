@@ -1,4 +1,3 @@
-import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 
 // Clash Grotesk é self-hosted a partir do pacote completo do Fontshare
@@ -28,11 +27,24 @@ export const clashGrotesk = localFont({
   display: "swap",
 });
 
-// Inter vem pelo next/font/google, que baixa no build e serve do
-// próprio domínio — nenhuma requisição do visitante vai pro Google.
-export const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "600"],
+// Inter também self-hosted, de `font/Inter/` (Inter 4.1 do rsms, licença
+// OFL junto). Era next/font/google, que baixa no build: a VM sem acesso ao
+// fonts.gstatic.com quebrou o build da imagem. Os arquivos são o recorte
+// latino que o Google servia (mesmo unicode-range, via pyftsubset), nos
+// dois pesos que os tokens citam.
+export const inter = localFont({
+  src: [
+    {
+      path: "../../../font/Inter/Inter-Regular-latin.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../../font/Inter/Inter-SemiBold-latin.woff2",
+      weight: "600",
+      style: "normal",
+    },
+  ],
   variable: "--fonte-corpo",
   display: "swap",
 });

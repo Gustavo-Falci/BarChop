@@ -98,6 +98,61 @@ describe("foto do serviço no cadastro", () => {
   });
 });
 
+describe("cadastro do serviço: prévia, foto e ações", () => {
+  beforeEach(() => localStorage.clear());
+
+  // A prévia é decorativa (aria-hidden): o formulário já diz tudo pra
+  // quem usa leitor de tela. Por isso a busca é por texto, a partir do
+  // título dela.
+  function previa(): HTMLElement {
+    return screen.getByText("Como o cliente vê").parentElement!;
+  }
+
+  it("a prévia mostra o cartão como o cliente vê, enquanto o dono digita", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
+    montarPainel(<CadastroDeServico />, criarApiClientFalso());
+
+    await userEvent.type(await screen.findByLabelText(/^nome/i), "Pigmentação");
+    await userEvent.type(screen.getByLabelText(/duração/i), "45");
+    await userEvent.type(screen.getByLabelText(/preço/i), "50,00");
+    await userEvent.type(screen.getByLabelText(/descrição/i), "Barba desenhada");
+
+    expect(within(previa()).getByText("Pigmentação")).toBeInTheDocument();
+    expect(within(previa()).getByText("45 min")).toBeInTheDocument();
+    expect(within(previa()).getByText(/50,00/)).toBeInTheDocument();
+    expect(within(previa()).getByText("Barba desenhada")).toBeInTheDocument();
+  });
+
+  it("no serviço novo, a prévia diz que a foto entra depois de salvar", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
+    montarPainel(<CadastroDeServico />, criarApiClientFalso());
+
+    await screen.findByLabelText(/^nome/i);
+    expect(screen.getByText(/depois de salvar, dá pra pôr a foto/i)).toBeInTheDocument();
+  });
+
+  it("na edição, a foto se escolhe por um botão, não pelo campo cru do navegador", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
+    montarPainel(<CadastroDeServico />, criarApiClientFalso({ servicos: [corte()] }));
+
+    expect(await screen.findByText("Escolher foto")).toBeInTheDocument();
+    await userEvent.upload(screen.getByLabelText(/^foto/i), arquivo());
+    expect(await screen.findByText("Trocar foto")).toBeInTheDocument();
+  });
+
+  it("Desativar diz o que acontece, e Reativar também", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
+    montarPainel(<CadastroDeServico />, criarApiClientFalso({ servicos: [corte()] }));
+
+    await screen.findByDisplayValue("Corte");
+    expect(screen.getByText(/sai da sua página e do agendamento/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Desativar" }));
+    expect(await screen.findByRole("button", { name: "Reativar" })).toBeInTheDocument();
+    expect(screen.getByText(/fora do agendamento/i)).toBeInTheDocument();
+  });
+});
+
 describe("miniatura na lista de serviços", () => {
   beforeEach(() => {
     localStorage.clear();

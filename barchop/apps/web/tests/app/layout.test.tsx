@@ -1,16 +1,12 @@
 import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-// `next/font/local` e `next/font/google` só existem de verdade dentro do
-// build do Next — fora dele os módulos não exportam função nenhuma e o
-// `app/fontes.ts` explode na importação. Os dublês devolvem só o
-// `.variable`, que é tudo que o layout usa das fontes.
+// `next/font/local` só existe de verdade dentro do build do Next — fora
+// dele o módulo não exporta função nenhuma e o `app/fontes.ts` explode na
+// importação. O dublê devolve só o `.variable`, que é tudo que o layout
+// usa das fontes.
 vi.mock("next/font/local", () => ({
-  default: () => ({ variable: "fonte-display" }),
-}));
-
-vi.mock("next/font/google", () => ({
-  Inter: () => ({ variable: "fonte-corpo" }),
+  default: ({ variable }: { variable: string }) => ({ variable }),
 }));
 
 import RootLayout from "../../app/layout";

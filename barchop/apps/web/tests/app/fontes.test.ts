@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 // As fontes saem do repositório, nunca da internet: o build da imagem do
@@ -27,10 +27,11 @@ describe("fontes do app", () => {
 
     expect(fontes.inter.variable).toBe("--fonte-corpo");
     expect(fontes.clashGrotesk.variable).toBe("--fonte-display");
-    // O `path` do next/font/local é relativo ao app/fontes.ts.
-    const pastaDoApp = new URL("../../app/", import.meta.url);
+    // O `path` do next/font/local é relativo ao app/fontes.ts; o vitest
+    // roda com o cwd em apps/web.
+    expect(chamadasLocais.length).toBe(2);
     for (const { path } of chamadasLocais.flatMap((chamada) => chamada.src)) {
-      expect(existsSync(fileURLToPath(new URL(path, pastaDoApp))), path).toBe(true);
+      expect(existsSync(resolve(process.cwd(), "app", path)), path).toBe(true);
     }
   });
 });

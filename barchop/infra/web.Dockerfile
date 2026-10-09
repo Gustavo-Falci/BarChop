@@ -19,8 +19,8 @@ ARG NEXT_PUBLIC_URL_DO_SITE
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
   NEXT_PUBLIC_URL_DO_SITE=$NEXT_PUBLIC_URL_DO_SITE \
   NEXT_TELEMETRY_DISABLED=1
-# A Inter vem do Google Fonts no build (app/fontes.ts): a máquina que
-# monta a imagem precisa de internet.
+# As fontes saem do repositório (font/, ver app/fontes.ts): o build não
+# baixa nada do Google Fonts.
 RUN pnpm --filter @barchop/web build
 
 FROM node:22-bookworm-slim AS web

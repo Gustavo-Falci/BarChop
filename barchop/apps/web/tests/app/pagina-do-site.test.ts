@@ -3,11 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // Ver tests/app/layout.test.tsx: as fontes só existem dentro do build
 // do Next.
 vi.mock("next/font/local", () => ({
-  default: () => ({ variable: "fonte-display" }),
-}));
-
-vi.mock("next/font/google", () => ({
-  Inter: () => ({ variable: "fonte-corpo" }),
+  default: ({ variable }: { variable: string }) => ({ variable }),
 }));
 
 import { metadata } from "../../app/(marketing)/page";

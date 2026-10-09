@@ -339,7 +339,7 @@ describe("agenda — bloquear", () => {
     expect(within(janela).getByLabelText("De")).toHaveValue("2026-09-08");
     expect(within(janela).getByLabelText("Até")).toHaveValue("2026-09-08");
 
-    await userEvent.click(within(janela).getByLabelText("Dia inteiro"));
+    await userEvent.click(within(janela).getByRole("radio", { name: "Só algumas horas" }));
     await userEvent.type(within(janela).getByLabelText("Das"), "15:00");
     await userEvent.type(within(janela).getByLabelText("Às"), "16:00");
     await userEvent.type(within(janela).getByLabelText("Motivo (opcional)"), "Médico");
@@ -378,7 +378,7 @@ describe("agenda — bloquear", () => {
     montarPainel(<Agenda agora={AGORA} />, semear());
 
     const janela = await abrirJanela();
-    await userEvent.click(within(janela).getByLabelText("Dia inteiro"));
+    await userEvent.click(within(janela).getByRole("radio", { name: "Só algumas horas" }));
     await userEvent.type(within(janela).getByLabelText("Das"), "16:00");
     await userEvent.type(within(janela).getByLabelText("Às"), "15:00");
     await userEvent.click(within(janela).getByRole("button", { name: "Bloquear" }));

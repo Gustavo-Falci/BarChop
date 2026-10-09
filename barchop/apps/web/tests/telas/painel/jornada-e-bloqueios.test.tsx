@@ -184,7 +184,9 @@ describe("folgas e bloqueios", () => {
     });
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
 
-    const item = (await screen.findByText("Férias")).closest("li") as HTMLElement;
+    // Pelo período: "Férias" também é um atalho do motivo no formulário.
+    const item = (await screen.findByText("5 a 9 de janeiro")).closest("li") as HTMLElement;
+    expect(within(item).getByText("Férias")).toBeInTheDocument();
     expect(within(item).getByText("Ana")).toBeInTheDocument();
     expect(within(item).getByText(/dia inteiro/i)).toBeInTheDocument();
   });
@@ -194,13 +196,11 @@ describe("folgas e bloqueios", () => {
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
 
-    // Espera a opção, e não só o <select>: ele aparece antes de a equipe
-    // chegar, vazio — sob carga o selectOptions corria contra a lista.
-    await screen.findByRole("option", { name: "Ana" });
-    await userEvent.selectOptions(screen.getByLabelText("Membro"), "m2");
+    // Espera a pílula da Ana: o grupo aparece antes de a equipe chegar.
+    await userEvent.click(await screen.findByRole("radio", { name: "Ana" }));
     fireEvent.change(screen.getByLabelText("De"), { target: { value: "2037-01-12" } });
     fireEvent.change(screen.getByLabelText("Até"), { target: { value: "2037-01-16" } });
-    await userEvent.click(screen.getByRole("checkbox", { name: /dia inteiro/i }));
+    await userEvent.click(screen.getByRole("radio", { name: "Só algumas horas" }));
     fireEvent.change(screen.getByLabelText("Das"), { target: { value: "12:00" } });
     fireEvent.change(screen.getByLabelText("Às"), { target: { value: "13:00" } });
     await userEvent.type(screen.getByLabelText(/motivo/i), "Almoço");
@@ -216,7 +216,9 @@ describe("folgas e bloqueios", () => {
         motivo: "Almoço",
       })
     );
-    expect(await screen.findByText("Almoço")).toBeInTheDocument();
+    // Na lista, pelo período ("Almoço" também é atalho do motivo).
+    const novo = (await screen.findByText("12 a 16 de janeiro")).closest("li") as HTMLElement;
+    expect(within(novo).getByText("Almoço")).toBeInTheDocument();
   });
 
   it("período invertido para na tela, sem chamar a API", async () => {
@@ -249,11 +251,11 @@ describe("folgas e bloqueios", () => {
     const apagar = vi.spyOn(falso.barbeiro, "apagarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
 
-    const item = (await screen.findByText("Médico")).closest("li") as HTMLElement;
+    const item = (await screen.findByText("5 de janeiro")).closest("li") as HTMLElement;
     await userEvent.click(within(item).getByRole("button", { name: /remover/i }));
 
     await waitFor(() => expect(apagar).toHaveBeenCalledWith("x1"));
-    await waitFor(() => expect(screen.queryByText("Médico")).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText("5 de janeiro")).not.toBeInTheDocument());
   });
 
   it("o profissional bloqueia só a própria agenda: sem escolher membro", async () => {
@@ -263,7 +265,7 @@ describe("folgas e bloqueios", () => {
 
     fireEvent.change(await screen.findByLabelText("De"), { target: { value: "2037-01-05" } });
     fireEvent.change(screen.getByLabelText("Até"), { target: { value: "2037-01-05" } });
-    expect(screen.queryByLabelText("Membro")).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Membro" })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^bloquear$/i }));
 
     await waitFor(() =>

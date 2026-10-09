@@ -14,6 +14,17 @@ export function formatarDataLonga(data: string): string {
   return FORMATADOR_LONGO.format(new Date(`${data}T00:00:00Z`));
 }
 
+// Um período de dias por extenso, sem repetir o que é igual: "5 de
+// janeiro" (um dia só), "5 a 9 de janeiro" (mesmo mês), "28 de dezembro
+// a 3 de janeiro" (meses diferentes). Folgas e bloqueios.
+export function formatarPeriodo(inicio: string, fim: string): string {
+  if (inicio === fim) return formatarDataLonga(inicio);
+  if (inicio.slice(0, 7) === fim.slice(0, 7)) {
+    return `${Number(inicio.slice(8, 10))} a ${formatarDataLonga(fim)}`;
+  }
+  return `${formatarDataLonga(inicio)} a ${formatarDataLonga(fim)}`;
+}
+
 // O Intl diz "terça-feira", e numa linha de resumo o "-feira" é peso
 // sem informação — daí a tabela própria, na ordem do getUTCDay.
 const DIAS_DA_SEMANA = [

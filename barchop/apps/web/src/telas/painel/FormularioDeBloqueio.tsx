@@ -5,10 +5,45 @@ import type { ErroDaApi } from "@barchop/api-client";
 import type { MembroDaEquipe } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Campo } from "../../componentes/Campo";
+import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
+import { formatarDataLonga, formatarPeriodo } from "../../formato/datas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./FormularioDeBloqueio.module.css";
 
 const MOTIVO_MAX = 120;
+
+// Os porquês de quase todo bloqueio: um toque preenche o motivo (dá pra
+// escrever outro).
+const MOTIVOS_COMUNS = ["Folga", "Férias", "Almoço", "Médico"];
+
+const OPCOES_DE_DURACAO: { valor: "dia" | "horas"; rotulo: string }[] = [
+  { valor: "dia", rotulo: "Dia inteiro" },
+  { valor: "horas", rotulo: "Só algumas horas" },
+];
+
+// "Ana fica fora da agenda de 12 a 16 de janeiro, o dia inteiro." Só
+// quando dá pra dizer: período inteiro e na ordem (e as horas, se for
+// por horas). O resto é com a validação, no Bloquear.
+function fraseDoBloqueio(
+  quem: string,
+  campos: {
+    dataInicio: string;
+    dataFim: string;
+    diaInteiro: boolean;
+    horaInicio: string;
+    horaFim: string;
+  }
+): string | null {
+  const { dataInicio, dataFim, diaInteiro, horaInicio, horaFim } = campos;
+  if (!dataInicio || !dataFim || dataFim < dataInicio) return null;
+  if (!diaInteiro && (!horaInicio || !horaFim || horaInicio >= horaFim)) return null;
+  const quando =
+    dataInicio === dataFim
+      ? `em ${formatarDataLonga(dataInicio)}`
+      : `de ${formatarPeriodo(dataInicio, dataFim)}`;
+  const horas = diaInteiro ? "o dia inteiro" : `das ${horaInicio} às ${horaFim}`;
+  return `${quem} fica fora da agenda ${quando}, ${horas}.`;
+}
 
 // O estado e a validação do bloqueio, separados dos campos: Folgas põe
 // o botão de enviar no cabeçalho da seção, e a janela da agenda no
@@ -80,10 +115,18 @@ export function useFormularioDeBloqueio({
     }
   }
 
+  // O Até acompanha o De: folga de um dia é o caso comum, e um Até que
+  // ficou pra trás viraria "termina antes de começar" no Bloquear. Um
+  // Até já depois do novo De fica como está.
+  function escolherInicio(data: string) {
+    setDataInicio(data);
+    setDataFim((atual) => (!atual || atual < data ? data : atual));
+  }
+
   return {
     campos: {
       barbeiroId, setBarbeiroId,
-      dataInicio, setDataInicio,
+      dataInicio, setDataInicio: escolherInicio,
       dataFim, setDataFim,
       diaInteiro, setDiaInteiro,
       horaInicio, setHoraInicio,
@@ -101,7 +144,8 @@ export function useFormularioDeBloqueio({
 export type FormularioDeBloqueioAberto = ReturnType<typeof useFormularioDeBloqueio>;
 
 // Os campos: membro (pra quem bloqueia a equipe), período, dia inteiro
-// ou faixa de horas, motivo. Quem envia é o botão de fora, por `form`.
+// ou faixa de horas, motivo, e a frase do que vai acontecer. Quem envia
+// é o botão de fora, por `form`.
 export function FormularioDeBloqueio({
   id,
   formulario,
@@ -115,6 +159,10 @@ export function FormularioDeBloqueio({
   soOProprio: boolean;
 }) {
   const { campos } = formulario;
+  const quem = soOProprio
+    ? "Você"
+    : (membros.find((membro) => membro.id === campos.barbeiroId)?.nome ?? "Quem você escolheu");
+  const frase = fraseDoBloqueio(quem, campos);
   return (
     <form
       id={id}
@@ -125,49 +173,63 @@ export function FormularioDeBloqueio({
         void formulario.bloquear();
       }}
     >
-      {/* `htmlFor`, e não o <label> embrulhando o <select>: embrulhado,
-          o texto das opções entraria no nome do campo. */}
+      {/* Pílulas, e não um <select>: a equipe de uma barbearia é curta,
+          e quem fica fora se escolhe à vista. */}
       {soOProprio ? null : (
-        <div className={estilos.campoSelect}>
-          <label htmlFor={`${id}-membro`}>Membro</label>
-          <select
-            id={`${id}-membro`}
-            value={campos.barbeiroId}
-            onChange={(evento) => campos.setBarbeiroId(evento.target.value)}
-          >
-            {membros.map((membro) => (
-              <option key={membro.id} value={membro.id}>
-                {membro.nome}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SeletorEmPilulas
+          nome={`${id}-membro`}
+          legenda="Membro"
+          opcoes={membros.map((membro) => ({ valor: membro.id, rotulo: membro.nome }))}
+          valor={campos.barbeiroId}
+          aoTrocar={campos.setBarbeiroId}
+        />
       )}
       <div className={estilos.linha}>
         <Campo rotulo="De" type="date" valor={campos.dataInicio} onChange={campos.setDataInicio} />
         <Campo rotulo="Até" type="date" valor={campos.dataFim} onChange={campos.setDataFim} />
       </div>
-      <label className={estilos.opcao}>
-        <input
-          type="checkbox"
-          checked={campos.diaInteiro}
-          onChange={(evento) => campos.setDiaInteiro(evento.target.checked)}
-        />
-        Dia inteiro
-      </label>
+      {/* Duas opções nomeadas, e não um checkbox "Dia inteiro": desmarcado,
+          ele não dizia o que acontecia. */}
+      <SeletorEmPilulas
+        nome={`${id}-duracao`}
+        legenda="Quanto tempo"
+        opcoes={OPCOES_DE_DURACAO}
+        valor={campos.diaInteiro ? "dia" : "horas"}
+        aoTrocar={(valor) => campos.setDiaInteiro(valor === "dia")}
+      />
       {campos.diaInteiro ? null : (
         <div className={estilos.linha}>
           <Campo rotulo="Das" type="time" valor={campos.horaInicio} onChange={campos.setHoraInicio} />
           <Campo rotulo="Às" type="time" valor={campos.horaFim} onChange={campos.setHoraFim} />
         </div>
       )}
-      <Campo
-        rotulo="Motivo (opcional)"
-        maxLength={MOTIVO_MAX}
-        placeholder="Férias, almoço, médico"
-        valor={campos.motivo}
-        onChange={campos.setMotivo}
-      />
+      <div className={estilos.motivo}>
+        <Campo
+          rotulo="Motivo (opcional)"
+          maxLength={MOTIVO_MAX}
+          placeholder="Férias, almoço, médico"
+          valor={campos.motivo}
+          onChange={campos.setMotivo}
+        />
+        <div className={estilos.atalhos}>
+          {MOTIVOS_COMUNS.map((motivo) => (
+            <button
+              key={motivo}
+              type="button"
+              className={estilos.atalho}
+              aria-pressed={campos.motivo === motivo}
+              onClick={() => campos.setMotivo(motivo)}
+            >
+              {motivo}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* O que o Bloquear vai fazer, dito antes: `aria-live` porque muda
+          a cada escolha. */}
+      <p className={estilos.frase} aria-live="polite">
+        {frase ?? "Escolha o período pra ver como fica."}
+      </p>
       {campos.erro ? <Aviso>{campos.erro}</Aviso> : null}
     </form>
   );

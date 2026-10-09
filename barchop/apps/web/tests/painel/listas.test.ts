@@ -32,17 +32,18 @@ function servico(
 const comEspacoComum = (texto: string) => texto.replace(/\s/g, " ");
 
 describe("agrupar serviços por categoria", () => {
-  it("mantém a ordem em que cada categoria aparece na lista da API", () => {
-    // A API já ordena (ativos antes, nome asc); a tela não reordena —
-    // só junta quem é da mesma categoria.
+  it("grupos na ordem da lista de categorias, com o rótulo", () => {
+    // A ordem é a da página pública (CATEGORIAS_DE_SERVICO), não a de
+    // quem aparece primeiro; dentro do grupo, a ordem da API fica.
     const grupos = agruparPorCategoria([
-      servico("1", "Cabelo"),
-      servico("2", "Barba"),
-      servico("3", "Cabelo"),
+      servico("1", "quimica"),
+      servico("2", "barba"),
+      servico("3", "cabelo"),
+      servico("4", "barba"),
     ]);
 
-    expect(grupos.map((grupo) => grupo.titulo)).toEqual(["Cabelo", "Barba"]);
-    expect(grupos[0].servicos.map((s) => s.id)).toEqual(["1", "3"]);
+    expect(grupos.map((grupo) => grupo.titulo)).toEqual(["Cabelo", "Barba", "Química e tratamentos"]);
+    expect(grupos[1].servicos.map((s) => s.id)).toEqual(["2", "4"]);
   });
 
   it("joga quem não tem categoria num grupo próprio, sempre por último", () => {
@@ -50,7 +51,7 @@ describe("agrupar serviços por categoria", () => {
     // categoria que o dono escolheu.
     const grupos = agruparPorCategoria([
       servico("1", null),
-      servico("2", "Cabelo"),
+      servico("2", "cabelo"),
     ]);
 
     expect(grupos.map((grupo) => grupo.titulo)).toEqual(["Cabelo", SEM_CATEGORIA]);
@@ -58,7 +59,7 @@ describe("agrupar serviços por categoria", () => {
 
   it("guarda o inativo no grupo dele", () => {
     // É desta tela que se reativa; o inativo não pode sumir do grupo.
-    const grupos = agruparPorCategoria([servico("1", "Cabelo", "40.00", false)]);
+    const grupos = agruparPorCategoria([servico("1", "cabelo", "40.00", false)]);
 
     expect(grupos[0].servicos).toHaveLength(1);
   });
@@ -69,7 +70,7 @@ describe("agrupar serviços por categoria", () => {
 
   it("ids de grupo diferentes pra cada categoria", () => {
     // Viram `key` de <tbody>; repetidos, o React misturaria grupos.
-    const grupos = agruparPorCategoria([servico("1", "Cabelo"), servico("2", null)]);
+    const grupos = agruparPorCategoria([servico("1", "cabelo"), servico("2", null)]);
 
     expect(new Set(grupos.map((grupo) => grupo.id)).size).toBe(2);
   });

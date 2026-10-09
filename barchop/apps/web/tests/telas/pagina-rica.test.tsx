@@ -92,23 +92,24 @@ describe("página da barbearia rica", () => {
     expect(screen.queryByRole("region", { name: /pagamento/i })).toBeNull();
   });
 
-  it("serviços por categoria, sem separar por caixa ou espaço; os sem categoria por último", async () => {
+  it("serviços por categoria, na ordem da lista e com o rótulo; os sem categoria por último", async () => {
     const falso = criarApiClientFalso({
       servicos: [
-        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cabelo", descricao: null, fotoUrl: null },
-        { id: "s2", nome: "Pigmentação", duracaoMinutos: 30, preco: "50.00", ativo: true, categoria: " cabelo ", descricao: null, fotoUrl: null },
-        { id: "s3", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true, categoria: "Barba", descricao: null, fotoUrl: null },
-        { id: "s4", nome: "Sobrancelha", duracaoMinutos: 15, preco: "15.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
+        { id: "s1", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true, categoria: "barba", descricao: null, fotoUrl: null },
+        { id: "s2", nome: "Pigmentação", duracaoMinutos: 30, preco: "50.00", ativo: true, categoria: "quimica", descricao: null, fotoUrl: null },
+        { id: "s3", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "cabelo", descricao: null, fotoUrl: null },
+        { id: "s4", nome: "Degradê", duracaoMinutos: 40, preco: "45.00", ativo: true, categoria: "cabelo", descricao: null, fotoUrl: null },
+        { id: "s5", nome: "Sobrancelha", duracaoMinutos: 15, preco: "15.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
       ],
     });
     montarPagina(falso);
 
     await screen.findByText("Pigmentação");
     const titulos = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-    expect(titulos).toEqual(["Cabelo", "Barba", "Outros serviços"]);
+    expect(titulos).toEqual(["Cabelo", "Barba", "Química e tratamentos", "Outros serviços"]);
     const cabelo = screen.getByRole("region", { name: "Cabelo" });
     expect(within(cabelo).getByText("Corte")).toBeInTheDocument();
-    expect(within(cabelo).getByText("Pigmentação")).toBeInTheDocument();
+    expect(within(cabelo).getByText("Degradê")).toBeInTheDocument();
   });
 
   it("sem categoria nenhuma, a lista fica como era, sem subtítulo", async () => {
@@ -230,6 +231,24 @@ describe("categoria no cadastro de serviço", () => {
     localStorage.clear();
   });
 
+  it("a categoria é escolhida da lista, sem campo de texto", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
+    montarPainel(<CadastroDeServico />, criarApiClientFalso());
+
+    const grupo = await screen.findByRole("group", { name: /categoria/i });
+    expect(within(grupo).getAllByRole("radio").map((r) => r.closest("label")?.textContent)).toEqual([
+      "Sem categoria",
+      "Cabelo",
+      "Barba",
+      "Combo",
+      "Sobrancelha",
+      "Química e tratamentos",
+      "Infantil",
+    ]);
+    expect(within(grupo).getByRole("radio", { name: "Sem categoria" })).toBeChecked();
+    expect(screen.queryByRole("textbox", { name: /categoria/i })).toBeNull();
+  });
+
   it("o serviço novo leva a categoria", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
     const falso = criarApiClientFalso();
@@ -240,27 +259,27 @@ describe("categoria no cadastro de serviço", () => {
     await userEvent.type(await screen.findByLabelText(/^nome/i), "Pigmentação");
     await userEvent.type(screen.getByLabelText(/duração/i), "30");
     await userEvent.type(screen.getByLabelText(/preço/i), "50,00");
-    await userEvent.type(screen.getByLabelText(/categoria/i), "Cabelo");
+    await userEvent.click(screen.getByRole("radio", { name: "Química e tratamentos" }));
     await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
     await waitFor(() =>
-      expect(criar).toHaveBeenCalledWith(expect.objectContaining({ categoria: "Cabelo" }))
+      expect(criar).toHaveBeenCalledWith(expect.objectContaining({ categoria: "quimica" }))
     );
   });
 
-  it("na edição, apagar a categoria manda null", async () => {
+  it("na edição, \"Sem categoria\" manda null", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
     const falso = criarApiClientFalso({
       servicos: [
-        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cabelo", descricao: null, fotoUrl: null },
+        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "cabelo", descricao: null, fotoUrl: null },
       ],
     });
     const atualizar = vi.fn(falso.barbeiro.atualizarServico);
     falso.barbeiro.atualizarServico = atualizar;
     montarPainel(<CadastroDeServico />, falso);
 
-    const campo = await screen.findByDisplayValue("Cabelo");
-    await userEvent.clear(campo);
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Cabelo" })).toBeChecked());
+    await userEvent.click(screen.getByRole("radio", { name: "Sem categoria" }));
     await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
     await waitFor(() =>

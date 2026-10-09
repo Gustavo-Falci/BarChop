@@ -4,7 +4,35 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (fim de 2026-10-08, noite — polimento de UI/UX e logo, tudo em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (fim de 2026-10-09 — categoria fechada, Inter local e telas sem caixas, tudo em produção) — vale mais que as seções abaixo
+
+**Estado:** `main` = **produção** = `4874b7c` (até o #108; cada deploy conferido no ar com curl e grep nos chunks). Nada pela metade em branch nenhuma. A migração `20261011120000_categoria_fechada` está aplicada em produção e no banco local de desenvolvimento.
+
+**Feito em 2026-10-09 (#101–#108):**
+- **Categoria do serviço em lista fechada** (plano `.claude/plans/categoria-fechada.plan.md`). #101 (API, **migração**): `CATEGORIAS_DE_SERVICO` em `@barchop/formato` — cabelo, barba, combo, sobrancelha, quimica ("Química e tratamentos"), infantil; a migração converteu o texto livre por palavra-chave (sem acento e sem caixa; não casou = sem categoria, caso do "CEBELO") e pôs o CHECK; a API valida com `enum`. #102 (telas): pílulas no cadastro, seções da página pública e da lista do painel na ordem da lista com `ROTULO_DA_CATEGORIA`, ícone por valor. #104: `categoriaConhecida()` — valor fora da lista vira "sem categoria" em vez de sumir (no primeiro deploy o web novo subiu antes do `migrar` e o serviço sumiu da página).
+- #103 **Inter self-hosted** em `barchop/font/Inter/` (Inter 4.1, recorte latino, licença OFL) por `next/font/local`, com `tests/app/fontes.test.ts`: o build do web tinha quebrado na VM ao baixar a fonte do `fonts.gstatic.com`. O build não depende mais de internet pras fontes.
+- #105 **cadastro de serviço**: prévia "Como o cliente vê" (o `CartaoDeServico`, `inert`) na coluna da direita com a foto embaixo; `CampoDeImagem` sem o input cru do navegador (botão "Escolher/Trocar foto", lugar "Sem foto" tracejado, Remover discreto) — vale também pra capa e foto do membro; rodapé Salvar/Cancelar | Desativar com a frase do efeito; preço abre com vírgula.
+- #106 **detalhe do cliente sem caixas**: topo com "← Clientes", resumo ("N agendamentos · próximo em … · último em …") e as ações WhatsApp e Agendar (`BotaoLink`; `linkDoZap` em `painel/whatsapp.ts`); histórico em Próximos/Anteriores com cada linha levando ao agendamento; dados com Salvar/Descartar só quando algo mudou.
+- #107 **folgas sem caixas**; o `FormularioDeBloqueio` (também da janela "Bloquear horário" da agenda) ganhou membro e "Dia inteiro / Só algumas horas" em pílulas, o Até acompanhando o De, atalhos de motivo (Folga, Férias, Almoço, Médico) e a frase "X fica fora da agenda …"; a lista mostra o período por extenso (`formatarPeriodo`).
+- #108 **página pública**: a Equipe foi pra lateral, logo abaixo do Horário de funcionamento.
+- **Lição do deploy (de novo):** com migração, o `migrar` precisa ser rebuildado e subido — ficou pra trás no #97 e no #101.
+
+**G3 adiado:** o dono decidiu (2026-10-08) que a GR Barber ainda não entra em produção. Não propor até ele pedir.
+
+**Ambiente local:** ao trocar de máquina, `migrate deploy` nos bancos dev e test (migração nova: `20261011120000_categoria_fechada`). Sem login, o dev deu 404 em `/painel/servicos/novo` e `/painel/clientes/novo`; logado, abriu normal.
+
+**O que falta (perguntar ao dono a ordem):**
+1. Mais telas de UI/UX — o dono manda print por print ("não divida em quadrados").
+2. Conferir no navegador o que só os testes cobriram: capa (Configurações) e foto do membro com o `CampoDeImagem` novo, a logo no painel (aba Marca) e a tela de serviço novo.
+3. G4 — docs da onda 1.
+4. Sombrear também a vista de semana da agenda (hoje só o dia; precisa de 7 consultas ou rota de período).
+5. `barbearia-teste` em produção: apagar ou manter.
+6. Onda 2 (dinheiro): caixa, cobrança, planos — começar pelo PRD (`ecc:plan-prd`); preços/plano grátis do site entram aqui.
+7. Soltas: razão social/CNPJ/DPO "a preencher" (`apps/web/src/site/controlador.ts`); imagem de Open Graph da home; pergunta do #89 (só hora cheia clicável na grade?).
+
+**Combinados:** um PR por item, TDD RED → GREEN, português; push, PR e merge por mim só com "pode mergear" do dono no turno ("aprovado" é aprovação visual). Telas sem caixas: colunas sem moldura com título pequeno, linhas finas, pílulas no lugar de select/checkbox de poucas opções, Salvar/Descartar só quando muda, frase do efeito antes da ação; conferir no navegador em 375 e 1440. Deploy: o dono roda na VM sozinho e já sabe os comandos (não passar), rebuildando o `migrar` quando houver migração; eu confiro com curl e grep nos chunks.
+
+## RETOMAR AQUI (fim de 2026-10-08, noite — polimento de UI/UX e logo, tudo em produção) — histórico
 
 **Estado:** `main` = **produção** = `4cc2296` (até o #99, conferido no ar com curl e grep no bundle e no CSS). Nada pela metade em branch nenhuma. A migração `20261010120000_logo_da_barbearia` está aplicada em produção e no banco local de desenvolvimento.
 

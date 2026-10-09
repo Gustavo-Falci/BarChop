@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apenasDigitos } from "@barchop/formato";
 import { ErroDaApi } from "@barchop/api-client";
 import type { ClienteDaLista, FaixaDeCliente } from "@barchop/types";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,6 +14,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
 import { IconeCalendario } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { linkDoZap } from "../../painel/whatsapp";
 import estilos from "./ListaDeClientes.module.css";
 
 // Quanto a busca espera parada antes de virar navegação e requisição.
@@ -41,13 +41,6 @@ function enderecoDaLista(busca: string, faixa: FaixaDeCliente): string {
   if (faixa !== "todos") params.set("faixa", faixa);
   const query = params.toString();
   return query ? `/painel/clientes?${query}` : "/painel/clientes";
-}
-
-// Zap abre no aplicativo com a conversa pronta. O 55 entra aqui porque o
-// telefone guardado é nacional — "(15) 99782-7833" vira 5515997827833.
-function linkDoZap(telefone: string): string {
-  const digitos = apenasDigitos(telefone);
-  return `https://wa.me/55${digitos}`;
 }
 
 // Desenhado aqui, e não em painel/icones.tsx, pelo mesmo motivo da lupa

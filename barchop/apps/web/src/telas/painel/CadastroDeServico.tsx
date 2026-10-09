@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
+import type { ServicoSerializado } from "@barchop/types";
 import { CATEGORIAS_DE_SERVICO, type CategoriaDeServico } from "@barchop/formato";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
-import { CamposLadoALado, LadoALado } from "../../componentes/Colunas";
+import { CamposLadoALado } from "../../componentes/Colunas";
 import { CampoDeImagem } from "../../componentes/CampoDeImagem";
+import { CartaoDeServico } from "../../componentes/CartaoDeServico";
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import { categoriaConhecida, ROTULO_DA_CATEGORIA } from "../../formato/pagina";
 import { useRequisicao } from "../../api/useRequisicao";
@@ -101,6 +103,10 @@ export function CadastroDeServico() {
   const [preco, setPreco] = useState("");
   const [categoria, setCategoria] = useState<CategoriaDeServico | "">("");
   const [descricao, setDescricao] = useState("");
+  // A foto que a prévia mostra depois de trocar ou remover aqui. Não se
+  // recarrega a lista pra isso: a sincronização abaixo refaria os campos
+  // e apagaria o que o dono digitou e ainda não salvou.
+  const [fotoDaPrevia, setFotoDaPrevia] = useState<string | null | undefined>(undefined);
   const [erroNome, setErroNome] = useState<string | undefined>();
   const [erroDuracao, setErroDuracao] = useState<string | undefined>();
   const [erroPreco, setErroPreco] = useState<string | undefined>();
@@ -212,104 +218,150 @@ export function CadastroDeServico() {
     setSalvando(false);
   }
 
+  // O cartão da prévia com o que está digitado agora. Campo ainda vazio ou
+  // inválido entra com um valor de exemplo, pra o cartão não abrir torto
+  // ("0 min", nome em branco) antes do dono começar.
+  const precoDaPrevia = paraDecimal(preco);
+  const minutosDaPrevia = paraMinutos(duracao);
+  const servicoDaPrevia: ServicoSerializado = {
+    id: atual?.id ?? "previa",
+    nome: nome.trim() || "Seu serviço",
+    duracaoMinutos: "valor" in minutosDaPrevia ? minutosDaPrevia.valor : 30,
+    preco: "valor" in precoDaPrevia ? precoDaPrevia.valor : "0.00",
+    ativo: true,
+    categoria: null,
+    descricao: descricao.trim() || null,
+    fotoUrl: fotoDaPrevia !== undefined ? fotoDaPrevia : (atual?.fotoUrl ?? null),
+  };
+
   return (
     <div className={estilos.pagina}>
       <h1>{id ? "Editar serviço" : "Novo serviço"}</h1>
 
-      {/* Nome, duração e preço numa linha: as telas usam a largura (pedido do dono). */}
-      <CamposLadoALado>
-        <Campo
-          rotulo="Nome"
-          placeholder="Corte"
-          valor={nome}
-          onChange={(proximo) => {
-            setNome(proximo);
-            setErroNome(undefined);
-          }}
-          erro={erroNome}
-        />
-        {/* `inputMode` e não `type="number"`: o teclado do celular abre
-            numérico do mesmo jeito, e o campo continua uma string — que é
-            o que o `paraMinutos`/`paraDecimal` validam. `type="number"`
-            traria as setinhas, a roda do mouse mudando o valor sem querer
-            e um `value` que o navegador esvazia sozinho quando a
-            digitação é inválida. */}
-        <Campo
-          rotulo="Duração em minutos"
-          inputMode="numeric"
-          placeholder="30"
-          valor={duracao}
-          onChange={(proximo) => {
-            setDuracao(proximo);
-            setErroDuracao(undefined);
-          }}
-          erro={erroDuracao}
-        />
-        <Campo
-          rotulo="Preço"
-          inputMode="decimal"
-          placeholder="40,00"
-          valor={preco}
-          onChange={(proximo) => {
-            setPreco(proximo);
-            setErroPreco(undefined);
-          }}
-          erro={erroPreco}
-        />
-      </CamposLadoALado>
+      <div className={estilos.corpo}>
+        <div className={estilos.formulario}>
+          {/* Nome, duração e preço numa linha: as telas usam a largura (pedido do dono). */}
+          <CamposLadoALado>
+            <Campo
+              rotulo="Nome"
+              placeholder="Corte"
+              valor={nome}
+              onChange={(proximo) => {
+                setNome(proximo);
+                setErroNome(undefined);
+              }}
+              erro={erroNome}
+            />
+            {/* `inputMode` e não `type="number"`: o teclado do celular abre
+                numérico do mesmo jeito, e o campo continua uma string — que é
+                o que o `paraMinutos`/`paraDecimal` validam. `type="number"`
+                traria as setinhas, a roda do mouse mudando o valor sem querer
+                e um `value` que o navegador esvazia sozinho quando a
+                digitação é inválida. */}
+            <Campo
+              rotulo="Duração em minutos"
+              inputMode="numeric"
+              placeholder="30"
+              valor={duracao}
+              onChange={(proximo) => {
+                setDuracao(proximo);
+                setErroDuracao(undefined);
+              }}
+              erro={erroDuracao}
+            />
+            <Campo
+              rotulo="Preço"
+              inputMode="decimal"
+              placeholder="40,00"
+              valor={preco}
+              onChange={(proximo) => {
+                setPreco(proximo);
+                setErroPreco(undefined);
+              }}
+              erro={erroPreco}
+            />
+          </CamposLadoALado>
 
-      <SeletorEmPilulas
-        nome="categoria"
-        legenda="Categoria (opcional)"
-        opcoes={OPCOES_DE_CATEGORIA}
-        valor={categoria}
-        aoTrocar={setCategoria}
-        efeito={
-          categoria
-            ? `Na sua página, aparece em “${ROTULO_DA_CATEGORIA[categoria]}”.`
-            : "Sem categoria, aparece no fim da sua página."
-        }
-      />
-
-      {/* Descrição e foto lado a lado. */}
-      <LadoALado>
-        {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
-            desenho do "Sobre a barbearia" em ConfiguracoesDaBarbearia. */}
-        <div className={estilos.campoLongo}>
-          <label className={estilos.rotulo} htmlFor="descricao">
-            Descrição (opcional)
-          </label>
-          <span className={estilos.apoio} id="descricao-apoio">
-            Aparece no cartão do serviço, na hora de agendar. Exemplo: máquina e
-            tesoura, acabamento na navalha.
-          </span>
-          <textarea
-            id="descricao"
-            className={estilos.area}
-            aria-describedby="descricao-apoio"
-            rows={3}
-            maxLength={DESCRICAO_MAX}
-            value={descricao}
-            onChange={(evento) => setDescricao(evento.target.value)}
+          <SeletorEmPilulas
+            nome="categoria"
+            legenda="Categoria (opcional)"
+            opcoes={OPCOES_DE_CATEGORIA}
+            valor={categoria}
+            aoTrocar={setCategoria}
+            efeito={
+              categoria
+                ? `Na sua página, aparece em “${ROTULO_DA_CATEGORIA[categoria]}”.`
+                : "Sem categoria, aparece no fim da sua página."
+            }
           />
-          <span className={estilos.contador}>
-            {descricao.length} de {DESCRICAO_MAX}
-          </span>
+
+          {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
+              desenho do "Sobre a barbearia" em ConfiguracoesDaBarbearia. */}
+          <div className={estilos.campoLongo}>
+            <label className={estilos.rotulo} htmlFor="descricao">
+              Descrição (opcional)
+            </label>
+            <span className={estilos.apoio} id="descricao-apoio">
+              Aparece no cartão do serviço, na hora de agendar. Exemplo: máquina e
+              tesoura, acabamento na navalha.
+            </span>
+            <textarea
+              id="descricao"
+              className={estilos.area}
+              aria-describedby="descricao-apoio"
+              rows={3}
+              maxLength={DESCRICAO_MAX}
+              value={descricao}
+              onChange={(evento) => setDescricao(evento.target.value)}
+            />
+            <span className={estilos.contador}>
+              {descricao.length} de {DESCRICAO_MAX}
+            </span>
+          </div>
         </div>
 
-        {/* Só na edição: a foto precisa de um serviço que já exista, como a
-            do membro. Salva sozinha, sem passar pelo Salvar. */}
-        {atual ? (
-          <CampoDeImagem
-            rotulo="Foto"
-            alt={`Foto de ${atual.nome}`}
-            urlAtual={atual.fotoUrl}
-            formato="quadrado"
-            enviar={(arquivo) => api.barbeiro.enviarFotoDoServico(atual.id, arquivo)}
-            remover={() => api.barbeiro.removerFotoDoServico(atual.id)}
-          />
-        ) : null}
-      </LadoALado>
+        {/* A coluna da direita: o cartão como o cliente vê na hora de
+            agendar, e a foto dele logo abaixo. */}
+        <div className={estilos.lateral}>
+          <div className={estilos.previa}>
+            <p className={estilos.rotulo}>Como o cliente vê</p>
+            {/* Decorativa: o formulário ao lado já diz tudo pra quem usa
+                leitor de tela, e o checkbox do cartão não faz nada aqui
+                (`inert` tira do teclado e do clique). */}
+            <ul className={estilos.cartao} aria-hidden="true" inert>
+              <CartaoDeServico
+                servico={servicoDaPrevia}
+                marcado={false}
+                aoAlternar={() => {}}
+                proximos={[]}
+                agora={new Date()}
+              />
+            </ul>
+          </div>
+
+          {/* Só na edição: a foto precisa de um serviço que já exista, como
+              a do membro. Salva sozinha, sem passar pelo Salvar. */}
+          {atual ? (
+            <CampoDeImagem
+              rotulo="Foto"
+              alt={`Foto de ${atual.nome}`}
+              urlAtual={atual.fotoUrl}
+              formato="quadrado"
+              enviar={async (arquivo) => {
+                const url = await api.barbeiro.enviarFotoDoServico(atual.id, arquivo);
+                setFotoDaPrevia(url);
+                return url;
+              }}
+              remover={async () => {
+                await api.barbeiro.removerFotoDoServico(atual.id);
+                setFotoDaPrevia(null);
+              }}
+            />
+          ) : (
+            <p className={estilos.apoio}>Depois de salvar, dá pra pôr a foto.</p>
+          )}
+        </div>
+      </div>
 
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
@@ -321,36 +373,43 @@ export function CadastroDeServico() {
           `type="button"` porque esta tela ainda não tem <form>, e vai
           ter: no dia em que tiver, um <button> sem type é submit, e
           "Cancelar" salvaria o serviço. */}
-      <div className={estilos.acoes}>
-        <Botao type="button" carregando={salvando} onClick={salvar}>
-          Salvar
-        </Botao>
-        {/* Sem `carregando`: desistir tem que funcionar inclusive
-            enquanto o salvamento pendura. */}
-        <Botao
-          type="button"
-          variante="contorno"
-          onClick={() => router.push("/painel/servicos")}
-        >
-          Cancelar
-        </Botao>
-      </div>
-
-      {/* Fora do grupo acima de propósito: desativar não é uma saída do
-          formulário, é uma mudança de estado do serviço — e fica longe
-          do Cancelar pra ninguém acertar uma querendo a outra. */}
-      {atual ? (
-        <div className={estilos.acaoDoEstado}>
+      <div className={estilos.rodape}>
+        <div className={estilos.acoes}>
+          <Botao type="button" carregando={salvando} onClick={salvar}>
+            Salvar
+          </Botao>
+          {/* Sem `carregando`: desistir tem que funcionar inclusive
+              enquanto o salvamento pendura. */}
           <Botao
             type="button"
             variante="contorno"
-            carregando={salvando}
-            onClick={alternarAtivo}
+            onClick={() => router.push("/painel/servicos")}
           >
-            {atual.ativo ? "Desativar" : "Reativar"}
+            Cancelar
           </Botao>
         </div>
-      ) : null}
+
+        {/* Fora do grupo acima de propósito: desativar não é uma saída do
+            formulário, é uma mudança de estado do serviço — fica na outra
+            ponta da linha, longe do Cancelar, e diz o que faz. */}
+        {atual ? (
+          <div className={estilos.acaoDoEstado}>
+            <p className={estilos.apoio}>
+              {atual.ativo
+                ? "Sai da sua página e do agendamento. Dá pra reativar depois."
+                : "Fora do agendamento. Reativar volta o serviço pra sua página."}
+            </p>
+            <Botao
+              type="button"
+              variante="contorno"
+              carregando={salvando}
+              onClick={alternarAtivo}
+            >
+              {atual.ativo ? "Desativar" : "Reativar"}
+            </Botao>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

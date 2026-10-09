@@ -1,7 +1,6 @@
 .campo {
   display: grid;
   gap: var(--espaco-xs);
-  justify-items: start;
 }
 
 .rotulo {
@@ -10,15 +9,71 @@
   color: var(--cor-ink-soft);
 }
 
+/* A imagem (ou o lugar dela) e os controles lado a lado; quebra quando
+   não cabe — a capa, larga, vai pra cima dos botões. */
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-md);
+}
+
 .previa {
   border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-sm);
   object-fit: cover;
 }
 
-.paisagem { width: 100%; max-width: 420px; aspect-ratio: 16 / 9; }
+.vazia {
+  display: grid;
+  place-items: center;
+  border: var(--borda-hairline) dashed var(--cor-line);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  text-align: center;
+}
+
+.paisagem { width: 100%; max-width: 420px; aspect-ratio: 16 / 9; border-radius: var(--raio-sm); }
 .retrato { width: 96px; height: 96px; border-radius: 50%; }
 /* A foto do serviço: quadrada como a miniatura do cartão. */
 .quadrado { width: 120px; height: 120px; border-radius: var(--raio-md); }
 
-.arquivo { font-size: var(--texto-sm); }
+.controles {
+  display: grid;
+  gap: var(--espaco-xs);
+  justify-items: start;
+}
+
+/* Escondido da vista, não do teclado nem do leitor de tela. */
+.arquivo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* O <label> com cara de botão: um pouco menor que o Salvar da tela,
+   que é a ação principal. */
+.escolher {
+  padding: var(--espaco-xs) var(--espaco-md);
+  font-size: var(--texto-sm);
+}
+
+/* O foco está no <input> escondido; o anel aparece no botão que se vê. */
+.arquivo:focus-visible + .escolher {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 3px;
+}
+
+.escolher[data-ocupado] {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.apoio {
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+}

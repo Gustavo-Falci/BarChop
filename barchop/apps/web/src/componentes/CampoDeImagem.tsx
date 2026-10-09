@@ -5,6 +5,7 @@ import { ErroDaApi } from "@barchop/api-client";
 import { redimensionarImagem } from "../painel/redimensionar";
 import { Aviso } from "./Aviso";
 import { Botao } from "./Botao";
+import estilosDoBotao from "./Botao.module.css";
 import estilos from "./CampoDeImagem.module.css";
 
 // Capa da barbearia, foto do profissional e do serviço: prévia, trocar e
@@ -72,33 +73,57 @@ export function CampoDeImagem({
     }
   }
 
+  const nomeDaImagem = rotulo.toLowerCase();
+
   return (
     <div className={estilos.campo}>
       <label className={estilos.rotulo} htmlFor={id}>
         {rotulo}
       </label>
-      {url ? (
-        // <img> simples: a imagem vem do bucket (ou da API em
-        // desenvolvimento), e o otimizador do Next exigiria liberar os
-        // dois domínios.
-        <img className={`${estilos.previa} ${estilos[formato]}`} src={url} alt={alt} />
-      ) : null}
-      <input
-        id={id}
-        className={estilos.arquivo}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        disabled={ocupado}
-        onChange={(evento) => {
-          void aoEscolher(evento.target.files?.[0]);
-          evento.target.value = "";
-        }}
-      />
-      {url ? (
-        <Botao variante="contorno" onClick={aoRemover} carregando={ocupado}>
-          Remover {rotulo.toLowerCase()}
-        </Botao>
-      ) : null}
+      <div className={estilos.linha}>
+        {url ? (
+          // <img> simples: a imagem vem do bucket (ou da API em
+          // desenvolvimento), e o otimizador do Next exigiria liberar os
+          // dois domínios.
+          <img className={`${estilos.previa} ${estilos[formato]}`} src={url} alt={alt} />
+        ) : (
+          // O lugar da imagem já desenhado, no tamanho dela: sem isso o
+          // campo vazio era só o "Escolher arquivo" cru do navegador.
+          <span className={`${estilos.vazia} ${estilos[formato]}`} aria-hidden="true">
+            Sem {nomeDaImagem}
+          </span>
+        )}
+        <div className={estilos.controles}>
+          {/* O <input> de verdade fica escondido (mas focável, e é ele que
+              o leitor de tela anuncia pelo rótulo acima); o que se vê é
+              este segundo <label>, com cara de botão. */}
+          <input
+            id={id}
+            className={estilos.arquivo}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={ocupado}
+            onChange={(evento) => {
+              void aoEscolher(evento.target.files?.[0]);
+              evento.target.value = "";
+            }}
+          />
+          <label
+            htmlFor={id}
+            className={`${estilosDoBotao.botao} ${estilosDoBotao.contorno} ${estilos.escolher}`}
+            aria-hidden="true"
+            data-ocupado={ocupado || undefined}
+          >
+            {ocupado ? "Enviando…" : url ? `Trocar ${nomeDaImagem}` : `Escolher ${nomeDaImagem}`}
+          </label>
+          {url ? (
+            <Botao variante="fantasma" onClick={aoRemover} carregando={ocupado}>
+              Remover {nomeDaImagem}
+            </Botao>
+          ) : null}
+          <span className={estilos.apoio}>JPG, PNG, WebP. A gente ajusta o tamanho.</span>
+        </div>
+      </div>
       {aviso ? <Aviso>{aviso}</Aviso> : null}
     </div>
   );

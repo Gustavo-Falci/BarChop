@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
+import type { CategoriaDeServico } from "@barchop/types";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../src/telas/PerfilDaBarbearia";
 import { CadastroDeServico } from "../../src/telas/painel/CadastroDeServico";
@@ -110,6 +111,42 @@ describe("página da barbearia rica", () => {
     const cabelo = screen.getByRole("region", { name: "Cabelo" });
     expect(within(cabelo).getByText("Corte")).toBeInTheDocument();
     expect(within(cabelo).getByText("Degradê")).toBeInTheDocument();
+  });
+
+  it("categoria fora da lista vai pra \"Outros serviços\", não some", async () => {
+    // Um valor que a lista não conhece (o "Cebelo" de antes da migração,
+    // ou uma categoria nova da API antes do web) não pode esconder o
+    // serviço da página: cai na sobra.
+    const desconhecida = "Cebelo" as CategoriaDeServico;
+    const falso = criarApiClientFalso({
+      servicos: [
+        { id: "s1", nome: "Corte social", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: desconhecida, descricao: null, fotoUrl: null },
+        { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "25.00", ativo: true, categoria: "barba", descricao: null, fotoUrl: null },
+      ],
+    });
+    montarPagina(falso);
+
+    const outros = await screen.findByRole("region", { name: "Outros serviços" });
+    expect(within(outros).getByText("Corte social")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual([
+      "Barba",
+      "Outros serviços",
+    ]);
+  });
+
+  it("só categoria fora da lista: lista única, com o serviço", async () => {
+    const desconhecida = "Cebelo" as CategoriaDeServico;
+    montarPagina(
+      criarApiClientFalso({
+        servicos: [
+          { id: "s1", nome: "Corte social", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: desconhecida, descricao: null, fotoUrl: null },
+        ],
+      })
+    );
+
+    // O link do serviço pro agendamento, não um texto solto em outro lugar.
+    expect(await screen.findByRole("link", { name: /Corte social/ })).toBeInTheDocument();
+    expect(screen.queryAllByRole("heading", { level: 3 })).toEqual([]);
   });
 
   it("sem categoria nenhuma, a lista fica como era, sem subtítulo", async () => {
@@ -280,6 +317,28 @@ describe("categoria no cadastro de serviço", () => {
 
     await waitFor(() => expect(screen.getByRole("radio", { name: "Cabelo" })).toBeChecked());
     await userEvent.click(screen.getByRole("radio", { name: "Sem categoria" }));
+    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+
+    await waitFor(() =>
+      expect(atualizar).toHaveBeenCalledWith("s1", expect.objectContaining({ categoria: null }))
+    );
+  });
+
+  it("na edição, categoria fora da lista abre como \"Sem categoria\" e salva null", async () => {
+    // Senão nenhuma pílula fica marcada e o salvar devolveria o valor
+    // velho, que a API recusa com 400.
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
+    const falso = criarApiClientFalso({
+      servicos: [
+        { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "Cebelo" as CategoriaDeServico, descricao: null, fotoUrl: null },
+      ],
+    });
+    const atualizar = vi.fn(falso.barbeiro.atualizarServico);
+    falso.barbeiro.atualizarServico = atualizar;
+    montarPainel(<CadastroDeServico />, falso);
+
+    await screen.findByDisplayValue("Corte");
+    expect(screen.getByRole("radio", { name: "Sem categoria" })).toBeChecked();
     await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
 
     await waitFor(() =>

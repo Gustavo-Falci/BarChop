@@ -57,6 +57,16 @@ describe("agrupar serviços por categoria", () => {
     expect(grupos.map((grupo) => grupo.titulo)).toEqual(["Cabelo", SEM_CATEGORIA]);
   });
 
+  it("categoria fora da lista cai em \"Sem categoria\", não some", () => {
+    const grupos = agruparPorCategoria([
+      servico("1", "Cebelo" as CategoriaDeServico),
+      servico("2", "cabelo"),
+    ]);
+
+    expect(grupos.map((grupo) => grupo.titulo)).toEqual(["Cabelo", SEM_CATEGORIA]);
+    expect(grupos[1].servicos.map((s) => s.id)).toEqual(["1"]);
+  });
+
   it("guarda o inativo no grupo dele", () => {
     // É desta tela que se reativa; o inativo não pode sumir do grupo.
     const grupos = agruparPorCategoria([servico("1", "cabelo", "40.00", false)]);

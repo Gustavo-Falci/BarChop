@@ -10,7 +10,7 @@ import { Campo } from "../../componentes/Campo";
 import { CamposLadoALado, LadoALado } from "../../componentes/Colunas";
 import { CampoDeImagem } from "../../componentes/CampoDeImagem";
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
-import { ROTULO_DA_CATEGORIA } from "../../formato/pagina";
+import { categoriaConhecida, ROTULO_DA_CATEGORIA } from "../../formato/pagina";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./CadastroDeServico.module.css";
@@ -140,7 +140,9 @@ export function CadastroDeServico() {
     setNome(atual.nome);
     setDuracao(String(atual.duracaoMinutos));
     setPreco(atual.preco);
-    setCategoria(atual.categoria ?? "");
+    // Fora da lista abre como "Sem categoria": nenhuma pílula marcada e
+    // o valor velho voltaria no salvar, que a API recusa.
+    setCategoria(categoriaConhecida(atual.categoria) ?? "");
     setDescricao(atual.descricao ?? "");
   }
 

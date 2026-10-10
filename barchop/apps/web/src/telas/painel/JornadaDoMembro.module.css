@@ -10,7 +10,7 @@
   border-block-end: var(--borda-hairline) solid var(--cor-line);
 }
 
-.dia:last-of-type {
+.dia:last-child {
   border-block-end: none;
 }
 
@@ -30,6 +30,12 @@
 }
 
 .horas {
+  display: grid;
+  gap: var(--espaco-sm);
+  justify-items: start;
+}
+
+.faixa {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;

@@ -22,7 +22,11 @@ export const ROTULO_DO_PAPEL: Record<PapelMembro, string> = {
 
 // O selo da coluna Situação: verde quem já está no painel, âmbar quem
 // ainda não aceitou o convite, neutro quem saiu.
-const SELO: Record<SituacaoDoMembro, { rotulo: string; tom: "ok" | "atencao" | "neutro" }> = {
+// Exportado: o topo do cadastro do membro mostra o mesmo selo.
+export const SELO_DA_SITUACAO: Record<
+  SituacaoDoMembro,
+  { rotulo: string; tom: "ok" | "atencao" | "neutro" }
+> = {
   ativo: { rotulo: "Ativo", tom: "ok" },
   convite: { rotulo: "Convite pendente", tom: "atencao" },
   inativo: { rotulo: "Inativo", tom: "neutro" },
@@ -127,7 +131,7 @@ export function ListaDaEquipe() {
             }
             aoAbrir={(id) => router.push(`/painel/equipe/${id}`)}
             linhas={listados.map((membro) => {
-              const selo = SELO[situacaoDoMembro(membro)];
+              const selo = SELO_DA_SITUACAO[situacaoDoMembro(membro)];
               return {
                 id: membro.id,
                 // Inativo atenua a linha inteira, como o serviço

@@ -1,0 +1,47 @@
+.grupo {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+  min-width: 0;
+}
+
+.topo {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+/* O título de grupo pequeno, em caixa alta: o mesmo do detalhe do
+   cliente e do agendamento. */
+.titulo {
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+/* `--cor-ink-soft` e não `--cor-muted`: é texto que se lê, e o muted
+   reprova contraste no tema claro. */
+.descricao {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+/* Os botões no tamanho do texto, colados ao que salvam. */
+.acao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+@media (max-width: 560px) {
+  .acao > * {
+    flex: 1;
+  }
+}

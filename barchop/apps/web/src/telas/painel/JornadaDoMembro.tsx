@@ -6,7 +6,7 @@ import type { DiaDaJornada, ModoJornada } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
-import { Secao } from "../../componentes/Secao";
+import { Grupo } from "../../componentes/Grupo";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./JornadaDoMembro.module.css";
@@ -66,10 +66,15 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
   const [salvando, setSalvando] = useState(false);
 
   // Sincronizado durante a renderização, como em CadastroDeServico: um
-  // efeito deixaria a semana vazia aparecer por um quadro.
-  const [sincronizada, setSincronizada] = useState<DiaDaJornada[] | null>(null);
-  if (salva.dados && salva.dados !== sincronizada) {
-    setSincronizada(salva.dados);
+  // efeito deixaria a semana vazia aparecer por um quadro. `vista` é a
+  // última resposta do GET; `gravada`, o que está no banco, que o Salvar
+  // também troca — com uma só, a tela voltava pra semana de antes logo
+  // depois de salvar (ver ServicosDoMembro).
+  const [vista, setVista] = useState<DiaDaJornada[] | null>(null);
+  const [gravada, setGravada] = useState<DiaDaJornada[] | null>(null);
+  if (salva.dados && salva.dados !== vista) {
+    setVista(salva.dados);
+    setGravada(salva.dados);
     setSemana(salva.dados);
     setPausaDeSempre(pausaDaSemana(salva.dados));
   }
@@ -144,9 +149,9 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
 
     setSalvando(true);
     try {
-      const gravada = await api.barbeiro.salvarJornada(membroId, semana);
-      setSincronizada(gravada);
-      setSemana(gravada);
+      const resposta = await api.barbeiro.salvarJornada(membroId, semana);
+      setGravada(resposta);
+      setSemana(resposta);
       setConfirmacao("Jornada salva.");
     } catch (causa) {
       setErro((causa as ErroDaApi).mensagem || "Não foi possível salvar a jornada agora.");
@@ -155,14 +160,32 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
     }
   }
 
+  // O Salvar só aparece com a semana diferente da gravada. Sete dias de
+  // campos curtos: comparar o texto basta.
+  const mudou = gravada !== null && JSON.stringify(semana) !== JSON.stringify(gravada);
+
+  function descartar() {
+    if (!gravada) return;
+    setErro(undefined);
+    setSemana(gravada);
+    setPausaDeSempre(pausaDaSemana(gravada));
+  }
+
   return (
-    <Secao
+    <Grupo
       titulo="Jornada"
       descricao="Em que dias e horários a pessoa atende. O horário próprio vale só dentro do horário da barbearia; na pausa, ninguém marca com ela."
       acao={
-        <Botao onClick={salvar} carregando={salvando} disabled={!salva.dados}>
-          Salvar jornada
-        </Botao>
+        mudou ? (
+          <>
+            <Botao onClick={salvar} carregando={salvando}>
+              Salvar jornada
+            </Botao>
+            <Botao variante="contorno" onClick={descartar}>
+              Descartar
+            </Botao>
+          </>
+        ) : undefined
       }
     >
       {!salva.dados ? <p>Carregando…</p> : null}
@@ -187,85 +210,91 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
           Aplicar aos dias de trabalho
         </Botao>
       </div>
-      {semana.map((dia) => {
-        const { nome, em } = DIAS[dia.diaSemana];
-        return (
-          <div key={dia.diaSemana} className={estilos.dia}>
-            <span>{capitalizar(nome)}</span>
-            <select
-              className={estilos.modo}
-              aria-label={`Jornada ${em} ${nome}`}
-              value={dia.modo}
-              onChange={(evento) => escolherModo(dia, evento.target.value as ModoJornada)}
-            >
-              {MODOS.map((modo) => (
-                <option key={modo.valor} value={modo.valor}>
-                  {modo.rotulo}
-                </option>
-              ))}
-            </select>
-            {/* Embrulhado, como em Configurações: as linhas mantêm o
-                mesmo número de colunas com ou sem as horas. */}
-            <div className={estilos.horas}>
-              {dia.modo === "proprio" ? (
-                <>
-                  <Campo
-                    rotulo="Entrada"
-                    type="time"
-                    aria-label={`Entrada ${em} ${nome}`}
-                    valor={dia.horaInicio ?? ""}
-                    onChange={(valor) => trocarDia(dia.diaSemana, { horaInicio: valor || null })}
-                  />
-                  <Campo
-                    rotulo="Saída"
-                    type="time"
-                    aria-label={`Saída ${em} ${nome}`}
-                    valor={dia.horaFim ?? ""}
-                    onChange={(valor) => trocarDia(dia.diaSemana, { horaFim: valor || null })}
-                  />
-                </>
-              ) : null}
-              {pausaAberta(dia) ? (
-                <>
-                  <Campo
-                    rotulo="Pausa"
-                    type="time"
-                    aria-label={`Início da pausa ${em} ${nome}`}
-                    valor={dia.pausaInicio ?? ""}
-                    onChange={(valor) => trocarDia(dia.diaSemana, { pausaInicio: valor || null })}
-                  />
-                  <Campo
-                    rotulo="até"
-                    type="time"
-                    aria-label={`Fim da pausa ${em} ${nome}`}
-                    valor={dia.pausaFim ?? ""}
-                    onChange={(valor) => trocarDia(dia.diaSemana, { pausaFim: valor || null })}
-                  />
+      {/* Os dias num bloco só: a régua da última linha some pelo
+          `:last-child`, com ou sem os botões de salvar depois. */}
+      <div>
+        {semana.map((dia) => {
+          const { nome, em } = DIAS[dia.diaSemana];
+          return (
+            <div key={dia.diaSemana} className={estilos.dia}>
+              <span>{capitalizar(nome)}</span>
+              <select
+                className={estilos.modo}
+                aria-label={`Jornada ${em} ${nome}`}
+                value={dia.modo}
+                onChange={(evento) => escolherModo(dia, evento.target.value as ModoJornada)}
+              >
+                {MODOS.map((modo) => (
+                  <option key={modo.valor} value={modo.valor}>
+                    {modo.rotulo}
+                  </option>
+                ))}
+              </select>
+              {/* Embrulhado, como em Configurações: as linhas mantêm o
+                  mesmo número de colunas com ou sem as horas. O horário
+                  e a pausa em faixas próprias: juntos numa linha só, o
+                  "até" da pausa quebrava sozinho pra linha de baixo. */}
+              <div className={estilos.horas}>
+                {dia.modo === "proprio" ? (
+                  <div className={estilos.faixa}>
+                    <Campo
+                      rotulo="Entrada"
+                      type="time"
+                      aria-label={`Entrada ${em} ${nome}`}
+                      valor={dia.horaInicio ?? ""}
+                      onChange={(valor) => trocarDia(dia.diaSemana, { horaInicio: valor || null })}
+                    />
+                    <Campo
+                      rotulo="Saída"
+                      type="time"
+                      aria-label={`Saída ${em} ${nome}`}
+                      valor={dia.horaFim ?? ""}
+                      onChange={(valor) => trocarDia(dia.diaSemana, { horaFim: valor || null })}
+                    />
+                  </div>
+                ) : null}
+                {pausaAberta(dia) ? (
+                  <div className={estilos.faixa}>
+                    <Campo
+                      rotulo="Pausa"
+                      type="time"
+                      aria-label={`Início da pausa ${em} ${nome}`}
+                      valor={dia.pausaInicio ?? ""}
+                      onChange={(valor) => trocarDia(dia.diaSemana, { pausaInicio: valor || null })}
+                    />
+                    <Campo
+                      rotulo="até"
+                      type="time"
+                      aria-label={`Fim da pausa ${em} ${nome}`}
+                      valor={dia.pausaFim ?? ""}
+                      onChange={(valor) => trocarDia(dia.diaSemana, { pausaFim: valor || null })}
+                    />
+                    <Botao
+                      variante="fantasma"
+                      aria-label={`Tirar pausa ${em} ${nome}`}
+                      onClick={() => trocarDia(dia.diaSemana, { pausaInicio: null, pausaFim: null })}
+                    >
+                      Tirar pausa
+                    </Botao>
+                  </div>
+                ) : dia.modo !== "folga" ? (
                   <Botao
                     variante="fantasma"
-                    aria-label={`Tirar pausa ${em} ${nome}`}
-                    onClick={() => trocarDia(dia.diaSemana, { pausaInicio: null, pausaFim: null })}
+                    aria-label={`Adicionar pausa ${em} ${nome}`}
+                    onClick={() =>
+                      trocarDia(dia.diaSemana, { pausaInicio: pausaDeSempre.inicio, pausaFim: pausaDeSempre.fim })
+                    }
                   >
-                    Tirar pausa
+                    + Pausa
                   </Botao>
-                </>
-              ) : dia.modo !== "folga" ? (
-                <Botao
-                  variante="fantasma"
-                  aria-label={`Adicionar pausa ${em} ${nome}`}
-                  onClick={() =>
-                    trocarDia(dia.diaSemana, { pausaInicio: pausaDeSempre.inicio, pausaFim: pausaDeSempre.fim })
-                  }
-                >
-                  + Pausa
-                </Botao>
-              ) : null}
+                ) : null}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       {erro ? <Aviso>{erro}</Aviso> : null}
       {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
-    </Secao>
+    </Grupo>
   );
 }

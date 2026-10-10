@@ -7,14 +7,18 @@ import { normalizarTelefoneObrigatorio, TelefoneInvalido } from "@barchop/format
 import type { PapelMembro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
+import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
-import { CamposLadoALado, LadoALado } from "../../componentes/Colunas";
+import { Chip } from "../../componentes/Chip";
+import { CamposLadoALado } from "../../componentes/Colunas";
+import { Grupo } from "../../componentes/Grupo";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { situacaoDoMembro } from "../../painel/listas";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { CampoDeImagem } from "../../componentes/CampoDeImagem";
 import { JornadaDoMembro } from "./JornadaDoMembro";
-import { ROTULO_DO_PAPEL } from "./ListaDaEquipe";
+import { ROTULO_DO_PAPEL, SELO_DA_SITUACAO } from "./ListaDaEquipe";
 import { ServicosDoMembro } from "./ServicosDoMembro";
 import estilos from "./CadastroDeMembro.module.css";
 
@@ -63,6 +67,9 @@ export function CadastroDeMembro() {
   const [atendeTocado, setAtendeTocado] = useState(false);
   const [erro, setErro] = useState<Record<string, string | undefined>>({});
   const [aviso, setAviso] = useState<string | undefined>();
+  // O que sai do Reenviar e do Desativar mora na Situação, junto dos
+  // botões; o aviso dos dados é só do Salvar.
+  const [avisoDaSituacao, setAvisoDaSituacao] = useState<string | undefined>();
   const [confirmacao, setConfirmacao] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
 
@@ -83,6 +90,26 @@ export function CadastroDeMembro() {
   }
   if (id && !equipe.dados) return <p>Carregando…</p>;
   if (id && !atual) return <Aviso>Membro não encontrado.</Aviso>;
+
+  // Na edição, Salvar e Descartar só aparecem quando os dados diferem do
+  // que está gravado (o combinado das telas sem caixas). No convite, o
+  // Enviar fica sempre à vista: não há o que comparar.
+  const mudou =
+    !atual ||
+    nome !== atual.nome ||
+    telefone !== (atual.telefone ?? "") ||
+    papel !== atual.papel ||
+    atende !== atual.atende;
+
+  function descartar() {
+    if (!atual) return;
+    setNome(atual.nome);
+    setTelefone(atual.telefone ?? "");
+    setPapel(atual.papel);
+    setAtende(atual.atende);
+    setErro({});
+    setAviso(undefined);
+  }
 
   function escolherPapel(proximo: PapelMembro) {
     setPapel(proximo);
@@ -172,7 +199,7 @@ export function CadastroDeMembro() {
 
   async function alternarAtivo() {
     if (!id || !atual) return;
-    setAviso(undefined);
+    setAvisoDaSituacao(undefined);
     setConfirmacao(undefined);
     setSalvando(true);
     try {
@@ -183,7 +210,7 @@ export function CadastroDeMembro() {
       equipe.recarregar();
     } catch (causa) {
       const falha = causa as ErroDaApi;
-      setAviso(
+      setAvisoDaSituacao(
         falha.codigo === "ultimo_dono"
           ? "A barbearia precisa de pelo menos um dono ativo. Promova outra pessoa antes de desativar este."
           : falha.mensagem || "Não foi possível salvar agora."
@@ -195,154 +222,196 @@ export function CadastroDeMembro() {
 
   async function reenviar() {
     if (!id || !atual) return;
-    setAviso(undefined);
+    setAvisoDaSituacao(undefined);
     setConfirmacao(undefined);
     setSalvando(true);
     try {
       await api.barbeiro.reenviarConvite(id);
       setConfirmacao(`Convite reenviado para ${atual.email}. O código anterior deixou de valer.`);
     } catch (causa) {
-      setAviso((causa as ErroDaApi).mensagem || "Não foi possível reenviar agora.");
+      setAvisoDaSituacao((causa as ErroDaApi).mensagem || "Não foi possível reenviar agora.");
     } finally {
       setSalvando(false);
     }
   }
 
+  const selo = atual ? SELO_DA_SITUACAO[situacaoDoMembro(atual)] : undefined;
+
   return (
     <div className={estilos.pagina}>
-      <h1>{id ? "Editar membro" : "Convidar membro"}</h1>
-      {id ? null : (
-        <p className={estilos.apoio}>
-          O convite chega por e-mail, com um código que vale 7 dias. A pessoa
-          define a própria senha e já entra no painel.
-        </p>
-      )}
+      {/* O desenho do detalhe do cliente: o caminho de volta, quem é e a
+          situação no topo; o resumo do que está gravado embaixo do nome. */}
+      <CabecalhoDaPagina
+        voltar={{ href: "/painel/equipe", rotulo: "Equipe" }}
+        titulo={atual ? atual.nome : "Convidar membro"}
+        selo={
+          selo ? (
+            <Chip tom={selo.tom} tamanho="pequeno">
+              {selo.rotulo}
+            </Chip>
+          ) : undefined
+        }
+        apoio={
+          atual
+            ? `${ROTULO_DO_PAPEL[atual.papel]} · ${atual.atende ? "atende clientes" : "não atende"}`
+            : "O convite chega por e-mail, com um código que vale 7 dias. A pessoa define a própria senha e já entra no painel."
+        }
+      />
 
-      <form
-        className={estilos.formulario}
-        noValidate
-        onSubmit={(evento) => {
-          evento.preventDefault();
-          void salvar();
-        }}
-      >
-        {/* Nome, e-mail e telefone numa linha: as telas usam a largura (pedido do dono). */}
-        <CamposLadoALado>
-          <Campo
-            rotulo="Nome"
-            name="nome"
-            autoComplete="off"
-            maxLength={NOME_MAX}
-            valor={nome}
-            onChange={(proximo) => {
-              setNome(proximo);
-              setErro((anterior) => ({ ...anterior, nome: undefined }));
+      {/* Sem caixas (pedido do dono): o que se edita à esquerda e largo —
+          os dados e a jornada, a mais larga das linhas —; foto, serviços
+          e situação à direita. No celular, um embaixo do outro. Cada
+          grupo salva sozinho, com o botão colado nele. */}
+      {/* No convite não há lateral (foto, serviços e situação pedem o
+          membro gravado): uma coluna só, com os campos na largura toda. */}
+      <div className={atual ? estilos.corpo : undefined}>
+        <div className={estilos.principal}>
+          <form
+            className={estilos.formulario}
+            noValidate
+            onSubmit={(evento) => {
+              evento.preventDefault();
+              void salvar();
             }}
-            erro={erro.nome}
-          />
-
-          {/* Na edição o e-mail é só leitura: é a chave do login, e a API
-              não deixa trocá-lo por aqui. */}
-          {atual ? (
-            <p className={estilos.email}>
-              E-mail de acesso: <b>{atual.email}</b>
-            </p>
-          ) : (
-            <Campo
-              rotulo="E-mail"
-              type="email"
-              name="email"
-              autoComplete="off"
-              maxLength={EMAIL_MAX}
-              valor={email}
-              onChange={(proximo) => {
-                setEmail(proximo);
-                setErro((anterior) => ({ ...anterior, email: undefined }));
-              }}
-              erro={erro.email}
-            />
-          )}
-
-          <Campo
-            rotulo="Telefone (opcional)"
-            formato="telefone"
-            name="telefone"
-            valor={telefone}
-            onChange={(proximo) => {
-              setTelefone(proximo);
-              setErro((anterior) => ({ ...anterior, telefone: undefined }));
-            }}
-            erro={erro.telefone}
-          />
-        </CamposLadoALado>
-
-        {/* O papel e o atende lado a lado. */}
-        <LadoALado>
-          <fieldset className={estilos.grupo}>
-            <legend>Papel</legend>
-            {PAPEIS.map(({ valor, descricao }) => (
-              <div className={estilos.opcao} key={valor}>
-                {/* A descrição fica fora do <label>: dentro, ela entraria
-                    no nome acessível, e "Marca na agenda de todos" do
-                    rádio da recepção não deve soar como o nome dele. */}
-                <input
-                  type="radio"
-                  id={`${idDoGrupo}-${valor}`}
-                  name="papel"
-                  value={valor}
-                  checked={papel === valor}
-                  onChange={() => escolherPapel(valor)}
-                  aria-describedby={`${idDoGrupo}-${valor}-descricao`}
+          >
+            <Grupo
+              titulo="Dados"
+              acao={
+                mudou ? (
+                  <>
+                    <Botao type="submit" carregando={salvando}>
+                      {id ? "Salvar" : "Enviar convite"}
+                    </Botao>
+                    {/* Sem `carregando`: desistir funciona mesmo com o envio
+                        pendurado. `type="button"` porque está dentro do <form>. */}
+                    {id ? (
+                      <Botao type="button" variante="contorno" onClick={descartar}>
+                        Descartar
+                      </Botao>
+                    ) : (
+                      <Botao
+                        type="button"
+                        variante="contorno"
+                        onClick={() => router.push("/painel/equipe")}
+                      >
+                        Cancelar
+                      </Botao>
+                    )}
+                  </>
+                ) : undefined
+              }
+            >
+              {/* Nome, e-mail e telefone numa linha: as telas usam a largura (pedido do dono). */}
+              <CamposLadoALado>
+                <Campo
+                  rotulo="Nome"
+                  name="nome"
+                  autoComplete="off"
+                  maxLength={NOME_MAX}
+                  valor={nome}
+                  onChange={(proximo) => {
+                    setNome(proximo);
+                    setErro((anterior) => ({ ...anterior, nome: undefined }));
+                  }}
+                  erro={erro.nome}
                 />
-                <label htmlFor={`${idDoGrupo}-${valor}`}>{ROTULO_DO_PAPEL[valor]}</label>
-                <span id={`${idDoGrupo}-${valor}-descricao`} className={estilos.descricao}>
-                  {descricao}
+
+                {atual ? null : (
+                  <Campo
+                    rotulo="E-mail"
+                    type="email"
+                    name="email"
+                    autoComplete="off"
+                    maxLength={EMAIL_MAX}
+                    valor={email}
+                    onChange={(proximo) => {
+                      setEmail(proximo);
+                      setErro((anterior) => ({ ...anterior, email: undefined }));
+                    }}
+                    erro={erro.email}
+                  />
+                )}
+
+                <Campo
+                  rotulo="Telefone (opcional)"
+                  formato="telefone"
+                  name="telefone"
+                  valor={telefone}
+                  onChange={(proximo) => {
+                    setTelefone(proximo);
+                    setErro((anterior) => ({ ...anterior, telefone: undefined }));
+                  }}
+                  erro={erro.telefone}
+                />
+              </CamposLadoALado>
+
+              {/* Na edição o e-mail é só leitura, embaixo dos campos: é a
+                  chave do login, e a API não deixa trocá-lo por aqui. Sem
+                  <label>, porque não é campo. */}
+              {atual ? (
+                <p className={estilos.email}>
+                  <span className={estilos.rotulo}>E-mail de acesso</span>
+                  <span>{atual.email}</span>
+                </p>
+              ) : null}
+
+              <fieldset className={estilos.grupo}>
+                <legend className={estilos.rotulo}>Papel</legend>
+                {/* As três opções lado a lado: a coluna é larga, e em pilha
+                    elas empurravam a jornada pra baixo. */}
+                <div className={estilos.papeis}>
+                  {PAPEIS.map(({ valor, descricao }) => (
+                    <div className={estilos.opcao} key={valor}>
+                      {/* A descrição fica fora do <label>: dentro, ela entraria
+                          no nome acessível, e "Marca na agenda de todos" do
+                          rádio da recepção não deve soar como o nome dele. */}
+                      <input
+                        type="radio"
+                        id={`${idDoGrupo}-${valor}`}
+                        name="papel"
+                        value={valor}
+                        checked={papel === valor}
+                        onChange={() => escolherPapel(valor)}
+                        aria-describedby={`${idDoGrupo}-${valor}-descricao`}
+                      />
+                      <label htmlFor={`${idDoGrupo}-${valor}`}>{ROTULO_DO_PAPEL[valor]}</label>
+                      <span id={`${idDoGrupo}-${valor}-descricao`} className={estilos.descricao}>
+                        {descricao}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </fieldset>
+
+              {/* Logo abaixo do papel, que decide o padrão dele. */}
+              <div className={estilos.opcao}>
+                <input
+                  type="checkbox"
+                  id={`${idDoGrupo}-atende`}
+                  checked={atende}
+                  onChange={(evento) => {
+                    setAtende(evento.target.checked);
+                    setAtendeTocado(true);
+                  }}
+                  aria-describedby={`${idDoGrupo}-atende-descricao`}
+                />
+                <label htmlFor={`${idDoGrupo}-atende`}>Atende clientes</label>
+                <span id={`${idDoGrupo}-atende-descricao`} className={estilos.descricao}>
+                  Aparece na agenda e pode receber agendamentos.
                 </span>
               </div>
-            ))}
-          </fieldset>
 
-          <div className={estilos.opcao}>
-            <input
-              type="checkbox"
-              id={`${idDoGrupo}-atende`}
-              checked={atende}
-              onChange={(evento) => {
-                setAtende(evento.target.checked);
-                setAtendeTocado(true);
-              }}
-              aria-describedby={`${idDoGrupo}-atende-descricao`}
-            />
-            <label htmlFor={`${idDoGrupo}-atende`}>Atende clientes</label>
-            <span id={`${idDoGrupo}-atende-descricao`} className={estilos.descricao}>
-              Aparece na agenda e pode receber agendamentos.
-            </span>
-          </div>
-        </LadoALado>
+              {aviso ? <Aviso>{aviso}</Aviso> : null}
+            </Grupo>
+          </form>
 
-        {aviso ? <Aviso>{aviso}</Aviso> : null}
-        {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
-
-        <div className={estilos.acoes}>
-          <Botao type="submit" carregando={salvando}>
-            {id ? "Salvar" : "Enviar convite"}
-          </Botao>
-          {/* Sem `carregando`: desistir funciona mesmo com o envio
-              pendurado. `type="button"` porque está dentro do <form>. */}
-          <Botao type="button" variante="contorno" onClick={() => router.push("/painel/equipe")}>
-            Cancelar
-          </Botao>
+          {/* Só na edição: o membro precisa existir pra ter semana e
+              serviços (nascem com ele, pelo banco). */}
+          {atual ? <JornadaDoMembro membroId={atual.id} /> : null}
         </div>
-      </form>
 
-      {/* Só na edição: o membro precisa existir pra ter semana e
-          serviços (nascem com ele, pelo banco). Cada seção salva sozinha
-          — trocar a jornada não exige reenviar o cadastro. */}
-      {atual ? (
-        // Lado a lado: foto e serviços à esquerda, a jornada (a mais
-        // alta) à direita — as telas usam a largura (pedido do dono).
-        <LadoALado>
-          <div className={estilos.pilha}>
+        {atual ? (
+          <div className={estilos.lateral}>
             {/* A foto que a página pública mostra na equipe. Salva sozinha,
                 como a jornada e os serviços. */}
             <CampoDeImagem
@@ -354,25 +423,37 @@ export function CadastroDeMembro() {
               remover={() => api.barbeiro.removerFotoDoMembro(atual.id)}
             />
             <ServicosDoMembro membroId={atual.id} />
-          </div>
-          <JornadaDoMembro membroId={atual.id} />
-        </LadoALado>
-      ) : null}
 
-      {/* Fora do formulário, como em CadastroDeServico: mudar o estado do
-          membro não é uma saída do formulário, e fica longe do Cancelar. */}
-      {atual ? (
-        <div className={estilos.acaoDoEstado}>
-          {atual.convitePendente && atual.ativo ? (
-            <Botao type="button" variante="contorno" carregando={salvando} onClick={reenviar}>
-              Reenviar convite
-            </Botao>
-          ) : null}
-          <Botao type="button" variante="contorno" carregando={salvando} onClick={alternarAtivo}>
-            {atual.ativo ? "Desativar" : "Reativar"}
-          </Botao>
-        </div>
-      ) : null}
+            {/* Por último e longe do Salvar: mudar o estado do membro não é
+                editar os dados. A frase diz o efeito antes do botão. */}
+            <Grupo titulo="Situação">
+              {atual.convitePendente && atual.ativo ? (
+                <p className={estilos.efeito}>
+                  Ainda não aceitou o convite. Reenviar manda um código novo, e o anterior
+                  deixa de valer.
+                </p>
+              ) : null}
+              <p className={estilos.efeito}>
+                {atual.ativo
+                  ? "Desativar: para de receber agendamentos e perde o acesso ao painel. Dá pra reativar depois."
+                  : "Não recebe agendamentos nem entra no painel. Reativar devolve os dois."}
+              </p>
+              {avisoDaSituacao ? <Aviso>{avisoDaSituacao}</Aviso> : null}
+              {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
+              <div className={estilos.acaoDoEstado}>
+                {atual.convitePendente && atual.ativo ? (
+                  <Botao type="button" variante="contorno" carregando={salvando} onClick={reenviar}>
+                    Reenviar convite
+                  </Botao>
+                ) : null}
+                <Botao type="button" variante="contorno" carregando={salvando} onClick={alternarAtivo}>
+                  {atual.ativo ? "Desativar" : "Reativar"}
+                </Botao>
+              </div>
+            </Grupo>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

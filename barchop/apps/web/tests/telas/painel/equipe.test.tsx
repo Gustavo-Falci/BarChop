@@ -249,6 +249,58 @@ describe("editar um membro", () => {
     expect(screen.getByRole("radio", { name: /profissional/i })).toBeChecked();
   });
 
+  // Sem caixas, no desenho do detalhe do cliente (pedido do dono,
+  // 2026-10-10): o caminho de volta, o nome e a situação no topo.
+  it("abre com o caminho de volta pra equipe, o nome no título e a situação ao lado", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
+    montarPainel(<CadastroDeMembro />, comEquipe());
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Ana" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Equipe" })).toHaveAttribute("href", "/painel/equipe");
+    expect(screen.getByText("Convite pendente")).toBeInTheDocument();
+  });
+
+  it("dados e jornada na coluna principal; serviços e situação na lateral", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
+    montarPainel(<CadastroDeMembro />, comEquipe());
+
+    const dados = await screen.findByRole("region", { name: "Dados" });
+    const jornada = screen.getByRole("region", { name: "Jornada" });
+    const servicos = screen.getByRole("region", { name: "Serviços que faz" });
+    const situacao = screen.getByRole("region", { name: "Situação" });
+
+    expect(jornada.parentElement).toBe(dados.parentElement);
+    expect(dados.compareDocumentPosition(jornada) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(situacao.parentElement).toBe(servicos.parentElement);
+    expect(servicos.parentElement).not.toBe(dados.parentElement);
+  });
+
+  it("Salvar e Descartar só aparecem depois de mudar os dados; Descartar volta o que estava", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
+    montarPainel(<CadastroDeMembro />, comEquipe());
+
+    const nome = await screen.findByDisplayValue("Ana");
+    expect(screen.queryByRole("button", { name: /^salvar$/i })).not.toBeInTheDocument();
+
+    await userEvent.type(nome, " Lima");
+    expect(screen.getByRole("button", { name: /^salvar$/i })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Descartar" }));
+    expect(screen.getByLabelText(/^nome/i)).toHaveValue("Ana");
+    expect(screen.queryByRole("button", { name: /^salvar$/i })).not.toBeInTheDocument();
+  });
+
+  it("a situação diz o efeito antes do Desativar e do Reativar", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
+    montarPainel(<CadastroDeMembro />, comEquipe());
+
+    const situacao = await screen.findByRole("region", { name: "Situação" });
+    expect(within(situacao).getByText(/tira da agenda e do painel/i)).toBeInTheDocument();
+
+    await userEvent.click(within(situacao).getByRole("button", { name: "Desativar" }));
+    expect(await within(situacao).findByText(/reativar devolve/i)).toBeInTheDocument();
+  });
+
   it("reenvia o convite de quem ainda não aceitou", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
     const falso = comEquipe();

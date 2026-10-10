@@ -76,6 +76,21 @@ describe("jornada do membro", () => {
     expect(salvar).not.toHaveBeenCalled();
   });
 
+  it("Salvar jornada só aparece depois de mudar a semana; Descartar volta como estava", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    const segunda = await screen.findByLabelText("Jornada na segunda");
+    expect(screen.queryByRole("button", { name: /salvar jornada/i })).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(segunda, "folga");
+    const jornada = screen.getByRole("region", { name: "Jornada" });
+    expect(within(jornada).getByRole("button", { name: /salvar jornada/i })).toBeInTheDocument();
+
+    await userEvent.click(within(jornada).getByRole("button", { name: "Descartar" }));
+    expect(screen.getByLabelText("Jornada na segunda")).toHaveValue("barbearia");
+    expect(screen.queryByRole("button", { name: /salvar jornada/i })).not.toBeInTheDocument();
+  });
+
   it("folga esconde as horas do dia", async () => {
     montarPainel(<CadastroDeMembro />, comAna());
 
@@ -162,6 +177,19 @@ describe("serviços do membro", () => {
 
     await waitFor(() => expect(salvar).toHaveBeenCalledWith("m2", ["s1"]));
     expect(await screen.findByText(/serviços salvos/i)).toBeInTheDocument();
+  });
+
+  it("Salvar serviços só aparece enquanto a marcação difere da salva", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    const barba = await screen.findByRole("checkbox", { name: "Barba" });
+    expect(screen.queryByRole("button", { name: /salvar serviços/i })).not.toBeInTheDocument();
+
+    await userEvent.click(barba);
+    expect(screen.getByRole("button", { name: /salvar serviços/i })).toBeInTheDocument();
+
+    await userEvent.click(barba);
+    expect(screen.queryByRole("button", { name: /salvar serviços/i })).not.toBeInTheDocument();
   });
 });
 

@@ -4,22 +4,50 @@
   align-content: start;
 }
 
-/* A coluna da esquerda na edição: foto em cima, serviços embaixo. */
-.pilha {
+/* Dados e jornada à esquerda, largos; foto, serviços e situação à
+   direita, como o detalhe do cliente e o cadastro de serviço. Sem
+   caixas: o que separa as colunas e os grupos é o espaço. No celular,
+   uma coluna só, na ordem do código. */
+.corpo {
   display: grid;
-  gap: var(--espaco-lg);
-  align-content: start;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-xl);
+  align-items: start;
 }
 
-.apoio,
-.email {
-  margin: 0;
-  color: var(--cor-ink-soft);
+@media (min-width: 1000px) {
+  .corpo {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  }
+}
+
+.principal,
+.lateral {
+  display: grid;
+  gap: var(--espaco-xl);
+  align-content: start;
+  min-width: 0;
 }
 
 .formulario {
   display: grid;
-  gap: var(--espaco-lg);
+  min-width: 0;
+}
+
+.email {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* O rótulo das partes que não são <Campo> (e-mail, papel): o mesmo
+   desenho do rótulo do Campo, pra a coluna ler como uma coisa só. */
+.rotulo {
+  padding: 0;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink-soft);
 }
 
 .grupo {
@@ -28,11 +56,19 @@
   margin: 0;
   padding: 0;
   border: 0;
+  min-width: 0;
 }
 
 .grupo legend {
   margin-block-end: var(--espaco-sm);
-  font-weight: 700;
+}
+
+/* Os três papéis lado a lado enquanto couberem (mín. 180px cada); na
+   coluna estreita, empilham. */
+.papeis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--espaco-md);
 }
 
 /* Controle, rótulo e, embaixo do rótulo, a descrição. O controle ocupa
@@ -45,6 +81,7 @@
   grid-template-columns: auto 1fr;
   column-gap: var(--espaco-sm);
   align-items: center;
+  align-content: start;
 }
 
 .opcao input {
@@ -65,8 +102,14 @@
   font-size: var(--texto-sm);
 }
 
+.efeito {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
 /* Mesma regra de CadastroDeServico: os botões no tamanho do texto. */
-.acoes,
 .acaoDoEstado {
   display: flex;
   flex-wrap: wrap;
@@ -74,7 +117,6 @@
 }
 
 @media (max-width: 560px) {
-  .acoes button,
   .acaoDoEstado button {
     flex: 1;
   }

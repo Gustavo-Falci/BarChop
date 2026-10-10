@@ -269,10 +269,15 @@ describe("editar um membro", () => {
     const servicos = screen.getByRole("region", { name: "Serviços que faz" });
     const situacao = screen.getByRole("region", { name: "Situação" });
 
-    expect(jornada.parentElement).toBe(dados.parentElement);
+    // A coluna de cada grupo: a principal tem dados e jornada, nessa
+    // ordem; a lateral, serviços e situação.
+    const principal = jornada.parentElement!;
+    expect(principal).toContainElement(dados);
+    expect(principal).not.toContainElement(servicos);
     expect(dados.compareDocumentPosition(jornada) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(situacao.parentElement).toBe(servicos.parentElement);
-    expect(servicos.parentElement).not.toBe(dados.parentElement);
+    const lateral = situacao.parentElement!;
+    expect(lateral).toContainElement(servicos);
+    expect(lateral).not.toContainElement(dados);
   });
 
   it("Salvar e Descartar só aparecem depois de mudar os dados; Descartar volta o que estava", async () => {

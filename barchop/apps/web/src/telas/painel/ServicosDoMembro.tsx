@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
-import { Secao } from "../../componentes/Secao";
+import { Grupo } from "../../componentes/Grupo";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./ServicosDoMembro.module.css";
@@ -22,10 +22,16 @@ export function ServicosDoMembro({ membroId }: { membroId: string }) {
   const [confirmacao, setConfirmacao] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
 
-  // Sincronizado durante a renderização (ver CadastroDeServico).
-  const [sincronizados, setSincronizados] = useState<string[] | null>(null);
-  if (feitos.dados && feitos.dados !== sincronizados) {
-    setSincronizados(feitos.dados);
+  // Sincronizado durante a renderização (ver CadastroDeServico). Duas
+  // coisas, e não uma: `vistos` é a última resposta do GET, que só muda
+  // quando a requisição muda; `salvos` é o que está gravado, que o
+  // Salvar também troca. Com uma só, salvar deixava o GET antigo
+  // diferente do guardado e a tela voltava pros serviços de antes.
+  const [vistos, setVistos] = useState<string[] | null>(null);
+  const [salvos, setSalvos] = useState<string[]>([]);
+  if (feitos.dados && feitos.dados !== vistos) {
+    setVistos(feitos.dados);
+    setSalvos(feitos.dados);
     setMarcados(new Set(feitos.dados));
   }
 
@@ -53,7 +59,7 @@ export function ServicosDoMembro({ membroId }: { membroId: string }) {
       // coisa vista do mesmo jeito.
       const ids = (catalogo.dados ?? []).map((s) => s.id).filter((id) => marcados.has(id));
       const gravados = await api.barbeiro.salvarServicosDoMembro(membroId, ids);
-      setSincronizados(gravados);
+      setSalvos(gravados);
       setMarcados(new Set(gravados));
       setConfirmacao("Serviços salvos.");
     } catch (causa) {
@@ -64,15 +70,31 @@ export function ServicosDoMembro({ membroId }: { membroId: string }) {
   }
 
   const carregando = !catalogo.dados || !feitos.dados;
+  // O Salvar só aparece enquanto a marcação difere da gravada: desmarcar
+  // e marcar de novo volta a não ter o que salvar.
+  const mudou = marcados.size !== salvos.length || salvos.some((id) => !marcados.has(id));
 
   return (
-    <Secao
+    <Grupo
       titulo="Serviços que faz"
       descricao="Só aparecem pra esta pessoa, na agenda e no agendamento online, os serviços marcados."
       acao={
-        <Botao onClick={salvar} carregando={salvando} disabled={carregando}>
-          Salvar serviços
-        </Botao>
+        mudou ? (
+          <>
+            <Botao onClick={salvar} carregando={salvando}>
+              Salvar serviços
+            </Botao>
+            <Botao
+              variante="contorno"
+              onClick={() => {
+                setAviso(undefined);
+                setMarcados(new Set(salvos));
+              }}
+            >
+              Descartar
+            </Botao>
+          </>
+        ) : undefined
       }
     >
       {carregando ? (
@@ -100,6 +122,6 @@ export function ServicosDoMembro({ membroId }: { membroId: string }) {
       )}
       {aviso ? <Aviso>{aviso}</Aviso> : null}
       {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
-    </Secao>
+    </Grupo>
   );
 }

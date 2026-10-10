@@ -300,7 +300,7 @@ describe("editar um membro", () => {
     montarPainel(<CadastroDeMembro />, comEquipe());
 
     const situacao = await screen.findByRole("region", { name: "Situação" });
-    expect(within(situacao).getByText(/tira da agenda e do painel/i)).toBeInTheDocument();
+    expect(within(situacao).getByText(/para de receber agendamentos e perde o acesso ao painel/i)).toBeInTheDocument();
 
     await userEvent.click(within(situacao).getByRole("button", { name: "Desativar" }));
     expect(await within(situacao).findByText(/reativar devolve/i)).toBeInTheDocument();

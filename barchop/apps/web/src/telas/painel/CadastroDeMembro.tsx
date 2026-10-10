@@ -435,8 +435,8 @@ export function CadastroDeMembro() {
               ) : null}
               <p className={estilos.efeito}>
                 {atual.ativo
-                  ? "Desativar tira da agenda e do painel. Dá pra reativar depois."
-                  : "Fora da agenda e sem acesso ao painel. Reativar devolve os dois."}
+                  ? "Desativar: para de receber agendamentos e perde o acesso ao painel. Dá pra reativar depois."
+                  : "Não recebe agendamentos nem entra no painel. Reativar devolve os dois."}
               </p>
               {avisoDaSituacao ? <Aviso>{avisoDaSituacao}</Aviso> : null}
               {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}

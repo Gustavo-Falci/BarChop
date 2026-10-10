@@ -61,6 +61,9 @@ describe("jornada do membro", () => {
     });
     expect(semana[2]).toMatchObject({ modo: "barbearia" });
     expect(await screen.findByText(/jornada salva/i)).toBeInTheDocument();
+    // A tela fica com o que salvou, e não volta pra semana de antes.
+    expect(screen.getByLabelText("Jornada na segunda")).toHaveValue("proprio");
+    expect(screen.getByLabelText("Entrada na segunda")).toHaveValue("13:00");
   });
 
   it("horário próprio sem saída para na tela, sem chamar a API", async () => {
@@ -177,6 +180,7 @@ describe("serviços do membro", () => {
 
     await waitFor(() => expect(salvar).toHaveBeenCalledWith("m2", ["s1"]));
     expect(await screen.findByText(/serviços salvos/i)).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Barba" })).not.toBeChecked();
   });
 
   it("Salvar serviços só aparece enquanto a marcação difere da salva", async () => {

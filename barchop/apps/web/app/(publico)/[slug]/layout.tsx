@@ -6,6 +6,8 @@ import { ProvedorDaApi } from "../../../src/api/ProvedorDaApi";
 import { BarraDaBarbearia } from "../../../src/fluxo/BarraDaBarbearia";
 import { metadataDaBarbearia } from "../../../src/fluxo/metadataDaBarbearia";
 import { cssDaAparencia, scriptDoModo } from "../../../src/fluxo/aparenciaDaPagina";
+import { OuvinteDaPrevia } from "../../../src/fluxo/OuvinteDaPrevia";
+import { ID_DA_PUBLICADA } from "../../../src/fluxo/previa";
 import { barbeariaDoLayout } from "../../../src/fluxo/slugAtual";
 import { destinoDoSlugAntigo } from "../../../src/tenant/endereco";
 import { ProvedorDoHost } from "../../../src/tenant/ProvedorDoHost";
@@ -68,7 +70,10 @@ export default async function LayoutDaBarbearia({
 
   return (
     <ProvedorDoHost barbearia={barbeariaDoHost}>
-      {css ? <style dangerouslySetInnerHTML={{ __html: css }} /> : null}
+      {css ? <style id={ID_DA_PUBLICADA} dangerouslySetInnerHTML={{ __html: css }} /> : null}
+      {/* Dentro do iframe da prévia do painel (marco E), troca o visual
+          pelo rascunho. Fora dele, não faz nada. */}
+      <OuvinteDaPrevia />
       {modo ? <script dangerouslySetInnerHTML={{ __html: modo }} /> : null}
       <ProvedorDaApi>
         {/* O wrapper só existe pra declarar as larguras do fluxo (ver o

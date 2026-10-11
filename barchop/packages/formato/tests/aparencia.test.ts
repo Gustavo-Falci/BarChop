@@ -34,6 +34,11 @@ describe("o padrão é o BarChop de hoje", () => {
     expect(colors.dark.onAccent).toBe(colors.dark.dark);
   });
 
+  it("a marca sobre o escuro da fachada é o amarelo de hoje", () => {
+    expect(colors.light.accentOnDark).toBe(colors.light.accent);
+    expect(colors.dark.accentOnDark).toBe(colors.dark.accent);
+  });
+
   it("o resto do padrão reproduz a página de hoje", () => {
     expect(APARENCIA_PADRAO).toEqual({
       tema: "barchop",
@@ -138,6 +143,7 @@ describe("o catálogo", () => {
         expect(contraste(cores.muted, cores.paperSoft)).toBeGreaterThanOrEqual(4.5);
         expect(contraste(cores.placeholder, cores.surface)).toBeGreaterThanOrEqual(4.5);
         expect(contraste(cores.onAccent, cores.accent)).toBeGreaterThanOrEqual(4.5);
+        expect(contraste(cores.accentOnDark, cores.dark)).toBeGreaterThanOrEqual(4.5);
       });
     }
   );
@@ -153,6 +159,9 @@ describe("a cor da marca", () => {
   it.each(CORES_DA_MARCA.map((cor) => [cor]))("o texto sobre %s passa de 4,5:1", (cor) => {
     const paleta = paletaDaAparencia(com({ cores: { claro: { marca: cor }, escuro: {} } }));
     expect(contraste(paleta.claro.onAccent, paleta.claro.accent)).toBeGreaterThanOrEqual(4.5);
+    // A marca como texto sobre o --cor-dark (as iniciais da fachada sem
+    // capa): marca quase preta tem de clarear pra aparecer.
+    expect(contraste(paleta.claro.accentOnDark, paleta.claro.dark)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("trocada no claro, vale também no escuro (o que não se define no escuro sai do claro)", () => {

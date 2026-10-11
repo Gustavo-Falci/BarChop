@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { slugAtual } from "../../src/fluxo/slugAtual";
+import { APARENCIA_PADRAO } from "@barchop/formato";
+import { barbeariaDoLayout, slugAtual } from "../../src/fluxo/slugAtual";
 
 function fetchQueResponde(status: number, corpo: unknown): typeof fetch {
   return async () =>
@@ -18,6 +19,29 @@ const PERFIL = {
   horarios: [],
   barbeiros: [],
 };
+
+// O layout também leva a Aparência publicada (marco C), da mesma busca.
+describe("barbeariaDoLayout", () => {
+  it("devolve o slug e a aparência, normalizada", async () => {
+    const lida = await barbeariaDoLayout(
+      "barbearia-do-gu",
+      fetchQueResponde(200, { ...PERFIL, aparencia: { tema: "oceano", cantos: "estrela" } })
+    );
+
+    expect(lida).toEqual({ slug: "barbearia-do-gu", aparencia: { ...APARENCIA_PADRAO, tema: "oceano" } });
+  });
+
+  it("API de antes da Aparência (sem o campo): o padrão", async () => {
+    // O web pode subir antes da API (a lição do #104).
+    const lida = await barbeariaDoLayout("barbearia-do-gu", fetchQueResponde(200, PERFIL));
+
+    expect(lida?.aparencia).toEqual(APARENCIA_PADRAO);
+  });
+
+  it("falha da API: null, e a página segue", async () => {
+    expect(await barbeariaDoLayout("barbearia-do-gu", fetchQueResponde(500, {}))).toBeNull();
+  });
+});
 
 // O layout de /[slug] pergunta à API qual é o slug atual da barbearia,
 // pra redirecionar o link antigo pro novo (E3c).

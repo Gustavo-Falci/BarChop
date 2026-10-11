@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
+import { APARENCIA_PADRAO } from "@barchop/formato";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { BarraDaBarbearia } from "../../src/fluxo/BarraDaBarbearia";
 import { sessaoDoCliente } from "../../src/sessao/armazenamento";
@@ -25,6 +26,21 @@ describe("barra da barbearia", () => {
     montar();
 
     expect(await screen.findByText("GR Barber")).toBeInTheDocument();
+  });
+
+  it("com a troca ligada na Aparência, tem o botão claro/escuro; sem ela, não", async () => {
+    montar();
+    await screen.findByText("GR Barber");
+    expect(screen.queryByRole("button", { name: /usar o modo/i })).not.toBeInTheDocument();
+  });
+
+  it("o botão claro/escuro entra quando o dono deixa", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.salvarRascunhoDaAparencia({ ...APARENCIA_PADRAO, clienteTrocaModo: true });
+    await falso.barbeiro.publicarAparencia();
+    montar(falso);
+
+    expect(await screen.findByRole("button", { name: /usar o modo/i })).toBeInTheDocument();
   });
 
   it("o nome leva de volta pra página da barbearia", async () => {

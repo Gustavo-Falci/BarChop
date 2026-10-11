@@ -37,6 +37,22 @@ describe("perfil da barbearia", () => {
     expect(screen.getByText("Rua das Tesouras, 123")).toBeInTheDocument();
   });
 
+  it("o botão claro/escuro só aparece se o dono deixou o cliente trocar", async () => {
+    const falso = criarApiClientFalso();
+    montar(falso);
+    await screen.findByRole("heading", { level: 1 });
+    expect(screen.queryByRole("button", { name: /usar o modo/i })).not.toBeInTheDocument();
+  });
+
+  it("com a troca ligada na Aparência, a página inicial tem o botão", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.salvarRascunhoDaAparencia({ ...APARENCIA_PADRAO, clienteTrocaModo: true });
+    await falso.barbeiro.publicarAparencia();
+    montar(falso);
+
+    expect(await screen.findByRole("button", { name: /usar o modo/i })).toBeInTheDocument();
+  });
+
   it("leva pro primeiro passo do agendamento", async () => {
     montar();
     await waitFor(() => screen.getByRole("heading", { level: 1 }));

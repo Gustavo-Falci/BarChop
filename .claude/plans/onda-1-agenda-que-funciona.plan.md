@@ -4,7 +4,36 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-11 — editar membro sem caixas e Cancelar no novo agendamento, tudo em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (fim de 2026-10-11 — Open Graph, semana sombreada, por profissional e no celular) — vale mais que as seções abaixo
+
+**Estado:** `main` = `38ecf17` (até o #117). **Produção conferida = até o #112** (2026-10-11). Nada pela metade em branch nenhuma. **Aguardando deploy (só web, sem migração):** #114 a #117 — depois conferir: `og:image` de `https://www.barchop.com.br/` responde 200 `image/png` (sem 308), e no chunk de `/painel/agenda`: `profissionais=` (#115) e `Filtrar por profissional` (#116). Nenhuma migração nova desde `20261011120000_categoria_fechada`.
+
+**Também de 2026-10-11 (#116–#117):**
+- #116 **semana por profissional** (`b36967d` RED → `213963d` GREEN): pílulas "Todos · Rafael · Ana" na semana, pra dono e recepção (não no dia, que já tem uma coluna por pessoa; não pro profissional). Escolhida uma pessoa (`?profissional=` na URL, mantido ao andar e ao trocar de vista), a semana mostra só os agendamentos e o expediente dela — pausa, folgas e o horário livre, que já leva ela pro Novo agendamento. Conferido em 1440.
+- #117 **semana no celular** (`c46e866` RED → `8e2cf6c` GREEN → `169a1b0` teste sem CRLF): em 375 as sete colunas se sobrepunham (o `min-width: 120px` ia nos itens, com trilhas `minmax(0, 1fr)`). Os 120px vão nas trilhas, e cabeçalho e corpo têm a mesma largura mínima pra rolarem juntos dentro do quadro. Conferido em 375: colunas de 120px, página sem rolagem horizontal, cabeçalho alinhado depois de rolar. O eixo das horas rola junto (não fica fixo).
+
+**Feito em 2026-10-11 (#113–#118):**
+- #113 e #118 docs.
+- **#89 decidido:** a grade da agenda continua clicável de 15 em 15 (sem código).
+- #114 **imagem de Open Graph da home**: `app/(marketing)/opengraph-image.tsx`, 1200×630 gerado no build com a Clash Grotesk do repositório (TTF estáticos; o gerador não lê woff2). O Next serve em `/opengraph-image-<hash>`, que no host do site passava no formato de slug e ia pro subdomínio de uma barbearia: o `matcher` do `proxy.ts` deixa esse caminho de fora. Termos e Privacidade herdam a imagem.
+- #115 **semana da agenda sombreada**: 7 consultas da rota do dia (`ocupacaoDoDia`, sem rota de período), presas ao domingo; a semana também busca as folgas. `expediente` da grade virou registro por data. **Regras do dono:** na coluna que junta a equipe só fica sombreado onde ninguém atende ("Pausa" quando todos no turno param; "Fechado" fora de todos os turnos, inclusive o vão entre turnos); um horário fica livre se alguém pode atender (no turno, fora da pausa, sem folga e sem agendamento dele) e leva essa lista pro Novo agendamento (`?profissionais=`), que oferece só essas pessoas — sendo uma, já escolhida; trocar dia ou hora tira a restrição. Todos em pausa = sem horário. Limite não visto: um agendamento que cubra a largura da coluna da semana pode esconder o horário livre de outro embaixo (vista de Dia ou o filtro por profissional resolvem).
+- Convite pendente não entra na agenda nem na ocupação (`PODE_ATENDER` = ativo, atende e com senha) — foi o que confundiu o teste do dono com a Ana.
+
+**G3 adiado:** o dono decidiu (2026-10-08) que a GR Barber ainda não entra em produção. Não propor até ele pedir.
+
+**Ambiente local:** ao trocar de máquina, `migrate deploy` nos bancos dev e test (última migração: `20261011120000_categoria_fechada`). Banco dev da `layout-dev`: casa de segunda a sábado, 9–19; Rafael Dono com pausa 12–13 e folga na quarta; **Ana Souza ativada só no dev** (senha `ana-dev-123`, sem aceitar convite) com segunda 10–18 e pausa 12–13. Sem clientes. O `TaskStop` não derruba os filhos do `pnpm dev`: encerrar pelos PIDs das portas 3000 e 3333.
+
+**O que falta (perguntar ao dono a ordem):**
+1. Mais telas de UI/UX — o dono manda print por print ("não divida em quadrados").
+2. Conferir no navegador o que só os testes cobriram: capa (Configurações) e foto do membro com o `CampoDeImagem` novo, a logo no painel (aba Marca), a tela de serviço novo e o editar membro do #110 em produção.
+3. G4 — docs da onda 1.
+4. `barbearia-teste` em produção: apagar ou manter.
+5. Onda 2 (dinheiro): caixa, cobrança, planos — começar pelo PRD (`ecc:plan-prd`); preços/plano grátis do site entram aqui.
+6. Solta: razão social/CNPJ/DPO "a preencher" (`apps/web/src/site/controlador.ts`).
+
+**Combinados:** um PR por item, TDD RED → GREEN, português; push, PR e merge por mim só com "pode mergear" do dono no turno ("aprovado" é aprovação visual); `gh pr merge` passa no modo automático. Telas sem caixas: colunas sem moldura com título pequeno, linhas finas, pílulas no lugar de select/checkbox de poucas opções, Salvar/Descartar só quando muda (por grupo), frase do efeito antes da ação; conferir no navegador em 375 e 1440. Deploy: o dono roda na VM sozinho e já sabe os comandos (não passar), rebuildando o `migrar` quando houver migração; eu confiro com curl e grep nos chunks.
+
+## RETOMAR AQUI (2026-10-11 — editar membro sem caixas e Cancelar no novo agendamento, tudo em produção) — histórico
 
 **Estado:** `main` = **produção** = `305e764` (até o #112; #110 e #112 só web, sem migração, os dois conferidos no ar em 2026-10-11 com `/health` e grep nos chunks — #110: "perde o acesso ao painel" e "Reativar devolve os dois" em `/painel/equipe/[id]`; #112: "Cancelar" e `.replace(` no chunk de `/painel/agendamentos/novo`). Nada pela metade em branch nenhuma. Nenhuma migração nova desde `20261011120000_categoria_fechada`.
 

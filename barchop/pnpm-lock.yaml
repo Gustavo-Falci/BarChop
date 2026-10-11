@@ -226,6 +226,10 @@ importers:
   packages/design-tokens: {}
 
   packages/formato:
+    dependencies:
+      '@barchop/design-tokens':
+        specifier: workspace:*
+        version: link:../design-tokens
     devDependencies:
       '@barchop/config':
         specifier: workspace:*

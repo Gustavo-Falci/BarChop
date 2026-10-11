@@ -16,6 +16,12 @@
   align-items: start;
 }
 
+/* Sem isto o aparelho de 390px alargava a coluna e a página rolava pro
+   lado no celular: item de grid não encolhe abaixo do conteúdo. */
+.lateral {
+  min-width: 0;
+}
+
 @media (min-width: 1200px) {
   .comPrevia {
     grid-template-columns: minmax(0, 1fr) 380px;

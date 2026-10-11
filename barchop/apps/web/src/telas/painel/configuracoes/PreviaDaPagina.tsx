@@ -94,7 +94,11 @@ function Quadro({
   aoFechar?: () => void;
 }) {
   const id = useId();
-  const [dispositivo, setDispositivo] = useState<Dispositivo>(ampliada ? "computador" : "celular");
+  // Ampliada abre no computador — menos num celular, onde a página de
+  // 1280px encolhida não se leria.
+  const [dispositivo, setDispositivo] = useState<Dispositivo>(() =>
+    ampliada && !(window.matchMedia?.("(max-width: 700px)").matches ?? false) ? "computador" : "celular"
+  );
   const [pagina, setPagina] = useState<Pagina>("inicio");
   const [modo, setModo] = useState<ModoDaPrevia>(aparencia.modoPadrao === "escuro" ? "escuro" : "claro");
   // O dono fixou um modo (ou escolheu um tema que abre no escuro): a
@@ -155,12 +159,15 @@ function Quadro({
 
   // E a altura da janela: a coluna da prévia fica presa no alto, e um
   // aparelho mais alto que a tela teria o pé cortado.
+  // Só quando a coluna está presa (a partir de 1200px) ou na ampliada:
+  // embaixo dos blocos, num celular, a prévia rola com a página.
   useEffect(() => {
-    const medir = () => setAlturaDaJanela(window.innerHeight);
+    const presa = window.matchMedia?.("(min-width: 1200px)");
+    const medir = () => setAlturaDaJanela(ampliada || presa?.matches ? window.innerHeight : 0);
     medir();
     window.addEventListener("resize", medir);
     return () => window.removeEventListener("resize", medir);
-  }, []);
+  }, [ampliada]);
 
   const tamanho = TAMANHO[dispositivo];
   // O que sobra da tela pro aparelho, tirados os controles e o link.

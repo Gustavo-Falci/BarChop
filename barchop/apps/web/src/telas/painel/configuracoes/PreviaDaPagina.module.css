@@ -55,6 +55,7 @@
 
 .caixa {
   width: 100%;
+  min-width: 0;
 }
 
 /* O aparelho encolhido: a caixa tem o tamanho já em escala, e o iframe

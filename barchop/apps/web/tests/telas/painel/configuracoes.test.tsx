@@ -66,7 +66,7 @@ describe("moldura das subtelas", () => {
   it("não aponta a própria área nem as já decididas", async () => {
     montarPainel(
       <ComunicacaoDaBarbearia />,
-      criarApiClientFalso({ areasDecididas: ["horarios", "regras_de_agendamento", "dados_do_negocio"] })
+      criarApiClientFalso({ areasDecididas: ["horarios", "regras_de_agendamento", "dados_do_negocio", "aparencia"] })
     );
 
     expect(await screen.findByRole("link", { name: /próxima área faltando: notificações/i })).toBeInTheDocument();
@@ -75,7 +75,9 @@ describe("moldura das subtelas", () => {
   it("com tudo decidido, não há próxima área", async () => {
     montarPainel(
       <ComunicacaoDaBarbearia />,
-      criarApiClientFalso({ areasDecididas: ["horarios", "regras_de_agendamento", "dados_do_negocio", "comunicacao", "notificacoes"] })
+      criarApiClientFalso({
+        areasDecididas: ["horarios", "regras_de_agendamento", "dados_do_negocio", "aparencia", "comunicacao", "notificacoes"],
+      })
     );
 
     await screen.findByRole("button", { name: /salvar comunicação/i });

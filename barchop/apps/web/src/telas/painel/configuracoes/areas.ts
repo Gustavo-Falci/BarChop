@@ -1,4 +1,5 @@
 import type { AreaDeConfiguracao, BarbeariaDoPainel, HorarioSerializado } from "@barchop/types";
+import { normalizarAparencia, personalizada, temaPorId } from "@barchop/formato";
 import { resumoDasRegras } from "./regras";
 
 // As áreas das Configurações como o painel as mostra (painel v2, marco
@@ -39,6 +40,13 @@ export const AREAS: DescricaoDaArea[] = [
     apoio: "Como a barbearia se apresenta na página pública.",
     rota: "/painel/configuracoes/dados-do-negocio",
     consequencia: "Nome, endereço e apresentação da página ainda não conferidos",
+  },
+  {
+    area: "aparencia",
+    titulo: "Aparência",
+    apoio: "O visual da sua página de agendamento.",
+    rota: "/painel/configuracoes/aparencia",
+    consequencia: "Sua página de agendamento está com as cores padrão",
   },
   {
     area: "comunicacao",
@@ -89,6 +97,16 @@ export function resumoDaArea(
       return resumoDasRegras(barbearia);
     case "dados_do_negocio":
       return `${barbearia.nome} · ${barbearia.endereco ?? "sem endereço"}`;
+    case "aparencia": {
+      const aparencia = normalizarAparencia(barbearia.aparencia);
+      const tema = `${temaPorId(aparencia.tema).nome}${personalizada(aparencia) ? " personalizado" : ""}`;
+      const modo = {
+        claro: "abre no claro",
+        escuro: "abre no escuro",
+        automatico: "segue o celular do cliente",
+      }[aparencia.modoPadrao];
+      return `${tema} · ${modo}`;
+    }
     case "comunicacao": {
       const canais = [barbearia.telefone, barbearia.whatsapp, barbearia.instagram].filter(Boolean).length;
       return canais === 0 ? "Nenhum canal de contato" : plural(canais, "canal de contato", "canais de contato");

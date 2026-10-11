@@ -7,7 +7,7 @@ import { montarPainel } from "../../ajudantes/painel";
 
 // Painel v2, marco 2: Configurações vira um índice de áreas. Cada linha
 // mostra o que vale hoje ou, se a área nunca foi salva, o que acontece
-// se ficar assim — e a contagem "X de 5 decididas" no topo. Decidida =
+// se ficar assim — e a contagem "X de 6 decididas" no topo. Decidida =
 // salva pelo menos uma vez (decisão do dono do produto, 2026-10-06).
 
 describe("índice das configurações", () => {
@@ -19,7 +19,7 @@ describe("índice das configurações", () => {
   it("conta quantas áreas já foram decididas", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ areasDecididas: ["horarios", "comunicacao"] }));
 
-    expect(await screen.findByText("2 de 5 decididas")).toBeInTheDocument();
+    expect(await screen.findByText("2 de 6 decididas")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: /decididas/i })).toHaveAttribute("aria-valuenow", "2");
   });
 
@@ -38,6 +38,10 @@ describe("índice das configurações", () => {
       "href",
       "/painel/configuracoes/dados-do-negocio"
     );
+    expect(screen.getByRole("link", { name: /^Aparência/ })).toHaveAttribute(
+      "href",
+      "/painel/configuracoes/aparencia"
+    );
     expect(screen.getByRole("link", { name: /^Comunicação/ })).toHaveAttribute(
       "href",
       "/painel/configuracoes/comunicacao"
@@ -55,7 +59,9 @@ describe("índice das configurações", () => {
   it("área decidida mostra o que vale hoje, sem pedir pra configurar", async () => {
     montarPainel(
       <IndiceDeConfiguracoes />,
-      criarApiClientFalso({ areasDecididas: ["horarios", "regras_de_agendamento", "dados_do_negocio", "comunicacao", "notificacoes"] })
+      criarApiClientFalso({
+        areasDecididas: ["horarios", "regras_de_agendamento", "dados_do_negocio", "aparencia", "comunicacao", "notificacoes"],
+      })
     );
 
     expect(await screen.findByRole("link", { name: /^Horários/ })).toHaveTextContent("Aberto 6 dias por semana");
@@ -69,7 +75,9 @@ describe("índice das configurações", () => {
     expect(screen.getByRole("link", { name: /^Regras de agendamento/ })).toHaveTextContent(
       "Grade de 15 min · agenda sem limite"
     );
-    expect(screen.getByText("5 de 5 decididas")).toBeInTheDocument();
+    // Publicada, a Aparência diz o tema e o modo.
+    expect(screen.getByRole("link", { name: /^Aparência/ })).toHaveTextContent("BarChop · segue o celular do cliente");
+    expect(screen.getByText("6 de 6 decididas")).toBeInTheDocument();
     expect(screen.queryByText(/configurar/i)).not.toBeInTheDocument();
   });
 
@@ -82,13 +90,21 @@ describe("índice das configurações", () => {
     expect(screen.getByRole("link", { name: /^Horários/ })).not.toHaveTextContent(/configurar/i);
   });
 
+  it("Aparência nunca publicada: a página está com as cores padrão", async () => {
+    montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso());
+
+    const aparencia = await screen.findByRole("link", { name: /^Aparência/ });
+    expect(aparencia).toHaveTextContent(/cores padrão/i);
+    expect(aparencia).toHaveTextContent(/configurar/i);
+  });
+
   it("barbearia que nunca salvou as regras vê que vale o padrão", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ areasDecididas: ["horarios"] }));
 
     const regras = await screen.findByRole("link", { name: /^Regras de agendamento/ });
     expect(regras).toHaveTextContent(/vale o padrão/i);
     expect(regras).toHaveTextContent(/configurar/i);
-    expect(screen.getByText("1 de 5 decididas")).toBeInTheDocument();
+    expect(screen.getByText("1 de 6 decididas")).toBeInTheDocument();
   });
 
   it("o perfil é de cada pessoa: não entra na contagem nem pede configurar", async () => {
@@ -96,7 +112,7 @@ describe("índice das configurações", () => {
 
     const perfil = await screen.findByRole("link", { name: /^Seu perfil/ });
     expect(perfil).not.toHaveTextContent(/configurar/i);
-    expect(screen.getByText("0 de 5 decididas")).toBeInTheDocument();
+    expect(screen.getByText("0 de 6 decididas")).toBeInTheDocument();
   });
 
   it("quem não é dono vê só o próprio perfil, sem o índice", async () => {

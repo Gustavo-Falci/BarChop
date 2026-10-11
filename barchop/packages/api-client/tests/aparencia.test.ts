@@ -85,6 +85,14 @@ describe("dublê — aparência", () => {
     expect(depois.aparencia).toEqual(APARENCIA_PADRAO);
   });
 
+  it("publicar decide a área Aparência, como na API", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.salvarRascunhoDaAparencia(OCEANO);
+
+    expect((await falso.barbeiro.minhaBarbearia()).areasDecididas).not.toContain("aparencia");
+    expect((await falso.barbeiro.publicarAparencia()).areasDecididas).toContain("aparencia");
+  });
+
   it("publicar sem rascunho é 409, como na API", async () => {
     const falso = criarApiClientFalso();
 

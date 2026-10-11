@@ -1,0 +1,199 @@
+import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it } from "vitest";
+import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
+import { APARENCIA_PADRAO } from "@barchop/formato";
+import { AparenciaDaBarbearia } from "../../../src/telas/painel/configuracoes/AparenciaDaBarbearia";
+import { navegacaoFalsa } from "../../ajudantes/navegacao";
+import { montarPainel } from "../../ajudantes/painel";
+
+// A tela Aparência (marco D): o visual da página pública. Cada mudança
+// vira rascunho guardado no servidor (sobrevive a fechar a aba); a
+// página do cliente só muda quando o dono publica.
+
+const MARCA = "/painel/configuracoes/dados-do-negocio?aba=marca";
+
+beforeEach(() => {
+  localStorage.clear();
+  navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes/aparencia" });
+});
+
+async function abrir(falso = criarApiClientFalso()) {
+  montarPainel(<AparenciaDaBarbearia />, falso);
+  await screen.findByRole("button", { name: "Oceano" });
+  return falso;
+}
+
+function grupo(nome: RegExp) {
+  return within(screen.getByRole("group", { name: nome }));
+}
+
+async function rascunho(falso: ReturnType<typeof criarApiClientFalso>) {
+  return (await falso.barbeiro.minhaBarbearia()).aparenciaRascunho;
+}
+
+describe("aparência", () => {
+  it("abre no tema BarChop, sem nada pra publicar, com o selo Faltando", async () => {
+    await abrir();
+
+    expect(screen.getByRole("button", { name: "BarChop" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Oceano" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument();
+    expect(screen.getByRole("banner")).toHaveTextContent("Faltando");
+    expect(grupo(/modo padrão/i).getByRole("radio", { name: "Automático" })).toBeChecked();
+    expect(grupo(/deixar o cliente trocar/i).getByRole("radio", { name: "Não" })).toBeChecked();
+  });
+
+  it("logo e capa: diz o que falta e leva pra aba Marca", async () => {
+    await abrir();
+
+    const links = screen.getAllByRole("link", { name: /enviar (logo|capa)/i });
+    expect(links).toHaveLength(2);
+    for (const link of links) expect(link).toHaveAttribute("href", MARCA);
+    expect(screen.getAllByText("falta")).toHaveLength(2);
+  });
+
+  it("escolher um tema guarda o rascunho, mas a página do cliente não muda", async () => {
+    const falso = await abrir();
+
+    await userEvent.click(screen.getByRole("button", { name: "Oceano" }));
+
+    expect(screen.getByRole("button", { name: "Oceano" })).toHaveAttribute("aria-pressed", "true");
+    await waitFor(async () => expect((await rascunho(falso))?.tema).toBe("oceano"));
+    expect((await falso.publico.perfilDaBarbearia("gr-barber")).aparencia.tema).toBe("barchop");
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeInTheDocument();
+  });
+
+  it("publicar leva o rascunho pro ar e decide a área", async () => {
+    const falso = await abrir();
+    await userEvent.click(screen.getByRole("button", { name: "Oceano" }));
+    await waitFor(async () => expect((await rascunho(falso))?.tema).toBe("oceano"));
+
+    await userEvent.click(screen.getByRole("button", { name: "Publicar" }));
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument());
+    expect((await falso.publico.perfilDaBarbearia("gr-barber")).aparencia.tema).toBe("oceano");
+    expect(screen.getByRole("banner")).toHaveTextContent("Configurado");
+  });
+
+  it("descartar volta pro que está no ar", async () => {
+    const falso = await abrir();
+    await userEvent.click(screen.getByRole("button", { name: "Oceano" }));
+    await waitFor(async () => expect((await rascunho(falso))?.tema).toBe("oceano"));
+
+    await userEvent.click(screen.getByRole("button", { name: "Descartar" }));
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "BarChop" })).toHaveAttribute("aria-pressed", "true"));
+    expect(await rascunho(falso)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument();
+  });
+
+  it("um rascunho guardado antes reabre na tela (fechou a aba e voltou)", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.salvarRascunhoDaAparencia({ ...APARENCIA_PADRAO, tema: "menta" });
+
+    await abrir(falso);
+
+    expect(screen.getByRole("button", { name: "Menta" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeInTheDocument();
+  });
+
+  it("o filtro Escuros mostra só os temas que abrem no escuro", async () => {
+    await abrir();
+
+    await userEvent.click(grupo(/mostrar temas/i).getByRole("radio", { name: "Escuros" }));
+
+    expect(screen.getByRole("button", { name: "Ousado" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Meia-noite" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Oceano" })).not.toBeInTheDocument();
+  });
+
+  it("tema que abre no escuro põe o modo padrão no Escuro", async () => {
+    const falso = await abrir();
+
+    await userEvent.click(screen.getByRole("button", { name: "Ousado" }));
+
+    expect(grupo(/modo padrão/i).getByRole("radio", { name: "Escuro" })).toBeChecked();
+    await waitFor(async () => expect((await rascunho(falso))?.modoPadrao).toBe("escuro"));
+  });
+
+  it("modo padrão e o botão do cliente entram no rascunho", async () => {
+    const falso = await abrir();
+
+    await userEvent.click(grupo(/modo padrão/i).getByRole("radio", { name: "Claro" }));
+    await userEvent.click(grupo(/deixar o cliente trocar/i).getByRole("radio", { name: "Sim" }));
+
+    await waitFor(async () =>
+      expect(await rascunho(falso)).toMatchObject({ modoPadrao: "claro", clienteTrocaModo: true })
+    );
+  });
+
+  it("trocar a cor da marca deixa o tema personalizado; Voltar ao original desfaz", async () => {
+    const falso = await abrir();
+
+    await userEvent.click(grupo(/cor da marca/i).getByRole("button", { name: "Azul" }));
+
+    expect(grupo(/cor da marca/i).getByRole("button", { name: "Azul" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("BarChop · personalizado")).toBeInTheDocument();
+    await waitFor(async () => expect((await rascunho(falso))?.cores.claro.marca).toBe("#2563EB"));
+
+    await userEvent.click(screen.getByRole("button", { name: "Voltar ao original" }));
+
+    expect(screen.queryByText("BarChop · personalizado")).not.toBeInTheDocument();
+    await waitFor(async () => expect(await rascunho(falso)).toBeNull());
+  });
+
+  it("outra cor, em hex", async () => {
+    const falso = await abrir();
+    const campo = screen.getByRole("textbox", { name: /outra cor/i });
+
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "#123abc{Enter}");
+
+    await waitFor(async () => expect((await rascunho(falso))?.cores.claro.marca).toBe("#123ABC"));
+  });
+
+  it("hex que não é cor não entra", async () => {
+    const falso = await abrir();
+    const campo = screen.getByRole("textbox", { name: /outra cor/i });
+
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "azul{Enter}");
+
+    expect(await screen.findByText(/use o formato #RRGGBB/i)).toBeInTheDocument();
+    expect(await rascunho(falso)).toBeNull();
+  });
+
+  it("a cor de fundo é de cada modo", async () => {
+    const falso = await abrir();
+
+    await userEvent.click(grupo(/fundo de qual modo/i).getByRole("radio", { name: "Modo escuro" }));
+    const campo = screen.getByRole("textbox", { name: /cor de fundo/i });
+    await userEvent.clear(campo);
+    await userEvent.type(campo, "#101820{Enter}");
+
+    await waitFor(async () => expect((await rascunho(falso))?.cores).toEqual({ claro: {}, escuro: { fundo: "#101820" } }));
+  });
+
+  it("se a mudança não chega ao servidor, diz isso e não deixa publicar uma versão velha", async () => {
+    const falso = criarApiClientFalso();
+    falso.barbeiro.salvarRascunhoDaAparencia = async () => {
+      throw new ErroDaApi(500, "erro_interno", "falhou");
+    };
+    await abrir(falso);
+
+    await userEvent.click(screen.getByRole("button", { name: "Oceano" }));
+
+    expect(await screen.findByText(/não guardado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/rascunho guardado/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Tentar de novo" })).toBeInTheDocument();
+  });
+
+  it("quem não é dono não mexe", async () => {
+    montarPainel(<AparenciaDaBarbearia />, criarApiClientFalso({ papel: "profissional" }));
+
+    expect(await screen.findByText(/só o dono da barbearia muda esta área/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Oceano" })).not.toBeInTheDocument();
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { APARENCIA_PADRAO } from "@barchop/formato";
+import { APARENCIA_PADRAO, type Aparencia } from "@barchop/formato";
 import type { AparenciaDaPagina } from "@barchop/types";
 import { criarApiClient, criarApiClientFalso, ErroDaApi } from "../src/index";
 
@@ -7,6 +7,17 @@ import { criarApiClient, criarApiClientFalso, ErroDaApi } from "../src/index";
 // ou descartar; a página pública só vê o que está no ar.
 
 const OCEANO: AparenciaDaPagina = { ...APARENCIA_PADRAO, tema: "oceano", cantos: "pilula" };
+
+// O tipo de @barchop/types é cópia à mão do de @barchop/formato (o pacote
+// de tipos não depende de nenhum outro). Se um dos dois mudar sozinho, o
+// type-check quebra aqui.
+type MesmoFormato = [Aparencia] extends [AparenciaDaPagina]
+  ? [AparenciaDaPagina] extends [Aparencia]
+    ? true
+    : false
+  : false;
+const mesmoFormato: MesmoFormato = true;
+void mesmoFormato;
 
 function respostaJson(corpo: unknown, status = 200): Response {
   return new Response(JSON.stringify(corpo), { status, headers: { "content-type": "application/json" } });

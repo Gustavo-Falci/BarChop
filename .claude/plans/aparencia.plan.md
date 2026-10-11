@@ -32,6 +32,10 @@ Barbearia que nunca abriu a Aparência continua **exatamente** como hoje: amarel
 | G | Ajuste fino: cantos, botão principal, cards, as nove cores | web | — |
 | H | Layout dos serviços: abas de categoria × lista agrupada (salva na hora) | web, API | talvez |
 
+**Armadilhas entre marcos (anotadas no B):**
+- **H — o que salva na hora:** o rascunho é sempre o objeto inteiro. Se o layout dos serviços (ou qualquer outra coisa "salva na hora") for direto pro `aparencia` com um rascunho pendente, o próximo Publicar devolve o valor antigo. Quem salva direto grava também no rascunho pendente, com teste "salvar layout com rascunho pendente → publicar mantém o layout novo".
+- **C — cache:** o layout público lê o perfil com `fetch` num server component, e o cache do `fetch` muda nesta versão do Next (ver `node_modules/next/dist/docs`). Ler antes do C; a conferência é: publicar e, num reload simples da página pública, ver o visual novo.
+
 **Fora por enquanto:** Histórico de alterações (não existe em área nenhuma; seria infraestrutura própria, vale pras Configurações todas).
 
 **Conferir no navegador:** 375 e 1440, claro e escuro, com e sem aparência salva; o fluxo de agendar com tema escuro e cor clara (contraste).

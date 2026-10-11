@@ -186,18 +186,26 @@ button.diaDoCabecalho:hover .numeroDoDia {
   border-inline-end: none;
 }
 
+/* A hora escrita em cada horário livre, o tempo todo (pedido do dono,
+   2026-10-11): no canto de cima, miúda e apagada, pra ler qual é sem
+   passar o mouse e sem competir com os agendamentos. */
 .livre {
   grid-row: var(--linha) / span var(--linhas);
   grid-column: 1;
+  display: flex;
+  align-items: flex-start;
+  padding: 2px var(--espaco-xs);
   border: none;
   background: transparent;
-  color: transparent;
+  color: var(--cor-muted);
   font-size: var(--texto-xs);
+  line-height: 1.2;
+  text-align: start;
   cursor: pointer;
 }
 
-/* A hora só aparece ao passar o mouse ou pelo teclado: escrita sempre,
-   a grade vira uma parede de números. */
+/* Ao passar o mouse ou pelo teclado, a faixa acende: é onde o clique
+   vai cair. */
 .livre:hover,
 .livre:focus-visible {
   background: var(--cor-pale-yellow);

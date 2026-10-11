@@ -7,7 +7,13 @@ import { describe, expect, it } from "vitest";
 // `minmax(0, 1fr)` — cada trilha ficava com ~40px e a coluna de 120px
 // transbordava em cima da vizinha. O jsdom não faz layout, então o teste
 // lê a regra do CSS.
-const css = readFileSync(join(__dirname, "../../src/componentes/GradeDeTempo.module.css"), "utf8");
+//
+// Sem o CRLF do checkout no Windows: o fim do bloco é procurado por
+// uma chave sozinha na linha.
+const css = readFileSync(
+  join(__dirname, "../../src/componentes/GradeDeTempo.module.css"),
+  "utf8"
+).replace(/\r\n/g, "\n");
 const doCelular = css.slice(css.indexOf("@media (max-width: 900px)"));
 const blocoDoCelular = doCelular.slice(0, doCelular.indexOf("\n}\n") + 2);
 

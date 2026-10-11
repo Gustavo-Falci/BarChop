@@ -17,6 +17,10 @@ export const colors = {
     paleYellow: "#FFF3B8",
     paleBlue: "#EFF8FA",
     dark: "#1A1A1A",
+    // O texto sobre a cor da marca (o botão Agendar). Hoje é o --cor-dark
+    // nos dois modos; na página pública com outra cor da marca, a
+    // Aparência calcula por contraste (@barchop/formato/aparencia).
+    onAccent: "#1A1A1A",
     shadow: "#000000",
     // O vermelho de erro era escrito à mão em Campo.module.css e
     // Aviso.module.css. Vira token porque precisa de valor POR TEMA:
@@ -54,6 +58,7 @@ export const colors = {
     paleYellow: "#3d3410",
     paleBlue: "#152329",
     dark: "#1A1A1A",
+    onAccent: "#1A1A1A",
     shadow: "#F3F0E7", // sombra clara no escuro, senão some contra o fundo
     // O #b3261e do claro dava 2,77:1 sobre este paper e 2,20:1 sobre
     // esta surface — o texto mais apagado da tela era justamente o que

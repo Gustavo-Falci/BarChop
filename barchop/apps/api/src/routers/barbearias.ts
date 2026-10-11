@@ -245,6 +245,50 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
     }
   );
 
+  // O layout dos serviços salva na hora (como logo e capa), sem passar
+  // pelo Publicar. Com um rascunho pendente, ele também leva o layout
+  // novo: o rascunho é a aparência inteira, e publicar depois traria o
+  // layout antigo de volta.
+  app.put(
+    "/barbearias/me/aparencia/layout-dos-servicos",
+    {
+      schema: {
+        body: {
+          type: "object",
+          additionalProperties: false,
+          required: ["layoutDosServicos"],
+          properties: { layoutDosServicos: { type: "string", enum: [...LAYOUTS_DOS_SERVICOS] } },
+        },
+      },
+      onRequest: exigirPapel("dono"),
+    },
+    async (request) => {
+      const id = request.user.barbeariaId;
+      const { layoutDosServicos } = request.body as { layoutDosServicos: (typeof LAYOUTS_DOS_SERVICOS)[number] };
+      const antes = await prisma.barbearia.findUniqueOrThrow({
+        where: { id },
+        select: { aparencia: true, aparenciaRascunho: true, areasDecididas: true },
+      });
+      const noAr = { ...normalizarAparencia(antes.aparencia), layoutDosServicos };
+      const rascunho =
+        antes.aparenciaRascunho === null
+          ? null
+          : { ...normalizarAparencia(antes.aparenciaRascunho), layoutDosServicos };
+      const barbearia = await prisma.barbearia.update({
+        where: { id },
+        data: {
+          aparencia: noAr as unknown as Prisma.InputJsonObject,
+          aparenciaRascunho:
+            rascunho === null || mesmaAparencia(rascunho, noAr)
+              ? Prisma.DbNull
+              : (rascunho as unknown as Prisma.InputJsonObject),
+          areasDecididas: juntarAreas(antes.areasDecididas, ["aparencia"]),
+        },
+      });
+      return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
+    }
+  );
+
   app.delete(
     "/barbearias/me/aparencia/rascunho",
     { onRequest: exigirPapel("dono") },

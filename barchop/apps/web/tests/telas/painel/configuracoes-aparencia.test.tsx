@@ -253,6 +253,35 @@ describe("aparência", () => {
     );
   });
 
+  it("layout dos serviços salva na hora, sem passar pelo Publicar", async () => {
+    const falso = await abrir();
+    expect(screen.getByRole("button", { name: /lista agrupada/i })).toHaveAttribute("aria-pressed", "true");
+
+    await userEvent.click(screen.getByRole("button", { name: /abas de categoria/i }));
+
+    await waitFor(async () =>
+      expect((await falso.publico.perfilDaBarbearia("gr-barber")).aparencia.layoutDosServicos).toBe("abas")
+    );
+    expect(screen.getByRole("button", { name: /abas de categoria/i })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument();
+  });
+
+  it("layout com rascunho pendente: o rascunho segue pendente, já com o layout novo", async () => {
+    const falso = await abrir();
+    await userEvent.click(screen.getByRole("button", { name: "Oceano" }));
+
+    await userEvent.click(screen.getByRole("button", { name: /abas de categoria/i }));
+
+    await waitFor(async () =>
+      expect(await rascunho(falso)).toMatchObject({ tema: "oceano", layoutDosServicos: "abas" })
+    );
+    expect((await falso.publico.perfilDaBarbearia("gr-barber")).aparencia).toMatchObject({
+      tema: "barchop",
+      layoutDosServicos: "abas",
+    });
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeInTheDocument();
+  });
+
   it("quem não é dono não mexe", async () => {
     montarPainel(<AparenciaDaBarbearia />, criarApiClientFalso({ papel: "profissional" }));
 

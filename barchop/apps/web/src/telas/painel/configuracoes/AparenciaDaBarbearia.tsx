@@ -23,6 +23,7 @@ import {
   type FonteDoTexto,
   type FonteDosTitulos,
   type IdDoTema,
+  type LayoutDosServicos,
   type ModoDeCor,
   type NomeDaCor,
   type TamanhoDoTexto,
@@ -89,6 +90,19 @@ const TAMANHOS: { valor: TamanhoDoTexto; rotulo: string; efeito: string }[] = [
   { valor: "compacto", rotulo: "Compacto", efeito: "Letra um pouco menor: cabe mais na tela do celular." },
   { valor: "normal", rotulo: "Normal", efeito: "O tamanho de sempre." },
   { valor: "espacoso", rotulo: "Espaçoso", efeito: "Letra um pouco maior: mais fácil de ler." },
+];
+
+const LAYOUTS: { valor: LayoutDosServicos; rotulo: string; efeito: string }[] = [
+  {
+    valor: "agrupada",
+    rotulo: "Lista agrupada",
+    efeito: "As categorias empilhadas: o cliente rola e vê todos os serviços de uma vez.",
+  },
+  {
+    valor: "abas",
+    rotulo: "Abas de categoria",
+    efeito: "Uma categoria por vez: o cliente toca na aba pra ver os serviços dela.",
+  },
 ];
 
 // O ajuste fino: cada opção com a frase do efeito.
@@ -220,6 +234,27 @@ function TelaDaAparencia() {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível publicar agora.");
     } finally {
       setPublicando(false);
+    }
+  }
+
+  // O layout dos serviços salva na hora, direto no ar (e no rascunho
+  // pendente, se houver). Antes, as gravações do rascunho em curso
+  // terminam: uma resposta atrasada traria o layout velho de volta.
+  const [salvandoLayout, setSalvandoLayout] = useState(false);
+  async function escolherLayout(layoutDosServicos: LayoutDosServicos) {
+    if (layoutDosServicos === noAr.layoutDosServicos) return;
+    setAviso(undefined);
+    setSalvandoLayout(true);
+    try {
+      await terminarDeGravar();
+      await api.barbeiro.salvarLayoutDosServicos(layoutDosServicos);
+      setNoAr({ ...noAr, layoutDosServicos });
+      setRascunho({ ...rascunho, layoutDosServicos });
+      marcar("aparencia");
+    } catch (causa) {
+      setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar o layout agora.");
+    } finally {
+      setSalvandoLayout(false);
     }
   }
 
@@ -540,6 +575,29 @@ function TelaDaAparencia() {
                 </div>
               </div>
             ) : null}
+          </SecaoNumerada>
+
+          <SecaoNumerada
+            numero={6}
+            titulo="Layout dos serviços"
+            lado="Salva na hora"
+            apoio="Como a lista de serviços aparece na página inicial."
+          >
+            <div className={estilos.layouts}>
+              {LAYOUTS.map((layout) => (
+                <button
+                  key={layout.valor}
+                  type="button"
+                  className={estilos.layout}
+                  aria-pressed={noAr.layoutDosServicos === layout.valor}
+                  disabled={salvandoLayout}
+                  onClick={() => escolherLayout(layout.valor)}
+                >
+                  <strong>{layout.rotulo}</strong>
+                  <span className={estilos.efeito}>{layout.efeito}</span>
+                </button>
+              ))}
+            </div>
           </SecaoNumerada>
 
           {pendente ? (

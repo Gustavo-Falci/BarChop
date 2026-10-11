@@ -636,3 +636,29 @@
     background: none;
   }
 }
+
+/* Os serviços em abas (Aparência, marco H): pílulas numa linha que rola
+   de lado no celular, a escolhida na cor da marca. */
+.abas {
+  display: flex;
+  gap: var(--espaco-sm);
+  margin-bottom: var(--espaco-md);
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.aba {
+  flex: none;
+  padding: var(--espaco-xs) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aba[aria-selected="true"] {
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+}

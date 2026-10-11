@@ -422,3 +422,32 @@
 .fonteNome {
   font-size: var(--texto-xs);
 }
+
+/* 6 · layout dos serviços: duas opções lado a lado, a escolhida com a
+   borda e a sombra da casa. */
+.layouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--espaco-md);
+}
+
+.layout {
+  display: grid;
+  gap: var(--espaco-xs);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: var(--cor-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.layout:hover {
+  border-color: var(--cor-ink-soft);
+}
+
+.layout[aria-pressed="true"] {
+  border-color: var(--cor-ink);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}

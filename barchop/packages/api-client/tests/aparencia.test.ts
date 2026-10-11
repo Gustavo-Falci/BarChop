@@ -35,12 +35,15 @@ describe("api do barbeiro — aparência", () => {
     await barbeiro.salvarRascunhoDaAparencia(OCEANO);
     await barbeiro.publicarAparencia();
     await barbeiro.descartarRascunhoDaAparencia();
+    await barbeiro.salvarLayoutDosServicos("abas");
 
     expect(fetchFalso.mock.calls.map(([url, init]) => [url, init!.method])).toEqual([
       ["https://api.exemplo.br/barbearias/me/aparencia/rascunho", "PUT"],
       ["https://api.exemplo.br/barbearias/me/aparencia/publicar", "POST"],
       ["https://api.exemplo.br/barbearias/me/aparencia/rascunho", "DELETE"],
+      ["https://api.exemplo.br/barbearias/me/aparencia/layout-dos-servicos", "PUT"],
     ]);
+    expect(JSON.parse(fetchFalso.mock.calls[3]![1]!.body as string)).toEqual({ layoutDosServicos: "abas" });
     expect(JSON.parse(fetchFalso.mock.calls[0]![1]!.body as string)).toEqual(OCEANO);
     expect((fetchFalso.mock.calls[0]![1]!.headers as Record<string, string>).Authorization).toBe("Bearer tok");
   });
@@ -91,6 +94,18 @@ describe("dublê — aparência", () => {
 
     expect((await falso.barbeiro.minhaBarbearia()).areasDecididas).not.toContain("aparencia");
     expect((await falso.barbeiro.publicarAparencia()).areasDecididas).toContain("aparencia");
+  });
+
+  it("o layout dos serviços salva no ar e no rascunho pendente, como na API", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.salvarRascunhoDaAparencia(OCEANO);
+
+    const depois = await falso.barbeiro.salvarLayoutDosServicos("abas");
+
+    expect(depois.aparencia.layoutDosServicos).toBe("abas");
+    expect(depois.aparenciaRascunho).toEqual({ ...OCEANO, layoutDosServicos: "abas" });
+    expect(depois.areasDecididas).toContain("aparencia");
+    expect((await falso.publico.perfilDaBarbearia("gr-barber")).aparencia.layoutDosServicos).toBe("abas");
   });
 
   it("publicar sem rascunho é 409, como na API", async () => {

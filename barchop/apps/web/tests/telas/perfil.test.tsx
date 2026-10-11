@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { APARENCIA_PADRAO, REGRAS_PADRAO } from "@barchop/formato";
+import type { ServicoSerializado } from "@barchop/types";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../src/telas/PerfilDaBarbearia";
 import { sessaoDoCliente } from "../../src/sessao/armazenamento";
@@ -51,6 +52,47 @@ describe("perfil da barbearia", () => {
     montar(falso);
 
     expect(await screen.findByRole("button", { name: /usar o modo/i })).toBeInTheDocument();
+  });
+
+  describe("layout dos serviços (Aparência)", () => {
+    const COM_CATEGORIAS: ServicoSerializado[] = [
+      { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "cabelo", descricao: null, fotoUrl: null },
+      { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "30.00", ativo: true, categoria: "barba", descricao: null, fotoUrl: null },
+    ];
+
+    it("lista agrupada (o padrão): todas as categorias empilhadas, sem abas", async () => {
+      montar(criarApiClientFalso({ servicos: COM_CATEGORIAS }));
+
+      expect(await screen.findByRole("link", { name: /corte/i })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /barba/i })).toBeInTheDocument();
+      expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    });
+
+    it("abas de categoria: uma por vez, o cliente toca pra trocar", async () => {
+      const falso = criarApiClientFalso({ servicos: COM_CATEGORIAS });
+      await falso.barbeiro.salvarLayoutDosServicos("abas");
+      montar(falso);
+
+      const abas = await screen.findByRole("tablist", { name: /categorias/i });
+      expect(within(abas).getByRole("tab", { name: "Cabelo" })).toHaveAttribute("aria-selected", "true");
+      expect(screen.getByRole("link", { name: /corte/i })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /barba/i })).not.toBeInTheDocument();
+
+      await userEvent.click(within(abas).getByRole("tab", { name: "Barba" }));
+
+      expect(screen.getByRole("tabpanel", { name: "Barba" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /barba/i })).toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /corte/i })).not.toBeInTheDocument();
+    });
+
+    it("abas com uma categoria só não têm o que trocar: vira a lista", async () => {
+      const falso = criarApiClientFalso({ servicos: [COM_CATEGORIAS[0]!] });
+      await falso.barbeiro.salvarLayoutDosServicos("abas");
+      montar(falso);
+
+      expect(await screen.findByRole("link", { name: /corte/i })).toBeInTheDocument();
+      expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    });
   });
 
   it("leva pro primeiro passo do agendamento", async () => {

@@ -4,11 +4,13 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (fim de 2026-10-11 — Open Graph, semana sombreada, por profissional e no celular) — vale mais que as seções abaixo
+## RETOMAR AQUI (fim de 2026-10-11 — Open Graph, semana sombreada, por profissional, no celular e horas nos livres, tudo em produção) — vale mais que as seções abaixo
 
-**Estado:** `main` = `38ecf17` (até o #117). **Produção conferida = até o #112** (2026-10-11). Nada pela metade em branch nenhuma. **Aguardando deploy (só web, sem migração):** #114 a #117 — depois conferir: `og:image` de `https://www.barchop.com.br/` responde 200 `image/png` (sem 308), e no chunk de `/painel/agenda`: `profissionais=` (#115) e `Filtrar por profissional` (#116). Nenhuma migração nova desde `20261011120000_categoria_fechada`.
+**Estado:** `main` = **produção** = `41465d5` (até o #119; #114 a #117 e #119 só web, sem migração, conferidos no ar em 2026-10-11 com `/health`, curl e grep: `og:image` de `https://www.barchop.com.br/` → 200 `image/png` no `www` e na raiz, sem 308; no chunk de `/painel/agenda`, `profissionais=` (#115) e `Filtrar por profissional` (#116); no CSS da agenda, `minmax(120px, 1fr)` (#117) e o `.livre` com `color:var(--cor-muted)` (#119)). Nada pela metade em branch nenhuma. Nenhuma migração nova desde `20261011120000_categoria_fechada`.
 
-**Também de 2026-10-11 (#116–#117):**
+**Também de 2026-10-11 (#116–#120):**
+- #119 **horários livres com a hora escrita** (pedido do dono; `b8f0b27` RED → `975954b` GREEN): cada faixa livre mostra a hora (09:00, 09:15, 09:30…) o tempo todo, no canto de cima, miúda e no cinza do eixo (`--cor-muted`); ao passar o mouse acende como antes. Pausa, fechado, ocupado e horário passado seguem sem hora. Contraste: no claro, em texto pequeno, fica abaixo de 4,5:1 — trocar o tom se o dono achar difícil de ler.
+- #120 docs: este RETOMAR AQUI.
 - #116 **semana por profissional** (`b36967d` RED → `213963d` GREEN): pílulas "Todos · Rafael · Ana" na semana, pra dono e recepção (não no dia, que já tem uma coluna por pessoa; não pro profissional). Escolhida uma pessoa (`?profissional=` na URL, mantido ao andar e ao trocar de vista), a semana mostra só os agendamentos e o expediente dela — pausa, folgas e o horário livre, que já leva ela pro Novo agendamento. Conferido em 1440.
 - #117 **semana no celular** (`c46e866` RED → `8e2cf6c` GREEN → `169a1b0` teste sem CRLF): em 375 as sete colunas se sobrepunham (o `min-width: 120px` ia nos itens, com trilhas `minmax(0, 1fr)`). Os 120px vão nas trilhas, e cabeçalho e corpo têm a mesma largura mínima pra rolarem juntos dentro do quadro. Conferido em 375: colunas de 120px, página sem rolagem horizontal, cabeçalho alinhado depois de rolar. O eixo das horas rola junto (não fica fixo).
 

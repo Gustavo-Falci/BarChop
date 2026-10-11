@@ -209,6 +209,27 @@ describe("agenda da equipe na semana", () => {
     ]);
   });
 
+  it("na pausa só do Rafael, o horário leva ao novo agendamento só com a Ana", async () => {
+    const falso = semear();
+    falso.estado.jornadas!.bb1 = [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+      diaSemana,
+      modo: "barbearia" as const,
+      horaInicio: null,
+      horaFim: null,
+      pausaInicio: diaSemana === 2 ? "14:00" : null,
+      pausaFim: diaSemana === 2 ? "15:00" : null,
+    }));
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    // A terça é a terceira coluna (domingo fecha): o 14:00 dela.
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "14:00" })).toHaveLength(6));
+    await userEvent.click(screen.getAllByRole("button", { name: "14:00" })[1]);
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith(
+      "/painel/agendamentos/novo?data=2026-09-08&hora=14%3A00&profissional=m2&profissionais=m2"
+    );
+  });
+
   it("se a ocupação falhar, a semana aparece com o horário da casa", async () => {
     const falso = comAlmocoDeTodos();
     falso.barbeiro.ocupacaoDoDia = async () => {

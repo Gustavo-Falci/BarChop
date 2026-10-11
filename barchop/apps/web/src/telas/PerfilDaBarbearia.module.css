@@ -60,20 +60,21 @@
   object-fit: cover;
 }
 
-/* Sem capa: as iniciais em amarelo sobre o escuro, com uma trama de
-   pontos que tira o bloco do chapado. --cor-dark e --cor-accent são os
-   mesmos nos dois temas, então a fachada fica escura de propósito
-   mesmo com a página clara. */
+/* Sem capa: as iniciais na cor da marca sobre o escuro, com uma trama de
+   pontos que tira o bloco do chapado. --cor-dark é o mesmo nos dois
+   temas, então a fachada fica escura de propósito mesmo com a página
+   clara. --cor-accent-on-dark é a marca clareada até se ler sobre ele
+   (marca quase preta, na Aparência, sumiria). */
 .monograma {
   display: grid;
   place-items: center;
   height: 100%;
   background-image: radial-gradient(
-    color-mix(in srgb, var(--cor-accent) 22%, transparent) 1.2px,
+    color-mix(in srgb, var(--cor-accent-on-dark) 22%, transparent) 1.2px,
     transparent 1.2px
   );
   background-size: 18px 18px;
-  color: var(--cor-accent);
+  color: var(--cor-accent-on-dark);
   font-family: var(--fonte-display), system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(64px, 12vw, 112px);
@@ -157,6 +158,10 @@
   /* No canto: no desktop a coluna da direita tem a largura dos atalhos,
      e sem isto o "Entrar" ficaria no começo dela, no meio do cartão. */
   justify-self: end;
+  /* O botão claro/escuro (quando o dono deixa) ao lado do "Entrar". */
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-xs);
   padding-top: var(--espaco-xs);
   font-size: var(--texto-sm);
 }
@@ -224,7 +229,7 @@
 
 .selo[data-estado="aberto"] {
   background: var(--cor-accent);
-  color: var(--cor-dark);
+  color: var(--cor-on-accent);
 }
 
 .selo[data-estado="fechado"] {
@@ -442,7 +447,7 @@
 
 .proximo:hover {
   background: var(--cor-accent);
-  color: var(--cor-dark);
+  color: var(--cor-on-accent);
 }
 
 .proximo:focus-visible {

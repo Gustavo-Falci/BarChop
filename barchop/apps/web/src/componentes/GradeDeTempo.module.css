@@ -126,7 +126,7 @@ span.diaDoCabecalho {
 
 button.diaDoCabecalho:hover .numeroDoDia {
   background: var(--cor-accent);
-  color: var(--cor-dark);
+  color: var(--cor-on-accent);
 }
 
 .eixo,
@@ -243,7 +243,7 @@ button.diaDoCabecalho:hover .numeroDoDia {
   border: var(--borda-hairline) solid var(--cor-ink);
   border-radius: var(--raio-sm);
   background: var(--cor-accent);
-  color: var(--cor-dark);
+  color: var(--cor-on-accent);
   text-align: start;
   font-size: var(--texto-xs);
   line-height: 1.25;

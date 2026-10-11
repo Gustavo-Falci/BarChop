@@ -142,7 +142,7 @@
 
 .marcado .marca {
   background: var(--cor-accent);
-  color: #202020;
+  color: var(--cor-on-accent);
 }
 
 /* Os atalhos de horário, no rodapé do cartão. */
@@ -185,4 +185,4 @@
   text-decoration: none;
 }
 
-.horario:hover { background: var(--cor-accent); color: #202020; }
+.horario:hover { background: var(--cor-accent); color: var(--cor-on-accent); }

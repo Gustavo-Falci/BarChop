@@ -46,7 +46,7 @@
 
 .navegar:hover {
   background: var(--cor-accent);
-  color: var(--cor-dark);
+  color: var(--cor-on-accent);
 }
 
 .grade {
@@ -87,7 +87,7 @@
 
 .dia:hover:enabled {
   background: var(--cor-accent);
-  color: var(--cor-dark);
+  color: var(--cor-on-accent);
 }
 
 /* Dia sem vaga (ou já passado) parecia dia inexistente: a opacidade
@@ -107,7 +107,7 @@
 .dia[aria-current="date"] {
   background: var(--cor-accent);
   box-shadow: 0 3px 0 var(--cor-shadow);
-  color: var(--cor-dark);
+  color: var(--cor-on-accent);
 }
 
 .vazio {

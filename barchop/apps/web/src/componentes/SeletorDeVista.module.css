@@ -56,7 +56,7 @@
 .vista[aria-pressed="true"] {
   background: var(--cor-accent);
   box-shadow: 0 3px 0 var(--cor-shadow);
-  color: var(--cor-dark);
+  color: var(--cor-on-accent);
 }
 
 .hoje {

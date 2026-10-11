@@ -21,6 +21,10 @@ export const colors = {
     // nos dois modos; na página pública com outra cor da marca, a
     // Aparência calcula por contraste (@barchop/formato/aparencia).
     onAccent: "#1A1A1A",
+    // A marca como texto sobre o --cor-dark (as iniciais da fachada sem
+    // capa). O amarelo da casa já passa; com outra marca, a Aparência
+    // clareia até passar de 4,5:1.
+    accentOnDark: "#FFD900",
     shadow: "#000000",
     // O vermelho de erro era escrito à mão em Campo.module.css e
     // Aviso.module.css. Vira token porque precisa de valor POR TEMA:
@@ -59,6 +63,7 @@ export const colors = {
     paleBlue: "#152329",
     dark: "#1A1A1A",
     onAccent: "#1A1A1A",
+    accentOnDark: "#FFD900",
     shadow: "#F3F0E7", // sombra clara no escuro, senão some contra o fundo
     // O #b3261e do claro dava 2,77:1 sobre este paper e 2,20:1 sobre
     // esta surface — o texto mais apagado da tela era justamente o que

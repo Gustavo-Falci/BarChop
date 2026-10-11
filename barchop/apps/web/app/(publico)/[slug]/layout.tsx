@@ -5,7 +5,8 @@ import type { ReactNode } from "react";
 import { ProvedorDaApi } from "../../../src/api/ProvedorDaApi";
 import { BarraDaBarbearia } from "../../../src/fluxo/BarraDaBarbearia";
 import { metadataDaBarbearia } from "../../../src/fluxo/metadataDaBarbearia";
-import { slugAtual } from "../../../src/fluxo/slugAtual";
+import { cssDaAparencia, scriptDoModo } from "../../../src/fluxo/aparenciaDaPagina";
+import { barbeariaDoLayout } from "../../../src/fluxo/slugAtual";
 import { destinoDoSlugAntigo } from "../../../src/tenant/endereco";
 import { ProvedorDoHost } from "../../../src/tenant/ProvedorDoHost";
 import { CABECALHO_DA_BARBEARIA, CABECALHO_DO_CAMINHO } from "../../../src/tenant/rota";
@@ -47,20 +48,28 @@ export default async function LayoutDaBarbearia({
   const cabecalhos = await headers();
   const barbeariaDoHost = cabecalhos.get(CABECALHO_DA_BARBEARIA);
 
-  const atual = await slugAtual(slug);
+  const barbearia = await barbeariaDoLayout(slug);
   const destino =
-    atual &&
+    barbearia &&
     destinoDoSlugAntigo({
       pedido: slug,
-      atual,
+      atual: barbearia.slug,
       caminho: cabecalhos.get(CABECALHO_DO_CAMINHO) ?? `/${slug}`,
       barbeariaDoHost,
       site: process.env.NEXT_PUBLIC_URL_DO_SITE,
     });
   if (destino) redirect(destino);
 
+  // A Aparência publicada (marco C): a paleta num <style> e o modo num
+  // <script>, antes do conteúdo — o visual certo já na primeira pintura.
+  // Barbearia que nunca mexeu: os dois vazios, e nada é escrito.
+  const css = barbearia ? cssDaAparencia(barbearia.aparencia) : "";
+  const modo = barbearia ? scriptDoModo(barbearia.slug, barbearia.aparencia) : "";
+
   return (
     <ProvedorDoHost barbearia={barbeariaDoHost}>
+      {css ? <style dangerouslySetInnerHTML={{ __html: css }} /> : null}
+      {modo ? <script dangerouslySetInnerHTML={{ __html: modo }} /> : null}
       <ProvedorDaApi>
         {/* O wrapper só existe pra declarar as larguras do fluxo (ver o
             CSS): a barra e a coluna leem a mesma variável daqui. */}

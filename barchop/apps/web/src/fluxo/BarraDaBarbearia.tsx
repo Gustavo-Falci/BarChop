@@ -7,6 +7,7 @@ import { useRequisicao } from "../api/useRequisicao";
 import { LogoDaBarbearia } from "../componentes/LogoDaBarbearia";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { LinkDaConta } from "./LinkDaConta";
+import { TrocaDeModo } from "./TrocaDeModo";
 import estilos from "./BarraDaBarbearia.module.css";
 
 // De quem é esta página. O fluxo do cliente chega por um link de
@@ -83,7 +84,11 @@ function Marca({ slug }: { slug: string }) {
         ) : null}
         {dados.nome}
       </Link>
-      <LinkDaConta slug={slug} />
+      <span className={estilos.acoes}>
+        {/* Só quando o dono deixou (Aparência). */}
+        {dados.aparencia?.clienteTrocaModo ? <TrocaDeModo slug={slug} /> : null}
+        <LinkDaConta slug={slug} />
+      </span>
     </>
   );
 }

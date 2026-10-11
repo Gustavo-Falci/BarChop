@@ -1,0 +1,28 @@
+/* Ícone sem caixa, ao lado do "Entrar": é ajuste de quem lê, não ação da
+   página. A área de toque fica nos 40px mesmo com o ícone de 20. */
+.botao {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-pill);
+  background: transparent;
+  color: var(--cor-ink);
+  cursor: pointer;
+}
+
+.botao:hover {
+  background: var(--cor-paper-soft);
+}
+
+.botao svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

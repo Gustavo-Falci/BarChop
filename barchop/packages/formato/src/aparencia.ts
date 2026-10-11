@@ -113,6 +113,12 @@ function textoSobre(fundo: Hex): Hex {
   return "#000000";
 }
 
+// A marca usada como texto sobre o --cor-dark (o mesmo nos dois modos):
+// marca escura demais clareia até se ler.
+function marcaSobreOEscuro(marca: Hex): Hex {
+  return garantirContraste(marca, "#FFFFFF", [colors.light.dark], 4.5);
+}
+
 // Puxa `cor` na direção de `alvo` até passar de `minimo` contra todos os
 // fundos — o "apagado" que ainda se lê.
 function garantirContraste(cor: Hex, alvo: Hex, fundos: Hex[], minimo: number): Hex {
@@ -426,6 +432,7 @@ function derivar(sementes: Sementes): CoresDaPagina {
     accentBorder: misturar(marca, BRANCO, 0.45),
     paleYellow: misturar(fundo, realce, escuro ? 0.22 : 0.16),
     onAccent: textoSobre(marca),
+    accentOnDark: marcaSobreOEscuro(marca),
     shadow: escuro ? texto : "#000000",
     placeholder: muted,
   };
@@ -454,6 +461,7 @@ function paletaDoModo(aparencia: Aparencia, modo: Modo): CoresDaPagina {
     paleta.accent = minhas.marca;
     paleta.accentBorder = misturar(minhas.marca, BRANCO, 0.45);
     paleta.onAccent = textoSobre(minhas.marca);
+    paleta.accentOnDark = marcaSobreOEscuro(minhas.marca);
   }
   for (const nome of NOVE_CORES) {
     const cor = minhas[nome];

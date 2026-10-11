@@ -61,7 +61,7 @@ describe("scriptDoModo", () => {
   });
 
   function rodar(script: string) {
-    // eslint-disable-next-line no-new-func -- é o que o <script> inline faz
+    // É o que o <script> inline faz.
     new Function(script)();
   }
 

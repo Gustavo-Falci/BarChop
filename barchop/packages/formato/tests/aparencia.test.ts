@@ -144,6 +144,9 @@ describe("o catálogo", () => {
         expect(contraste(cores.placeholder, cores.surface)).toBeGreaterThanOrEqual(4.5);
         expect(contraste(cores.onAccent, cores.accent)).toBeGreaterThanOrEqual(4.5);
         expect(contraste(cores.accentOnDark, cores.dark)).toBeGreaterThanOrEqual(4.5);
+        // Os fundos de apoio também levam texto.
+        expect(contraste(cores.ink, cores.paleYellow)).toBeGreaterThanOrEqual(4.5);
+        expect(contraste(cores.ink, cores.paperSoft)).toBeGreaterThanOrEqual(4.5);
       });
     }
   );

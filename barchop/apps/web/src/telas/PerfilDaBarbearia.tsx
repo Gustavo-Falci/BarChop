@@ -14,6 +14,7 @@ import { iniciais } from "../formato/iniciais";
 import { rotuloDaComodidade, rotuloDoPagamento } from "../formato/pagina";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { LinkDaConta } from "../fluxo/LinkDaConta";
+import { TrocaDeModo } from "../fluxo/TrocaDeModo";
 import { IconeCamera, IconeConversa, IconeMapa } from "../painel/icones";
 import estilos from "./PerfilDaBarbearia.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
@@ -111,6 +112,8 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
             {/* Aqui a barra da barbearia não aparece (o nome já é o
                 título), então o caminho até a conta mora na fachada. */}
             <nav className={estilos.conta} aria-label="Sua conta">
+              {/* O claro/escuro, quando o dono deixou (Aparência). */}
+              {dados.aparencia?.clienteTrocaModo ? <TrocaDeModo slug={slug} /> : null}
               <LinkDaConta slug={slug} />
             </nav>
             <h1 className={estilos.nome}>{dados.nome}</h1>

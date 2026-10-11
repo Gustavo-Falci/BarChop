@@ -2,6 +2,13 @@
   box-sizing: border-box;
 }
 
+/* A fonte do texto é a Inter (a --fonte-inter vem do next/font, em
+   app/fontes.ts). Uma variável no meio porque a Aparência troca a do
+   texto na página pública e ainda pode querer a Inter nos títulos. */
+:root {
+  --fonte-corpo: var(--fonte-inter);
+}
+
 body {
   margin: 0;
   background: var(--cor-paper);

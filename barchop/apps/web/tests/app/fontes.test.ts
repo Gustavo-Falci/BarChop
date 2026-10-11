@@ -8,10 +8,12 @@ import { describe, expect, it, vi } from "vitest";
 // app/fontes.ts voltar a usar, a importação quebra aqui.
 // `vi.hoisted`: o vi.mock sobe pro topo do arquivo, antes de qualquer
 // `const` comum.
-const chamadasLocais = vi.hoisted(() => [] as { src: { path: string }[]; variable: string }[]);
+const chamadasLocais = vi.hoisted(
+  () => [] as { src: { path: string }[]; variable: string; preload?: boolean }[]
+);
 
 vi.mock("next/font/local", () => ({
-  default: (opcoes: { src: { path: string }[]; variable: string }) => {
+  default: (opcoes: { src: { path: string }[]; variable: string; preload?: boolean }) => {
     chamadasLocais.push(opcoes);
     return { variable: opcoes.variable };
   },
@@ -25,13 +27,31 @@ describe("fontes do app", () => {
   it("vêm todas do repositório, com o arquivo no lugar", async () => {
     const fontes = await import("../../app/fontes");
 
-    expect(fontes.inter.variable).toBe("--fonte-corpo");
+    expect(fontes.inter.variable).toBe("--fonte-inter");
     expect(fontes.clashGrotesk.variable).toBe("--fonte-display");
     // O `path` do next/font/local é relativo ao app/fontes.ts; o vitest
     // roda com o cwd em apps/web.
-    expect(chamadasLocais.length).toBe(2);
+    expect(chamadasLocais.length).toBe(7);
     for (const { path } of chamadasLocais.flatMap((chamada) => chamada.src)) {
       expect(existsSync(resolve(process.cwd(), "app", path)), path).toBe(true);
     }
+  });
+
+  // As cinco da Aparência (marco F): só a página pública que escolheu uma
+  // delas baixa o arquivo — sem pré-carga, a @font-face só busca quando
+  // alguém usa a família.
+  it("as fontes da Aparência, sem pré-carga", async () => {
+    const fontes = await import("../../app/fontes");
+
+    expect(fontes.FONTES_DA_APARENCIA.map((fonte) => fonte.variable)).toEqual([
+      "--fonte-roboto",
+      "--fonte-poppins",
+      "--fonte-montserrat",
+      "--fonte-open-sans",
+      "--fonte-lato",
+    ]);
+    const daAparencia = chamadasLocais.filter((chamada) => chamada.variable !== "--fonte-inter" && chamada.variable !== "--fonte-display");
+    expect(daAparencia).toHaveLength(5);
+    for (const chamada of daAparencia) expect(chamada.preload).toBe(false);
   });
 });

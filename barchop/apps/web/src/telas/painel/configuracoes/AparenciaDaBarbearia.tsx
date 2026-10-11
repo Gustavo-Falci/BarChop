@@ -6,6 +6,8 @@ import type { ErroDaApi } from "@barchop/api-client";
 import {
   APARENCIA_PADRAO,
   CORES_DA_MARCA,
+  FONTES_DO_TEXTO,
+  FONTES_DOS_TITULOS,
   TEMAS,
   normalizarAparencia,
   paletaDaAparencia,
@@ -18,9 +20,12 @@ import {
   type Botao as EstiloDoBotao,
   type Cantos,
   type Cards,
+  type FonteDoTexto,
+  type FonteDosTitulos,
   type IdDoTema,
   type ModoDeCor,
   type NomeDaCor,
+  type TamanhoDoTexto,
 } from "@barchop/formato";
 import { Botao } from "../../../componentes/Botao";
 import { Chip } from "../../../componentes/Chip";
@@ -67,6 +72,24 @@ const EFEITO_DO_MODO: Record<ModoDeCor, string> = {
   escuro: "Sua página abre no escuro pra todo mundo.",
   automatico: "Sua página acompanha o celular ou o computador de cada cliente.",
 };
+
+// A letra: o nome de cada família e a variável que o next/font declara
+// no <html> (app/fontes.ts) — o "Aa" de cada botão sai na própria fonte.
+const FONTES: Record<FonteDosTitulos, { nome: string; variavel: string }> = {
+  clash: { nome: "Clash Grotesk", variavel: "--fonte-display" },
+  inter: { nome: "Inter", variavel: "--fonte-inter" },
+  roboto: { nome: "Roboto", variavel: "--fonte-roboto" },
+  poppins: { nome: "Poppins", variavel: "--fonte-poppins" },
+  montserrat: { nome: "Montserrat", variavel: "--fonte-montserrat" },
+  "open-sans": { nome: "Open Sans", variavel: "--fonte-open-sans" },
+  lato: { nome: "Lato", variavel: "--fonte-lato" },
+};
+
+const TAMANHOS: { valor: TamanhoDoTexto; rotulo: string; efeito: string }[] = [
+  { valor: "compacto", rotulo: "Compacto", efeito: "Letra um pouco menor: cabe mais na tela do celular." },
+  { valor: "normal", rotulo: "Normal", efeito: "O tamanho de sempre." },
+  { valor: "espacoso", rotulo: "Espaçoso", efeito: "Letra um pouco maior: mais fácil de ler." },
+];
 
 // O ajuste fino: cada opção com a frase do efeito.
 const CANTOS: { valor: Cantos; rotulo: string; efeito: string }[] = [
@@ -400,8 +423,17 @@ function TelaDaAparencia() {
             </div>
           </SecaoNumerada>
 
+          <SecaoNumerada numero={4} titulo="A letra" apoio="A fonte de todo o texto da sua página.">
+            <EscolhaDeFonte
+              rotulo="A fonte do texto"
+              opcoes={FONTES_DO_TEXTO}
+              valor={rascunho.fonte}
+              aoEscolher={(fonte) => mudar({ ...rascunho, fonte: fonte as FonteDoTexto })}
+            />
+          </SecaoNumerada>
+
           <SecaoNumerada
-            numero={4}
+            numero={5}
             titulo="Ajuste fino"
             lado={
               <button
@@ -419,6 +451,41 @@ function TelaDaAparencia() {
           >
             {ajusteAberto ? (
               <div id="ajuste-fino" className={estilos.ajuste}>
+                <div className={estilos.tresColunas}>
+                  <SeletorEmPilulas<"sim" | "nao">
+                    nome="titulos-outra-fonte"
+                    legenda="Os títulos usam outra fonte"
+                    opcoes={[
+                      { valor: "sim", rotulo: "Sim" },
+                      { valor: "nao", rotulo: "Não" },
+                    ]}
+                    valor={rascunho.fonteDosTitulos === null ? "nao" : "sim"}
+                    aoTrocar={(valor) =>
+                      mudar({ ...rascunho, fonteDosTitulos: valor === "sim" ? (rascunho.fonteDosTitulos ?? "clash") : null })
+                    }
+                    efeito={
+                      rascunho.fonteDosTitulos === null
+                        ? "Títulos e texto na mesma fonte."
+                        : `Os títulos em ${FONTES[rascunho.fonteDosTitulos].nome}, o texto em ${FONTES[rascunho.fonte].nome}.`
+                    }
+                  />
+                  <SeletorEmPilulas<TamanhoDoTexto>
+                    nome="tamanho-do-texto"
+                    legenda="Tamanho do texto"
+                    opcoes={TAMANHOS}
+                    valor={rascunho.tamanhoDoTexto}
+                    aoTrocar={(tamanhoDoTexto) => mudar({ ...rascunho, tamanhoDoTexto })}
+                    efeito={TAMANHOS.find((item) => item.valor === rascunho.tamanhoDoTexto)!.efeito}
+                  />
+                </div>
+                {rascunho.fonteDosTitulos !== null ? (
+                  <EscolhaDeFonte
+                    rotulo="A fonte dos títulos"
+                    opcoes={FONTES_DOS_TITULOS}
+                    valor={rascunho.fonteDosTitulos}
+                    aoEscolher={(fonteDosTitulos) => mudar({ ...rascunho, fonteDosTitulos })}
+                  />
+                ) : null}
                 <div className={estilos.tresColunas}>
                   <SeletorEmPilulas<Cantos>
                     nome="cantos"
@@ -514,6 +581,44 @@ function TelaDaAparencia() {
         </aside>
       </div>
     </MolduraDaArea>
+  );
+}
+
+// Uma família por botão, com o "Aa" desenhado nela.
+function EscolhaDeFonte({
+  rotulo,
+  opcoes,
+  valor,
+  aoEscolher,
+}: {
+  rotulo: string;
+  opcoes: readonly FonteDosTitulos[];
+  valor: FonteDosTitulos;
+  aoEscolher: (fonte: FonteDosTitulos) => void;
+}) {
+  return (
+    <div className={estilos.fontes}>
+      <span className={estilos.rotulo}>{rotulo}</span>
+      <div role="group" aria-label={rotulo} className={estilos.fontesOpcoes}>
+        {opcoes.map((fonte) => (
+          <button
+            key={fonte}
+            type="button"
+            className={estilos.fonte}
+            aria-pressed={fonte === valor}
+            aria-label={FONTES[fonte].nome}
+            onClick={() => aoEscolher(fonte)}
+          >
+            <span className={estilos.fonteAa} style={{ fontFamily: `var(${FONTES[fonte].variavel})` }} aria-hidden="true">
+              Aa
+            </span>
+            <span className={estilos.fonteNome} aria-hidden="true">
+              {FONTES[fonte].nome}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

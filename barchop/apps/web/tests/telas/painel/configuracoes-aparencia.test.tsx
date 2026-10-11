@@ -220,6 +220,39 @@ describe("aparência", () => {
     expect(screen.getByRole("textbox", { name: "Texto de apoio" })).toBeInTheDocument();
   });
 
+  it("a letra: a fonte do texto entra no rascunho", async () => {
+    const falso = await abrir();
+
+    expect(grupo(/a fonte do texto/i).getByRole("button", { name: "Inter" })).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(grupo(/a fonte do texto/i).getByRole("button", { name: "Poppins" }));
+
+    expect(grupo(/a fonte do texto/i).getByRole("button", { name: "Poppins" })).toHaveAttribute("aria-pressed", "true");
+    await waitFor(async () => expect((await rascunho(falso))?.fonte).toBe("poppins"));
+  });
+
+  it("títulos na mesma fonte, ou numa própria; e o tamanho do texto", async () => {
+    const falso = await abrir();
+    await userEvent.click(screen.getByRole("button", { name: /abrir o ajuste fino/i }));
+
+    // O padrão: títulos em outra fonte, a Clash.
+    expect(grupo(/os títulos usam outra fonte/i).getByRole("radio", { name: "Sim" })).toBeChecked();
+    expect(grupo(/a fonte dos títulos/i).getByRole("button", { name: "Clash Grotesk" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+
+    await userEvent.click(grupo(/a fonte dos títulos/i).getByRole("button", { name: "Montserrat" }));
+    await waitFor(async () => expect((await rascunho(falso))?.fonteDosTitulos).toBe("montserrat"));
+
+    await userEvent.click(grupo(/os títulos usam outra fonte/i).getByRole("radio", { name: "Não" }));
+    expect(screen.queryByRole("group", { name: /a fonte dos títulos/i })).not.toBeInTheDocument();
+    await userEvent.click(grupo(/tamanho do texto/i).getByRole("radio", { name: "Espaçoso" }));
+
+    await waitFor(async () =>
+      expect(await rascunho(falso)).toMatchObject({ fonteDosTitulos: null, tamanhoDoTexto: "espacoso" })
+    );
+  });
+
   it("quem não é dono não mexe", async () => {
     montarPainel(<AparenciaDaBarbearia />, criarApiClientFalso({ papel: "profissional" }));
 

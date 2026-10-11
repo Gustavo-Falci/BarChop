@@ -107,6 +107,36 @@ describe("ajuste fino no CSS", () => {
   });
 });
 
+describe("a letra no CSS", () => {
+  it("Inter, títulos em Clash e tamanho normal (o padrão) não geram nada", () => {
+    expect(cssDaAparencia(com({ fonte: "inter", fonteDosTitulos: "clash", tamanhoDoTexto: "normal" }))).toBe("");
+  });
+
+  it("a fonte do texto troca a --fonte-corpo pela da família", () => {
+    expect(cssDaAparencia(com({ fonte: "open-sans" }))).toContain("--fonte-corpo: var(--fonte-open-sans);");
+  });
+
+  it("títulos na mesma fonte do texto, ou numa própria", () => {
+    expect(cssDaAparencia(com({ fonteDosTitulos: null }))).toContain("--fonte-display: var(--fonte-corpo);");
+    expect(cssDaAparencia(com({ fonteDosTitulos: "montserrat" }))).toContain(
+      "--fonte-display: var(--fonte-montserrat);"
+    );
+    // Títulos em Inter: a Inter é a --fonte-corpo da casa.
+    expect(cssDaAparencia(com({ fonte: "lato", fonteDosTitulos: "inter" }))).toContain(
+      "--fonte-display: var(--fonte-inter);"
+    );
+  });
+
+  it("o tamanho do texto escala a régua toda", () => {
+    const compacto = cssDaAparencia(com({ tamanhoDoTexto: "compacto" }));
+    expect(compacto).toContain("--texto-md: 14px;");
+    expect(compacto).toContain("--texto-display: 36px;");
+    const espacoso = cssDaAparencia(com({ tamanhoDoTexto: "espacoso" }));
+    expect(espacoso).toContain("--texto-md: 18px;");
+    expect(espacoso).toContain("--texto-xs: 13px;");
+  });
+});
+
 describe("scriptDoModo", () => {
   beforeEach(() => {
     document.documentElement.removeAttribute("data-theme");

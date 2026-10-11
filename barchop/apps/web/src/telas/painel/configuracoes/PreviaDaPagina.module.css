@@ -1,0 +1,108 @@
+/* A prévia: sem moldura em volta da coluna — a moldura é o aparelho. */
+.previa {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.titulo {
+  font-family: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+.quadro {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+/* Os seletores da prévia, miúdos: são ferramenta, não decisão. */
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--espaco-sm) var(--espaco-md);
+  font-size: var(--texto-sm);
+}
+
+.acoes {
+  display: flex;
+  gap: var(--espaco-xs);
+}
+
+.acao {
+  padding: 4px var(--espaco-sm);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-pill);
+  background: transparent;
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.acao:hover {
+  border-color: var(--cor-ink);
+}
+
+.caixa {
+  width: 100%;
+}
+
+/* O aparelho encolhido: a caixa tem o tamanho já em escala, e o iframe
+   dentro dela, no tamanho de verdade, encolhe a partir do canto. */
+.aparelho {
+  margin-inline: auto;
+  overflow: hidden;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper);
+}
+
+.iframe {
+  display: block;
+  border: 0;
+  transform-origin: top left;
+}
+
+.abrir {
+  justify-self: end;
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* Ampliada: a janela quase da tela inteira. */
+.janela {
+  width: min(96vw, 1400px);
+  max-width: none;
+  height: 94vh;
+  max-height: none;
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+}
+
+.janela::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+
+.ampliado {
+  height: 100%;
+  grid-template-rows: auto 1fr auto;
+}
+
+.ampliado .caixa {
+  overflow: auto;
+}

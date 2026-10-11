@@ -58,6 +58,14 @@ describe("prévia da página", () => {
     );
   });
 
+  it("o modo da prévia acompanha o modo padrão quando o dono o fixa", () => {
+    const { rerender } = render(<PreviaDaPagina slug="gr-barber" aparencia={APARENCIA_PADRAO} pendente={false} />);
+    expect(screen.getByRole("radio", { name: "Claro" })).toBeChecked();
+
+    rerender(<PreviaDaPagina slug="gr-barber" aparencia={{ ...APARENCIA_PADRAO, modoPadrao: "escuro" }} pendente />);
+    expect(screen.getByRole("radio", { name: "Escuro" })).toBeChecked();
+  });
+
   it("diz se o que se vê já está no ar", () => {
     const { rerender } = render(<PreviaDaPagina slug="gr-barber" aparencia={APARENCIA_PADRAO} pendente={false} />);
     expect(screen.getByText("Publicada")).toBeInTheDocument();

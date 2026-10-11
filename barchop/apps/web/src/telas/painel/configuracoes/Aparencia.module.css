@@ -4,7 +4,27 @@
 .tela {
   display: grid;
   gap: var(--espaco-xl);
+  min-width: 0;
   max-width: 1040px;
+}
+
+/* Configuração à esquerda e a prévia presa à direita (como na
+   referência); estreito, a prévia vem depois dos blocos. */
+.comPrevia {
+  display: grid;
+  gap: var(--espaco-xl);
+  align-items: start;
+}
+
+@media (min-width: 1200px) {
+  .comPrevia {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+
+  .lateral {
+    position: sticky;
+    top: var(--espaco-md);
+  }
 }
 
 .efeito {

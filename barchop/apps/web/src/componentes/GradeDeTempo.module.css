@@ -314,9 +314,20 @@ button.diaDoCabecalho:hover .numeroDoDia {
     overflow-x: auto;
   }
 
-  .coluna,
-  .diaDoCabecalho {
-    min-width: 120px;
+  /* Os 120px vão nas TRILHAS, e não nos itens: com `min-width` só na
+     coluna, a trilha seguia `minmax(0, 1fr)`, ficava com ~40px numa tela
+     de 375 e cada coluna transbordava em cima da vizinha. */
+  .cabecalho,
+  .corpo {
+    grid-template-columns: 3.5rem repeat(var(--colunas), minmax(120px, 1fr));
+  }
+
+  /* Cabeçalho e invólucro do corpo com a largura das trilhas: quem rola
+     na horizontal é o quadro, e os dois andam juntos. Sem isso o corpo
+     rolaria sozinho por baixo de um cabeçalho parado. */
+  .cabecalho,
+  .rolagem {
+    min-width: calc(3.5rem + var(--colunas) * 120px);
   }
 }
 

@@ -214,20 +214,6 @@
   border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
-.chave {
-  display: grid;
-  gap: var(--espaco-xs);
-  align-content: start;
-}
-
-.chave label {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-sm);
-  font-weight: 600;
-  cursor: pointer;
-}
-
 /* 3 · a cor da marca */
 .bolinhas {
   display: flex;

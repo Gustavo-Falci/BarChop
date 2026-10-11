@@ -36,6 +36,8 @@ Barbearia que nunca abriu a Aparência continua **exatamente** como hoje: amarel
 - **H — o que salva na hora:** o rascunho é sempre o objeto inteiro. Se o layout dos serviços (ou qualquer outra coisa "salva na hora") for direto pro `aparencia` com um rascunho pendente, o próximo Publicar devolve o valor antigo. Quem salva direto grava também no rascunho pendente, com teste "salvar layout com rascunho pendente → publicar mantém o layout novo".
 - **C — cache:** o layout público lê o perfil com `fetch` num server component, e o cache do `fetch` muda nesta versão do Next (ver `node_modules/next/dist/docs`). Ler antes do C; a conferência é: publicar e, num reload simples da página pública, ver o visual novo.
 
+- **G — marca escura no modo escuro:** a marca escolhida no claro vale também no escuro. Marca quase preta (Carvão, `#1C1C1C`) sobre o fundo escuro dá ~1:1 — o botão principal some (a borda dele é transparente). No G, quando a marca do escuro vem herdada do claro e não passa de 3:1 contra o fundo, clarear (como o `accentOnDark`), com teste em todos os temas e nas 16 bolinhas.
+
 **Fora por enquanto:** Histórico de alterações (não existe em área nenhuma; seria infraestrutura própria, vale pras Configurações todas).
 
 **Conferir no navegador:** 375 e 1440, claro e escuro, com e sem aparência salva; o fluxo de agendar com tema escuro e cor clara (contraste).

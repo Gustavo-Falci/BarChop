@@ -95,6 +95,9 @@ function TelaDaAparencia() {
   const [rascunho, setRascunho] = useState<Aparencia>(APARENCIA_PADRAO);
   const [aviso, setAviso] = useState<string | undefined>();
   const [publicando, setPublicando] = useState(false);
+  // A última gravação do rascunho falhou: a tela tem uma mudança que o
+  // servidor não tem, e publicar levaria pro ar a versão velha.
+  const [naoGuardado, setNaoGuardado] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [modoDoFundo, setModoDoFundo] = useState<Modo>("claro");
 
@@ -122,7 +125,9 @@ function TelaDaAparencia() {
       proxima.current = null;
       try {
         await api.barbeiro.salvarRascunhoDaAparencia(vez);
+        if (!proxima.current) setNaoGuardado(false);
       } catch (causa) {
+        setNaoGuardado(true);
         setAviso((causa as ErroDaApi).mensagem || "Não foi possível guardar a mudança agora.");
       }
     }
@@ -162,6 +167,7 @@ function TelaDaAparencia() {
     try {
       await api.barbeiro.descartarRascunhoDaAparencia();
       setRascunho(noAr);
+      setNaoGuardado(false);
     } catch (causa) {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível descartar agora.");
     }
@@ -276,22 +282,21 @@ function TelaDaAparencia() {
               aoTrocar={(modoPadrao) => mudar({ ...rascunho, modoPadrao })}
               efeito={EFEITO_DO_MODO[rascunho.modoPadrao]}
             />
-            <div className={estilos.chave}>
-              <label>
-                <input
-                  type="checkbox"
-                  aria-describedby="troca-de-modo-apoio"
-                  checked={rascunho.clienteTrocaModo}
-                  onChange={(evento) => mudar({ ...rascunho, clienteTrocaModo: evento.target.checked })}
-                />
-                Deixar o cliente trocar entre claro e escuro
-              </label>
-              <span id="troca-de-modo-apoio" className={estilos.efeito}>
-                {rascunho.clienteTrocaModo
+            <SeletorEmPilulas<"sim" | "nao">
+              nome="cliente-troca-modo"
+              legenda="Deixar o cliente trocar entre claro e escuro"
+              opcoes={[
+                { valor: "sim", rotulo: "Sim" },
+                { valor: "nao", rotulo: "Não" },
+              ]}
+              valor={rascunho.clienteTrocaModo ? "sim" : "nao"}
+              aoTrocar={(valor) => mudar({ ...rascunho, clienteTrocaModo: valor === "sim" })}
+              efeito={
+                rascunho.clienteTrocaModo
                   ? "Aparece o botão de lua e sol na sua página; a escolha fica guardada no aparelho do cliente."
-                  : "Sua página fica sempre no modo padrão, sem o botão de lua e sol."}
-              </span>
-            </div>
+                  : "Sua página fica sempre no modo padrão, sem o botão de lua e sol."
+              }
+            />
           </div>
         </SecaoNumerada>
 
@@ -315,7 +320,7 @@ function TelaDaAparencia() {
             ))}
           </div>
           <CampoDeCor
-            key={`marca-${paleta.claro.accent}`}
+            key="marca"
             rotulo="Outra cor"
             valor={paleta.claro.accent}
             aoAplicar={escolherMarca}
@@ -337,7 +342,7 @@ function TelaDaAparencia() {
               aoTrocar={setModoDoFundo}
             />
             <CampoDeCor
-              key={`fundo-${modoDoFundo}-${paleta[modoDoFundo].paper}`}
+              key="fundo"
               rotulo="Cor de fundo"
               valor={paleta[modoDoFundo].paper}
               aoAplicar={escolherFundo}
@@ -351,13 +356,26 @@ function TelaDaAparencia() {
         {pendente ? (
           <div className={estilos.barra} aria-live="polite">
             <p className={estilos.barraTexto}>
-              <strong>Rascunho guardado</strong> · sua página ainda mostra a versão publicada.
+              {naoGuardado ? (
+                <>
+                  <strong>Não guardado</strong> · a última mudança não chegou ao servidor.
+                </>
+              ) : (
+                <>
+                  <strong>Rascunho guardado</strong> · sua página ainda mostra a versão publicada.
+                </>
+              )}
             </p>
             <div className={estilos.barraAcoes}>
+              {naoGuardado ? (
+                <Botao variante="fantasma" onClick={() => mudar(rascunho)}>
+                  Tentar de novo
+                </Botao>
+              ) : null}
               <Botao variante="fantasma" onClick={descartar} disabled={publicando}>
                 Descartar
               </Botao>
-              <Botao onClick={publicar} carregando={publicando}>
+              <Botao onClick={publicar} carregando={publicando} disabled={naoGuardado}>
                 Publicar
               </Botao>
             </div>
@@ -452,6 +470,16 @@ function CampoDeCor({
 }) {
   const [texto, setTexto] = useState(valor);
   const [erro, setErro] = useState(false);
+  // O valor muda por fora (uma bolinha, o seletor arrastado, outro modo):
+  // o texto acompanha. Sincronizado na renderização e não por `key` — um
+  // `key` com o valor remontaria o <input type="color"> a cada passo do
+  // arrasto, e o navegador fecha o seletor aberto.
+  const [base, setBase] = useState(valor);
+  if (valor !== base) {
+    setBase(valor);
+    setTexto(valor);
+    setErro(false);
+  }
   const idDoErro = `${rotulo.replace(/\s+/g, "-").toLowerCase()}-erro`;
 
   function aplicar() {

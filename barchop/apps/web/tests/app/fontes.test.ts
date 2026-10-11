@@ -27,7 +27,7 @@ describe("fontes do app", () => {
   it("vêm todas do repositório, com o arquivo no lugar", async () => {
     const fontes = await import("../../app/fontes");
 
-    expect(fontes.inter.variable).toBe("--fonte-corpo");
+    expect(fontes.inter.variable).toBe("--fonte-inter");
     expect(fontes.clashGrotesk.variable).toBe("--fonte-display");
     // O `path` do next/font/local é relativo ao app/fontes.ts; o vitest
     // roda com o cwd em apps/web.
@@ -50,7 +50,7 @@ describe("fontes do app", () => {
       "--fonte-open-sans",
       "--fonte-lato",
     ]);
-    const daAparencia = chamadasLocais.filter((chamada) => chamada.variable !== "--fonte-corpo" && chamada.variable !== "--fonte-display");
+    const daAparencia = chamadasLocais.filter((chamada) => chamada.variable !== "--fonte-inter" && chamada.variable !== "--fonte-display");
     expect(daAparencia).toHaveLength(5);
     for (const chamada of daAparencia) expect(chamada.preload).toBe(false);
   });

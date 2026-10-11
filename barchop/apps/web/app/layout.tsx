@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { clashGrotesk, inter } from "./fontes";
+import { FONTES_DA_APARENCIA, clashGrotesk, inter } from "./fontes";
 import { cssDeTokens } from "./tokens-css";
 import { SCRIPT_DA_BARRA } from "../src/painel/barra";
 import { SCRIPT_DE_TEMA } from "../src/painel/tema";
@@ -35,7 +35,7 @@ export default function RootLayout({
     // divergência dentro do <body> continua sendo denunciada.
     <html
       lang="pt-BR"
-      className={`${clashGrotesk.variable} ${inter.variable}`}
+      className={[clashGrotesk, inter, ...FONTES_DA_APARENCIA].map((fonte) => fonte.variable).join(" ")}
       suppressHydrationWarning
     >
       <head>

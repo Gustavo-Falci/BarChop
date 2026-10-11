@@ -378,3 +378,47 @@
 .nove .rotulo {
   grid-column: 1 / -1;
 }
+
+/* 4 · a letra: um botão por família, com o "Aa" na própria fonte. */
+.fontes {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.fontesOpcoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--espaco-sm);
+}
+
+.fonte {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: var(--cor-ink);
+  cursor: pointer;
+}
+
+.fonte:hover {
+  border-color: var(--cor-ink-soft);
+}
+
+.fonte[aria-pressed="true"] {
+  border-color: var(--cor-ink);
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+}
+
+.fonteAa {
+  font-size: var(--texto-xl);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.fonteNome {
+  font-size: var(--texto-xs);
+}

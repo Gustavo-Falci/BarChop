@@ -1,3 +1,4 @@
+import { fontSize } from "@barchop/design-tokens";
 import {
   misturar,
   normalizarAparencia,
@@ -9,6 +10,8 @@ import {
   type Cantos,
   type Cards,
   type CoresDaPagina,
+  type FonteDosTitulos,
+  type TamanhoDoTexto,
 } from "@barchop/formato";
 
 // A Aparência na página pública (plano aparencia.plan.md, marcos C e G).
@@ -72,6 +75,40 @@ const DOS_CARDS: Record<Cards, string[]> = {
   borda: ["--cartao-sombra: none;", "--cartao-sombra-hover: none;"],
 };
 
+// A letra (marco F): a família de cada opção é uma variável que o
+// next/font declara no <html> (app/fontes.ts). A Clash é a --fonte-display
+// da casa.
+const VARIAVEL_DA_FONTE: Record<FonteDosTitulos, string> = {
+  clash: "--fonte-display",
+  inter: "--fonte-inter",
+  roboto: "--fonte-roboto",
+  poppins: "--fonte-poppins",
+  montserrat: "--fonte-montserrat",
+  "open-sans": "--fonte-open-sans",
+  lato: "--fonte-lato",
+};
+
+function daLetra(aparencia: Aparencia): string[] {
+  const linhas: string[] = [];
+  if (aparencia.fonte !== "inter") linhas.push(`--fonte-corpo: var(${VARIAVEL_DA_FONTE[aparencia.fonte]});`);
+  if (aparencia.fonteDosTitulos === null) linhas.push("--fonte-display: var(--fonte-corpo);");
+  else if (aparencia.fonteDosTitulos !== "clash") {
+    linhas.push(`--fonte-display: var(${VARIAVEL_DA_FONTE[aparencia.fonteDosTitulos]});`);
+  }
+  return linhas;
+}
+
+// O tamanho do texto escala a régua inteira (--texto-xs a
+// --texto-display), arredondada no pixel.
+const ESCALA_DO_TEXTO: Record<TamanhoDoTexto, number> = { compacto: 0.9, normal: 1, espacoso: 1.1 };
+
+function doTamanho(tamanho: TamanhoDoTexto): string[] {
+  if (tamanho === "normal") return [];
+  return Object.entries(fontSize).map(
+    ([nome, px]) => `--texto-${nome}: ${Math.round(px * ESCALA_DO_TEXTO[tamanho])}px;`
+  );
+}
+
 // Os três blocos do tokens-css.ts, na mesma forma e com a mesma
 // especificidade: vindo depois no documento, cada um cobre o seu par. Sem
 // um deles, o escuro do sistema (ou do botão) voltaria pra paleta da casa.
@@ -103,7 +140,13 @@ export function cssDaAparencia(valor: Aparencia): string {
   const coresDaCasa = aparencia.tema === "barchop" && !personalizada(aparencia);
   if (!coresDaCasa || aparencia.botao !== "solido") partes.push(blocosDeCor(aparencia));
 
-  const ajuste = [...DOS_CANTOS[aparencia.cantos], ...DO_BOTAO[aparencia.botao], ...DOS_CARDS[aparencia.cards]];
+  const ajuste = [
+    ...daLetra(aparencia),
+    ...doTamanho(aparencia.tamanhoDoTexto),
+    ...DOS_CANTOS[aparencia.cantos],
+    ...DO_BOTAO[aparencia.botao],
+    ...DOS_CARDS[aparencia.cards],
+  ];
   if (ajuste.length > 0) partes.push(`:root {\n${ajuste.map((linha) => `  ${linha}`).join("\n")}\n}`);
 
   return partes.join("\n\n");

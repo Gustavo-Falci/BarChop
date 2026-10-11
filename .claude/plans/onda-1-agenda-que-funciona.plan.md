@@ -4,17 +4,22 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-11 — editar membro sem caixas, tudo em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-11 — editar membro sem caixas e Cancelar no novo agendamento, tudo em produção) — vale mais que as seções abaixo
 
-**Estado:** `main` = **produção** = `0e458b6` (até o #110; deploy só do web, sem migração, conferido no ar em 2026-10-11: `/health` ok e os textos novos "perde o acesso ao painel" e "Reativar devolve os dois" no chunk de `/painel/equipe/[id]`). Nada pela metade em branch nenhuma. Nenhuma migração nova desde `20261011120000_categoria_fechada`.
+**Estado:** `main` = **produção** = `305e764` (até o #112; #110 e #112 só web, sem migração, os dois conferidos no ar em 2026-10-11 com `/health` e grep nos chunks — #110: "perde o acesso ao painel" e "Reativar devolve os dois" em `/painel/equipe/[id]`; #112: "Cancelar" e `.replace(` no chunk de `/painel/agendamentos/novo`). Nada pela metade em branch nenhuma. Nenhuma migração nova desde `20261011120000_categoria_fechada`.
 
 **Feito em 2026-10-10 (#110):**
 - **Editar membro sem caixas** (pedido do dono): topo no desenho do detalhe do cliente ("← Equipe", nome, selo da situação, resumo do papel); duas colunas sem caixas — dados e jornada à esquerda, foto, serviços e situação à direita (uma coluna no celular). **Cada grupo salva sozinho** (dados, jornada, serviços), com Salvar/Descartar só quando aquele grupo mudou. Situação com a frase do efeito antes de Reenviar/Desativar. Convidar membro numa coluna só. Peça nova `componentes/Grupo` (a `Secao` sem moldura; as Configurações seguem com a `Secao`).
 - **Bug corrigido (estava em produção):** depois de "Salvar jornada"/"Salvar serviços" a tela voltava pro valor antigo (a API gravava certo): o GET antigo sobrescrevia a resposta do salvar. Agora a última resposta do GET e a base gravada ficam separadas.
 
+**Feito em 2026-10-11 (#111–#112):**
+- #111 docs: este RETOMAR AQUI.
+- #112 **Cancelar no novo agendamento** (pedido do dono): botão abaixo do Agendar, no fecho, que volta pra tela anterior (`router.back()` — a tela abre do Hoje, da Agenda, da lista e do detalhe do cliente). Dia e hora agora trocam a URL com `router.replace` (com `push` o voltar caía na mesma tela). Limite: aberto direto numa aba nova, sem histórico, o Cancelar não faz nada. No teste, `navegacaoFalsa.back`.
+- `gh pr merge` voltou a passar no modo automático (com o "pode mergear" do dono).
+
 **G3 adiado:** o dono decidiu (2026-10-08) que a GR Barber ainda não entra em produção. Não propor até ele pedir.
 
-**Ambiente local:** ao trocar de máquina, `migrate deploy` nos bancos dev e test (última migração: `20261011120000_categoria_fechada`).
+**Ambiente local:** ao trocar de máquina, `migrate deploy` nos bancos dev e test (última migração: `20261011120000_categoria_fechada`). O banco dev da barbearia `layout-dev` está sem horário de funcionamento e sem clientes: nenhum dia com vaga no novo agendamento.
 
 **O que falta (perguntar ao dono a ordem):**
 1. Mais telas de UI/UX — o dono manda print por print ("não divida em quadrados").

@@ -16,7 +16,7 @@ import estilos from "./Configuracoes.module.css";
 // agenda funcionar e o que o cliente vê.
 const GRUPOS: { titulo: string; areas: AreaDeConfiguracao[] }[] = [
   { titulo: "Operação", areas: ["horarios", "regras_de_agendamento"] },
-  { titulo: "Canais com clientes", areas: ["dados_do_negocio", "comunicacao", "notificacoes"] },
+  { titulo: "Canais com clientes", areas: ["dados_do_negocio", "aparencia", "comunicacao", "notificacoes"] },
 ];
 
 function LinhaDaArea({

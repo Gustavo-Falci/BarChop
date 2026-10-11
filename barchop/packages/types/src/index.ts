@@ -201,6 +201,7 @@ export type AreaDeConfiguracao =
   | "horarios"
   | "regras_de_agendamento"
   | "dados_do_negocio"
+  | "aparencia"
   | "comunicacao"
   | "notificacoes";
 

@@ -1293,6 +1293,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         }
         estado.perfil = { ...estado.perfil, aparencia: estado.aparenciaRascunho };
         estado.aparenciaRascunho = null;
+        decidir(["aparencia"]);
         return barbeariaDoPainel();
       },
       async descartarRascunhoDaAparencia() {

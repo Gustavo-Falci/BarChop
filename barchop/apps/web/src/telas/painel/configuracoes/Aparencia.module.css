@@ -1,0 +1,329 @@
+/* A tela Aparência. Seções sem moldura (SecaoNumerada), como as outras
+   áreas; os únicos "cartões" são os temas, porque eles SÃO o conteúdo —
+   uma amostra da página. */
+.tela {
+  display: grid;
+  gap: var(--espaco-xl);
+  max-width: 1040px;
+}
+
+.efeito {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.rotulo {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+/* 1 · logo e capa: duas linhas finas, sem caixa. */
+.imagens {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.imagem {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  padding: var(--espaco-md) 0;
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.miniatura {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--raio-sm);
+  object-fit: cover;
+}
+
+.semImagem {
+  display: block;
+  border: var(--borda-hairline) dashed var(--cor-ink-soft);
+  background: var(--cor-paper-soft);
+}
+
+.imagemTexto {
+  display: grid;
+  gap: 2px;
+}
+
+.imagemTexto strong {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.imagemAcao {
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+/* 2 · os temas */
+.personalizado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-xs) 0 var(--espaco-xs) var(--espaco-md);
+  border-left: 3px solid var(--cor-accent);
+  font-weight: 600;
+}
+
+.temas {
+  display: grid;
+  /* Duas por linha já no celular: uma só fazia dos 17 temas uma rolagem
+     sem fim. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  gap: var(--espaco-md);
+}
+
+.tema {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 0 0 var(--espaco-md);
+  overflow: hidden;
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tema:hover {
+  border-color: var(--cor-ink-soft);
+}
+
+/* O escolhido: a borda da casa e a sombra deslocada, como a pílula
+   escolhida em todo o painel. */
+.tema[aria-pressed="true"] {
+  border-color: var(--cor-ink);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+.amostra {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 92px;
+  margin-bottom: var(--espaco-sm);
+}
+
+.metade {
+  display: grid;
+  align-content: space-between;
+  padding: var(--espaco-sm);
+}
+
+.miniCartao {
+  display: grid;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid;
+  border-radius: 6px;
+}
+
+.miniCartao span {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.miniCartao span:first-child {
+  width: 70%;
+}
+
+.miniCartao span:last-child {
+  width: 45%;
+}
+
+.aa {
+  justify-self: start;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.temaNome {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  padding: 0 var(--espaco-md);
+  font-weight: 700;
+}
+
+.temaDescricao {
+  padding: 0 var(--espaco-md);
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+}
+
+@media (min-width: 700px) {
+  .temas {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  }
+
+  .temaDescricao {
+    font-size: var(--texto-sm);
+  }
+}
+
+.selo {
+  padding: 0 6px;
+  border: var(--borda-hairline) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.marcado {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: 50%;
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.duasColunas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--espaco-lg);
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.chave {
+  display: grid;
+  gap: var(--espaco-xs);
+  align-content: start;
+}
+
+.chave label {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 3 · a cor da marca */
+.bolinhas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+.bolinha {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.bolinha[aria-pressed="true"] {
+  border-color: var(--cor-ink);
+  box-shadow:
+    0 0 0 3px var(--cor-paper),
+    0 0 0 5px var(--cor-ink);
+}
+
+.campoDeCor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.seletorDeCor {
+  width: 44px;
+  height: 40px;
+  padding: 2px;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  cursor: pointer;
+}
+
+.hex {
+  width: 120px;
+  padding: var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-transform: uppercase;
+}
+
+.hex[aria-invalid="true"] {
+  border-color: var(--cor-erro);
+}
+
+.erro {
+  flex-basis: 100%;
+  font-size: var(--texto-sm);
+  color: var(--cor-erro);
+}
+
+.fundo {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* A barra de publicar: presa ao pé da tela enquanto houver rascunho,
+   pra o Publicar estar à mão de qualquer ponto da rolagem. */
+.barra {
+  position: sticky;
+  bottom: var(--espaco-md);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+.barraTexto {
+  margin: 0;
+}
+
+.barraAcoes {
+  display: flex;
+  gap: var(--espaco-sm);
+}
+
+.noAr {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}

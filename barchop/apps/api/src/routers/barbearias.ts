@@ -227,9 +227,9 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
     { onRequest: exigirPapel("dono") },
     async (request) => {
       const id = request.user.barbeariaId;
-      const { aparenciaRascunho } = await prisma.barbearia.findUniqueOrThrow({
+      const { aparenciaRascunho, areasDecididas } = await prisma.barbearia.findUniqueOrThrow({
         where: { id },
-        select: { aparenciaRascunho: true },
+        select: { aparenciaRascunho: true, areasDecididas: true },
       });
       if (aparenciaRascunho === null) throw conflito("não há rascunho da aparência para publicar");
       const barbearia = await prisma.barbearia.update({
@@ -237,6 +237,8 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
         data: {
           aparencia: normalizarAparencia(aparenciaRascunho) as unknown as Prisma.InputJsonObject,
           aparenciaRascunho: Prisma.DbNull,
+          // Publicar é decidir a área (como salvar, nas outras).
+          areasDecididas: juntarAreas(areasDecididas, ["aparencia"]),
         },
       });
       return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);

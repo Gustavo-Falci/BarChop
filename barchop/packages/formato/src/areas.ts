@@ -11,6 +11,9 @@ export const AREAS_DE_CONFIGURACAO = [
   // Painel v2, marco 3: como o cliente marca, remarca e cancela pelo link.
   "regras_de_agendamento",
   "dados_do_negocio",
+  // A Aparência da página pública: decidida quando o dono publica pela
+  // primeira vez (POST /barbearias/me/aparencia/publicar).
+  "aparencia",
   "comunicacao",
   "notificacoes",
 ] as const;

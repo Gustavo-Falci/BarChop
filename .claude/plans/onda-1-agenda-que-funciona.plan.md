@@ -4,7 +4,34 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (fim de 2026-10-11 — Open Graph, semana sombreada, por profissional, no celular e horas nos livres, tudo em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-11 — a tela Aparência inteira, marcos A a H, tudo em produção) — vale mais que as seções abaixo
+
+**Estado:** `main` = **produção** = `336717d` (até o #128; cada deploy conferido no ar com curl e grep nos chunks — por último: `PUT /barbearias/me/aparencia/layout-dos-servicos` dá 401 sem token (rota que não existe dá 404), "Categorias de serviço" no chunk da página pública e "Layout dos serviços" no de `/painel/configuracoes/aparencia`). Nada pela metade em branch nenhuma. **Migração nova:** `20261012120000_aparencia` (aplicada em produção pelo dono, e no dev e no test).
+
+**A Aparência** (pedido do dono com o guia e as prints do Barbeiro.app; plano em `.claude/plans/aparencia.plan.md`, que tem as decisões e as armadilhas): `/painel/configuracoes/aparencia`, só o dono, área nova `aparencia` no índice (agora **6** áreas). Barbearia que nunca publicou fica exatamente como antes (tema BarChop = os tokens).
+- #121 (A) `@barchop/formato/aparencia`: 17 temas (BarChop + os 16 da referência, descrições nossas), paleta pura com contraste WCAG garantido em teste, `normalizarAparencia`. Token novo `onAccent` (texto sobre a marca).
+- #122 (B, **migração**) colunas `aparencia` (no ar) e `aparencia_rascunho` (**decisão do dono: rascunho guardado no servidor** até publicar/descartar); rotas PUT rascunho, POST publicar (409 sem rascunho), DELETE rascunho; hex estrito no schema.
+- #123 (C) a página pública aplica a aparência publicada: `<style>` nos três blocos do tokens-css (só hex) + `<script>` do modo padrão; botão lua/sol quando o dono deixa (escolha em `pagina.<slug>.modo`, nunca `painel.tema`); texto sobre a marca vira `--cor-on-accent` em todos os componentes; `--cor-accent-on-dark` nas iniciais da fachada.
+- #124 (D) a tela: blocos 1 (logo/capa → atalho pra Marca), 2 (temas com filtro, "personalizado · Voltar ao original", modo padrão, Sim/Não do botão do cliente) e 3 (16 cores, outra cor em hex, fundo por modo); rascunho gravado a cada mudança, uma gravação por vez; barra Publicar/Descartar presa ao pé; "Não guardado · Tentar de novo" quando falha. Publicar decide a área.
+- #125 (G) ajuste fino: cantos, botão (sólido/contorno/gradiente), cards (plano/elevado/borda) e as nove cores por modo — variáveis com o valor de hoje como reserva (`var(--raio-botao, var(--raio-md))`), então o painel não muda. Marca herdada no escuro clareia até 3:1 (o Carvão sumia). **Corrigiu bug que estava no ar desde o #123:** o filtro de hex só aceitava maiúsculas e o BarChop personalizado no escuro vazava o claro.
+- #126 (E) prévia ao vivo: iframe da página de verdade numa coluna presa à direita (celular/computador, Início/Agendar, claro/escuro, Atualizar, Ampliar num `<dialog>`, Abrir a página); rascunho por `postMessage` com origem conferida dos dois lados (cross-origin em produção: `painel.` → `<slug>.`), nunca pela URL.
+- #127 (F) a letra: Roboto, Poppins, Montserrat, Open Sans e Lato em `barchop/font/` (recorte latino + licença, como a Inter), **sem pré-carga** (o painel segue só com Clash e Inter); a Inter virou `--fonte-inter` com `--fonte-corpo: var(--fonte-inter)` no `:root`; títulos em outra fonte e tamanho do texto (régua `--texto-*` a 0,9/1,1).
+- #128 (H) layout dos serviços (lista agrupada × abas de categoria), **salva na hora** e leva junto o rascunho pendente; abas são um `tablist` acessível na página inicial. O passo Agendar segue em lista.
+
+**Ambiente local:** `migrate deploy` nos bancos dev e test ao trocar de máquina (última migração: `20261012120000_aparencia`). O banco dev da `layout-dev` ficou com uma aparência que o dono testou (publicado Clássico + Poppins + Espaçoso; rascunho Oceano + Pílula + Open Sans) — não apagar sem perguntar. Pra ver o painel dev sem senha: gerar um JWT com o `JWT_SECRET` do `apps/api/.env` (payload `{tipo:"barbeiro", barbeiroId, barbeariaId, iat}`) e gravar em `localStorage["sessao.barbeiro"]` + `["sessao.barbearia"]`; um 401 (ex.: a API dev reiniciando com o `tsx watch`) derruba a sessão por regra. O servidor web dev travado ("Next stale", erro de worker) se resolve matando o PID da porta 3000 e subindo de novo.
+
+**O que falta (perguntar ao dono a ordem):**
+1. Aparência, depois: Histórico de alterações (adiado pelo dono; seria pras Configurações todas); abas também no passo Agendar (decidido que não, por ora); barra do proprietário dentro da prévia (a referência tem; aqui não).
+2. Mais telas de UI/UX — o dono manda print por print ("não divida em quadrados").
+3. Conferir no navegador o que só os testes cobriram: capa (Configurações) e foto do membro com o `CampoDeImagem` novo, a logo no painel (aba Marca), a tela de serviço novo e o editar membro do #110 em produção.
+4. G4 — docs da onda 1.
+5. `barbearia-teste` em produção: apagar ou manter.
+6. Onda 2 (dinheiro): caixa, cobrança, planos — começar pelo PRD (`ecc:plan-prd`); preços/plano grátis do site entram aqui.
+7. Solta: razão social/CNPJ/DPO "a preencher" (`apps/web/src/site/controlador.ts`).
+
+**Combinados:** um PR por item, TDD RED → GREEN, português; push, PR e merge por mim só com "pode mergear" do dono no turno ("aprovado" é aprovação visual); `gh pr merge` passa no modo automático. **PR empilhado:** depois de mesclar a base, `gh pr edit <n> --base main` e conferir antes de mesclar o de cima (o GitHub não troca sozinho sem apagar o branch). Telas sem caixas: colunas sem moldura com título pequeno, linhas finas, pílulas no lugar de select/checkbox de poucas opções, Salvar/Descartar só quando muda (por grupo), frase do efeito antes da ação; conferir no navegador em 375 e 1440. Prettier não é do projeto — não rodar (reformata o arquivo inteiro). Deploy: o dono roda na VM sozinho e já sabe os comandos (não passar), rebuildando o `migrar` quando houver migração; eu confiro com curl e grep nos chunks.
+
+## RETOMAR AQUI (fim de 2026-10-11 — Open Graph, semana sombreada, por profissional, no celular e horas nos livres, tudo em produção) — histórico
 
 **Estado:** `main` = **produção** = `41465d5` (até o #119; #114 a #117 e #119 só web, sem migração, conferidos no ar em 2026-10-11 com `/health`, curl e grep: `og:image` de `https://www.barchop.com.br/` → 200 `image/png` no `www` e na raiz, sem 308; no chunk de `/painel/agenda`, `profissionais=` (#115) e `Filtrar por profissional` (#116); no CSS da agenda, `minmax(120px, 1fr)` (#117) e o `.livre` com `color:var(--cor-muted)` (#119)). Nada pela metade em branch nenhuma. Nenhuma migração nova desde `20261011120000_categoria_fechada`.
 

@@ -13,7 +13,7 @@
 .entrada {
   padding: var(--espaco-sm) var(--espaco-md);
   border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-sm);
+  border-radius: var(--raio-campo, var(--raio-sm));
   background: var(--cor-surface);
   color: var(--cor-ink);
   font-family: var(--fonte-corpo), system-ui, sans-serif;

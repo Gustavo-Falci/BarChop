@@ -36,6 +36,18 @@ describe("cssDaAparencia", () => {
     );
   });
 
+  it("o BarChop personalizado leva a paleta escura inteira (tokens em minúsculas também)", () => {
+    // Os tokens da casa têm hex em minúsculas (#3d3410). Filtrados fora,
+    // o bloco escuro ficava sem eles e o claro vazava: fundo de destaque
+    // amarelo-claro com texto claro, no escuro.
+    const css = cssDaAparencia(com({ cores: { claro: { marca: "#1C1C1C" }, escuro: {} } }));
+    const escuro = css.slice(css.indexOf('[data-theme="dark"] {'));
+    for (const nome of ["pale-yellow", "ink-soft", "muted", "line", "placeholder"]) {
+      expect(escuro).toMatch(new RegExp(`--cor-${nome}: #[0-9A-F]{6};`));
+    }
+    expect(escuro).toContain("--cor-pale-yellow: #3D3410;");
+  });
+
   it("só sai hex: o que vier forjado não vira CSS", () => {
     // O CSS entra por dangerouslySetInnerHTML. A API já recusa, e quem
     // lê normaliza; aqui é a última guarda.

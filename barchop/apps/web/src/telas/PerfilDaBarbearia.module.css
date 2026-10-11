@@ -16,11 +16,11 @@
   width: calc(100% - 2 * var(--espaco-lg));
   max-width: calc(var(--fluxo-largura) - 2 * var(--espaco-lg));
   margin: var(--espaco-lg) auto 0;
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-lg);
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border-radius: var(--raio-cartao, var(--raio-lg));
   overflow: hidden;
   background: var(--cor-surface);
-  box-shadow: 0 6px 0 var(--cor-shadow);
+  box-shadow: var(--cartao-sombra, 0 6px 0 var(--cor-shadow));
 }
 
 /* Proporção fixa, com ou sem capa: a foto que chega depois (ou não
@@ -342,8 +342,8 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-md);
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border-radius: var(--raio-cartao, var(--raio-md));
   background: var(--cor-surface);
   overflow: hidden;
 }

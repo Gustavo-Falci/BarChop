@@ -467,7 +467,24 @@ function paletaDoModo(aparencia: Aparencia, modo: Modo): CoresDaPagina {
     const cor = minhas[nome];
     if (cor) paleta[TOKEN_DA_COR[nome]] = cor;
   }
+
+  // A marca que o escuro herdou do claro pode sumir no fundo escuro (o
+  // Carvão dava 1:1, e o botão principal desaparecia): clareia até 3:1, o
+  // mínimo de um componente. Escolhida à mão no escuro, fica como está.
+  if (modo === "escuro" && !aparencia.cores.escuro.marca && contraste(paleta.accent, paleta.paper) < 3) {
+    const visivel = garantirContraste(paleta.accent, paleta.ink, [paleta.paper], 3);
+    paleta.accent = visivel;
+    paleta.accentBorder = misturar(visivel, BRANCO, 0.45);
+    paleta.onAccent = textoSobre(visivel);
+    paleta.accentOnDark = marcaSobreOEscuro(visivel);
+  }
   return paleta;
+}
+
+// A marca usada como texto sobre o fundo e os cards (o botão Contorno):
+// puxada pro texto até passar de 4,5:1 nos dois.
+export function textoDaMarca(cores: CoresDaPagina): Hex {
+  return garantirContraste(cores.accent, cores.ink, [cores.paper, cores.surface], 4.5);
 }
 
 export function paletaDaAparencia(aparencia: Aparencia): { claro: CoresDaPagina; escuro: CoresDaPagina } {

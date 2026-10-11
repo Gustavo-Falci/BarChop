@@ -236,6 +236,72 @@ describe("DELETE /barbearias/me/aparencia/rascunho", () => {
   });
 });
 
+describe("PUT /barbearias/me/aparencia/layout-dos-servicos", () => {
+  async function salvarLayout(app: App, token: string, layoutDosServicos: unknown) {
+    return app.inject({
+      method: "PUT",
+      url: "/barbearias/me/aparencia/layout-dos-servicos",
+      headers: auth(token),
+      payload: { layoutDosServicos },
+    });
+  }
+
+  it("salva na hora, direto no ar, e decide a área", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+
+    const resposta = await salvarLayout(app, um.token, "abas");
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json().aparencia.layoutDosServicos).toBe("abas");
+    expect(resposta.json().aparenciaRascunho).toBeNull();
+    expect(resposta.json().areasDecididas).toContain("aparencia");
+    expect((await publica(app, um.slug)).aparencia.layoutDosServicos).toBe("abas");
+
+    await app.close();
+  });
+
+  it("com rascunho pendente, o rascunho leva o layout novo — publicar não traz o antigo de volta", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+    await salvarRascunho(app, um.token, OCEANO);
+
+    const resposta = await salvarLayout(app, um.token, "abas");
+
+    expect(resposta.json().aparenciaRascunho).toEqual({ ...OCEANO, layoutDosServicos: "abas" });
+    const publicado = await app.inject({
+      method: "POST",
+      url: "/barbearias/me/aparencia/publicar",
+      headers: auth(um.token),
+    });
+    expect(publicado.json().aparencia).toEqual({ ...OCEANO, layoutDosServicos: "abas" });
+
+    await app.close();
+  });
+
+  it("o resto do que está no ar não muda", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+    await salvarRascunho(app, um.token, OCEANO);
+    await app.inject({ method: "POST", url: "/barbearias/me/aparencia/publicar", headers: auth(um.token) });
+
+    const resposta = await salvarLayout(app, um.token, "abas");
+
+    expect(resposta.json().aparencia).toEqual({ ...OCEANO, layoutDosServicos: "abas" });
+
+    await app.close();
+  });
+
+  it.each([["grade"], [null], [""]])("recusa %s com 400", async (valor) => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+
+    expect((await salvarLayout(app, um.token, valor)).statusCode).toBe(400);
+
+    await app.close();
+  });
+});
+
 describe("só o dono", () => {
   it.each(["profissional", "recepcao"] as const)("%s recebe 403 nas três escritas", async (papel) => {
     const app = buildApp();

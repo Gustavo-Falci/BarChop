@@ -43,6 +43,7 @@ const SO_DO_DONO = [
   { method: "PUT", url: "/barbearias/me/aparencia/rascunho" },
   { method: "POST", url: "/barbearias/me/aparencia/publicar" },
   { method: "DELETE", url: "/barbearias/me/aparencia/rascunho" },
+  { method: "PUT", url: "/barbearias/me/aparencia/layout-dos-servicos" },
 ] as const;
 
 async function prepararEquipe(app: App) {

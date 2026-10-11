@@ -180,6 +180,24 @@ describe("POST /barbearias/me/aparencia/publicar", () => {
     await app.close();
   });
 
+  it("publicar decide a área Aparência das Configurações", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+    await salvarRascunho(app, um.token, OCEANO);
+
+    const antes = (await app.inject({ method: "GET", url: "/barbearias/me", headers: auth(um.token) })).json();
+    expect(antes.areasDecididas).not.toContain("aparencia");
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/barbearias/me/aparencia/publicar",
+      headers: auth(um.token),
+    });
+
+    expect(resposta.json().areasDecididas).toContain("aparencia");
+
+    await app.close();
+  });
+
   it("sem rascunho, não há o que publicar: 409", async () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");

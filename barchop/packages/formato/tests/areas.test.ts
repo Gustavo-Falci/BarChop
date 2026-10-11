@@ -7,11 +7,13 @@ import { AREAS_DE_CONFIGURACAO, areasTocadas, juntarAreas } from "../src/areas";
 // a API de verdade não dá.
 
 describe("áreas das Configurações", () => {
-  it("ordem do índice: Horários, Regras de agendamento, Dados do negócio, Comunicação, Notificações", () => {
+  it("ordem do índice: Horários, Regras de agendamento, Dados do negócio, Aparência, Comunicação, Notificações", () => {
     expect(AREAS_DE_CONFIGURACAO).toEqual([
       "horarios",
       "regras_de_agendamento",
       "dados_do_negocio",
+      // A Aparência (marco D): decide quem publica pela primeira vez.
+      "aparencia",
       "comunicacao",
       "notificacoes",
     ]);

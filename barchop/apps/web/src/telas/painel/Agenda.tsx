@@ -91,9 +91,15 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     () => (daEquipe && vista === "dia" ? api.barbeiro.equipe() : Promise.resolve([])),
     [daEquipe, vista]
   );
+  // Na semana também: a folga de cada um o tira de quem pode atender.
   const bloqueios = useRequisicao(
-    () => (vista === "dia" ? api.barbeiro.bloqueios(data, data) : Promise.resolve([])),
-    [vista, data]
+    () =>
+      vista === "dia"
+        ? api.barbeiro.bloqueios(data, data)
+        : vista === "semana"
+          ? api.barbeiro.bloqueios(semana[0], semana[6])
+          : Promise.resolve([]),
+    [vista, vista === "semana" ? semana[0] : data]
   );
   // O expediente de cada um (janela e pausa), pra sombrear o fechado e
   // não oferecer horário livre no almoço. Vem da ocupação, que já faz a
@@ -270,12 +276,16 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
                 : (ocupacaoDaSemana.dados ?? undefined),
           })}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
-          aoCriar={(dia, hora, barbeiroId) =>
+          aoCriar={(dia, hora, barbeiroId, profissionais) => {
+            // Na coluna que junta a equipe, só quem pode atender naquela
+            // hora; sendo um só, ele já vem escolhido.
+            const unico = barbeiroId ?? (profissionais?.length === 1 ? profissionais[0] : undefined);
             router.push(
               `/painel/agendamentos/novo?data=${dia}&hora=${encodeURIComponent(hora)}` +
-                (barbeiroId ? `&profissional=${barbeiroId}` : "")
-            )
-          }
+                (unico ? `&profissional=${unico}` : "") +
+                (profissionais ? `&profissionais=${profissionais.join(",")}` : "")
+            );
+          }}
           // Só na semana: na vista de dia, um botão para abrir o dia que
           // já está aberto seria ruído.
           aoAbrirDia={

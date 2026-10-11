@@ -147,13 +147,14 @@ export interface Tema {
   escuro: Sementes;
 }
 
-function tema(
-  id: string,
+// Genérica no id pra que `IdDoTema` seja a união dos ids, e não string.
+function tema<I extends string>(
+  id: I,
   nome: string,
   descricao: string,
   cores: { marca: [Hex, Hex]; realce: Hex; claro: [Hex, Hex]; escuro: [Hex, Hex] },
   abreNoEscuro = false
-): Tema {
+): Tema & { id: I } {
   return {
     id,
     nome,
@@ -281,13 +282,14 @@ export const TEMAS = [
     claro: ["#FFFFFF", "#0A0A0A"],
     escuro: ["#0A0A0A", "#FAFAFA"],
   }),
-] as const satisfies readonly Tema[];
+] as const;
 
 export type IdDoTema = (typeof TEMAS)[number]["id"];
 
-const IDS_DOS_TEMAS: readonly string[] = TEMAS.map((item) => item.id);
+// A lista que a API valida.
+export const IDS_DOS_TEMAS: readonly IdDoTema[] = TEMAS.map((item) => item.id);
 
-export function temaPorId(id: IdDoTema): Tema {
+export function temaPorId(id: IdDoTema): (typeof TEMAS)[number] {
   return TEMAS.find((item) => item.id === id) ?? TEMAS[0];
 }
 
@@ -315,7 +317,7 @@ export const CORES_DA_MARCA = [
 // O padrão e a leitura do que vem do banco
 // ---------------------------------------------------------------------------
 
-export const APARENCIA_PADRAO: Aparencia = {
+export const APARENCIA_PADRAO: Readonly<Aparencia> = {
   tema: "barchop",
   modoPadrao: "automatico",
   clienteTrocaModo: false,
@@ -349,13 +351,14 @@ function lerCores(valor: unknown): CoresPersonalizadas {
 
 // O que vem do banco (ou de um web mais novo que a API) vira sempre uma
 // Aparência inteira: o que falta ou não se conhece cai no padrão, em vez
-// de quebrar a página (a lição do #104).
+// de quebrar a página (a lição do #104). Sempre um objeto novo: quem
+// editar o rascunho não mexe no padrão de todo mundo.
 export function normalizarAparencia(valor: unknown): Aparencia {
-  if (!ehObjeto(valor)) return APARENCIA_PADRAO;
+  if (!ehObjeto(valor)) return { ...APARENCIA_PADRAO, cores: { claro: {}, escuro: {} } };
   const p = APARENCIA_PADRAO;
   const cores = ehObjeto(valor.cores) ? valor.cores : {};
   return {
-    tema: daLista(IDS_DOS_TEMAS, valor.tema, p.tema) as IdDoTema,
+    tema: daLista(IDS_DOS_TEMAS, valor.tema, p.tema),
     modoPadrao: daLista(MODOS_DE_COR, valor.modoPadrao, p.modoPadrao),
     clienteTrocaModo: typeof valor.clienteTrocaModo === "boolean" ? valor.clienteTrocaModo : p.clienteTrocaModo,
     fonte: daLista(FONTES_DO_TEXTO, valor.fonte, p.fonte),
@@ -476,7 +479,7 @@ export function aplicarTema(aparencia: Aparencia, id: IdDoTema): Aparencia {
   let modoPadrao = aparencia.modoPadrao;
   if (novo.abreNoEscuro) modoPadrao = "escuro";
   else if (anterior.abreNoEscuro && modoPadrao === "escuro") modoPadrao = "automatico";
-  return { ...aparencia, tema: novo.id as IdDoTema, modoPadrao, cores: { claro: {}, escuro: {} } };
+  return { ...aparencia, tema: novo.id, modoPadrao, cores: { claro: {}, escuro: {} } };
 }
 
 export function personalizada(aparencia: Aparencia): boolean {

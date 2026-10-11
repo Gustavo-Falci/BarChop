@@ -3,6 +3,7 @@ import { colors } from "@barchop/design-tokens";
 import {
   APARENCIA_PADRAO,
   CORES_DA_MARCA,
+  IDS_DOS_TEMAS,
   TEMAS,
   aplicarTema,
   contraste,
@@ -66,6 +67,12 @@ describe("normalizarAparencia", () => {
     expect(lida.layoutDosServicos).toBe("agrupada");
   });
 
+  it("devolve sempre um objeto novo (o padrão não se mexe)", () => {
+    const lida = normalizarAparencia(null);
+    expect(lida).not.toBe(APARENCIA_PADRAO);
+    expect(lida.cores.claro).not.toBe(APARENCIA_PADRAO.cores.claro);
+  });
+
   it("tema que não existe (mais) volta pro BarChop", () => {
     expect(normalizarAparencia({ tema: "neon" }).tema).toBe("barchop");
   });
@@ -97,6 +104,12 @@ describe("o catálogo", () => {
     expect(TEMAS).toHaveLength(17);
     expect(TEMAS[0]!.id).toBe("barchop");
     expect(new Set(TEMAS.map((tema) => tema.id)).size).toBe(17);
+  });
+
+  it("o id do tema é a lista fechada, não qualquer texto", () => {
+    expect(IDS_DOS_TEMAS).toEqual(TEMAS.map((tema) => tema.id));
+    // @ts-expect-error -- "neon" não é tema
+    aplicarTema(APARENCIA_PADRAO, "neon");
   });
 
   it("dois abrem no escuro: Ousado e Meia-noite", () => {

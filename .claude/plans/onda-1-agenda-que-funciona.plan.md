@@ -4,16 +4,16 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (fim de 2026-10-11 — Open Graph, semana sombreada e por profissional) — vale mais que as seções abaixo
+## RETOMAR AQUI (fim de 2026-10-11 — Open Graph, semana sombreada, por profissional e no celular) — vale mais que as seções abaixo
 
-**Estado:** `main` = `3ebf8f7` (até o #115). **Produção conferida = até o #112** (2026-10-11). **Aguardando deploy (só web, sem migração):** #114 e #115 — depois conferir: `og:image` de `https://www.barchop.com.br/` responde 200 `image/png` (sem 308), e na semana da agenda as faixas "Pausa"/"Fechado" (grep `profissionais=` no chunk de `/painel/agenda`). Nenhuma migração nova desde `20261011120000_categoria_fechada`.
+**Estado:** `main` = `38ecf17` (até o #117). **Produção conferida = até o #112** (2026-10-11). Nada pela metade em branch nenhuma. **Aguardando deploy (só web, sem migração):** #114 a #117 — depois conferir: `og:image` de `https://www.barchop.com.br/` responde 200 `image/png` (sem 308), e no chunk de `/painel/agenda`: `profissionais=` (#115) e `Filtrar por profissional` (#116). Nenhuma migração nova desde `20261011120000_categoria_fechada`.
 
-**Prontos em branch, esperando "pode mergear" (só web):**
-- `semana-por-profissional` (`b36967d` RED → `213963d` GREEN): pílulas "Todos · Rafael · Ana" na semana, pra dono e recepção (não no dia, que já tem uma coluna por pessoa; não pro profissional). Escolhida uma pessoa (`?profissional=` na URL, mantido ao andar e ao trocar de vista), a semana mostra só os agendamentos e o expediente dela — pausa, folgas e o horário livre, que já leva ela pro Novo agendamento. Conferido em 1440.
-- `semana-no-celular` (`c46e866` RED → `8e2cf6c` GREEN → `169a1b0` teste sem CRLF): em 375 as sete colunas se sobrepunham (o `min-width: 120px` ia nos itens, com trilhas `minmax(0, 1fr)`). Os 120px vão nas trilhas, e cabeçalho e corpo têm a mesma largura mínima pra rolarem juntos dentro do quadro. Conferido em 375: colunas de 120px, página sem rolagem horizontal, cabeçalho alinhado depois de rolar. O eixo das horas rola junto (não fica fixo).
+**Também de 2026-10-11 (#116–#117):**
+- #116 **semana por profissional** (`b36967d` RED → `213963d` GREEN): pílulas "Todos · Rafael · Ana" na semana, pra dono e recepção (não no dia, que já tem uma coluna por pessoa; não pro profissional). Escolhida uma pessoa (`?profissional=` na URL, mantido ao andar e ao trocar de vista), a semana mostra só os agendamentos e o expediente dela — pausa, folgas e o horário livre, que já leva ela pro Novo agendamento. Conferido em 1440.
+- #117 **semana no celular** (`c46e866` RED → `8e2cf6c` GREEN → `169a1b0` teste sem CRLF): em 375 as sete colunas se sobrepunham (o `min-width: 120px` ia nos itens, com trilhas `minmax(0, 1fr)`). Os 120px vão nas trilhas, e cabeçalho e corpo têm a mesma largura mínima pra rolarem juntos dentro do quadro. Conferido em 375: colunas de 120px, página sem rolagem horizontal, cabeçalho alinhado depois de rolar. O eixo das horas rola junto (não fica fixo).
 
-**Feito em 2026-10-11 (#113–#115):**
-- #113 docs.
+**Feito em 2026-10-11 (#113–#118):**
+- #113 e #118 docs.
 - **#89 decidido:** a grade da agenda continua clicável de 15 em 15 (sem código).
 - #114 **imagem de Open Graph da home**: `app/(marketing)/opengraph-image.tsx`, 1200×630 gerado no build com a Clash Grotesk do repositório (TTF estáticos; o gerador não lê woff2). O Next serve em `/opengraph-image-<hash>`, que no host do site passava no formato de slug e ia pro subdomínio de uma barbearia: o `matcher` do `proxy.ts` deixa esse caminho de fora. Termos e Privacidade herdam a imagem.
 - #115 **semana da agenda sombreada**: 7 consultas da rota do dia (`ocupacaoDoDia`, sem rota de período), presas ao domingo; a semana também busca as folgas. `expediente` da grade virou registro por data. **Regras do dono:** na coluna que junta a equipe só fica sombreado onde ninguém atende ("Pausa" quando todos no turno param; "Fechado" fora de todos os turnos, inclusive o vão entre turnos); um horário fica livre se alguém pode atender (no turno, fora da pausa, sem folga e sem agendamento dele) e leva essa lista pro Novo agendamento (`?profissionais=`), que oferece só essas pessoas — sendo uma, já escolhida; trocar dia ou hora tira a restrição. Todos em pausa = sem horário. Limite não visto: um agendamento que cubra a largura da coluna da semana pode esconder o horário livre de outro embaixo (vista de Dia ou o filtro por profissional resolvem).

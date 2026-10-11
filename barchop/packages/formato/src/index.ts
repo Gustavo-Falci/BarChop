@@ -55,6 +55,7 @@ export {
   paletaDaAparencia,
   personalizada,
   temaPorId,
+  textoDaMarca,
   type Aparencia,
   type Botao,
   type Cantos,

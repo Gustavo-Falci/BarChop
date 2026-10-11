@@ -4,14 +4,14 @@
    botão apertado, e é o que diz "escolhido" sem depender só da cor. */
 .cartao {
   list-style: none;
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-md);
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border-radius: var(--raio-cartao, var(--raio-md));
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--cartao-sombra, 0 4px 0 var(--cor-shadow));
   transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
 
-.cartao:hover { transform: translateY(-1px); box-shadow: 0 5px 0 var(--cor-shadow); }
+.cartao:hover { transform: translateY(-1px); box-shadow: var(--cartao-sombra-hover, 0 5px 0 var(--cor-shadow)); }
 
 .marcado,
 .marcado:hover {

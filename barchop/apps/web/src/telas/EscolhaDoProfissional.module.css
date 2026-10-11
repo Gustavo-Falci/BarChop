@@ -24,8 +24,8 @@
   width: 100%;
   min-height: 56px;
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-md, var(--raio-sm));
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border-radius: var(--raio-cartao, var(--raio-md, var(--raio-sm)));
   background: var(--cor-surface);
   color: var(--cor-ink);
   font: inherit;

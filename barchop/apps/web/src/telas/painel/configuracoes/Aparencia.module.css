@@ -313,3 +313,42 @@
   font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
 }
+
+/* 4 · ajuste fino: recolhido; o Abrir/Fechar mora na ponta da régua. */
+.abrir {
+  padding: 2px var(--espaco-md);
+  border: var(--borda-hairline) solid var(--cor-ink);
+  border-radius: var(--raio-pill);
+  background: transparent;
+  color: var(--cor-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ajuste {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+.tresColunas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--espaco-lg);
+}
+
+.nove {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: var(--espaco-md) var(--espaco-lg);
+}
+
+/* Nas nove, o nome em cima e o seletor com o hex na linha de baixo. */
+.nove .campoDeCor {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+}
+
+.nove .rotulo {
+  grid-column: 1 / -1;
+}

@@ -30,8 +30,8 @@
   display: grid;
   gap: var(--espaco-xs);
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-md);
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border-radius: var(--raio-cartao, var(--raio-md));
   background: var(--cor-surface);
 }
 
@@ -122,8 +122,8 @@
   .resumo {
     display: grid;
     padding: var(--espaco-sm) var(--espaco-lg);
-    border: var(--borda-padrao) solid var(--cor-ink);
-    border-radius: var(--raio-md);
+    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+    border-radius: var(--raio-cartao, var(--raio-md));
     background: var(--cor-surface);
   }
 

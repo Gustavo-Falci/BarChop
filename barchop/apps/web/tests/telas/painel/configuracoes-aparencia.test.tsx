@@ -190,6 +190,36 @@ describe("aparência", () => {
     expect(screen.getByRole("button", { name: "Tentar de novo" })).toBeInTheDocument();
   });
 
+  it("o ajuste fino vem recolhido; aberto, cantos, botão e cards entram no rascunho", async () => {
+    const falso = await abrir();
+    const abrirAjuste = screen.getByRole("button", { name: /abrir o ajuste fino/i });
+    expect(abrirAjuste).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("group", { name: /os cantos/i })).not.toBeInTheDocument();
+
+    await userEvent.click(abrirAjuste);
+    await userEvent.click(grupo(/os cantos/i).getByRole("radio", { name: "Retos" }));
+    await userEvent.click(grupo(/o botão principal/i).getByRole("radio", { name: "Contorno" }));
+    await userEvent.click(grupo(/os cards/i).getByRole("radio", { name: "Planos" }));
+
+    await waitFor(async () =>
+      expect(await rascunho(falso)).toMatchObject({ cantos: "retos", botao: "contorno", cards: "plano" })
+    );
+    expect(screen.getByRole("button", { name: /fechar o ajuste fino/i })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("as nove cores, uma a uma, em cada modo", async () => {
+    const falso = await abrir();
+    await userEvent.click(screen.getByRole("button", { name: /abrir o ajuste fino/i }));
+
+    await userEvent.click(grupo(/as nove cores de qual modo/i).getByRole("radio", { name: "Modo escuro" }));
+    const card = screen.getByRole("textbox", { name: "Card" });
+    await userEvent.clear(card);
+    await userEvent.type(card, "#202020{Enter}");
+
+    await waitFor(async () => expect((await rascunho(falso))?.cores.escuro).toEqual({ card: "#202020" }));
+    expect(screen.getByRole("textbox", { name: "Texto de apoio" })).toBeInTheDocument();
+  });
+
   it("quem não é dono não mexe", async () => {
     montarPainel(<AparenciaDaBarbearia />, criarApiClientFalso({ papel: "profissional" }));
 

@@ -5,7 +5,9 @@
   gap: var(--espaco-sm);
   padding: var(--espaco-sm) var(--espaco-lg);
   border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-md);
+  /* As variáveis com reserva são o ajuste fino da Aparência na página
+     pública (fluxo/aparenciaDaPagina.ts); no painel nunca existem. */
+  border-radius: var(--raio-botao, var(--raio-md));
   font-family: var(--fonte-display), system-ui, sans-serif;
   font-size: var(--texto-md);
   font-weight: 700;
@@ -27,8 +29,9 @@
 }
 
 .primario {
-  background: var(--cor-accent);
-  color: var(--cor-on-accent);
+  border-color: var(--botao-borda, var(--cor-ink));
+  background: var(--botao-fundo, var(--cor-accent));
+  color: var(--botao-texto, var(--cor-on-accent));
 }
 
 .fantasma {

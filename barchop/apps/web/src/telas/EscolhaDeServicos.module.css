@@ -147,9 +147,9 @@
     grid-template-columns: 1fr;
     gap: var(--espaco-md);
     padding: var(--espaco-lg);
-    border: var(--borda-padrao) solid var(--cor-ink);
-    border-radius: var(--raio-md);
-    box-shadow: 0 4px 0 var(--cor-shadow);
+    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+    border-radius: var(--raio-cartao, var(--raio-md));
+    box-shadow: var(--cartao-sombra, 0 4px 0 var(--cor-shadow));
   }
 
   .resumoTitulo {

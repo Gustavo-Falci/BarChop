@@ -12,7 +12,12 @@ import {
   personalizada,
   temaPorId,
   aplicarTema,
+  NOVE_CORES,
+  TOKEN_DA_COR,
   type Aparencia,
+  type Botao as EstiloDoBotao,
+  type Cantos,
+  type Cards,
   type IdDoTema,
   type ModoDeCor,
   type NomeDaCor,
@@ -62,6 +67,37 @@ const EFEITO_DO_MODO: Record<ModoDeCor, string> = {
   automatico: "Sua página acompanha o celular ou o computador de cada cliente.",
 };
 
+// O ajuste fino: cada opção com a frase do efeito.
+const CANTOS: { valor: Cantos; rotulo: string; efeito: string }[] = [
+  { valor: "retos", rotulo: "Retos", efeito: "Botões, campos e cards com cantos quase retos." },
+  { valor: "arredondados", rotulo: "Arredondados", efeito: "O arredondado de sempre." },
+  { valor: "pilula", rotulo: "Pílula", efeito: "Botões em pílula e cards bem arredondados." },
+];
+
+const BOTOES: { valor: EstiloDoBotao; rotulo: string; efeito: string }[] = [
+  { valor: "solido", rotulo: "Sólido", efeito: "O botão de agendar cheio, na cor da marca." },
+  { valor: "contorno", rotulo: "Contorno", efeito: "Fundo claro, com a borda e o texto na cor da marca." },
+  { valor: "gradiente", rotulo: "Gradiente", efeito: "Um degradê suave da cor da marca." },
+];
+
+const CARDS: { valor: Cards; rotulo: string; efeito: string }[] = [
+  { valor: "plano", rotulo: "Planos", efeito: "Sem borda nem sombra: cada serviço se separa só pelo fundo." },
+  { valor: "elevado", rotulo: "Elevados", efeito: "Borda e a sombra marcada da casa." },
+  { valor: "borda", rotulo: "Com borda", efeito: "Só a borda, sem sombra." },
+];
+
+const NOME_DA_NOVE: Record<NomeDaCor, string> = {
+  marca: "Marca",
+  secundaria: "Secundária",
+  destaque: "Destaque",
+  fundo: "Fundo",
+  card: "Card",
+  apagado: "Apagado",
+  texto: "Texto",
+  textoDeApoio: "Texto de apoio",
+  linhas: "Linhas",
+};
+
 // A paleta de cada tema puro, pras amostras: calculada uma vez.
 const PALETAS_DOS_TEMAS = Object.fromEntries(
   TEMAS.map((tema) => [tema.id, paletaDaAparencia({ ...APARENCIA_PADRAO, tema: tema.id })])
@@ -100,6 +136,8 @@ function TelaDaAparencia() {
   const [naoGuardado, setNaoGuardado] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [modoDoFundo, setModoDoFundo] = useState<Modo>("claro");
+  const [ajusteAberto, setAjusteAberto] = useState(false);
+  const [modoDasNove, setModoDasNove] = useState<Modo>("claro");
 
   // Sincronizado na renderização, como nas outras áreas (ver
   // DadosDoNegocio). O rascunho guardado, se houver, é o que a tela abre.
@@ -197,6 +235,13 @@ function TelaDaAparencia() {
 
   function escolherFundo(cor: string) {
     mudar(comCor(rascunho, modoDoFundo, "fundo", cor === puro[modoDoFundo].paper ? null : cor));
+  }
+
+  // Uma das nove: igual ao que sairia sem ela, não fica guardada.
+  function escolherUmaDasNove(nome: NomeDaCor, cor: string) {
+    const sem = comCor(rascunho, modoDasNove, nome, null);
+    const daConta = paletaDaAparencia(sem)[modoDasNove][TOKEN_DA_COR[nome]];
+    mudar(comCor(sem, modoDasNove, nome, cor === daConta ? null : cor));
   }
 
   return (
@@ -351,6 +396,81 @@ function TelaDaAparencia() {
               A cor atrás de tudo. Cartões, bordas e textos acompanham o fundo sozinhos, sempre com contraste pra leitura.
             </p>
           </div>
+        </SecaoNumerada>
+
+        <SecaoNumerada
+          numero={4}
+          titulo="Ajuste fino"
+          lado={
+            <button
+              type="button"
+              className={estilos.abrir}
+              aria-expanded={ajusteAberto}
+              aria-controls="ajuste-fino"
+              aria-label={ajusteAberto ? "Fechar o ajuste fino" : "Abrir o ajuste fino"}
+              onClick={() => setAjusteAberto(!ajusteAberto)}
+            >
+              {ajusteAberto ? "Fechar" : "Abrir"}
+            </button>
+          }
+          apoio="Cantos, botão, cards e as cores uma a uma. Quase ninguém precisa — o tema já resolve."
+        >
+          {ajusteAberto ? (
+            <div id="ajuste-fino" className={estilos.ajuste}>
+              <div className={estilos.tresColunas}>
+                <SeletorEmPilulas<Cantos>
+                  nome="cantos"
+                  legenda="Os cantos"
+                  opcoes={CANTOS}
+                  valor={rascunho.cantos}
+                  aoTrocar={(cantos) => mudar({ ...rascunho, cantos })}
+                  efeito={CANTOS.find((item) => item.valor === rascunho.cantos)!.efeito}
+                />
+                <SeletorEmPilulas<EstiloDoBotao>
+                  nome="botao"
+                  legenda="O botão principal"
+                  opcoes={BOTOES}
+                  valor={rascunho.botao}
+                  aoTrocar={(botao) => mudar({ ...rascunho, botao })}
+                  efeito={BOTOES.find((item) => item.valor === rascunho.botao)!.efeito}
+                />
+                <SeletorEmPilulas<Cards>
+                  nome="cards"
+                  legenda="Os cards"
+                  opcoes={CARDS}
+                  valor={rascunho.cards}
+                  aoTrocar={(cards) => mudar({ ...rascunho, cards })}
+                  efeito={CARDS.find((item) => item.valor === rascunho.cards)!.efeito}
+                />
+              </div>
+
+              <div className={estilos.fundo}>
+                <SeletorEmPilulas<Modo>
+                  nome="nove-cores-modo"
+                  legenda="As nove cores de qual modo"
+                  opcoes={[
+                    { valor: "claro", rotulo: "Modo claro" },
+                    { valor: "escuro", rotulo: "Modo escuro" },
+                  ]}
+                  valor={modoDasNove}
+                  aoTrocar={setModoDasNove}
+                />
+                <div className={estilos.nove}>
+                  {NOVE_CORES.map((nome) => (
+                    <CampoDeCor
+                      key={nome}
+                      rotulo={NOME_DA_NOVE[nome]}
+                      valor={paleta[modoDasNove][TOKEN_DA_COR[nome]]}
+                      aoAplicar={(cor) => escolherUmaDasNove(nome, cor)}
+                    />
+                  ))}
+                </div>
+                <p className={estilos.efeito}>
+                  No escuro, a cor da marca acompanha a do claro e o resto vem do tema. Mexa só no que estiver errado.
+                </p>
+              </div>
+            </div>
+          ) : null}
         </SecaoNumerada>
 
         {pendente ? (

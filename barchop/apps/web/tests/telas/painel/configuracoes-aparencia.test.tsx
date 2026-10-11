@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
-import { criarApiClientFalso } from "@barchop/api-client";
+import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { APARENCIA_PADRAO } from "@barchop/formato";
 import { AparenciaDaBarbearia } from "../../../src/telas/painel/configuracoes/AparenciaDaBarbearia";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
@@ -41,7 +41,7 @@ describe("aparência", () => {
     expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument();
     expect(screen.getByRole("banner")).toHaveTextContent("Faltando");
     expect(grupo(/modo padrão/i).getByRole("radio", { name: "Automático" })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /deixar o cliente trocar/i })).not.toBeChecked();
+    expect(grupo(/deixar o cliente trocar/i).getByRole("radio", { name: "Não" })).toBeChecked();
   });
 
   it("logo e capa: diz o que falta e leva pra aba Marca", async () => {
@@ -121,7 +121,7 @@ describe("aparência", () => {
     const falso = await abrir();
 
     await userEvent.click(grupo(/modo padrão/i).getByRole("radio", { name: "Claro" }));
-    await userEvent.click(screen.getByRole("checkbox", { name: /deixar o cliente trocar/i }));
+    await userEvent.click(grupo(/deixar o cliente trocar/i).getByRole("radio", { name: "Sim" }));
 
     await waitFor(async () =>
       expect(await rascunho(falso)).toMatchObject({ modoPadrao: "claro", clienteTrocaModo: true })
@@ -173,6 +173,21 @@ describe("aparência", () => {
     await userEvent.type(campo, "#101820{Enter}");
 
     await waitFor(async () => expect((await rascunho(falso))?.cores).toEqual({ claro: {}, escuro: { fundo: "#101820" } }));
+  });
+
+  it("se a mudança não chega ao servidor, diz isso e não deixa publicar uma versão velha", async () => {
+    const falso = criarApiClientFalso();
+    falso.barbeiro.salvarRascunhoDaAparencia = async () => {
+      throw new ErroDaApi(500, "erro_interno", "falhou");
+    };
+    await abrir(falso);
+
+    await userEvent.click(screen.getByRole("button", { name: "Oceano" }));
+
+    expect(await screen.findByText(/não guardado/i)).toBeInTheDocument();
+    expect(screen.queryByText(/rascunho guardado/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Publicar" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Tentar de novo" })).toBeInTheDocument();
   });
 
   it("quem não é dono não mexe", async () => {

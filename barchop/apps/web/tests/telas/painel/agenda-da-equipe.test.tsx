@@ -155,3 +155,68 @@ describe("painel do dia da equipe", () => {
     expect(screen.queryByText(/com rafael/i)).not.toBeInTheDocument();
   });
 });
+
+describe("agenda da equipe na semana", () => {
+  beforeEach(() => {
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/agenda",
+      query: { vista: "semana", data: "2026-09-08" },
+    });
+  });
+
+  function comAlmocoDeTodos() {
+    const falso = semear();
+    const jornada = [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+      diaSemana,
+      modo: "barbearia" as const,
+      horaInicio: null,
+      horaFim: null,
+      pausaInicio: diaSemana === 2 ? "14:00" : null,
+      pausaFim: diaSemana === 2 ? "15:00" : null,
+    }));
+    falso.estado.jornadas!.bb1 = jornada;
+    falso.estado.jornadas!.m2 = jornada;
+    return falso;
+  }
+
+  it("a pausa de todos na terça fica sombreada na coluna da terça", async () => {
+    montarPainel(<Agenda agora={AGORA} />, comAlmocoDeTodos());
+
+    expect(await screen.findByText("Pausa")).toBeInTheDocument();
+    // Seis dias abertos oferecem 14:00 (domingo fecha); a terça não.
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "14:00" })).toHaveLength(5));
+  });
+
+  it("pede a ocupação dos sete dias da semana", async () => {
+    const falso = comAlmocoDeTodos();
+    const original = falso.barbeiro.ocupacaoDoDia;
+    const pedidas: string[] = [];
+    falso.barbeiro.ocupacaoDoDia = async (data: string) => {
+      pedidas.push(data);
+      return original(data);
+    };
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    await screen.findByText("Pausa");
+    expect([...pedidas].sort()).toEqual([
+      "2026-09-06",
+      "2026-09-07",
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-12",
+    ]);
+  });
+
+  it("se a ocupação falhar, a semana aparece com o horário da casa", async () => {
+    const falso = comAlmocoDeTodos();
+    falso.barbeiro.ocupacaoDoDia = async () => {
+      throw new Error("fora do ar");
+    };
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "14:00" })).toHaveLength(6));
+    expect(screen.queryByText("Pausa")).not.toBeInTheDocument();
+  });
+});

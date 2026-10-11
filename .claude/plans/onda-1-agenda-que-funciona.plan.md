@@ -4,7 +4,30 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (fim de 2026-10-09 — categoria fechada, Inter local e telas sem caixas, tudo em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-11 — editar membro sem caixas, tudo em produção) — vale mais que as seções abaixo
+
+**Estado:** `main` = **produção** = `0e458b6` (até o #110; deploy só do web, sem migração, conferido no ar em 2026-10-11: `/health` ok e os textos novos "perde o acesso ao painel" e "Reativar devolve os dois" no chunk de `/painel/equipe/[id]`). Nada pela metade em branch nenhuma. Nenhuma migração nova desde `20261011120000_categoria_fechada`.
+
+**Feito em 2026-10-10 (#110):**
+- **Editar membro sem caixas** (pedido do dono): topo no desenho do detalhe do cliente ("← Equipe", nome, selo da situação, resumo do papel); duas colunas sem caixas — dados e jornada à esquerda, foto, serviços e situação à direita (uma coluna no celular). **Cada grupo salva sozinho** (dados, jornada, serviços), com Salvar/Descartar só quando aquele grupo mudou. Situação com a frase do efeito antes de Reenviar/Desativar. Convidar membro numa coluna só. Peça nova `componentes/Grupo` (a `Secao` sem moldura; as Configurações seguem com a `Secao`).
+- **Bug corrigido (estava em produção):** depois de "Salvar jornada"/"Salvar serviços" a tela voltava pro valor antigo (a API gravava certo): o GET antigo sobrescrevia a resposta do salvar. Agora a última resposta do GET e a base gravada ficam separadas.
+
+**G3 adiado:** o dono decidiu (2026-10-08) que a GR Barber ainda não entra em produção. Não propor até ele pedir.
+
+**Ambiente local:** ao trocar de máquina, `migrate deploy` nos bancos dev e test (última migração: `20261011120000_categoria_fechada`).
+
+**O que falta (perguntar ao dono a ordem):**
+1. Mais telas de UI/UX — o dono manda print por print ("não divida em quadrados").
+2. Conferir no navegador o que só os testes cobriram: capa (Configurações) e foto do membro com o `CampoDeImagem` novo, a logo no painel (aba Marca), a tela de serviço novo e o editar membro do #110 em produção.
+3. G4 — docs da onda 1.
+4. Sombrear também a vista de semana da agenda (hoje só o dia; precisa de 7 consultas ou rota de período).
+5. `barbearia-teste` em produção: apagar ou manter.
+6. Onda 2 (dinheiro): caixa, cobrança, planos — começar pelo PRD (`ecc:plan-prd`); preços/plano grátis do site entram aqui.
+7. Soltas: razão social/CNPJ/DPO "a preencher" (`apps/web/src/site/controlador.ts`); imagem de Open Graph da home; pergunta do #89 (só hora cheia clicável na grade?).
+
+**Combinados:** um PR por item, TDD RED → GREEN, português; push, PR e merge por mim só com "pode mergear" do dono no turno ("aprovado" é aprovação visual). Telas sem caixas: colunas sem moldura com título pequeno, linhas finas, pílulas no lugar de select/checkbox de poucas opções, Salvar/Descartar só quando muda (por grupo), frase do efeito antes da ação; conferir no navegador em 375 e 1440. Deploy: o dono roda na VM sozinho e já sabe os comandos (não passar), rebuildando o `migrar` quando houver migração; eu confiro com curl e grep nos chunks.
+
+## RETOMAR AQUI (fim de 2026-10-09 — categoria fechada, Inter local e telas sem caixas, tudo em produção) — histórico
 
 **Estado:** `main` = **produção** = `4874b7c` (até o #108; cada deploy conferido no ar com curl e grep nos chunks). Nada pela metade em branch nenhuma. A migração `20261011120000_categoria_fechada` está aplicada em produção e no banco local de desenvolvimento.
 

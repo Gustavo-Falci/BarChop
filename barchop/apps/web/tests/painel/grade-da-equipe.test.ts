@@ -133,10 +133,10 @@ describe("gradeDeTempo com o expediente", () => {
       agendamentos: [],
       agora: AGORA,
       profissionais: EQUIPE,
-      expediente: [
+      expediente: { [TERCA]: [
         { id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } },
         { id: "m2", janela: aberto, pausa: null },
-      ],
+      ] },
     });
 
     const [rafael, ana] = grade.colunas;
@@ -155,10 +155,10 @@ describe("gradeDeTempo com o expediente", () => {
       agendamentos: [],
       agora: AGORA,
       profissionais: EQUIPE,
-      expediente: [
+      expediente: { [TERCA]: [
         { id: "bb1", janela: aberto, pausa: null },
         { id: "m2", janela: { abre: "13:00", fecha: "17:00" }, pausa: null },
-      ],
+      ] },
     });
 
     const ana = grade.colunas[1];
@@ -178,10 +178,10 @@ describe("gradeDeTempo com o expediente", () => {
       agendamentos: [],
       agora: AGORA,
       profissionais: EQUIPE,
-      expediente: [
+      expediente: { [TERCA]: [
         { id: "bb1", janela: aberto, pausa: null },
         { id: "m2", janela: null, pausa: null },
-      ],
+      ] },
     });
 
     expect(grade.colunas[1].fechado).toBe(true);
@@ -196,10 +196,10 @@ describe("gradeDeTempo com o expediente", () => {
       agendamentos: [],
       agora: AGORA,
       profissionais: EQUIPE,
-      expediente: [
+      expediente: { [TERCA]: [
         { id: "bb1", janela: { abre: "08:00", fecha: "18:00" }, pausa: null },
         { id: "m2", janela: { abre: "08:00", fecha: "18:00" }, pausa: null },
-      ],
+      ] },
     });
 
     expect(grade.minutoInicial).toBe(8 * 60);
@@ -212,7 +212,7 @@ describe("gradeDeTempo com o expediente", () => {
       horarios: HORARIOS,
       agendamentos: [],
       agora: AGORA,
-      expediente: [{ id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } }],
+      expediente: { [TERCA]: [{ id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } }] },
     });
 
     expect(grade.colunas[0].fechadas.map((f) => f.rotulo)).toEqual(["Pausa"]);
@@ -227,7 +227,7 @@ describe("gradeDeTempo com o expediente", () => {
       horarios: HORARIOS,
       agendamentos: [],
       agora: AGORA,
-      expediente: [{ id: "m2", janela: aberto, pausa: null }],
+      expediente: { [TERCA]: [{ id: "m2", janela: aberto, pausa: null }] },
       bloqueios: [bloqueio({ horaInicio: "15:00", horaFim: "16:00", motivo: "Médico" })],
     });
 

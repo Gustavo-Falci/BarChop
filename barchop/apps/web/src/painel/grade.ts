@@ -168,14 +168,16 @@ export function gradeDeTempo(entrada: {
   // o primeiro de `dias`), com os agendamentos e bloqueios de cada um.
   profissionais?: { id: string; nome: string }[];
   bloqueios?: BloqueioSerializado[];
-  // Só na vista de dia: o expediente de cada profissional. A coluna de
-  // um profissional usa o dele; a coluna única (quem trabalha sozinho,
-  // ou o profissional vendo a própria agenda) usa o único que vier.
-  // Ausente, a grade segue só o horário da casa, como antes.
-  expediente?: ExpedienteDoProfissional[];
+  // O expediente de cada profissional, por data. A coluna de um
+  // profissional usa o dele; a coluna única (quem trabalha sozinho, ou o
+  // profissional vendo a própria agenda) usa o único que vier. Dia sem
+  // expediente segue só o horário da casa, como antes.
+  expediente?: Record<string, ExpedienteDoProfissional[]>;
 }): GradeDeTempo {
   const { dias, horarios, agendamentos, agora, profissionais, bloqueios = [], expediente } = entrada;
-  const janelas = (expediente ?? []).flatMap((e) => (e.janela ? [e.janela] : []));
+  const janelas = dias
+    .flatMap((data) => expediente?.[data] ?? [])
+    .flatMap((e) => (e.janela ? [e.janela] : []));
 
   // Só o que pertence aos dias mostrados: quem chama pode ter buscado um
   // intervalo maior (o mês busca a grade inteira).
@@ -257,12 +259,13 @@ export function gradeDeTempo(entrada: {
     const doDia = doPeriodo
       .filter((a) => a.data === data && (!barbeiroId || a.barbeiro.id === barbeiroId))
       .sort((um, outro) => um.horaInicio.localeCompare(outro.horaInicio));
-    const doExpediente = !expediente
+    const expedienteDoDia = expediente?.[data];
+    const doExpediente = !expedienteDoDia
       ? undefined
       : barbeiroId
-        ? expediente.find((e) => e.id === barbeiroId)
-        : expediente.length === 1
-          ? expediente[0]
+        ? expedienteDoDia.find((e) => e.id === barbeiroId)
+        : expedienteDoDia.length === 1
+          ? expedienteDoDia[0]
           : undefined;
     // A coluna única (quem trabalha sozinho) é de um profissional só: os
     // bloqueios dele entram nela como entram nas colunas da equipe.

@@ -250,7 +250,10 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             agora,
             profissionais,
             bloqueios: bloqueios.dados ?? [],
-            expediente: vista === "dia" ? ocupacao.dados?.profissionais : undefined,
+            expediente:
+              vista === "dia" && ocupacao.dados
+                ? { [data]: ocupacao.dados.profissionais }
+                : undefined,
           })}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
           aoCriar={(dia, hora, barbeiroId) =>

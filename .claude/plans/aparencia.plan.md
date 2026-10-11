@@ -1,5 +1,7 @@
 # Plan: Aparência — o visual da página pública por barbearia
 
+**Status (2026-10-11): concluído, A a H em produção (#121–#128).** Fora: Histórico de alterações (adiado pelo dono).
+
 **Referência:** o guia "Barbeiro.app — Tela Aparência" e as 21 prints que o dono mandou em 2026-10-11 (ficam fora do repo, em Downloads). A referência é cheia de caixas; aqui vale o combinado da casa: sem caixas, título pequeno, pílulas, Salvar/Publicar só quando muda.
 
 **Rota:** `/painel/configuracoes/aparencia` (só o dono). Nova área `aparencia` em `AREAS_DE_CONFIGURACAO`, no grupo "Canais com clientes" — o índice passa de 5 pra 6 áreas.

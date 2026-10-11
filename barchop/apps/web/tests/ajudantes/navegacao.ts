@@ -13,6 +13,7 @@ export const navegacaoFalsa = {
   query: new URLSearchParams(),
   push: vi.fn((_destino: string) => {}),
   replace: vi.fn((_destino: string) => {}),
+  back: vi.fn(() => {}),
   redefinir(
     entrada: {
       slug?: string;
@@ -27,5 +28,6 @@ export const navegacaoFalsa = {
     this.query = new URLSearchParams(entrada.query ?? {});
     this.push.mockClear();
     this.replace.mockClear();
+    this.back.mockClear();
   },
 };

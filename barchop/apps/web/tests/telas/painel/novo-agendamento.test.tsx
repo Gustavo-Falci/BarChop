@@ -237,9 +237,50 @@ describe("novo agendamento no painel", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "10 de setembro" })).toBeEnabled());
     await userEvent.click(screen.getByRole("button", { name: "10 de setembro" }));
 
-    const ultimaChamada = navegacaoFalsa.push.mock.calls.at(-1);
+    const ultimaChamada = navegacaoFalsa.replace.mock.calls.at(-1);
     expect(ultimaChamada?.[0]).toContain("data=2026-09-10");
     expect(ultimaChamada?.[0]).not.toContain("hora=");
+  });
+
+  describe("cancelar", () => {
+    it("Cancelar volta pra tela anterior sem criar nada", async () => {
+      // A tela abre da agenda, do Hoje, da lista e do detalhe do
+      // cliente: um destino fixo erraria em quase todos. Voltar no
+      // histórico leva pra onde a pessoa estava.
+      const falso = semear();
+      const criar = vi.fn(falso.barbeiro.criarAgendamento);
+      falso.barbeiro.criarAgendamento = criar;
+      montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+      await userEvent.click(await screen.findByRole("button", { name: /^cancelar$/i }));
+
+      expect(navegacaoFalsa.back).toHaveBeenCalledTimes(1);
+      expect(criar).not.toHaveBeenCalled();
+    });
+
+    it("escolher dia e horário não empilha histórico, senão o Cancelar voltaria pra esta mesma tela", async () => {
+      const falso = semear();
+      falso.estado.diasComVaga = { "2026-09-10": true };
+      montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+      await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
+      await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
+      await abrirPasso("Data");
+      await waitFor(() => expect(screen.getByRole("button", { name: "10 de setembro" })).toBeEnabled());
+      await userEvent.click(screen.getByRole("button", { name: "10 de setembro" }));
+      // Escolher o dia já abre o passo do horário.
+      await userEvent.click(await screen.findByRole("button", { name: "11:30" }));
+
+      expect(navegacaoFalsa.push).not.toHaveBeenCalled();
+      expect(navegacaoFalsa.replace).toHaveBeenCalledTimes(2);
+    });
+
+    it("Cancelar fica junto do Agendar, no fecho", async () => {
+      montarPainel(<NovoAgendamento agora={AGORA} />, semear());
+
+      const fecho = await screen.findByTestId("fecho");
+      expect(fecho).toContainElement(screen.getByRole("button", { name: /^cancelar$/i }));
+    });
   });
 
   // O quarto caminho de salvamento do painel (ao lado dos três save

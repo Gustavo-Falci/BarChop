@@ -18,7 +18,7 @@ const rotadorFalso = {
   replace: navegacaoFalsa.replace,
   refresh: vi.fn(),
   prefetch: vi.fn(),
-  back: vi.fn(),
+  back: navegacaoFalsa.back,
   forward: vi.fn(),
 };
 

@@ -10,6 +10,7 @@ import {
   normalizarAparencia,
   paletaDaAparencia,
   personalizada,
+  textoDaMarca,
   type Aparencia,
 } from "../src/aparencia";
 
@@ -144,6 +145,9 @@ describe("o catálogo", () => {
         expect(contraste(cores.placeholder, cores.surface)).toBeGreaterThanOrEqual(4.5);
         expect(contraste(cores.onAccent, cores.accent)).toBeGreaterThanOrEqual(4.5);
         expect(contraste(cores.accentOnDark, cores.dark)).toBeGreaterThanOrEqual(4.5);
+        // A marca como texto (o botão Contorno) se lê no fundo e no card.
+        expect(contraste(textoDaMarca(cores), cores.paper)).toBeGreaterThanOrEqual(4.5);
+        expect(contraste(textoDaMarca(cores), cores.surface)).toBeGreaterThanOrEqual(4.5);
         // Os fundos de apoio também levam texto.
         expect(contraste(cores.ink, cores.paleYellow)).toBeGreaterThanOrEqual(4.5);
         expect(contraste(cores.ink, cores.paperSoft)).toBeGreaterThanOrEqual(4.5);
@@ -180,6 +184,30 @@ describe("a cor da marca", () => {
       com({ cores: { claro: { marca: "#2563EB" }, escuro: { marca: "#60A5FA" } } })
     );
     expect(paleta.escuro.accent).toBe("#60A5FA");
+  });
+
+  it.each(CORES_DA_MARCA.map((cor) => [cor]))(
+    "herdada no escuro, %s aparece no fundo escuro (pelo menos 3:1)",
+    (cor) => {
+      // Marca quase preta (Carvão) sobre o fundo escuro dava 1:1 e o
+      // botão principal sumia.
+      const escuro = paletaDaAparencia(com({ cores: { claro: { marca: cor }, escuro: {} } })).escuro;
+      expect(contraste(escuro.accent, escuro.paper)).toBeGreaterThanOrEqual(3);
+      expect(contraste(escuro.onAccent, escuro.accent)).toBeGreaterThanOrEqual(4.5);
+      expect(contraste(textoDaMarca(escuro), escuro.paper)).toBeGreaterThanOrEqual(4.5);
+    }
+  );
+
+  it("a marca do escuro escolhida à mão fica como o dono pôs", () => {
+    const escuro = paletaDaAparencia(com({ cores: { claro: {}, escuro: { marca: "#1C1C1C" } } })).escuro;
+    expect(escuro.accent).toBe("#1C1C1C");
+  });
+
+  it("todo tema, no escuro, tem a marca visível no fundo", () => {
+    for (const tema of TEMAS) {
+      const escuro = paletaDaAparencia(com({ tema: tema.id })).escuro;
+      expect(contraste(escuro.accent, escuro.paper), tema.id).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it("só a marca muda: o fundo continua o do tema", () => {

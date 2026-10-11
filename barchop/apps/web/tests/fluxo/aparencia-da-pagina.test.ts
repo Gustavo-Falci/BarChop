@@ -54,6 +54,47 @@ describe("cssDaAparencia", () => {
   });
 });
 
+describe("ajuste fino no CSS", () => {
+  // Cantos, botão e cards viram variáveis que os componentes leem com o
+  // valor de hoje como reserva: sem elas, nada muda (nem no painel).
+  it("os padrões (arredondados, sólido, elevado) não geram nada", () => {
+    expect(cssDaAparencia(com({ cantos: "arredondados", botao: "solido", cards: "elevado" }))).toBe("");
+  });
+
+  it("cantos retos e em pílula", () => {
+    const retos = cssDaAparencia(com({ cantos: "retos" }));
+    expect(retos).toContain("--raio-botao: 4px;");
+    expect(retos).toContain("--raio-cartao: 4px;");
+    expect(retos).toContain("--raio-campo: 4px;");
+    const pilula = cssDaAparencia(com({ cantos: "pilula" }));
+    expect(pilula).toContain("--raio-botao: 999px;");
+    expect(pilula).toContain("--raio-cartao: 20px;");
+  });
+
+  it("botão em contorno: fundo do card e a marca como texto, por modo", () => {
+    const css = cssDaAparencia(com({ botao: "contorno" }));
+    expect(css).toContain("--botao-fundo: var(--cor-surface);");
+    expect(css).toContain("--botao-texto: var(--cor-accent-text);");
+    expect(css).toMatch(/--cor-accent-text: #[0-9A-F]{6};/);
+    expect(css).toContain('[data-theme="dark"] {');
+  });
+
+  it("botão em gradiente", () => {
+    const css = cssDaAparencia(com({ botao: "gradiente" }));
+    expect(css).toContain("--botao-fundo: linear-gradient(135deg, var(--cor-accent), var(--cor-accent-fim));");
+    expect(css).toMatch(/--cor-accent-fim: #[0-9A-F]{6};/);
+  });
+
+  it("cards planos e com borda", () => {
+    const plano = cssDaAparencia(com({ cards: "plano" }));
+    expect(plano).toContain("--cartao-borda: transparent;");
+    expect(plano).toContain("--cartao-sombra: none;");
+    const borda = cssDaAparencia(com({ cards: "borda" }));
+    expect(borda).toContain("--cartao-sombra: none;");
+    expect(borda).not.toContain("--cartao-borda: transparent;");
+  });
+});
+
 describe("scriptDoModo", () => {
   beforeEach(() => {
     document.documentElement.removeAttribute("data-theme");

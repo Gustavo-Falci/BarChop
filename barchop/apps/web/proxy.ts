@@ -51,6 +51,10 @@ export const config = {
   // Fora: os arquivos do Next e os estáticos da raiz. Não se exclui
   // "todo caminho com ponto", como nos exemplos da documentação: o token
   // do link do lembrete é um JWT, cheio de pontos, e precisa ser
-  // reescrito no host da barbearia.
-  matcher: ["/((?!_next/|__next|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$).*)"],
+  // reescrito no host da barbearia. A imagem de Open Graph do site sai
+  // em /opengraph-image-<hash>, que passa no formato de slug: sem ficar
+  // de fora, iria pra opengraph-image-<hash>.barchop.com.br.
+  matcher: [
+    "/((?!_next/|__next|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$|opengraph-image$|opengraph-image-[a-z0-9]+$).*)",
+  ],
 };

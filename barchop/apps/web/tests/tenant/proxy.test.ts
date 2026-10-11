@@ -106,4 +106,18 @@ describe("o matcher do proxy", () => {
     expect(roda("/_next/image")).toBe(false);
     expect(roda("/favicon.ico")).toBe(false);
   });
+
+  it("não roda na imagem de Open Graph, que sem isso pareceria um slug de barbearia", () => {
+    // O Next serve a imagem em /opengraph-image-<hash>. No host do site,
+    // esse caminho passa no formato de slug e iria pra
+    // opengraph-image-<hash>.barchop.com.br — a prévia do link sairia
+    // sem imagem.
+    expect(roda("/opengraph-image-pwu6ef")).toBe(false);
+    expect(roda("/opengraph-image")).toBe(false);
+  });
+
+  it("um slug que só começa parecido continua passando pelo proxy", () => {
+    expect(roda("/opengraph-imagem")).toBe(true);
+    expect(roda("/opengraph-image-barber/agendar")).toBe(true);
+  });
 });

@@ -39,6 +39,10 @@ const SO_DO_DONO = [
   { method: "DELETE", url: "/barbearias/me/capa" },
   { method: "POST", url: `/equipe/${ID_QUALQUER}/foto` },
   { method: "DELETE", url: `/equipe/${ID_QUALQUER}/foto` },
+  // A Aparência: rascunho, publicar e descartar.
+  { method: "PUT", url: "/barbearias/me/aparencia/rascunho" },
+  { method: "POST", url: "/barbearias/me/aparencia/publicar" },
+  { method: "DELETE", url: "/barbearias/me/aparencia/rascunho" },
 ] as const;
 
 async function prepararEquipe(app: App) {

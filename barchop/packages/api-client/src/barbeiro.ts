@@ -5,6 +5,7 @@ import type {
   CategoriaDeServico,
   FormatoDaLogo,
   RegrasDeAgendamento,
+  AparenciaDaPagina,
   BarbeariaDoPainel,
   BloqueioSerializado,
   ClienteSerializado,
@@ -501,6 +502,25 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     async removerLogo(): Promise<void> {
       await requisicao("/barbearias/me/logo", { metodo: "DELETE", comToken: true });
+    },
+
+    // A Aparência: o rascunho fica no servidor até publicar ou
+    // descartar. Rascunho igual ao que está no ar volta como null.
+    salvarRascunhoDaAparencia(aparencia: AparenciaDaPagina): Promise<BarbeariaDoPainel> {
+      return requisicao("/barbearias/me/aparencia/rascunho", {
+        metodo: "PUT",
+        corpo: aparencia,
+        comToken: true,
+      });
+    },
+
+    // Sem corpo: publica o rascunho guardado. Sem rascunho, 409.
+    publicarAparencia(): Promise<BarbeariaDoPainel> {
+      return requisicao("/barbearias/me/aparencia/publicar", { metodo: "POST", comToken: true });
+    },
+
+    descartarRascunhoDaAparencia(): Promise<BarbeariaDoPainel> {
+      return requisicao("/barbearias/me/aparencia/rascunho", { metodo: "DELETE", comToken: true });
     },
 
     async enviarFotoDoMembro(id: string, arquivo: Blob): Promise<string> {

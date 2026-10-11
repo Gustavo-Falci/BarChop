@@ -24,13 +24,17 @@ Barbearia que nunca abriu a Aparência continua **exatamente** como hoje: amarel
 | # | Marco | Toca | Migração |
 |---|-------|------|----------|
 | A | Paleta pura + catálogo dos temas (BarChop + os da referência, descrições nossas) | pacote | — |
-| B | Coluna `aparencia`, rota GET/PUT na API, área `aparencia` | API, banco, formato | **sim** (`migrar` rebuildado) |
+| B | Colunas `aparencia` e `aparencia_rascunho`; rotas de rascunho, publicar e descartar; aparência na leitura pública e do painel; cliente e dublê | API, banco, api-client | **sim** (`migrar` rebuildado) |
 | C | Página pública aplica a aparência publicada + botão claro/escuro do visitante | web público | — |
-| D | Tela Aparência: blocos 1 (atalhos pra Marca), 2 (temas, modo) e 3 (cor da marca, fundo) + barra Publicar + entrada no índice | web painel | — |
+| D | Tela Aparência: blocos 1 (atalhos pra Marca), 2 (temas, modo) e 3 (cor da marca, fundo) + barra Publicar + área `aparencia` (formato, API marca no publicar, entrada no índice) | web painel, formato, API | — |
 | E | Prévia ao vivo em iframe (celular/computador, claro/escuro, ampliar, abrir a página) | web | — |
 | F | A letra: as seis fontes + títulos em outra fonte + tamanho do texto | web, `font/` | — |
 | G | Ajuste fino: cantos, botão principal, cards, as nove cores | web | — |
 | H | Layout dos serviços: abas de categoria × lista agrupada (salva na hora) | web, API | talvez |
+
+**Armadilhas entre marcos (anotadas no B):**
+- **H — o que salva na hora:** o rascunho é sempre o objeto inteiro. Se o layout dos serviços (ou qualquer outra coisa "salva na hora") for direto pro `aparencia` com um rascunho pendente, o próximo Publicar devolve o valor antigo. Quem salva direto grava também no rascunho pendente, com teste "salvar layout com rascunho pendente → publicar mantém o layout novo".
+- **C — cache:** o layout público lê o perfil com `fetch` num server component, e o cache do `fetch` muda nesta versão do Next (ver `node_modules/next/dist/docs`). Ler antes do C; a conferência é: publicar e, num reload simples da página pública, ver o visual novo.
 
 **Fora por enquanto:** Histórico de alterações (não existe em área nenhuma; seria infraestrutura própria, vale pras Configurações todas).
 

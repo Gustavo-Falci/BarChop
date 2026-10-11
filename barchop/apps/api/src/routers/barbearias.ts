@@ -1,7 +1,17 @@
-import { prisma } from "@barchop/database";
+import { Prisma, prisma } from "@barchop/database";
 import {
   ANTECEDENCIAS_MINUTOS,
+  BOTOES,
+  CANTOS,
+  CARDS,
   COMODIDADES,
+  FONTES_DO_TEXTO,
+  FONTES_DOS_TITULOS,
+  IDS_DOS_TEMAS,
+  LAYOUTS_DOS_SERVICOS,
+  MODOS_DE_COR,
+  NOVE_CORES,
+  TAMANHOS_DO_TEXTO,
   FORMAS_DE_PAGAMENTO,
   FORMATOS_DA_LOGO,
   INTERVALOS_MINUTOS,
@@ -10,7 +20,9 @@ import {
   PRAZOS_HORAS,
   areasTocadas,
   juntarAreas,
+  normalizarAparencia,
 } from "@barchop/formato";
+import { conflito } from "../lib/erro-http";
 import { PODE_ATENDER } from "../lib/disponibilidade";
 import { enfileirarLembretesFuturos } from "../lib/lembrete";
 import { normalizarTelefone } from "../lib/telefone";
@@ -84,6 +96,57 @@ const corpoPatchBarbearia = {
   },
 } as const;
 
+// A Aparência inteira, como a tela manda: todo campo obrigatório e nada
+// a mais. As cores vão parar num <style> da página pública, então o hex
+// é estrito (6 dígitos, nada depois) — o que não casa nem chega ao banco.
+const PADRAO_HEX = "^#[0-9A-Fa-f]{6}$";
+const coresDoModo = {
+  type: "object",
+  additionalProperties: false,
+  properties: Object.fromEntries(NOVE_CORES.map((nome) => [nome, { type: "string", pattern: PADRAO_HEX }])),
+} as const;
+const corpoAparencia = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "tema",
+    "modoPadrao",
+    "clienteTrocaModo",
+    "fonte",
+    "fonteDosTitulos",
+    "tamanhoDoTexto",
+    "cantos",
+    "botao",
+    "cards",
+    "cores",
+    "layoutDosServicos",
+  ],
+  properties: {
+    tema: { type: "string", enum: [...IDS_DOS_TEMAS] },
+    modoPadrao: { type: "string", enum: [...MODOS_DE_COR] },
+    clienteTrocaModo: { type: "boolean" },
+    fonte: { type: "string", enum: [...FONTES_DO_TEXTO] },
+    fonteDosTitulos: { type: ["string", "null"], enum: [...FONTES_DOS_TITULOS, null] },
+    tamanhoDoTexto: { type: "string", enum: [...TAMANHOS_DO_TEXTO] },
+    cantos: { type: "string", enum: [...CANTOS] },
+    botao: { type: "string", enum: [...BOTOES] },
+    cards: { type: "string", enum: [...CARDS] },
+    cores: {
+      type: "object",
+      additionalProperties: false,
+      required: ["claro", "escuro"],
+      properties: { claro: coresDoModo, escuro: coresDoModo },
+    },
+    layoutDosServicos: { type: "string", enum: [...LAYOUTS_DOS_SERVICOS] },
+  },
+} as const;
+
+// Comparar duas aparências: normalizadas, as chaves saem sempre na mesma
+// ordem, e o JSON basta.
+function mesmaAparencia(a: unknown, b: unknown): boolean {
+  return JSON.stringify(normalizarAparencia(a)) === JSON.stringify(normalizarAparencia(b));
+}
+
 export function registrarRotasBarbeariasProtegidas(app: App): void {
   // A leitura do painel. Antes dela, Configurações lia a própria
   // barbearia pela rota pública por slug — o painel dependia de uma
@@ -131,6 +194,63 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
         await enfileirarLembretesFuturos({ fila: app.fila, log: request.log }, barbearia.id);
       }
 
+      return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
+    }
+  );
+
+  // A Aparência (plano aparencia.plan.md, marco B). O rascunho fica no
+  // servidor até o dono publicar ou descartar (decisão do dono,
+  // 2026-10-11); a página pública só lê o que está no ar.
+  app.put(
+    "/barbearias/me/aparencia/rascunho",
+    { schema: { body: corpoAparencia }, onRequest: exigirPapel("dono") },
+    async (request) => {
+      const id = request.user.barbeariaId;
+      const { aparencia } = await prisma.barbearia.findUniqueOrThrow({ where: { id }, select: { aparencia: true } });
+      // Hex em maiúsculas e as chaves na ordem de sempre. Igual ao que
+      // está no ar = nada pendente.
+      const rascunho = normalizarAparencia(request.body);
+      const barbearia = await prisma.barbearia.update({
+        where: { id },
+        data: {
+          aparenciaRascunho: mesmaAparencia(rascunho, aparencia)
+            ? Prisma.DbNull
+            : (rascunho as unknown as Prisma.InputJsonObject),
+        },
+      });
+      return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
+    }
+  );
+
+  app.post(
+    "/barbearias/me/aparencia/publicar",
+    { onRequest: exigirPapel("dono") },
+    async (request) => {
+      const id = request.user.barbeariaId;
+      const { aparenciaRascunho } = await prisma.barbearia.findUniqueOrThrow({
+        where: { id },
+        select: { aparenciaRascunho: true },
+      });
+      if (aparenciaRascunho === null) throw conflito("não há rascunho da aparência para publicar");
+      const barbearia = await prisma.barbearia.update({
+        where: { id },
+        data: {
+          aparencia: normalizarAparencia(aparenciaRascunho) as unknown as Prisma.InputJsonObject,
+          aparenciaRascunho: Prisma.DbNull,
+        },
+      });
+      return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
+    }
+  );
+
+  app.delete(
+    "/barbearias/me/aparencia/rascunho",
+    { onRequest: exigirPapel("dono") },
+    async (request) => {
+      const barbearia = await prisma.barbearia.update({
+        where: { id: request.user.barbeariaId },
+        data: { aparenciaRascunho: Prisma.DbNull },
+      });
       return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
     }
   );

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
-import { REGRAS_PADRAO } from "@barchop/formato";
+import { APARENCIA_PADRAO, REGRAS_PADRAO } from "@barchop/formato";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
 
@@ -43,6 +43,8 @@ describe("PATCH /barbearias/me", () => {
       // Nome, endereço e sobre são Dados do negócio; telefone é
       // Comunicação (painel v2).
       areasDecididas: ["dados_do_negocio", "comunicacao"],
+      aparencia: APARENCIA_PADRAO,
+      aparenciaRascunho: null,
       // As regras de agendamento, nos padrões (painel v2, marco 3).
       ...REGRAS_PADRAO,
     });

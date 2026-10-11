@@ -12,7 +12,7 @@ import type {
   HorarioSerializado,
   ServicoSerializado,
 } from "@barchop/types";
-import { juntarAreas } from "@barchop/formato";
+import { juntarAreas, normalizarAparencia } from "@barchop/formato";
 import { dateParaData, dateParaHora } from "./horas";
 import { regrasDe } from "./regras";
 
@@ -51,6 +51,8 @@ export function serializarBarbearia(barbearia: {
   comodidades: string[];
   formasDePagamento: string[];
   capaChave: string | null;
+  // JSON da coluna; quem lê normaliza (pode vir de um formato antigo).
+  aparencia: unknown;
 } & Parameters<typeof regrasDe>[0],
 // A URL pública de uma chave do armazenamento (app.armazenamento.urlPublica).
 urlDaImagem: (chave: string) => string
@@ -73,6 +75,8 @@ urlDaImagem: (chave: string) => string
     comodidades: barbearia.comodidades,
     formasDePagamento: barbearia.formasDePagamento,
     capaUrl: barbearia.capaChave ? urlDaImagem(barbearia.capaChave) : null,
+    // Sempre inteira: sem nada publicado, o padrão (o tema BarChop).
+    aparencia: normalizarAparencia(barbearia.aparencia),
     // As regras de agendamento (painel v2, marco 3): a página pública
     // também lê — a tela do cliente mostra os prazos.
     ...regrasDe(barbearia),
@@ -86,6 +90,7 @@ export function serializarBarbeariaDoPainel(
     lembreteAntecedenciaHoras: number;
     lembreteAtivo: boolean;
     areasDecididas: string[];
+    aparenciaRascunho: unknown;
   },
   urlDaImagem: (chave: string) => string
 ): BarbeariaDoPainel {
@@ -96,6 +101,9 @@ export function serializarBarbeariaDoPainel(
     lembreteAtivo: barbearia.lembreteAtivo,
     // juntarAreas com nada: ordem do índice e só nomes que ainda são área.
     areasDecididas: juntarAreas(barbearia.areasDecididas, []),
+    // O rascunho é só do painel: a página pública não o recebe.
+    aparenciaRascunho:
+      barbearia.aparenciaRascunho == null ? null : normalizarAparencia(barbearia.aparenciaRascunho),
   };
 }
 

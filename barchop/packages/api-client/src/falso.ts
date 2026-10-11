@@ -1,4 +1,5 @@
 import {
+  APARENCIA_PADRAO,
   CATEGORIAS_DE_SERVICO,
   COMODIDADES,
   FORMAS_DE_PAGAMENTO,
@@ -6,10 +7,12 @@ import {
   REGRAS_PADRAO,
   areasTocadas,
   juntarAreas,
+  normalizarAparencia,
   slugReservado,
   type AreaDeConfiguracao,
 } from "@barchop/formato";
 import type {
+  AparenciaDaPagina,
   FaixaDeCliente,
   AgendamentoComCliente,
   AgendamentoDoLembrete,
@@ -159,6 +162,9 @@ export interface EstadoFalso {
   // As áreas das Configurações já salvas (painel v2). Sem semente,
   // nenhuma — como numa barbearia nova.
   areasDecididas?: AreaDeConfiguracao[];
+  // O rascunho da Aparência que o dono ainda não publicou. Sem semente,
+  // nenhum. O que está no ar mora no `perfil`, como na página pública.
+  aparenciaRascunho?: AparenciaDaPagina | null;
   // Os tokens do link do lembrete que o dublê reconhece, por token o id
   // do agendamento. Qualquer outro é 401, como na API; os vencidos, 410.
   lembretes?: Record<string, string>;
@@ -191,6 +197,7 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
   comodidades: [],
   formasDePagamento: [],
   capaUrl: null,
+  aparencia: APARENCIA_PADRAO,
   // As regras de agendamento nos padrões; salvar grava no perfil, como
   // a API (o dublê não aplica as regras: calcular a agenda é da API).
   ...REGRAS_PADRAO,
@@ -605,6 +612,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       lembreteAntecedenciaHoras: estado.lembreteAntecedenciaHoras ?? 24,
       lembreteAtivo: estado.lembreteAtivo ?? true,
       areasDecididas: [...(estado.areasDecididas ?? [])],
+      aparenciaRascunho: estado.aparenciaRascunho ?? null,
     };
   }
 
@@ -1268,6 +1276,29 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async removerLogo() {
         estado.perfil = { ...estado.perfil, logoUrl: null, logoFormato: null };
+      },
+      // As regras da API: rascunho igual ao que está no ar é nada
+      // pendente; publicar sem rascunho é 409; só o dono.
+      async salvarRascunhoDaAparencia(aparencia: AparenciaDaPagina) {
+        exigirDono();
+        const rascunho = normalizarAparencia(aparencia);
+        const igual = JSON.stringify(rascunho) === JSON.stringify(normalizarAparencia(estado.perfil.aparencia));
+        estado.aparenciaRascunho = igual ? null : rascunho;
+        return barbeariaDoPainel();
+      },
+      async publicarAparencia() {
+        exigirDono();
+        if (!estado.aparenciaRascunho) {
+          throw new ErroDaApi(409, "conflito", "não há rascunho da aparência para publicar");
+        }
+        estado.perfil = { ...estado.perfil, aparencia: estado.aparenciaRascunho };
+        estado.aparenciaRascunho = null;
+        return barbeariaDoPainel();
+      },
+      async descartarRascunhoDaAparencia() {
+        exigirDono();
+        estado.aparenciaRascunho = null;
+        return barbeariaDoPainel();
       },
       async enviarFotoDoMembro(id: string, arquivo: Blob) {
         membroOu404(id);

@@ -98,6 +98,12 @@ model Barbearia {
   cabeAntesDeFechar         Boolean  @default(true) @map("cabe_antes_de_fechar")
   prazoRemarcarHoras        Int      @default(0) @map("prazo_remarcar_horas") @db.SmallInt
   prazoCancelarHoras        Int      @default(0) @map("prazo_cancelar_horas") @db.SmallInt
+  // A Aparência da página pública: o que está no ar e o rascunho que o
+  // dono ainda não publicou. Nulas = o padrão / nada pendente. Formato
+  // em packages/formato/src/aparencia.ts; a API valida, quem lê
+  // normaliza (migration 20261012120000_aparencia).
+  aparencia                 Json?
+  aparenciaRascunho         Json?    @map("aparencia_rascunho")
   criadoEm                  DateTime @default(now()) @map("criado_em") @db.Timestamptz
 
   barbeiros             Barbeiro[]

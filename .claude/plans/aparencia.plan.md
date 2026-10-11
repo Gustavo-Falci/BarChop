@@ -24,9 +24,9 @@ Barbearia que nunca abriu a Aparência continua **exatamente** como hoje: amarel
 | # | Marco | Toca | Migração |
 |---|-------|------|----------|
 | A | Paleta pura + catálogo dos temas (BarChop + os da referência, descrições nossas) | pacote | — |
-| B | Coluna `aparencia`, rota GET/PUT na API, área `aparencia` | API, banco, formato | **sim** (`migrar` rebuildado) |
+| B | Colunas `aparencia` e `aparencia_rascunho`; rotas de rascunho, publicar e descartar; aparência na leitura pública e do painel; cliente e dublê | API, banco, api-client | **sim** (`migrar` rebuildado) |
 | C | Página pública aplica a aparência publicada + botão claro/escuro do visitante | web público | — |
-| D | Tela Aparência: blocos 1 (atalhos pra Marca), 2 (temas, modo) e 3 (cor da marca, fundo) + barra Publicar + entrada no índice | web painel | — |
+| D | Tela Aparência: blocos 1 (atalhos pra Marca), 2 (temas, modo) e 3 (cor da marca, fundo) + barra Publicar + área `aparencia` (formato, API marca no publicar, entrada no índice) | web painel, formato, API | — |
 | E | Prévia ao vivo em iframe (celular/computador, claro/escuro, ampliar, abrir a página) | web | — |
 | F | A letra: as seis fontes + títulos em outra fonte + tamanho do texto | web, `font/` | — |
 | G | Ajuste fino: cantos, botão principal, cards, as nove cores | web | — |

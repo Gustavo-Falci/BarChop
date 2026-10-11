@@ -89,6 +89,58 @@ export interface BarbeariaSerializada extends RegrasDeAgendamento {
   formasDePagamento: string[];
   // A capa da página pública (bloco E2), montada da chave guardada.
   capaUrl: string | null;
+  // O visual da página (Aparência), sempre inteiro: sem nada salvo, o
+  // padrão (o tema BarChop).
+  aparencia: AparenciaDaPagina;
+}
+
+// A Aparência da página pública. Mesmos campos e opções de
+// @barchop/formato/aparencia, que é quem valida, normaliza e monta a
+// paleta (este pacote não depende de nenhum outro).
+export type IdDoTema =
+  | "barchop"
+  | "classico"
+  | "ardosia"
+  | "oceano"
+  | "menta"
+  | "floresta"
+  | "citrico"
+  | "quente"
+  | "cobre"
+  | "ousado"
+  | "bordo"
+  | "florescer"
+  | "nude"
+  | "elegante"
+  | "meia-noite"
+  | "gentleman"
+  | "minimalista";
+export type FonteDoTexto = "inter" | "roboto" | "poppins" | "montserrat" | "open-sans" | "lato";
+export type NomeDaCor =
+  | "marca"
+  | "secundaria"
+  | "destaque"
+  | "fundo"
+  | "card"
+  | "apagado"
+  | "texto"
+  | "textoDeApoio"
+  | "linhas";
+
+export interface AparenciaDaPagina {
+  tema: IdDoTema;
+  modoPadrao: "claro" | "escuro" | "automatico";
+  clienteTrocaModo: boolean;
+  fonte: FonteDoTexto;
+  // null = os títulos usam a fonte do texto.
+  fonteDosTitulos: FonteDoTexto | "clash" | null;
+  tamanhoDoTexto: "compacto" | "normal" | "espacoso";
+  cantos: "retos" | "arredondados" | "pilula";
+  botao: "solido" | "contorno" | "gradiente";
+  cards: "plano" | "elevado" | "borda";
+  // "#RRGGBB", por modo; só o que o dono trocou à mão.
+  cores: { claro: Partial<Record<NomeDaCor, string>>; escuro: Partial<Record<NomeDaCor, string>> };
+  layoutDosServicos: "agrupada" | "abas";
 }
 
 // A moldura da logo. Mesmos valores de FORMATOS_DA_LOGO em
@@ -140,6 +192,9 @@ export interface BarbeariaDoPainel extends BarbeariaSerializada {
   // ordem do índice. Mesmos nomes de AREAS_DE_CONFIGURACAO em
   // @barchop/formato, que é quem decide qual campo marca qual área.
   areasDecididas: AreaDeConfiguracao[];
+  // O que o dono mexeu na Aparência e ainda não publicou; null = nada
+  // pendente. Só o painel vê.
+  aparenciaRascunho: AparenciaDaPagina | null;
 }
 
 export type AreaDeConfiguracao =

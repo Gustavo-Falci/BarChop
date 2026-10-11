@@ -133,10 +133,10 @@ describe("gradeDeTempo com o expediente", () => {
       agendamentos: [],
       agora: AGORA,
       profissionais: EQUIPE,
-      expediente: [
+      expediente: { [TERCA]: [
         { id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } },
         { id: "m2", janela: aberto, pausa: null },
-      ],
+      ] },
     });
 
     const [rafael, ana] = grade.colunas;
@@ -155,10 +155,10 @@ describe("gradeDeTempo com o expediente", () => {
       agendamentos: [],
       agora: AGORA,
       profissionais: EQUIPE,
-      expediente: [
+      expediente: { [TERCA]: [
         { id: "bb1", janela: aberto, pausa: null },
         { id: "m2", janela: { abre: "13:00", fecha: "17:00" }, pausa: null },
-      ],
+      ] },
     });
 
     const ana = grade.colunas[1];
@@ -178,10 +178,10 @@ describe("gradeDeTempo com o expediente", () => {
       agendamentos: [],
       agora: AGORA,
       profissionais: EQUIPE,
-      expediente: [
+      expediente: { [TERCA]: [
         { id: "bb1", janela: aberto, pausa: null },
         { id: "m2", janela: null, pausa: null },
-      ],
+      ] },
     });
 
     expect(grade.colunas[1].fechado).toBe(true);
@@ -196,10 +196,10 @@ describe("gradeDeTempo com o expediente", () => {
       agendamentos: [],
       agora: AGORA,
       profissionais: EQUIPE,
-      expediente: [
+      expediente: { [TERCA]: [
         { id: "bb1", janela: { abre: "08:00", fecha: "18:00" }, pausa: null },
         { id: "m2", janela: { abre: "08:00", fecha: "18:00" }, pausa: null },
-      ],
+      ] },
     });
 
     expect(grade.minutoInicial).toBe(8 * 60);
@@ -212,7 +212,7 @@ describe("gradeDeTempo com o expediente", () => {
       horarios: HORARIOS,
       agendamentos: [],
       agora: AGORA,
-      expediente: [{ id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } }],
+      expediente: { [TERCA]: [{ id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } }] },
     });
 
     expect(grade.colunas[0].fechadas.map((f) => f.rotulo)).toEqual(["Pausa"]);
@@ -227,7 +227,7 @@ describe("gradeDeTempo com o expediente", () => {
       horarios: HORARIOS,
       agendamentos: [],
       agora: AGORA,
-      expediente: [{ id: "m2", janela: aberto, pausa: null }],
+      expediente: { [TERCA]: [{ id: "m2", janela: aberto, pausa: null }] },
       bloqueios: [bloqueio({ horaInicio: "15:00", horaFim: "16:00", motivo: "Médico" })],
     });
 
@@ -240,5 +240,258 @@ describe("gradeDeTempo com o expediente", () => {
 
     expect(grade.colunas[0].fechadas).toEqual([]);
     expect(grade.colunas[0].livres.map((f) => f.hora)).toContain("12:00");
+  });
+});
+
+// A vista de semana: uma coluna por dia, cada uma com o expediente
+// daquele dia. Na equipe a coluna junta todo mundo, então só fica
+// sombreado o que vale pra todos: fora do expediente de qualquer um é
+// "Fechado", e "Pausa" só quando todos que estão no expediente param.
+describe("gradeDeTempo na semana, com o expediente de cada dia", () => {
+  const SEGUNDA = "2026-09-07";
+  const linhaDe = (hora: string) => {
+    const [h, m] = hora.split(":").map(Number);
+    return (h * 60 + m - 9 * 60) / MINUTOS_POR_LINHA + 1;
+  };
+  const aberto = { abre: "09:00", fecha: "18:00" };
+  const almoco = { inicio: "12:00", fim: "13:00" };
+  const horas = (coluna: { livres: { hora: string }[] }) => coluna.livres.map((f) => f.hora);
+
+  it("quem trabalha sozinho: cada dia usa o próprio expediente", () => {
+    const grade = gradeDeTempo({
+      dias: [SEGUNDA, TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: {
+        [SEGUNDA]: [{ id: "bb1", janela: aberto, pausa: null }],
+        [TERCA]: [{ id: "bb1", janela: aberto, pausa: almoco }],
+      },
+    });
+
+    const [segunda, terca] = grade.colunas;
+    expect(segunda.fechadas).toEqual([]);
+    expect(horas(segunda)).toContain("12:00");
+    expect(terca.fechadas).toEqual([{ linha: linhaDe("12:00"), linhas: 60 / MINUTOS_POR_LINHA, rotulo: "Pausa" }]);
+    expect(horas(terca)).not.toContain("12:00");
+  });
+
+  it("a grade cobre a janela mais larga da semana", () => {
+    const grade = gradeDeTempo({
+      dias: [SEGUNDA, TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: {
+        [SEGUNDA]: [{ id: "bb1", janela: aberto, pausa: null }],
+        [TERCA]: [{ id: "bb1", janela: { abre: "08:00", fecha: "18:00" }, pausa: null }],
+      },
+    });
+
+    expect(grade.minutoInicial).toBe(8 * 60);
+    // A segunda abre às 9: a hora a mais da terça fica fechada nela.
+    expect(grade.colunas[0].fechadas).toEqual([{ linha: 1, linhas: 60 / MINUTOS_POR_LINHA, rotulo: "Fechado" }]);
+  });
+
+  it("na equipe, o almoço de todos na mesma hora fica sombreado", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: aberto, pausa: almoco },
+          { id: "m2", janela: aberto, pausa: almoco },
+        ],
+      },
+    });
+
+    expect(grade.colunas[0].fechadas).toEqual([
+      { linha: linhaDe("12:00"), linhas: 60 / MINUTOS_POR_LINHA, rotulo: "Pausa" },
+    ]);
+    expect(horas(grade.colunas[0])).not.toContain("12:30");
+  });
+
+  it("na equipe, almoços em horas diferentes não sombreiam nada: sempre tem alguém", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: aberto, pausa: almoco },
+          { id: "m2", janela: aberto, pausa: { inicio: "13:00", fim: "14:00" } },
+        ],
+      },
+    });
+
+    expect(grade.colunas[0].fechadas).toEqual([]);
+    expect(horas(grade.colunas[0])).toContain("12:00");
+    expect(horas(grade.colunas[0])).toContain("13:00");
+  });
+
+  it("na equipe, o vão entre um turno e outro é fechado", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: { abre: "09:00", fecha: "13:00" }, pausa: null },
+          { id: "m2", janela: { abre: "14:00", fecha: "18:00" }, pausa: null },
+        ],
+      },
+    });
+
+    expect(grade.colunas[0].fechadas).toEqual([
+      { linha: linhaDe("13:00"), linhas: 60 / MINUTOS_POR_LINHA, rotulo: "Fechado" },
+    ]);
+    expect(horas(grade.colunas[0])).not.toContain("13:30");
+    expect(horas(grade.colunas[0])).toContain("14:00");
+  });
+
+  it("na equipe, quem está de folga não conta; todo mundo de folga fecha o dia", () => {
+    const umDeFolga = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: aberto, pausa: almoco },
+          { id: "m2", janela: null, pausa: null },
+        ],
+      },
+    });
+    expect(umDeFolga.colunas[0].fechadas.map((f) => f.rotulo)).toEqual(["Pausa"]);
+
+    const todosDeFolga = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [agendamento("a1", "bb1", "10:00", "10:30")],
+      agora: AGORA,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: null, pausa: null },
+          { id: "m2", janela: null, pausa: null },
+        ],
+      },
+    });
+    expect(todosDeFolga.colunas[0].fechado).toBe(true);
+    expect(todosDeFolga.colunas[0].livres).toEqual([]);
+    // O agendamento que já existia continua na grade.
+    expect(todosDeFolga.colunas[0].eventos.map((e) => e.agendamento.id)).toEqual(["a1"]);
+  });
+});
+
+// Pedido do dono (2026-10-11): na coluna que junta a equipe, um horário
+// fica livre se ALGUÉM pode atender, e leva junto quem pode — o Novo
+// agendamento oferece só essas pessoas. Pausa, folga e agendamento de um
+// tiram só ele da lista.
+describe("gradeDeTempo na semana: quem pode atender em cada horário livre", () => {
+  const aberto = { abre: "09:00", fecha: "18:00" };
+  const almoco = { inicio: "12:00", fim: "13:00" };
+  const livre = (coluna: { livres: { hora: string; profissionais?: string[] }[] }, hora: string) =>
+    coluna.livres.find((f) => f.hora === hora);
+
+  it("na pausa do Rafael, o horário fica livre só pra Ana", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: aberto, pausa: almoco },
+          { id: "m2", janela: aberto, pausa: null },
+        ],
+      },
+    });
+
+    expect(livre(grade.colunas[0], "12:00")?.profissionais).toEqual(["m2"]);
+    expect(livre(grade.colunas[0], "11:00")?.profissionais).toEqual(["bb1", "m2"]);
+  });
+
+  it("o agendamento do Rafael não tira o horário da Ana", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [agendamento("a1", "bb1", "10:00", "10:30")],
+      agora: AGORA,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: aberto, pausa: null },
+          { id: "m2", janela: aberto, pausa: null },
+        ],
+      },
+    });
+
+    expect(livre(grade.colunas[0], "10:00")?.profissionais).toEqual(["m2"]);
+    expect(livre(grade.colunas[0], "10:30")?.profissionais).toEqual(["bb1", "m2"]);
+  });
+
+  it("folga da Ana na hora da pausa do Rafael: ninguém atende, sem horário livre", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      bloqueios: [bloqueio({ barbeiroId: "m2", horaInicio: "12:00", horaFim: "13:00", motivo: "Médico" })],
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: aberto, pausa: almoco },
+          { id: "m2", janela: aberto, pausa: null },
+        ],
+      },
+    });
+
+    expect(livre(grade.colunas[0], "12:00")).toBeUndefined();
+    expect(livre(grade.colunas[0], "13:00")?.profissionais).toEqual(["bb1", "m2"]);
+  });
+
+  it("todos em pausa na mesma hora: nenhum horário livre ali", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: aberto, pausa: almoco },
+          { id: "m2", janela: aberto, pausa: almoco },
+        ],
+      },
+    });
+
+    expect(grade.colunas[0].livres.map((f) => f.hora).filter((h) => h >= "12:00" && h < "13:00")).toEqual([]);
+  });
+
+  it("coluna de um profissional só não leva a lista: ele já é o profissional", () => {
+    const sozinho = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      expediente: { [TERCA]: [{ id: "bb1", janela: aberto, pausa: null }] },
+    });
+    expect(livre(sozinho.colunas[0], "11:00")?.profissionais).toBeUndefined();
+
+    const daEquipe = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      profissionais: EQUIPE,
+      expediente: {
+        [TERCA]: [
+          { id: "bb1", janela: aberto, pausa: null },
+          { id: "m2", janela: aberto, pausa: null },
+        ],
+      },
+    });
+    expect(livre(daEquipe.colunas[1], "11:00")?.profissionais).toBeUndefined();
   });
 });

@@ -144,3 +144,52 @@ describe("profissional no novo agendamento", () => {
     );
   });
 });
+
+// Pedido do dono (2026-10-11): vindo de um horário livre da semana, o
+// select mostra só quem pode atender naquela hora (`?profissionais=`).
+describe("profissional vindo de um horário da semana", () => {
+  it("com ?profissionais=m2, só a Ana aparece, já escolhida", async () => {
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/agendamentos/novo",
+      query: { data: "2026-09-09", hora: "11:00", profissionais: "m2" },
+    });
+    montarPainel(<NovoAgendamento agora={AGORA} />, semear());
+
+    await screen.findByRole("option", { name: "Ana" });
+    expect(screen.queryByRole("option", { name: "Rafael" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Profissional")).toHaveValue("m2");
+  });
+
+  it("com os dois livres, os dois aparecem e quem está logado vem escolhido", async () => {
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/agendamentos/novo",
+      query: { data: "2026-09-09", hora: "11:00", profissionais: "bb1,m2" },
+    });
+    montarPainel(<NovoAgendamento agora={AGORA} />, semear());
+
+    await screen.findByRole("option", { name: "Ana" });
+    expect(screen.getByRole("option", { name: "Rafael" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Profissional")).toHaveValue("bb1");
+  });
+
+  it("trocar o dia tira a restrição, que valia pra outra hora", async () => {
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/agendamentos/novo",
+      query: { data: "2026-09-09", hora: "11:00", profissionais: "m2" },
+    });
+    const falso = semear();
+    falso.estado.diasComVaga = { "2026-09-10": true };
+    montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+    await screen.findByRole("option", { name: "Ana" });
+    await userEvent.click(screen.getByRole("button", { name: "Serviços" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Data" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "10 de setembro" })).toBeEnabled());
+    await userEvent.click(screen.getByRole("button", { name: "10 de setembro" }));
+
+    const ultima = navegacaoFalsa.replace.mock.calls.at(-1)?.[0];
+    expect(ultima).toContain("data=2026-09-10");
+    expect(ultima).not.toContain("profissionais=");
+  });
+});

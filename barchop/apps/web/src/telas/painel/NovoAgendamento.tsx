@@ -54,15 +54,24 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
     () => (soOProprio ? Promise.resolve([]) : api.barbeiro.equipe()),
     [soOProprio]
   );
+  // Vindo de um horário livre da semana, `?profissionais=` diz quem pode
+  // atender naquela hora (pedido do dono, 2026-10-11): o select oferece
+  // só essas pessoas. Sai da URL junto com a hora.
+  const permitidos = query.get("profissionais")?.split(",").filter(Boolean);
   const atendentes = (equipe.dados ?? []).filter(
-    (membro) => membro.ativo && membro.atende && !membro.convitePendente
+    (membro) =>
+      membro.ativo &&
+      membro.atende &&
+      !membro.convitePendente &&
+      (!permitidos || permitidos.includes(membro.id))
   );
   const [escolhido, setEscolhido] = useState<string | undefined>(
     () => query.get("profissional") ?? undefined
   );
+  const logadoPode = perfil.atende && (!permitidos || permitidos.includes(perfil.id));
   const profissionalId = soOProprio
     ? perfil.id
-    : (escolhido ?? (perfil.atende ? perfil.id : atendentes[0]?.id));
+    : (escolhido ?? (logadoPode ? perfil.id : atendentes[0]?.id));
 
   // A lista de clientes manda um cliente pronto pela URL (a ação
   // "Agendar" de cada linha). Sem isto, quem clicou lá chegava aqui e
@@ -217,6 +226,9 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   // histórico e o Cancelar (que volta um passo) cairia nesta mesma tela.
   function trocarQuery(proximos: Record<string, string | null>) {
     const atual = new URLSearchParams(query.toString());
+    // Quem pode atender valia pra hora que veio da agenda: trocou a hora
+    // (ou o dia, que a limpa), a lista não vale mais.
+    if ("hora" in proximos) atual.delete("profissionais");
     for (const [chave, valor] of Object.entries(proximos)) {
       if (valor === null) atual.delete(chave);
       else atual.set(chave, valor);

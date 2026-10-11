@@ -31,6 +31,9 @@ export interface FaixaLivre {
   linha: number;
   linhas: number;
   passada: boolean;
+  // Na coluna que junta a equipe: quem pode atender nesse horário, que é
+  // quem o Novo agendamento oferece.
+  profissionais?: string[];
 }
 
 // Folga, almoço ou horário fechado de um profissional, já na grade.
@@ -168,14 +171,16 @@ export function gradeDeTempo(entrada: {
   // o primeiro de `dias`), com os agendamentos e bloqueios de cada um.
   profissionais?: { id: string; nome: string }[];
   bloqueios?: BloqueioSerializado[];
-  // Só na vista de dia: o expediente de cada profissional. A coluna de
-  // um profissional usa o dele; a coluna única (quem trabalha sozinho,
-  // ou o profissional vendo a própria agenda) usa o único que vier.
-  // Ausente, a grade segue só o horário da casa, como antes.
-  expediente?: ExpedienteDoProfissional[];
+  // O expediente de cada profissional, por data. A coluna de um
+  // profissional usa o dele; a coluna única (quem trabalha sozinho, ou o
+  // profissional vendo a própria agenda) usa o único que vier. Dia sem
+  // expediente segue só o horário da casa, como antes.
+  expediente?: Record<string, ExpedienteDoProfissional[]>;
 }): GradeDeTempo {
   const { dias, horarios, agendamentos, agora, profissionais, bloqueios = [], expediente } = entrada;
-  const janelas = (expediente ?? []).flatMap((e) => (e.janela ? [e.janela] : []));
+  const janelas = dias
+    .flatMap((data) => expediente?.[data] ?? [])
+    .flatMap((e) => (e.janela ? [e.janela] : []));
 
   // Só o que pertence aos dias mostrados: quem chama pode ter buscado um
   // intervalo maior (o mês busca a grade inteira).
@@ -257,16 +262,17 @@ export function gradeDeTempo(entrada: {
     const doDia = doPeriodo
       .filter((a) => a.data === data && (!barbeiroId || a.barbeiro.id === barbeiroId))
       .sort((um, outro) => um.horaInicio.localeCompare(outro.horaInicio));
-    const doExpediente = !expediente
-      ? undefined
+    // Quem conta nesta coluna: o profissional dela; ou, na coluna do dia
+    // (semana, ou quem trabalha sozinho), todo mundo que a API mandou.
+    const expedienteDoDia = expediente?.[data];
+    const daColuna = !expedienteDoDia
+      ? []
       : barbeiroId
-        ? expediente.find((e) => e.id === barbeiroId)
-        : expediente.length === 1
-          ? expediente[0]
-          : undefined;
-    // A coluna única (quem trabalha sozinho) é de um profissional só: os
+        ? expedienteDoDia.filter((e) => e.id === barbeiroId)
+        : expedienteDoDia;
+    // A coluna de um profissional só (quem trabalha sozinho) é dele: os
     // bloqueios dele entram nela como entram nas colunas da equipe.
-    const donoDaColuna = barbeiroId ?? doExpediente?.id;
+    const donoDaColuna = barbeiroId ?? (daColuna.length === 1 ? daColuna[0].id : undefined);
     const { posicionados, bloqueiaMinuto } = donoDaColuna
       ? bloqueiosNaColuna(data, donoDaColuna)
       : { posicionados: [], bloqueiaMinuto: () => false };
@@ -285,35 +291,75 @@ export function gradeDeTempo(entrada: {
 
     distribuirEmPistas(eventos);
 
-    // A janela em que se oferece horário: o expediente, quando a API o
-    // mandou; senão, o horário da casa no dia da semana.
-    const janelaDaColuna = doExpediente
-      ? doExpediente.janela && {
-          abre: emMinutos(doExpediente.janela.abre),
-          fecha: emMinutos(doExpediente.janela.fecha),
-        }
-      : aberto(horario)
-        ? { abre: emMinutos(horario.horaAbertura), fecha: emMinutos(horario.horaFechamento) }
-        : null;
-    const pausa = doExpediente?.pausa
-      ? { inicio: emMinutos(doExpediente.pausa.inicio), fim: emMinutos(doExpediente.pausa.fim) }
-      : null;
-    const naPausa = (minuto: number) => pausa !== null && pausa.inicio <= minuto && minuto < pausa.fim;
+    // O expediente de quem está trabalhando no dia, em minutos. Quem está
+    // de folga (janela null) não conta.
+    const turnos = daColuna.flatMap((e) =>
+      e.janela
+        ? [
+            {
+              id: e.id,
+              // A folga de horas dele, que o tira da conta como a pausa.
+              bloqueado: e.id === donoDaColuna ? bloqueiaMinuto : bloqueiosNaColuna(data, e.id).bloqueiaMinuto,
+              abre: emMinutos(e.janela.abre),
+              fecha: emMinutos(e.janela.fecha),
+              pausa: e.pausa ? { inicio: emMinutos(e.pausa.inicio), fim: emMinutos(e.pausa.fim) } : null,
+            },
+          ]
+        : []
+    );
+    const noTurno = (minuto: number) => turnos.filter((t) => t.abre <= minuto && minuto < t.fecha);
+    // Alguém atende neste minuto: está no turno e fora da pausa.
+    const atendeAlguem = (minuto: number) =>
+      noTurno(minuto).some((t) => !t.pausa || minuto < t.pausa.inicio || t.pausa.fim <= minuto);
 
-    // O que fica sombreado: antes de abrir, depois de fechar e a pausa,
-    // recortados na janela da grade. Sem expediente, nada (a semana).
+    // A janela em que se oferece horário: do primeiro que abre ao último
+    // que fecha, quando a API mandou o expediente; senão, o horário da
+    // casa no dia da semana.
+    const janelaDaColuna =
+      daColuna.length > 0
+        ? turnos.length > 0
+          ? { abre: Math.min(...turnos.map((t) => t.abre)), fecha: Math.max(...turnos.map((t) => t.fecha)) }
+          : null
+        : aberto(horario)
+          ? { abre: emMinutos(horario.horaAbertura), fecha: emMinutos(horario.horaFechamento) }
+          : null;
+    // Quem pode receber cliente neste minuto: no turno, fora da pausa,
+    // sem folga e sem agendamento dele ali. O agendamento de um não tira
+    // o horário do outro.
+    const podemAtender = (minuto: number) =>
+      noTurno(minuto)
+        .filter((t) => !t.pausa || minuto < t.pausa.inicio || t.pausa.fim <= minuto)
+        .filter((t) => !t.bloqueado(minuto))
+        .filter(
+          (t) =>
+            !doDia.some(
+              (a) =>
+                a.barbeiro.id === t.id &&
+                emMinutos(a.horaInicio) <= minuto &&
+                minuto < emMinutos(a.horaFim)
+            )
+        )
+        .map((t) => t.id);
+    // Só a coluna que junta a equipe leva a lista: na de um profissional,
+    // ele já é o profissional.
+    const juntaAEquipe = !barbeiroId && daColuna.length > 1;
+
+    // O que fica sombreado é onde ninguém atende, linha a linha: "Pausa"
+    // quando quem está no turno parou; "Fechado" quando ninguém está no
+    // turno (antes de abrir, depois de fechar, o vão entre dois turnos).
+    // Sem expediente, nada.
     const fechadas: FaixaFechada[] = [];
-    if (doExpediente && janelaDaColuna) {
-      const faixa = (de: number, ate: number, rotulo: FaixaFechada["rotulo"]) => {
-        const inicio = Math.max(de, minutoInicial);
-        const fim = Math.min(ate, fimDaJanela);
-        if (fim > inicio) {
-          fechadas.push({ linha: linhaDe(inicio), linhas: (fim - inicio) / MINUTOS_POR_LINHA, rotulo });
+    if (turnos.length > 0) {
+      for (let minuto = minutoInicial; minuto < fimDaJanela; minuto += MINUTOS_POR_LINHA) {
+        if (atendeAlguem(minuto)) continue;
+        const rotulo: FaixaFechada["rotulo"] = noTurno(minuto).length > 0 ? "Pausa" : "Fechado";
+        const anterior = fechadas.at(-1);
+        if (anterior && anterior.rotulo === rotulo && anterior.linha + anterior.linhas === linhaDe(minuto)) {
+          anterior.linhas += 1;
+        } else {
+          fechadas.push({ linha: linhaDe(minuto), linhas: 1, rotulo });
         }
-      };
-      faixa(minutoInicial, janelaDaColuna.abre, "Fechado");
-      if (pausa) faixa(pausa.inicio, pausa.fim, "Pausa");
-      faixa(janelaDaColuna.fecha, fimDaJanela, "Fechado");
+      }
     }
 
     const livres: FaixaLivre[] = [];
@@ -321,14 +367,21 @@ export function gradeDeTempo(entrada: {
       const { abre, fecha } = janelaDaColuna;
 
       for (let minuto = abre; minuto < fecha; minuto += PASSO_LIVRE) {
-        // Ocupado é qualquer minuto entre início e fim, não só o início:
-        // é exatamente o que a grade antiga errava, e por isso oferecia
-        // 09:15 como livre em cima de um corte das 09:00 às 10:00.
-        const ocupado = doDia.some(
-          (a) =>
-            emMinutos(a.horaInicio) <= minuto && minuto < emMinutos(a.horaFim)
-        );
-        if (ocupado || bloqueiaMinuto(minuto) || naPausa(minuto)) continue;
+        // Com expediente, livre é ter alguém que possa atender. Sem ele
+        // (a ocupação falhou), a regra de antes: ocupado é qualquer
+        // minuto entre início e fim, não só o início — é exatamente o que
+        // a grade antiga errava, e por isso oferecia 09:15 como livre em
+        // cima de um corte das 09:00 às 10:00.
+        const quem = turnos.length > 0 ? podemAtender(minuto) : [];
+        if (turnos.length > 0) {
+          if (quem.length === 0) continue;
+        } else {
+          const ocupado = doDia.some(
+            (a) =>
+              emMinutos(a.horaInicio) <= minuto && minuto < emMinutos(a.horaFim)
+          );
+          if (ocupado || bloqueiaMinuto(minuto)) continue;
+        }
 
         const hora = emHora(minuto);
         livres.push({
@@ -336,6 +389,7 @@ export function gradeDeTempo(entrada: {
           linha: linhaDe(minuto),
           linhas: PASSO_LIVRE / MINUTOS_POR_LINHA,
           passada: horaJaPassou(data, hora, agora),
+          ...(juntaAEquipe ? { profissionais: quem } : {}),
         });
       }
     }

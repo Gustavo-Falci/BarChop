@@ -99,8 +99,9 @@ export function GradeDeTempo({
   aoAbrir: (id: string) => void;
   // O dia vai junto da hora: na vista de semana a hora sozinha não diz
   // qual coluna foi clicada.
-  // `barbeiroId` vem quando a coluna é de um profissional (equipe).
-  aoCriar: (data: string, hora: string, barbeiroId?: string) => void;
+  // `barbeiroId` vem quando a coluna é de um profissional (equipe);
+  // `profissionais`, quando a coluna junta a equipe: quem pode atender.
+  aoCriar: (data: string, hora: string, barbeiroId?: string, profissionais?: string[]) => void;
   // Só a vista de semana passa: é o cabeçalho clicável de cada coluna.
   aoAbrirDia?: (data: string) => void;
 }) {
@@ -241,7 +242,9 @@ export function GradeDeTempo({
                     onClick={() =>
                       coluna.barbeiroId
                         ? aoCriar(coluna.data, faixa.hora, coluna.barbeiroId)
-                        : aoCriar(coluna.data, faixa.hora)
+                        : faixa.profissionais
+                          ? aoCriar(coluna.data, faixa.hora, undefined, faixa.profissionais)
+                          : aoCriar(coluna.data, faixa.hora)
                     }
                   >
                     {faixa.hora}

@@ -241,3 +241,151 @@ describe("agenda da equipe na semana", () => {
     expect(screen.queryByText("Pausa")).not.toBeInTheDocument();
   });
 });
+
+// Pedido do dono (2026-10-11): na semana, pílulas "Todos · Rafael · Ana".
+// Escolhida uma pessoa, a semana mostra só a agenda dela, com a pausa e
+// as folgas dela; o horário livre já leva ela pro Novo agendamento.
+describe("semana por profissional", () => {
+  function comAgendaDeCadaUm(papel?: "dono" | "profissional" | "recepcao") {
+    const falso = criarApiClientFalso({
+      papel,
+      clientes: [{ id: "c1", nome: "João Silva", telefone: "(11) 99999-0001", email: null, temConta: false }],
+      bloqueios: [
+        {
+          id: "x1",
+          barbeiroId: "m2",
+          dataInicio: "2026-09-08",
+          dataFim: "2026-09-08",
+          horaInicio: "12:00",
+          horaFim: "13:00",
+          motivo: "Almoço",
+        },
+      ],
+      agendamentos: [
+        {
+          id: "a1",
+          clienteId: "c1",
+          data: "2026-09-09",
+          horaInicio: "10:00",
+          horaFim: "10:30",
+          status: "confirmado",
+          origem: "cliente",
+          observacoes: null,
+          barbeiro: { id: "bb1", nome: "Rafael" },
+          servicos: [{ servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 }],
+        },
+        {
+          id: "a2",
+          clienteId: "c1",
+          data: "2026-09-10",
+          horaInicio: "15:00",
+          horaFim: "15:30",
+          status: "confirmado",
+          origem: "cliente",
+          observacoes: null,
+          barbeiro: { id: "m2", nome: "Ana" },
+          servicos: [{ servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 }],
+        },
+      ],
+    });
+    falso.estado.equipe!.push({
+      id: "m2",
+      nome: "Ana",
+      email: "ana@gr.com",
+      telefone: null,
+      papel: "profissional",
+      atende: true,
+      ativo: true,
+      fotoUrl: null,
+      convitePendente: false,
+    });
+    // Pausa só do Rafael, na terça das 14 às 15.
+    falso.estado.jornadas!.bb1 = [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+      diaSemana,
+      modo: "barbearia" as const,
+      horaInicio: null,
+      horaFim: null,
+      pausaInicio: diaSemana === 2 ? "14:00" : null,
+      pausaFim: diaSemana === 2 ? "15:00" : null,
+    }));
+    return falso;
+  }
+
+  function naSemana(query: Record<string, string> = {}) {
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/agenda",
+      query: { vista: "semana", data: "2026-09-08", ...query },
+    });
+  }
+
+  it("mostra Todos e uma pílula por quem atende, com Todos escolhido", async () => {
+    naSemana();
+    montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm());
+
+    const grupo = await screen.findByRole("group", { name: "Filtrar por profissional" });
+    expect(within(grupo).getByRole("button", { name: "Todos" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(grupo).getByRole("button", { name: "Rafael" })).toBeInTheDocument();
+    expect(within(grupo).getByRole("button", { name: "Ana" })).toBeInTheDocument();
+  });
+
+  it("escolher a Ana vai pra URL, mantendo vista e data", async () => {
+    naSemana();
+    montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm());
+
+    const grupo = await screen.findByRole("group", { name: "Filtrar por profissional" });
+    await userEvent.click(within(grupo).getByRole("button", { name: "Ana" }));
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=semana&data=2026-09-08&profissional=m2");
+  });
+
+  it("andar de semana mantém a pessoa escolhida", async () => {
+    naSemana({ profissional: "m2" });
+    montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm());
+
+    await userEvent.click(await screen.findByRole("button", { name: "Próximo período" }));
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=semana&data=2026-09-15&profissional=m2");
+  });
+
+  it("com o Rafael, a pausa dele aparece e só os agendamentos dele", async () => {
+    naSemana({ profissional: "bb1" });
+    montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm());
+
+    expect(await screen.findByText("Pausa")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /João Silva/ })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /João Silva/ })).toHaveLength(1);
+    expect(screen.getByText("1 agendamento")).toBeInTheDocument();
+  });
+
+  it("com a Ana, a folga dela aparece e o horário livre leva ela", async () => {
+    naSemana({ profissional: "m2" });
+    montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm());
+
+    expect(await screen.findByText("Almoço")).toBeInTheDocument();
+    // Seis dias abertos com 14:00; a terça da Ana não tem pausa.
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "14:00" })).toHaveLength(6));
+    await userEvent.click(screen.getAllByRole("button", { name: "14:00" })[1]);
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith(
+      "/painel/agendamentos/novo?data=2026-09-08&hora=14%3A00&profissional=m2"
+    );
+  });
+
+  it("o profissional não vê as pílulas: a agenda já é só dele", async () => {
+    naSemana();
+    montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm("profissional"));
+
+    await screen.findByRole("button", { name: "Semana" });
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "14:00" }).length).toBeGreaterThan(0));
+    expect(screen.queryByRole("group", { name: "Filtrar por profissional" })).not.toBeInTheDocument();
+  });
+
+  it("na vista de dia as pílulas não aparecem: lá já tem uma coluna por pessoa", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { vista: "dia", data: "2026-09-08" } });
+    montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm());
+
+    const cabecalho = await screen.findByTestId("cabecalho-da-grade");
+    await waitFor(() => expect(within(cabecalho).getByText("Ana")).toBeInTheDocument());
+    expect(screen.queryByRole("group", { name: "Filtrar por profissional" })).not.toBeInTheDocument();
+  });
+});

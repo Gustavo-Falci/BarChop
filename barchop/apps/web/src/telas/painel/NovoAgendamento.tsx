@@ -212,13 +212,16 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
     setAberto((atual) => (atual === etapa ? null : etapa));
   }
 
+  // `replace`, e não `push`: trocar o dia ou a hora ajusta o pedido, não
+  // abre uma tela nova. Com `push`, cada escolha virava uma entrada no
+  // histórico e o Cancelar (que volta um passo) cairia nesta mesma tela.
   function trocarQuery(proximos: Record<string, string | null>) {
     const atual = new URLSearchParams(query.toString());
     for (const [chave, valor] of Object.entries(proximos)) {
       if (valor === null) atual.delete(chave);
       else atual.set(chave, valor);
     }
-    router.push(`/painel/agendamentos/novo?${atual.toString()}`);
+    router.replace(`/painel/agendamentos/novo?${atual.toString()}`);
   }
 
   async function agendar() {
@@ -475,6 +478,13 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
 
         <Botao disabled={!pronto} carregando={enviando} onClick={agendar}>
           Agendar
+        </Botao>
+        {/* Volta no histórico, e não pra um destino fixo: a tela abre da
+            agenda, do Hoje, da lista e do detalhe do cliente. Sem
+            `carregando`: desistir tem que funcionar inclusive enquanto o
+            envio pendura. */}
+        <Botao type="button" variante="contorno" onClick={() => router.back()}>
+          Cancelar
         </Botao>
       </div>
       </div>

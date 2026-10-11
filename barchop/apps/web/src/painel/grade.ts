@@ -259,17 +259,17 @@ export function gradeDeTempo(entrada: {
     const doDia = doPeriodo
       .filter((a) => a.data === data && (!barbeiroId || a.barbeiro.id === barbeiroId))
       .sort((um, outro) => um.horaInicio.localeCompare(outro.horaInicio));
+    // Quem conta nesta coluna: o profissional dela; ou, na coluna do dia
+    // (semana, ou quem trabalha sozinho), todo mundo que a API mandou.
     const expedienteDoDia = expediente?.[data];
-    const doExpediente = !expedienteDoDia
-      ? undefined
+    const daColuna = !expedienteDoDia
+      ? []
       : barbeiroId
-        ? expedienteDoDia.find((e) => e.id === barbeiroId)
-        : expedienteDoDia.length === 1
-          ? expedienteDoDia[0]
-          : undefined;
-    // A coluna única (quem trabalha sozinho) é de um profissional só: os
+        ? expedienteDoDia.filter((e) => e.id === barbeiroId)
+        : expedienteDoDia;
+    // A coluna de um profissional só (quem trabalha sozinho) é dele: os
     // bloqueios dele entram nela como entram nas colunas da equipe.
-    const donoDaColuna = barbeiroId ?? doExpediente?.id;
+    const donoDaColuna = barbeiroId ?? (daColuna.length === 1 ? daColuna[0].id : undefined);
     const { posicionados, bloqueiaMinuto } = donoDaColuna
       ? bloqueiosNaColuna(data, donoDaColuna)
       : { posicionados: [], bloqueiaMinuto: () => false };
@@ -288,35 +288,53 @@ export function gradeDeTempo(entrada: {
 
     distribuirEmPistas(eventos);
 
-    // A janela em que se oferece horário: o expediente, quando a API o
-    // mandou; senão, o horário da casa no dia da semana.
-    const janelaDaColuna = doExpediente
-      ? doExpediente.janela && {
-          abre: emMinutos(doExpediente.janela.abre),
-          fecha: emMinutos(doExpediente.janela.fecha),
-        }
-      : aberto(horario)
-        ? { abre: emMinutos(horario.horaAbertura), fecha: emMinutos(horario.horaFechamento) }
-        : null;
-    const pausa = doExpediente?.pausa
-      ? { inicio: emMinutos(doExpediente.pausa.inicio), fim: emMinutos(doExpediente.pausa.fim) }
-      : null;
-    const naPausa = (minuto: number) => pausa !== null && pausa.inicio <= minuto && minuto < pausa.fim;
+    // O expediente de quem está trabalhando no dia, em minutos. Quem está
+    // de folga (janela null) não conta.
+    const turnos = daColuna.flatMap((e) =>
+      e.janela
+        ? [
+            {
+              abre: emMinutos(e.janela.abre),
+              fecha: emMinutos(e.janela.fecha),
+              pausa: e.pausa ? { inicio: emMinutos(e.pausa.inicio), fim: emMinutos(e.pausa.fim) } : null,
+            },
+          ]
+        : []
+    );
+    const noTurno = (minuto: number) => turnos.filter((t) => t.abre <= minuto && minuto < t.fecha);
+    // Alguém atende neste minuto: está no turno e fora da pausa.
+    const atendeAlguem = (minuto: number) =>
+      noTurno(minuto).some((t) => !t.pausa || minuto < t.pausa.inicio || t.pausa.fim <= minuto);
 
-    // O que fica sombreado: antes de abrir, depois de fechar e a pausa,
-    // recortados na janela da grade. Sem expediente, nada (a semana).
+    // A janela em que se oferece horário: do primeiro que abre ao último
+    // que fecha, quando a API mandou o expediente; senão, o horário da
+    // casa no dia da semana.
+    const janelaDaColuna =
+      daColuna.length > 0
+        ? turnos.length > 0
+          ? { abre: Math.min(...turnos.map((t) => t.abre)), fecha: Math.max(...turnos.map((t) => t.fecha)) }
+          : null
+        : aberto(horario)
+          ? { abre: emMinutos(horario.horaAbertura), fecha: emMinutos(horario.horaFechamento) }
+          : null;
+    const foraDoExpediente = (minuto: number) => turnos.length > 0 && !atendeAlguem(minuto);
+
+    // O que fica sombreado é onde ninguém atende, linha a linha: "Pausa"
+    // quando quem está no turno parou; "Fechado" quando ninguém está no
+    // turno (antes de abrir, depois de fechar, o vão entre dois turnos).
+    // Sem expediente, nada.
     const fechadas: FaixaFechada[] = [];
-    if (doExpediente && janelaDaColuna) {
-      const faixa = (de: number, ate: number, rotulo: FaixaFechada["rotulo"]) => {
-        const inicio = Math.max(de, minutoInicial);
-        const fim = Math.min(ate, fimDaJanela);
-        if (fim > inicio) {
-          fechadas.push({ linha: linhaDe(inicio), linhas: (fim - inicio) / MINUTOS_POR_LINHA, rotulo });
+    if (turnos.length > 0) {
+      for (let minuto = minutoInicial; minuto < fimDaJanela; minuto += MINUTOS_POR_LINHA) {
+        if (atendeAlguem(minuto)) continue;
+        const rotulo: FaixaFechada["rotulo"] = noTurno(minuto).length > 0 ? "Pausa" : "Fechado";
+        const anterior = fechadas.at(-1);
+        if (anterior && anterior.rotulo === rotulo && anterior.linha + anterior.linhas === linhaDe(minuto)) {
+          anterior.linhas += 1;
+        } else {
+          fechadas.push({ linha: linhaDe(minuto), linhas: 1, rotulo });
         }
-      };
-      faixa(minutoInicial, janelaDaColuna.abre, "Fechado");
-      if (pausa) faixa(pausa.inicio, pausa.fim, "Pausa");
-      faixa(janelaDaColuna.fecha, fimDaJanela, "Fechado");
+      }
     }
 
     const livres: FaixaLivre[] = [];
@@ -331,7 +349,7 @@ export function gradeDeTempo(entrada: {
           (a) =>
             emMinutos(a.horaInicio) <= minuto && minuto < emMinutos(a.horaFim)
         );
-        if (ocupado || bloqueiaMinuto(minuto) || naPausa(minuto)) continue;
+        if (ocupado || bloqueiaMinuto(minuto) || foraDoExpediente(minuto)) continue;
 
         const hora = emHora(minuto);
         livres.push({

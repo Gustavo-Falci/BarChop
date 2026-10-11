@@ -103,6 +103,18 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     () => (vista === "dia" ? api.barbeiro.ocupacaoDoDia(data) : Promise.resolve(null)),
     [vista, data]
   );
+  // Na semana, o mesmo expediente, dia a dia: sete consultas da rota do
+  // dia, em vez de uma rota de período só pra isto. Presa ao domingo, e
+  // não à data: andar dentro da mesma semana não refaz as sete.
+  const ocupacaoDaSemana = useRequisicao(
+    () =>
+      vista === "semana"
+        ? Promise.all(semana.map((dia) => api.barbeiro.ocupacaoDoDia(dia))).then((dias) =>
+            Object.fromEntries(dias.map((dia) => [dia.data, dia.profissionais]))
+          )
+        : Promise.resolve(null),
+    [vista, semana[0]]
+  );
   const atendentes = (equipe.dados ?? [])
     .filter((membro) => membro.ativo && membro.atende && !membro.convitePendente)
     .map((membro) => ({ id: membro.id, nome: membro.nome }));
@@ -251,9 +263,11 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             profissionais,
             bloqueios: bloqueios.dados ?? [],
             expediente:
-              vista === "dia" && ocupacao.dados
-                ? { [data]: ocupacao.dados.profissionais }
-                : undefined,
+              vista === "dia"
+                ? ocupacao.dados
+                  ? { [data]: ocupacao.dados.profissionais }
+                  : undefined
+                : (ocupacaoDaSemana.dados ?? undefined),
           })}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
           aoCriar={(dia, hora, barbeiroId) =>

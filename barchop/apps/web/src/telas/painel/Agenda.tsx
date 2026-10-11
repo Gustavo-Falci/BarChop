@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Aviso } from "../../componentes/Aviso";
 import { GradeDeTempo } from "../../componentes/GradeDeTempo";
 import { GradeDoMes } from "../../componentes/GradeDoMes";
+import { PilulasDeFiltro } from "../../componentes/PilulasDeFiltro";
 import { SeletorDeVista, type Vista } from "../../componentes/SeletorDeVista";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
@@ -17,6 +18,9 @@ import { ResumoDoPeriodo } from "./agenda/ResumoDoPeriodo";
 import estilos from "./Agenda.module.css";
 
 const VISTAS: Vista[] = ["dia", "semana", "mes"];
+
+// O valor da pílula "Todos": não é id de ninguém, e some da URL.
+const TODOS = "todos";
 
 function lerVista(bruta: string | null): Vista {
   // Vista desconhecida cai no padrão em silêncio, como a leitura do tema
@@ -87,9 +91,11 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   // dividir. Os bloqueios entram como faixas na coluna de cada um.
   const { perfil } = usePainel();
   const daEquipe = perfil.papel !== "profissional";
+  // Na semana, a equipe dá as pílulas do filtro por profissional.
+  const comEquipe = daEquipe && vista !== "mes";
   const equipe = useRequisicao(
-    () => (daEquipe && vista === "dia" ? api.barbeiro.equipe() : Promise.resolve([])),
-    [daEquipe, vista]
+    () => (comEquipe ? api.barbeiro.equipe() : Promise.resolve([])),
+    [comEquipe]
   );
   // Na semana também: a folga de cada um o tira de quem pode atender.
   const bloqueios = useRequisicao(
@@ -128,8 +134,21 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   // só ocuparia o cabeçalho com um nome que ninguém precisa ler.
   const profissionais = vista === "dia" && atendentes.length > 1 ? atendentes : undefined;
 
-  function irPara(proxima: Vista, proximaData: string) {
-    router.push(`/painel/agenda?vista=${proxima}&data=${proximaData}`);
+  // A semana de uma pessoa só (pedido do dono, 2026-10-11): as pílulas
+  // "Todos · Rafael · Ana". Só pra quem vê a equipe e só na semana — no
+  // dia já há uma coluna por pessoa. Enquanto a equipe não chega, vale o
+  // que veio na URL; um id que não atende cai em Todos.
+  const pedido = query.get("profissional") ?? undefined;
+  const comPilulas = daEquipe && vista === "semana" && atendentes.length > 1;
+  const filtro =
+    daEquipe && vista === "semana" && pedido && (!equipe.dados || atendentes.some((a) => a.id === pedido))
+      ? pedido
+      : undefined;
+
+  function irPara(proxima: Vista, proximaData: string, quem: string | undefined = pedido) {
+    router.push(
+      `/painel/agenda?vista=${proxima}&data=${proximaData}` + (quem ? `&profissional=${quem}` : "")
+    );
   }
 
   // "Agora": a régua do agora no centro da grade. Fora de hoje, navega
@@ -172,6 +191,22 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     );
   }
   if (!agendamentos.dados || !horarios.dados) return <p>Carregando…</p>;
+
+  // A semana de uma pessoa: só os agendamentos e o expediente dela. Com
+  // um expediente só, a coluna da grade é dela — a pausa, as folgas e o
+  // horário livre seguem os dela.
+  const visiveis = filtro
+    ? agendamentos.dados.filter((a) => a.barbeiro.id === filtro)
+    : agendamentos.dados;
+  const expedienteDaSemana =
+    ocupacaoDaSemana.dados && filtro
+      ? Object.fromEntries(
+          Object.entries(ocupacaoDaSemana.dados).map(([dia, deles]) => [
+            dia,
+            deles.filter((p) => p.id === filtro),
+          ])
+        )
+      : (ocupacaoDaSemana.dados ?? undefined);
 
   const titulo =
     vista === "mes"
@@ -224,10 +259,22 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           }
         />
 
+        {comPilulas ? (
+          <PilulasDeFiltro
+            rotulo="Filtrar por profissional"
+            valor={filtro ?? TODOS}
+            aoTrocar={(quem) => irPara(vista, data, quem === TODOS ? undefined : quem)}
+            opcoes={[
+              { valor: TODOS, rotulo: "Todos" },
+              ...atendentes.map((a) => ({ valor: a.id, rotulo: a.nome })),
+            ]}
+          />
+        ) : null}
+
         {vista === "mes" ? null : (
           <ResumoDoPeriodo
             periodo={vista === "dia" ? "dia" : "semana"}
-            agendamentos={agendamentos.dados.filter((a) =>
+            agendamentos={visiveis.filter((a) =>
               vista === "dia" ? a.data === data : semana.includes(a.data)
             )}
             agora={agora}
@@ -264,7 +311,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           grade={gradeDeTempo({
             dias: vista === "dia" ? [data] : semana,
             horarios: horarios.dados,
-            agendamentos: agendamentos.dados,
+            agendamentos: visiveis,
             agora,
             profissionais,
             bloqueios: bloqueios.dados ?? [],
@@ -273,13 +320,14 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
                 ? ocupacao.dados
                   ? { [data]: ocupacao.dados.profissionais }
                   : undefined
-                : (ocupacaoDaSemana.dados ?? undefined),
+                : expedienteDaSemana,
           })}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
           aoCriar={(dia, hora, barbeiroId, profissionais) => {
             // Na coluna que junta a equipe, só quem pode atender naquela
             // hora; sendo um só, ele já vem escolhido.
-            const unico = barbeiroId ?? (profissionais?.length === 1 ? profissionais[0] : undefined);
+            const unico =
+              barbeiroId ?? filtro ?? (profissionais?.length === 1 ? profissionais[0] : undefined);
             router.push(
               `/painel/agendamentos/novo?data=${dia}&hora=${encodeURIComponent(hora)}` +
                 (unico ? `&profissional=${unico}` : "") +

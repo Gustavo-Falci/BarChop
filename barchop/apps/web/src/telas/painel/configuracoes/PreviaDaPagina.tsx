@@ -234,7 +234,9 @@ function Quadro({
           style={{ width: tamanho.largura * escala, height: tamanho.altura * escala }}
         >
           <iframe
-            key={versao}
+            // O layout dos serviços é dado da página, não CSS: salvo no
+            // ar, a prévia recarrega pra mostrar.
+            key={`${versao}-${aparencia.layoutDosServicos}`}
             ref={iframe}
             title={titulo}
             src={endereco}

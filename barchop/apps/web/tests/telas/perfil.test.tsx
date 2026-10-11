@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { APARENCIA_PADRAO, REGRAS_PADRAO } from "@barchop/formato";
+import type { ServicoSerializado } from "@barchop/types";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../src/telas/PerfilDaBarbearia";
 import { sessaoDoCliente } from "../../src/sessao/armazenamento";
@@ -54,7 +55,7 @@ describe("perfil da barbearia", () => {
   });
 
   describe("layout dos serviços (Aparência)", () => {
-    const COM_CATEGORIAS = [
+    const COM_CATEGORIAS: ServicoSerializado[] = [
       { id: "s1", nome: "Corte", duracaoMinutos: 30, preco: "40.00", ativo: true, categoria: "cabelo", descricao: null, fotoUrl: null },
       { id: "s2", nome: "Barba", duracaoMinutos: 20, preco: "30.00", ativo: true, categoria: "barba", descricao: null, fotoUrl: null },
     ];

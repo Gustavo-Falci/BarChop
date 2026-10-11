@@ -1,6 +1,8 @@
 "use client";
 
+import { useId, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
+import { normalizarAparencia } from "@barchop/formato";
 import { useParams, useRouter } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
@@ -41,6 +43,10 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
   // Os próximos horários de cada serviço, em paralelo com as outras duas.
   // Se falhar, a página continua sem eles: são atalho, não conteúdo.
   const proximos = useRequisicao(() => api.publico.proximosHorarios(slug), [slug]);
+  // A aba de categoria escolhida, quando a Aparência pôs os serviços em
+  // abas (marco H). Null = a primeira.
+  const [aba, setAba] = useState<string | null>(null);
+  const idDasAbas = useId();
   const proximosDe = new Map(
     (proximos.dados ?? []).map((item) => [item.servicoId, item.horarios])
   );
@@ -213,9 +219,17 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
             <section className={estilos.secao}>
               <h2 className={estilos.titulo}>Serviços</h2>
               {/* Por categoria quando o dono as cadastrou; sem nenhuma, a
-                  lista é uma só, sem subtítulo. */}
-              {agruparPorCategoria(servicos.dados).map((grupo) => {
-                const lista = (
+                  lista é uma só, sem subtítulo. Na Aparência, o dono
+                  escolhe entre as seções empilhadas (o padrão) e abas, uma
+                  categoria por vez — com uma categoria só, não há o que
+                  trocar, e fica a lista. */}
+              {(() => {
+                const grupos = agruparPorCategoria(servicos.dados);
+                const emAbas =
+                  normalizarAparencia(dados?.aparencia).layoutDosServicos === "abas" &&
+                  grupos.length > 1 &&
+                  grupos.every((grupo) => grupo.titulo);
+                const listaDe = (grupo: (typeof grupos)[number]) => (
                   <ul className={estilos.servicos}>
                     {grupo.servicos.map((servico) => {
                       const horariosDoServico = proximosDe.get(servico.id) ?? [];
@@ -281,15 +295,65 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                     })}
                   </ul>
                 );
-                return grupo.titulo ? (
-                  <section key={grupo.titulo} className={estilos.grupo} aria-label={grupo.titulo}>
-                    <h3 className={estilos.subtitulo}>{grupo.titulo}</h3>
-                    {lista}
-                  </section>
-                ) : (
-                  <div key="todos">{lista}</div>
+
+                if (emAbas) {
+                  const atual = grupos.find((grupo) => grupo.titulo === aba) ?? grupos[0]!;
+                  const indice = grupos.indexOf(atual);
+                  // Setas do teclado trocam de aba, como num tablist de verdade.
+                  const aoTeclar = (evento: KeyboardEvent<HTMLDivElement>) => {
+                    const passo = evento.key === "ArrowRight" ? 1 : evento.key === "ArrowLeft" ? -1 : 0;
+                    if (!passo) return;
+                    evento.preventDefault();
+                    const proximo = grupos[(indice + passo + grupos.length) % grupos.length]!;
+                    setAba(proximo.titulo);
+                    document.getElementById(`${idDasAbas}-aba-${proximo.titulo}`)?.focus();
+                  };
+                  return (
+                    <>
+                      <div
+                        role="tablist"
+                        aria-label="Categorias de serviço"
+                        className={estilos.abas}
+                        onKeyDown={aoTeclar}
+                      >
+                        {grupos.map((grupo) => (
+                          <button
+                            key={grupo.titulo}
+                            type="button"
+                            role="tab"
+                            id={`${idDasAbas}-aba-${grupo.titulo}`}
+                            aria-selected={grupo === atual}
+                            aria-controls={`${idDasAbas}-painel`}
+                            tabIndex={grupo === atual ? 0 : -1}
+                            className={estilos.aba}
+                            onClick={() => setAba(grupo.titulo)}
+                          >
+                            {grupo.titulo}
+                          </button>
+                        ))}
+                      </div>
+                      <div
+                        role="tabpanel"
+                        id={`${idDasAbas}-painel`}
+                        aria-labelledby={`${idDasAbas}-aba-${atual.titulo}`}
+                      >
+                        {listaDe(atual)}
+                      </div>
+                    </>
+                  );
+                }
+
+                return grupos.map((grupo) =>
+                  grupo.titulo ? (
+                    <section key={grupo.titulo} className={estilos.grupo} aria-label={grupo.titulo}>
+                      <h3 className={estilos.subtitulo}>{grupo.titulo}</h3>
+                      {listaDe(grupo)}
+                    </section>
+                  ) : (
+                    <div key="todos">{listaDe(grupo)}</div>
+                  )
                 );
-              })}
+              })()}
             </section>
           ) : null}
         </div>

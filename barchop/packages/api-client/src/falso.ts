@@ -1296,6 +1296,20 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         decidir(["aparencia"]);
         return barbeariaDoPainel();
       },
+      async salvarLayoutDosServicos(layoutDosServicos: AparenciaDaPagina["layoutDosServicos"]) {
+        exigirDono();
+        if (layoutDosServicos !== "agrupada" && layoutDosServicos !== "abas") {
+          throw new ErroDaApi(400, "requisicao_invalida", "layout dos serviços fora da lista");
+        }
+        const noAr = { ...normalizarAparencia(estado.perfil.aparencia), layoutDosServicos };
+        estado.perfil = { ...estado.perfil, aparencia: noAr };
+        if (estado.aparenciaRascunho) {
+          const rascunho = { ...normalizarAparencia(estado.aparenciaRascunho), layoutDosServicos };
+          estado.aparenciaRascunho = JSON.stringify(rascunho) === JSON.stringify(noAr) ? null : rascunho;
+        }
+        decidir(["aparencia"]);
+        return barbeariaDoPainel();
+      },
       async descartarRascunhoDaAparencia() {
         exigirDono();
         estado.aparenciaRascunho = null;

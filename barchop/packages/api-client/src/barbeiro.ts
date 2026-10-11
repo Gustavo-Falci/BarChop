@@ -519,6 +519,15 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao("/barbearias/me/aparencia/publicar", { metodo: "POST", comToken: true });
     },
 
+    // Salva na hora, direto no ar (e no rascunho pendente, se houver).
+    salvarLayoutDosServicos(layoutDosServicos: AparenciaDaPagina["layoutDosServicos"]): Promise<BarbeariaDoPainel> {
+      return requisicao("/barbearias/me/aparencia/layout-dos-servicos", {
+        metodo: "PUT",
+        corpo: { layoutDosServicos },
+        comToken: true,
+      });
+    },
+
     descartarRascunhoDaAparencia(): Promise<BarbeariaDoPainel> {
       return requisicao("/barbearias/me/aparencia/rascunho", { metodo: "DELETE", comToken: true });
     },

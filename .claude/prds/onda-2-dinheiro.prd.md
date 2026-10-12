@@ -68,6 +68,7 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 - [ ] O BarChop tem CNPJ/razão social para abrir conta no provedor? (Mesma pendência da verificação da Meta e dos "a preencher" do site.)
 - [ ] A GR Barber, como piloto, paga plano ou fica de graça?
 - [ ] Extras do módulo do Barbeiro.app — entram na Onda 2 ou depois: pacote pré-pago, convênio, regras finas de uso (dias permitidos, intervalo mínimo, agendamentos futuros simultâneos), sugestão de preço, aba Receita, Pix Automático, selo "mais popular".
+- [ ] Plano de assinante de um cliente que "é" do parceiro: o dinheiro do plano cai na conta da barbearia (uma só no provedor) — de quem é a mensalidade, ela entra no acerto por profissional, e como o valor fixo por atendimento de assinante se combina com a regra "de quem é o cliente × quem atendeu"? Decidir antes do `/plan` do marco 3.
 - [ ] Gorjeta e desconto dado na hora entram no caixa e na divisão?
 - [ ] Quais relatórios o dono da GR Barber olharia de verdade (definir no piloto do caixa).
 

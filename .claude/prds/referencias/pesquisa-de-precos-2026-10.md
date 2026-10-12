@@ -34,7 +34,7 @@ Preços-base definidos pelo dono em 12/10/2026 (a proposta inicial era R$ 29,90 
 | Completo | R$ 44,90/mês | R$ 15/mês | sem limite | + lembrete por WhatsApp, planos de assinatura da barbearia (vitrine e pagamento online), relatórios completos |
 
 - **Anual**: 2 meses grátis (≈ −17%), cobrado de uma vez — Essencial R$ 349,00/ano, Completo R$ 449,00/ano (com 1 profissional).
-- **Teste**: 14 dias do Completo, sem cartão. Ao fim, sem pagamento, a barbearia **cai para o Grátis**: guarda os dados, desliga o que é pago, e não bloqueia a agenda do cliente final.
+- **Teste**: 14 dias com **todas as funcionalidades e serviços liberados** (o Completo, sem limite de profissionais) — decisão do dono, 12/10/2026; sem cartão. Ao fim, sem pagamento, a barbearia **cai para o Grátis**: guarda os dados, desliga o que é pago, e não bloqueia a agenda do cliente final.
 - **GR Barber (2 profissionais)**: Essencial R$ 44,90; Completo R$ 59,90. Comparando: Barbeiro.app Starter R$ 39,90 e Pro R$ 59,90, Trinks ≈ R$ 76, AppBarber R$ 109,90.
 - **Como fica**:
   - O Essencial custa R$ 5 a mais que o Starter do Barbeiro.app, mas já traz o caixa e o acerto entre profissionais.

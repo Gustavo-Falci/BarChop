@@ -30,8 +30,8 @@ We'll know we're right when **a GR Barber tiver ≥ 50% dos agendamentos feitos 
 **MVP** — Ondas 0 e 1: casa arrumada (conta e recuperação de senha do dono, slugs seguros, datas no passado recusadas), equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no endereço próprio da barbearia, lembrete automático por e-mail e WhatsApp com confirmar/cancelar, cadastro self-service do dono com onboarding, painel do dia — rodando em produção com a GR Barber.
 
 **Out of scope (MVP)**
-- Caixa, comissões, relatórios e cobrança da assinatura do SaaS — Onda 2, só depois do piloto provar valor.
-- Pagamento online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações — Onda 3.
+- Caixa, comissões, relatórios, cobrança da assinatura do SaaS e planos de assinatura da barbearia com pagamento online — Onda 2 (`.claude/prds/onda-2-dinheiro.prd.md`); o piloto da GR Barber começa com o sistema pronto, Onda 2 incluída.
+- Pagamento ou sinal online do agendamento avulso, fidelidade, lista de espera, avaliações — Onda 3 (o clube de assinatura e o pagamento online dos planos subiram para a Onda 2; pacotes ficaram pendentes lá).
 - Indicação, loja, múltiplas unidades, campanhas, login social — Onda 4.
 - IA no WhatsApp, NFS-e, domínio próprio, app do profissional — Onda 5 (diferenciais).
 - Blog, páginas de comparação e de funcionalidade completas no site — crescem depois da landing mínima.
@@ -45,14 +45,14 @@ We'll know we're right when **a GR Barber tiver ≥ 50% dos agendamentos feitos 
 | 0 | Onda 0 — Casa arrumada | Dono recupera a própria senha; trocar senha derruba sessões; nenhum slug sombreia rotas do sistema; ninguém agenda ou remarca para o passado; documentação descreve o BarChop como SaaS | complete | `.claude/plans/onda-0-casa-arrumada.plan.md` |
 | 1 | Onda 1 — Agenda que funciona (MVP + piloto) | Barbearia com vários profissionais e papéis; cliente agenda com o profissional que quer, na página da barbearia no endereço próprio; lembrete chega e cliente confirma/cancela; dono se cadastra e configura sozinho; GR Barber em produção | in-progress | `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
 | 1s | Site de marketing (mínimo, em paralelo à Onda 1) | Visitante entende a promessa, vê preços e cria a conta da barbearia sem falar com ninguém (preços: "grátis durante o lançamento"; tabela e `/gratis` na Onda 2) | complete | `.claude/plans/onda-1s-site-de-marketing.plan.md` |
-| 2 | Onda 2 — Dinheiro | Dono fecha o caixa do dia, vê comissões e relatórios; BarChop cobra a própria assinatura (grátis + planos por profissional, teste de 14 dias) | pending | — |
-| 3 | Onda 3 — Retenção do cliente final | Cliente paga ou deixa sinal online, assina clube, acumula pontos, entra em lista de espera e avalia o atendimento | pending | — |
+| 2 | Onda 2 — Dinheiro | BarChop cobra a própria assinatura (grátis + planos por profissional, teste de 14 dias); dono fecha o caixa do dia com o acerto entre profissionais e vê relatórios; barbearia vende planos de assinatura ao cliente com pagamento online | in-progress | PRD: `.claude/prds/onda-2-dinheiro.prd.md` |
+| 3 | Onda 3 — Retenção do cliente final | Cliente paga ou deixa sinal online no agendamento avulso, acumula pontos, entra em lista de espera e avalia o atendimento | pending | — |
 | 4 | Onda 4 — Crescimento | Indicação, loja com estoque, múltiplas unidades, campanhas, login com Google/Apple | pending | — |
 | 5 | Onda 5 — Diferenciais | Assistente de IA no WhatsApp, NFS-e, domínio próprio, app do profissional | pending | — |
 
 ## Open Questions
 - [ ] Qual é o diferencial do BarChop frente ao Barbeiro.app, Trinks e AppBarber (a promessa de uma frase do site)?
-- [ ] Preço e nomes dos planos (o grátis tem quais limites?).
+- [ ] Preço e nomes dos planos (o grátis tem quais limites?) — acompanhada no PRD da Onda 2.
 - [ ] Existe CNPJ para a verificação de negócio na Meta (pré-requisito do WhatsApp oficial)?
 - [ ] Abrir para a 2ª barbearia só depois dos 60 dias de piloto, ou antes?
 - [ ] Linha de base de faltas da GR Barber — como medir antes do lembrete existir?
@@ -61,8 +61,8 @@ We'll know we're right when **a GR Barber tiver ≥ 50% dos agendamentos feitos 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | Verificação da Meta / aprovação de templates demora semanas | High | High | Iniciar já, em paralelo; lembrete por e-mail sai primeiro |
-| Escopo cresce em direção aos 13 módulos do concorrente | High | High | Não abrir onda nova antes do piloto rodar a Onda 1 |
-| Piloto com uma barbearia só não generaliza | Medium | Medium | Entrevistar 3–5 barbearias antes da Onda 2 |
+| Escopo cresce em direção aos 13 módulos do concorrente | High | High | Decisão do dono (2026-10-12): o piloto só começa com o sistema pronto, Onda 2 incluída; cada onda em marcos pequenos, um em produção antes do próximo |
+| Piloto com uma barbearia só não generaliza | Medium | Medium | Decisão do dono (2026-10-12): sem entrevistas prévias; validar com a conversão das primeiras contas externas e regras configuráveis (ex.: divisão do caixa) |
 | Diferencial fraco frente a concorrente estabelecido | Medium | High | Responder a 1ª open question antes do site |
 | Múltiplas unidades mudam o modelo de horários e equipe tarde demais | Medium | Medium | Jornada por profissional já desenhada pensando em unidade |
 

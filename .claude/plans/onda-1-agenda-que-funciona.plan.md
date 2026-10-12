@@ -4,7 +4,33 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-11 — a tela Aparência inteira, marcos A a H, tudo em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-12 — PRD da Onda 2 na main, Onda 2 adiada) — vale mais que as seções abaixo
+
+**Estado:** produção segue em `336717d` (#128); a `main` só ganhou docs depois disso (#129, #130 e este PR). Nada pela metade em branch nenhuma. Sem migração nova (última: `20261012120000_aparencia`).
+
+**Onda 2 (dinheiro) — PRD pronto, mas o dono decidiu NÃO começar agora** (não propor `/plan` dela sem ele pedir):
+- PRD: `.claude/prds/onda-2-dinheiro.prd.md` (#130). Quatro marcos, nessa ordem:
+  1. BarChop cobra a assinatura.
+  2. Caixa do dia e comissões: acerto por profissional, regra "de quem é o cliente × quem atendeu"; o cliente é de quem o atendeu primeiro e o dono troca à mão.
+  3. Planos da barbearia para o cliente, com pagamento online e o dinheiro na conta da própria barbearia; o BarChop não cobra taxa sobre essas vendas.
+  4. Relatórios.
+- O que o PRD mestre (`barchop-saas.prd.md`) passou a registrar:
+  - o piloto da GR Barber só começa com o sistema pronto, Onda 2 incluída;
+  - sem entrevistas com outras barbearias;
+  - o clube de assinatura subiu da Onda 3 para a 2.
+- Preços decididos: Grátis (1 profissional, agendamentos sem limite), Essencial R$ 34,90 + R$ 10 por extra (até 3), Completo R$ 44,90 + R$ 15 por extra. Anual com 2 meses grátis. Teste de 14 dias com tudo liberado, sem cartão.
+- Referências em `.claude/prds/referencias/`: as duas análises do Barbeiro.app e a pesquisa de preços dos concorrentes.
+- Trava o `/plan` do marco 1:
+  - CNPJ ou razão social (nenhum provedor abre conta sem);
+  - escolha do provedor de pagamento;
+  - custos da mensagem de WhatsApp na Meta, da taxa do provedor e da VM.
+- O marco 2 não depende de gateway nem de CNPJ.
+
+**O que falta (perguntar ao dono a ordem):** os itens 1 a 5 e 7 da lista da seção abaixo seguem valendo. O item 6 (Onda 2) virou o bloco acima e está adiado.
+
+**Ambiente local e Combinados:** iguais aos da seção abaixo.
+
+## RETOMAR AQUI (noite de 2026-10-11 — a tela Aparência inteira, marcos A a H, tudo em produção) — histórico
 
 **Estado:** `main` = **produção** = `336717d` (até o #128; cada deploy conferido no ar com curl e grep nos chunks — por último: `PUT /barbearias/me/aparencia/layout-dos-servicos` dá 401 sem token (rota que não existe dá 404), "Categorias de serviço" no chunk da página pública e "Layout dos serviços" no de `/painel/configuracoes/aparencia`). Nada pela metade em branch nenhuma. **Migração nova:** `20261012120000_aparencia` (aplicada em produção pelo dono, e no dev e no test).
 

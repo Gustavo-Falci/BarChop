@@ -35,7 +35,7 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 ## Scope
 **MVP** — quatro marcos, nesta ordem (decisão do dono), cada um em produção antes do próximo:
 
-1. **BarChop cobra a assinatura**: barbearia nova ganha 14 dias de teste; depois escolhe o plano grátis (com limites) ou um plano pago por profissional e paga online; tabela de preços e `/gratis` no site no lugar de "grátis durante o lançamento". Preços, nomes e limites do grátis: TBD (ver Open Questions).
+1. **BarChop cobra a assinatura**: barbearia nova ganha 14 dias de teste; depois escolhe o plano grátis (com limites) ou um plano pago por profissional e paga online; tabela de preços e `/gratis` no site no lugar de "grátis durante o lançamento". Planos: Grátis (1 profissional), Essencial R$ 34,90 + R$ 10 por extra (até 3) e Completo R$ 44,90 + R$ 15 por extra (ver Open Questions para o que ainda falta conferir).
 2. **Caixa do dia e comissões**: ao concluir um atendimento, fica registrado quanto foi cobrado, a forma de pagamento e quem recebeu; todo cliente "é de" um profissional — automaticamente de quem o atendeu primeiro, e **o dono pode trocar à mão** (requisito, não detalhe: os clientes que já existem quando o recurso entrar no ar seriam atribuídos por acaso); a barbearia configura as regras de divisão por combinação "de quem é o cliente × quem atendeu" (a da GR Barber tem que caber); fechar o dia mostra, por profissional, quanto recebeu, quanto lhe cabe e quanto deve repassar a quem — cada um recebe direto, então o fechamento é um **acerto por profissional**, não um caixa único.
 3. **Planos da barbearia para o cliente**: a barbearia cria planos de assinatura recorrente (ciclo, preço, dias de teste, serviços incluídos com limite de usos por ciclo), mostra na página pública numa vitrine que pode ligar/desligar, e o cliente assina pagando online (Pix e cartão recorrente) **com o dinheiro caindo na conta da própria barbearia no provedor** — ou no local, se a barbearia permitir; o painel lista os assinantes por situação (ativa, em atraso, pendente, cancelada…); o profissional que atende um assinante ganha um **valor fixo por atendimento** definido pela barbearia; o BarChop **não** cobra taxa sobre essas vendas.
 4. **Relatórios**: o dono vê quanto entrou por período, por profissional e por forma de pagamento, e o histórico dos fechamentos e acertos. Recorte exato: TBD — needs validation via uso do caixa no piloto.
@@ -62,8 +62,9 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 | 4 | Relatórios | Dono vê o que entrou por período, profissional e forma de pagamento, e o histórico dos fechamentos | pending | — |
 
 ## Open Questions
-- [ ] Preços, nomes dos planos do BarChop e o que o plano grátis limita — proposta provisória em `referencias/pesquisa-de-precos-2026-10.md` (Grátis / Essencial R$ 29,90 + R$ 10 / Completo R$ 39,90 + R$ 15); o dono decide antes do `/plan` do marco 1.
-- [ ] O que acontece com a barbearia que termina o teste sem pagar, ou atrasa a mensalidade: cai para o grátis, fica só leitura, ou bloqueia?
+- [x] Preços e nomes dos planos do BarChop — decididos pelo dono em 12/10/2026: Grátis (1 profissional), Essencial R$ 34,90 + R$ 10 por profissional extra (até 3), Completo R$ 44,90 + R$ 15 por extra (sem limite); detalhes em `referencias/pesquisa-de-precos-2026-10.md`.
+- [ ] Antes de fechar os preços: custo por mensagem do WhatsApp na Meta, taxa do provedor sobre a mensalidade e custo da VM (quantas contas pagas cobrem a infraestrutura).
+- [ ] O que acontece com a barbearia que termina o teste sem pagar, ou atrasa a mensalidade: cai para o grátis, fica só leitura, ou bloqueia? (Proposta: cai para o Grátis, guarda os dados e não bloqueia a agenda do cliente final.)
 - [ ] Quais provedores de pagamento: um para o BarChop cobrar as barbearias e um (ou vários) para a barbearia receber dos clientes — e o que cada um exige de cadastro (CNPJ, conta PJ).
 - [ ] O BarChop tem CNPJ/razão social para abrir conta no provedor? (Mesma pendência da verificação da Meta e dos "a preencher" do site.)
 - [ ] A GR Barber, como piloto, paga plano ou fica de graça?

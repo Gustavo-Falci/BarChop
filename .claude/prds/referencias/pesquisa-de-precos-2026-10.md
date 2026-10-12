@@ -23,20 +23,22 @@
 - Grátis permanente só no Barbeiro.app e na GENDA; os outros dão de 5 a 7 dias de teste. Os 14 dias do BarChop são mais generosos que todos.
 - Caixa e comissão já são esperados nos planos pagos (BarberCode, GENDA, BestBarbers premium).
 
-## Proposta para o BarChop (provisória — decisão do dono)
+## Proposta para o BarChop
+
+Preços-base definidos pelo dono em 12/10/2026 (a proposta inicial era R$ 29,90 e R$ 39,90); o resto da tabela segue a proposta.
 
 | Plano | Preço com 1 profissional | Profissional extra | Limite | O que entra |
 |---|---|---|---|---|
 | Grátis | R$ 0 | — | 1 profissional | Agenda, agendamentos ilimitados, página pública com Aparência, lembrete por e-mail |
-| Essencial | R$ 29,90/mês | R$ 10/mês | até 3 | + equipe com papéis, caixa do dia e acerto entre profissionais, relatórios básicos |
-| Completo | R$ 39,90/mês | R$ 15/mês | sem limite | + lembrete por WhatsApp, planos de assinatura da barbearia (vitrine e pagamento online), relatórios completos |
+| Essencial | R$ 34,90/mês | R$ 10/mês | até 3 | + equipe com papéis, caixa do dia e acerto entre profissionais, relatórios básicos |
+| Completo | R$ 44,90/mês | R$ 15/mês | sem limite | + lembrete por WhatsApp, planos de assinatura da barbearia (vitrine e pagamento online), relatórios completos |
 
-- **Anual**: 2 meses grátis (≈ −17%), cobrado de uma vez.
+- **Anual**: 2 meses grátis (≈ −17%), cobrado de uma vez — Essencial R$ 349,00/ano, Completo R$ 449,00/ano (com 1 profissional).
 - **Teste**: 14 dias do Completo, sem cartão. Ao fim, sem pagamento, a barbearia **cai para o Grátis**: guarda os dados, desliga o que é pago, e não bloqueia a agenda do cliente final.
-- **GR Barber (2 profissionais)**: Essencial R$ 39,90; Completo R$ 54,90. Comparando: Barbeiro.app Pro R$ 59,90, Trinks ≈ R$ 76, AppBarber R$ 109,90.
-- **Por quê**:
-  - O Essencial empata com o Starter do Barbeiro.app (concorrente direto e mais barato).
-  - O Completo fica abaixo do Pro deles a partir de 2 profissionais, com extra mais barato (R$ 15 contra R$ 20).
+- **GR Barber (2 profissionais)**: Essencial R$ 44,90; Completo R$ 59,90. Comparando: Barbeiro.app Starter R$ 39,90 e Pro R$ 59,90, Trinks ≈ R$ 76, AppBarber R$ 109,90.
+- **Como fica**:
+  - O Essencial custa R$ 5 a mais que o Starter do Barbeiro.app, mas já traz o caixa e o acerto entre profissionais.
+  - O Completo empata com o Pro deles com 2 profissionais e fica mais barato a partir de 3, porque o extra custa R$ 15 contra R$ 20. Exemplo com 4 profissionais: R$ 89,90 contra R$ 99,90.
   - O grátis sem limite de agendamentos é o argumento contra os 100/mês do Barbeiro.app.
 - **A conferir antes de fechar**:
   - custo por mensagem do WhatsApp na Meta (define se o Completo aguenta lembrete sem cota);

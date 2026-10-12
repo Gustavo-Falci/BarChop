@@ -1,7 +1,7 @@
 # BarChop — Onda 2: Dinheiro
 
 **PRD-mãe**: `.claude/prds/barchop-saas.prd.md` (marco 2)
-**Referência de concorrente**: análise funcional do módulo de Planos de Assinatura do Barbeiro.app (Gustavo Falci, 12/10/2026 — arquivo fora do repo, `Analise_Planos_Assinatura_BarbeiroApp.docx`)
+**Referências** (em `.claude/prds/referencias/`): `barbeiro-app-planos-da-barbearia.md` (módulo de planos que a barbearia vende ao cliente), `barbeiro-app-planos-do-saas.md` (o que o Barbeiro.app cobra da barbearia) e `pesquisa-de-precos-2026-10.md` (concorrentes + proposta de preços do BarChop)
 
 ## Problem
 O dono de barbearia pequena controla o dinheiro no caderno e no app da maquininha: no fim do dia não sabe ao certo quanto entrou, quanto cada profissional fez e quanto um deve ao outro quando atendeu cliente alheio — a conta é feita de cabeça e gera erro e atrito na sociedade. Além disso, a barbearia não tem como vender plano recorrente aos clientes (receita previsível, cliente fiel), e o próprio BarChop não cobra nada, então não se paga nem pode abrir o cadastro para outras barbearias de verdade.
@@ -62,7 +62,7 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 | 4 | Relatórios | Dono vê o que entrou por período, profissional e forma de pagamento, e o histórico dos fechamentos | pending | — |
 
 ## Open Questions
-- [ ] Preços, nomes dos planos do BarChop e o que o plano grátis limita — o dono traz os valores antes do `/plan` do marco 1.
+- [ ] Preços, nomes dos planos do BarChop e o que o plano grátis limita — proposta provisória em `referencias/pesquisa-de-precos-2026-10.md` (Grátis / Essencial R$ 29,90 + R$ 10 / Completo R$ 39,90 + R$ 15); o dono decide antes do `/plan` do marco 1.
 - [ ] O que acontece com a barbearia que termina o teste sem pagar, ou atrasa a mensalidade: cai para o grátis, fica só leitura, ou bloqueia?
 - [ ] Quais provedores de pagamento: um para o BarChop cobrar as barbearias e um (ou vários) para a barbearia receber dos clientes — e o que cada um exige de cadastro (CNPJ, conta PJ).
 - [ ] O BarChop tem CNPJ/razão social para abrir conta no provedor? (Mesma pendência da verificação da Meta e dos "a preencher" do site.)

@@ -1,3 +1,16 @@
+/* Título em cima e o campo embaixo, com o mesmo respiro e a mesma letra
+   do rótulo "Capa" (componentes/CampoDeImagem.module.css). */
+.bloco {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.titulo {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
 /* A prévia à esquerda, num quadro do tamanho da maior logo, e os
    controles à direita; no celular, um embaixo do outro. */
 .campo {

@@ -316,13 +316,13 @@ function TelaDaAparencia() {
             <ul className={estilos.imagens}>
               <LinhaDaImagem
                 titulo="Logo"
-                detalhe="Quadrada · até 2 MB"
+                detalhe="512 × 512 px (quadrada) · PNG com fundo transparente, JPG ou WebP"
                 url={dados.logoUrl}
                 acao={dados.logoUrl ? "Trocar logo" : "Enviar logo"}
               />
               <LinhaDaImagem
                 titulo="Capa"
-                detalhe="Deitada, 4 por 1 — é a primeira coisa que o cliente vê"
+                detalhe="1600 × 400 px (4 por 1) · JPG, PNG ou WebP — é a primeira coisa que o cliente vê"
                 url={dados.capaUrl}
                 acao={dados.capaUrl ? "Trocar capa" : "Enviar capa"}
               />

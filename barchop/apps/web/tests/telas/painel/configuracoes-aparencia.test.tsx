@@ -53,6 +53,13 @@ describe("aparência", () => {
     expect(screen.getAllByText("falta")).toHaveLength(2);
   });
 
+  it("logo e capa: diz a medida e os tipos de arquivo recomendados", async () => {
+    await abrir();
+
+    expect(screen.getByText(/512 × 512 px \(quadrada\) · PNG com fundo transparente, JPG ou WebP/)).toBeInTheDocument();
+    expect(screen.getByText(/1600 × 400 px \(4 por 1\) · JPG, PNG ou WebP/)).toBeInTheDocument();
+  });
+
   it("escolher um tema guarda o rascunho, mas a página do cliente não muda", async () => {
     const falso = await abrir();
 

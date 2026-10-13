@@ -37,6 +37,12 @@ describe("capa nas configurações", () => {
     expect(imagem).toHaveAttribute("src", (await falso.barbeiro.minhaBarbearia()).capaUrl!);
   });
 
+  it("diz a medida recomendada da capa", async () => {
+    montarPainel(<DadosDoNegocio />, criarApiClientFalso());
+
+    expect(await screen.findByText(/1600 × 400 px \(4 por 1\)/)).toBeInTheDocument();
+  });
+
   it("remover tira a capa", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.enviarCapa(new Blob([PNG]));
@@ -70,7 +76,7 @@ describe("capa nas configurações", () => {
 
     await userEvent.upload(await screen.findByLabelText(/^capa/i), arquivo());
 
-    expect(await screen.findByText(/JPG, PNG ou WebP/i)).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/JPG, PNG ou WebP/i);
   });
 });
 

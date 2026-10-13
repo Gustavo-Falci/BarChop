@@ -424,6 +424,8 @@ function Dados() {
               urlAtual={barbearia.dados.capaUrl ?? null}
               enviar={enviarCapa}
               remover={api.barbeiro.removerCapa}
+              // A capa vai até 1600px de lado maior (painel/redimensionar.ts).
+              apoio="1600 × 400 px (4 por 1). JPG, PNG ou WebP; a gente ajusta o tamanho."
             />
           </Secao>
         ) : null}

@@ -28,14 +28,39 @@
   justify-items: start;
 }
 
-.escolher {
-  font-size: var(--texto-sm);
-  font-weight: 600;
-  color: var(--cor-ink-soft);
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-xs);
 }
 
+/* Escondido da vista, não do teclado nem do leitor de tela. */
 .arquivo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* O <label> com cara de botão, do tamanho do da capa. */
+.escolher {
+  padding: var(--espaco-xs) var(--espaco-md);
   font-size: var(--texto-sm);
+}
+
+/* O foco está no <input> escondido; o anel aparece no botão que se vê. */
+.arquivo:focus-visible + .escolher {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 3px;
+}
+
+.escolher[data-ocupado] {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 .apoio {

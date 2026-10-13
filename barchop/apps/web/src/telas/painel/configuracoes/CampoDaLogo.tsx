@@ -7,6 +7,7 @@ import { Aviso } from "../../../componentes/Aviso";
 import { Botao } from "../../../componentes/Botao";
 import { LogoDaBarbearia } from "../../../componentes/LogoDaBarbearia";
 import { SeletorEmPilulas } from "../../../componentes/SeletorEmPilulas";
+import estilosDoBotao from "../../../componentes/Botao.module.css";
 import { prepararLogo } from "../../../painel/logo";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import estilos from "./CampoDaLogo.module.css";
@@ -127,43 +128,51 @@ export function CampoDaLogo({
       </div>
 
       <div className={estilos.controles}>
-        <label className={estilos.escolher} htmlFor={id}>
-          {marca ? "Escolher logo nova" : "Escolher logo"}
-        </label>
-        <input
-          id={id}
-          className={estilos.arquivo}
-          type="file"
-          accept="image/png,image/webp,image/jpeg"
-          disabled={ocupado}
-          aria-describedby={`${id}-apoio`}
-          onChange={(evento) => {
-            void aoEscolher(evento.target.files?.[0]);
-            evento.target.value = "";
-          }}
-        />
+        {/* Como na capa (CampoDeImagem): o <input> fica escondido, mas
+            focável, e o <label> dele tem cara de botão. */}
+        <div className={estilos.acoes}>
+          <input
+            id={id}
+            className={estilos.arquivo}
+            type="file"
+            accept="image/png,image/webp,image/jpeg"
+            disabled={ocupado}
+            aria-describedby={`${id}-apoio`}
+            onChange={(evento) => {
+              void aoEscolher(evento.target.files?.[0]);
+              evento.target.value = "";
+            }}
+          />
+          <label
+            htmlFor={id}
+            className={`${estilosDoBotao.botao} ${estilosDoBotao.contorno} ${estilos.escolher}`}
+            data-ocupado={ocupado || undefined}
+          >
+            {ocupado ? "Enviando…" : marca ? "Trocar logo" : "Escolher logo"}
+          </label>
+          {marca ? (
+            <Botao variante="fantasma" onClick={remover} carregando={ocupado}>
+              Remover logo
+            </Botao>
+          ) : null}
+        </div>
         <span className={estilos.apoio} id={`${id}-apoio`}>
           512 × 512 px, quadrada. PNG com fundo transparente fica melhor: a moldura segue o formato do desenho.
         </span>
 
         {marca ? (
-          <>
-            <SeletorEmPilulas
-              nome={`${id}-formato`}
-              legenda="Moldura"
-              opcoes={OPCOES}
-              valor={marca.logoFormato}
-              aoTrocar={(formato) => void trocarFormato(formato)}
-              efeito={
-                sugerido
-                  ? `Pelo arquivo, sugerimos ${ROTULO_DA_SUGESTAO[sugerido]}. Troque se não ficou bom.`
-                  : undefined
-              }
-            />
-            <Botao variante="contorno" onClick={remover} carregando={ocupado}>
-              Remover logo
-            </Botao>
-          </>
+          <SeletorEmPilulas
+            nome={`${id}-formato`}
+            legenda="Moldura"
+            opcoes={OPCOES}
+            valor={marca.logoFormato}
+            aoTrocar={(formato) => void trocarFormato(formato)}
+            efeito={
+              sugerido
+                ? `Pelo arquivo, sugerimos ${ROTULO_DA_SUGESTAO[sugerido]}. Troque se não ficou bom.`
+                : undefined
+            }
+          />
         ) : null}
         {aviso ? <Aviso>{aviso}</Aviso> : null}
       </div>

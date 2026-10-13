@@ -168,8 +168,10 @@ describe("barra de topo do painel", () => {
       montar();
 
       const maisOpcoes = await screen.findByRole("button", { name: "Mais opções" });
-      // O ponto no gatilho avisa que há novidade sem abrir o menu.
-      expect(maisOpcoes).toHaveAttribute("data-aviso");
+      // O ponto no gatilho avisa que há novidade sem abrir o menu. Vem de
+      // um efeito depois da montagem (lê o localStorage): espera, senão o
+      // teste corre contra o render.
+      await waitFor(() => expect(maisOpcoes).toHaveAttribute("data-aviso"));
       await userEvent.click(maisOpcoes);
 
       const novidades = screen.getByRole("button", { name: /Novidades/ });

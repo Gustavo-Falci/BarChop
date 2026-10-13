@@ -56,7 +56,7 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
-| 1 | BarChop cobra a assinatura | Barbearia nova testa 14 dias, escolhe grátis ou plano pago por profissional e paga online; site mostra a tabela de preços e `/gratis` | pending | — |
+| 1 | BarChop cobra a assinatura | Barbearia nova testa 14 dias, escolhe grátis ou plano pago por profissional e paga online; site mostra a tabela de preços e `/gratis` | in-progress | `.claude/plans/cobranca-do-barchop.plan.md` |
 | 2 | Caixa do dia e comissões | Dono fecha o dia no BarChop e vê o acerto por profissional segundo as regras da barbearia (de quem é o cliente × quem atendeu), sem conta de cabeça | pending | — |
 | 3 | Planos da barbearia para o cliente | Cliente assina um plano da barbearia na página pública e paga online (Pix/cartão) ou no local; dono acompanha os assinantes; profissional ganha valor fixo por atendimento de assinante | pending | — |
 | 4 | Relatórios | Dono vê o que entrou por período, profissional e forma de pagamento, e o histórico dos fechamentos | pending | — |
@@ -65,12 +65,12 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 - [x] Preços e nomes dos planos do BarChop — decididos pelo dono em 12/10/2026: Grátis (1 profissional), Essencial R$ 34,90 + R$ 10 por profissional extra (até 3), Completo R$ 44,90 + R$ 15 por extra (sem limite); detalhes em `referencias/pesquisa-de-precos-2026-10.md`.
 - [ ] Antes de fechar os preços: custo por mensagem do WhatsApp na Meta, taxa do provedor sobre a mensalidade e custo da VM (quantas contas pagas cobrem a infraestrutura).
 - [ ] O que acontece com a barbearia que termina o teste sem pagar, ou atrasa a mensalidade: cai para o grátis, fica só leitura, ou bloqueia? (Proposta: cai para o Grátis, guarda os dados e não bloqueia a agenda do cliente final.)
-- [ ] Quais provedores de pagamento: um para o BarChop cobrar as barbearias e um (ou vários) para a barbearia receber dos clientes — e o que cada um exige de cadastro (CNPJ, conta PJ).
+- [x] Provedor para o BarChop cobrar as barbearias: **Stripe**, conta de pessoa física (CPF), sem CNPJ — decisão do dono em 13/10/2026 (ADR-0010). O provedor para a barbearia receber dos clientes (marco 3) segue em aberto.
 - [ ] O BarChop tem CNPJ/razão social para abrir conta no provedor? (Mesma pendência da verificação da Meta e dos "a preencher" do site.)
 - [ ] A GR Barber, como piloto, paga plano ou fica de graça?
 - [ ] Extras do módulo do Barbeiro.app — entram na Onda 2 ou depois: pacote pré-pago, convênio, regras finas de uso (dias permitidos, intervalo mínimo, agendamentos futuros simultâneos), sugestão de preço, aba Receita, Pix Automático, selo "mais popular".
 - [ ] Plano de assinante de um cliente que "é" do parceiro: o dinheiro do plano cai na conta da barbearia (uma só no provedor) — de quem é a mensalidade, ela entra no acerto por profissional, e como o valor fixo por atendimento de assinante se combina com a regra "de quem é o cliente × quem atendeu"? Decidir antes do `/plan` do marco 3.
-- [ ] Gorjeta e desconto dado na hora entram no caixa e na divisão?
+- [x] Gorjeta e desconto — decidido pelo dono em 13/10/2026: a gorjeta vai 100% para quem atendeu (fora da regra de divisão); o desconto reduz o valor cobrado e a divisão é feita sobre o que foi pago.
 - [ ] Quais relatórios o dono da GR Barber olharia de verdade (definir no piloto do caixa).
 
 ## Risks

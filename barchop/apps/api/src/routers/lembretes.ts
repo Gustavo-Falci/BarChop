@@ -6,6 +6,7 @@ import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { carregarRegras, garantirPrazoDoCliente } from "../lib/regras";
 import { dateParaData, dateParaHora } from "../lib/horas";
 import type { PayloadBarbeiro, PayloadCliente, PayloadLembrete } from "../plugins/auth";
+import { notificarAgendamento } from "../lib/notificacoes";
 import type { App } from "../tipos";
 
 // O destino do link do e-mail de lembrete: confirmar presença ou
@@ -107,9 +108,15 @@ export function registrarRotasLembretes(app: App): void {
       // Status e marca no WHERE: um cancelamento que commitou depois da
       // leitura ganha, e a segunda confirmação não troca a hora da
       // primeira.
-      const { count } = await prisma.agendamento.updateMany({
-        where: { id, status: { in: [...STATUS_ATIVO] }, presencaConfirmadaEm: null },
-        data: { presencaConfirmadaEm: new Date() },
+      const count = await prisma.$transaction(async (tx) => {
+        const { count } = await tx.agendamento.updateMany({
+          where: { id, status: { in: [...STATUS_ATIVO] }, presencaConfirmadaEm: null },
+          data: { presencaConfirmadaEm: new Date() },
+        });
+        // Só quem mudou alguma coisa avisa a equipe: o segundo clique
+        // não confirma de novo, então não notifica de novo.
+        if (count > 0) await notificarAgendamento(tx, "confirmado", id);
+        return count;
       });
 
       const depois = await carregar(id);
@@ -141,9 +148,12 @@ export function registrarRotasLembretes(app: App): void {
 
       // Mesmo cuidado do remarcar: o status no WHERE faz a corrida com
       // outra mudança terminar num resultado só.
-      await prisma.agendamento.updateMany({
-        where: { id, status: { in: [...STATUS_ATIVO] } },
-        data: { status: "cancelado" },
+      await prisma.$transaction(async (tx) => {
+        const { count } = await tx.agendamento.updateMany({
+          where: { id, status: { in: [...STATUS_ATIVO] } },
+          data: { status: "cancelado" },
+        });
+        if (count > 0) await notificarAgendamento(tx, "cancelado", id);
       });
 
       const depois = await carregar(id);

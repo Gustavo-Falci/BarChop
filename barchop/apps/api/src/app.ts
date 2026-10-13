@@ -32,6 +32,8 @@ import { registrarRotasHorarios } from "./routers/horarios";
 import { registrarRotaDeArquivos, registrarRotasImagens } from "./routers/imagens";
 import { ocultarTokenDoLembrete, registrarRotasLembretes } from "./routers/lembretes";
 import { registrarRotasMe } from "./routers/me";
+import { registrarRotasNotificacoes } from "./routers/notificacoes";
+import { registrarRotasAvisos } from "./routers/avisos";
 import { registrarRotasOcupacao } from "./routers/ocupacao";
 import {
   registrarRotasServicos,
@@ -177,6 +179,7 @@ export function buildApp(
     await protegidas.register(rateLimit, { global: false });
     const limitesDeEquipe = limitesDaEquipe(protegidas);
     registrarRotasMe(protegidas);
+    registrarRotasNotificacoes(protegidas);
     registrarRotasBarbeariasProtegidas(protegidas);
     registrarRotasHorarios(protegidas);
     registrarRotasOcupacao(protegidas);
@@ -212,6 +215,7 @@ export function buildApp(
   app.register(async (doSuporte: App) => {
     doSuporte.addHook("onRequest", autenticarSuporte);
     registrarRotasSuporte(doSuporte);
+    registrarRotasAvisos(doSuporte);
   });
 
   app.get("/health", async () => ({ status: "ok" }));

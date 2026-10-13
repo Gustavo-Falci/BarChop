@@ -51,7 +51,7 @@ describe("prévia da página", () => {
       window.location.origin
     );
 
-    await userEvent.click(screen.getByRole("radio", { name: "Escuro" }));
+    await userEvent.click(screen.getByRole("switch", { name: "Modo escuro" }));
     expect(enviar).toHaveBeenLastCalledWith(
       expect.objectContaining({ modo: "escuro" }),
       window.location.origin
@@ -60,10 +60,26 @@ describe("prévia da página", () => {
 
   it("o modo da prévia acompanha o modo padrão quando o dono o fixa", () => {
     const { rerender } = render(<PreviaDaPagina slug="gr-barber" aparencia={APARENCIA_PADRAO} pendente={false} />);
-    expect(screen.getByRole("radio", { name: "Claro" })).toBeChecked();
+    expect(screen.getByRole("switch", { name: "Modo escuro" })).toHaveAttribute("aria-checked", "false");
 
     rerender(<PreviaDaPagina slug="gr-barber" aparencia={{ ...APARENCIA_PADRAO, modoPadrao: "escuro" }} pendente />);
-    expect(screen.getByRole("radio", { name: "Escuro" })).toBeChecked();
+    expect(screen.getByRole("switch", { name: "Modo escuro" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("mostra o endereço da página em cima do aparelho, como no navegador", async () => {
+    render(<PreviaDaPagina slug="gr-barber" aparencia={APARENCIA_PADRAO} pendente={false} />);
+
+    expect(screen.getByText("localhost:3000/gr-barber")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("radio", { name: "Agendar" }));
+    expect(screen.getByText("localhost:3000/gr-barber/agendar")).toBeInTheDocument();
+  });
+
+  it("atualizar recarrega a página da prévia", async () => {
+    render(<PreviaDaPagina slug="gr-barber" aparencia={APARENCIA_PADRAO} pendente={false} />);
+    const antes = quadro();
+
+    await userEvent.click(screen.getByRole("button", { name: "Atualizar a prévia" }));
+    expect(quadro()).not.toBe(antes);
   });
 
   it("diz se o que se vê já está no ar", () => {

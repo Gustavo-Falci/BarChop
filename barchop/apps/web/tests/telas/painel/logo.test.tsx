@@ -38,6 +38,12 @@ describe("logo nas configurações", () => {
     expect(screen.getByText(/sugerimos a moldura redonda/i)).toBeInTheDocument();
   });
 
+  it("diz a medida recomendada da logo", async () => {
+    montarPainel(<DadosDoNegocio />, criarApiClientFalso());
+
+    expect(await screen.findByText(/512 × 512 px, quadrada/)).toBeInTheDocument();
+  });
+
   it("trocar a moldura salva só o formato, sem reenviar a imagem", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.enviarLogo(new Blob([PNG]), "redonda");

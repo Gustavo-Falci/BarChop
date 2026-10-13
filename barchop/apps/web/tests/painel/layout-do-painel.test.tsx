@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
 import { LayoutDoPainel } from "../../src/painel/LayoutDoPainel";
@@ -71,5 +71,13 @@ describe("shell do painel", () => {
     // E a navegação fica FORA do main: dentro, ela seria relida como
     // parte do conteúdo a cada troca de tela.
     expect(screen.getByRole("main")).not.toContainElement(navegacao);
+  });
+
+  it("tem a barra de topo como banner, fora do <main>, com os menus", async () => {
+    montar();
+
+    const topo = await screen.findByRole("banner");
+    expect(screen.getByRole("main")).not.toContainElement(topo);
+    expect(within(topo).getByRole("button", { name: "Mais opções" })).toBeInTheDocument();
   });
 });

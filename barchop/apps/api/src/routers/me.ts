@@ -5,15 +5,19 @@ import type { App } from "../tipos";
 
 // Formato de resposta das duas rotas. Campos listados um a um, nunca
 // spread do registro: é o que garante que senhaHash não escape.
-function respostaBarbeiro(barbeiro: {
-  id: string;
-  nome: string;
-  email: string | null;
-  telefone: string | null;
-  barbeariaId: string;
-  papel: string;
-  atende: boolean;
-}) {
+function respostaBarbeiro(
+  barbeiro: {
+    id: string;
+    nome: string;
+    email: string | null;
+    telefone: string | null;
+    barbeariaId: string;
+    papel: string;
+    atende: boolean;
+    fotoChave: string | null;
+  },
+  urlDaImagem: (chave: string) => string
+) {
   return {
     id: barbeiro.id,
     nome: barbeiro.nome,
@@ -23,6 +27,8 @@ function respostaBarbeiro(barbeiro: {
     // O painel esconde o que o papel não pode; quem barra é a API.
     papel: barbeiro.papel,
     atende: barbeiro.atende,
+    // A barra de topo do painel mostra a foto no menu do usuário.
+    fotoUrl: barbeiro.fotoChave ? urlDaImagem(barbeiro.fotoChave) : null,
   };
 }
 
@@ -57,7 +63,7 @@ export function registrarRotasMe(app: App): void {
       where: { id: request.user.barbeiroId },
     });
 
-    return respostaBarbeiro(barbeiro);
+    return respostaBarbeiro(barbeiro, app.armazenamento.urlPublica);
   });
 
   app.patch("/me", { schema: { body: corpoPatchMe } }, async (request) => {
@@ -79,6 +85,6 @@ export function registrarRotasMe(app: App): void {
       },
     });
 
-    return respostaBarbeiro(barbeiro);
+    return respostaBarbeiro(barbeiro, app.armazenamento.urlPublica);
   });
 }

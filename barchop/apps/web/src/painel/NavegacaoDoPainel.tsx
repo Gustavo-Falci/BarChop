@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Botao } from "../componentes/Botao";
 import { LogoDaBarbearia } from "../componentes/LogoDaBarbearia";
 import { aplicarBarra, gravarBarra, lerBarra } from "./barra";
 import {
@@ -13,13 +12,9 @@ import {
   IconeCliente,
   IconeEngrenagem,
   IconeEquipe,
-  IconeLua,
   IconeRecolher,
-  IconeSair,
-  IconeSol,
   IconeTesoura,
 } from "./icones";
-import { aplicarTema, gravarTema, lerTema, temaDoSistema, type Tema } from "./tema";
 import { usePainel } from "./SessaoDoPainel";
 import estilos from "./NavegacaoDoPainel.module.css";
 
@@ -41,23 +36,12 @@ const LINKS = [
 const ID_DAS_SECOES = "secoes-do-painel";
 
 export function NavegacaoDoPainel() {
-  const { slug, sair, perfil, marca } = usePainel();
+  const { slug, perfil, marca } = usePainel();
   const links = LINKS.filter((link) => !link.soDoDono || perfil.papel === "dono");
   const caminho = usePathname();
-  const [tema, setTema] = useState<Tema>("claro");
   const [recolhida, setRecolhida] = useState(false);
 
-  // O script do <head> já pintou; isto só põe o React em dia com o que
-  // está no <html>, pra os botões mostrarem o rótulo certo.
-  useEffect(() => setTema(lerTema() ?? temaDoSistema()), []);
   useEffect(() => setRecolhida(lerBarra() === "recolhida"), []);
-
-  function trocarTema() {
-    const proximo: Tema = tema === "claro" ? "escuro" : "claro";
-    setTema(proximo);
-    gravarTema(proximo);
-    aplicarTema(proximo);
-  }
 
   // Quem manda no visual é o atributo no <html>, não este estado: é o
   // mesmo que o script do <head> escreve antes da primeira pintura, e
@@ -134,21 +118,8 @@ export function NavegacaoDoPainel() {
         ))}
       </nav>
 
-      <div className={estilos.rodape}>
-        {/* Eram dois <button> crus, os únicos do painel fora do
-            componente — daí saírem com o cinza e a fonte do sistema
-            enquanto todo o resto era neobrutalista. */}
-        <Botao variante="contorno" type="button" onClick={trocarTema}>
-          {tema === "claro" ? <IconeLua /> : <IconeSol />}
-          <span className={estilos.rotulo}>
-            {tema === "claro" ? "Modo escuro" : "Modo claro"}
-          </span>
-        </Botao>
-        <Botao variante="contorno" type="button" onClick={sair}>
-          <IconeSair />
-          <span className={estilos.rotulo}>Sair</span>
-        </Botao>
-      </div>
+      {/* Tema e Sair moravam aqui embaixo; foram pra barra de topo
+          (BarraDoTopo), junto do resto da conta. */}
     </aside>
   );
 }

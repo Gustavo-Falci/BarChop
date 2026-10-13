@@ -43,6 +43,24 @@ describe("GET /me", () => {
     await app.close();
   });
 
+  // A barra de topo do painel mostra a foto do membro no menu do
+  // usuário; sem foto, as iniciais.
+  it("devolve a foto do membro como URL pública, e null sem foto", async () => {
+    const app = buildApp();
+    const token = await cadastrarEObterToken(app);
+    const ler = () =>
+      app.inject({ method: "GET", url: "/me", headers: { authorization: `Bearer ${token}` } });
+
+    expect((await ler()).json().fotoUrl).toBeNull();
+
+    const chave = "barbearias/b/membros/m/foto.png";
+    await prisma.barbeiro.update({ where: { email: "gu@exemplo.com" }, data: { fotoChave: chave } });
+
+    expect((await ler()).json().fotoUrl).toBe(app.armazenamento.urlPublica(chave));
+
+    await app.close();
+  });
+
   it("nunca devolve senhaHash", async () => {
     const app = buildApp();
     const token = await cadastrarEObterToken(app);

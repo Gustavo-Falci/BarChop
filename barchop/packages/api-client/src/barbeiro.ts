@@ -18,6 +18,8 @@ import type {
   NovoAgendamentoBarbeiroInput,
   OcupacaoDoDia,
   FaixaDeCliente,
+  FiltroDeNotificacoes,
+  Notificacao,
   PaginaDeClientes,
   PapelMembro,
   PerfilBarbeiro,
@@ -251,6 +253,31 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     meuPerfil(): Promise<PerfilBarbeiro> {
       return requisicao("/me", { comToken: true });
+    },
+
+    // O sino da barra de topo: as 50 mais novas do filtro, a conta das
+    // não lidas, e marcar uma ou todas como lidas.
+    async notificacoes(filtro: FiltroDeNotificacoes): Promise<Notificacao[]> {
+      const resposta = await requisicao<{ notificacoes: Notificacao[] }>("/me/notificacoes", {
+        comToken: true,
+        query: { filtro },
+      });
+      return resposta.notificacoes;
+    },
+
+    async contagemDeNotificacoes(): Promise<number> {
+      const resposta = await requisicao<{ naoLidas: number }>("/me/notificacoes/contagem", {
+        comToken: true,
+      });
+      return resposta.naoLidas;
+    },
+
+    async marcarNotificacaoLida(id: string): Promise<void> {
+      await requisicao(`/me/notificacoes/${id}/lida`, { comToken: true, metodo: "POST" });
+    },
+
+    async lerTodasAsNotificacoes(): Promise<void> {
+      await requisicao("/me/notificacoes/ler-todas", { comToken: true, metodo: "POST" });
     },
 
     atualizarMeuPerfil(edicao: EdicaoDoPerfil): Promise<PerfilBarbeiro> {

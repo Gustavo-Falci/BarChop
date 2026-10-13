@@ -1,0 +1,133 @@
+/* `relative` pra o painel se ancorar no gatilho, e não na página. */
+.raiz {
+  position: relative;
+}
+
+.gatilho {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: var(--borda-padrao) solid transparent;
+  border-radius: var(--raio-md);
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.gatilho:hover,
+.gatilho[aria-expanded="true"] {
+  border-color: var(--cor-line);
+  background: var(--cor-surface);
+}
+
+/* O ponto de "tem novidade". Amarelo da casa com contorno de tinta: só
+   a cor sumiria no fundo claro, e o contorno o separa do ícone. */
+.gatilho[data-aviso]::after {
+  position: absolute;
+  inset-block-start: 6px;
+  inset-inline-end: 6px;
+  width: 9px;
+  height: 9px;
+  border: var(--borda-hairline) solid var(--cor-ink);
+  border-radius: 50%;
+  background: var(--cor-accent);
+  content: "";
+}
+
+.painel {
+  position: absolute;
+  z-index: 20;
+  inset-block-start: calc(100% + var(--espaco-xs));
+  inset-inline-end: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  min-width: 260px;
+  max-width: min(340px, calc(100vw - 32px));
+  padding: var(--espaco-xs);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  width: 100%;
+  min-height: 40px;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.linha:hover:not(:disabled) {
+  background: var(--cor-surface);
+}
+
+.linha:disabled {
+  color: var(--cor-ink-soft);
+  cursor: not-allowed;
+}
+
+/* Linha que só informa (o idioma, por ora): sem cara de clicável. */
+.linha[data-estatica] {
+  cursor: default;
+}
+
+.linha[data-estatica]:hover {
+  background: none;
+}
+
+.linha[data-perigo] {
+  color: var(--cor-erro);
+}
+
+.linha svg {
+  flex: none;
+}
+
+.texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.fim {
+  flex: none;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.regua {
+  margin: var(--espaco-xs) calc(var(--espaco-xs) * -1);
+  border: 0;
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* No celular o painel vira folha na largura da tela, presa logo abaixo
+   da barra: ancorado no gatilho, ele vazaria pela esquerda. */
+@media (max-width: 500px) {
+  .raiz {
+    position: static;
+  }
+
+  .painel {
+    inset-inline: var(--espaco-md);
+    width: auto;
+    max-width: none;
+  }
+}

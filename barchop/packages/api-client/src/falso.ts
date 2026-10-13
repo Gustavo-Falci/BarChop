@@ -28,6 +28,7 @@ import type {
   FormatoDaLogo,
   HorarioSerializado,
   MembroDaEquipe,
+  Notificacao,
   NovoAgendamentoBarbeiroInput,
   NovoAgendamentoPublicoInput,
   OcupacaoDoDia,
@@ -183,6 +184,9 @@ export interface EstadoFalso {
   // Links de outras barbearias, atuais ou antigos: pedir ou aprovar um
   // deles é 409, como na API.
   slugsEmUso?: string[];
+  // O sino do membro logado, da mais nova pra mais antiga. Sem semente,
+  // nenhuma.
+  notificacoes?: Notificacao[];
   // Os avisos da plataforma já publicados, do mais novo. Sem semente,
   // nenhum.
   avisosPublicados?: AvisoPublicado[];
@@ -311,6 +315,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       barbearia: { ...s.barbearia },
     })),
     slugsEmUso: [...(semente.slugsEmUso ?? [])],
+    notificacoes: (semente.notificacoes ?? []).map((n) => ({ ...n })),
     avisosPublicados: (semente.avisosPublicados ?? []).map((a) => ({ ...a })),
   };
 
@@ -424,6 +429,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       barbeariaId: estado.perfil.id,
       papel: eu.papel,
       atende: eu.atende,
+      fotoUrl: eu.fotoUrl,
     };
   }
 
@@ -840,6 +846,25 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async meuPerfil() {
         return perfilDoLogado();
+      },
+      // Os mesmos filtros da API (GET /me/notificacoes).
+      async notificacoes(filtro: "nao-lidas" | "todas" | "avisos") {
+        return estado
+          .notificacoes!.filter((n) =>
+            filtro === "nao-lidas" ? !n.lida : filtro === "avisos" ? n.tipo === "plataforma" : true
+          )
+          .map((n) => ({ ...n }));
+      },
+      async contagemDeNotificacoes() {
+        return estado.notificacoes!.filter((n) => !n.lida).length;
+      },
+      async marcarNotificacaoLida(id: string) {
+        const achada = estado.notificacoes!.find((n) => n.id === id);
+        if (!achada) throw new ErroDaApi(404, "nao_encontrado", "notificação não encontrada");
+        achada.lida = true;
+      },
+      async lerTodasAsNotificacoes() {
+        for (const n of estado.notificacoes!) n.lida = true;
       },
       async atualizarMeuPerfil(edicao: EdicaoDoPerfil) {
         Object.assign(membroOu404("bb1"), edicao);

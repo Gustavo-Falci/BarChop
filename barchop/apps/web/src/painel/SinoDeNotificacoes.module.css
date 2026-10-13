@@ -1,0 +1,177 @@
+/* O número no canto do sino. Fundo de tinta e texto claro: lê em
+   qualquer um dos temas, e não se confunde com o ponto amarelo de
+   novidade do menu "…". */
+.contador {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-end: 0;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding-inline: 4px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-ink);
+  color: var(--cor-paper);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.painel {
+  width: 380px;
+  max-width: min(380px, calc(100vw - 32px));
+  padding: var(--espaco-sm);
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  /* Altura fixa: o "Marcar todas" some quando não há o que ler, e o
+     painel não pode encolher debaixo do dedo. */
+  min-height: 40px;
+  padding: 0 var(--espaco-xs) var(--espaco-xs);
+}
+
+.cabecalho {
+  margin: 0;
+  font-size: var(--texto-md);
+}
+
+.lerTodas,
+.verLidas {
+  padding: var(--espaco-xs);
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* As abas são as pílulas da casa; a legenda "Mostrar" some da vista e
+   fica pro leitor de tela, que precisa saber do que é o grupo. */
+.abas {
+  padding-inline: var(--espaco-xs);
+}
+
+.abas legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.lista {
+  max-height: min(420px, 60vh);
+  margin-block-start: var(--espaco-sm);
+  overflow-y: auto;
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+.lista ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista li + li {
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+.linha {
+  display: flex;
+  gap: var(--espaco-sm);
+  width: 100%;
+  padding: var(--espaco-sm) var(--espaco-xs);
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.linha:hover {
+  background: var(--cor-surface);
+}
+
+/* Não lida = ponto amarelo com contorno; lida = sem ponto, mas o espaço
+   fica, pra os textos não pularem de lugar quando ela é lida. */
+.ponto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-block-start: 6px;
+  border: var(--borda-hairline) solid var(--cor-ink);
+  border-radius: 50%;
+  background: var(--cor-accent);
+}
+
+.ponto[data-lida] {
+  border-color: transparent;
+  background: transparent;
+}
+
+.miolo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.titulo {
+  font-size: var(--texto-sm);
+}
+
+.texto {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+.quando {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.vazio {
+  display: grid;
+  justify-items: center;
+  gap: var(--espaco-xs);
+  padding: var(--espaco-lg) var(--espaco-md);
+  text-align: center;
+}
+
+.vazio p {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+.selo {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: 50%;
+  background: var(--cor-accent);
+  color: var(--cor-dark);
+}
+
+.falha {
+  margin: 0;
+  padding: var(--espaco-md) var(--espaco-xs);
+  color: var(--cor-erro);
+  font-size: var(--texto-sm);
+}

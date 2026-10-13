@@ -5,6 +5,7 @@ import {
   gravarTema,
   hostDoSite,
   lerTema,
+  resolverTema,
   SCRIPT_DE_TEMA,
   scriptDeTema,
 } from "../../src/painel/tema";
@@ -54,6 +55,22 @@ describe("tema do painel", () => {
     expect(lerTema()).toBe("escuro");
   });
 
+  it("'sistema' é uma escolha que se grava e se lê", () => {
+    gravarTema("sistema");
+
+    expect(lerTema()).toBe("sistema");
+  });
+
+  it("resolverTema traduz 'sistema' pelo aparelho, e deixa claro e escuro como estão", () => {
+    stubMatchMedia(true);
+    expect(resolverTema("sistema")).toBe("escuro");
+    expect(resolverTema("claro")).toBe("claro");
+
+    stubMatchMedia(false);
+    expect(resolverTema("sistema")).toBe("claro");
+    expect(resolverTema("escuro")).toBe("escuro");
+  });
+
   it("ignora valor estragado no localStorage", () => {
     // Chave editada à mão ou sobrevivente de uma versão anterior não
     // pode virar data-theme="banana" no <html>.
@@ -92,16 +109,27 @@ describe("tema do painel", () => {
       expect(document.documentElement.getAttribute("data-theme")).toBe("light");
     });
 
-    it("no painel, sem nada gravado e sistema escuro, escreve dark e grava a escolha", () => {
+    it("no painel, sem nada gravado e sistema escuro, escreve dark sem fixar escolha", () => {
       irParaCaminho("/painel/agenda");
       stubMatchMedia(true);
 
       rodarScriptDeTema();
 
       expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-      // A escolha do primeiro acesso fica gravada — da próxima vez não é
-      // mais o sistema que decide, é o localStorage.
-      expect(localStorage.getItem(CHAVE_DO_TEMA)).toBe("escuro");
+      // Sem escolha, vale "Sistema": nada é gravado, e o painel continua
+      // acompanhando o aparelho até o barbeiro escolher Claro ou Escuro.
+      expect(localStorage.getItem(CHAVE_DO_TEMA)).toBeNull();
+    });
+
+    it("no painel, com 'sistema' gravado, segue o aparelho e mantém a escolha", () => {
+      irParaCaminho("/painel/agenda");
+      localStorage.setItem(CHAVE_DO_TEMA, "sistema");
+      stubMatchMedia(true);
+
+      rodarScriptDeTema();
+
+      expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+      expect(localStorage.getItem(CHAVE_DO_TEMA)).toBe("sistema");
     });
 
     it("no painel, com valor estragado gravado, cai pro sistema em vez de escrever o lixo", () => {
@@ -120,9 +148,8 @@ describe("tema do painel", () => {
 
       expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
       // Segunda confirmação independente: com a validação funcionando, o
-      // lixo é substituído por uma escolha válida gravada — não apenas
-      // ignorado ao gravar o atributo.
-      expect(localStorage.getItem(CHAVE_DO_TEMA)).toBe("escuro");
+      // lixo sai do localStorage — não fica lá pra ser lido de novo.
+      expect(localStorage.getItem(CHAVE_DO_TEMA)).toBeNull();
     });
 
     it("na página da barbearia, não escreve tema: o CSS segue o sistema", () => {

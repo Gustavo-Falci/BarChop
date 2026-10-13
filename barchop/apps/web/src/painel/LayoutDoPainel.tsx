@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { BarraDoTopo } from "./BarraDoTopo";
 import { NavegacaoDoPainel } from "./NavegacaoDoPainel";
 import estilos from "./NavegacaoDoPainel.module.css";
 
@@ -15,9 +16,14 @@ export function LayoutDoPainel({ children }: { children: ReactNode }) {
   return (
     <div className={estilos.shell}>
       <NavegacaoDoPainel />
-      <main className={estilos.conteudo}>
-        <div className={estilos.container}>{children}</div>
-      </main>
+      {/* Barra de topo e conteúdo numa coluna só: a barra fica parada e
+          quem rola é o <main> embaixo dela. */}
+      <div className={estilos.coluna}>
+        <BarraDoTopo />
+        <main className={estilos.conteudo}>
+          <div className={estilos.container}>{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

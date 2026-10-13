@@ -1,20 +1,27 @@
 export type Tema = "claro" | "escuro";
 
+// O que o barbeiro escolhe no menu: um dos temas, ou "sistema" — seguir
+// o aparelho, inclusive quando ele troca sozinho à noite. Sem escolha
+// gravada, vale "sistema".
+export type EscolhaDeTema = Tema | "sistema";
+
 export const CHAVE_DO_TEMA = "painel.tema";
 
 // O atributo é em inglês porque é o que o CSS lê, e o que o resto do
 // mundo espera encontrar num data-theme.
 const ATRIBUTO: Record<Tema, string> = { claro: "light", escuro: "dark" };
 
-export function lerTema(): Tema | null {
+export function lerTema(): EscolhaDeTema | null {
   if (typeof window === "undefined") return null;
   const guardado = window.localStorage.getItem(CHAVE_DO_TEMA);
-  return guardado === "claro" || guardado === "escuro" ? guardado : null;
+  return guardado === "claro" || guardado === "escuro" || guardado === "sistema"
+    ? guardado
+    : null;
 }
 
-export function gravarTema(tema: Tema): void {
+export function gravarTema(escolha: EscolhaDeTema): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(CHAVE_DO_TEMA, tema);
+  window.localStorage.setItem(CHAVE_DO_TEMA, escolha);
 }
 
 export function temaDoSistema(): Tema {
@@ -22,6 +29,10 @@ export function temaDoSistema(): Tema {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches
     ? "escuro"
     : "claro";
+}
+
+export function resolverTema(escolha: EscolhaDeTema): Tema {
+  return escolha === "sistema" ? temaDoSistema() : escolha;
 }
 
 // No <html>, e não numa div do layout do grupo: o body pinta o fundo da
@@ -47,7 +58,8 @@ export function hostDoSite(urlDoSite: string | undefined): string | undefined {
 // de o React montar, e é o que evita o pisca.
 //
 // Três casos:
-// - painel: a escolha gravada do barbeiro, ou o sistema no 1º acesso;
+// - painel: a escolha gravada do barbeiro; "sistema" (ou nada gravado)
+//   segue o aparelho, e lixo gravado sai do localStorage;
 // - site de marketing (o host raiz e o www; sem site configurado, as
 //   rotas "/", "/privacidade" e "/termos"): sempre claro;
 // - página da barbearia e o fluxo do cliente: nenhum atributo — o CSS
@@ -76,9 +88,11 @@ export function scriptDeTema(site: string | undefined): string {
   }
   var guardado = localStorage.getItem("${CHAVE_DO_TEMA}");
   var tema = guardado === "claro" || guardado === "escuro" ? guardado : null;
+  if (guardado !== null && !tema && guardado !== "sistema") {
+    localStorage.removeItem("${CHAVE_DO_TEMA}");
+  }
   if (!tema) {
     tema = matchMedia("(prefers-color-scheme: dark)").matches ? "escuro" : "claro";
-    localStorage.setItem("${CHAVE_DO_TEMA}", tema);
   }
   document.documentElement.setAttribute("data-theme", tema === "escuro" ? "dark" : "light");
 }catch(e){}})();`;

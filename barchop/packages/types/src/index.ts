@@ -387,6 +387,23 @@ export interface PerfilBarbeiro {
   papel: PapelMembro;
   // Aparece na agenda e no fluxo público. A recepção nasce sem atender.
   atende: boolean;
+  // A foto do membro (a mesma da Equipe); nula sem foto.
+  fotoUrl: string | null;
+}
+
+// O sino da barra de topo do painel (GET /me/notificacoes). O texto vem
+// pronto da API; `link` é um caminho do painel ou um https de fora.
+export type TipoDeNotificacao = "agendamento" | "pagamento" | "plataforma";
+export type FiltroDeNotificacoes = "nao-lidas" | "todas" | "avisos";
+
+export interface Notificacao {
+  id: string;
+  tipo: TipoDeNotificacao;
+  titulo: string;
+  texto: string;
+  link: string | null;
+  lida: boolean;
+  criadaEm: string;
 }
 
 // Cada dia da jornada do membro: acompanha o funcionamento da barbearia,

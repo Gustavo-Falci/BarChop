@@ -30,6 +30,7 @@ import {
   NOVIDADES,
 } from "./novidades";
 import { usePainel } from "./SessaoDoPainel";
+import { SinoDeNotificacoes } from "./SinoDeNotificacoes";
 import {
   aplicarTema,
   gravarTema,
@@ -46,11 +47,11 @@ const OPCOES_DE_TEMA: { valor: EscolhaDeTema; rotulo: string }[] = [
   { valor: "sistema", rotulo: "Sistema" },
 ];
 
-type Menu = "opcoes" | "conta";
+type Menu = "sino" | "opcoes" | "conta";
 
-// A barra no topo do conteúdo do painel: menu "…" (novidades, ajuda,
-// aparência, idioma) e menu do usuário (conta e sair). O sino entra
-// aqui também (plano barra-do-topo, PR C).
+// A barra no topo do conteúdo do painel: o sino de notificações, o menu
+// "…" (novidades, ajuda, aparência, idioma) e o menu do usuário (conta e
+// sair). Um aberto por vez.
 export function BarraDoTopo() {
   const { perfil, slug, nomeDaBarbearia, sair } = usePainel();
   const [aberto, setAberto] = useState<Menu | null>(null);
@@ -97,6 +98,12 @@ export function BarraDoTopo() {
 
   return (
     <header className={estilos.barra}>
+      <SinoDeNotificacoes
+        aberto={aberto === "sino"}
+        aoAlternar={() => alternar("sino")}
+        aoFechar={fechar}
+      />
+
       <MenuSuspenso
         rotulo="Mais opções"
         rotuloDoGatilho="Mais opções"

@@ -21,6 +21,7 @@ export function MenuSuspenso({
   aoFechar,
   aviso = false,
   classeDoGatilho,
+  classeDoPainel,
   children,
 }: {
   // O nome do painel aberto ("Sua conta", "Mais opções").
@@ -34,6 +35,8 @@ export function MenuSuspenso({
   // O ponto no canto do gatilho: tem coisa nova lá dentro.
   aviso?: boolean;
   classeDoGatilho?: string;
+  // Pra quem precisa de outra largura (o sino é mais largo).
+  classeDoPainel?: string;
   children: ReactNode;
 }) {
   const raiz = useRef<HTMLDivElement>(null);
@@ -83,7 +86,7 @@ export function MenuSuspenso({
           id={idDoPainel}
           role="group"
           aria-label={rotulo}
-          className={estilos.painel}
+          className={`${estilos.painel} ${classeDoPainel ?? ""}`}
           onClick={aoClicarNoPainel}
         >
           {children}

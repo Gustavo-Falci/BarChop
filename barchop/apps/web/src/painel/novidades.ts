@@ -11,6 +11,12 @@ export interface Novidade {
 export const NOVIDADES: Novidade[] = [
   {
     data: "2026-10-13",
+    titulo: "Sino de notificações",
+    texto:
+      "O sino no canto de cima avisa quando um cliente marca, cancela, remarca ou confirma presença pelo link, e traz os avisos do BarChop.",
+  },
+  {
+    data: "2026-10-13",
     titulo: "Menu de conta e de opções no topo",
     texto:
       "Tema (Claro, Escuro ou Sistema), Central de ajuda, novidades e Sair agora ficam no canto de cima do painel.",

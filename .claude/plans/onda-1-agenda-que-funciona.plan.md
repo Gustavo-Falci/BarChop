@@ -4,7 +4,55 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-12 — PRD da Onda 2 na main, Onda 2 adiada) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-13 — Onda 2 começou: marco 1, cobrança pela Stripe) — vale mais que as seções abaixo
+
+**Estado:** produção = `baf335c` (#139). A `main` ganhou depois disso só docs (este PR). Nada pela metade em branch nenhuma. Última migração: `20261013120000_notificacoes`.
+
+**Feito em 13/10 (#132–#139, tudo em produção):**
+- Prévia da Aparência numa moldura só: Celular/Computador e Modo escuro.
+- Medidas recomendadas: logo 512×512 e capa 1600×400.
+- Logo com botão, como a capa, e com o título "Logo".
+- Barra de topo do painel:
+  - menu "…": Novidades, Central de ajuda, Aparência Claro/Escuro/Sistema;
+  - menu da conta, com Faturas e Indique como "Em breve".
+- Notificações e avisos (MIGRAÇÃO), sino com abas, e a tela de avisos do suporte.
+
+**Onda 2 — o dono escolheu começar pelo marco 1 (BarChop cobra a assinatura):**
+- Provedor: **Stripe**, conta de pessoa física (CPF), sem CNPJ.
+- Plano aprovado: `.claude/plans/cobranca-do-barchop.plan.md`, em 6 PRs:
+  1. `planos.ts` em `@barchop/formato` e ADR-0010;
+  2. assinatura no banco (MIGRAÇÃO);
+  3. limite de profissionais;
+  4. Stripe: Checkout, Portal, webhook e o script dos preços;
+  5. tela do plano no painel;
+  6. site (`/precos`, `/gratis`) e termos.
+- Decisões do dono:
+  - GR Barber **paga**, sem cortesia;
+  - `/precos` mostra a tabela, `/gratis` leva ao cadastro com o Grátis em destaque;
+  - as decisões propostas no plano foram aceitas: recepção não conta, existentes ganham 14 dias a partir do deploy, sem pagar cai no Grátis sem apagar nada, só cartão até o Pix se confirmar;
+  - marco 2: a gorjeta vai 100% para quem atendeu, e o desconto reduz o valor que é dividido.
+- PRD: marco 1 `in-progress`.
+- **Conta na Stripe criada pelo dono em 13/10:**
+  - categoria Software (SaaS);
+  - descrição no extrato `BARCHOP.COM.BR`, descrição curta `BARCHOP`.
+
+**Próximo passo (nesta ordem):**
+1. O dono põe a chave de teste no `barchop/apps/api/.env` como `STRIPE_SECRET_KEY=sk_test_...`. Nunca colar a chave no chat; conferir só o prefixo.
+2. O dono vê se o Pix aparece em Formas de pagamento, e se é recorrente.
+3. O dono configura o Portal do cliente nos dois modos: trocar cartão, faturas e cancelar no fim do período ligados; trocar plano e quantidade desligados.
+4. Começar o PR 1 com `ecc:tdd-workflow`. Os PRs 1 a 3 não precisam da Stripe; a partir do PR 4, a chave é necessária.
+
+**O que mais falta (depois da Onda 2 ou quando o dono pedir):**
+- telas de UI/UX por print;
+- `barbearia-teste` em produção (o aviso de teste de 13/10 só sai pelo banco);
+- G4 (docs da onda 1);
+- conferir no navegador a foto do membro e o serviço novo;
+- razão social/CNPJ/DPO "a preencher" no site;
+- G3 (GR Barber) só quando o dono pedir.
+
+**Ambiente local e Combinados:** iguais aos da seção de 11/10 abaixo.
+
+## RETOMAR AQUI (2026-10-12 — PRD da Onda 2 na main, Onda 2 adiada) — histórico
 
 **Estado:** produção segue em `336717d` (#128); a `main` só ganhou docs depois disso (#129, #130 e este PR). Nada pela metade em branch nenhuma. Sem migração nova (última: `20261012120000_aparencia`).
 

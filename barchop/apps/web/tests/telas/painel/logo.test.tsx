@@ -61,6 +61,16 @@ describe("logo nas configurações", () => {
     );
   });
 
+  it("o botão diz Escolher sem logo e Trocar com logo, como na capa", async () => {
+    const falso = criarApiClientFalso();
+    montarPainel(<DadosDoNegocio />, falso);
+
+    expect(await screen.findByLabelText("Escolher logo")).toHaveAttribute("type", "file");
+    await userEvent.upload(screen.getByLabelText("Escolher logo"), arquivo());
+
+    expect(await screen.findByLabelText("Trocar logo")).toHaveAttribute("type", "file");
+  });
+
   it("remover tira a logo e a escolha de moldura", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.enviarLogo(new Blob([PNG]), "quadrada");

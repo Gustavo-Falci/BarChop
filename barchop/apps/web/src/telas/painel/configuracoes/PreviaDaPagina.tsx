@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { Aparencia } from "@barchop/formato";
 import { Chip } from "../../../componentes/Chip";
-import { SeletorEmPilulas } from "../../../componentes/SeletorEmPilulas";
 import { MENSAGEM_DA_APARENCIA, MENSAGEM_DE_PRONTA, type ModoDaPrevia } from "../../../fluxo/previa";
 import { linkDaBarbearia } from "../../../painel/compartilhar";
 import { enderecoDaBarbearia } from "../../../tenant/endereco";
@@ -63,6 +62,10 @@ function JanelaAmpliada({
 
   useEffect(() => {
     janela.current?.showModal();
+    // O showModal leva o foco pro primeiro rádio, que parece escolhido
+    // sem estar; a janela abre com o foco na saída. (O `autoFocus` do
+    // React não serve: ele foca antes do showModal, que tira o foco.)
+    janela.current?.querySelector<HTMLElement>("[data-foco-inicial]")?.focus();
   }, []);
 
   return (
@@ -170,90 +173,208 @@ function Quadro({
   }, [ampliada]);
 
   const tamanho = TAMANHO[dispositivo];
-  // O que sobra da tela pro aparelho, tirados os controles e o link.
-  const alturaUtil = alturaDaJanela > 0 ? Math.max(320, alturaDaJanela - (ampliada ? 200 : 420)) : 0;
+  // O que sobra da tela pro aparelho, tirados o título, os controles, a
+  // barra de endereço e o rodapé (uns 225px) e as folgas da coluna presa.
+  const alturaUtil = alturaDaJanela > 0 ? Math.max(320, alturaDaJanela - (ampliada ? 200 : 300)) : 0;
   const escala = Math.min(
     1,
     largura > 0 ? largura / tamanho.largura : 1,
     alturaUtil > 0 ? alturaUtil / tamanho.altura : 1
   );
 
+  // Na barra de endereço, como no navegador: sem o protocolo.
+  const enderecoVisivel = abrir.replace(/^https?:\/\//, "");
+
   return (
     <div className={ampliada ? `${estilos.quadro} ${estilos.ampliado}` : estilos.quadro}>
-      <div className={estilos.controles}>
-        <SeletorEmPilulas<Dispositivo>
-          nome={`${id}-dispositivo`}
-          legenda="Aparelho"
-          opcoes={[
-            { valor: "celular", rotulo: "Celular" },
-            { valor: "computador", rotulo: "Computador" },
-          ]}
-          valor={dispositivo}
-          aoTrocar={setDispositivo}
-        />
-        <SeletorEmPilulas<Pagina>
-          nome={`${id}-pagina`}
-          legenda="Página"
-          opcoes={[
-            { valor: "inicio", rotulo: "Início" },
-            { valor: "agendar", rotulo: "Agendar" },
-          ]}
-          valor={pagina}
-          aoTrocar={setPagina}
-        />
-        <SeletorEmPilulas<ModoDaPrevia>
-          nome={`${id}-modo`}
-          legenda="Ver no modo"
-          opcoes={[
-            { valor: "claro", rotulo: "Claro" },
-            { valor: "escuro", rotulo: "Escuro" },
-          ]}
-          valor={modo}
-          aoTrocar={setModo}
-        />
+      <div className={estilos.barra}>
+        <fieldset className={estilos.segmentos}>
+          <legend className={estilos.somenteLeitor}>Aparelho</legend>
+          {(
+            [
+              { valor: "celular", rotulo: "Celular", icone: <IconeCelular /> },
+              { valor: "computador", rotulo: "Computador", icone: <IconeComputador /> },
+            ] as const
+          ).map((opcao) => (
+            <label key={opcao.valor} className={estilos.segmento}>
+              <input
+                type="radio"
+                name={`${id}-dispositivo`}
+                value={opcao.valor}
+                checked={dispositivo === opcao.valor}
+                onChange={() => setDispositivo(opcao.valor)}
+                className={estilos.radio}
+              />
+              <span className={estilos.rotuloDoSegmento}>
+                {opcao.icone}
+                {opcao.rotulo}
+              </span>
+            </label>
+          ))}
+        </fieldset>
         <div className={estilos.acoes}>
-          <button type="button" className={estilos.acao} onClick={() => setVersao(versao + 1)}>
-            ↻ Atualizar
+          <button
+            type="button"
+            className={estilos.acao}
+            onClick={() => setVersao(versao + 1)}
+            aria-label="Atualizar a prévia"
+            title="Atualizar"
+          >
+            <IconeAtualizar />
           </button>
           {aoAmpliar ? (
-            <button type="button" className={estilos.acao} onClick={aoAmpliar} aria-label="Ampliar a prévia">
-              ⤢ Ampliar
+            <button type="button" className={estilos.acao} onClick={aoAmpliar} aria-label="Ampliar a prévia" title="Ampliar">
+              <IconeAmpliar />
             </button>
           ) : null}
           {aoFechar ? (
-            <button type="button" className={estilos.acao} onClick={aoFechar} aria-label="Fechar a prévia">
-              ✕ Fechar
+            <button
+              type="button"
+              className={estilos.acao}
+              onClick={aoFechar}
+              aria-label="Fechar a prévia"
+              title="Fechar"
+              data-foco-inicial
+            >
+              <IconeFechar />
             </button>
           ) : null}
         </div>
       </div>
 
+      <fieldset className={estilos.paginas}>
+        <legend className={estilos.somenteLeitor}>Página</legend>
+        {(
+          [
+            { valor: "inicio", rotulo: "Início" },
+            { valor: "agendar", rotulo: "Agendar" },
+          ] as const
+        ).map((opcao) => (
+          <label key={opcao.valor} className={estilos.pagina}>
+            <input
+              type="radio"
+              name={`${id}-pagina`}
+              value={opcao.valor}
+              checked={pagina === opcao.valor}
+              onChange={() => setPagina(opcao.valor)}
+              className={estilos.radio}
+            />
+            <span className={estilos.rotuloDaPagina}>{opcao.rotulo}</span>
+          </label>
+        ))}
+      </fieldset>
+
       <div ref={caixa} className={estilos.caixa}>
-        <div
-          className={estilos.aparelho}
-          style={{ width: tamanho.largura * escala, height: tamanho.altura * escala }}
-        >
-          <iframe
-            // O layout dos serviços é dado da página, não CSS: salvo no
-            // ar, a prévia recarrega pra mostrar.
-            key={`${versao}-${aparencia.layoutDosServicos}`}
-            ref={iframe}
-            title={titulo}
-            src={endereco}
-            data-dispositivo={dispositivo}
-            className={estilos.iframe}
-            style={{
-              width: tamanho.largura,
-              height: tamanho.altura,
-              transform: `scale(${escala})`,
-            }}
-          />
+        <div className={estilos.aparelho} style={{ width: tamanho.largura * escala }}>
+          <p className={estilos.endereco}>{enderecoVisivel}</p>
+          <div style={{ width: tamanho.largura * escala, height: tamanho.altura * escala, overflow: "hidden" }}>
+            <iframe
+              // O layout dos serviços é dado da página, não CSS: salvo no
+              // ar, a prévia recarrega pra mostrar.
+              key={`${versao}-${aparencia.layoutDosServicos}`}
+              ref={iframe}
+              title={titulo}
+              src={endereco}
+              data-dispositivo={dispositivo}
+              className={estilos.iframe}
+              style={{
+                width: tamanho.largura,
+                height: tamanho.altura,
+                transform: `scale(${escala})`,
+              }}
+            />
+          </div>
         </div>
       </div>
 
-      <a className={estilos.abrir} href={abrir} target="_blank" rel="noreferrer">
-        Abrir a página <span aria-hidden="true">↗</span>
-      </a>
+      <div className={estilos.rodape}>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={modo === "escuro"}
+          className={estilos.interruptor}
+          onClick={() => setModo(modo === "escuro" ? "claro" : "escuro")}
+        >
+          Modo escuro
+          <span className={estilos.trilho} aria-hidden="true">
+            <span className={estilos.botaozinho} />
+          </span>
+        </button>
+        <a className={estilos.abrir} href={abrir} target="_blank" rel="noreferrer">
+          Abrir a página <IconeLinkExterno />
+        </a>
+      </div>
     </div>
+  );
+}
+
+// Os ícones da barra, no traço dos da referência (24×24, contorno).
+function Icone({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {children}
+    </svg>
+  );
+}
+
+function IconeCelular() {
+  return (
+    <Icone>
+      <rect x="6" y="2" width="12" height="20" rx="2" />
+      <path d="M11 18h2" />
+    </Icone>
+  );
+}
+
+function IconeComputador() {
+  return (
+    <Icone>
+      <rect x="2" y="3" width="20" height="14" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </Icone>
+  );
+}
+
+function IconeAtualizar() {
+  return (
+    <Icone>
+      <path d="M21 12a9 9 0 1 1-2.64-6.36L21 8" />
+      <path d="M21 3v5h-5" />
+    </Icone>
+  );
+}
+
+function IconeAmpliar() {
+  return (
+    <Icone>
+      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+    </Icone>
+  );
+}
+
+function IconeFechar() {
+  return (
+    <Icone>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </Icone>
+  );
+}
+
+function IconeLinkExterno() {
+  return (
+    <Icone>
+      <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    </Icone>
   );
 }

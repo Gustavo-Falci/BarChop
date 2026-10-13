@@ -110,23 +110,6 @@ export function IconeEngrenagem(props: Props) {
   );
 }
 
-export function IconeSol(props: Props) {
-  return (
-    <Base {...props}>
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" />
-    </Base>
-  );
-}
-
-export function IconeLua(props: Props) {
-  return (
-    <Base {...props}>
-      <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5" />
-    </Base>
-  );
-}
-
 export function IconeSair(props: Props) {
   return (
     <Base {...props}>
@@ -343,6 +326,60 @@ export function IconeCartao(props: Props) {
     <Base {...props}>
       <rect x="2.5" y="5" width="19" height="14" rx="2" />
       <path d="M2.5 10h19M6.5 15h4" />
+    </Base>
+  );
+}
+
+// Os da barra de topo (menu "…", menu do usuário e o sino).
+export function IconeMaisOpcoes(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />
+    </Base>
+  );
+}
+
+export function IconeAjuda(props: Props) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01" />
+    </Base>
+  );
+}
+
+export function IconeGlobo(props: Props) {
+  return (
+    <Base {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z" />
+    </Base>
+  );
+}
+
+export function IconePresente(props: Props) {
+  return (
+    <Base {...props}>
+      <rect x="3.5" y="8" width="17" height="4" rx="1" />
+      <path d="M5 12v8h14v-8M12 8v12" />
+      <path d="M12 8C10.5 5 7.5 4.5 7.5 6.5S10.5 8 12 8Zm0 0c1.5-3 4.5-3.5 4.5-1.5S13.5 8 12 8Z" />
+    </Base>
+  );
+}
+
+export function IconeDescer(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </Base>
+  );
+}
+
+export function IconeSino(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
     </Base>
   );
 }

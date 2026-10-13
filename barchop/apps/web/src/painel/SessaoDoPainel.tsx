@@ -27,6 +27,9 @@ interface Painel {
   perfil: PerfilBarbeiro;
   slug: string;
   marca: MarcaDoPainel;
+  // O nome da barbearia, pro menu do usuário na barra de topo. Nulo até
+  // a barbearia chegar: o menu mostra o slug enquanto isso.
+  nomeDaBarbearia: string | null;
   // A aba Marca troca a logo e avisa por aqui: a barra muda na hora, sem
   // esperar a próxima leitura da barbearia.
   atualizarMarca: (marca: MarcaDoPainel) => void;
@@ -53,6 +56,7 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
   // seguiria consultando a disponibilidade pelo endereço velho.
   const [slug, setSlug] = useState(() => sessaoDaBarbearia.ler() ?? "");
   const [marca, setMarca] = useState<MarcaDoPainel>(null);
+  const [nomeDaBarbearia, setNomeDaBarbearia] = useState<string | null>(null);
 
   useEffect(() => {
     const acompanhar = () => setSlug(sessaoDaBarbearia.ler() ?? "");
@@ -106,6 +110,7 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
     api.barbeiro
       .minhaBarbearia()
       .then((barbearia) => {
+        if (vivo) setNomeDaBarbearia(barbearia.nome);
         if (vivo && barbearia.logoUrl && barbearia.logoFormato) {
           setMarca({ logoUrl: barbearia.logoUrl, logoFormato: barbearia.logoFormato });
         }
@@ -136,7 +141,15 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
 
   return (
     <Contexto.Provider
-      value={{ perfil, slug, marca, atualizarMarca: setMarca, sair, recarregarPerfil }}
+      value={{
+        perfil,
+        slug,
+        marca,
+        nomeDaBarbearia,
+        atualizarMarca: setMarca,
+        sair,
+        recarregarPerfil,
+      }}
     >
       {children}
     </Contexto.Provider>

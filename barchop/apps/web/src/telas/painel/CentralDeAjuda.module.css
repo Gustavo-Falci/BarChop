@@ -1,0 +1,95 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-lg);
+}
+
+.busca {
+  max-width: 480px;
+}
+
+/* Os assuntos lado a lado no desktop (o painel usa a largura), um
+   embaixo do outro no celular. */
+.temas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: var(--espaco-lg) var(--espaco-xl);
+  align-items: start;
+}
+
+.tema {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nomeDoTema {
+  margin: 0 0 var(--espaco-xs);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Linhas finas, sem caixa: cada pergunta é uma linha que abre. */
+.pergunta {
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+.pergunta:last-child {
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+}
+
+.resumo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  min-height: 48px;
+  padding-block: var(--espaco-sm);
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.resumo::-webkit-details-marker {
+  display: none;
+}
+
+/* O "+" vira "−" aberto: diz que a linha abre sem um ícone a mais. */
+.resumo::after {
+  flex: none;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-lg);
+  font-weight: 400;
+  content: "+";
+}
+
+.pergunta[open] .resumo::after {
+  content: "−";
+}
+
+.resumo:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.resposta {
+  margin: 0;
+  padding-block-end: var(--espaco-md);
+  color: var(--cor-ink-soft);
+  text-wrap: pretty;
+}
+
+.resposta a {
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.vazio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}

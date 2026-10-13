@@ -1,4 +1,10 @@
-import type { SessaoSuporte, SolicitacaoDeLink, SolicitacaoNaFila } from "@barchop/types";
+import type {
+  AvisoPublicado,
+  NovoAviso,
+  SessaoSuporte,
+  SolicitacaoDeLink,
+  SolicitacaoNaFila,
+} from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
 // O suporte da plataforma (Onda 1, F4): conta própria, fora de qualquer
@@ -28,6 +34,24 @@ export function criarApiSuporte(requisicao: Requisicao) {
         metodo: "POST",
         comToken: true,
       });
+    },
+
+    // Os avisos da plataforma: os publicados, do mais novo, e publicar
+    // um (cai no sino de todos os membros ativos).
+    async avisos(): Promise<AvisoPublicado[]> {
+      const resposta = await requisicao<{ avisos: AvisoPublicado[] }>("/suporte/avisos", {
+        comToken: true,
+      });
+      return resposta.avisos;
+    },
+
+    async publicarAviso(aviso: NovoAviso): Promise<AvisoPublicado> {
+      const resposta = await requisicao<{ aviso: AvisoPublicado }>("/suporte/avisos", {
+        metodo: "POST",
+        corpo: aviso,
+        comToken: true,
+      });
+      return resposta.aviso;
     },
 
     // A resposta é obrigatória: é o que o dono lê em Configurações.

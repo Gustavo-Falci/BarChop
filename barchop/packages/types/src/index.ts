@@ -343,6 +343,26 @@ export interface SolicitacaoDeLink {
   decididoEm: string | null;
 }
 
+// O aviso que o suporte publica pra todas as barbearias (POST
+// /suporte/avisos): cai no sino de cada membro ativo, na aba Avisos.
+// `link`: um caminho do painel ("/painel/…") ou um https de fora.
+export interface NovoAviso {
+  titulo: string;
+  texto: string;
+  link?: string;
+}
+
+export interface AvisoPublicado {
+  id: string;
+  titulo: string;
+  texto: string;
+  link: string | null;
+  criadoEm: string;
+  // Quantos membros receberam (os ativos na hora) e quantos já leram.
+  destinatarios: number;
+  lidas: number;
+}
+
 // Como o suporte vê o pedido: com a barbearia e o link atual dela.
 export interface SolicitacaoNaFila extends SolicitacaoDeLink {
   barbearia: { id: string; nome: string; slug: string };

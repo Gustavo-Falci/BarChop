@@ -41,6 +41,8 @@ import type {
   SessaoSuporte,
   SolicitacaoDeLink,
   SolicitacaoNaFila,
+  AvisoPublicado,
+  NovoAviso,
 } from "@barchop/types";
 import type {
   AceiteDoConvite,
@@ -185,6 +187,9 @@ export interface EstadoFalso {
   // O sino do membro logado, da mais nova pra mais antiga. Sem semente,
   // nenhuma.
   notificacoes?: Notificacao[];
+  // Os avisos da plataforma já publicados, do mais novo. Sem semente,
+  // nenhum.
+  avisosPublicados?: AvisoPublicado[];
 }
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {
@@ -311,6 +316,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     })),
     slugsEmUso: [...(semente.slugsEmUso ?? [])],
     notificacoes: (semente.notificacoes ?? []).map((n) => ({ ...n })),
+    avisosPublicados: (semente.avisosPublicados ?? []).map((a) => ({ ...a })),
   };
 
   // O pedido como o dono o vê: sem a barbearia, que é a dele.
@@ -1472,6 +1478,28 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         }
         Object.assign(pedido, { status: "aprovada", decididoEm: new Date().toISOString() });
         return semBarbearia(pedido);
+      },
+      async avisos() {
+        return estado.avisosPublicados!.map((a) => ({ ...a }));
+      },
+      // O mesmo schema da API: link só do painel ou https. Quem recebe
+      // são os membros ativos — no dublê, a equipe.
+      async publicarAviso(aviso: NovoAviso) {
+        const link = aviso.link ?? null;
+        if (link !== null && !/^(\/painel(\/\S*)?|https:\/\/\S+)$/.test(link)) {
+          throw new ErroDaApi(400, "requisicao_invalida", "link inválido");
+        }
+        const publicado: AvisoPublicado = {
+          id: `aviso-${estado.avisosPublicados!.length + 1}`,
+          titulo: aviso.titulo.trim(),
+          texto: aviso.texto.trim(),
+          link,
+          criadoEm: new Date().toISOString(),
+          destinatarios: estado.equipe!.filter((m) => m.ativo).length,
+          lidas: 0,
+        };
+        estado.avisosPublicados!.unshift(publicado);
+        return { ...publicado };
       },
       async recusar(id: string, resposta: string) {
         const pedido = pedidoPendente(id);

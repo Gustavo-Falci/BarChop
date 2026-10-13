@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { SolicitacaoNaFila } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
-import { Botao } from "../../componentes/Botao";
+import { Botao, BotaoLink } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { useApiDoSuporte, type ApiDoSuporte } from "../../suporte/ProvedorDoSuporte";
 import { sessaoDoSuporte } from "../../sessao/armazenamento";
@@ -77,9 +77,16 @@ export function FilaDoSuporte() {
         titulo="Pedidos de troca de link"
         apoio="Aprovar troca o link na hora; o antigo continua levando à barbearia. Recusar pede uma resposta, que o dono lê em Configurações."
         acao={
-          <Botao variante="fantasma" onClick={sair}>
-            Sair
-          </Botao>
+          <div className={estilos.acoes}>
+            {/* A outra tela do suporte: os avisos que caem no sino de
+                todas as barbearias. */}
+            <BotaoLink href="/painel/suporte/avisos" variante="contorno">
+              Avisos
+            </BotaoLink>
+            <Botao variante="fantasma" onClick={sair}>
+              Sair
+            </Botao>
+          </div>
         }
       />
       {aviso ? <Aviso>{aviso}</Aviso> : null}

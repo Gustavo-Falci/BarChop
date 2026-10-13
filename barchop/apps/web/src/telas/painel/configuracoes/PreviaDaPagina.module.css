@@ -1,4 +1,5 @@
-/* A prévia: sem moldura em volta da coluna — a moldura é o aparelho. */
+/* A prévia: uma moldura só em volta dos controles e do aparelho — é uma
+   ferramenta à parte da tela, como a janela de um navegador. */
 .previa {
   display: grid;
   gap: var(--espaco-sm);
@@ -22,35 +23,157 @@
 .quadro {
   display: grid;
   gap: var(--espaco-sm);
+  padding: var(--espaco-sm);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
 }
 
-/* Os seletores da prévia, miúdos: são ferramenta, não decisão. */
-.controles {
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* O rádio sai da vista mas segue no teclado e no leitor de tela. */
+.radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Linha 1: aparelho à esquerda, ações à direita. */
+.barra {
   display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: var(--espaco-sm) var(--espaco-md);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+}
+
+.segmentos {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  border: none;
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  min-width: 0;
+}
+
+.segmento {
+  position: relative;
+  cursor: pointer;
+}
+
+.rotuloDoSegmento {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 var(--espaco-sm);
+  border-radius: calc(var(--raio-md) - 3px);
+  color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  transition-property: background-color, color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.segmento:hover .rotuloDoSegmento {
+  color: var(--cor-ink);
+}
+
+.radio:checked + .rotuloDoSegmento {
+  background: var(--cor-surface);
+  box-shadow: 0 0 0 var(--borda-hairline) var(--cor-line), 0 1px 2px rgb(0 0 0 / 12%);
+  color: var(--cor-ink);
+}
+
+.radio:focus-visible + .rotuloDoSegmento,
+.radio:focus-visible + .rotuloDaPagina {
+  outline: 2px solid var(--cor-ink);
+  outline-offset: 2px;
 }
 
 .acoes {
   display: flex;
-  gap: var(--espaco-xs);
+  gap: 2px;
 }
 
+/* Só ícone: o nome vai no aria-label e no title. 40×40 de alvo. */
 .acao {
-  padding: 4px var(--espaco-sm);
-  border: var(--borda-hairline) solid var(--cor-line);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
   border-radius: var(--raio-pill);
   background: transparent;
-  color: var(--cor-ink);
-  font-size: var(--texto-sm);
-  font-weight: 600;
+  color: var(--cor-ink-soft);
   cursor: pointer;
+  transition-property: background-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
 }
 
 .acao:hover {
-  border-color: var(--cor-ink);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+}
+
+/* Linha 2: a página, em pílulas miúdas — é navegação da prévia. */
+.paginas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+
+.pagina {
+  position: relative;
+  cursor: pointer;
+}
+
+.rotuloDaPagina {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 var(--espaco-sm);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  transition-property: border-color, background-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.pagina:hover .rotuloDaPagina {
+  border-color: var(--cor-ink-soft);
+  color: var(--cor-ink);
+}
+
+/* Marcada: contorno na cor da marca e um fundo dela bem de leve; o
+   texto fica na tinta (amarelo sobre branco não se lê). */
+.radio:checked + .rotuloDaPagina {
+  border-color: var(--cor-accent);
+  background: color-mix(in srgb, var(--cor-accent) 14%, transparent);
+  color: var(--cor-ink);
 }
 
 .caixa {
@@ -58,14 +181,28 @@
   min-width: 0;
 }
 
-/* O aparelho encolhido: a caixa tem o tamanho já em escala, e o iframe
-   dentro dela, no tamanho de verdade, encolhe a partir do canto. */
+/* O aparelho encolhido, com a barra de endereço em cima: a caixa tem o
+   tamanho já em escala, e o iframe dentro dela, no tamanho de verdade,
+   encolhe a partir do canto. */
 .aparelho {
   margin-inline: auto;
   overflow: hidden;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line);
   border-radius: var(--raio-md);
   background: var(--cor-paper);
+}
+
+.endereco {
+  margin: 0;
+  padding: 6px var(--espaco-sm);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .iframe {
@@ -74,12 +211,96 @@
   transform-origin: top left;
 }
 
+/* Rodapé: o modo da prévia e o link da página de verdade. */
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  padding-block-start: var(--espaco-sm);
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+.interruptor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--cor-ink);
+  font: inherit;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+}
+
+.trilho {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-pill);
+  background: var(--cor-paper-soft);
+  transition-property: background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.botaozinho {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cor-ink-soft);
+  transition-property: transform, background-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.interruptor[aria-checked="true"] .trilho {
+  border-color: var(--cor-accent);
+  background: var(--cor-accent);
+}
+
+.interruptor[aria-checked="true"] .botaozinho {
+  transform: translateX(18px);
+  background: var(--cor-on-accent);
+}
+
+.interruptor:focus-visible {
+  outline: none;
+}
+
+.interruptor:focus-visible .trilho {
+  outline: 2px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
 .abrir {
-  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
   color: var(--cor-ink);
   font-size: var(--texto-sm);
   font-weight: 700;
   text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotuloDoSegmento,
+  .acao,
+  .rotuloDaPagina,
+  .trilho,
+  .botaozinho {
+    transition-duration: 0ms;
+  }
 }
 
 /* Ampliada: a janela quase da tela inteira. */
@@ -99,9 +320,13 @@
   background: rgb(0 0 0 / 60%);
 }
 
+/* A janela já é a moldura: o quadro dentro dela não leva outra. */
 .ampliado {
   height: 100%;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .ampliado .caixa {

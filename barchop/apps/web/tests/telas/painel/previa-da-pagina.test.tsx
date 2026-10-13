@@ -104,6 +104,7 @@ describe("prévia da página", () => {
     await userEvent.click(screen.getByRole("button", { name: "Ampliar a prévia" }));
     const janela = screen.getByRole("dialog", { name: "Prévia da sua página" });
     expect(within(janela).getByTitle("Prévia ampliada da sua página")).toBeInTheDocument();
+    expect(within(janela).getByRole("button", { name: "Fechar a prévia" })).toHaveFocus();
 
     await userEvent.click(within(janela).getByRole("button", { name: "Fechar a prévia" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

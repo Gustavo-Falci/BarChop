@@ -50,61 +50,61 @@ enum OrigemAgendamento {
 }
 
 model Barbearia {
-  id                        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nome                      String   @db.VarChar(120)
-  slug                      String   @unique @db.VarChar(80)
-  telefone                  String?  @db.VarChar(20)
-  endereco                  String?  @db.VarChar(255)
+  id                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nome                      String    @db.VarChar(120)
+  slug                      String    @unique @db.VarChar(80)
+  telefone                  String?   @db.VarChar(20)
+  endereco                  String?   @db.VarChar(255)
   // Texto de apresentação da home pública: o que a barbearia diz de si
   // pra quem abriu o link no WhatsApp. Anulável porque toda barbearia
   // já cadastrada nasce sem ele, e porque a home tem que funcionar sem
   // — quem acabou de criar a conta ainda não escreveu nada.
-  sobre                     String?  @db.VarChar(1000)
+  sobre                     String?   @db.VarChar(1000)
   // Quanto antes do horário sai o lembrete: 2, 12 ou 24 (CHECK na
   // migration 20261004130000_lembrete).
-  lembreteAntecedenciaHoras Int      @default(24) @map("lembrete_antecedencia_horas") @db.SmallInt
+  lembreteAntecedenciaHoras Int       @default(24) @map("lembrete_antecedencia_horas") @db.SmallInt
   // Interruptor do lembrete (G2c). Ligado nas barbearias novas.
-  lembreteAtivo             Boolean  @default(true) @map("lembrete_ativo")
+  lembreteAtivo             Boolean   @default(true) @map("lembrete_ativo")
   // Áreas das Configurações salvas pelo menos uma vez (painel v2). Só
   // cresce; a API marca no salvar (@barchop/formato/areas).
-  areasDecididas            String[] @default([]) @map("areas_decididas")
+  areasDecididas            String[]  @default([]) @map("areas_decididas")
   // A página pública rica (bloco E1). Listas fechadas: os valores moram
   // em packages/formato/src/pagina.ts, e a migration
   // 20261004160000_pagina_da_barbearia tem o CHECK com os mesmos.
-  whatsapp                  String?  @db.VarChar(20)
-  instagram                 String?  @db.VarChar(30)
-  comodidades               String[] @default([])
-  formasDePagamento         String[] @default([]) @map("formas_pagamento")
+  whatsapp                  String?   @db.VarChar(20)
+  instagram                 String?   @db.VarChar(30)
+  comodidades               String[]  @default([])
+  formasDePagamento         String[]  @default([]) @map("formas_pagamento")
   // Chave da capa no armazenamento (bloco E2); a URL sai da config.
-  capaChave                 String?  @map("capa_chave") @db.VarChar(200)
+  capaChave                 String?   @map("capa_chave") @db.VarChar(200)
   // A logo, como a capa: a chave no armazenamento, e o formato da
   // moldura (redonda, quadrada ou livre — CHECK na migration
   // 20261010120000_logo_da_barbearia, lista em @barchop/formato).
-  logoChave                 String?  @map("logo_chave") @db.VarChar(200)
-  logoFormato               String?  @map("logo_formato")
+  logoChave                 String?   @map("logo_chave") @db.VarChar(200)
+  logoFormato               String?   @map("logo_formato")
   // As duas marcas da trilha de primeiros passos (bloco F2) que não se
   // deduzem do resto: o link copiado e o "trabalho sozinho".
   linkCompartilhadoEm       DateTime? @map("link_compartilhado_em") @db.Timestamptz
-  trabalhaSozinho           Boolean  @default(false) @map("trabalha_sozinho")
+  trabalhaSozinho           Boolean   @default(false) @map("trabalha_sozinho")
   // Regras de agendamento (painel v2, marco 3): só pro cliente, o
   // painel encaixa livre. Listas fechadas em packages/formato/src/
   // regras.ts, com o CHECK na migration 20261009120000_regras_de_agendamento.
   // Os padrões são o comportamento de antes das regras.
-  intervaloMinutos          Int      @default(15) @map("intervalo_minutos") @db.SmallInt
-  antecedenciaMinutos       Int      @default(0) @map("antecedencia_minutos") @db.SmallInt
-  aceitaMesmoDia            Boolean  @default(true) @map("aceita_mesmo_dia")
+  intervaloMinutos          Int       @default(15) @map("intervalo_minutos") @db.SmallInt
+  antecedenciaMinutos       Int       @default(0) @map("antecedencia_minutos") @db.SmallInt
+  aceitaMesmoDia            Boolean   @default(true) @map("aceita_mesmo_dia")
   // Nula = sem limite.
-  janelaDias                Int?     @map("janela_dias") @db.SmallInt
-  cabeAntesDeFechar         Boolean  @default(true) @map("cabe_antes_de_fechar")
-  prazoRemarcarHoras        Int      @default(0) @map("prazo_remarcar_horas") @db.SmallInt
-  prazoCancelarHoras        Int      @default(0) @map("prazo_cancelar_horas") @db.SmallInt
+  janelaDias                Int?      @map("janela_dias") @db.SmallInt
+  cabeAntesDeFechar         Boolean   @default(true) @map("cabe_antes_de_fechar")
+  prazoRemarcarHoras        Int       @default(0) @map("prazo_remarcar_horas") @db.SmallInt
+  prazoCancelarHoras        Int       @default(0) @map("prazo_cancelar_horas") @db.SmallInt
   // A Aparência da página pública: o que está no ar e o rascunho que o
   // dono ainda não publicou. Nulas = o padrão / nada pendente. Formato
   // em packages/formato/src/aparencia.ts; a API valida, quem lê
   // normaliza (migration 20261012120000_aparencia).
   aparencia                 Json?
-  aparenciaRascunho         Json?    @map("aparencia_rascunho")
-  criadoEm                  DateTime @default(now()) @map("criado_em") @db.Timestamptz
+  aparenciaRascunho         Json?     @map("aparencia_rascunho")
+  criadoEm                  DateTime  @default(now()) @map("criado_em") @db.Timestamptz
 
   barbeiros             Barbeiro[]
   clientes              Cliente[]
@@ -133,6 +133,7 @@ model OperadorSuporte {
   criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz
 
   decisoes SolicitacaoTrocaLink[]
+  avisos   Aviso[]
 
   @@map("operador_suporte")
 }
@@ -231,23 +232,24 @@ model Barbeiro {
   jornada      JornadaProfissional[]
   servicos     ProfissionalServico[]
   bloqueios    Bloqueio[]
+  notificacoes Notificacao[]
 
   @@index([barbeariaId])
   @@map("barbeiro")
 }
 
 model JornadaProfissional {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  barbeiroId String      @map("barbeiro_id") @db.Uuid
-  diaSemana  Int         @map("dia_semana") @db.SmallInt
-  modo       ModoJornada @default(barbearia)
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeiroId  String      @map("barbeiro_id") @db.Uuid
+  diaSemana   Int         @map("dia_semana") @db.SmallInt
+  modo        ModoJornada @default(barbearia)
   // Só no modo `proprio`, e as duas — CHECK `jornada_horas_do_modo`.
-  horaInicio DateTime?   @map("hora_inicio") @db.Time
-  horaFim    DateTime?   @map("hora_fim") @db.Time
+  horaInicio  DateTime?   @map("hora_inicio") @db.Time
+  horaFim     DateTime?   @map("hora_fim") @db.Time
   // Pausa do almoço (painel v2, marco 3): as duas ou nenhuma, nunca na
   // folga — CHECK `jornada_pausa_inteira` (migration 20261008120000).
-  pausaInicio DateTime?  @map("pausa_inicio") @db.Time
-  pausaFim    DateTime?  @map("pausa_fim") @db.Time
+  pausaInicio DateTime?   @map("pausa_inicio") @db.Time
+  pausaFim    DateTime?   @map("pausa_fim") @db.Time
 
   barbeiro Barbeiro @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
 
@@ -401,4 +403,57 @@ model CodigoVerificacao {
 
   @@index([finalidade, destino, barbeariaId, criadoEm(sort: Desc)], map: "codigo_verificacao_alvo_idx")
   @@map("codigo_verificacao")
+}
+
+// De onde vem a notificação do sino do painel. `pagamento` existe desde
+// já, sem quem a gere: entra com a Onda 2 (dinheiro).
+enum TipoNotificacao {
+  agendamento
+  pagamento
+  plataforma
+
+  @@map("tipo_notificacao")
+}
+
+// O aviso que o suporte publica pra todas as barbearias (plano
+// barra-do-topo, PR B). Cada membro ativo na hora recebe a sua
+// Notificacao com o aviso_id — é por ele que o suporte conta quantos
+// leram. Quem entra na equipe depois não recebe os avisos antigos.
+model Aviso {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titulo    String   @db.VarChar(120)
+  texto     String   @db.VarChar(500)
+  link      String?  @db.VarChar(300)
+  criadoPor String?  @map("criado_por") @db.Uuid
+  criadoEm  DateTime @default(now()) @map("criado_em") @db.Timestamptz
+
+  operador     OperadorSuporte? @relation(fields: [criadoPor], references: [id], onDelete: SetNull)
+  notificacoes Notificacao[]
+
+  @@index([criadoEm(sort: Desc)])
+  @@map("aviso")
+}
+
+// Uma linha por destinatário, e não uma por evento: o "lida" é de cada
+// pessoa, e a equipe de uma barbearia é pequena. O texto é gravado
+// pronto — se o cliente mudar de nome depois, o aviso conta o que
+// aconteceu na hora. Ver a migration 20261013120000_notificacoes.
+model Notificacao {
+  id         String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeiroId String          @map("barbeiro_id") @db.Uuid
+  tipo       TipoNotificacao
+  titulo     String          @db.VarChar(120)
+  texto      String          @db.VarChar(500)
+  // Caminho do painel ("/painel/agendamentos/…") ou https://, ou nada.
+  link       String?         @db.VarChar(300)
+  avisoId    String?         @map("aviso_id") @db.Uuid
+  lidaEm     DateTime?       @map("lida_em") @db.Timestamptz
+  criadaEm   DateTime        @default(now()) @map("criada_em") @db.Timestamptz
+
+  barbeiro Barbeiro @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
+  aviso    Aviso?   @relation(fields: [avisoId], references: [id], onDelete: Cascade)
+
+  @@index([barbeiroId, criadaEm(sort: Desc)])
+  @@index([avisoId])
+  @@map("notificacao")
 }

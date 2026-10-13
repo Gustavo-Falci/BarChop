@@ -35,6 +35,7 @@ import { comRetryDeDeadlock } from "../lib/transacao";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
 import { agendaVisivel, membroDoToken } from "../plugins/auth";
 import type { LimitesPublicos } from "../lib/limites";
+import { notificarAgendamento } from "../lib/notificacoes";
 import type { App } from "../tipos";
 
 // Sem `barbeariaId` e sem `origem`: os dois seriam forjáveis. O
@@ -415,7 +416,7 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
           // Mesma transação do upsert: agendamento recusado desfaz o
           // cliente recém-criado junto, senão cada tentativa inválida
           // deixaria um cadastro fantasma.
-          return criarAgendamento(tx, {
+          const criado = await criarAgendamento(tx, {
             ...resto,
             barbeiroId,
             barbeariaId: barbearia.id,
@@ -423,6 +424,10 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
             origem: "cliente",
             emailLembrete: normalizarEmail(dadosCliente.email),
           });
+          // O sino da equipe. Só aqui, e não no POST /agendamentos: o que
+          // a equipe marca pelo painel ela já sabe.
+          await notificarAgendamento(tx, "novo", criado.id);
+          return criado;
         })
       );
 

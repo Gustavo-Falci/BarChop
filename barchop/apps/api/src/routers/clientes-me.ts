@@ -13,6 +13,7 @@ import { carregarRegras, garantirPrazoDoCliente } from "../lib/regras";
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { PADRAO_DATA, PADRAO_EMAIL, PADRAO_HORA, PADRAO_UUID } from "../lib/padroes";
 import { serializarAgendamento, serializarCliente } from "../lib/serializar";
+import { notificarAgendamento } from "../lib/notificacoes";
 import type { App } from "../tipos";
 
 // Telefone fica de fora: é a chave do login e do upsert do agendamento
@@ -161,10 +162,16 @@ export function registrarRotasClientesMe(app: App): void {
         "cancelar"
       );
 
-      const cancelado = await prisma.agendamento.update({
-        where: { id: agendamento.id },
-        data: { status: "cancelado" },
-        include: INCLUDE_AGENDAMENTO,
+      // Na mesma transação do aviso pra equipe: cancelamento sem aviso
+      // (ou aviso sem cancelamento) não acontece.
+      const cancelado = await prisma.$transaction(async (tx) => {
+        const atualizado = await tx.agendamento.update({
+          where: { id: agendamento.id },
+          data: { status: "cancelado" },
+          include: INCLUDE_AGENDAMENTO,
+        });
+        await notificarAgendamento(tx, "cancelado", atualizado.id);
+        return atualizado;
       });
 
       return { agendamento: serializarAgendamento(cancelado) };
@@ -227,7 +234,7 @@ export function registrarRotasClientesMe(app: App): void {
             );
           }
 
-          return criarAgendamento(tx, {
+          const novo = await criarAgendamento(tx, {
             barbeariaId: antigo.barbeariaId,
             // Herdado: trocar de barbeiro é agendar outro, e a
             // barbearia do MVP tem um só.
@@ -241,6 +248,11 @@ export function registrarRotasClientesMe(app: App): void {
             // O e-mail que recebia o lembrete do antigo recebe o do novo.
             emailLembrete: antigo.emailLembrete,
           });
+          await notificarAgendamento(tx, "remarcado", novo.id, {
+            data: antigo.data,
+            horaInicio: antigo.horaInicio,
+          });
+          return novo;
         })
       );
 

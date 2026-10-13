@@ -3,6 +3,8 @@ import { prisma } from "@barchop/database";
 // TRUNCATE ... CASCADE em vez de deleteMany por tabela: é mais rápido e
 // não depende de acertar a ordem das foreign keys.
 const TABELAS = [
+  "notificacao",
+  "aviso",
   "solicitacao_troca_link",
   "operador_suporte",
   "slug_antigo",

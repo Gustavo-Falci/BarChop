@@ -38,6 +38,16 @@ describe("logo nas configurações", () => {
     expect(screen.getByText(/sugerimos a moldura redonda/i)).toBeInTheDocument();
   });
 
+  it("tem o título Logo em cima, como a capa tem Capa", async () => {
+    montarPainel(<DadosDoNegocio />, criarApiClientFalso());
+
+    // Grupo nomeado pelo título: o botão de escolher continua sendo o
+    // rótulo do arquivo, e o "Logo" diz do que é o bloco inteiro.
+    const bloco = await screen.findByRole("group", { name: "Logo" });
+    expect(bloco).toContainElement(screen.getByLabelText("Escolher logo"));
+    expect(screen.getByText("Logo", { selector: "span" })).toBeVisible();
+  });
+
   it("diz a medida recomendada da logo", async () => {
     montarPainel(<DadosDoNegocio />, criarApiClientFalso());
 

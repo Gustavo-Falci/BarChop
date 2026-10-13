@@ -76,7 +76,7 @@ describe("capa nas configurações", () => {
 
     await userEvent.upload(await screen.findByLabelText(/^capa/i), arquivo());
 
-    expect(await screen.findByText(/JPG, PNG ou WebP/i)).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/JPG, PNG ou WebP/i);
   });
 });
 

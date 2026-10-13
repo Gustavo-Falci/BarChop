@@ -143,7 +143,7 @@ export function CampoDaLogo({
           }}
         />
         <span className={estilos.apoio} id={`${id}-apoio`}>
-          PNG com fundo transparente fica melhor: a moldura segue o formato do desenho.
+          512 × 512 px, quadrada. PNG com fundo transparente fica melhor: a moldura segue o formato do desenho.
         </span>
 
         {marca ? (

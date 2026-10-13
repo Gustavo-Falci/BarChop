@@ -19,6 +19,7 @@ export function CampoDeImagem({
   enviar,
   remover,
   formato = "paisagem",
+  apoio = "JPG, PNG, WebP. A gente ajusta o tamanho.",
 }: {
   rotulo: string;
   // O texto alternativo da prévia: "Capa da barbearia", "Foto de Ana".
@@ -27,6 +28,8 @@ export function CampoDeImagem({
   enviar: (arquivo: Blob) => Promise<string>;
   remover: () => Promise<void>;
   formato?: "paisagem" | "retrato" | "quadrado";
+  // A dica embaixo do botão: a capa diz a medida recomendada.
+  apoio?: string;
 }) {
   const id = useId();
   const [url, setUrl] = useState(urlAtual);
@@ -121,7 +124,7 @@ export function CampoDeImagem({
               Remover {nomeDaImagem}
             </Botao>
           ) : null}
-          <span className={estilos.apoio}>JPG, PNG, WebP. A gente ajusta o tamanho.</span>
+          <span className={estilos.apoio}>{apoio}</span>
         </div>
       </div>
       {aviso ? <Aviso>{aviso}</Aviso> : null}

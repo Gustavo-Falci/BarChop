@@ -6,7 +6,6 @@ import { NavegacaoDoPainel } from "../../src/painel/NavegacaoDoPainel";
 import { ProvedorDoPainel } from "../../src/painel/ProvedorDoPainel";
 import { SessaoDoPainel } from "../../src/painel/SessaoDoPainel";
 import { CHAVE_DA_BARRA } from "../../src/painel/barra";
-import { CHAVE_DO_TEMA } from "../../src/painel/tema";
 import {
   sessaoDaBarbearia,
   sessaoDoBarbeiro,
@@ -106,20 +105,14 @@ describe("navegação do painel", () => {
     );
   });
 
-  it("o botão de tema troca o rótulo, o atributo do <html> e a escolha gravada", async () => {
+  it("tema e Sair não moram mais na barra lateral — foram pra barra de topo", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel" });
 
     montar();
 
-    const botao = await screen.findByRole("button", { name: "Modo escuro" });
-
-    await userEvent.click(botao);
-
-    expect(
-      screen.getByRole("button", { name: "Modo claro" })
-    ).toBeInTheDocument();
-    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-    expect(localStorage.getItem(CHAVE_DO_TEMA)).toBe("escuro");
+    await screen.findByRole("link", { name: "Hoje" });
+    expect(screen.queryByRole("button", { name: /Modo (escuro|claro)/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sair" })).toBeNull();
   });
   describe("recolher a barra", () => {
     it("começa expandida e o botão anuncia o que faz", async () => {
@@ -181,18 +174,6 @@ describe("navegação do painel", () => {
       for (const rotulo of ["Hoje", "Agenda", "Clientes", "Serviços", "Configurações"]) {
         expect(await screen.findByRole("link", { name: rotulo })).toBeInTheDocument();
       }
-    });
-
-    it("recolhida, o botão de tema mantém o nome acessível", async () => {
-      navegacaoFalsa.redefinir({ pathname: "/painel" });
-      localStorage.setItem(CHAVE_DA_BARRA, "recolhida");
-
-      montar();
-
-      expect(
-        await screen.findByRole("button", { name: "Modo escuro" })
-      ).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Sair" })).toBeInTheDocument();
     });
   });
 });

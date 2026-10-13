@@ -418,6 +418,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       barbeariaId: estado.perfil.id,
       papel: eu.papel,
       atende: eu.atende,
+      fotoUrl: eu.fotoUrl,
     };
   }
 

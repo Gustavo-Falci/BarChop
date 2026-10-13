@@ -79,8 +79,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--espaco-xs);
-  /* Empurra o rodapé (tema e sair) pro fim da coluna. */
-  margin-block-end: auto;
 }
 
 .links a {
@@ -110,22 +108,14 @@
   color: var(--cor-dark);
 }
 
-/* Os dois botões do rodapé passaram a levar ícone além do texto. O
-   alinhamento mora aqui e não no Botao: é esta barra que põe ícone
-   dentro deles, e nenhum outro uso do componente no painel faz isso. */
-.rodape button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--espaco-sm);
-}
-
-.rodape {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espaco-sm);
-  padding-block-start: var(--espaco-md);
-  border-block-start: var(--borda-hairline) solid var(--cor-line);
+/* A coluna da direita: barra de topo parada em cima, conteúdo rolando
+   embaixo. Mesma regra do shell — `minmax(0, 1fr)` na linha do conteúdo
+   pra a rolagem acontecer dentro dele e não na janela. */
+.coluna {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
 }
 
 /* A área de conteúdo. O container centra e limita a medida: o painel
@@ -238,7 +228,6 @@
 }
 
 :global(html[data-barra="recolhida"]) .links a,
-:global(html[data-barra="recolhida"]) .rodape button,
 :global(html[data-barra="recolhida"]) .alternador {
   justify-content: center;
   /* Quadrado: sem o texto, o padding lateral da versão larga deixaria
@@ -318,6 +307,10 @@
     overflow-y: visible;
   }
 
+  .coluna {
+    grid-template-rows: auto auto;
+  }
+
   .barra {
     height: auto;
     overflow-y: visible;
@@ -332,7 +325,6 @@
   .links {
     flex-direction: row;
     flex-wrap: nowrap;
-    margin-block-end: 0;
     margin-inline-end: auto;
     /* `min-width: 0` e não só `overflow-x`: item de flex não encolhe
        abaixo do próprio conteúdo por padrão, então a faixa empurrava a
@@ -345,12 +337,6 @@
 
   .links a {
     white-space: nowrap;
-  }
-
-  .rodape {
-    flex-direction: row;
-    padding-block-start: 0;
-    border-block-start: none;
   }
 
   .conteudo {
@@ -380,8 +366,7 @@
     clip-path: none;
   }
 
-  :global(html[data-barra="recolhida"]) .links a,
-  :global(html[data-barra="recolhida"]) .rodape button {
+  :global(html[data-barra="recolhida"]) .links a {
     gap: var(--espaco-sm);
     width: auto;
     height: auto;

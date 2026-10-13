@@ -367,6 +367,8 @@ export interface PerfilBarbeiro {
   papel: PapelMembro;
   // Aparece na agenda e no fluxo público. A recepção nasce sem atender.
   atende: boolean;
+  // A foto do membro (a mesma da Equipe); nula sem foto.
+  fotoUrl: string | null;
 }
 
 // Cada dia da jornada do membro: acompanha o funcionamento da barbearia,

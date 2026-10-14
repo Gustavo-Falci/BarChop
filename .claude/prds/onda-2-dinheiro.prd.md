@@ -64,10 +64,11 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 ## Open Questions
 - [x] Preços e nomes dos planos do BarChop — decididos pelo dono em 12/10/2026: Grátis (1 profissional), Essencial R$ 34,90 + R$ 10 por profissional extra (até 3), Completo R$ 44,90 + R$ 15 por extra (sem limite); detalhes em `referencias/pesquisa-de-precos-2026-10.md`.
 - [ ] Antes de fechar os preços: custo por mensagem do WhatsApp na Meta, taxa do provedor sobre a mensalidade e custo da VM (quantas contas pagas cobrem a infraestrutura).
-- [ ] O que acontece com a barbearia que termina o teste sem pagar, ou atrasa a mensalidade: cai para o grátis, fica só leitura, ou bloqueia? (Proposta: cai para o Grátis, guarda os dados e não bloqueia a agenda do cliente final.)
+- [x] O que acontece com a barbearia que termina o teste sem pagar, ou atrasa a mensalidade — decidido pelo dono em 13/10/2026: no atraso, tudo segue funcionando enquanto a Stripe tenta cobrar; teste vencido ou assinatura cancelada cai no Grátis, guarda os dados e não bloqueia a agenda do cliente final.
 - [x] Provedor para o BarChop cobrar as barbearias: **Stripe**, conta de pessoa física (CPF), sem CNPJ — decisão do dono em 13/10/2026 (ADR-0010). O provedor para a barbearia receber dos clientes (marco 3) segue em aberto.
-- [ ] O BarChop tem CNPJ/razão social para abrir conta no provedor? (Mesma pendência da verificação da Meta e dos "a preencher" do site.)
-- [ ] A GR Barber, como piloto, paga plano ou fica de graça?
+- [ ] O BarChop tem CNPJ/razão social para abrir conta no provedor? Não trava mais o marco 1 (Stripe com CPF); segue valendo para o marco 3, a verificação da Meta e os "a preencher" do site.
+- [x] A GR Barber, como piloto, paga plano ou fica de graça? — decidido pelo dono em 13/10/2026: **paga**, sem cortesia.
+- [x] Pix na assinatura do BarChop — conferido pelo dono em 14/10/2026: a conta da Stripe tem Pix, mas sem pagamento recorrente; a assinatura começa só com cartão (ADR-0010).
 - [ ] Extras do módulo do Barbeiro.app — entram na Onda 2 ou depois: pacote pré-pago, convênio, regras finas de uso (dias permitidos, intervalo mínimo, agendamentos futuros simultâneos), sugestão de preço, aba Receita, Pix Automático, selo "mais popular".
 - [ ] Plano de assinante de um cliente que "é" do parceiro: o dinheiro do plano cai na conta da barbearia (uma só no provedor) — de quem é a mensalidade, ela entra no acerto por profissional, e como o valor fixo por atendimento de assinante se combina com a regra "de quem é o cliente × quem atendeu"? Decidir antes do `/plan` do marco 3.
 - [x] Gorjeta e desconto — decidido pelo dono em 13/10/2026: a gorjeta vai 100% para quem atendeu (fora da regra de divisão); o desconto reduz o valor cobrado e a divisão é feita sobre o que foi pago.
@@ -76,7 +77,7 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 ## Risks
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| Sem CNPJ, nenhum provedor abre conta: trava o marco 1 (BarChop cobrar) e o pagamento online do marco 3 | High | High | Resolver CNPJ e escolher provedor antes do `/plan` do marco 1; conferir os requisitos de cada provedor candidato |
+| Sem CNPJ, nenhum provedor abre conta: trava o pagamento online do marco 3 | High | High | Marco 1 resolvido com a Stripe em conta de pessoa física (ADR-0010); para o marco 3, conferir os requisitos de cada provedor candidato |
 | Regras de divisão variam demais entre barbearias e a configuração não cobre a próxima | Medium | High | Regras configuráveis por combinação "de quem é o cliente × quem atendeu"; validar com a primeira barbearia externa |
 | "Quem atendeu primeiro" atribui errado os clientes antigos quando o caixa entrar no ar | High | Medium | Dono troca o profissional do cliente à mão (requisito do marco 2) |
 | Onda 2 ficou grande (gateway e planos subiram da Onda 3) e atrasa o início do piloto | High | High | Quatro marcos independentes, cada um em produção antes do próximo; extras do documento ficam pendentes |
@@ -84,4 +85,4 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 | Acerto errado gera briga entre sócios e o dono volta ao caderno | Medium | High | Duas semanas em paralelo com o caderno na GR Barber antes de confiar só no BarChop |
 
 ---
-*Status: DRAFT — requirements only. Implementation planning pending via /plan.*
+*Status: marco 1 em andamento (`.claude/plans/cobranca-do-barchop.plan.md`); marcos 2 a 4 aguardam o `/plan`.*

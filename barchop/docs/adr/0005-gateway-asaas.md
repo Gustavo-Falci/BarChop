@@ -1,7 +1,7 @@
 # ADR-0005: Asaas como gateway de pagamento
 
 **Date**: 2026-10-02
-**Status**: accepted
+**Status**: parcialmente substituída pela ADR-0010 (a cobrança do SaaS vai pela Stripe; o dinheiro da barbearia segue em aberto)
 **Deciders**: Gustavo Falci (dono do produto), Claude
 
 ## Context

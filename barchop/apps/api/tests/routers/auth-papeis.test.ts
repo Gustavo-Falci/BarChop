@@ -46,6 +46,8 @@ const SO_DO_DONO = [
   { method: "PUT", url: "/barbearias/me/aparencia/layout-dos-servicos" },
   // A assinatura do BarChop (Onda 2).
   { method: "GET", url: "/barbearias/me/assinatura" },
+  { method: "POST", url: "/barbearias/me/assinatura/checkout" },
+  { method: "POST", url: "/barbearias/me/assinatura/portal" },
 ] as const;
 
 async function prepararEquipe(app: App) {

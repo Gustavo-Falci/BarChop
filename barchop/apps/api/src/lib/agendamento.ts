@@ -11,6 +11,7 @@ import {
   horariosDoProfissionalNoDia,
   horariosLivres,
 } from "./disponibilidade";
+import { foraDoLink, garantirNoLink } from "./assinatura";
 import { ErroDeNegocio } from "./erro-negocio";
 import { dataParaDate, horaParaDate, somarMinutos } from "./horas";
 import { carregarRegras, garantirRegrasDoCliente, gradeDe } from "./regras";
@@ -45,7 +46,11 @@ export async function escolherProfissional(
     throw new ErroDeNegocio(`a data ${data} não existe`, "data_invalida");
   }
 
-  const candidatos = await candidatosDoQualquerUm(tx, barbeariaId, servicoIds);
+  // Só o link escolhe: quem ficou fora pelo limite do plano não entra.
+  const ocultos = await foraDoLink(tx, barbeariaId, new Date());
+  const candidatos = (await candidatosDoQualquerUm(tx, barbeariaId, servicoIds)).filter(
+    (id) => !ocultos.includes(id)
+  );
   const grade = gradeDe(await carregarRegras(tx, barbeariaId), true);
   const livres: string[] = [];
   for (const barbeiroId of candidatos) {
@@ -88,6 +93,9 @@ export interface CriarAgendamentoParams {
   // Só do fluxo público e do remarcar (ver lembrete.ts): o e-mail pro
   // lembrete deste agendamento, já normalizado.
   emailLembrete?: string | null;
+  // Só do remarcar do cliente: o profissional é o do agendamento antigo,
+  // então quem ficou fora do link pelo limite do plano ainda vale.
+  remarcando?: boolean;
 }
 
 // Recebe o `tx` em vez de abrir a própria transação: o fluxo público
@@ -107,9 +115,14 @@ export async function criarAgendamento(
     origem,
     observacoes,
     emailLembrete,
+    remarcando,
   } = params;
 
   await garantirBarbeiro(tx, barbeariaId, barbeiroId);
+  // O cliente não marca horário novo pelo link com quem ficou fora pelo
+  // limite do plano; remarcar o que já tinha, sim (decisão do dono,
+  // 14/10/2026). O painel marca com qualquer um.
+  if (origem === "cliente" && !remarcando) await garantirNoLink(tx, barbeariaId, barbeiroId, new Date());
 
   const { servicos, duracaoTotalMinutos } = await carregarServicos(
     tx,

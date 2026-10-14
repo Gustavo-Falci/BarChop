@@ -178,6 +178,28 @@ export async function ehMembroDaBarbearia(request: FastifyRequest, barbeariaId: 
   );
 }
 
+// Nas rotas públicas de disponibilidade: o cliente logado, ou null.
+// Espelho do `ehMembroDaBarbearia`: nunca recusa — sem token, token
+// torto, de outro tipo, de cliente apagado ou anterior à troca de
+// senha, a resposta é a de quem não está logado.
+export async function clienteDaRequisicao(request: FastifyRequest): Promise<string | null> {
+  if (!request.headers.authorization) return null;
+
+  let payload: PayloadBarbeiro | PayloadCliente | PayloadSuporte;
+  try {
+    payload = await request.jwtVerify<PayloadBarbeiro | PayloadCliente | PayloadSuporte>();
+  } catch {
+    return null;
+  }
+  if (payload.tipo !== "cliente") return null;
+
+  const cliente = await prisma.cliente.findUnique({
+    where: { id: payload.clienteId },
+    select: { senhaAlteradaEm: true },
+  });
+  return cliente && !emitidoAntesDaTroca(payload, cliente.senhaAlteradaEm) ? payload.clienteId : null;
+}
+
 // Lê o membro que o hook decorou — espelho do clienteDoToken.
 export function membroDoToken(request: FastifyRequest): Membro {
   if (!request.membro) {

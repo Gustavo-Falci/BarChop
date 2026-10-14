@@ -320,12 +320,16 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
           <span>Profissional</span>
           {/* Com profissional escolhido e o perfil ainda chegando, nada
               de "quem estiver livre": seria falso por um instante. */}
+          {/* No remarcar, o profissional pode ter saído da lista pública
+              (Grátis acima do limite): o nome não chega, mas é o mesmo. */}
           <b>
             {!profissional
               ? "Com quem estiver livre"
               : nomeDoProfissional
                 ? `Com ${nomeDoProfissional}`
-                : "…"}
+                : remarcar && perfil.dados
+                  ? "Com o mesmo profissional"
+                  : "…"}
           </b>
         </div>
         <div className={estilos.linha}>

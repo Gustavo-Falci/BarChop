@@ -17,6 +17,9 @@ Toda barbearia passa a ter uma assinatura: 14 dias de teste com tudo liberado, d
 1. **Quem conta como profissional**: membro ativo com papel `dono` ou `profissional`. A recepção não conta e não paga.
 2. **Barbearias que já existem** (teste1, barbearia-teste, gr-barber): ganham 14 dias de teste a partir do deploy da migração.
 3. **Teste acabou sem pagar, ou a assinatura foi cancelada → Grátis.** Nada é apagado. Se a barbearia tem mais profissionais que o limite, só o dono mais antigo continua aparecendo no link público. Os outros ficam no painel e com a agenda, mas não recebem agendamento novo pelo link. Os horários já marcados continuam valendo. O painel mostra uma faixa explicando isso.
+   - **Ajustes do dono (14/10, PR 3):**
+     - **Quem fica:** se o dono mais antigo não atende, fica no link o profissional mais antigo que atende, para o link nunca ficar sem ninguém.
+     - **Remarcar:** o cliente que já tem horário com quem saiu do link pode remarcar pela conta, com o mesmo profissional, respeitando o prazo de remarcar da barbearia. A busca de horários abre a agenda desse profissional só para o cliente dono do agendamento, com o parâmetro `remarcar` e o login dele.
 4. **Pagamento atrasado**: a Stripe tenta cobrar de novo sozinha. Enquanto tenta, tudo continua funcionando e o painel mostra a faixa "pagamento pendente". Quando a Stripe desiste e cancela, a barbearia cai no Grátis (item 3).
 5. **Formas de pagamento**: cartão. Pix Automático entra se a conta for elegível, porque a documentação e o suporte da Stripe se contradizem (ver Riscos). Boleto fica fora.
 6. **Mudar a equipe com plano pago**: incluir ou reativar um profissional aumenta a quantidade na Stripe, com cobrança proporcional. No Essencial, o 4º profissional é recusado com o convite "suba para o Completo". No Grátis, o 2º é recusado com o convite "escolha um plano".

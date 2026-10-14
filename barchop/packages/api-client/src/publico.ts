@@ -17,9 +17,13 @@ export interface FiltroDoDia {
   barbeiroId?: string;
   data: string; // "YYYY-MM-DD"
   servicoIds: string[];
+  // O agendamento que o cliente logado está remarcando (com `comToken`):
+  // a API abre a agenda do profissional dele mesmo fora do link.
+  remarcar?: string;
 }
 
-// `comToken`: o painel pergunta como membro da barbearia.
+// `comToken`: o painel pergunta como membro da barbearia, ou o cliente
+// logado, no remarcar.
 export interface OpcoesDaDisponibilidade {
   comToken?: boolean;
 }
@@ -28,6 +32,7 @@ export interface FiltroDoMes {
   barbeiroId?: string;
   mes: string; // "YYYY-MM"
   servicoIds: string[];
+  remarcar?: string;
 }
 
 // Por onde o cliente se identifica: telefone OU e-mail, nunca os dois —

@@ -23,6 +23,7 @@ import {
   normalizarAparencia,
 } from "@barchop/formato";
 import { conflito } from "../lib/erro-http";
+import { foraDoLink } from "../lib/assinatura";
 import { PODE_ATENDER } from "../lib/disponibilidade";
 import { enfileirarLembretesFuturos } from "../lib/lembrete";
 import { normalizarTelefone } from "../lib/telefone";
@@ -346,6 +347,9 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
           },
         },
       });
+      // No Grátis acima do limite, quem ficou fora não aparece no link
+      // (lib/assinatura.ts).
+      const ocultos = await foraDoLink(prisma, barbearia.id, new Date());
 
       // Campos escolhidos pelo serializador: um spread traria o
       // senhaHash junto.
@@ -355,12 +359,14 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
         // O id vai pra disponibilidade e pro agendamento; os serviços de
         // cada um deixam o passo do profissional oferecer só quem faz o
         // que o cliente escolheu.
-        barbeiros: barbearia.barbeiros.map((barbeiro) => ({
-          id: barbeiro.id,
-          nome: barbeiro.nome,
-          servicoIds: barbeiro.servicos.map((servico) => servico.servicoId),
-          fotoUrl: barbeiro.fotoChave ? app.armazenamento.urlPublica(barbeiro.fotoChave) : null,
-        })),
+        barbeiros: barbearia.barbeiros
+          .filter((barbeiro) => !ocultos.includes(barbeiro.id))
+          .map((barbeiro) => ({
+            id: barbeiro.id,
+            nome: barbeiro.nome,
+            servicoIds: barbeiro.servicos.map((servico) => servico.servicoId),
+            fotoUrl: barbeiro.fotoChave ? app.armazenamento.urlPublica(barbeiro.fotoChave) : null,
+          })),
       };
     }
   );

@@ -356,6 +356,25 @@ describe("confirmação", () => {
       await screen.findByText(/agendamento confirmado/i);
       expect(lerDadosDoCliente()).toEqual(rascunhoDeOutroAgendamento);
     });
+
+    it("com o profissional fora da lista pública (Grátis acima do limite), diz que é o mesmo", async () => {
+      // O remarcar mantém o profissional; no Grátis acima do limite ele
+      // pode não estar no perfil público, e o nome nunca chegaria.
+      const { falso, original } = await prepararRemarcar();
+      navegacaoFalsa.redefinir({
+        query: {
+          servicos: "s1",
+          data: "2026-09-21",
+          hora: "10:00",
+          remarcar: original.id,
+          profissional: "bb-fora-do-link",
+        },
+      });
+
+      montar(falso);
+
+      expect(await screen.findByText("Com o mesmo profissional")).toBeInTheDocument();
+    });
   });
 
   it("com sessão, a tela de sucesso leva aos agendamentos", async () => {

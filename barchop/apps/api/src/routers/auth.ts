@@ -1,5 +1,6 @@
 import { prisma } from "@barchop/database";
 import { normalizarEmail, slugReservado } from "@barchop/formato";
+import { fimDoTeste } from "../lib/assinatura";
 import { consumirCodigo, emitirCodigo } from "../lib/codigos";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { garantirSlugLivre } from "../lib/slug";
@@ -88,8 +89,14 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         // teve continua dela. Lança aqui dentro de propósito — o rollback
         // devolve o código, e o dono só escolhe outro link.
         await garantirSlugLivre(tx, barbearia.slug, null);
+        // Nasce com a assinatura em teste (Onda 2): 14 dias com tudo
+        // liberado, sem cartão.
         const novaBarbearia = await tx.barbearia.create({
-          data: { nome: barbearia.nome, slug: barbearia.slug },
+          data: {
+            nome: barbearia.nome,
+            slug: barbearia.slug,
+            assinatura: { create: { testeTerminaEm: fimDoTeste(new Date()) } },
+          },
         });
 
         const novoBarbeiro = await tx.barbeiro.create({

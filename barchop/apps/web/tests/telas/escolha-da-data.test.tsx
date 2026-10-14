@@ -139,6 +139,36 @@ describe("escolha do dia e do horário", () => {
     );
   });
 
+  it("no remarcar, pede a agenda com o id do agendamento e o login, mesmo com o profissional fora da lista pública", async () => {
+    // No Grátis acima do limite, o profissional do agendamento pode ter
+    // saído do link: o perfil não o traz, mas a API abre a agenda dele
+    // pra quem remarca (com o login do cliente dono do agendamento).
+    navegacaoFalsa.redefinir({
+      query: { servicos: "s1", remarcar: "a1", profissional: "bb-fora-do-link" },
+    });
+    const cliente = criarApiClientFalso({ diasComVaga: { "2026-09-10": true }, horariosLivres: ["15:00"] });
+    const doMes = vi.spyOn(cliente.publico, "disponibilidadeDoMes");
+    const doDia = vi.spyOn(cliente.publico, "disponibilidadeDoDia");
+    render(
+      <ProvedorDaApi valor={cliente}>
+        <EscolhaDaData agora={MANHA} />
+      </ProvedorDaApi>
+    );
+
+    expect(await screen.findByRole("button", { name: "15:00" })).toBeInTheDocument();
+    expect(navegacaoFalsa.replace).not.toHaveBeenCalled();
+    expect(doMes).toHaveBeenCalledWith(
+      "gr-barber",
+      expect.objectContaining({ barbeiroId: "bb-fora-do-link", remarcar: "a1" }),
+      { comToken: true }
+    );
+    expect(doDia).toHaveBeenCalledWith(
+      "gr-barber",
+      expect.objectContaining({ barbeiroId: "bb-fora-do-link", remarcar: "a1" }),
+      { comToken: true }
+    );
+  });
+
   it("mostra o recado de horário ocupado que a confirmação mandou", async () => {
     navegacaoFalsa.redefinir({
       query: { servicos: "s1", data: "2026-09-10", aviso: "horario_ocupado" },

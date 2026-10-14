@@ -93,6 +93,9 @@ export interface CriarAgendamentoParams {
   // Só do fluxo público e do remarcar (ver lembrete.ts): o e-mail pro
   // lembrete deste agendamento, já normalizado.
   emailLembrete?: string | null;
+  // Só do remarcar do cliente: o profissional é o do agendamento antigo,
+  // então quem ficou fora do link pelo limite do plano ainda vale.
+  remarcando?: boolean;
 }
 
 // Recebe o `tx` em vez de abrir a própria transação: o fluxo público
@@ -112,12 +115,14 @@ export async function criarAgendamento(
     origem,
     observacoes,
     emailLembrete,
+    remarcando,
   } = params;
 
   await garantirBarbeiro(tx, barbeariaId, barbeiroId);
-  // O cliente (link e remarcar) não marca com quem ficou fora do link
-  // pelo limite do plano; o painel marca com qualquer um.
-  if (origem === "cliente") await garantirNoLink(tx, barbeariaId, barbeiroId, new Date());
+  // O cliente não marca horário novo pelo link com quem ficou fora pelo
+  // limite do plano; remarcar o que já tinha, sim (decisão do dono,
+  // 14/10/2026). O painel marca com qualquer um.
+  if (origem === "cliente" && !remarcando) await garantirNoLink(tx, barbeariaId, barbeiroId, new Date());
 
   const { servicos, duracaoTotalMinutos } = await carregarServicos(
     tx,

@@ -104,7 +104,7 @@ describe("remarcar com quem ficou fora do link", () => {
     const resposta = await remarcar(app, cliente.token, agendamento.id, SEXTA, "10:00");
 
     expect(resposta.statusCode).toBe(201);
-    expect(resposta.json().agendamento.barbeiroId).toBe(profissional.barbeiroId);
+    expect(resposta.json().agendamento.barbeiro.id).toBe(profissional.barbeiroId);
     await app.close();
   });
 

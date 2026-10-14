@@ -69,8 +69,11 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
   const barbeiroId = profissional;
   // O profissional da URL ainda serve? Link velho, ou serviço trocado
   // depois de escolher, podem trazer quem não faz o que foi pedido — e a
-  // API responderia 422. `undefined` enquanto o perfil não chegou.
-  const profissionalServe = !profissional
+  // API responderia 422. `undefined` enquanto o perfil não chegou. No
+  // remarcar, o profissional é o do agendamento e os serviços são os
+  // dele: serve sempre, mesmo fora da lista pública (Grátis acima do
+  // limite) — a API confere.
+  const profissionalServe = !profissional || remarcar
     ? true
     : perfil.dados
       ? profissionaisQueFazem(perfil.dados.barbeiros, servicoIds).some(
@@ -78,6 +81,9 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
         )
       : undefined;
   const podeConsultar = pronto && profissionalServe === true;
+  // No remarcar, com o login do cliente: é o que deixa a API abrir a
+  // agenda do profissional dele mesmo fora do link.
+  const comLogin = remarcar ? { comToken: true } : undefined;
 
   useEffect(() => {
     // `replace`: a URL com o profissional que não serve não merece
@@ -103,7 +109,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     if (!podeConsultar) return null;
     const porMes = await Promise.all(
       meses.map((mes) =>
-        api.publico.disponibilidadeDoMes(slug, { barbeiroId, mes, servicoIds })
+        api.publico.disponibilidadeDoMes(slug, { barbeiroId, mes, servicoIds, remarcar }, comLogin)
       )
     );
     const dias: Record<string, boolean> = Object.assign({}, ...porMes);
@@ -118,7 +124,8 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
         barbeiroId,
         data: hoje,
         servicoIds,
-      });
+        remarcar,
+      }, comLogin);
       if (horarios.every((hora) => horaJaPassou(hoje, hora, agora))) {
         dias[hoje] = false;
       }
@@ -142,7 +149,8 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
       barbeiroId,
       data: dataEfetiva,
       servicoIds,
-    });
+      remarcar,
+    }, comLogin);
     // O dia viaja junto com a lista. O useRequisicao mantém a resposta
     // anterior enquanto busca a nova, e sem esta marca os horários de
     // ontem apareceriam sob o dia de hoje por um instante — e um toque

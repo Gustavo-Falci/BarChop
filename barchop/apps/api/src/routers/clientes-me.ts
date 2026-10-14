@@ -247,6 +247,9 @@ export function registrarRotasClientesMe(app: App): void {
             origem: "cliente",
             // O e-mail que recebia o lembrete do antigo recebe o do novo.
             emailLembrete: antigo.emailLembrete,
+            // Mesmo profissional: vale mesmo fora do link (o prazo foi
+            // conferido acima).
+            remarcando: true,
           });
           await notificarAgendamento(tx, "remarcado", novo.id, {
             data: antigo.data,

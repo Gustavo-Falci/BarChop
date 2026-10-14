@@ -6,12 +6,14 @@ import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-
 import { armazenamentoPadrao, type Armazenamento } from "./lib/armazenamento";
 import { confiancaNoProxy, origemPermitida, origensPermitidas, proxiesConfiaveis } from "./lib/borda";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
+import { cobrancaDoAmbiente, type Cobranca } from "./lib/cobranca";
 import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDaEquipe, limitesDeAuth, limitesPublicos } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
 import { autenticar, autenticarCliente, autenticarSuporte, registrarAuth } from "./plugins/auth";
 import { registrarRotasAssinatura } from "./routers/assinatura";
 import { registrarRotasAuth } from "./routers/auth";
+import { registrarRotaWebhookStripe } from "./routers/webhook-stripe";
 import { registrarRotasAuthCliente } from "./routers/auth-cliente";
 import {
   registrarRotasAgendamentos,
@@ -55,6 +57,9 @@ declare module "fastify" {
     // Onde ficam capa e fotos (bloco E2). Na instância pelo mesmo motivo:
     // cada teste com a sua pasta temporária.
     armazenamento: Armazenamento;
+    // A cobrança da assinatura do BarChop (ADR-0010). Na instância pelo
+    // mesmo motivo do canal: cada teste com a sua, de memória.
+    cobranca: Cobranca;
   }
 }
 
@@ -66,6 +71,7 @@ export function buildApp(
     canal?: CanalDeMensagem;
     fila?: Fila;
     armazenamento?: Armazenamento;
+    cobranca?: Cobranca;
     // A borda (proxy de confiança e CORS) lê daqui; o padrão é o
     // process.env. Existe pra o teste montar a API "atrás do Caddy" sem
     // mexer no ambiente do processo.
@@ -138,6 +144,9 @@ export function buildApp(
   // Fora dos testes, recusa o disco local em produção (armazenamento.ts).
   app.decorate("armazenamento", opts.armazenamento ?? armazenamentoPadrao());
 
+  // Em produção, recusa subir sem as chaves da Stripe (lib/cobranca.ts).
+  app.decorate("cobranca", opts.cobranca ?? cobrancaDoAmbiente(ambiente));
+
   // Escopo só pras quatro rotas que recebem senha — as duas de login e
   // as duas de signup. Existe por causa do `await`: os contadores são
   // construídos com `escopo.rateLimit(...)`, que só passa a existir
@@ -168,6 +177,11 @@ export function buildApp(
   });
   // Sem login: quem autoriza é o token do link do e-mail de lembrete.
   registrarRotasLembretes(app);
+  // Sem login também: quem prova a origem é a assinatura da Stripe no
+  // corpo, que precisa chegar cru — por isso o escopo próprio.
+  app.register(async (daStripe: App) => {
+    registrarRotaWebhookStripe(daStripe);
+  });
   // As imagens servidas pela própria API, só no armazenamento local.
   registrarRotaDeArquivos(app);
 

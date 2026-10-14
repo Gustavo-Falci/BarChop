@@ -12,6 +12,8 @@ export default defineConfig({
   entry: {
     server: "src/server.ts",
     "criar-suporte": "scripts/criar-suporte.ts",
+    // Os preços da Stripe (ADR-0010): `node dist/criar-precos-no-stripe.js`.
+    "criar-precos-no-stripe": "scripts/criar-precos-no-stripe.ts",
   },
   outDir: "dist",
   format: ["cjs"], // sem "type": "module" no package.json, o start roda CJS

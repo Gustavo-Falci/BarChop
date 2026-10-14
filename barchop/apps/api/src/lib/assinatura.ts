@@ -8,6 +8,7 @@ import {
   type IdDoPlano,
   type SituacaoDaAssinatura,
 } from "@barchop/formato";
+import type { Cobranca } from "./cobranca";
 import { ErroDeNegocio } from "./erro-negocio";
 
 // A assinatura do BarChop (Onda 2, marco 1): o que a API lê dela e o
@@ -175,4 +176,34 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
     limiteDeProfissionais: limite,
     excedente: limite !== null && profissionais > limite,
   };
+}
+
+interface LogDeAviso {
+  warn(objeto: object, mensagem: string): void;
+}
+
+// Depois que a equipe muda (e a transação gravou): com plano pago, a
+// quantidade na Stripe acompanha os profissionais contados, para cima e
+// para baixo, nunca abaixo de 1 — cobrança proporcional na próxima
+// fatura. Se a Stripe falhar, a mudança na equipe fica: o aviso vai pro
+// log, e o `profissionaisContratados` do webhook mostra a diferença.
+export async function sincronizarQuantidade(
+  cobranca: Cobranca,
+  barbeariaId: string,
+  log: LogDeAviso
+): Promise<void> {
+  const linha = await prisma.assinatura.findUnique({
+    where: { barbeariaId },
+    select: { situacao: true, stripeSubscriptionId: true, profissionaisContratados: true },
+  });
+  if (!linha?.stripeSubscriptionId || (linha.situacao !== "ativa" && linha.situacao !== "em_atraso")) return;
+
+  const profissionais = Math.max(1, await contarProfissionais(barbeariaId));
+  if (profissionais === linha.profissionaisContratados) return;
+  try {
+    await cobranca.atualizarQuantidade(linha.stripeSubscriptionId, profissionais);
+    await prisma.assinatura.update({ where: { barbeariaId }, data: { profissionaisContratados: profissionais } });
+  } catch (erro) {
+    log.warn({ err: erro, barbeariaId, profissionais }, "não consegui atualizar a quantidade na Stripe");
+  }
 }

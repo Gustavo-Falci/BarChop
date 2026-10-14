@@ -93,3 +93,19 @@ export async function notificarAgendamento(
     })),
   });
 }
+
+// Os avisos da assinatura do BarChop (Onda 2): só o dono mexe nela, então
+// só os donos ativos recebem. Na transação de quem muda a situação.
+export async function notificarDonos(
+  tx: Prisma.TransactionClient,
+  barbeariaId: string,
+  aviso: { titulo: string; texto: string; link: string }
+): Promise<void> {
+  const donos = await tx.barbeiro.findMany({
+    where: { barbeariaId, ativo: true, papel: "dono" },
+    select: { id: true },
+  });
+  await tx.notificacao.createMany({
+    data: donos.map(({ id }) => ({ barbeiroId: id, tipo: "pagamento" as const, ...aviso })),
+  });
+}

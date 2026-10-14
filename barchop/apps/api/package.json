@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "criar-suporte": "tsx --env-file-if-exists=.env scripts/criar-suporte.ts"
+    "criar-suporte": "tsx --env-file-if-exists=.env scripts/criar-suporte.ts",
+    "criar-precos": "tsx --env-file-if-exists=.env scripts/criar-precos-no-stripe.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",

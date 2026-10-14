@@ -33,6 +33,25 @@ export {
   type RegrasDeAgendamento,
 } from "./regras";
 export {
+  CICLOS,
+  DIAS_DE_TESTE,
+  IDS_DOS_PLANOS,
+  PLANOS,
+  RECURSOS,
+  SITUACOES_DA_ASSINATURA,
+  limiteDeProfissionais,
+  planoEfetivo,
+  precoDoPlano,
+  precosDoCiclo,
+  temRecurso,
+  type Ciclo,
+  type IdDoPlano,
+  type Plano,
+  type Recurso,
+  type SituacaoDaAssinatura,
+  type SituacaoParaOPlano,
+} from "./planos";
+export {
   APARENCIA_PADRAO,
   BOTOES,
   CANTOS,

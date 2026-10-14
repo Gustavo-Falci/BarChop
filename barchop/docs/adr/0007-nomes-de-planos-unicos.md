@@ -15,7 +15,8 @@ falam em "Enterprise" a R$ 119,90.
 ## Decision
 
 Nome, preço base, preço por profissional extra, desconto anual e limites
-de cada plano são definidos uma vez em `packages/config`. Site, painel e
+de cada plano são definidos uma vez em `packages/config` (hoje em
+`@barchop/formato`, `src/planos.ts` — ver a ADR-0010). Site, painel e
 API leem desse mesmo módulo; nenhum deles escreve um preço ou um limite à
 mão.
 

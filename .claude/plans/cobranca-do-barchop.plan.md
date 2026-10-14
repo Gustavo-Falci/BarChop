@@ -138,11 +138,11 @@ Toda barbearia passa a ter uma assinatura: 14 dias de teste com tudo liberado, d
 - **Validate**: testes do site + tsc + lint + navegador.
 
 ## Antes do PR 4 (o dono faz na Stripe)
-1. Abrir a conta como pessoa física (CPF), com conta bancária no mesmo CPF.
-2. Ver se o **Pix** aparece como forma de pagamento para assinaturas (Pix Automático). Se não aparecer, segue só com cartão.
-3. Configurar o Portal do cliente: cancelar, trocar cartão, ver faturas.
+1. ~~Abrir a conta como pessoa física (CPF), com conta bancária no mesmo CPF.~~ Feito em 13/10.
+2. ~~Ver se o **Pix** aparece como forma de pagamento para assinaturas (Pix Automático).~~ Conferido em 14/10: Pix habilitado, mas "Pagamentos recorrentes: Não" → segue só com cartão.
+3. ~~Configurar o Portal do cliente: cancelar, trocar cartão, ver faturas.~~ Feito em 14/10.
 4. Criar o endpoint do webhook `https://api.barchop.com.br/stripe/webhook`.
-5. Gerar as chaves de teste para eu desenvolver, e as de produção para o `.env` da VM.
+5. Gerar as chaves de teste para eu desenvolver (feito em 14/10: `STRIPE_SECRET_KEY` no `apps/api/.env`), e as de produção para o `.env` da VM.
 
 ## Validation
 ```bash

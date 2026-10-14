@@ -116,8 +116,47 @@ model Barbearia {
   bloqueios             Bloqueio[]
   slugsAntigos          SlugAntigo[]
   solicitacoesDeLink    SolicitacaoTrocaLink[]
+  assinatura            Assinatura?
 
   @@map("barbearia")
+}
+
+// A assinatura do BarChop (Onda 2, marco 1): uma por barbearia, nasce
+// no cadastro em teste. Listas fechadas (plano, ciclo, situação) em
+// packages/formato/src/planos.ts, com o CHECK na migration
+// 20261014120000_assinatura. A Stripe é a fonte da verdade do que foi
+// pago; aqui fica a cópia que o webhook mantém (ADR-0010).
+model Assinatura {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId              String    @unique @map("barbearia_id") @db.Uuid
+  situacao                 String    @default("teste")
+  // O plano contratado. No teste vale o Completo, seja qual for este
+  // (planoEfetivo em @barchop/formato).
+  plano                    String    @default("gratis")
+  ciclo                    String    @default("mensal")
+  // Obrigatório quando a situação é `teste` (CHECK).
+  testeTerminaEm           DateTime? @map("teste_termina_em") @db.Timestamptz
+  stripeCustomerId         String?   @unique @map("stripe_customer_id") @db.VarChar(255)
+  stripeSubscriptionId     String?   @unique @map("stripe_subscription_id") @db.VarChar(255)
+  // A quantidade cobrada na Stripe; nula sem plano pago.
+  profissionaisContratados Int?      @map("profissionais_contratados") @db.SmallInt
+  periodoTerminaEm         DateTime? @map("periodo_termina_em") @db.Timestamptz
+  criadaEm                 DateTime  @default(now()) @map("criada_em") @db.Timestamptz
+  atualizadaEm             DateTime  @default(now()) @updatedAt @map("atualizada_em") @db.Timestamptz
+
+  barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+
+  @@map("assinatura")
+}
+
+// Os eventos do webhook da Stripe já processados: o id do evento é a
+// chave, então o mesmo evento entregue duas vezes só vale uma.
+model EventoStripe {
+  id           String   @id @db.VarChar(255)
+  tipo         String   @db.VarChar(100)
+  processadoEm DateTime @default(now()) @map("processado_em") @db.Timestamptz
+
+  @@map("evento_stripe")
 }
 
 // O suporte da plataforma (bloco F4): avalia os pedidos de troca de

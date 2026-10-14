@@ -53,7 +53,7 @@ Toda barbearia passa a ter uma assinatura: 14 dias de teste com tudo liberado, d
 | `barchop/packages/database/prisma/migrations/2026101412xxxx_assinatura/migration.sql` | CREATE | tabelas + CHECK + teste de 14 dias para as barbearias existentes |
 | `barchop/apps/api/src/routers/auth.ts` | UPDATE | signup cria a assinatura em teste |
 | `barchop/apps/api/src/lib/assinatura.ts` | CREATE | ler a assinatura, contar profissionais, decidir quem fica visível no Grátis |
-| `barchop/apps/api/src/routers/assinatura.ts` | CREATE | `GET /me/assinatura`, `POST /me/assinatura/checkout`, `POST /me/assinatura/portal` |
+| `barchop/apps/api/src/routers/assinatura.ts` | CREATE | `GET /barbearias/me/assinatura`, `POST /barbearias/me/assinatura/checkout`, `POST /barbearias/me/assinatura/portal` (sob `/barbearias/me`, como a Aparência: a assinatura é da barbearia, não da pessoa) |
 | `barchop/apps/api/src/routers/equipe.ts` | UPDATE | limite de profissionais + ajuste da quantidade na Stripe |
 | `barchop/apps/api/src/routers/barbearias.ts`, `disponibilidade.ts`, `agendamentos.ts` (público) | UPDATE | no Grátis acima do limite, o link público mostra só o profissional que continua |
 | `barchop/apps/api/src/lib/cobranca.ts` (+ `cobranca-stripe.ts`) | CREATE | interface + memória + Stripe |
@@ -87,7 +87,7 @@ Toda barbearia passa a ter uma assinatura: 14 dias de teste com tudo liberado, d
   - Tabela `evento_stripe`, com o `id` do evento como chave primária.
   - A migração cria a assinatura de todas as barbearias existentes, em teste até `now() + 14 dias`.
   - O signup cria a assinatura na transação.
-  - `GET /me/assinatura` devolve situação, plano efetivo, dias de teste restantes, profissionais contados, limite e se há excedente.
+  - `GET /barbearias/me/assinatura` devolve situação, plano efetivo, dias de teste restantes, profissionais contados, limite e se há excedente.
 - **Mirror**: migração do #136; transação do signup.
 - **Validate**: testes de `auth-signup` e `assinatura` + tsc + lint. **Lembrar o `migrar` no deploy.**
 

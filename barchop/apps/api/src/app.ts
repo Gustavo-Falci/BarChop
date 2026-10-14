@@ -10,6 +10,7 @@ import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDaEquipe, limitesDeAuth, limitesPublicos } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
 import { autenticar, autenticarCliente, autenticarSuporte, registrarAuth } from "./plugins/auth";
+import { registrarRotasAssinatura } from "./routers/assinatura";
 import { registrarRotasAuth } from "./routers/auth";
 import { registrarRotasAuthCliente } from "./routers/auth-cliente";
 import {
@@ -181,6 +182,7 @@ export function buildApp(
     registrarRotasMe(protegidas);
     registrarRotasNotificacoes(protegidas);
     registrarRotasBarbeariasProtegidas(protegidas);
+    registrarRotasAssinatura(protegidas);
     registrarRotasHorarios(protegidas);
     registrarRotasOcupacao(protegidas);
     registrarRotasServicos(protegidas);

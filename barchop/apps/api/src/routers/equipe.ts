@@ -1,6 +1,7 @@
 import type { FastifyRequest } from "fastify";
 import { Prisma, prisma } from "@barchop/database";
 import { normalizarEmail } from "@barchop/formato";
+import { garantirVagaNoPlano } from "../lib/assinatura";
 import { emitirCodigo } from "../lib/codigos";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
@@ -255,6 +256,12 @@ function tiraUmDono(corpo: { papel?: string; ativo?: boolean }): boolean {
   return (corpo.papel !== undefined && corpo.papel !== "dono") || corpo.ativo === false;
 }
 
+// Quem conta no limite do plano: ativo, dono ou profissional. A
+// recepção não conta (lib/assinatura.ts).
+function contaNoPlano(membro: { ativo?: boolean; papel?: string }): boolean {
+  return membro.ativo === true && (membro.papel === "dono" || membro.papel === "profissional");
+}
+
 export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
   // Todos os papéis leem: a recepção marca pra qualquer profissional e
   // precisa da lista; o profissional vê os colegas na agenda.
@@ -278,18 +285,22 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
       // `!`: o schema exige e-mail não vazio, como no signup.
       const email = normalizarEmail(request.body.email)!;
 
+      const { barbeariaId } = request.user;
       let membro;
       try {
-        membro = await prisma.barbeiro.create({
-          data: {
-            barbeariaId: request.user.barbeariaId,
-            nome,
-            email,
-            papel,
-            // A recepção não atende por padrão; o dono diz se atende.
-            atende: atende ?? papel !== "recepcao",
-            ...(telefone !== undefined ? { telefone: normalizarTelefone(telefone) } : {}),
-          },
+        membro = await prisma.$transaction(async (tx) => {
+          if (contaNoPlano({ ativo: true, papel })) await garantirVagaNoPlano(tx, barbeariaId, new Date());
+          return tx.barbeiro.create({
+            data: {
+              barbeariaId,
+              nome,
+              email,
+              papel,
+              // A recepção não atende por padrão; o dono diz se atende.
+              atende: atende ?? papel !== "recepcao",
+              ...(telefone !== undefined ? { telefone: normalizarTelefone(telefone) } : {}),
+            },
+          });
         });
       } catch (erro) {
         // O e-mail é a chave do login, única na plataforma: no piloto um
@@ -352,6 +363,19 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
                 "ultimo_dono"
               );
             }
+          }
+        }
+
+        // Reativar ou tirar da recepção: o membro passa a contar no
+        // limite do plano.
+        if (request.body.ativo === true || (request.body.papel !== undefined && request.body.papel !== "recepcao")) {
+          const atual = await tx.barbeiro.findFirst({
+            where: { id, barbeariaId },
+            select: { ativo: true, papel: true },
+          });
+          const depois = { ativo: request.body.ativo ?? atual?.ativo, papel: request.body.papel ?? atual?.papel };
+          if (atual && !contaNoPlano(atual) && contaNoPlano(depois)) {
+            await garantirVagaNoPlano(tx, barbeariaId, new Date());
           }
         }
 

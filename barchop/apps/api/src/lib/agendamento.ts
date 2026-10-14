@@ -11,6 +11,7 @@ import {
   horariosDoProfissionalNoDia,
   horariosLivres,
 } from "./disponibilidade";
+import { foraDoLink, garantirNoLink } from "./assinatura";
 import { ErroDeNegocio } from "./erro-negocio";
 import { dataParaDate, horaParaDate, somarMinutos } from "./horas";
 import { carregarRegras, garantirRegrasDoCliente, gradeDe } from "./regras";
@@ -45,7 +46,11 @@ export async function escolherProfissional(
     throw new ErroDeNegocio(`a data ${data} não existe`, "data_invalida");
   }
 
-  const candidatos = await candidatosDoQualquerUm(tx, barbeariaId, servicoIds);
+  // Só o link escolhe: quem ficou fora pelo limite do plano não entra.
+  const ocultos = await foraDoLink(tx, barbeariaId, new Date());
+  const candidatos = (await candidatosDoQualquerUm(tx, barbeariaId, servicoIds)).filter(
+    (id) => !ocultos.includes(id)
+  );
   const grade = gradeDe(await carregarRegras(tx, barbeariaId), true);
   const livres: string[] = [];
   for (const barbeiroId of candidatos) {
@@ -110,6 +115,9 @@ export async function criarAgendamento(
   } = params;
 
   await garantirBarbeiro(tx, barbeariaId, barbeiroId);
+  // O cliente (link e remarcar) não marca com quem ficou fora do link
+  // pelo limite do plano; o painel marca com qualquer um.
+  if (origem === "cliente") await garantirNoLink(tx, barbeariaId, barbeiroId, new Date());
 
   const { servicos, duracaoTotalMinutos } = await carregarServicos(
     tx,

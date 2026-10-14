@@ -10,6 +10,7 @@ import {
   horariosDoProfissionalNoDia,
   type ClientePrisma,
 } from "../lib/disponibilidade";
+import { foraDoLink } from "../lib/assinatura";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate } from "../lib/horas";
 import { proximosHorarios } from "../lib/proximos-horarios";
@@ -84,14 +85,22 @@ function dataDaQuery(valor: string): Date {
 // De quem é a agenda pedida. Com o profissional, as checagens dele
 // (existe, atende, faz os serviços) respondem 422 com o motivo; sem,
 // são os candidatos do "qualquer um" — lista vazia quando ninguém faz a
-// combinação, e aí a resposta é só "sem horário".
+// combinação, e aí a resposta é só "sem horário". Pro cliente, quem
+// ficou fora do link pelo limite do plano não existe (lib/assinatura.ts).
 async function agendaDe(
   db: ClientePrisma,
   barbeariaId: string,
   barbeiroId: string | undefined,
-  servicoIds: string[]
+  servicoIds: string[],
+  ocultos: string[]
 ): Promise<string[]> {
-  if (!barbeiroId) return candidatosDoQualquerUm(db, barbeariaId, servicoIds);
+  if (!barbeiroId) {
+    const candidatos = await candidatosDoQualquerUm(db, barbeariaId, servicoIds);
+    return candidatos.filter((id) => !ocultos.includes(id));
+  }
+  if (ocultos.includes(barbeiroId)) {
+    throw new ErroDeNegocio("barbeiro não encontrado nesta barbearia", "barbeiro_invalido");
+  }
   await garantirBarbeiro(db, barbeariaId, barbeiroId);
   await garantirServicosDoProfissional(db, barbeiroId, servicoIds);
   return [barbeiroId];
@@ -113,6 +122,8 @@ async function barbeariaComRegras(request: FastifyRequest, slug: string) {
     id: barbearia.id,
     grade: gradeDe(regras, paraCliente),
     regrasDoCliente: paraCliente ? regras : undefined,
+    // O painel vê a agenda de todos, mesmo de quem ficou fora do link.
+    foraDoLink: paraCliente ? await foraDoLink(prisma, barbearia.id, new Date()) : [],
   };
 }
 
@@ -149,7 +160,7 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
       // Os serviços antes da agenda: serviço de outra barbearia ou
       // inativo é 422 também no "qualquer um".
       const { duracaoTotalMinutos } = await carregarServicos(prisma, barbearia.id, servicoIds);
-      const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds);
+      const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds, barbearia.foraDoLink);
       const dataDate = dataDaQuery(data);
 
       // A mesma função que o POST do "qualquer um" usa pra escolher: o
@@ -187,7 +198,7 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
       const barbearia = await barbeariaComRegras(request, request.params.slug);
 
       const { duracaoTotalMinutos } = await carregarServicos(prisma, barbearia.id, servicoIds);
-      const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds);
+      const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds, barbearia.foraDoLink);
 
       const [ano, numeroDoMes] = mes.split("-").map(Number);
       const primeiroDia = new Date(Date.UTC(ano, numeroDoMes - 1, 1));

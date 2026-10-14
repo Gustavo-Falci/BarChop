@@ -1,5 +1,6 @@
 import type { ProximosHorariosDoServico } from "@barchop/types";
 import { agendaDoPeriodo, descartarPassados, PODE_ATENDER, type ClientePrisma } from "./disponibilidade";
+import { foraDoLink } from "./assinatura";
 import { dataParaDate, dateParaData } from "./horas";
 import { carregarRegras, gradeDe } from "./regras";
 
@@ -30,7 +31,7 @@ export async function proximosHorarios(
 ): Promise<ProximosDoServico[]> {
   const { barbeariaId, agora, dias = 14, quantos = 3 } = params;
 
-  const [servicos, membros, regras] = await Promise.all([
+  const [servicos, membros, regras, ocultos] = await Promise.all([
     // A mesma lista e a mesma ordem da escolha de serviços pública.
     db.servico.findMany({
       where: { barbeariaId, ativo: true },
@@ -42,20 +43,23 @@ export async function proximosHorarios(
       select: { id: true, servicos: { select: { servicoId: true } } },
     }),
     carregarRegras(db, barbeariaId),
+    // Quem ficou fora do link pelo limite do plano (lib/assinatura.ts).
+    foraDoLink(db, barbeariaId, new Date()),
   ]);
+  const doLink = membros.filter((membro) => !ocultos.includes(membro.id));
 
   const primeiroDia = dataParaDate(agora.data);
   const ultimoDia = new Date(primeiroDia.getTime() + (dias - 1) * UM_DIA);
   const horariosDoDia = await agendaDoPeriodo(db, {
     barbeariaId,
-    barbeiroIds: membros.map((membro) => membro.id),
+    barbeiroIds: doLink.map((membro) => membro.id),
     primeiroDia,
     ultimoDia,
     grade: gradeDe(regras, true),
   });
 
   return servicos.map((servico) => {
-    const candidatos = membros
+    const candidatos = doLink
       .filter((membro) => membro.servicos.some((s) => s.servicoId === servico.id))
       .map((membro) => membro.id);
 

@@ -151,8 +151,9 @@ describe("rodapé do site", () => {
 
   // No celular estreito o link Preços sai do cabeçalho (não cabe); o
   // rodapé o mantém à mão.
-  it("leva aos preços", () => {
+  it("leva aos preços e ao Grátis", () => {
     render(<RodapeDoSite />);
     expect(screen.getByRole("link", { name: "Preços" })).toHaveAttribute("href", "/precos");
+    expect(screen.getByRole("link", { name: "Plano grátis" })).toHaveAttribute("href", "/gratis");
   });
 });

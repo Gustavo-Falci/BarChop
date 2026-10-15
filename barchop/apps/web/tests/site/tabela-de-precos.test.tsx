@@ -56,8 +56,16 @@ describe("tabela de preços do site", () => {
   it("todo plano leva ao cadastro, que começa com o teste de 14 dias", () => {
     render(<TabelaDePrecos />);
     for (const nome of ["Grátis", "Essencial", "Completo"]) {
-      const convite = within(plano(nome)).getByRole("link");
+      const convite = within(plano(nome)).getByRole("link", { name: /começar grátis|testar 14 dias/i });
       expect(convite).toHaveAttribute("href", "/painel/cadastro");
     }
+  });
+
+  it("o Grátis leva à página dele, /gratis", () => {
+    render(<TabelaDePrecos />);
+    expect(within(plano("Grátis")).getByRole("link", { name: "Saiba mais sobre o Grátis" })).toHaveAttribute(
+      "href",
+      "/gratis"
+    );
   });
 });

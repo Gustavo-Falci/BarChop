@@ -1,9 +1,11 @@
-import { CONTROLADOR, ouAPreencher } from "./controlador";
+import { DIAS_DE_TESTE } from "@barchop/formato";
+import { ouAPreencher, vendedor } from "./controlador";
 import { DocumentoLegal, SecaoLegal, type ItemDoSumario } from "./DocumentoLegal";
 
 const SUMARIO: ItemDoSumario[] = [
   { id: "quem-somos", titulo: "Quem somos" },
   { id: "o-servico", titulo: "O serviço" },
+  { id: "planos-e-cobranca", titulo: "Planos, cobrança e cancelamento" },
   { id: "sua-conta", titulo: "Sua conta e a da sua equipe" },
   { id: "dados-dos-clientes", titulo: "Os dados dos seus clientes" },
   { id: "uso-correto", titulo: "Uso correto" },
@@ -12,16 +14,19 @@ const SUMARIO: ItemDoSumario[] = [
   { id: "mudancas", titulo: "Mudanças nestes termos" },
 ];
 
-// Termos de uso do BarChop (onda 1s-b). Rascunho base pra revisão
-// jurídica; só fala do que o produto já faz.
+// Termos de uso do BarChop (onda 1s-b; cobrança na Onda 2, PR 6).
+// Rascunho base pra revisão jurídica; só fala do que o produto já faz.
+// As regras da cobrança são as que a Stripe e a API aplicam; os preços
+// ficam em /precos, lidos de planos.ts, e não são escritos aqui.
 export function Termos() {
+  const { nome, cpf, email } = vendedor();
   return (
     <DocumentoLegal titulo="Termos de uso" sumario={SUMARIO}>
       <SecaoLegal id="quem-somos" titulo="Quem somos">
         <p>
-          O BarChop é um sistema de agendamento online para barbearias, oferecido por{" "}
-          {ouAPreencher(CONTROLADOR.razaoSocial)}, CNPJ {ouAPreencher(CONTROLADOR.cnpj)}. Ao criar uma
-          barbearia ou usar o painel, você concorda com estes termos.
+          O BarChop é um sistema de agendamento online para barbearias, oferecido por {ouAPreencher(nome)}, pessoa
+          física, CPF {ouAPreencher(cpf)}. Contato: {email ? <a href={`mailto:${email}`}>{email}</a> : ouAPreencher(email)}
+          . Ao criar uma barbearia ou usar o painel, você concorda com estes termos.
         </p>
       </SecaoLegal>
 
@@ -31,7 +36,50 @@ export function Termos() {
           horário, e um painel para a equipe cuidar da agenda. O cliente pode receber lembrete do
           horário por e-mail, com link para confirmar a presença ou cancelar.
         </p>
-        <p>Durante o lançamento o uso é gratuito. Se isso mudar, avisamos com antecedência no painel.</p>
+      </SecaoLegal>
+
+      <SecaoLegal id="planos-e-cobranca" titulo="Planos, cobrança e cancelamento">
+        <ul>
+          <li>Toda barbearia começa com {DIAS_DE_TESTE} dias de teste com tudo liberado, sem cartão.</li>
+          <li>
+            Os planos, o que cada um inclui e os preços estão na página de <a href="/precos">preços</a>. Quando um
+            preço mudar, avisamos no painel com pelo menos 30 dias de antecedência, e o valor novo só vale a
+            partir da renovação seguinte.
+          </li>
+          <li>
+            O valor dos planos pagos depende de quantos profissionais atendem: o dono e os profissionais da
+            equipe. A recepção não conta. Incluir um profissional com o plano pago soma o valor proporcional na
+            cobrança.
+          </li>
+          <li>
+            O pagamento é no cartão de crédito, pela Stripe, que processa a cobrança. O BarChop não vê nem guarda
+            os dados do cartão.
+          </li>
+          <li>
+            O plano se renova sozinho ao fim de cada período, mensal ou anual, com a cobrança adiantada do período
+            seguinte. Quem assina durante o teste só é cobrado quando o teste acaba.
+          </li>
+          <li>
+            Subir de plano no meio do período: paga-se na hora só a diferença pelos dias que faltam. Descer de
+            plano ou trocar o anual pelo mensal: a mudança vale no fim do período já pago.
+          </li>
+          <li>
+            Você pode cancelar quando quiser, sem multa, em Faturas, no painel. O plano vale até o fim do período
+            já pago, sem devolução proporcional do período em curso.
+          </li>
+          <li>
+            Desistiu da primeira assinatura? Em até 7 dias da primeira cobrança, peça pelo e-mail de contato e o
+            valor é devolvido (direito de arrependimento, art. 49 do Código de Defesa do Consumidor).
+          </li>
+          <li>
+            Se a cobrança falhar, a Stripe tenta cobrar de novo nos dias seguintes, e o BarChop continua
+            funcionando enquanto isso. Se ela não conseguir, a assinatura é cancelada.
+          </li>
+          <li>
+            Sem plano pago (no fim do teste, depois de cancelar ou quando a cobrança não passa), a barbearia vai
+            para o Grátis: nada é apagado, mas só 1 profissional aparece no link de agendamento.
+          </li>
+        </ul>
       </SecaoLegal>
 
       <SecaoLegal id="sua-conta" titulo="Sua conta e a da sua equipe">
@@ -40,6 +88,7 @@ export function Termos() {
           <li>Os dados informados no cadastro precisam ser verdadeiros, e o e-mail precisa ser seu.</li>
           <li>A senha é pessoal. Se desconfiar que alguém a conhece, troque pelo painel.</li>
           <li>O endereço da página (o link da barbearia) é único e só muda com um pedido ao suporte.</li>
+          <li>Só o dono vê e mexe na assinatura e nas faturas.</li>
         </ul>
       </SecaoLegal>
 
@@ -73,9 +122,10 @@ export function Termos() {
 
       <SecaoLegal id="encerramento" titulo="Encerramento">
         <p>
-          Você pode encerrar a conta da barbearia quando quiser, pedindo ao suporte. Antes de apagar,
-          podemos exportar os seus dados. Depois do encerramento, os dados são apagados no prazo da
-          política de privacidade, salvo o que a lei obrigar a guardar.
+          Você pode encerrar a conta da barbearia quando quiser, pedindo ao suporte. Encerrar a conta
+          cancela a assinatura. Antes de apagar, podemos exportar os seus dados. Depois do
+          encerramento, os dados são apagados no prazo da política de privacidade, salvo o que a lei
+          obrigar a guardar.
         </p>
       </SecaoLegal>
 

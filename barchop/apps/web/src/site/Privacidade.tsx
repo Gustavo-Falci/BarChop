@@ -1,4 +1,4 @@
-import { CONTROLADOR, ouAPreencher } from "./controlador";
+import { ouAPreencher, vendedor } from "./controlador";
 import { DocumentoLegal, SecaoLegal, type ItemDoSumario } from "./DocumentoLegal";
 
 const SUMARIO: ItemDoSumario[] = [
@@ -16,13 +16,13 @@ const SUMARIO: ItemDoSumario[] = [
 // dados da conta (dono e equipe) e operador dos dados dos clientes
 // finais, que são da barbearia.
 export function Privacidade() {
+  const { nome, cpf, email } = vendedor();
   return (
     <DocumentoLegal titulo="Política de privacidade" sumario={SUMARIO}>
       <SecaoLegal id="papeis" titulo="Quem decide sobre cada dado">
         <p>
           Para os dados de quem cria e usa o painel — o dono da barbearia e a equipe —, o BarChop (
-          {ouAPreencher(CONTROLADOR.razaoSocial)}) é o <strong>controlador</strong>: decide como esses
-          dados são usados.
+          {ouAPreencher(nome)}) é o <strong>controlador</strong>: decide como esses dados são usados.
         </p>
         <p>
           Para os dados dos clientes que agendam pela página da barbearia, a barbearia é a
@@ -39,6 +39,10 @@ export function Privacidade() {
             do painel.
           </li>
           <li>Dos clientes da barbearia: nome, telefone, e-mail (quando informado) e os agendamentos.</li>
+          <li>
+            Da assinatura: o plano, a situação da cobrança e as faturas. Os dados do cartão ficam com a Stripe: o
+            BarChop não vê nem guarda os dados do cartão.
+          </li>
           <li>Técnicos: endereço IP e registros de acesso, para segurança e para evitar abuso.</li>
         </ul>
       </SecaoLegal>
@@ -47,6 +51,7 @@ export function Privacidade() {
         <ul>
           <li>Fazer o agendamento funcionar: mostrar horários livres, marcar, remarcar e cancelar.</li>
           <li>Enviar o código de verificação e o lembrete do horário por e-mail.</li>
+          <li>Cobrar a assinatura dos planos pagos e avisar o dono sobre ela.</li>
           <li>Proteger as contas e o sistema contra acesso indevido e uso abusivo.</li>
           <li>Cumprir obrigações legais.</li>
         </ul>
@@ -56,6 +61,7 @@ export function Privacidade() {
       <SecaoLegal id="quem-ajuda" titulo="Quem nos ajuda a operar">
         <ul>
           <li>Resend: envio dos e-mails (código de verificação e lembrete).</li>
+          <li>Stripe: cobrança da assinatura e os dados do cartão de quem assina um plano pago.</li>
           <li>Oracle Cloud: hospedagem do sistema e do banco de dados.</li>
           <li>Cloudflare: endereço (DNS) do site.</li>
         </ul>
@@ -80,9 +86,13 @@ export function Privacidade() {
 
       <SecaoLegal id="contato" titulo="Contato">
         <ul>
-          <li>Encarregado de dados (DPO): {ouAPreencher(CONTROLADOR.emailDoEncarregado)}</li>
-          <li>Razão social: {ouAPreencher(CONTROLADOR.razaoSocial)}</li>
-          <li>CNPJ: {ouAPreencher(CONTROLADOR.cnpj)}</li>
+          <li>
+            Responsável: {ouAPreencher(nome)}, pessoa física, CPF {ouAPreencher(cpf)}
+          </li>
+          <li>
+            E-mail, também para o encarregado de dados (DPO):{" "}
+            {email ? <a href={`mailto:${email}`}>{email}</a> : ouAPreencher(email)}
+          </li>
         </ul>
       </SecaoLegal>
     </DocumentoLegal>

@@ -23,12 +23,29 @@ import type {
   PaginaDeClientes,
   PapelMembro,
   PerfilBarbeiro,
+  ResumoDaAssinatura,
+  CicloDoPlano,
+  IdDoPlano,
   ServicoSerializado,
   SessaoBarbeiro,
   EstadoDoOnboarding,
   SolicitacaoDeLink,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
+
+// O que o dono escolhe na tela do plano. O Grátis não se compra.
+export interface PedidoDeAssinatura {
+  plano: Exclude<IdDoPlano, "gratis">;
+  ciclo: CicloDoPlano;
+  profissionais: number;
+}
+
+// O que o dono escolhe na tela do plano. O Grátis não se compra.
+export interface PedidoDeAssinatura {
+  plano: Exclude<IdDoPlano, "gratis">;
+  ciclo: CicloDoPlano;
+  profissionais: number;
+}
 
 export interface CredenciaisDoBarbeiro {
   email: string;
@@ -557,6 +574,21 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     descartarRascunhoDaAparencia(): Promise<BarbeariaDoPainel> {
       return requisicao("/barbearias/me/aparencia/rascunho", { metodo: "DELETE", comToken: true });
+    },
+
+    // A assinatura do BarChop, só do dono. Pagar e gerenciar é na
+    // Stripe: o Checkout e o Portal devolvem o endereço de lá.
+    assinatura(): Promise<ResumoDaAssinatura> {
+      return requisicao("/barbearias/me/assinatura", { comToken: true });
+    },
+
+    checkoutDaAssinatura(pedido: PedidoDeAssinatura): Promise<{ url: string }> {
+      return requisicao("/barbearias/me/assinatura/checkout", { metodo: "POST", corpo: pedido, comToken: true });
+    },
+
+    // Sem ter assinado, 409: ainda não há cliente na Stripe.
+    portalDaAssinatura(): Promise<{ url: string }> {
+      return requisicao("/barbearias/me/assinatura/portal", { metodo: "POST", comToken: true });
     },
 
     async enviarFotoDoMembro(id: string, arquivo: Blob): Promise<string> {

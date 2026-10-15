@@ -43,6 +43,7 @@ export {
   planoEfetivo,
   precoDoPlano,
   precosDoCiclo,
+  formatarReais,
   temRecurso,
   type Ciclo,
   type IdDoPlano,

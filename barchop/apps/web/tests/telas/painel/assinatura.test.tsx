@@ -56,7 +56,7 @@ function montar(assinatura: ResumoDaAssinatura, semente: SementeFalsa = {}, inte
 // O preço grande do cartão do plano: valor e unidade. O Intl separa o
 // "R$" com espaço inquebrável.
 async function preco() {
-  return (await screen.findByTestId("preco-do-plano")).textContent?.replace(/ /g, " ");
+  return (await screen.findByTestId("preco-do-plano")).textContent?.replaceAll(String.fromCharCode(160), " ");
 }
 
 describe("tela do plano", () => {
@@ -72,7 +72,8 @@ describe("tela do plano", () => {
     montar(resumo());
 
     expect(await screen.findByRole("heading", { name: "Plano" })).toBeInTheDocument();
-    expect(screen.getByText("Teste grátis · faltam 10 dias")).toBeInTheDocument();
+    // O título vem antes: a assinatura chega depois do perfil.
+    expect(await screen.findByText("Teste grátis · faltam 10 dias")).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "Essencial" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Mensal" })).toBeChecked();
     expect(screen.getByLabelText("Profissionais")).toHaveTextContent("2");

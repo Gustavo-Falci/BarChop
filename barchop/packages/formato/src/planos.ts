@@ -121,3 +121,11 @@ export function planoEfetivo(assinatura: SituacaoParaOPlano, agora: Date): IdDoP
       return "gratis";
   }
 }
+
+const REAIS = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+// Centavos em reais, como o brasileiro lê ("R$ 34,90"). O site e o
+// painel mostram os preços por aqui.
+export function formatarReais(centavos: number): string {
+  return REAIS.format(centavos / 100);
+}

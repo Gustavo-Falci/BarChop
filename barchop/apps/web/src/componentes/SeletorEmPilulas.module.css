@@ -76,3 +76,27 @@
   color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
 }
+
+/* Desligada: à vista pra quem procura, apagada e sem reagir. */
+.radio:disabled,
+.radio:disabled + .pilula {
+  cursor: not-allowed;
+}
+
+.radio:disabled + .pilula {
+  opacity: 0.45;
+}
+
+.opcao:hover .radio:disabled + .pilula {
+  border-color: var(--cor-line);
+}
+
+.selo {
+  margin-inline-start: var(--espaco-xs);
+  padding: 0 var(--espaco-xs);
+  border-radius: var(--raio-pill);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}

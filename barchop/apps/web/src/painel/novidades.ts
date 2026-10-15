@@ -10,6 +10,12 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    data: "2026-10-14",
+    titulo: "Plano da barbearia",
+    texto:
+      "Escolha o Essencial ou o Completo, quantos profissionais e mensal ou anual, e veja o preço na hora. Assinando no teste, a 1ª cobrança é só no fim dele. Fica no menu da sua conta, em Plano.",
+  },
+  {
     data: "2026-10-13",
     titulo: "Sino de notificações",
     texto:

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { CICLOS, DIAS_DE_TESTE, IDS_DOS_PLANOS, SITUACOES_DA_ASSINATURA } from "@barchop/formato";
 import { buildApp } from "../../src/app";
+import { dataParaDate, horaParaDate } from "../../src/lib/horas";
 import type { App } from "../../src/tipos";
 import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
 
@@ -61,6 +62,58 @@ describe("GET /barbearias/me/assinatura", () => {
       excedente: false,
       foraDoLink: [],
       temPortal: false,
+      usoNoTeste: {
+        desde: expect.any(String),
+        ate: expect.any(String),
+        agendamentos: 0,
+        servicos: expect.any(Number),
+      },
+    });
+    await app.close();
+  });
+
+  // A recomendação de plano na tela de Faturas mostra o que a barbearia
+  // fez no teste, como no Barbeiro.app.
+  it("o uso no teste: do início ao fim dele, agendamentos que não foram cancelados e serviços ativos", async () => {
+    const app = buildApp();
+    const { token, barbeariaId, barbeiroId } = await criarBarbeariaComToken(app);
+    await prisma.servico.deleteMany({ where: { barbeariaId } });
+    const linha = await prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } });
+    const inicio = new Date(linha.testeTerminaEm!.getTime() - DIAS_DE_TESTE * UM_DIA);
+    await prisma.servico.createMany({
+      data: [
+        { barbeariaId, nome: "Corte", duracaoMinutos: 30, preco: "40.00" },
+        { barbeariaId, nome: "Barba", duracaoMinutos: 20, preco: "30.00" },
+        { barbeariaId, nome: "Antigo", duracaoMinutos: 20, preco: "30.00", ativo: false },
+      ],
+    });
+    const cliente = await prisma.cliente.create({ data: { barbeariaId, nome: "Ana", telefone: "11999990000" } });
+    const agendamento = (dia: string, status: "confirmado" | "cancelado" | "concluido", criadoEm: Date) => ({
+      barbeariaId,
+      barbeiroId,
+      clienteId: cliente.id,
+      data: dataParaDate(dia),
+      horaInicio: horaParaDate("10:00"),
+      horaFim: horaParaDate("10:30"),
+      status,
+      criadoEm,
+    });
+    await prisma.agendamento.createMany({
+      data: [
+        agendamento("2026-10-20", "confirmado", new Date()),
+        agendamento("2026-10-21", "concluido", new Date()),
+        agendamento("2026-10-22", "cancelado", new Date()),
+        agendamento("2026-10-23", "confirmado", new Date(inicio.getTime() - UM_DIA)),
+      ],
+    });
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo.usoNoTeste).toEqual({
+      desde: inicio.toISOString(),
+      ate: linha.testeTerminaEm!.toISOString(),
+      agendamentos: 2,
+      servicos: 2,
     });
     await app.close();
   });
@@ -88,6 +141,8 @@ describe("GET /barbearias/me/assinatura", () => {
     expect(corpo.planoEfetivo).toBe("gratis");
     expect(corpo.diasDeTesteRestantes).toBe(0);
     expect(corpo.limiteDeProfissionais).toBe(1);
+    // No Grátis, a tela ainda mostra o que foi feito no teste.
+    expect(corpo.usoNoTeste).toMatchObject({ agendamentos: 0 });
     await app.close();
   });
 
@@ -146,6 +201,7 @@ describe("GET /barbearias/me/assinatura", () => {
       periodoTerminaEm: fim.toISOString(),
       limiteDeProfissionais: 3,
       excedente: false,
+      usoNoTeste: null,
     });
     await app.close();
   });

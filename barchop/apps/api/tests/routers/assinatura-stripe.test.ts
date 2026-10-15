@@ -63,6 +63,7 @@ function assinaturaNaStripe(barbeariaId: string, extra: Partial<AssinaturaNaCobr
     chave: "essencial_mensal",
     quantidade: 2,
     periodoTerminaEm: new Date("2026-12-01T12:00:00Z"),
+    cancelaEm: null,
     ...extra,
   };
 }
@@ -278,6 +279,27 @@ describe("POST /stripe/webhook", () => {
 
     expect(resumo).toMatchObject({ situacao: "cancelada", planoEfetivo: "gratis" });
     expect((await lerLinha(barbeariaId)).stripeCustomerId).toBe("cus_1");
+    await app.close();
+  });
+
+  it("cancelar no fim do período grava quando acaba; desistir de cancelar apaga", async () => {
+    const { app, cobranca } = montar();
+    const { barbeariaId } = await criarBarbeariaComToken(app);
+    const sub = assinaturaNaStripe(barbeariaId);
+    cobranca.assinaturas.set(sub.id, sub);
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(sub));
+
+    // No Portal, "cancelar" deixa a Stripe `active` até o fim do período.
+    cobranca.assinaturas.set(sub.id, { ...sub, cancelaEm: sub.periodoTerminaEm });
+    await webhook(app, "customer.subscription.updated", eventoDaAssinatura(sub));
+    const cancelando = await lerLinha(barbeariaId);
+
+    cobranca.assinaturas.set(sub.id, { ...sub, cancelaEm: null });
+    await webhook(app, "customer.subscription.updated", eventoDaAssinatura(sub));
+    const renovando = await lerLinha(barbeariaId);
+
+    expect(cancelando).toMatchObject({ situacao: "ativa", cancelaEm: sub.periodoTerminaEm });
+    expect(renovando.cancelaEm).toBeNull();
     await app.close();
   });
 

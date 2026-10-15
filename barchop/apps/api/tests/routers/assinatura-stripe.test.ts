@@ -100,6 +100,17 @@ describe("POST /barbearias/me/assinatura/checkout", () => {
     await app.close();
   });
 
+  it("o Checkout volta pra Faturas: pago na etapa do acesso liberado, desistiu na tela do cancelado", async () => {
+    const { app, cobranca } = montar();
+    const { token } = await criarBarbeariaComToken(app);
+
+    await checkout(app, token, { plano: "essencial", ciclo: "mensal", profissionais: 1 });
+
+    expect(cobranca.checkouts[0].urlDeSucesso).toMatch(/\/painel\/faturas\?ok=1$/);
+    expect(cobranca.checkouts[0].urlDeCancelamento).toMatch(/\/painel\/faturas\/cancelado$/);
+    await app.close();
+  });
+
   it("no teste, a primeira cobrança fica para o fim dele", async () => {
     const { app, cobranca } = montar();
     const { token, barbeariaId } = await criarBarbeariaComToken(app);
@@ -187,6 +198,7 @@ describe("POST /barbearias/me/assinatura/portal", () => {
     expect(resposta.statusCode).toBe(200);
     expect(resposta.json().url).toMatch(/^https:\/\//);
     expect(cobranca.portais[0].customerId).toBe("cus_9");
+    expect(cobranca.portais[0].urlDeVolta).toMatch(/\/painel\/faturas$/);
     await app.close();
   });
 });
@@ -231,7 +243,7 @@ describe("POST /stripe/webhook", () => {
       periodoTerminaEm: sub.periodoTerminaEm,
     });
     expect(avisos).toHaveLength(1);
-    expect(avisos[0]).toMatchObject({ tipo: "pagamento", link: "/painel/assinatura" });
+    expect(avisos[0]).toMatchObject({ tipo: "pagamento", link: "/painel/faturas" });
     await app.close();
   });
 

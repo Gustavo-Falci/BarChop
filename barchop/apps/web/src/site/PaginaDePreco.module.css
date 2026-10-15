@@ -3,6 +3,9 @@
    largura — pedido do dono); no celular, uma coluna. */
 .pagina {
   display: grid;
+  /* Sem o minmax, um filho que não quebra linha estica a coluna além
+     da tela no celular. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--espaco-xxl);
   width: 100%;
   max-width: 1120px;

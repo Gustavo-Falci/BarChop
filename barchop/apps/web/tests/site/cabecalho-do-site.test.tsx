@@ -11,6 +11,11 @@ describe("cabeçalho do site", () => {
     expect(screen.getByRole("link", { name: "BarChop" })).toHaveAttribute("href", "/");
   });
 
+  it("leva aos preços", () => {
+    render(<CabecalhoDoSite />);
+    expect(screen.getByRole("link", { name: "Preços" })).toHaveAttribute("href", "/precos");
+  });
+
   it("quem já tem conta entra no painel", () => {
     render(<CabecalhoDoSite />);
     expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute(

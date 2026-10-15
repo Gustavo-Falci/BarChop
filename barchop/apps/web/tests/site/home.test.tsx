@@ -1,3 +1,4 @@
+import { formatarReais, precoDoPlano } from "@barchop/formato";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
@@ -34,14 +35,23 @@ describe("home do site", () => {
     expect(passos[2]).toHaveTextContent(/lembrete/i);
   });
 
-  // Preço e planos ficam pra Onda 2, com a cobrança (ADR-0007): até lá
-  // o site não escreve valor nenhum, pra não prometer o que a API não
-  // aplica.
-  it("diz que é grátis no lançamento, sem valor em reais", () => {
+  // Os planos chegaram com a cobrança (Onda 2, PR 6): a Home mostra a
+  // tabela lida de planos.ts e leva aos detalhes em /precos. O "grátis
+  // durante o lançamento" saiu de vez.
+  it("mostra os planos com os preços de planos.ts e leva a /precos", () => {
     render(<Home />);
-    const secao = screen.getByRole("region", { name: "Preço" });
-    expect(secao).toHaveTextContent(/grátis/i);
-    expect(document.body.textContent).not.toMatch(/R\$/);
+    const secao = screen.getByRole("region", { name: "Planos" });
+    expect(within(secao).getByRole("list", { name: "Planos" })).toBeInTheDocument();
+    expect(secao).toHaveTextContent(formatarReais(precoDoPlano("essencial", "mensal", 1)));
+    expect(within(secao).getByRole("link", { name: /todos os detalhes/i })).toHaveAttribute("href", "/precos");
+    expect(document.body.textContent).not.toMatch(/lançamento/i);
+  });
+
+  it("o convite do topo promete o teste de 14 dias, sem cartão", () => {
+    render(<Home />);
+    const topo = screen.getByRole("heading", { level: 1 }).closest("section") as HTMLElement;
+    expect(topo).toHaveTextContent(/14 dias/);
+    expect(topo).toHaveTextContent(/sem cartão/i);
   });
 
   // O lembrete sai por e-mail; o WhatsApp oficial espera a Meta

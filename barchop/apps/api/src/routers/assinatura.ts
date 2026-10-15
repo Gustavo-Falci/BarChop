@@ -91,6 +91,17 @@ export function registrarRotasAssinatura(app: App): void {
     }
   );
 
+  // As faturas na tela de Faturas. Sem cliente na Stripe ainda não há
+  // fatura nenhuma, e nem vale perguntar.
+  app.get("/barbearias/me/assinatura/faturas", { onRequest: exigirPapel("dono") }, async (request) => {
+    const linha = await prisma.assinatura.findUniqueOrThrow({
+      where: { barbeariaId: request.user.barbeariaId },
+      select: { stripeCustomerId: true },
+    });
+    if (!linha.stripeCustomerId) return [];
+    return app.cobranca.listarFaturas(linha.stripeCustomerId);
+  });
+
   // Trocar cartão, ver faturas e cancelar no fim do período: tudo no
   // Portal da Stripe, configurado pelo dono no painel dela.
   app.post("/barbearias/me/assinatura/portal", { onRequest: exigirPapel("dono") }, async (request) => {

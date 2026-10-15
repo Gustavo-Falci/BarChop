@@ -7,6 +7,7 @@ import {
   type IdDoPlano,
   type SituacaoDaAssinatura,
 } from "@barchop/formato";
+import type { FaturaDaAssinatura, SituacaoDaFatura } from "@barchop/types";
 import { ErroHttp } from "./erro-http";
 
 // A cobrança da assinatura do BarChop (ADR-0010; PR 4 do plano
@@ -70,6 +71,19 @@ export function situacaoDaStripe(status: string): SituacaoDaAssinatura | null {
   return null;
 }
 
+// A fatura da Stripe na tela de Faturas. Aberta que já teve tentativa
+// de cobrança falhou (o cartão recusou); o rascunho ainda não é do dono.
+export function situacaoDaFatura(status: string | null, tentativas: number): SituacaoDaFatura | null {
+  if (status === "paid") return "paga";
+  if (status === "void") return "anulada";
+  if (status === "uncollectible") return "falhou";
+  if (status === "open") return tentativas > 0 ? "falhou" : "aberta";
+  return null;
+}
+
+// As últimas faturas bastam: o histórico inteiro fica no Portal.
+const FATURAS_NA_TELA = 24;
+
 // A Stripe exige o fim do teste pelo menos 48h à frente; a folga cobre
 // o tempo entre abrir o Checkout e a Stripe conferir.
 const FOLGA_MINIMA_DO_TESTE = 48 * 60 * 60 * 1000 + 10 * 60 * 1000;
@@ -131,6 +145,8 @@ export interface Cobranca {
   // webhook): cancela na hora e devolve o que ela já cobrou. Repetir a
   // chamada não cancela nem devolve duas vezes.
   cancelarRepetida(assinaturaId: string): Promise<void>;
+  // Da mais nova pra mais velha.
+  listarFaturas(customerId: string): Promise<FaturaDaAssinatura[]>;
   // Lança quando a assinatura do evento não confere.
   lerEvento(corpo: Buffer, assinatura: string): EventoDaCobranca;
 }
@@ -195,6 +211,9 @@ export interface CobrancaDeMemoria extends Cobranca {
   falharQuantidade: boolean;
   cancelamentos: string[];
   falharCancelamento: boolean;
+  // As faturas de cada cliente, e quem foi consultado.
+  faturas: Map<string, FaturaDaAssinatura[]>;
+  consultasDeFaturas: string[];
 }
 
 export function cobrancaDeMemoria(): CobrancaDeMemoria {
@@ -209,6 +228,8 @@ export function cobrancaDeMemoria(): CobrancaDeMemoria {
     falharQuantidade: false,
     cancelamentos: [],
     falharCancelamento: false,
+    faturas: new Map(),
+    consultasDeFaturas: [],
     async criarCliente(dados) {
       const id = `cus_memoria_${cobranca.clientes.length + 1}`;
       cobranca.clientes.push({ id, ...dados });
@@ -236,6 +257,10 @@ export function cobrancaDeMemoria(): CobrancaDeMemoria {
       cobranca.cancelamentos.push(assinaturaId);
       const assinatura = cobranca.assinaturas.get(assinaturaId);
       if (assinatura) cobranca.assinaturas.set(assinaturaId, { ...assinatura, status: "canceled" });
+    },
+    async listarFaturas(customerId) {
+      cobranca.consultasDeFaturas.push(customerId);
+      return cobranca.faturas.get(customerId) ?? [];
     },
     lerEvento(corpo, assinatura) {
       return lerEventoAssinado(corpo, assinatura, SEGREDO_DO_WEBHOOK_DE_TESTE);
@@ -331,6 +356,25 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
         await stripe.refunds.create({ payment_intent: intencao }, { idempotencyKey: `repetida-${intencao}` });
       }
     },
+    async listarFaturas(customerId) {
+      const { data } = await stripe.invoices.list({ customer: customerId, limit: FATURAS_NA_TELA });
+      return data.flatMap((fatura) => {
+        const situacao = situacaoDaFatura(fatura.status, fatura.attempt_count);
+        if (situacao === null) return [];
+        return [
+          {
+            id: fatura.id!,
+            numero: fatura.number,
+            emitidaEm: new Date(fatura.created * 1000).toISOString(),
+            // Paga: o que entrou; senão, o que ainda deve.
+            valorCentavos: situacao === "paga" ? fatura.amount_paid : fatura.amount_due,
+            situacao,
+            pdfUrl: fatura.invoice_pdf ?? null,
+            paginaUrl: fatura.hosted_invoice_url ?? null,
+          },
+        ];
+      });
+    },
     lerEvento(corpo, assinatura) {
       if (!opcoes.segredoDoWebhook) throw new Error("STRIPE_WEBHOOK_SECRET ausente");
       return lerEventoAssinado(corpo, assinatura, opcoes.segredoDoWebhook);
@@ -353,6 +397,7 @@ function cobrancaDesligada(): Cobranca {
     atualizarQuantidade: async () => desligada(),
     lerAssinatura: async () => desligada(),
     cancelarRepetida: async () => desligada(),
+    listarFaturas: async () => desligada(),
     lerEvento: () => desligada(),
   };
 }

@@ -1,7 +1,7 @@
 .pagina {
   display: grid;
   gap: var(--espaco-lg);
-  max-width: 880px;
+  max-width: 1200px;
 }
 
 /* Plano, profissionais e ciclo numa linha só, como o configurador da
@@ -239,6 +239,33 @@
   margin: var(--espaco-sm) 0 0;
   color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
+}
+
+/* No desktop a tela usa a largura: configurador e perguntas à esquerda,
+   o cartão do plano à direita, ocupando as duas linhas. O `dense` sobe
+   as perguntas pro lado do cartão quando não há configurador (plano
+   pago). O resto (cabeçalho, avisos) segue de ponta a ponta. */
+@media (min-width: 1100px) {
+  .pagina {
+    grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
+    grid-auto-flow: row dense;
+    align-items: start;
+    column-gap: var(--espaco-xxl);
+  }
+
+  .pagina > * {
+    grid-column: 1 / -1;
+  }
+
+  .controles,
+  .perguntas {
+    grid-column: 1;
+  }
+
+  .cartao {
+    grid-column: 2;
+    grid-row: span 2;
+  }
 }
 
 /* No celular, o preço desce pra baixo do nome e alinha à esquerda. */

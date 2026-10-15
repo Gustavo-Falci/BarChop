@@ -4,7 +4,44 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-14 — #143 no ar, PR 4 testado na Stripe, PR 5 aberto como #145) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-15 — PRs 4, 5 e 6 da cobrança abertos e empilhados: #144 → #145 → #146) — vale mais que as seções abaixo
+
+> **Este RETOMAR AQUI vive no branch `site-e-termos` (#146)**, empilhado no `tela-do-plano` (#145), que está empilhado no `stripe-na-cobranca` (#144). Nenhum foi mesclado. Na outra máquina: `git fetch` e `git checkout site-e-termos`. A `main` ainda mostra o RETOMAR AQUI de 13/10.
+
+**Estado:**
+- **Produção:** igual à seção de 14/10 abaixo (`main` = `10ff35c`; última migração em produção `20261014120000_assinatura`).
+- **#145 virou "Faturas"** no modelo do `Telas_Assinatura_BarbeiroApp.docx` do dono (plano em `.claude/plans/faturas-no-modelo-do-barbeiro-app.plan.md`):
+  - `/painel/faturas`, só do dono: sem plano pago, Plano → Pagamento (Cartão; Pix e Boleto "Em breve") → Acesso liberado, com o Seu pedido ao lado; com plano pago, a lista de faturas da Stripe e o Seu plano com **Gerenciar assinatura** (o Portal);
+  - `/painel/faturas/cancelado` na volta do Checkout desistido;
+  - API: `GET /barbearias/me/assinatura/faturas` e `usoNoTeste` no resumo; o webhook cancela e reembolsa a 2ª assinatura viva da mesma barbearia (dois Checkouts antes do webhook).
+- **Portal da Stripe (modo de teste), conferido em 15/10:**
+  - troca de plano ligada, com Essencial e Completo, mensal e anual;
+  - subir de plano: **cobra na hora só a diferença proporcional** (`always_invoice`, pedido do dono);
+  - descer de plano ou anual → mensal: no fim do período;
+  - trocar durante o teste mantém o teste (`continue_trial`);
+  - cancelar: no fim do período, sem reembolso parcial;
+  - nome público e descrição na fatura do cartão: **BarChop / BARCHOP**.
+  - A pergunta "Mudei de plano no meio do mês, quanto pago?" está nas Faturas.
+- **#146 (PR 6):** Home sem o "lançamento" e com a tabela dos planos; `/precos`; `/gratis`; termos com a seção da cobrança; privacidade com a Stripe; Preços no cabeçalho (no celular estreito, só no rodapé); site sem rolar pro lado em 375px.
+  - **Quem vende** (pessoa física: nome, CPF e e-mail; sem cidade) vem de `NEXT_PUBLIC_VENDEDOR_NOME`, `_CPF` e `_EMAIL`, porque o repositório é **público**. Nesta máquina estão no `apps/web/.env.local` (fora do git). O `compose.yaml` exige as três no `infra/.env`.
+  - Os termos prometem aviso de 30 dias antes de mudar preço e o arrependimento de 7 dias (CDC art. 49, devolução pedida por e-mail, feita à mão na Stripe). Conferir com o dono/revisão jurídica.
+
+**Próximo passo (nesta ordem):**
+1. O dono confere `/painel/faturas`, `/`, `/precos`, `/gratis` e `/termos` no navegador.
+2. **Entrada no ar dos PRs 4, 5 e 6 juntos** (merge só com "pode mergear"; mesclar #144, depois #145, depois #146). Antes:
+   - o dono ativa a conta PF no modo real;
+   - no modo real, repetir o Portal do cliente como no teste (troca de plano com os 4 preços, `always_invoice`, descida no fim do período, `continue_trial`) e conferir nome público e descrição na fatura;
+   - criar o webhook real `https://api.barchop.com.br/stripe/webhook` com os eventos `checkout.session.completed`, `customer.subscription.created/updated/deleted`, `invoice.paid` e `invoice.payment_failed`;
+   - `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no `infra/api.env` da VM;
+   - `NEXT_PUBLIC_VENDEDOR_NOME`, `_CPF` e `_EMAIL` no `infra/.env` da VM (rebuild do web);
+   - o deploy roda **as duas migrações** (`migrar`);
+   - depois, `docker compose exec api node dist/criar-precos-no-stripe.js`;
+   - a data da novidade "Faturas e assinatura" (`novidades.ts`) e a vigência dos termos (`controlador.ts`, hoje 15/10) mudam para o dia da entrada no ar.
+3. Depois: o Portal só troca o preço, não a quantidade. Quem desce do Completo para o Essencial com mais de 3 profissionais não é barrado lá; segurar no app.
+
+**Ambiente local:** como na seção de 14/10 abaixo. A API dev roda com `STRIPE_WEBHOOK_SECRET` do `stripe listen` e `CANAL_DE_MENSAGEM=log` (o Resend falha no dev).
+
+## RETOMAR AQUI (noite de 2026-10-14 — #143 no ar, PR 4 testado na Stripe, PR 5 aberto como #145) — histórico
 
 > **Este RETOMAR AQUI vive no branch `tela-do-plano` (#145), empilhado sobre o `stripe-na-cobranca` (#144).** Nenhum dos dois foi mesclado. Na outra máquina: `git fetch` e `git checkout tela-do-plano`. A `main` ainda mostra o RETOMAR AQUI de 13/10.
 

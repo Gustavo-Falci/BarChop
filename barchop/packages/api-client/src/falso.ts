@@ -197,12 +197,14 @@ export interface EstadoFalso {
   assinatura?: ResumoDaAssinatura;
 }
 
+const FIM_DO_TESTE_PADRAO = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
 const ASSINATURA_PADRAO: ResumoDaAssinatura = {
   situacao: "teste",
   plano: "gratis",
   ciclo: "mensal",
   planoEfetivo: "completo",
-  testeTerminaEm: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+  testeTerminaEm: FIM_DO_TESTE_PADRAO,
   diasDeTesteRestantes: 14,
   periodoTerminaEm: null,
   primeiraCobrancaPendente: false,
@@ -212,6 +214,7 @@ const ASSINATURA_PADRAO: ResumoDaAssinatura = {
   excedente: false,
   foraDoLink: [],
   temPortal: false,
+  usoNoTeste: { desde: new Date().toISOString(), ate: FIM_DO_TESTE_PADRAO, agendamentos: 0, servicos: 0 },
 };
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {

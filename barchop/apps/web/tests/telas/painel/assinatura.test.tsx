@@ -35,6 +35,7 @@ function resumo(parcial: Partial<ResumoDaAssinatura> = {}): ResumoDaAssinatura {
     excedente: false,
     foraDoLink: [],
     temPortal: false,
+    usoNoTeste: null,
     ...parcial,
   };
 }

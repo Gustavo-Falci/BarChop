@@ -540,6 +540,18 @@ export interface ResumoDaAssinatura {
   foraDoLink: { id: string; nome: string }[];
   // A barbearia já passou pelo Checkout: Faturas e Gerenciar abrem.
   temPortal: boolean;
+  // O que a barbearia fez no teste, pra recomendar o plano. Só sem plano
+  // pago e com teste (vigente ou vencido); senão, null.
+  usoNoTeste: UsoNoTeste | null;
+}
+
+export interface UsoNoTeste {
+  desde: string;
+  ate: string;
+  // Feitos no período, sem os cancelados.
+  agendamentos: number;
+  // Ativos hoje.
+  servicos: number;
 }
 
 // GET /barbearias/me/assinatura/faturas — as faturas da assinatura,

@@ -8,7 +8,7 @@ import {
   type IdDoPlano,
   type SituacaoDaAssinatura,
 } from "@barchop/formato";
-import type { ResumoDaAssinatura } from "@barchop/types";
+import type { ResumoDaAssinatura, UsoNoTeste } from "@barchop/types";
 import type { Cobranca } from "./cobranca";
 import { ErroDeNegocio } from "./erro-negocio";
 
@@ -145,6 +145,20 @@ async function quemSaiuDoLink(barbeariaId: string, agora: Date): Promise<{ id: s
 }
 
 // Os ids da Stripe ficam de fora: o painel não precisa deles.
+// O teste de 14 dias: o início é o fim menos os dias, e a contagem vai
+// até agora, se o teste ainda corre.
+async function usoNoTeste(barbeariaId: string, testeTerminaEm: Date, agora: Date): Promise<UsoNoTeste> {
+  const desde = new Date(testeTerminaEm.getTime() - DIAS_DE_TESTE * UM_DIA);
+  const ate = agora < testeTerminaEm ? agora : testeTerminaEm;
+  const [agendamentos, servicos] = await Promise.all([
+    prisma.agendamento.count({
+      where: { barbeariaId, status: { not: "cancelado" }, criadoEm: { gte: desde, lte: ate } },
+    }),
+    prisma.servico.count({ where: { barbeariaId, ativo: true } }),
+  ]);
+  return { desde: desde.toISOString(), ate: testeTerminaEm.toISOString(), agendamentos, servicos };
+}
+
 export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Promise<ResumoDaAssinatura> {
   const [linha, profissionais, saiuDoLink] = await Promise.all([
     prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } }),
@@ -160,6 +174,8 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
   };
   const efetivo = planoEfetivo(assinatura, agora);
   const limite = limiteDeProfissionais(efetivo);
+  const pago = assinatura.situacao === "ativa" || assinatura.situacao === "em_atraso";
+  const uso = !pago && linha.testeTerminaEm ? await usoNoTeste(barbeariaId, linha.testeTerminaEm, agora) : null;
   return {
     situacao: assinatura.situacao,
     plano: assinatura.plano,
@@ -184,6 +200,7 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
     excedente: limite !== null && profissionais > limite,
     foraDoLink: saiuDoLink,
     temPortal: linha.stripeCustomerId !== null,
+    usoNoTeste: uso,
   };
 }
 

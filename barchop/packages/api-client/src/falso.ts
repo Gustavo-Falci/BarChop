@@ -906,7 +906,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         exigirDono();
         const { situacao } = estado.assinatura!;
         if (estado.assinatura!.temPortal && (situacao === "ativa" || situacao === "em_atraso")) {
-          throw new ErroDaApi(409, "conflito", "a barbearia já tem assinatura: mude o plano em Gerenciar pagamento");
+          throw new ErroDaApi(409, "conflito", "a barbearia já tem assinatura: mude o plano em Gerenciar assinatura");
         }
         return { url: "https://checkout.stripe.test/1" };
       },

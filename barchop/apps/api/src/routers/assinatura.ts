@@ -43,7 +43,7 @@ export function registrarRotasAssinatura(app: App): void {
 
       const linha = await prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } });
       if (linha.stripeSubscriptionId && (linha.situacao === "ativa" || linha.situacao === "em_atraso")) {
-        throw conflito("a barbearia já tem assinatura: mude o plano em Gerenciar pagamento");
+        throw conflito("a barbearia já tem assinatura: mude o plano em Gerenciar assinatura");
       }
 
       // Nunca menos que a equipe de hoje, nem mais que o plano permite.

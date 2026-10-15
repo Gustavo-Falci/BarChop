@@ -39,7 +39,7 @@ const AVISOS: Partial<Record<SituacaoDaAssinatura, (plano: string) => { titulo: 
   ativa: (plano) => ({ titulo: "Assinatura ativa", texto: `O plano ${plano} da barbearia está ativo.` }),
   em_atraso: () => ({
     titulo: "Pagamento pendente",
-    texto: "Não conseguimos cobrar a assinatura. Atualize o cartão em Gerenciar pagamento para não perder o plano.",
+    texto: "Não conseguimos cobrar a assinatura. Atualize o cartão em Gerenciar assinatura para não perder o plano.",
   }),
   cancelada: () => ({
     titulo: "Assinatura cancelada",

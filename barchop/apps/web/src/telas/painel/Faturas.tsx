@@ -35,8 +35,8 @@ import estilos from "./Faturas.module.css";
 // Barbeiro.app (Telas_Assinatura_BarbeiroApp.docx, 15/10/2026). Sem
 // plano pago: Plano → Pagamento → Acesso liberado, com o Seu pedido ao
 // lado e o comparativo embaixo. Com plano pago: o plano e as faturas
-// lidas da Stripe. Pagar, trocar o cartão e cancelar é tudo na Stripe;
-// aqui é o caminho até lá.
+// lidas da Stripe. Pagar, trocar de plano, trocar o cartão e cancelar é
+// tudo na Stripe; aqui é o caminho até lá.
 
 type PlanoPago = "essencial" | "completo";
 type Etapa = "plano" | "pagamento";
@@ -88,6 +88,7 @@ const LINHAS_DO_COMPARATIVO: { recurso: string; valores: [string, string, string
 
 const GARANTIAS = [
   "Sem fidelidade, cancele quando quiser",
+  "Troque de plano quando quiser",
   "Recibo em cada fatura",
   "Pagamento no cartão pela Stripe",
   "Cancelou? Nada é apagado",
@@ -801,7 +802,9 @@ function PlanoAtual({ resumo }: { resumo: ResumoDaAssinatura }) {
       ) : null}
 
       <BotaoDoPortal />
-      <p className={estilos.rodape}>Trocar o cartão, ver as faturas antigas e cancelar: na página segura da Stripe.</p>
+      <p className={estilos.rodape}>
+        Trocar de plano, trocar o cartão, ver as faturas antigas e cancelar: na página segura da Stripe.
+      </p>
     </section>
   );
 }
@@ -826,7 +829,7 @@ function BotaoDoPortal() {
     <>
       {erro ? <Aviso>{erro}</Aviso> : null}
       <Botao onClick={abrir} carregando={abrindo}>
-        Gerenciar pagamento
+        Gerenciar assinatura
       </Botao>
     </>
   );
@@ -841,7 +844,7 @@ const PERGUNTAS: { pergunta: string; resposta: string }[] = [
   {
     pergunta: "Posso cancelar quando quiser?",
     resposta:
-      "Sim, sem multa, em Gerenciar pagamento. O plano vale até o fim do período já pago; depois, a barbearia volta para o Grátis sem perder nada.",
+      "Sim, sem multa, em Gerenciar assinatura. O plano vale até o fim do período já pago; depois, a barbearia volta para o Grátis sem perder nada.",
   },
   {
     pergunta: "Qual a diferença entre mensal e anual?",

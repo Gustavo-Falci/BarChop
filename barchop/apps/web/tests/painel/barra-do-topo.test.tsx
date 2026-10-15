@@ -59,7 +59,7 @@ describe("barra de topo do painel", () => {
       expect(gatilho).toHaveTextContent("R");
     });
 
-    it("abre com e-mail, Minha conta, Faturas e Indique em breve, e Sair", async () => {
+    it("abre com e-mail, Minha conta, Faturas antes de assinar, Indique em breve, e Sair", async () => {
       montar();
 
       await userEvent.click(await screen.findByRole("button", { name: /Rafael/ }));
@@ -70,10 +70,10 @@ describe("barra de topo do painel", () => {
         "href",
         "/painel/configuracoes/perfil"
       );
-      // Ainda não existem: à vista, mas sem levar a lugar nenhum.
+      // Sem assinatura paga não há fatura; a indicação ainda não existe.
       expect(within(menu).getByRole("button", { name: /Faturas/ })).toBeDisabled();
       expect(within(menu).getByRole("button", { name: /Indique e ganhe/ })).toBeDisabled();
-      expect(within(menu).getAllByText("Em breve")).toHaveLength(2);
+      expect(within(menu).getAllByText("Em breve")).toHaveLength(1);
     });
 
     it("Sair encerra a sessão e volta pro login", async () => {

@@ -10,6 +10,7 @@ import {
   planoEfetivo,
   precoDoPlano,
   precosDoCiclo,
+  formatarReais,
   temRecurso,
 } from "../src/planos";
 
@@ -152,5 +153,15 @@ describe("planoEfetivo", () => {
   it("no teste, o limite de profissionais é o do Completo (sem limite)", () => {
     const plano = planoEfetivo({ situacao: "teste", plano: "gratis", testeTerminaEm: DEPOIS }, AGORA);
     expect(limiteDeProfissionais(plano)).toBeNull();
+  });
+});
+
+describe("formatarReais", () => {
+  it("escreve os centavos em reais, como o brasileiro lê", () => {
+    // O Intl separa o "R$" com espaço inquebrável.
+    expect(formatarReais(3490)).toBe("R$\u00a034,90");
+    expect(formatarReais(44900)).toBe("R$\u00a0449,00");
+    expect(formatarReais(123456)).toBe("R$\u00a01.234,56");
+    expect(formatarReais(0)).toBe("R$\u00a00,00");
   });
 });

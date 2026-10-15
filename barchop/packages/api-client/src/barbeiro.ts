@@ -24,6 +24,7 @@ import type {
   PapelMembro,
   PerfilBarbeiro,
   ResumoDaAssinatura,
+  FaturaDaAssinatura,
   CicloDoPlano,
   IdDoPlano,
   ServicoSerializado,
@@ -584,6 +585,11 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     checkoutDaAssinatura(pedido: PedidoDeAssinatura): Promise<{ url: string }> {
       return requisicao("/barbearias/me/assinatura/checkout", { metodo: "POST", corpo: pedido, comToken: true });
+    },
+
+    // Da mais nova pra mais velha; sem ter assinado, nenhuma.
+    faturasDaAssinatura(): Promise<FaturaDaAssinatura[]> {
+      return requisicao("/barbearias/me/assinatura/faturas", { comToken: true });
     },
 
     // Sem ter assinado, 409: ainda não há cliente na Stripe.

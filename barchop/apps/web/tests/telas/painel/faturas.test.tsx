@@ -356,6 +356,16 @@ describe("Faturas com plano pago", () => {
     await waitFor(() => expect(irParaAStripe).toHaveBeenCalled());
   });
 
+  it("as perguntas explicam a troca no meio do período: sobe pagando a diferença, desce no fim", async () => {
+    montar(resumo(PAGA));
+
+    const pergunta = await screen.findByText("Mudei de plano no meio do mês, quanto pago?");
+    const resposta = pergunta.nextElementSibling as HTMLElement;
+    expect(resposta).toHaveTextContent(/na hora só a diferença pelos dias que faltam/);
+    expect(resposta).toHaveTextContent(/no fim do período já pago/);
+    expect(resposta).toHaveTextContent(/Durante o teste, trocar de plano não cobra nada/);
+  });
+
   it("cancelada no Portal: diz até quando vale, sem anunciar cobrança", async () => {
     montar(resumo({ ...PAGA, cancelaEm: "2026-11-28T14:11:00Z" }));
 

@@ -97,7 +97,9 @@ async function aplicar(
       stripeSubscriptionId: assinatura.id,
       profissionaisContratados: assinatura.quantidade,
       periodoTerminaEm: assinatura.periodoTerminaEm,
-      cancelaEm: assinatura.cancelaEm,
+      // Cancelada de vez, a data em que ia acabar já passou: a Stripe
+      // ainda a mostra, mas não diz mais nada.
+      cancelaEm: situacao === "cancelada" ? null : assinatura.cancelaEm,
     },
   });
 

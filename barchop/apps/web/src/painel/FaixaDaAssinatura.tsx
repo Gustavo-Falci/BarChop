@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ResumoDaAssinatura } from "@barchop/types";
-import { diaEMes, diasQueFaltam, emLista, nomeDoPlano, profissionais } from "./assinatura";
+import { diaEMes, diasQueFaltam, emLista, nomeDoPlano, profissionais, temPlanoPago } from "./assinatura";
 import { useAssinatura } from "./ProvedorDaAssinatura";
 import estilos from "./FaixaDaAssinatura.module.css";
 
@@ -22,7 +22,8 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       acao: "Resolver",
     };
   }
-  if (resumo.cancelaEm) {
+  // Só enquanto o plano pago vale: acabado, o que importa é o Grátis.
+  if (temPlanoPago(resumo) && resumo.cancelaEm) {
     return {
       tom: "neutro",
       texto: `Assinatura cancelada: o ${nomeDoPlano(resumo)} vale até ${diaEMes(resumo.cancelaEm)}.`,

@@ -4,9 +4,9 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-14 — #143 no ar, PR 4 testado na Stripe, PR 5 pronto) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-14 — #143 no ar, PR 4 testado na Stripe, PR 5 aberto como #145) — vale mais que as seções abaixo
 
-> **Este RETOMAR AQUI vive no branch `tela-do-plano` (PR 5), empilhado sobre o `stripe-na-cobranca` (#144).** Nenhum dos dois foi mesclado. Na outra máquina: `git fetch` e `git checkout tela-do-plano`. A `main` ainda mostra o RETOMAR AQUI de 13/10.
+> **Este RETOMAR AQUI vive no branch `tela-do-plano` (#145), empilhado sobre o `stripe-na-cobranca` (#144).** Nenhum dos dois foi mesclado. Na outra máquina: `git fetch` e `git checkout tela-do-plano`. A `main` ainda mostra o RETOMAR AQUI de 13/10.
 
 **Estado:**
 - **Produção:**
@@ -19,7 +19,7 @@
   - Em produção, a última continua sendo `20261014120000_assinatura`.
 - **Branches abertos (não mesclar ainda):**
   - `stripe-na-cobranca`: **#144**, o PR 4;
-  - `tela-do-plano`: o PR 5, enviado ao GitHub **sem PR aberto**. Abrir o PR com a base `stripe-na-cobranca`.
+  - `tela-do-plano`: o PR 5, **#145**, aberto com base `stripe-na-cobranca`. Na abertura, as suítes estavam verdes: API 960, web 1141, formato 175.
 
 **Feito em 14/10 à noite:**
 - **Teste de fumaça do #144 na Stripe de teste: passou.** Os detalhes estão no plano `cobranca-do-barchop.plan.md`, na seção "Teste de fumaça do PR 4".
@@ -49,13 +49,16 @@
 - A referência visual da tela do plano é o `Planos_BarbeiroApp.docx` do dono.
 
 **Próximo passo (nesta ordem):**
-1. **Abrir o PR do `tela-do-plano`** com a base `stripe-na-cobranca`.
-2. **Ajustes miúdos do PR 5, se o dono quiser:**
+1. **Ajustes miúdos do #145, se o dono quiser:**
    - a página do plano fica alinhada à esquerda em telas largas (até 880px);
    - o tema claro não foi conferido;
    - a data da novidade (14/10) muda para o dia da entrada no ar.
-3. **PR 6:** site (`/precos`, `/gratis`, Home) e termos. A tabela vem de `planos.ts` e o preço sai de `formatarReais`.
-4. **Entrada no ar dos PRs 4, 5 e 6 juntos.** Antes:
+2. **PR 6:** site (`/precos`, `/gratis`, Home) e termos.
+   - Branch empilhado no `tela-do-plano`; o PR vai com base `tela-do-plano`.
+   - A tabela vem de `planos.ts` e o preço sai de `formatarReais`.
+   - Os termos falam da cobrança recorrente, do cancelamento, do fim do teste e do atraso, e da Stripe como processadora. A política de privacidade cita a Stripe como operadora.
+   - O dono decide quais dados pessoais aparecem nos termos, porque o vendedor é pessoa física.
+3. **Entrada no ar dos PRs 4, 5 e 6 juntos** (#144, #145 e o PR 6; o merge só com "pode mergear" do dono). Antes:
    - **o dono ativa a conta PF no modo real** (hoje `charges_enabled: false`);
    - criar o webhook real `https://api.barchop.com.br/stripe/webhook`;
    - preencher `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no `~/BarChop/barchop/infra/api.env` da VM;

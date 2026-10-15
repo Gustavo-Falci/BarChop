@@ -1,0 +1,100 @@
+/* Os planos lado a lado no desktop (as telas usam a largura — pedido do
+   dono); um embaixo do outro no celular, do Grátis ao Completo. */
+.planos {
+  display: grid;
+  gap: var(--espaco-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 880px) {
+  .planos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* O convite desce até o pé do cartão: os três botões ficam na mesma
+   linha, por mais que um plano tenha mais itens. */
+.plano {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+}
+
+.cabeca {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.nome {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  line-height: 1.1;
+  word-spacing: 0.08em;
+}
+
+.apoio,
+.detalhe {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--cor-ink-soft);
+}
+
+.detalhe {
+  font-size: var(--texto-sm);
+}
+
+.preco {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaco-xs);
+  margin: 0;
+}
+
+.valor {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-display);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.periodo {
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
+.itens {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: var(--espaco-md) 0 0;
+  border-top: var(--borda-hairline) solid var(--cor-line);
+  list-style: none;
+}
+
+.itens li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--espaco-sm);
+  line-height: 1.45;
+}
+
+.itens li::before {
+  content: "✓";
+  font-weight: 700;
+}
+
+.convite {
+  display: grid;
+  margin-top: auto;
+  padding-top: var(--espaco-sm);
+}

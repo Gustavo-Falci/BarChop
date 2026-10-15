@@ -53,8 +53,7 @@
    grandes do site. */
 .titulo,
 .tituloDaSecao,
-.tituloDoItem,
-.valor {
+.tituloDoItem {
   word-spacing: 0.08em;
 }
 
@@ -249,25 +248,25 @@
   background: var(--cor-surface);
 }
 
-.preco {
-  padding: var(--espaco-xl);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-lg);
-  background: var(--cor-pale-yellow);
+/* Os planos (TabelaDePrecos) com o título e o apoio em cima e o link
+   pros detalhes embaixo, alinhado à esquerda como o resto. */
+.cabecaDosPlanos {
+  display: grid;
+  gap: var(--espaco-sm);
 }
 
-.preco p {
+.apoioDosPlanos {
   margin: 0;
   max-width: 60ch;
   line-height: 1.55;
+  color: var(--cor-ink-soft);
 }
 
-.valor {
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: var(--texto-display);
-  font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+.detalhes {
+  justify-self: start;
+  font-weight: 600;
+  color: var(--cor-ink);
+  text-underline-offset: 4px;
 }
 
 .perguntas {

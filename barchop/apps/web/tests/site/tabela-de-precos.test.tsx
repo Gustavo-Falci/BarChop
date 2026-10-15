@@ -3,6 +3,12 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { TabelaDePrecos } from "../../src/site/TabelaDePrecos";
 
+// O formatarReais separa "R$" do valor com espaço rígido (160), e o
+// toHaveTextContent normaliza só o texto da página, não o esperado.
+function reais(centavos: number): string {
+  return formatarReais(centavos).replaceAll(String.fromCharCode(160), " ");
+}
+
 // A tabela dos três planos do site (Onda 2, PR 6 da cobrança). Os preços
 // saem de planos.ts, como no painel e na Stripe: ninguém escreve um
 // preço à mão. Os testes calculam o esperado pelo mesmo módulo.
@@ -21,21 +27,21 @@ describe("tabela de preços do site", () => {
 
   it("o preço mensal de cada plano vem de planos.ts", () => {
     render(<TabelaDePrecos />);
-    expect(plano("Grátis")).toHaveTextContent(formatarReais(0));
-    expect(plano("Essencial")).toHaveTextContent(formatarReais(precoDoPlano("essencial", "mensal", 1)));
-    expect(plano("Completo")).toHaveTextContent(formatarReais(precoDoPlano("completo", "mensal", 1)));
+    expect(plano("Grátis")).toHaveTextContent(reais(0));
+    expect(plano("Essencial")).toHaveTextContent(reais(precoDoPlano("essencial", "mensal", 1)));
+    expect(plano("Completo")).toHaveTextContent(reais(precoDoPlano("completo", "mensal", 1)));
   });
 
   it("os pagos dizem o anual, o extra por profissional e o limite", () => {
     render(<TabelaDePrecos />);
     const essencial = plano("Essencial");
-    expect(essencial).toHaveTextContent(formatarReais(precoDoPlano("essencial", "anual", 1)));
-    expect(essencial).toHaveTextContent(`+ ${formatarReais(1000)} por profissional a mais`);
+    expect(essencial).toHaveTextContent(reais(precoDoPlano("essencial", "anual", 1)));
+    expect(essencial).toHaveTextContent(`+ ${reais(1000)} por profissional a mais`);
     expect(essencial).toHaveTextContent("Até 3 profissionais");
 
     const completo = plano("Completo");
-    expect(completo).toHaveTextContent(formatarReais(precoDoPlano("completo", "anual", 1)));
-    expect(completo).toHaveTextContent(`+ ${formatarReais(1500)} por profissional a mais`);
+    expect(completo).toHaveTextContent(reais(precoDoPlano("completo", "anual", 1)));
+    expect(completo).toHaveTextContent(`+ ${reais(1500)} por profissional a mais`);
     expect(completo).toHaveTextContent("Profissionais sem limite");
 
     expect(plano("Grátis")).toHaveTextContent("1 profissional");

@@ -1,9 +1,12 @@
+import { DIAS_DE_TESTE, formatarReais, precosDoCiclo } from "@barchop/formato";
+import Link from "next/link";
 import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./Home.module.css";
+import { TabelaDePrecos } from "./TabelaDePrecos";
 
 // A home do SaaS (marco 1s). O texto só promete o que o produto já faz:
 // lembrete por e-mail (o WhatsApp oficial espera a Meta, ADR-0009),
-// nenhum preço em reais (planos chegam com a cobrança, Onda 2) e
+// os preços lidos de planos.ts (chegaram com a cobrança, Onda 2) e
 // nenhum número de prova antes de o piloto medir alguma coisa.
 
 const DORES = [
@@ -65,7 +68,9 @@ const PERGUNTAS = [
   },
   {
     pergunta: "Quanto custa?",
-    resposta: "Nada durante o lançamento. Os planos pagos vêm depois, e quem já usa fica sabendo antes de qualquer cobrança.",
+    resposta: `Tem o Grátis, com 1 profissional, para sempre. Os planos pagos começam em ${formatarReais(
+      precosDoCiclo("essencial", "mensal").base
+    )} por mês. Toda barbearia começa com ${DIAS_DE_TESTE} dias de tudo liberado, sem cartão.`,
   },
   {
     pergunta: "Trabalho sozinho. Serve pra mim?",
@@ -93,7 +98,7 @@ export function Home() {
             <LinkDeAcao href="/painel/cadastro" grande>
               Criar minha barbearia grátis
             </LinkDeAcao>
-            <p className={estilos.nota}>Grátis durante o lançamento. Sem cartão.</p>
+            <p className={estilos.nota}>{DIAS_DE_TESTE} dias com tudo liberado. Sem cartão.</p>
           </div>
         </div>
         <AgendaDeExemplo />
@@ -132,13 +137,18 @@ export function Home() {
         </ul>
       </section>
 
-      <section aria-labelledby="preco" className={`${estilos.secao} ${estilos.preco}`}>
-        <h2 id="preco" className={estilos.tituloDaSecao}>Preço</h2>
-        <p className={estilos.valor}>Grátis durante o lançamento</p>
-        <p>
-          Todas as funções liberadas, sem cartão de crédito. Quando os planos
-          pagos chegarem, você fica sabendo antes e decide se continua.
-        </p>
+      <section aria-labelledby="planos" className={estilos.secao}>
+        <div className={estilos.cabecaDosPlanos}>
+          <h2 id="planos" className={estilos.tituloDaSecao}>Planos</h2>
+          <p className={estilos.apoioDosPlanos}>
+            Comece com {DIAS_DE_TESTE} dias de tudo liberado. Depois, escolha um
+            plano ou fique no Grátis.
+          </p>
+        </div>
+        <TabelaDePrecos />
+        <Link href="/precos" className={estilos.detalhes}>
+          Ver todos os detalhes dos preços
+        </Link>
       </section>
 
       <section aria-labelledby="perguntas" className={estilos.secao}>

@@ -7,7 +7,7 @@ import type { MetadataRoute } from "next";
 
 // As páginas públicas do site (ADR-0006). As das barbearias ficam de
 // fora: moram cada uma no próprio host.
-const PAGINAS_DO_SITE = ["/", "/termos", "/privacidade"];
+const PAGINAS_DO_SITE = ["/", "/precos", "/gratis", "/termos", "/privacidade"];
 
 export function baseDoSite(urlDoSite: string | undefined): URL | undefined {
   if (!urlDoSite) return undefined;

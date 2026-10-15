@@ -3,7 +3,7 @@ import { Home } from "../../src/site/Home";
 
 const TITULO = "BarChop — agenda online para barbearias";
 const DESCRICAO =
-  "O cliente agenda pelo link da sua barbearia, escolhe o profissional e recebe lembrete. Grátis durante o lançamento.";
+  "O cliente agenda pelo link da sua barbearia, escolhe o profissional e recebe lembrete. 14 dias grátis, sem cartão.";
 
 export const metadata: Metadata = {
   title: TITULO,

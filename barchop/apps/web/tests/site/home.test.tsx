@@ -4,6 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { Home } from "../../src/site/Home";
 
+// O formatarReais separa "R$" do valor com espaço rígido (160), e o
+// toHaveTextContent normaliza só o texto da página, não o esperado.
+function reais(centavos: number): string {
+  return formatarReais(centavos).replaceAll(String.fromCharCode(160), " ");
+}
+
 // A home do SaaS (marco 1s): quem chega em barchop.com.br entende a
 // promessa e vai pro cadastro sem falar com ninguém. O site só promete
 // o que o produto já faz — daí os testes do que a página NÃO diz.
@@ -42,7 +48,7 @@ describe("home do site", () => {
     render(<Home />);
     const secao = screen.getByRole("region", { name: "Planos" });
     expect(within(secao).getByRole("list", { name: "Planos" })).toBeInTheDocument();
-    expect(secao).toHaveTextContent(formatarReais(precoDoPlano("essencial", "mensal", 1)));
+    expect(secao).toHaveTextContent(reais(precoDoPlano("essencial", "mensal", 1)));
     expect(within(secao).getByRole("link", { name: /todos os detalhes/i })).toHaveAttribute("href", "/precos");
     expect(document.body.textContent).not.toMatch(/lançamento/i);
   });

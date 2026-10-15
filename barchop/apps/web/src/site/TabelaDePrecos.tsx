@@ -6,6 +6,7 @@ import {
   precosDoCiclo,
   type IdDoPlano,
 } from "@barchop/formato";
+import Link from "next/link";
 import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./TabelaDePrecos.module.css";
 
@@ -68,7 +69,12 @@ export function TabelaDePrecos() {
                 ou {formatarReais(anual.base)} por ano (2 meses grátis)
               </p>
             ) : (
-              <p className={estilos.detalhe}>Para sempre, sem cartão.</p>
+              <p className={estilos.detalhe}>
+                Para sempre, sem cartão.{" "}
+                <Link href="/gratis" className={estilos.saibaMais}>
+                  Saiba mais sobre o Grátis
+                </Link>
+              </p>
             )}
 
             <ul className={estilos.itens}>

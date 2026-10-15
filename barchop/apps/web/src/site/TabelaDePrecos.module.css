@@ -67,6 +67,12 @@
   white-space: nowrap;
 }
 
+.saibaMais {
+  font-weight: 600;
+  color: var(--cor-ink);
+  text-underline-offset: 3px;
+}
+
 .periodo {
   font-weight: 600;
   color: var(--cor-ink-soft);

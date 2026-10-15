@@ -11,6 +11,9 @@ export function RodapeDoSite() {
           <Link href="/precos" className={estilos.link}>
             Preços
           </Link>
+          <Link href="/gratis" className={estilos.link}>
+            Plano grátis
+          </Link>
           <Link href="/termos" className={estilos.link}>
             Termos de uso
           </Link>

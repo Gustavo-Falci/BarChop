@@ -223,6 +223,12 @@ describe("Faturas sem plano pago: etapa Plano", () => {
     expect(texto(porMes)).toContain("R$ 34,90");
     expect(texto(porMes)).toContain("R$ 44,90");
   });
+
+  it("promete a troca de plano, que o Portal da Stripe faz", async () => {
+    montar(resumo());
+
+    expect(await screen.findByText("Troque de plano quando quiser")).toBeInTheDocument();
+  });
 });
 
 describe("Faturas sem plano pago: etapa Pagamento", () => {
@@ -339,11 +345,12 @@ describe("Faturas com plano pago", () => {
     expect(screen.getByText("Próxima cobrança em 28/11")).toBeInTheDocument();
   });
 
-  it("Gerenciar abre o Portal da Stripe", async () => {
+  it("Gerenciar abre o Portal da Stripe, onde também se troca de plano", async () => {
     const falso = montar(resumo(PAGA));
+    expect(await screen.findByText(/Trocar de plano, trocar o cartão/)).toBeInTheDocument();
     const portal = vi.spyOn(falso.barbeiro, "portalDaAssinatura");
 
-    await userEvent.click(await screen.findByRole("button", { name: "Gerenciar pagamento" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Gerenciar assinatura" }));
 
     expect(portal).toHaveBeenCalled();
     await waitFor(() => expect(irParaAStripe).toHaveBeenCalled());
@@ -360,6 +367,6 @@ describe("Faturas com plano pago", () => {
     montar(resumo({ ...PAGA, situacao: "em_atraso", plano: "completo", planoEfetivo: "completo" }));
 
     expect(await screen.findByText(/A Stripe não conseguiu cobrar/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Gerenciar pagamento" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Gerenciar assinatura" })).toBeInTheDocument();
   });
 });

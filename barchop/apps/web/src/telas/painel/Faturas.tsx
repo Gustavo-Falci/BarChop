@@ -847,6 +847,11 @@ const PERGUNTAS: { pergunta: string; resposta: string }[] = [
       "Sim, sem multa, em Gerenciar assinatura. O plano vale até o fim do período já pago; depois, a barbearia volta para o Grátis sem perder nada.",
   },
   {
+    pergunta: "Mudei de plano no meio do mês, quanto pago?",
+    resposta:
+      "Subiu de plano: paga na hora só a diferença pelos dias que faltam no período, e o plano novo já vale. Desceu de plano ou trocou o anual pelo mensal: a mudança vale no fim do período já pago, sem cobrança a mais. Durante o teste, trocar de plano não cobra nada.",
+  },
+  {
     pergunta: "Qual a diferença entre mensal e anual?",
     resposta: "No anual você paga 10 meses e leva 12: dois meses grátis, cobrados de uma vez.",
   },

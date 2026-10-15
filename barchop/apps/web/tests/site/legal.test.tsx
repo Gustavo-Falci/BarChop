@@ -148,4 +148,11 @@ describe("rodapé do site", () => {
     expect(screen.getByRole("link", { name: /termos de uso/i })).toHaveAttribute("href", "/termos");
     expect(screen.getByRole("link", { name: /privacidade/i })).toHaveAttribute("href", "/privacidade");
   });
+
+  // No celular estreito o link Preços sai do cabeçalho (não cabe); o
+  // rodapé o mantém à mão.
+  it("leva aos preços", () => {
+    render(<RodapeDoSite />);
+    expect(screen.getByRole("link", { name: "Preços" })).toHaveAttribute("href", "/precos");
+  });
 });

@@ -127,6 +127,10 @@ export interface Cobranca {
   criarPortal(dados: { customerId: string; urlDeVolta: string }): Promise<string>;
   atualizarQuantidade(assinaturaId: string, profissionais: number): Promise<void>;
   lerAssinatura(assinaturaId: string): Promise<AssinaturaNaCobranca>;
+  // Uma segunda assinatura da mesma barbearia (dois Checkouts antes do
+  // webhook): cancela na hora e devolve o que ela já cobrou. Repetir a
+  // chamada não cancela nem devolve duas vezes.
+  cancelarRepetida(assinaturaId: string): Promise<void>;
   // Lança quando a assinatura do evento não confere.
   lerEvento(corpo: Buffer, assinatura: string): EventoDaCobranca;
 }
@@ -189,6 +193,8 @@ export interface CobrancaDeMemoria extends Cobranca {
   // O que a "Stripe" diz de cada assinatura quando o webhook relê.
   assinaturas: Map<string, AssinaturaNaCobranca>;
   falharQuantidade: boolean;
+  cancelamentos: string[];
+  falharCancelamento: boolean;
 }
 
 export function cobrancaDeMemoria(): CobrancaDeMemoria {
@@ -201,6 +207,8 @@ export function cobrancaDeMemoria(): CobrancaDeMemoria {
     quantidades: [],
     assinaturas: new Map(),
     falharQuantidade: false,
+    cancelamentos: [],
+    falharCancelamento: false,
     async criarCliente(dados) {
       const id = `cus_memoria_${cobranca.clientes.length + 1}`;
       cobranca.clientes.push({ id, ...dados });
@@ -222,6 +230,12 @@ export function cobrancaDeMemoria(): CobrancaDeMemoria {
       const assinatura = cobranca.assinaturas.get(assinaturaId);
       if (!assinatura) throw new Error(`assinatura ${assinaturaId} não existe na cobrança de memória`);
       return assinatura;
+    },
+    async cancelarRepetida(assinaturaId) {
+      if (cobranca.falharCancelamento) throw new Error("Stripe fora do ar (teste)");
+      cobranca.cancelamentos.push(assinaturaId);
+      const assinatura = cobranca.assinaturas.get(assinaturaId);
+      if (assinatura) cobranca.assinaturas.set(assinaturaId, { ...assinatura, status: "canceled" });
     },
     lerEvento(corpo, assinatura) {
       return lerEventoAssinado(corpo, assinatura, SEGREDO_DO_WEBHOOK_DE_TESTE);
@@ -300,6 +314,23 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
             : null,
       };
     },
+    async cancelarRepetida(assinaturaId) {
+      // A Stripe tenta de novo quando o webhook dá 500: o que já foi feito
+      // numa entrega anterior não se repete.
+      let assinatura = await stripe.subscriptions.retrieve(assinaturaId);
+      if (assinatura.status !== "canceled") {
+        assinatura = await stripe.subscriptions.cancel(assinaturaId, { prorate: false, invoice_now: false });
+      }
+      // No teste nada foi cobrado; fora dele, a 1ª fatura já foi paga.
+      const fatura = idDe(assinatura.latest_invoice);
+      if (!fatura) return;
+      const { data: pagamentos } = await stripe.invoicePayments.list({ invoice: fatura, status: "paid" });
+      for (const { payment } of pagamentos) {
+        const intencao = idDe(payment.payment_intent);
+        if (!intencao) continue;
+        await stripe.refunds.create({ payment_intent: intencao }, { idempotencyKey: `repetida-${intencao}` });
+      }
+    },
     lerEvento(corpo, assinatura) {
       if (!opcoes.segredoDoWebhook) throw new Error("STRIPE_WEBHOOK_SECRET ausente");
       return lerEventoAssinado(corpo, assinatura, opcoes.segredoDoWebhook);
@@ -321,6 +352,7 @@ function cobrancaDesligada(): Cobranca {
     criarPortal: async () => desligada(),
     atualizarQuantidade: async () => desligada(),
     lerAssinatura: async () => desligada(),
+    cancelarRepetida: async () => desligada(),
     lerEvento: () => desligada(),
   };
 }

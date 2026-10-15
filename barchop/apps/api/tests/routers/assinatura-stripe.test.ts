@@ -370,6 +370,94 @@ describe("POST /stripe/webhook", () => {
     await app.close();
   });
 
+  // Dois Checkouts abertos antes do primeiro webhook (duas abas, ou o
+  // webhook atrasado): a Stripe cria duas assinaturas e as duas cobrariam.
+  // Vale a que chegou primeiro; a repetida é cancelada na hora, com o que
+  // ela tiver cobrado devolvido.
+  it("assinatura repetida: a segunda é cancelada na Stripe e a primeira continua valendo", async () => {
+    const { app, cobranca } = montar();
+    const { barbeariaId, barbeiroId } = await criarBarbeariaComToken(app);
+    const primeira = assinaturaNaStripe(barbeariaId, { id: "sub_primeira" });
+    const repetida = assinaturaNaStripe(barbeariaId, { id: "sub_repetida" });
+    cobranca.assinaturas.set(primeira.id, primeira);
+    cobranca.assinaturas.set(repetida.id, repetida);
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(primeira));
+
+    const resposta = await webhook(app, "customer.subscription.created", eventoDaAssinatura(repetida));
+
+    expect(resposta.statusCode).toBe(200);
+    expect(cobranca.cancelamentos).toEqual(["sub_repetida"]);
+    expect(await lerLinha(barbeariaId)).toMatchObject({ situacao: "ativa", stripeSubscriptionId: "sub_primeira" });
+    // Só o aviso da primeira: a repetida não vira "Assinatura ativa" de novo.
+    expect(await prisma.notificacao.count({ where: { barbeiroId } })).toBe(1);
+    await app.close();
+  });
+
+  it("os eventos seguintes da repetida, já cancelada, não mexem em nada", async () => {
+    const { app, cobranca } = montar();
+    const { barbeariaId } = await criarBarbeariaComToken(app);
+    const primeira = assinaturaNaStripe(barbeariaId, { id: "sub_primeira" });
+    const repetida = assinaturaNaStripe(barbeariaId, { id: "sub_repetida" });
+    cobranca.assinaturas.set(primeira.id, primeira);
+    cobranca.assinaturas.set(repetida.id, repetida);
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(primeira));
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(repetida));
+
+    await webhook(app, "checkout.session.completed", {
+      object: "checkout.session",
+      subscription: repetida.id,
+      customer: repetida.customerId,
+      client_reference_id: barbeariaId,
+    });
+    await webhook(app, "customer.subscription.deleted", eventoDaAssinatura(repetida));
+
+    expect(cobranca.cancelamentos).toEqual(["sub_repetida"]);
+    expect(await lerLinha(barbeariaId)).toMatchObject({ situacao: "ativa", stripeSubscriptionId: "sub_primeira" });
+    await app.close();
+  });
+
+  it("assinar de novo depois de cancelar: a nova vale, mesmo com o cancelamento da antiga ainda a caminho", async () => {
+    const { app, cobranca } = montar();
+    const { barbeariaId } = await criarBarbeariaComToken(app);
+    const antiga = assinaturaNaStripe(barbeariaId, { id: "sub_antiga" });
+    cobranca.assinaturas.set(antiga.id, antiga);
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(antiga));
+    // Na Stripe a antiga já terminou; o evento dela ainda não chegou.
+    cobranca.assinaturas.set(antiga.id, { ...antiga, status: "canceled" });
+    const nova = assinaturaNaStripe(barbeariaId, { id: "sub_nova", chave: "completo_anual" });
+    cobranca.assinaturas.set(nova.id, nova);
+
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(nova));
+
+    expect(cobranca.cancelamentos).toEqual([]);
+    expect(await lerLinha(barbeariaId)).toMatchObject({
+      situacao: "ativa",
+      plano: "completo",
+      stripeSubscriptionId: "sub_nova",
+    });
+    await app.close();
+  });
+
+  it("falha ao cancelar a repetida: 500 e o evento não fica gravado, pra Stripe tentar de novo", async () => {
+    const { app, cobranca } = montar();
+    const { barbeariaId } = await criarBarbeariaComToken(app);
+    const primeira = assinaturaNaStripe(barbeariaId, { id: "sub_primeira" });
+    const repetida = assinaturaNaStripe(barbeariaId, { id: "sub_repetida" });
+    cobranca.assinaturas.set(primeira.id, primeira);
+    cobranca.assinaturas.set(repetida.id, repetida);
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(primeira));
+    cobranca.falharCancelamento = true;
+
+    const resposta = await webhook(app, "customer.subscription.created", eventoDaAssinatura(repetida), {
+      id: "evt_repetida",
+    });
+
+    expect(resposta.statusCode).toBe(500);
+    expect(await prisma.eventoStripe.count({ where: { id: "evt_repetida" } })).toBe(0);
+    expect(await lerLinha(barbeariaId)).toMatchObject({ stripeSubscriptionId: "sub_primeira" });
+    await app.close();
+  });
+
   it("falha ao reler na Stripe: 500 e o evento não fica gravado, pra Stripe tentar de novo", async () => {
     const { app } = montar();
     const { barbeariaId } = await criarBarbeariaComToken(app);

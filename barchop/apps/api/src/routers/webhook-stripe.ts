@@ -4,6 +4,7 @@ import {
   planoDaChave,
   situacaoDaStripe,
   type AssinaturaNaCobranca,
+  type Cobranca,
   type EventoDaCobranca,
 } from "../lib/cobranca";
 import { ErroHttp } from "../lib/erro-http";
@@ -24,7 +25,9 @@ import type { App } from "../tipos";
 // - o evento é gravado na mesma transação da mudança: o mesmo evento
 //   entregue duas vezes só vale uma;
 // - dado estranho (preço desconhecido, barbearia que não existe) vai pro
-//   log e responde 200: um 500 aí faria a Stripe tentar pra sempre.
+//   log e responde 200: um 500 aí faria a Stripe tentar pra sempre;
+// - uma segunda assinatura viva da mesma barbearia (dois Checkouts antes
+//   do webhook) é cancelada, com o valor devolvido: vale a primeira.
 
 const UUID = new RegExp(PADRAO_UUID);
 
@@ -46,7 +49,11 @@ const AVISOS: Partial<Record<SituacaoDaAssinatura, (plano: string) => { titulo: 
 
 // A linha da assinatura desta barbearia: pelo metadata (o caminho
 // normal), ou pelos ids que o Checkout já gravou.
-function acharLinha(tx: Prisma.TransactionClient, assinatura: AssinaturaNaCobranca, evento: EventoDaCobranca) {
+function acharLinha(
+  tx: Prisma.TransactionClient | typeof prisma,
+  assinatura: AssinaturaNaCobranca,
+  evento: EventoDaCobranca
+) {
   // Metadata torto não pode virar 500 no Postgres (uuid inválido).
   const candidato = assinatura.barbeariaId ?? evento.barbeariaId;
   const barbeariaId = candidato && UUID.test(candidato) ? candidato : null;
@@ -59,6 +66,23 @@ function acharLinha(tx: Prisma.TransactionClient, assinatura: AssinaturaNaCobran
       ],
     },
   });
+}
+
+const VIVAS: readonly (SituacaoDaAssinatura | null)[] = ["ativa", "em_atraso"];
+
+// Repetida: chega viva, e a barbearia já tem outra gravada que segue viva
+// na Stripe. A gravada é relida, e não lida do banco: se ela acabou de
+// ser cancelada e o evento ainda não chegou, a nova é quem vale.
+async function ehRepetida(
+  cobranca: Cobranca,
+  assinatura: AssinaturaNaCobranca,
+  evento: EventoDaCobranca
+): Promise<boolean> {
+  if (!VIVAS.includes(situacaoDaStripe(assinatura.status))) return false;
+  const linha = await acharLinha(prisma, assinatura, evento);
+  if (!linha?.stripeSubscriptionId || linha.stripeSubscriptionId === assinatura.id) return false;
+  const gravada = await cobranca.lerAssinatura(linha.stripeSubscriptionId);
+  return VIVAS.includes(situacaoDaStripe(gravada.status));
 }
 
 async function aplicar(
@@ -136,11 +160,16 @@ export function registrarRotaWebhookStripe(app: App): void {
 
     // Fora da transação: é rede. Falhou, lança (500) sem gravar o evento.
     const assinatura = evento.assinaturaId ? await app.cobranca.lerAssinatura(evento.assinaturaId) : null;
+    const repetida = assinatura !== null && (await ehRepetida(app.cobranca, assinatura, evento));
+    if (repetida) {
+      await app.cobranca.cancelarRepetida(assinatura.id);
+      request.log.warn({ evento: evento.id, assinatura: assinatura.id }, "assinatura repetida cancelada na Stripe");
+    }
 
     try {
       await prisma.$transaction(async (tx) => {
         await tx.eventoStripe.create({ data: { id: evento.id, tipo: evento.tipo.slice(0, 100) } });
-        if (assinatura) await aplicar(tx, assinatura, evento, request.log);
+        if (assinatura && !repetida) await aplicar(tx, assinatura, evento, request.log);
       });
     } catch (erro) {
       // Duas entregas do mesmo evento ao mesmo tempo: a segunda bate na

@@ -26,6 +26,9 @@ Toda barbearia passa a ter uma assinatura: 14 dias de teste com tudo liberado, d
 7. **Só o dono** vê e mexe na assinatura.
 8. **Os recursos por plano** (WhatsApp, caixa, planos da barbearia) já entram no módulo como sinalizadores, mas hoje nada é bloqueado por eles, porque esses recursos ainda não existem. Cada marco liga o seu.
 
+## Respondidas pelo dono (14/10, PR 4)
+- **Assinar durante o teste só cobra quando ele acaba** (`trial_end` no Checkout). A Stripe exige pelo menos 48h até a cobrança; com menos que isso, cobra na hora.
+
 ## Respondidas pelo dono (13/10)
 - **GR Barber paga**, sem cortesia: não existe situação `cortesia`.
 - `/precos` mostra a tabela; `/gratis` leva ao cadastro com o Grátis em destaque.

@@ -4,7 +4,77 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-13 — Onda 2 começou: marco 1, cobrança pela Stripe) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-14 — cobrança: PRs 1 a 3 mesclados, PR 4 aberto) — vale mais que as seções abaixo
+
+> **Este RETOMAR AQUI vive no branch `stripe-na-cobranca` (PR #144), que ainda não foi mesclado.** Na outra máquina: `git fetch` e `git checkout stripe-na-cobranca`. A `main` ainda mostra o RETOMAR AQUI de 13/10.
+
+**Estado:**
+- **Produção:**
+  - a API está com o **#142** (assinatura no banco). O deploy foi conferido em 14/10:
+    - `GET /barbearias/me/assinatura` sem token dá 401;
+    - pelo console do painel, deu `situacao: "teste"` com 14 dias.
+  - O **#143** está mesclado (`main` = `10ff35c`) e **ainda não foi para produção**. Ele mexe na API e na web.
+- **Última migração:** `20261014120000_assinatura`. Foi aplicada em produção e no dev e no test desta máquina.
+- **Teste das barbearias que já existiam:** acaba em **28/10/2026 às 11h43**. Em produção só existem a teste1 e a barbearia-teste. **A GR Barber ainda não existe em produção**: vai se cadastrar e ganhar os 14 dias dela.
+- **Branch aberto:** `stripe-na-cobranca`, o **PR #144** (PR 4 de 6), com todos os testes verdes. **Não mesclar ainda** (ver "Próximo passo").
+
+**Feito em 14/10 (plano `.claude/plans/cobranca-do-barchop.plan.md`):**
+- **#141 (PR 1):**
+  - `@barchop/formato/src/planos.ts`: preços em centavos, limite, recursos, `precoDoPlano`, `precosDoCiclo` e `planoEfetivo`;
+  - ADR-0010 (Stripe na cobrança, conta PF). A ADR-0005 passou a parcialmente substituída;
+  - PRD da Onda 2 atualizado.
+- **#142 (PR 2, MIGRAÇÃO):**
+  - tabelas `assinatura` (1:1 com a barbearia, CHECK das listas) e `evento_stripe`;
+  - o signup cria a assinatura em teste;
+  - `GET /barbearias/me/assinatura`, só do dono. As rotas ficam sob `/barbearias/me`, e não `/me`.
+- **#143 (PR 3):**
+  - **Na equipe:** acima do limite do plano que vale agora, dá 422 `limite_do_plano`, com o convite de cada plano.
+  - **No Grátis acima do limite**, o link público esconde quem ficou de fora. Isso vale para a página, a disponibilidade, os próximos horários, o "qualquer um" e o agendamento novo. O painel segue vendo todos.
+- **#144 (PR 4, aberto):** lib `cobranca` (memória/Stripe/desligada), Checkout, Portal, webhook `POST /stripe/webhook`, quantidade na Stripe acompanhando a equipe e script `criar-precos`. Dependência `stripe` ^23. **Em produção, a API não sobe sem `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET`.**
+
+**Decisões do dono em 14/10:**
+- **Pix:** está habilitado na conta, mas "Pagamentos recorrentes: Não". A assinatura fica **só no cartão**.
+- **Portal do cliente:** configurado. A chave `sk_test_` está no `apps/api/.env` **desta** máquina.
+- **Quem fica no link (Grátis acima do limite):** quem atende, com o dono à frente. Se o dono não atende, fica o profissional mais antigo que atende.
+- **Remarcar:** o cliente **remarca** pela conta com o mesmo profissional, mesmo que ele tenha saído do link, desde que dentro do prazo de remarcar da barbearia.
+- **Primeira cobrança:** assinar durante o teste só cobra **no fim do teste** (`trial_end`). Se faltarem menos de 48h, cobra na hora.
+
+**Próximo passo (nesta ordem):**
+1. **O dono faz o deploy do #143** (API + web, sem migração). Eu confiro no ar com curl.
+2. **O dono responde duas perguntas:**
+   - **(a)** posso rodar o `pnpm --filter @barchop/api criar-precos` no **modo de teste**? Rodar duas vezes: na 2ª, todos os preços têm que dizer "já está certo";
+   - **(b)** a conta PF está **ativada no modo real**? Sem isso não existe `sk_live_`.
+3. **Teste de fumaça do #144 na Stripe de teste, antes de pedir o merge:**
+   - subir a API dev com a `sk_test_`;
+   - gerar o JWT de dono (o truque da seção de 11/10);
+   - `POST /barbearias/me/assinatura/checkout` tem que devolver uma URL real da Stripe;
+   - opcional: pagar com o cartão 4242 4242 4242 4242 e conferir a assinatura (`trialing`, `lookup_key`, metadata `barbeariaId`, `current_period_end`);
+   - o webhook local precisa do Stripe CLI (`stripe listen --forward-to localhost:3333/stripe/webhook`), que dá o `STRIPE_WEBHOOK_SECRET`.
+4. **PR 5 (tela do plano):** empilhado sobre o #144, a partir do branch `stripe-na-cobranca`.
+   - `/painel/assinatura` com plano em pílulas, profissionais −/+, Mensal/Anual, preço por `precoDoPlano`, Assinar e Gerenciar;
+   - a faixa no topo;
+   - Faturas e Plano no menu da conta;
+   - Novidades.
+   - **Pendências para o PR 5:**
+     - `trialing` vira `ativa`, então quem assina o Essencial no dia 2 cai do Completo para o Essencial na hora. Combinar com o dono. Correção barata: expor "em teste na Stripe" e `periodoTerminaEm` ("1ª cobrança em X").
+     - A faixa "X fora do link" precisa dos nomes do `foraDoLink`. Deixar de fora o convite pendente e o dono que não atende.
+5. **PR 6:** site (`/precos`, `/gratis`, Home) e termos (cobrança recorrente, cancelamento, Stripe).
+6. **Entrada no ar:** os PRs 4, 5 e 6 entram juntos, porque depois do merge do #144 a `main` só sobe em produção com as chaves reais. Antes:
+   - criar o webhook real `https://api.barchop.com.br/stripe/webhook` com os eventos listados no PR #144;
+   - preencher `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no `infra/api.env` da VM;
+   - depois de subir, rodar `docker compose exec api node dist/criar-precos-no-stripe.js`.
+
+**Na outra máquina, antes de rodar qualquer coisa:**
+- `pnpm install` (por causa da dependência `stripe` nova);
+- `pnpm exec prisma generate` em `packages/database`;
+- `prisma migrate deploy` nos bancos dev e test, até `20261014120000_assinatura`;
+- copiar a `STRIPE_SECRET_KEY=sk_test_...` para o `apps/api/.env` de lá. O `.env` não viaja; o dono pega a chave no painel da Stripe.
+
+**O que mais falta:** igual à seção de 13/10 abaixo.
+
+**Ambiente local e Combinados:** iguais aos da seção de 11/10 abaixo.
+
+## RETOMAR AQUI (noite de 2026-10-13 — Onda 2 começou: marco 1, cobrança pela Stripe) — histórico
 
 **Estado:** produção = `baf335c` (#139). A `main` ganhou depois disso só docs (este PR). Nada pela metade em branch nenhuma. Última migração: `20261013120000_notificacoes`.
 

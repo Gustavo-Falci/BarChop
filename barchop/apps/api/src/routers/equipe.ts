@@ -1,7 +1,7 @@
 import type { FastifyRequest } from "fastify";
 import { Prisma, prisma } from "@barchop/database";
 import { normalizarEmail } from "@barchop/formato";
-import { garantirVagaNoPlano } from "../lib/assinatura";
+import { garantirVagaNoPlano, sincronizarQuantidade } from "../lib/assinatura";
 import { emitirCodigo } from "../lib/codigos";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
@@ -313,6 +313,8 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
       }
 
       await enviarConvite(app, request, { email, barbeariaId: membro.barbeariaId });
+      // Com plano pago, a quantidade na Stripe acompanha a equipe.
+      await sincronizarQuantidade(app.cobranca, barbeariaId, request.log);
 
       return reply.code(201).send(serializarMembro(membro, app.armazenamento.urlPublica));
     }
@@ -384,6 +386,8 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         return tx.barbeiro.update({ where: { id, barbeariaId }, data });
       });
 
+      // Reativar, desativar ou trocar de papel muda a conta do plano.
+      await sincronizarQuantidade(app.cobranca, barbeariaId, request.log);
       return serializarMembro(membro, app.armazenamento.urlPublica);
     }
   );

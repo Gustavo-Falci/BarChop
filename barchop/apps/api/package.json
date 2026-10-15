@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "criar-suporte": "tsx --env-file-if-exists=.env scripts/criar-suporte.ts"
+    "criar-suporte": "tsx --env-file-if-exists=.env scripts/criar-suporte.ts",
+    "criar-precos": "tsx --env-file-if-exists=.env scripts/criar-precos-no-stripe.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1146.0",
@@ -23,7 +24,8 @@
     "@fastify/rate-limit": "^11.2.0",
     "@fastify/type-provider-json-schema-to-ts": "^4.0.0",
     "fastify": "^5.0.0",
-    "pg-boss": "^12.36.0"
+    "pg-boss": "^12.36.0",
+    "stripe": "^23.0.0"
   },
   "devDependencies": {
     "@barchop/config": "workspace:*",

@@ -270,14 +270,15 @@ describe("POST /stripe/webhook", () => {
     const sub = assinaturaNaStripe(barbeariaId);
     cobranca.assinaturas.set(sub.id, sub);
     await webhook(app, "customer.subscription.created", eventoDaAssinatura(sub));
-    cobranca.assinaturas.set(sub.id, { ...sub, status: "canceled" });
+    // A Stripe segue dizendo quando ia acabar; já acabou.
+    cobranca.assinaturas.set(sub.id, { ...sub, status: "canceled", cancelaEm: sub.periodoTerminaEm });
 
     await webhook(app, "customer.subscription.deleted", eventoDaAssinatura(sub));
     const resumo = (
       await app.inject({ method: "GET", url: "/barbearias/me/assinatura", headers: auth(token) })
     ).json();
 
-    expect(resumo).toMatchObject({ situacao: "cancelada", planoEfetivo: "gratis" });
+    expect(resumo).toMatchObject({ situacao: "cancelada", planoEfetivo: "gratis", cancelaEm: null });
     expect((await lerLinha(barbeariaId)).stripeCustomerId).toBe("cus_1");
     await app.close();
   });

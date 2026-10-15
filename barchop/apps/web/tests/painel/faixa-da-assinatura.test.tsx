@@ -143,6 +143,28 @@ describe("faixa da assinatura", () => {
     expect(await faixa()).toHaveTextContent("Assinatura cancelada: o Essencial vale até 28/11");
   });
 
+  it("o cancelamento já terminou: o que vale é o Grátis, não a data que passou", async () => {
+    montar({
+      assinatura: resumo({
+        situacao: "cancelada",
+        plano: "essencial",
+        planoEfetivo: "gratis",
+        testeTerminaEm: null,
+        diasDeTesteRestantes: null,
+        cancelaEm: "2026-10-28T14:11:00Z",
+        profissionais: 2,
+        limiteDeProfissionais: 1,
+        excedente: true,
+        foraDoLink: [{ id: "m2", nome: "Ana Souza" }],
+      }),
+    });
+
+    const regiao = await faixa();
+
+    expect(regiao).toHaveTextContent("Fora do link: Ana Souza");
+    expect(regiao).not.toHaveTextContent(/vale até/);
+  });
+
   it("ativa e em dia: nenhuma faixa", async () => {
     const { leitura } = montar({ assinatura: ATIVA });
 

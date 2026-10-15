@@ -100,7 +100,7 @@ describe("faixa da assinatura", () => {
     const regiao = await faixa();
 
     expect(regiao).toHaveTextContent("Teste grátis: faltam 10 dias");
-    expect(within(regiao).getByRole("link", { name: "Escolher plano" })).toHaveAttribute("href", "/painel/assinatura");
+    expect(within(regiao).getByRole("link", { name: "Escolher plano" })).toHaveAttribute("href", "/painel/faturas");
   });
 
   it("no último dia, fala no singular", async () => {
@@ -194,39 +194,31 @@ describe("menu da conta", () => {
     sessaoDaBarbearia.gravar("gr-barber");
   });
 
-  it("o dono tem Plano, que leva à tela do plano", async () => {
+  // Tudo da assinatura mora em Faturas (decisão do dono, 15/10): o
+  // item Plano saiu, e Faturas leva à tela, antes ou depois de assinar.
+  it("antes de assinar, Faturas leva à tela de Faturas, e não há item Plano", async () => {
     montar({ assinatura: resumo() });
 
     await abrirAConta();
 
-    expect(screen.getByRole("link", { name: /Plano/ })).toHaveAttribute("href", "/painel/assinatura");
+    expect(screen.getByRole("link", { name: /Faturas/ })).toHaveAttribute("href", "/painel/faturas");
+    expect(screen.queryByRole("link", { name: /^Plano$/ })).not.toBeInTheDocument();
   });
 
-  it("com o Portal, Faturas abre o Portal da Stripe", async () => {
-    const { falso } = montar({ assinatura: ATIVA });
-    const portal = vi.spyOn(falso.barbeiro, "portalDaAssinatura");
-
-    await abrirAConta();
-    await userEvent.click(await screen.findByRole("button", { name: /Faturas/ }));
-
-    expect(portal).toHaveBeenCalled();
-    await waitFor(() => expect(irParaAStripe).toHaveBeenCalled());
-  });
-
-  it("antes de assinar, Faturas fica desligada", async () => {
-    montar({ assinatura: resumo() });
+  it("com plano pago, Faturas também leva à tela, e não abre a Stripe direto", async () => {
+    montar({ assinatura: ATIVA });
 
     await abrirAConta();
 
-    expect(await screen.findByRole("button", { name: /Faturas/ })).toBeDisabled();
+    expect(screen.getByRole("link", { name: /Faturas/ })).toHaveAttribute("href", "/painel/faturas");
+    expect(irParaAStripe).not.toHaveBeenCalled();
   });
 
-  it("quem não é dono não vê Plano nem Faturas", async () => {
+  it("quem não é dono não vê Faturas", async () => {
     montar({ papel: "profissional", assinatura: resumo() });
 
     await abrirAConta();
 
-    expect(screen.queryByRole("link", { name: /Plano/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Faturas/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Faturas/ })).not.toBeInTheDocument();
   });
 });

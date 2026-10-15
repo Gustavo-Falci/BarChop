@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { CICLOS, DIAS_DE_TESTE, IDS_DOS_PLANOS, SITUACOES_DA_ASSINATURA } from "@barchop/formato";
 import { buildApp } from "../../src/app";
+import { dataParaDate, horaParaDate } from "../../src/lib/horas";
 import type { App } from "../../src/tipos";
 import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
 
@@ -54,9 +55,65 @@ describe("GET /barbearias/me/assinatura", () => {
       testeTerminaEm: expect.any(String),
       diasDeTesteRestantes: DIAS_DE_TESTE,
       periodoTerminaEm: null,
+      primeiraCobrancaPendente: false,
+      cancelaEm: null,
       profissionais: 1,
       limiteDeProfissionais: null,
       excedente: false,
+      foraDoLink: [],
+      temPortal: false,
+      usoNoTeste: {
+        desde: expect.any(String),
+        ate: expect.any(String),
+        agendamentos: 0,
+        servicos: expect.any(Number),
+      },
+    });
+    await app.close();
+  });
+
+  // A recomendação de plano na tela de Faturas mostra o que a barbearia
+  // fez no teste, como no Barbeiro.app.
+  it("o uso no teste: do início ao fim dele, agendamentos que não foram cancelados e serviços ativos", async () => {
+    const app = buildApp();
+    const { token, barbeariaId, barbeiroId } = await criarBarbeariaComToken(app);
+    await prisma.servico.deleteMany({ where: { barbeariaId } });
+    const linha = await prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } });
+    const inicio = new Date(linha.testeTerminaEm!.getTime() - DIAS_DE_TESTE * UM_DIA);
+    await prisma.servico.createMany({
+      data: [
+        { barbeariaId, nome: "Corte", duracaoMinutos: 30, preco: "40.00" },
+        { barbeariaId, nome: "Barba", duracaoMinutos: 20, preco: "30.00" },
+        { barbeariaId, nome: "Antigo", duracaoMinutos: 20, preco: "30.00", ativo: false },
+      ],
+    });
+    const cliente = await prisma.cliente.create({ data: { barbeariaId, nome: "Ana", telefone: "11999990000" } });
+    const agendamento = (dia: string, status: "confirmado" | "cancelado" | "concluido", criadoEm: Date) => ({
+      barbeariaId,
+      barbeiroId,
+      clienteId: cliente.id,
+      data: dataParaDate(dia),
+      horaInicio: horaParaDate("10:00"),
+      horaFim: horaParaDate("10:30"),
+      status,
+      criadoEm,
+    });
+    await prisma.agendamento.createMany({
+      data: [
+        agendamento("2026-10-20", "confirmado", new Date()),
+        agendamento("2026-10-21", "concluido", new Date()),
+        agendamento("2026-10-22", "cancelado", new Date()),
+        agendamento("2026-10-23", "confirmado", new Date(inicio.getTime() - UM_DIA)),
+      ],
+    });
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo.usoNoTeste).toEqual({
+      desde: inicio.toISOString(),
+      ate: linha.testeTerminaEm!.toISOString(),
+      agendamentos: 2,
+      servicos: 2,
     });
     await app.close();
   });
@@ -84,6 +141,8 @@ describe("GET /barbearias/me/assinatura", () => {
     expect(corpo.planoEfetivo).toBe("gratis");
     expect(corpo.diasDeTesteRestantes).toBe(0);
     expect(corpo.limiteDeProfissionais).toBe(1);
+    // No Grátis, a tela ainda mostra o que foi feito no teste.
+    expect(corpo.usoNoTeste).toMatchObject({ agendamentos: 0 });
     await app.close();
   });
 
@@ -142,7 +201,115 @@ describe("GET /barbearias/me/assinatura", () => {
       periodoTerminaEm: fim.toISOString(),
       limiteDeProfissionais: 3,
       excedente: false,
+      usoNoTeste: null,
     });
+    await app.close();
+  });
+
+  it("no Grátis acima do limite: diz quem ficou fora do link, sem convite pendente nem quem não atende", async () => {
+    const app = buildApp();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    const fora = await criarMembroComToken(app, barbeariaId, "profissional", "p1");
+    // O convite que ninguém aceitou e quem não atende também saem do
+    // link, mas não perderam nada: não entram no aviso da faixa.
+    await prisma.barbeiro.create({
+      data: { barbeariaId, nome: "Convidado", email: "convidado@exemplo.com", papel: "profissional", atende: true },
+    });
+    await criarMembroComToken(app, barbeariaId, "profissional", "nao-atende").then(({ barbeiroId }) =>
+      prisma.barbeiro.update({ where: { id: barbeiroId }, data: { atende: false } })
+    );
+    await definir(barbeariaId, { situacao: "gratis", testeTerminaEm: null });
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo.foraDoLink).toEqual([{ id: fora.barbeiroId, nome: "Membro p1" }]);
+    await app.close();
+  });
+
+  it("dentro do limite: ninguém fora do link", async () => {
+    const app = buildApp();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    await criarMembroComToken(app, barbeariaId, "profissional", "p1");
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo.foraDoLink).toEqual([]);
+    await app.close();
+  });
+
+  it("assinou durante o teste: a 1ª cobrança ainda vem no fim do período", async () => {
+    const app = buildApp();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    const fimDoTeste = new Date("2026-12-01T12:00:00.659Z");
+    // Na Stripe o fim do teste é em segundos: o período termina antes
+    // dos milissegundos gravados.
+    await definir(barbeariaId, {
+      situacao: "ativa",
+      plano: "essencial",
+      testeTerminaEm: fimDoTeste,
+      periodoTerminaEm: new Date("2026-12-01T12:00:00Z"),
+    });
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo.primeiraCobrancaPendente).toBe(true);
+    await app.close();
+  });
+
+  it("já cobrada: o período passou do fim do teste", async () => {
+    const app = buildApp();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    await definir(barbeariaId, {
+      situacao: "ativa",
+      plano: "essencial",
+      testeTerminaEm: new Date("2026-12-01T12:00:00Z"),
+      periodoTerminaEm: new Date("2027-01-01T12:00:00Z"),
+    });
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo.primeiraCobrancaPendente).toBe(false);
+    await app.close();
+  });
+
+  it("em teste, sem assinar: nenhuma cobrança pendente", async () => {
+    const app = buildApp();
+    const { token } = await criarBarbeariaComToken(app);
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo.primeiraCobrancaPendente).toBe(false);
+    await app.close();
+  });
+
+  it("cancelada no fim do período: diz até quando vale", async () => {
+    const app = buildApp();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    const fim = new Date("2026-12-01T12:00:00Z");
+    await definir(barbeariaId, {
+      situacao: "ativa",
+      plano: "essencial",
+      testeTerminaEm: null,
+      periodoTerminaEm: fim,
+      cancelaEm: fim,
+    });
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo).toMatchObject({ situacao: "ativa", cancelaEm: fim.toISOString() });
+    await app.close();
+  });
+
+  it("diz se o Portal existe: só depois do primeiro Checkout", async () => {
+    const app = buildApp();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+
+    const antes = (await lerAssinatura(app, token)).json();
+    await definir(barbeariaId, { stripeCustomerId: "cus_123" });
+    const depois = (await lerAssinatura(app, token)).json();
+
+    expect(antes).toMatchObject({ temPortal: false, cancelaEm: null });
+    expect(depois.temPortal).toBe(true);
     await app.close();
   });
 

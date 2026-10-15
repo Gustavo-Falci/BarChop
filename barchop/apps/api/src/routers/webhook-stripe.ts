@@ -39,7 +39,7 @@ const AVISOS: Partial<Record<SituacaoDaAssinatura, (plano: string) => { titulo: 
   ativa: (plano) => ({ titulo: "Assinatura ativa", texto: `O plano ${plano} da barbearia está ativo.` }),
   em_atraso: () => ({
     titulo: "Pagamento pendente",
-    texto: "Não conseguimos cobrar a assinatura. Atualize o cartão em Gerenciar pagamento para não perder o plano.",
+    texto: "Não conseguimos cobrar a assinatura. Atualize o cartão em Gerenciar assinatura para não perder o plano.",
   }),
   cancelada: () => ({
     titulo: "Assinatura cancelada",
@@ -121,12 +121,15 @@ async function aplicar(
       stripeSubscriptionId: assinatura.id,
       profissionaisContratados: assinatura.quantidade,
       periodoTerminaEm: assinatura.periodoTerminaEm,
+      // Cancelada de vez, a data em que ia acabar já passou: a Stripe
+      // ainda a mostra, mas não diz mais nada.
+      cancelaEm: situacao === "cancelada" ? null : assinatura.cancelaEm,
     },
   });
 
   if (situacao !== linha.situacao) {
     const aviso = AVISOS[situacao]?.(`${PLANOS[plano.plano].nome} ${plano.ciclo}`);
-    if (aviso) await notificarDonos(tx, linha.barbeariaId, { ...aviso, link: "/painel/assinatura" });
+    if (aviso) await notificarDonos(tx, linha.barbeariaId, { ...aviso, link: "/painel/faturas" });
   }
 }
 

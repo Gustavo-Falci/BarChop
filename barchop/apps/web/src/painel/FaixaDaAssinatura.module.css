@@ -1,0 +1,42 @@
+/* Uma linha sob a barra de topo, de ponta a ponta da coluna: texto à
+   esquerda, o caminho pra tela do plano à direita. No celular, o link
+   desce pra baixo do texto. */
+.faixa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-xs) var(--espaco-md);
+  padding: var(--espaco-sm) var(--espaco-lg);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+  font-size: var(--texto-sm);
+}
+
+.neutro {
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+}
+
+.atencao {
+  background: var(--cor-pale-yellow);
+  color: var(--cor-ink);
+}
+
+.texto {
+  margin: 0;
+  min-width: 0;
+}
+
+.acao {
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+/* O mesmo recuo da barra de topo no celular. */
+@media (max-width: 500px) {
+  .faixa {
+    padding-inline: var(--espaco-md);
+  }
+}

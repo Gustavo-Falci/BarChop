@@ -509,3 +509,63 @@ export interface Disponibilidade {
 export interface DisponibilidadeDoMes {
   dias: Record<string, boolean>; // "YYYY-MM-DD" -> tem vaga
 }
+
+// GET /barbearias/me/assinatura — a assinatura do BarChop, só pro dono
+// (Onda 2, marco 1). Mesmas listas de @barchop/formato/planos, que é
+// quem calcula; os ids da Stripe ficam de fora.
+export type IdDoPlano = "gratis" | "essencial" | "completo";
+export type CicloDoPlano = "mensal" | "anual";
+export type SituacaoDaAssinatura = "teste" | "ativa" | "em_atraso" | "cancelada" | "gratis";
+
+export interface ResumoDaAssinatura {
+  situacao: SituacaoDaAssinatura;
+  plano: IdDoPlano;
+  ciclo: CicloDoPlano;
+  planoEfetivo: IdDoPlano;
+  testeTerminaEm: string | null;
+  // Só em teste; fora dele, null.
+  diasDeTesteRestantes: number | null;
+  periodoTerminaEm: string | null;
+  // Assinou durante o teste e a Stripe ainda não cobrou: a 1ª cobrança
+  // é no fim do período.
+  primeiraCobrancaPendente: boolean;
+  // Cancelada no Portal: o plano vale até aqui, e não há nova cobrança.
+  cancelaEm: string | null;
+  profissionais: number;
+  limiteDeProfissionais: number | null;
+  // Mais profissionais que o plano que vale agora permite.
+  excedente: boolean;
+  // Quem atendia pelo link e saiu dele pelo limite do plano. O convite
+  // pendente e quem não atende ficam de fora: não perderam nada.
+  foraDoLink: { id: string; nome: string }[];
+  // A barbearia já passou pelo Checkout: Faturas e Gerenciar abrem.
+  temPortal: boolean;
+  // O que a barbearia fez no teste, pra recomendar o plano. Só sem plano
+  // pago e com teste (vigente ou vencido); senão, null.
+  usoNoTeste: UsoNoTeste | null;
+}
+
+export interface UsoNoTeste {
+  desde: string;
+  ate: string;
+  // Feitos no período, sem os cancelados.
+  agendamentos: number;
+  // Ativos hoje.
+  servicos: number;
+}
+
+// GET /barbearias/me/assinatura/faturas — as faturas da assinatura,
+// lidas da Stripe, da mais nova pra mais velha. `falhou` = a Stripe
+// tentou cobrar e não conseguiu (ou desistiu); `anulada` não cobra mais.
+export type SituacaoDaFatura = "paga" | "aberta" | "falhou" | "anulada";
+
+export interface FaturaDaAssinatura {
+  id: string;
+  numero: string | null;
+  emitidaEm: string;
+  valorCentavos: number;
+  situacao: SituacaoDaFatura;
+  // O PDF e a página da fatura na Stripe; nulos enquanto ela não fecha.
+  pdfUrl: string | null;
+  paginaUrl: string | null;
+}

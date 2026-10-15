@@ -1,0 +1,47 @@
+/* No meio da área do painel, como a tela do Barbeiro.app. */
+.tela {
+  display: grid;
+  justify-items: center;
+  gap: var(--espaco-md);
+  max-width: 520px;
+  margin: 0 auto;
+  padding-block: var(--espaco-xxl);
+  text-align: center;
+}
+
+.marca {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: var(--borda-padrao) solid var(--cor-ink-soft);
+  border-radius: var(--raio-pill);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xl);
+  font-weight: 700;
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--fonte-display);
+  font-size: var(--texto-xl);
+}
+
+.texto {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+.detalhe {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--espaco-md);
+  margin-block-start: var(--espaco-sm);
+}

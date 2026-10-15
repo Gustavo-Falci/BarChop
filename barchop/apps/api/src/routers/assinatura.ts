@@ -24,9 +24,9 @@ const corpoCheckout = {
 } as const;
 
 // Pra onde a Stripe devolve o dono. Em desenvolvimento, o `pnpm dev` do web.
-function telaDaAssinatura(): string {
+function telaDeFaturas(): string {
   const painel = (process.env.URL_DO_PAINEL ?? "http://localhost:3000").replace(/\/+$/, "");
-  return `${painel}/painel/assinatura`;
+  return `${painel}/painel/faturas`;
 }
 
 export function registrarRotasAssinatura(app: App): void {
@@ -43,7 +43,7 @@ export function registrarRotasAssinatura(app: App): void {
 
       const linha = await prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } });
       if (linha.stripeSubscriptionId && (linha.situacao === "ativa" || linha.situacao === "em_atraso")) {
-        throw conflito("a barbearia já tem assinatura: mude o plano em Gerenciar pagamento");
+        throw conflito("a barbearia já tem assinatura: mude o plano em Gerenciar assinatura");
       }
 
       // Nunca menos que a equipe de hoje, nem mais que o plano permite.
@@ -75,7 +75,7 @@ export function registrarRotasAssinatura(app: App): void {
         await prisma.assinatura.update({ where: { barbeariaId }, data: { stripeCustomerId: customerId } });
       }
 
-      const tela = telaDaAssinatura();
+      const tela = telaDeFaturas();
       const url = await app.cobranca.criarCheckout({
         customerId,
         barbeariaId,
@@ -85,11 +85,22 @@ export function registrarRotasAssinatura(app: App): void {
         testeTerminaEm:
           linha.situacao === "teste" ? fimDoTesteNaCobranca(linha.testeTerminaEm, new Date()) : null,
         urlDeSucesso: `${tela}?ok=1`,
-        urlDeCancelamento: tela,
+        urlDeCancelamento: `${tela}/cancelado`,
       });
       return { url };
     }
   );
+
+  // As faturas na tela de Faturas. Sem cliente na Stripe ainda não há
+  // fatura nenhuma, e nem vale perguntar.
+  app.get("/barbearias/me/assinatura/faturas", { onRequest: exigirPapel("dono") }, async (request) => {
+    const linha = await prisma.assinatura.findUniqueOrThrow({
+      where: { barbeariaId: request.user.barbeariaId },
+      select: { stripeCustomerId: true },
+    });
+    if (!linha.stripeCustomerId) return [];
+    return app.cobranca.listarFaturas(linha.stripeCustomerId);
+  });
 
   // Trocar cartão, ver faturas e cancelar no fim do período: tudo no
   // Portal da Stripe, configurado pelo dono no painel dela.
@@ -99,7 +110,7 @@ export function registrarRotasAssinatura(app: App): void {
       select: { stripeCustomerId: true },
     });
     if (!linha.stripeCustomerId) throw conflito("a barbearia ainda não assinou um plano");
-    const url = await app.cobranca.criarPortal({ customerId: linha.stripeCustomerId, urlDeVolta: telaDaAssinatura() });
+    const url = await app.cobranca.criarPortal({ customerId: linha.stripeCustomerId, urlDeVolta: telaDeFaturas() });
     return { url };
   });
 }

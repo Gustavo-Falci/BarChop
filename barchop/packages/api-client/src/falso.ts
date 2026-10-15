@@ -34,6 +34,8 @@ import type {
   OcupacaoDoDia,
   PapelMembro,
   PerfilPublicoBarbearia,
+  ResumoDaAssinatura,
+  FaturaDaAssinatura,
   ProximosHorariosDoServico,
   ServicoSerializado,
   EstadoDoOnboarding,
@@ -57,6 +59,7 @@ import type {
   NovaBarbearia,
   NovoCliente,
   NovoServico,
+  PedidoDeAssinatura,
   RedefinicaoDeSenha,
 } from "./barbeiro";
 import type { EdicaoDoMeuCadastro, Remarcacao } from "./cliente";
@@ -190,7 +193,32 @@ export interface EstadoFalso {
   // Os avisos da plataforma já publicados, do mais novo. Sem semente,
   // nenhum.
   avisosPublicados?: AvisoPublicado[];
+  // A assinatura do BarChop, como o GET a resume. Sem semente: em teste,
+  // com 14 dias pela frente.
+  assinatura?: ResumoDaAssinatura;
+  // As faturas da Stripe, da mais nova. Sem semente, nenhuma.
+  faturas?: FaturaDaAssinatura[];
 }
+
+const FIM_DO_TESTE_PADRAO = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+const ASSINATURA_PADRAO: ResumoDaAssinatura = {
+  situacao: "teste",
+  plano: "gratis",
+  ciclo: "mensal",
+  planoEfetivo: "completo",
+  testeTerminaEm: FIM_DO_TESTE_PADRAO,
+  diasDeTesteRestantes: 14,
+  periodoTerminaEm: null,
+  primeiraCobrancaPendente: false,
+  cancelaEm: null,
+  profissionais: 1,
+  limiteDeProfissionais: null,
+  excedente: false,
+  foraDoLink: [],
+  temPortal: false,
+  usoNoTeste: { desde: new Date().toISOString(), ate: FIM_DO_TESTE_PADRAO, agendamentos: 0, servicos: 0 },
+};
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {
   id: "b1",
@@ -317,6 +345,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     slugsEmUso: [...(semente.slugsEmUso ?? [])],
     notificacoes: (semente.notificacoes ?? []).map((n) => ({ ...n })),
     avisosPublicados: (semente.avisosPublicados ?? []).map((a) => ({ ...a })),
+    assinatura: { ...(semente.assinatura ?? ASSINATURA_PADRAO) },
+    faturas: (semente.faturas ?? []).map((f) => ({ ...f })),
   };
 
   // O pedido como o dono o vê: sem a barbearia, que é a dele.
@@ -865,6 +895,31 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async lerTodasAsNotificacoes() {
         for (const n of estado.notificacoes!) n.lida = true;
+      },
+      // A Stripe não entra: o Checkout e o Portal devolvem um endereço
+      // de mentira, e a situação só muda pela semente.
+      async assinatura() {
+        exigirDono();
+        return { ...estado.assinatura!, foraDoLink: estado.assinatura!.foraDoLink.map((m) => ({ ...m })) };
+      },
+      async checkoutDaAssinatura(_pedido: PedidoDeAssinatura) {
+        exigirDono();
+        const { situacao } = estado.assinatura!;
+        if (estado.assinatura!.temPortal && (situacao === "ativa" || situacao === "em_atraso")) {
+          throw new ErroDaApi(409, "conflito", "a barbearia já tem assinatura: mude o plano em Gerenciar assinatura");
+        }
+        return { url: "https://checkout.stripe.test/1" };
+      },
+      async portalDaAssinatura() {
+        exigirDono();
+        if (!estado.assinatura!.temPortal) {
+          throw new ErroDaApi(409, "conflito", "a barbearia ainda não assinou um plano");
+        }
+        return { url: "https://billing.stripe.test/1" };
+      },
+      async faturasDaAssinatura() {
+        exigirDono();
+        return estado.faturas!.map((f) => ({ ...f }));
       },
       async atualizarMeuPerfil(edicao: EdicaoDoPerfil) {
         Object.assign(membroOu404("bb1"), edicao);

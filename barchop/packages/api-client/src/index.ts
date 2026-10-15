@@ -36,6 +36,7 @@ export type {
   NovaBarbearia,
   NovoCliente,
   NovoServico,
+  PedidoDeAssinatura,
   RedefinicaoDeSenha,
 } from "./barbeiro";
 export type {

@@ -1,0 +1,662 @@
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  max-width: 1200px;
+}
+
+/* A trilha Plano → Pagamento → Acesso liberado, como no Barbeiro.app:
+   números em círculo ligados por um tracejado; a etapa feita vira ✓. */
+.trilha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm) var(--espaco-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.passoDaTrilha {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.passoDaTrilha + .passoDaTrilha::before {
+  content: "";
+  width: 32px;
+  border-block-start: var(--borda-padrao) dashed var(--cor-line);
+  margin-inline-end: var(--espaco-xs);
+}
+
+.passoDaTrilha[aria-current="step"] {
+  color: var(--cor-ink);
+  font-weight: 700;
+}
+
+.numeroDaTrilha {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-pill);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.passoDaTrilha[aria-current="step"] .numeroDaTrilha {
+  border-color: var(--cor-accent);
+  color: var(--cor-ink);
+}
+
+.passoDaTrilha[data-feita] .numeroDaTrilha {
+  border-color: var(--cor-ink);
+  background: var(--cor-ink);
+  color: var(--cor-paper);
+}
+
+/* No celular, uma coluna na ordem do HTML: etapa, pedido, resto. No
+   desktop, a grade abaixo põe o pedido à direita. */
+.corpo {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+.etapa,
+.lado,
+.resto {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+  min-width: 0;
+}
+
+/* Com plano pago, no celular, o plano vem antes das faturas. */
+.pago > .lado {
+  order: -1;
+}
+
+/* No desktop a tela usa a largura: a etapa e o resto à esquerda, o
+   pedido à direita. As duas linhas são explícitas — a da etapa
+   (`auto`) e a do resto (`1fr`) —, então o lado não abre buraco entre
+   a etapa e o comparativo. */
+@media (min-width: 1100px) {
+  .corpo {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+    grid-template-areas: "etapa lado" "resto lado";
+    grid-template-rows: auto 1fr;
+    column-gap: var(--espaco-xl);
+    align-items: start;
+  }
+
+  .etapa {
+    grid-area: etapa;
+  }
+
+  .lado {
+    grid-area: lado;
+    position: sticky;
+    top: var(--espaco-lg);
+  }
+
+  .resto {
+    grid-area: resto;
+  }
+
+  .pago > .lado {
+    order: 0;
+  }
+}
+
+.tituloDaEtapa {
+  margin: 0;
+  font-family: var(--fonte-display);
+  font-size: var(--texto-lg);
+  font-weight: 700;
+}
+
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 400;
+}
+
+/* Os dois planos pagos em cartões: o rádio fica escondido e o cartão
+   inteiro é o alvo do toque. */
+.planos {
+  display: grid;
+  gap: var(--espaco-md);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.planos legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espaco-sm);
+  padding: 0;
+  margin-block-end: var(--espaco-md);
+}
+
+.cartoesDosPlanos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--espaco-md);
+}
+
+.cartaoDoPlano {
+  position: relative;
+  display: grid;
+  gap: var(--espaco-xs);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  cursor: pointer;
+}
+
+.cartaoDoPlano:has(.radioDoPlano:checked) {
+  border-color: var(--cor-ink);
+  box-shadow: 0 3px 0 var(--cor-shadow);
+}
+
+.cartaoDoPlano:has(.radioDoPlano:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cartaoDoPlano:has(.radioDoPlano:focus-visible) {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.radioDoPlano {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nomeNoCartao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+  font-weight: 700;
+  font-size: var(--texto-md);
+}
+
+.recomendado {
+  padding: 2px var(--espaco-sm);
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.precoNoCartao {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* O plano escolhido: a decisão, por isso com borda. */
+.cartao {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: 0 4px 0 var(--cor-shadow);
+  min-width: 0;
+}
+
+.recomendacao {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: calc(var(--espaco-lg) * -1) calc(var(--espaco-lg) * -1) 0;
+  padding: var(--espaco-sm) var(--espaco-lg);
+  border-radius: var(--raio-lg) var(--raio-lg) 0 0;
+  background: var(--cor-paper-soft);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+}
+
+.tituloDaRecomendacao {
+  margin: 0;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.uso {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.topoDoCartao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+}
+
+.nomeDoPlano {
+  margin: 0;
+  font-family: var(--fonte-display);
+  font-size: var(--texto-xl);
+}
+
+.valores {
+  display: grid;
+  justify-items: end;
+  gap: var(--espaco-xs);
+  text-align: end;
+}
+
+.preco {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.valor {
+  font-family: var(--fonte-display);
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.unidade {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 400;
+}
+
+.economia {
+  margin: 0;
+  color: var(--cor-ok);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}
+
+.controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--espaco-lg) var(--espaco-xl);
+}
+
+.contador {
+  display: grid;
+  gap: var(--espaco-sm);
+  max-width: 280px;
+}
+
+.legenda {
+  font-weight: 600;
+}
+
+.passos {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.passo {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-size: var(--texto-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.passo:hover:not(:disabled) {
+  border-color: var(--cor-ink);
+}
+
+.passo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.passo:focus-visible {
+  outline: 3px solid var(--cor-ink);
+  outline-offset: 2px;
+}
+
+.quantidade {
+  min-width: 2ch;
+  text-align: center;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dica {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.conta {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding-block: var(--espaco-sm);
+  border-block: var(--borda-hairline) solid var(--cor-line);
+  font-size: var(--texto-sm);
+}
+
+.linhaDaConta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+}
+
+.linhaDaConta dt {
+  color: var(--cor-ink-soft);
+}
+
+.linhaDaConta dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.colunas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--espaco-md) var(--espaco-xl);
+}
+
+.subtitulo {
+  margin: 0 0 var(--espaco-sm);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lista {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--texto-sm);
+}
+
+.lista li::before {
+  content: "✓ ";
+  color: var(--cor-ok);
+  font-weight: 700;
+}
+
+.listaDoOutro li {
+  color: var(--cor-ink-soft);
+}
+
+.listaDoOutro li::before {
+  content: "– ";
+  color: var(--cor-ink-soft);
+}
+
+.rodape {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+}
+
+/* O Seu pedido e o Seu plano: a outra caixa da tela, à direita. */
+.pedido {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+}
+
+.linhasDoPedido {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding-block-end: var(--espaco-sm);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+  font-size: var(--texto-sm);
+}
+
+.hoje {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  font-weight: 700;
+}
+
+.depois {
+  margin: 0;
+  text-align: end;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+}
+
+.trocar {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.cobranca {
+  margin: 0;
+  font-weight: 700;
+}
+
+.nadaApagado {
+  margin: 0;
+  padding: var(--espaco-md);
+  border-radius: var(--raio-sm);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.nadaApagado strong {
+  color: var(--cor-ink);
+}
+
+/* Comparativo e faturas: tabela de linhas finas, sem caixa. Rola de
+   lado dentro dela no celular, sem empurrar a página. */
+.comparativo,
+.faturas {
+  display: grid;
+  gap: var(--espaco-md);
+  min-width: 0;
+}
+
+.rolagemDaTabela {
+  overflow-x: auto;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--texto-sm);
+}
+
+.legendaDaTabela {
+  margin: 0 0 var(--espaco-sm);
+  font-family: var(--fonte-display);
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  text-align: start;
+}
+
+.tabela th,
+.tabela td {
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.tabela thead th {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tabela tbody th {
+  font-weight: 600;
+  white-space: normal;
+}
+
+.colunaEscolhida {
+  background: var(--cor-paper-soft);
+  font-weight: 700;
+}
+
+.linhaDoPreco th,
+.linhaDoPreco td {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-block-end: 0;
+}
+
+.numero {
+  font-variant-numeric: tabular-nums;
+}
+
+.tabela td[data-situacao="falhou"] {
+  color: var(--cor-erro);
+  font-weight: 700;
+}
+
+.tabela a {
+  color: var(--cor-ink);
+  font-weight: 700;
+}
+
+.soLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.garantias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-xs) var(--espaco-lg);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+}
+
+.garantias li::before {
+  content: "✓ ";
+  color: var(--cor-ok);
+  font-weight: 700;
+}
+
+/* Perguntas frequentes recolhidas, como no Barbeiro.app. */
+.perguntas {
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+  padding-block-start: var(--espaco-md);
+}
+
+.resumoDasPerguntas {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.listaDePerguntas {
+  display: grid;
+  gap: var(--espaco-md);
+  margin: var(--espaco-md) 0 0;
+}
+
+.pergunta dt {
+  font-weight: 700;
+}
+
+.pergunta dd {
+  margin: var(--espaco-xs) 0 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+/* Acesso liberado: o fim do caminho, centrado. */
+.liberado {
+  display: grid;
+  justify-items: center;
+  gap: var(--espaco-md);
+  padding-block: var(--espaco-xl);
+  text-align: center;
+}
+
+.marcaDoLiberado {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-ok);
+  color: var(--cor-paper);
+  font-size: var(--texto-xl);
+  font-weight: 700;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--espaco-md);
+}
+
+/* No celular, o preço desce pra baixo do nome e alinha à esquerda. */
+@media (max-width: 500px) {
+  .cartao,
+  .pedido {
+    padding: var(--espaco-md);
+  }
+
+  .recomendacao {
+    margin: calc(var(--espaco-md) * -1) calc(var(--espaco-md) * -1) 0;
+    padding-inline: var(--espaco-md);
+  }
+
+  .valores {
+    justify-items: start;
+    text-align: start;
+  }
+}

@@ -8,6 +8,7 @@ import {
   type IdDoPlano,
   type SituacaoDaAssinatura,
 } from "@barchop/formato";
+import type { ResumoDaAssinatura, UsoNoTeste } from "@barchop/types";
 import type { Cobranca } from "./cobranca";
 import { ErroDeNegocio } from "./erro-negocio";
 
@@ -131,26 +132,38 @@ export async function garantirNoLink(
   }
 }
 
-export interface ResumoDaAssinatura {
-  situacao: SituacaoDaAssinatura;
-  plano: IdDoPlano;
-  ciclo: Ciclo;
-  planoEfetivo: IdDoPlano;
-  testeTerminaEm: string | null;
-  // Só em teste; fora dele, null.
-  diasDeTesteRestantes: number | null;
-  periodoTerminaEm: string | null;
-  profissionais: number;
-  limiteDeProfissionais: number | null;
-  // Mais profissionais que o plano que vale agora permite.
-  excedente: boolean;
+// Quem saiu do link e perdeu algo com isso: atendia e já tinha entrado
+// na equipe. Na ordem do foraDoLink.
+async function quemSaiuDoLink(barbeariaId: string, agora: Date): Promise<{ id: string; nome: string }[]> {
+  const ids = await foraDoLink(prisma, barbeariaId, agora);
+  if (ids.length === 0) return [];
+  const membros = await prisma.barbeiro.findMany({
+    where: { id: { in: ids }, atende: true, senhaHash: { not: null } },
+    select: { id: true, nome: true },
+  });
+  return ids.flatMap((id) => membros.filter((m) => m.id === id));
 }
 
 // Os ids da Stripe ficam de fora: o painel não precisa deles.
+// O teste de 14 dias: o início é o fim menos os dias, e a contagem vai
+// até agora, se o teste ainda corre.
+async function usoNoTeste(barbeariaId: string, testeTerminaEm: Date, agora: Date): Promise<UsoNoTeste> {
+  const desde = new Date(testeTerminaEm.getTime() - DIAS_DE_TESTE * UM_DIA);
+  const ate = agora < testeTerminaEm ? agora : testeTerminaEm;
+  const [agendamentos, servicos] = await Promise.all([
+    prisma.agendamento.count({
+      where: { barbeariaId, status: { not: "cancelado" }, criadoEm: { gte: desde, lte: ate } },
+    }),
+    prisma.servico.count({ where: { barbeariaId, ativo: true } }),
+  ]);
+  return { desde: desde.toISOString(), ate: testeTerminaEm.toISOString(), agendamentos, servicos };
+}
+
 export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Promise<ResumoDaAssinatura> {
-  const [linha, profissionais] = await Promise.all([
+  const [linha, profissionais, saiuDoLink] = await Promise.all([
     prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } }),
     contarProfissionais(barbeariaId),
+    quemSaiuDoLink(barbeariaId, agora),
   ]);
   // O CHECK da migration garante que as três colunas estão nas listas.
   const assinatura = {
@@ -161,6 +174,8 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
   };
   const efetivo = planoEfetivo(assinatura, agora);
   const limite = limiteDeProfissionais(efetivo);
+  const pago = assinatura.situacao === "ativa" || assinatura.situacao === "em_atraso";
+  const uso = !pago && linha.testeTerminaEm ? await usoNoTeste(barbeariaId, linha.testeTerminaEm, agora) : null;
   return {
     situacao: assinatura.situacao,
     plano: assinatura.plano,
@@ -172,9 +187,20 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
         ? diasDeTesteRestantes(linha.testeTerminaEm, agora)
         : null,
     periodoTerminaEm: linha.periodoTerminaEm?.toISOString() ?? null,
+    // Com teste na Stripe, o 1º período termina no fim do teste (em
+    // segundos, então nunca depois); cobrada, ele passa dessa data.
+    primeiraCobrancaPendente:
+      assinatura.situacao === "ativa" &&
+      linha.testeTerminaEm !== null &&
+      linha.periodoTerminaEm !== null &&
+      linha.periodoTerminaEm <= linha.testeTerminaEm,
+    cancelaEm: linha.cancelaEm?.toISOString() ?? null,
     profissionais,
     limiteDeProfissionais: limite,
     excedente: limite !== null && profissionais > limite,
+    foraDoLink: saiuDoLink,
+    temPortal: linha.stripeCustomerId !== null,
+    usoNoTeste: uso,
   };
 }
 

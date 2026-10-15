@@ -54,6 +54,7 @@ type Menu = "sino" | "opcoes" | "conta";
 // sair). Um aberto por vez.
 export function BarraDoTopo() {
   const { perfil, slug, nomeDaBarbearia, sair } = usePainel();
+  const dono = perfil.papel === "dono";
   const [aberto, setAberto] = useState<Menu | null>(null);
   const [tema, setTema] = useState<EscolhaDeTema>("sistema");
   const [novas, setNovas] = useState(0);
@@ -178,16 +179,15 @@ export function BarraDoTopo() {
         <Link href="/painel/configuracoes/perfil" className={LINHA_DO_MENU}>
           <ItemDoMenu icone={<IconeCliente />}>Minha conta</ItemDoMenu>
         </Link>
-        {/* Cobrança e indicação ainda não existem: à vista pra quem
-            procura, desligadas, com o selo dizendo por quê. */}
-        <button type="button" className={LINHA_DO_MENU} disabled>
-          <ItemDoMenu
-            icone={<IconeCartao />}
-            fim={<Chip tamanho="pequeno" tom="neutro">Em breve</Chip>}
-          >
-            Faturas
-          </ItemDoMenu>
-        </button>
+        {/* A assinatura é só do dono, e mora toda em Faturas: escolher
+            o plano e pagar antes de assinar, o plano e as faturas
+            depois (decisão do dono, 15/10/2026). */}
+        {dono ? (
+          <Link href="/painel/faturas" className={LINHA_DO_MENU}>
+            <ItemDoMenu icone={<IconeCartao />}>Faturas</ItemDoMenu>
+          </Link>
+        ) : null}
+        {/* A indicação ainda não existe. */}
         <button type="button" className={LINHA_DO_MENU} disabled>
           <ItemDoMenu
             icone={<IconePresente />}

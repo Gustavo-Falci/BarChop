@@ -63,6 +63,7 @@ function assinaturaNaStripe(barbeariaId: string, extra: Partial<AssinaturaNaCobr
     chave: "essencial_mensal",
     quantidade: 2,
     periodoTerminaEm: new Date("2026-12-01T12:00:00Z"),
+    cancelaEm: null,
     ...extra,
   };
 }
@@ -96,6 +97,17 @@ describe("POST /barbearias/me/assinatura/checkout", () => {
       ciclo: "anual",
       profissionais: 2,
     });
+    await app.close();
+  });
+
+  it("o Checkout volta pra Faturas: pago na etapa do acesso liberado, desistiu na tela do cancelado", async () => {
+    const { app, cobranca } = montar();
+    const { token } = await criarBarbeariaComToken(app);
+
+    await checkout(app, token, { plano: "essencial", ciclo: "mensal", profissionais: 1 });
+
+    expect(cobranca.checkouts[0].urlDeSucesso).toMatch(/\/painel\/faturas\?ok=1$/);
+    expect(cobranca.checkouts[0].urlDeCancelamento).toMatch(/\/painel\/faturas\/cancelado$/);
     await app.close();
   });
 
@@ -186,6 +198,59 @@ describe("POST /barbearias/me/assinatura/portal", () => {
     expect(resposta.statusCode).toBe(200);
     expect(resposta.json().url).toMatch(/^https:\/\//);
     expect(cobranca.portais[0].customerId).toBe("cus_9");
+    expect(cobranca.portais[0].urlDeVolta).toMatch(/\/painel\/faturas$/);
+    await app.close();
+  });
+});
+
+function faturas(app: App, token: string) {
+  return app.inject({ method: "GET", url: "/barbearias/me/assinatura/faturas", headers: auth(token) });
+}
+
+describe("GET /barbearias/me/assinatura/faturas", () => {
+  it("sem ter passado pelo Checkout, nenhuma fatura e nada perguntado à Stripe", async () => {
+    const { app, cobranca } = montar();
+    const { token } = await criarBarbeariaComToken(app);
+
+    const resposta = await faturas(app, token);
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toEqual([]);
+    expect(cobranca.consultasDeFaturas).toEqual([]);
+    await app.close();
+  });
+
+  it("com o cliente na Stripe, devolve as faturas dele", async () => {
+    const { app, cobranca } = montar();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    await prisma.assinatura.update({ where: { barbeariaId }, data: { stripeCustomerId: "cus_9" } });
+    const fatura = {
+      id: "in_1",
+      numero: "BARCHOP-0001",
+      emitidaEm: "2026-10-29T12:00:00.000Z",
+      valorCentavos: 3490,
+      situacao: "paga" as const,
+      pdfUrl: "https://pay.stripe.test/in_1.pdf",
+      paginaUrl: "https://pay.stripe.test/in_1",
+    };
+    cobranca.faturas.set("cus_9", [fatura]);
+
+    const resposta = await faturas(app, token);
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toEqual([fatura]);
+    expect(cobranca.consultasDeFaturas).toEqual(["cus_9"]);
+    await app.close();
+  });
+
+  it("só o dono vê as faturas", async () => {
+    const { app } = montar();
+    const { barbeariaId } = await criarBarbeariaComToken(app);
+    const profissional = await criarMembroComToken(app, barbeariaId, "profissional", "p");
+    const recepcao = await criarMembroComToken(app, barbeariaId, "recepcao", "r");
+
+    expect((await faturas(app, profissional.token)).statusCode).toBe(403);
+    expect((await faturas(app, recepcao.token)).statusCode).toBe(403);
     await app.close();
   });
 });
@@ -230,7 +295,7 @@ describe("POST /stripe/webhook", () => {
       periodoTerminaEm: sub.periodoTerminaEm,
     });
     expect(avisos).toHaveLength(1);
-    expect(avisos[0]).toMatchObject({ tipo: "pagamento", link: "/painel/assinatura" });
+    expect(avisos[0]).toMatchObject({ tipo: "pagamento", link: "/painel/faturas" });
     await app.close();
   });
 
@@ -269,15 +334,37 @@ describe("POST /stripe/webhook", () => {
     const sub = assinaturaNaStripe(barbeariaId);
     cobranca.assinaturas.set(sub.id, sub);
     await webhook(app, "customer.subscription.created", eventoDaAssinatura(sub));
-    cobranca.assinaturas.set(sub.id, { ...sub, status: "canceled" });
+    // A Stripe segue dizendo quando ia acabar; já acabou.
+    cobranca.assinaturas.set(sub.id, { ...sub, status: "canceled", cancelaEm: sub.periodoTerminaEm });
 
     await webhook(app, "customer.subscription.deleted", eventoDaAssinatura(sub));
     const resumo = (
       await app.inject({ method: "GET", url: "/barbearias/me/assinatura", headers: auth(token) })
     ).json();
 
-    expect(resumo).toMatchObject({ situacao: "cancelada", planoEfetivo: "gratis" });
+    expect(resumo).toMatchObject({ situacao: "cancelada", planoEfetivo: "gratis", cancelaEm: null });
     expect((await lerLinha(barbeariaId)).stripeCustomerId).toBe("cus_1");
+    await app.close();
+  });
+
+  it("cancelar no fim do período grava quando acaba; desistir de cancelar apaga", async () => {
+    const { app, cobranca } = montar();
+    const { barbeariaId } = await criarBarbeariaComToken(app);
+    const sub = assinaturaNaStripe(barbeariaId);
+    cobranca.assinaturas.set(sub.id, sub);
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(sub));
+
+    // No Portal, "cancelar" deixa a Stripe `active` até o fim do período.
+    cobranca.assinaturas.set(sub.id, { ...sub, cancelaEm: sub.periodoTerminaEm });
+    await webhook(app, "customer.subscription.updated", eventoDaAssinatura(sub));
+    const cancelando = await lerLinha(barbeariaId);
+
+    cobranca.assinaturas.set(sub.id, { ...sub, cancelaEm: null });
+    await webhook(app, "customer.subscription.updated", eventoDaAssinatura(sub));
+    const renovando = await lerLinha(barbeariaId);
+
+    expect(cancelando).toMatchObject({ situacao: "ativa", cancelaEm: sub.periodoTerminaEm });
+    expect(renovando.cancelaEm).toBeNull();
     await app.close();
   });
 

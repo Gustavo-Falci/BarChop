@@ -18,7 +18,10 @@ export function SeletorEmPilulas<V extends string>({
   // O `name` dos rádios — único na tela, senão dois grupos viram um.
   nome: string;
   legenda: string;
-  opcoes: { valor: V; rotulo: string }[];
+  // `desligada`: à vista, mas não se escolhe (o Essencial pra equipe
+  // maior que o limite dele). `selo`: um detalhe curto dentro da pílula
+  // ("2 meses grátis").
+  opcoes: { valor: V; rotulo: string; desligada?: boolean; selo?: ReactNode }[];
   valor: V;
   aoTrocar: (valor: V) => void;
   // A consequência da escolha numa frase ("Seus clientes vão ver: 9:00,
@@ -37,10 +40,14 @@ export function SeletorEmPilulas<V extends string>({
               name={nome}
               value={opcao.valor}
               checked={opcao.valor === valor}
+              disabled={opcao.desligada}
               onChange={() => aoTrocar(opcao.valor)}
               className={estilos.radio}
             />
-            <span className={estilos.pilula}>{opcao.rotulo}</span>
+            <span className={estilos.pilula}>
+              {opcao.rotulo}
+              {opcao.selo ? <span className={estilos.selo}>{opcao.selo}</span> : null}
+            </span>
           </label>
         ))}
       </div>

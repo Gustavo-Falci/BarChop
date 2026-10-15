@@ -91,6 +91,8 @@ export interface AssinaturaNaCobranca {
   chave: string | null;
   quantidade: number;
   periodoTerminaEm: Date | null;
+  // Cancelada no Portal: segue `active` até aqui. Null sem cancelamento.
+  cancelaEm: Date | null;
 }
 
 // O que o webhook precisa de um evento: o id (idempotência) e por onde
@@ -280,6 +282,7 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
     async lerAssinatura(assinaturaId) {
       const assinatura = await stripe.subscriptions.retrieve(assinaturaId);
       const item = assinatura.items.data[0];
+      const periodoTerminaEm = item?.current_period_end ? new Date(item.current_period_end * 1000) : null;
       return {
         id: assinatura.id,
         customerId: idDe(assinatura.customer)!,
@@ -288,7 +291,13 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
         chave: item?.price.lookup_key ?? null,
         quantidade: item?.quantity ?? 1,
         // Desde 2025 o período mora no item, em segundos.
-        periodoTerminaEm: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
+        periodoTerminaEm,
+        // O Portal marca `cancel_at_period_end` ou uma data em `cancel_at`.
+        cancelaEm: assinatura.cancel_at
+          ? new Date(assinatura.cancel_at * 1000)
+          : assinatura.cancel_at_period_end
+            ? periodoTerminaEm
+            : null,
       };
     },
     lerEvento(corpo, assinatura) {

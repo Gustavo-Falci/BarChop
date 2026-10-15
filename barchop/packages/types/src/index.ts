@@ -509,3 +509,35 @@ export interface Disponibilidade {
 export interface DisponibilidadeDoMes {
   dias: Record<string, boolean>; // "YYYY-MM-DD" -> tem vaga
 }
+
+// GET /barbearias/me/assinatura — a assinatura do BarChop, só pro dono
+// (Onda 2, marco 1). Mesmas listas de @barchop/formato/planos, que é
+// quem calcula; os ids da Stripe ficam de fora.
+export type IdDoPlano = "gratis" | "essencial" | "completo";
+export type CicloDoPlano = "mensal" | "anual";
+export type SituacaoDaAssinatura = "teste" | "ativa" | "em_atraso" | "cancelada" | "gratis";
+
+export interface ResumoDaAssinatura {
+  situacao: SituacaoDaAssinatura;
+  plano: IdDoPlano;
+  ciclo: CicloDoPlano;
+  planoEfetivo: IdDoPlano;
+  testeTerminaEm: string | null;
+  // Só em teste; fora dele, null.
+  diasDeTesteRestantes: number | null;
+  periodoTerminaEm: string | null;
+  // Assinou durante o teste e a Stripe ainda não cobrou: a 1ª cobrança
+  // é no fim do período.
+  primeiraCobrancaPendente: boolean;
+  // Cancelada no Portal: o plano vale até aqui, e não há nova cobrança.
+  cancelaEm: string | null;
+  profissionais: number;
+  limiteDeProfissionais: number | null;
+  // Mais profissionais que o plano que vale agora permite.
+  excedente: boolean;
+  // Quem atendia pelo link e saiu dele pelo limite do plano. O convite
+  // pendente e quem não atende ficam de fora: não perderam nada.
+  foraDoLink: { id: string; nome: string }[];
+  // A barbearia já passou pelo Checkout: Faturas e Gerenciar abrem.
+  temPortal: boolean;
+}

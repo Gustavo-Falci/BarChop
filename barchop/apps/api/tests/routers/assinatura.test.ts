@@ -54,9 +54,13 @@ describe("GET /barbearias/me/assinatura", () => {
       testeTerminaEm: expect.any(String),
       diasDeTesteRestantes: DIAS_DE_TESTE,
       periodoTerminaEm: null,
+      primeiraCobrancaPendente: false,
+      cancelaEm: null,
       profissionais: 1,
       limiteDeProfissionais: null,
       excedente: false,
+      foraDoLink: [],
+      temPortal: false,
     });
     await app.close();
   });

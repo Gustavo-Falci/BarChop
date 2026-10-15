@@ -8,6 +8,7 @@ import {
   type IdDoPlano,
   type SituacaoDaAssinatura,
 } from "@barchop/formato";
+import type { ResumoDaAssinatura } from "@barchop/types";
 import type { Cobranca } from "./cobranca";
 import { ErroDeNegocio } from "./erro-negocio";
 
@@ -131,26 +132,24 @@ export async function garantirNoLink(
   }
 }
 
-export interface ResumoDaAssinatura {
-  situacao: SituacaoDaAssinatura;
-  plano: IdDoPlano;
-  ciclo: Ciclo;
-  planoEfetivo: IdDoPlano;
-  testeTerminaEm: string | null;
-  // Só em teste; fora dele, null.
-  diasDeTesteRestantes: number | null;
-  periodoTerminaEm: string | null;
-  profissionais: number;
-  limiteDeProfissionais: number | null;
-  // Mais profissionais que o plano que vale agora permite.
-  excedente: boolean;
+// Quem saiu do link e perdeu algo com isso: atendia e já tinha entrado
+// na equipe. Na ordem do foraDoLink.
+async function quemSaiuDoLink(barbeariaId: string, agora: Date): Promise<{ id: string; nome: string }[]> {
+  const ids = await foraDoLink(prisma, barbeariaId, agora);
+  if (ids.length === 0) return [];
+  const membros = await prisma.barbeiro.findMany({
+    where: { id: { in: ids }, atende: true, senhaHash: { not: null } },
+    select: { id: true, nome: true },
+  });
+  return ids.flatMap((id) => membros.filter((m) => m.id === id));
 }
 
 // Os ids da Stripe ficam de fora: o painel não precisa deles.
 export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Promise<ResumoDaAssinatura> {
-  const [linha, profissionais] = await Promise.all([
+  const [linha, profissionais, saiuDoLink] = await Promise.all([
     prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } }),
     contarProfissionais(barbeariaId),
+    quemSaiuDoLink(barbeariaId, agora),
   ]);
   // O CHECK da migration garante que as três colunas estão nas listas.
   const assinatura = {
@@ -172,9 +171,19 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
         ? diasDeTesteRestantes(linha.testeTerminaEm, agora)
         : null,
     periodoTerminaEm: linha.periodoTerminaEm?.toISOString() ?? null,
+    // Com teste na Stripe, o 1º período termina no fim do teste (em
+    // segundos, então nunca depois); cobrada, ele passa dessa data.
+    primeiraCobrancaPendente:
+      assinatura.situacao === "ativa" &&
+      linha.testeTerminaEm !== null &&
+      linha.periodoTerminaEm !== null &&
+      linha.periodoTerminaEm <= linha.testeTerminaEm,
+    cancelaEm: linha.cancelaEm?.toISOString() ?? null,
     profissionais,
     limiteDeProfissionais: limite,
     excedente: limite !== null && profissionais > limite,
+    foraDoLink: saiuDoLink,
+    temPortal: linha.stripeCustomerId !== null,
   };
 }
 

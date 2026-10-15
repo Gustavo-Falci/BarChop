@@ -141,6 +141,8 @@ model Assinatura {
   // A quantidade cobrada na Stripe; nula sem plano pago.
   profissionaisContratados Int?      @map("profissionais_contratados") @db.SmallInt
   periodoTerminaEm         DateTime? @map("periodo_termina_em") @db.Timestamptz
+  // Cancelada no Portal: a Stripe segue `active` até esta data.
+  cancelaEm                DateTime? @map("cancela_em") @db.Timestamptz
   criadaEm                 DateTime  @default(now()) @map("criada_em") @db.Timestamptz
   atualizadaEm             DateTime  @default(now()) @updatedAt @map("atualizada_em") @db.Timestamptz
 

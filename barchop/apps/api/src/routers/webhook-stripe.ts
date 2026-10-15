@@ -97,6 +97,7 @@ async function aplicar(
       stripeSubscriptionId: assinatura.id,
       profissionaisContratados: assinatura.quantidade,
       periodoTerminaEm: assinatura.periodoTerminaEm,
+      cancelaEm: assinatura.cancelaEm,
     },
   });
 

@@ -2,7 +2,7 @@
 
 **Source PRD**: `.claude/prds/onda-2-dinheiro.prd.md`
 **Selected Milestone**: 1 — BarChop cobra a assinatura
-**Complexity**: Large (6 PRs, 1 migração)
+**Complexity**: Large (6 PRs, 2 migrações: a 2ª, `cancela_em`, entrou no PR 5 por decisão do dono em 14/10)
 
 ## Summary
 Toda barbearia passa a ter uma assinatura: 14 dias de teste com tudo liberado, depois Grátis (1 profissional) ou um plano pago por profissional (Essencial, Completo), mensal ou anual, pago online pela Stripe. O pagamento acontece todo nas páginas da Stripe (Checkout e Portal do cliente), então o BarChop não guarda cartão. A situação da assinatura chega pelo webhook. Os preços e limites ficam num módulo só, lido pelo site, pelo painel, pela API e pelo script que cria os preços na Stripe.
@@ -69,6 +69,7 @@ Toda barbearia passa a ter uma assinatura: 14 dias de teste com tudo liberado, d
 | `.claude/prds/onda-2-dinheiro.prd.md` | UPDATE | marco 1 em andamento; Stripe, gorjeta e desconto decididos |
 | `barchop/packages/database/prisma/schema.prisma` | UPDATE | `Assinatura` (1:1 com a barbearia) e `EventoDaStripe` (idempotência) |
 | `barchop/packages/database/prisma/migrations/2026101412xxxx_assinatura/migration.sql` | CREATE | tabelas + CHECK + teste de 14 dias para as barbearias existentes |
+| `barchop/packages/database/prisma/migrations/20261015120000_assinatura_cancela_em/migration.sql` | CREATE | PR 5: quando acaba a assinatura cancelada no Portal (a Stripe segue `active` até lá) |
 | `barchop/apps/api/src/routers/auth.ts` | UPDATE | signup cria a assinatura em teste |
 | `barchop/apps/api/src/lib/assinatura.ts` | CREATE | ler a assinatura, contar profissionais, decidir quem fica visível no Grátis |
 | `barchop/apps/api/src/routers/assinatura.ts` | CREATE | `GET /barbearias/me/assinatura`, `POST /barbearias/me/assinatura/checkout`, `POST /barbearias/me/assinatura/portal` (sob `/barbearias/me`, como a Aparência: a assinatura é da barbearia, não da pessoa) |

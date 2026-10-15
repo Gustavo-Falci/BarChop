@@ -1,12 +1,12 @@
 "use client";
 
 import { SoDoDono } from "../../../../../src/painel/SoDoDono";
-import { Assinatura } from "../../../../../src/telas/painel/Assinatura";
+import { Faturas } from "../../../../../src/telas/painel/Faturas";
 
 export default function Pagina() {
   return (
     <SoDoDono>
-      <Assinatura />
+      <Faturas />
     </SoDoDono>
   );
 }

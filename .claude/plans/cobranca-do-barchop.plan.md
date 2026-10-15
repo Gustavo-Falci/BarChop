@@ -28,6 +28,18 @@ Toda barbearia passa a ter uma assinatura: 14 dias de teste com tudo liberado, d
 
 ## Respondidas pelo dono (14/10, PR 4)
 - **Assinar durante o teste só cobra quando ele acaba** (`trial_end` no Checkout). A Stripe exige pelo menos 48h até a cobrança; com menos que isso, cobra na hora.
+- **Assinou durante o teste, vale o plano assinado na hora** (decisão do dono em 14/10, opção b). A Stripe diz `trialing`, a API grava `ativa`, e quem assina o Essencial no dia 2 sai do Completo do teste no mesmo instante. A tela do plano (PR 5) avisa quando vem a 1ª cobrança.
+
+## Teste de fumaça do PR 4 (14/10, Stripe de teste)
+- `criar-precos` rodou duas vezes no modo de teste: na 1ª, criou os 2 produtos e os 4 preços; na 2ª, os 4 estavam "já está certo".
+- A `layout-dev` (banco dev) assinou o Essencial mensal com 2 profissionais pelo Checkout e pagou com o cartão 4242:
+  - na Stripe: `trialing`, com `trial_end` no fim do teste, `essencial_mensal` × 2 e `metadata.barbeariaId`;
+  - os eventos chegaram pelo Stripe CLI (`stripe listen --api-key`) com 200;
+  - no banco: `ativa`, `essencial`, 2 profissionais contratados e `periodoTerminaEm`;
+  - o evento repetido não foi aplicado duas vezes;
+  - o dono recebeu o aviso "Assinatura ativa";
+  - o 2º Checkout deu 409, e o Portal abriu.
+- **Achado:** "cancelar no fim do período" no Portal não chega ao banco. A Stripe segue `active` até o fim, e a API não lê `cancel_at_period_end`. Até isso entrar, a tela não pode afirmar "próxima cobrança em X" para quem cancelou.
 
 ## Respondidas pelo dono (13/10)
 - **GR Barber paga**, sem cortesia: não existe situação `cortesia`.

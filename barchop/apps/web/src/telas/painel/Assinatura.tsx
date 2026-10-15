@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { ErroDaApi } from "@barchop/api-client";
 import {
@@ -124,46 +124,54 @@ export function Assinatura({
         </Aviso>
       ) : null}
 
-      {resumo === null ? null : temPlanoPago(resumo) ? (
-        <PlanoAtual resumo={resumo} />
+      {resumo === null ? (
+        <PerguntasFrequentes />
+      ) : temPlanoPago(resumo) ? (
+        <PlanoAtual resumo={resumo}>
+          <PerguntasFrequentes />
+        </PlanoAtual>
       ) : (
-        <Configurador resumo={resumo} agora={agora} />
+        <Configurador resumo={resumo} agora={agora}>
+          <PerguntasFrequentes />
+        </Configurador>
       )}
-
-      <PerguntasFrequentes />
     </div>
   );
 }
 
-// Com plano pago: o que vale, quando cobra, e o Portal pra mudar.
-function PlanoAtual({ resumo }: { resumo: ResumoDaAssinatura }) {
+// Com plano pago: o que vale, quando cobra, e o Portal pra mudar. As
+// perguntas (`children`) ficam na coluna da esquerda no desktop.
+function PlanoAtual({ resumo, children }: { resumo: ResumoDaAssinatura; children: ReactNode }) {
   const frase = fraseDaCobranca(resumo);
   const contratados = resumo.profissionais;
 
   return (
-    <section className={estilos.cartao} aria-labelledby="plano-atual">
-      <div className={estilos.topoDoCartao}>
-        <div>
-          <h2 id="plano-atual" className={estilos.nomeDoPlano}>
-            {nomeDoPlano(resumo)} {resumo.ciclo === "anual" ? "anual" : "mensal"}
-          </h2>
-          <p className={estilos.apoio}>Equipe de {profissionais(contratados)}</p>
+    <div className={estilos.corpo}>
+      <div className={estilos.coluna}>{children}</div>
+      <section className={estilos.cartao} aria-labelledby="plano-atual">
+        <div className={estilos.topoDoCartao}>
+          <div>
+            <h2 id="plano-atual" className={estilos.nomeDoPlano}>
+              {nomeDoPlano(resumo)} {resumo.ciclo === "anual" ? "anual" : "mensal"}
+            </h2>
+            <p className={estilos.apoio}>Equipe de {profissionais(contratados)}</p>
+          </div>
+          {frase ? <p className={estilos.cobranca}>{frase}</p> : null}
         </div>
-        {frase ? <p className={estilos.cobranca}>{frase}</p> : null}
-      </div>
 
-      {resumo.situacao === "em_atraso" ? (
-        <Aviso tom="atencao">
-          A Stripe não conseguiu cobrar. Atualize o cartão para não perder o plano; enquanto ela tenta de novo,
-          tudo continua funcionando.
-        </Aviso>
-      ) : null}
+        {resumo.situacao === "em_atraso" ? (
+          <Aviso tom="atencao">
+            A Stripe não conseguiu cobrar. Atualize o cartão para não perder o plano; enquanto ela tenta de novo,
+            tudo continua funcionando.
+          </Aviso>
+        ) : null}
 
-      <BotaoDoPortal />
-      <p className={estilos.rodape}>
-        Trocar de plano ou de ciclo, atualizar o cartão, ver as faturas e cancelar: tudo na página segura da Stripe.
-      </p>
-    </section>
+        <BotaoDoPortal />
+        <p className={estilos.rodape}>
+          Trocar de plano ou de ciclo, atualizar o cartão, ver as faturas e cancelar: tudo na página segura da Stripe.
+        </p>
+      </section>
+    </div>
   );
 }
 
@@ -193,8 +201,18 @@ function BotaoDoPortal() {
   );
 }
 
-// Sem plano pago (teste, Grátis ou cancelada): escolher e assinar.
-function Configurador({ resumo, agora }: { resumo: ResumoDaAssinatura; agora: Date }) {
+// Sem plano pago (teste, Grátis ou cancelada): escolher e assinar. Os
+// controles e as perguntas (`children`) dividem a coluna da esquerda no
+// desktop; o cartão fica ao lado.
+function Configurador({
+  resumo,
+  agora,
+  children,
+}: {
+  resumo: ResumoDaAssinatura;
+  agora: Date;
+  children: ReactNode;
+}) {
   const api = useApiDoPainel();
   const equipe = Math.max(1, resumo.profissionais);
   const cabeNoEssencial = equipe <= (limiteDeProfissionais("essencial") ?? Infinity);
@@ -240,65 +258,68 @@ function Configurador({ resumo, agora }: { resumo: ResumoDaAssinatura; agora: Da
   }
 
   return (
-    <>
-      <div className={estilos.controles}>
-        <SeletorEmPilulas<PlanoPago>
-          nome="plano"
-          legenda="Plano"
-          valor={plano}
-          aoTrocar={setPlano}
-          opcoes={[
-            { valor: "essencial", rotulo: "Essencial", desligada: !cabeNoEssencial },
-            { valor: "completo", rotulo: "Completo" },
-          ]}
-        />
+    <div className={estilos.corpo}>
+      <div className={estilos.coluna}>
+        <div className={estilos.controles}>
+          <SeletorEmPilulas<PlanoPago>
+            nome="plano"
+            legenda="Plano"
+            valor={plano}
+            aoTrocar={setPlano}
+            opcoes={[
+              { valor: "essencial", rotulo: "Essencial", desligada: !cabeNoEssencial },
+              { valor: "completo", rotulo: "Completo" },
+            ]}
+          />
 
-        <div className={estilos.contador}>
-          <span id="rotulo-profissionais" className={estilos.legenda}>
-            Profissionais
-          </span>
-          <div className={estilos.passos}>
-            <button
-              type="button"
-              className={estilos.passo}
-              aria-label="Menos um profissional"
-              disabled={profissionaisNoPlano <= equipe}
-              onClick={() => setQuantidade(profissionaisNoPlano - 1)}
-            >
-              −
-            </button>
-            <output className={estilos.quantidade} aria-labelledby="rotulo-profissionais" aria-live="polite">
-              {profissionaisNoPlano}
-            </output>
-            <button
-              type="button"
-              className={estilos.passo}
-              aria-label="Mais um profissional"
-              disabled={limite !== null && profissionaisNoPlano >= limite}
-              onClick={() => setQuantidade(profissionaisNoPlano + 1)}
-            >
-              +
-            </button>
+          <div className={estilos.contador}>
+            <span id="rotulo-profissionais" className={estilos.legenda}>
+              Profissionais
+            </span>
+            <div className={estilos.passos}>
+              <button
+                type="button"
+                className={estilos.passo}
+                aria-label="Menos um profissional"
+                disabled={profissionaisNoPlano <= equipe}
+                onClick={() => setQuantidade(profissionaisNoPlano - 1)}
+              >
+                −
+              </button>
+              <output className={estilos.quantidade} aria-labelledby="rotulo-profissionais" aria-live="polite">
+                {profissionaisNoPlano}
+              </output>
+              <button
+                type="button"
+                className={estilos.passo}
+                aria-label="Mais um profissional"
+                disabled={limite !== null && profissionaisNoPlano >= limite}
+                onClick={() => setQuantidade(profissionaisNoPlano + 1)}
+              >
+                +
+              </button>
+            </div>
+            {limite !== null && profissionaisNoPlano >= limite ? (
+              <p className={estilos.dica}>
+                O {nome} vai até {profissionais(limite)}. Para uma equipe maior, escolha o Completo.
+              </p>
+            ) : equipe > 1 && profissionaisNoPlano === equipe ? (
+              <p className={estilos.dica}>Sua equipe tem {profissionais(equipe)}: o plano começa daí.</p>
+            ) : null}
           </div>
-          {limite !== null && profissionaisNoPlano >= limite ? (
-            <p className={estilos.dica}>
-              O {nome} vai até {profissionais(limite)}. Para uma equipe maior, escolha o Completo.
-            </p>
-          ) : equipe > 1 && profissionaisNoPlano === equipe ? (
-            <p className={estilos.dica}>Sua equipe tem {profissionais(equipe)}: o plano começa daí.</p>
-          ) : null}
-        </div>
 
-        <SeletorEmPilulas<Ciclo>
-          nome="ciclo"
-          legenda="Ciclo de cobrança"
-          valor={ciclo}
-          aoTrocar={setCiclo}
-          opcoes={[
-            { valor: "mensal", rotulo: "Mensal" },
-            { valor: "anual", rotulo: "Anual", selo: "2 meses grátis" },
-          ]}
-        />
+          <SeletorEmPilulas<Ciclo>
+            nome="ciclo"
+            legenda="Ciclo de cobrança"
+            valor={ciclo}
+            aoTrocar={setCiclo}
+            opcoes={[
+              { valor: "mensal", rotulo: "Mensal" },
+              { valor: "anual", rotulo: "Anual", selo: "2 meses grátis" },
+            ]}
+          />
+        </div>
+        {children}
       </div>
 
       <section className={estilos.cartao} aria-labelledby="plano-escolhido">
@@ -368,7 +389,7 @@ function Configurador({ resumo, agora }: { resumo: ResumoDaAssinatura; agora: Da
         </Botao>
         <p className={estilos.rodape}>Cartão via Stripe · sem fidelidade, cancele quando quiser</p>
       </section>
-    </>
+    </div>
   );
 }
 

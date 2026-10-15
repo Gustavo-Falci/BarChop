@@ -223,6 +223,7 @@
 .perguntas {
   display: grid;
   gap: var(--espaco-sm);
+  order: 1;
 }
 
 .pergunta {
@@ -241,30 +242,31 @@
   font-size: var(--texto-sm);
 }
 
-/* No desktop a tela usa a largura: configurador e perguntas à esquerda,
-   o cartão do plano à direita, ocupando as duas linhas. O `dense` sobe
-   as perguntas pro lado do cartão quando não há configurador (plano
-   pago). O resto (cabeçalho, avisos) segue de ponta a ponta. */
+/* Controles e perguntas numa coluna, o cartão do plano na outra. No
+   celular a coluna se desfaz (`contents`): controles, cartão e, por
+   último, as perguntas. */
+.corpo {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+.coluna {
+  display: contents;
+}
+
+/* No desktop a tela usa a largura: as duas colunas lado a lado, cada
+   uma com a própria altura. */
 @media (min-width: 1100px) {
-  .pagina {
+  .corpo {
     grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
-    grid-auto-flow: row dense;
     align-items: start;
     column-gap: var(--espaco-xxl);
   }
 
-  .pagina > * {
-    grid-column: 1 / -1;
-  }
-
-  .controles,
-  .perguntas {
-    grid-column: 1;
-  }
-
-  .cartao {
-    grid-column: 2;
-    grid-row: span 2;
+  .coluna {
+    display: grid;
+    gap: var(--espaco-lg);
+    align-content: start;
   }
 }
 

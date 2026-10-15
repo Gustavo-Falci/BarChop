@@ -129,7 +129,7 @@ async function aplicar(
 
   if (situacao !== linha.situacao) {
     const aviso = AVISOS[situacao]?.(`${PLANOS[plano.plano].nome} ${plano.ciclo}`);
-    if (aviso) await notificarDonos(tx, linha.barbeariaId, { ...aviso, link: "/painel/assinatura" });
+    if (aviso) await notificarDonos(tx, linha.barbeariaId, { ...aviso, link: "/painel/faturas" });
   }
 }
 

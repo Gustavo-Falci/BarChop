@@ -24,9 +24,9 @@ const corpoCheckout = {
 } as const;
 
 // Pra onde a Stripe devolve o dono. Em desenvolvimento, o `pnpm dev` do web.
-function telaDaAssinatura(): string {
+function telaDeFaturas(): string {
   const painel = (process.env.URL_DO_PAINEL ?? "http://localhost:3000").replace(/\/+$/, "");
-  return `${painel}/painel/assinatura`;
+  return `${painel}/painel/faturas`;
 }
 
 export function registrarRotasAssinatura(app: App): void {
@@ -75,7 +75,7 @@ export function registrarRotasAssinatura(app: App): void {
         await prisma.assinatura.update({ where: { barbeariaId }, data: { stripeCustomerId: customerId } });
       }
 
-      const tela = telaDaAssinatura();
+      const tela = telaDeFaturas();
       const url = await app.cobranca.criarCheckout({
         customerId,
         barbeariaId,
@@ -85,7 +85,7 @@ export function registrarRotasAssinatura(app: App): void {
         testeTerminaEm:
           linha.situacao === "teste" ? fimDoTesteNaCobranca(linha.testeTerminaEm, new Date()) : null,
         urlDeSucesso: `${tela}?ok=1`,
-        urlDeCancelamento: tela,
+        urlDeCancelamento: `${tela}/cancelado`,
       });
       return { url };
     }
@@ -99,7 +99,7 @@ export function registrarRotasAssinatura(app: App): void {
       select: { stripeCustomerId: true },
     });
     if (!linha.stripeCustomerId) throw conflito("a barbearia ainda não assinou um plano");
-    const url = await app.cobranca.criarPortal({ customerId: linha.stripeCustomerId, urlDeVolta: telaDaAssinatura() });
+    const url = await app.cobranca.criarPortal({ customerId: linha.stripeCustomerId, urlDeVolta: telaDeFaturas() });
     return { url };
   });
 }

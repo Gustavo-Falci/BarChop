@@ -541,3 +541,19 @@ export interface ResumoDaAssinatura {
   // A barbearia já passou pelo Checkout: Faturas e Gerenciar abrem.
   temPortal: boolean;
 }
+
+// GET /barbearias/me/assinatura/faturas — as faturas da assinatura,
+// lidas da Stripe, da mais nova pra mais velha. `falhou` = a Stripe
+// tentou cobrar e não conseguiu (ou desistiu); `anulada` não cobra mais.
+export type SituacaoDaFatura = "paga" | "aberta" | "falhou" | "anulada";
+
+export interface FaturaDaAssinatura {
+  id: string;
+  numero: string | null;
+  emitidaEm: string;
+  valorCentavos: number;
+  situacao: SituacaoDaFatura;
+  // O PDF e a página da fatura na Stripe; nulos enquanto ela não fecha.
+  pdfUrl: string | null;
+  paginaUrl: string | null;
+}

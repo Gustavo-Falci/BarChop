@@ -9,6 +9,7 @@ import {
   fimDoTesteNaCobranca,
   planoDaChave,
   precosParaStripe,
+  situacaoDaFatura,
   situacaoDaStripe,
 } from "../../src/lib/cobranca";
 
@@ -181,5 +182,22 @@ describe("lerEvento", () => {
   it("assinatura que não confere lança", () => {
     const { corpo } = assinado({ id: "evt_5", object: "event", type: "invoice.paid", data: { object: {} } });
     expect(() => cobrancaDeMemoria().lerEvento(corpo, "t=1,v1=errada")).toThrow();
+  });
+});
+
+describe("situacaoDaFatura", () => {
+  it("traduz a fatura da Stripe", () => {
+    expect(situacaoDaFatura("paid", 1)).toBe("paga");
+    expect(situacaoDaFatura("open", 0)).toBe("aberta");
+    expect(situacaoDaFatura("void", 0)).toBe("anulada");
+    expect(situacaoDaFatura("uncollectible", 4)).toBe("falhou");
+  });
+
+  it("aberta que a Stripe já tentou cobrar e não conseguiu: falhou", () => {
+    expect(situacaoDaFatura("open", 2)).toBe("falhou");
+  });
+
+  it("rascunho ainda não é fatura pro dono", () => {
+    expect(situacaoDaFatura("draft", 0)).toBeNull();
   });
 });

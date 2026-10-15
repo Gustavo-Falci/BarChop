@@ -4,7 +4,75 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-14 — cobrança: PRs 1 a 3 mesclados, PR 4 aberto) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-14 — #143 no ar, PR 4 testado na Stripe, PR 5 pronto) — vale mais que as seções abaixo
+
+> **Este RETOMAR AQUI vive no branch `tela-do-plano` (PR 5), empilhado sobre o `stripe-na-cobranca` (#144).** Nenhum dos dois foi mesclado. Na outra máquina: `git fetch` e `git checkout tela-do-plano`. A `main` ainda mostra o RETOMAR AQUI de 13/10.
+
+**Estado:**
+- **Produção:**
+  - **#143 no ar**, conferido em 14/10 à noite:
+    - a disponibilidade aceita `?remarcar=` (a versão antiga dava 400);
+    - o JS publicado tem "Com o mesmo profissional".
+  - A `main` = `10ff35c`, toda em produção.
+- **Última migração:** `20261015120000_assinatura_cancela_em` (PR 5).
+  - Está aplicada só no dev e no test **desta** máquina.
+  - Em produção, a última continua sendo `20261014120000_assinatura`.
+- **Branches abertos (não mesclar ainda):**
+  - `stripe-na-cobranca`: **#144**, o PR 4;
+  - `tela-do-plano`: o PR 5, enviado ao GitHub **sem PR aberto**. Abrir o PR com a base `stripe-na-cobranca`.
+
+**Feito em 14/10 à noite:**
+- **Teste de fumaça do #144 na Stripe de teste: passou.** Os detalhes estão no plano `cobranca-do-barchop.plan.md`, na seção "Teste de fumaça do PR 4".
+  - O `criar-precos` rodou no modo de teste com o OK do dono. A 2ª rodada deu "já está certo" nos 4 preços.
+  - A `layout-dev` (banco dev) assinou o Essencial mensal com 2 profissionais e pagou com o cartão 4242. A assinatura está `trialing` na Stripe e `ativa` no banco.
+  - O webhook respondeu 200. O evento repetido não foi aplicado duas vezes. O aviso "Assinatura ativa" chegou ao dono. O Portal abre.
+- **Stripe CLI 1.53.1** instalado em `~/bin` (`stripe.exe`), sem `stripe login`.
+  - Os comandos usam `--api-key` com a `sk_test_` do `apps/api/.env`.
+  - `stripe listen --print-secret --api-key …` dá o `whsec_`. Passar esse valor no ambiente ao subir a API (`STRIPE_WEBHOOK_SECRET=… npx tsx --env-file=.env src/server.ts`), sem gravar no `.env`.
+  - Cuidado: o `--print-secret` sai com uma linha em branco antes do segredo.
+- **PR 5 (tela do plano), feito no branch `tela-do-plano`:**
+  - **API:**
+    - migração `cancela_em`: o webhook grava o `cancel_at` da Stripe e o apaga quando a assinatura chega `cancelada`. Testado na Stripe de verdade: cancelar e desfazer;
+    - o `GET /barbearias/me/assinatura` ganhou `primeiraCobrancaPendente`, `cancelaEm`, `foraDoLink` (nomes, sem convite pendente nem quem não atende) e `temPortal`;
+    - o `ResumoDaAssinatura` mora em `@barchop/types`.
+  - **Web:**
+    - `/painel/assinatura`, só do dono, no modelo do `Planos_BarbeiroApp.docx` do dono: configurador, cartão do plano, plano atual com Gerenciar pagamento e faturas, e perguntas frequentes;
+    - faixa no topo, só do dono;
+    - menu da conta com Plano, e Faturas abrindo o Portal;
+    - `formatarReais` em `@barchop/formato`;
+    - novidade "Plano da barbearia".
+  - Conferido no navegador em 1440 e 375, sem nada vazando para os lados.
+
+**Decisões do dono em 14/10 à noite:**
+- **(b) Assinou durante o teste, vale o plano assinado na hora.** A tela diz "1ª cobrança em X".
+- **Cancelar no Portal ganha migração própria** (`cancela_em`). As opções descartadas foram texto neutro e ler da Stripe na hora.
+- A referência visual da tela do plano é o `Planos_BarbeiroApp.docx` do dono.
+
+**Próximo passo (nesta ordem):**
+1. **Abrir o PR do `tela-do-plano`** com a base `stripe-na-cobranca`.
+2. **Ajustes miúdos do PR 5, se o dono quiser:**
+   - a página do plano fica alinhada à esquerda em telas largas (até 880px);
+   - o tema claro não foi conferido;
+   - a data da novidade (14/10) muda para o dia da entrada no ar.
+3. **PR 6:** site (`/precos`, `/gratis`, Home) e termos. A tabela vem de `planos.ts` e o preço sai de `formatarReais`.
+4. **Entrada no ar dos PRs 4, 5 e 6 juntos.** Antes:
+   - **o dono ativa a conta PF no modo real** (hoje `charges_enabled: false`);
+   - criar o webhook real `https://api.barchop.com.br/stripe/webhook`;
+   - preencher `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no `~/BarChop/barchop/infra/api.env` da VM;
+   - o deploy roda **as duas migrações** (`migrar`);
+   - depois, `docker compose exec api node dist/criar-precos-no-stripe.js`.
+
+**Na outra máquina, antes de rodar qualquer coisa:**
+- `pnpm install`. O `node-linker=hoisted` põe o `stripe` em `barchop/node_modules`, e não em `apps/api/node_modules`.
+- `pnpm exec prisma generate` em `packages/database`. Pare a API de desenvolvimento antes, senão dá EPERM na DLL do Prisma.
+- `prisma migrate deploy` nos bancos dev e test, até `20261015120000_assinatura_cancela_em`.
+- Copiar a `STRIPE_SECRET_KEY=sk_test_...` para o `apps/api/.env`. Para o webhook local, instalar o Stripe CLI como acima.
+
+**O que mais falta:** igual à seção de 13/10 abaixo.
+
+**Ambiente local e Combinados:** iguais aos da seção de 11/10 abaixo.
+
+## RETOMAR AQUI (2026-10-14 — cobrança: PRs 1 a 3 mesclados, PR 4 aberto) — histórico
 
 > **Este RETOMAR AQUI vive no branch `stripe-na-cobranca` (PR #144), que ainda não foi mesclado.** Na outra máquina: `git fetch` e `git checkout stripe-na-cobranca`. A `main` ainda mostra o RETOMAR AQUI de 13/10.
 

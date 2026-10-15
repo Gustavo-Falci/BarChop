@@ -34,3 +34,11 @@
   color: var(--cor-ink);
   text-underline-offset: 4px;
 }
+
+/* No celular estreito, Preços + Entrar + Criar barbearia passavam de
+   375px: o Preços sai daqui (o rodapé e a Home levam aos preços). */
+@media (max-width: 419px) {
+  .precos {
+    display: none;
+  }
+}

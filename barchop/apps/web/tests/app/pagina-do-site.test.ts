@@ -17,6 +17,11 @@ describe("página da home do site", () => {
     expect(metadata.description).toMatch(/barbearia/i);
   });
 
+  it("a descrição fala do teste de 14 dias, não do lançamento", () => {
+    expect(metadata.description).toMatch(/14 dias/);
+    expect(metadata.description).not.toMatch(/lançamento/i);
+  });
+
   it("monta a prévia do link com o mesmo título e descrição", () => {
     // É o que aparece quando alguém cola barchop.com.br no WhatsApp.
     expect(metadata.openGraph).toMatchObject({

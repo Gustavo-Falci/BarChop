@@ -61,7 +61,8 @@ export function hostDoSite(urlDoSite: string | undefined): string | undefined {
 // - painel: a escolha gravada do barbeiro; "sistema" (ou nada gravado)
 //   segue o aparelho, e lixo gravado sai do localStorage;
 // - site de marketing (o host raiz e o www; sem site configurado, as
-//   rotas "/", "/privacidade" e "/termos"): sempre claro;
+//   rotas "/", "/precos", "/gratis", "/privacidade" e "/termos"): sempre
+//   claro;
 // - página da barbearia e o fluxo do cliente: nenhum atributo — o CSS
 //   dos tokens segue o prefers-color-scheme do sistema, e acompanha ao
 //   vivo se a pessoa trocar o tema com a página aberta. Nenhuma escolha
@@ -81,7 +82,7 @@ export function scriptDeTema(site: string | undefined): string {
     var h = location.host.toLowerCase();
     var noSite = site
       ? h === site || h === "www." + site
-      : p === "/" || p === "/privacidade" || p === "/termos";
+      : p === "/" || p === "/precos" || p === "/gratis" || p === "/privacidade" || p === "/termos";
     if (noSite) document.documentElement.setAttribute("data-theme", "light");
     else document.documentElement.removeAttribute("data-theme");
     return;

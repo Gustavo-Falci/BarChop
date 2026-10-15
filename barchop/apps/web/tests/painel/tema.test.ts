@@ -167,7 +167,7 @@ describe("tema do painel", () => {
 
     it("sem site configurado, as rotas do site ficam claras", () => {
       stubMatchMedia(true);
-      for (const caminho of ["/", "/privacidade", "/termos"]) {
+      for (const caminho of ["/", "/precos", "/gratis", "/privacidade", "/termos"]) {
         document.documentElement.removeAttribute("data-theme");
         irParaCaminho(caminho);
 

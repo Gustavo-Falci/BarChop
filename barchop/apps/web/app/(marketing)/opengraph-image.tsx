@@ -88,7 +88,7 @@ export default async function Imagem() {
             suabarbearia.barchop.com.br
           </div>
           <div style={{ display: "flex", fontSize: 32, fontWeight: 500, color: cor.inkSoft }}>
-            Grátis durante o lançamento
+            14 dias grátis, sem cartão
           </div>
         </div>
       </div>

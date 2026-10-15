@@ -44,3 +44,12 @@
   padding: var(--espaco-md) var(--espaco-xl);
   font-size: var(--texto-lg);
 }
+
+/* No celular estreito, o convite grande ("Criar minha barbearia
+   grátis") não cabe numa linha só dentro das caixas do site. */
+@media (max-width: 419px) {
+  .link {
+    white-space: normal;
+    text-align: center;
+  }
+}

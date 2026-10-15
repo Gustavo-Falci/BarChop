@@ -40,7 +40,7 @@ cd ~/BarChop/barchop/infra
 cp .env.example .env
 cp api.env.example api.env
 chmod 600 .env api.env
-nano .env       # banco, Cloudflare, e-mail do ACME
+nano .env       # banco, Cloudflare, e-mail do ACME, quem vende (termos)
 nano api.env    # JWT, Resend, S3
 
 # Um de cada vez: em paralelo, o build do Next e o da API disputam

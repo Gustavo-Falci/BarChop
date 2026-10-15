@@ -42,6 +42,8 @@ describe("sitemap.xml", () => {
 
     expect(urls).toEqual([
       "https://barchop.com.br/",
+      "https://barchop.com.br/precos",
+      "https://barchop.com.br/gratis",
       "https://barchop.com.br/termos",
       "https://barchop.com.br/privacidade",
     ]);

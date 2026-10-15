@@ -1,0 +1,172 @@
+/* /precos e /gratis: a mesma largura e o mesmo ritmo da Home. No
+   desktop, as regras e as perguntas lado a lado (as telas usam a
+   largura — pedido do dono); no celular, uma coluna. */
+.pagina {
+  display: grid;
+  /* Sem o minmax, um filho que não quebra linha estica a coluna além
+     da tela no celular. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-xxl);
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: var(--espaco-xxl) var(--espaco-lg);
+}
+
+.topo {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.titulo {
+  margin: 0;
+  max-width: 20ch;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: clamp(var(--texto-display), 6vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  word-spacing: 0.08em;
+  text-wrap: balance;
+}
+
+.apoio {
+  margin: 0;
+  max-width: 60ch;
+  font-size: var(--texto-lg);
+  line-height: 1.5;
+  color: var(--cor-ink-soft);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-md);
+  margin-top: var(--espaco-sm);
+}
+
+.ladoALado {
+  display: grid;
+  gap: var(--espaco-xxl);
+}
+
+@media (min-width: 880px) {
+  .ladoALado {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.secao {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+/* O Grátis em destaque: o único bloco com fundo, como o preço da Home
+   antes da cobrança. */
+.destaque {
+  display: grid;
+  gap: var(--espaco-lg);
+  padding: var(--espaco-xl);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-pale-yellow);
+}
+
+.tituloDaSecao {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  word-spacing: 0.08em;
+}
+
+.preco {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espaco-xs);
+  margin: 0;
+}
+
+.valor {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-display);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.periodo {
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
+.regras {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.regras li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--espaco-sm);
+  line-height: 1.5;
+}
+
+.regras li::before {
+  content: "✓";
+  font-weight: 700;
+}
+
+.passos {
+  display: grid;
+  gap: var(--espaco-md);
+  margin: 0;
+  padding-left: var(--espaco-lg);
+  line-height: 1.55;
+}
+
+.passos li::marker {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.perguntas {
+  display: grid;
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.pergunta {
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.pergunta summary {
+  padding: var(--espaco-md) 0;
+  font-weight: 600;
+  font-size: var(--texto-lg);
+  cursor: pointer;
+}
+
+.pergunta p {
+  margin: 0;
+  padding-bottom: var(--espaco-md);
+  max-width: 64ch;
+  line-height: 1.55;
+  color: var(--cor-ink-soft);
+}
+
+.final {
+  display: grid;
+  justify-items: center;
+  gap: var(--espaco-lg);
+  padding: var(--espaco-xxl) var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  text-align: center;
+}

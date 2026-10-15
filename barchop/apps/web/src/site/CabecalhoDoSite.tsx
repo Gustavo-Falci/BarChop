@@ -12,6 +12,9 @@ export function CabecalhoDoSite() {
           BarChop
         </Link>
         <nav aria-label="Conta" className={estilos.nav}>
+          <Link href="/precos" className={`${estilos.entrar} ${estilos.precos}`}>
+            Preços
+          </Link>
           <Link href="/painel/entrar" className={estilos.entrar}>
             Entrar
           </Link>

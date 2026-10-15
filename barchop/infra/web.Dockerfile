@@ -14,10 +14,19 @@ RUN pnpm install --frozen-lockfile --filter "@barchop/web..."
 # entram como argumento de build, não como variável do contêiner — a
 # imagem do web é por ambiente. Sem NEXT_PUBLIC_URL_DO_SITE as
 # barbearias não abrem no próprio host (ver apps/web/src/tenant/rota.ts).
+# As VENDEDOR_* são quem vende nos termos e na privacidade (pessoa
+# física: nome, CPF e e-mail; apps/web/src/site/controlador.ts): ficam
+# no infra/.env da VM porque o repositório é público.
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_URL_DO_SITE
+ARG NEXT_PUBLIC_VENDEDOR_NOME
+ARG NEXT_PUBLIC_VENDEDOR_CPF
+ARG NEXT_PUBLIC_VENDEDOR_EMAIL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
   NEXT_PUBLIC_URL_DO_SITE=$NEXT_PUBLIC_URL_DO_SITE \
+  NEXT_PUBLIC_VENDEDOR_NOME=$NEXT_PUBLIC_VENDEDOR_NOME \
+  NEXT_PUBLIC_VENDEDOR_CPF=$NEXT_PUBLIC_VENDEDOR_CPF \
+  NEXT_PUBLIC_VENDEDOR_EMAIL=$NEXT_PUBLIC_VENDEDOR_EMAIL \
   NEXT_TELEMETRY_DISABLED=1
 # As fontes saem do repositório (font/, ver app/fontes.ts): o build não
 # baixa nada do Google Fonts.

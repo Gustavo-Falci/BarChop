@@ -63,7 +63,7 @@ export function FaixaDaAssinatura() {
   return (
     <section aria-label="Assinatura" className={`${estilos.faixa} ${estilos[recado.tom]}`}>
       <p className={estilos.texto}>{recado.texto}</p>
-      <Link href="/painel/assinatura" className={estilos.acao}>
+      <Link href="/painel/faturas" className={estilos.acao}>
         {recado.acao}
       </Link>
     </section>

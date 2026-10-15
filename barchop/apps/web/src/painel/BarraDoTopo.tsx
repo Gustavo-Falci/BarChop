@@ -16,7 +16,6 @@ import {
   IconeBrilho,
   IconeCartao,
   IconeCliente,
-  IconeCoroa,
   IconeDescer,
   IconeGlobo,
   IconeMaisOpcoes,
@@ -30,11 +29,8 @@ import {
   marcarNovidadesVistas,
   NOVIDADES,
 } from "./novidades";
-import { useAssinatura } from "./ProvedorDaAssinatura";
-import { useApiDoPainel } from "./ProvedorDoPainel";
 import { usePainel } from "./SessaoDoPainel";
 import { SinoDeNotificacoes } from "./SinoDeNotificacoes";
-import { irParaAStripe } from "./stripe";
 import {
   aplicarTema,
   gravarTema,
@@ -58,10 +54,7 @@ type Menu = "sino" | "opcoes" | "conta";
 // sair). Um aberto por vez.
 export function BarraDoTopo() {
   const { perfil, slug, nomeDaBarbearia, sair } = usePainel();
-  const api = useApiDoPainel();
-  const { resumo } = useAssinatura();
   const dono = perfil.papel === "dono";
-  const [abrindoFaturas, setAbrindoFaturas] = useState(false);
   const [aberto, setAberto] = useState<Menu | null>(null);
   const [tema, setTema] = useState<EscolhaDeTema>("sistema");
   const [novas, setNovas] = useState(0);
@@ -90,17 +83,6 @@ export function BarraDoTopo() {
     setTema(escolha);
     gravarTema(escolha);
     aplicarTema(resolverTema(escolha));
-  }
-
-  // As faturas moram no Portal da Stripe, que só existe depois do
-  // primeiro Checkout.
-  async function abrirFaturas() {
-    setAbrindoFaturas(true);
-    try {
-      irParaAStripe((await api.barbeiro.portalDaAssinatura()).url);
-    } catch {
-      setAbrindoFaturas(false);
-    }
   }
 
   function abrirNovidades() {
@@ -197,29 +179,13 @@ export function BarraDoTopo() {
         <Link href="/painel/configuracoes/perfil" className={LINHA_DO_MENU}>
           <ItemDoMenu icone={<IconeCliente />}>Minha conta</ItemDoMenu>
         </Link>
-        {/* A assinatura é só do dono. As faturas moram no Portal da
-            Stripe, que nasce no primeiro Checkout: antes dele, o item
-            fica à vista e desligado, com o selo dizendo por quê. */}
+        {/* A assinatura é só do dono, e mora toda em Faturas: escolher
+            o plano e pagar antes de assinar, o plano e as faturas
+            depois (decisão do dono, 15/10/2026). */}
         {dono ? (
-          <>
-            <Link href="/painel/assinatura" className={LINHA_DO_MENU}>
-              <ItemDoMenu icone={<IconeCoroa />}>Plano</ItemDoMenu>
-            </Link>
-            <button
-              type="button"
-              className={LINHA_DO_MENU}
-              disabled={!resumo?.temPortal || abrindoFaturas}
-              aria-busy={abrindoFaturas || undefined}
-              onClick={abrirFaturas}
-            >
-              <ItemDoMenu
-                icone={<IconeCartao />}
-                fim={resumo?.temPortal ? null : <Chip tamanho="pequeno" tom="neutro">Depois de assinar</Chip>}
-              >
-                Faturas
-              </ItemDoMenu>
-            </button>
-          </>
+          <Link href="/painel/faturas" className={LINHA_DO_MENU}>
+            <ItemDoMenu icone={<IconeCartao />}>Faturas</ItemDoMenu>
+          </Link>
         ) : null}
         {/* A indicação ainda não existe. */}
         <button type="button" className={LINHA_DO_MENU} disabled>

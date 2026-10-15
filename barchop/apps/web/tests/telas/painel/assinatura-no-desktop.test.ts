@@ -22,13 +22,15 @@ describe("tela do plano no desktop", () => {
     expect(regraDaPagina).not.toMatch(/max-width:\s*880px/);
   });
 
-  it("a partir de 1100px, duas colunas com o cartão do plano na da direita", () => {
+  it("a partir de 1100px, duas colunas: controles e perguntas à esquerda, o cartão do plano à direita", () => {
     expect(css).toContain("@media (min-width: 1100px)");
-    expect(blocoDoDesktop).toMatch(/\.pagina\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(/);
-    expect(blocoDoDesktop).toMatch(/\.cartao\s*\{[^}]*grid-column:\s*2/);
+    expect(blocoDoDesktop).toMatch(/\.corpo\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(/);
+    expect(blocoDoDesktop).toMatch(/\.coluna\s*\{[^}]*display:\s*grid/);
   });
 
-  it("as perguntas sobem para o lado do cartão, sem buraco à esquerda", () => {
-    expect(blocoDoDesktop).toMatch(/\.pagina\s*\{[^}]*grid-auto-flow:\s*row dense/);
+  it("no celular a coluna se desfaz e as perguntas descem pra baixo do cartão", () => {
+    const foraDoDesktop = css.replace(blocoDoDesktop, "");
+    expect(foraDoDesktop).toMatch(/\.coluna\s*\{[^}]*display:\s*contents/);
+    expect(foraDoDesktop).toMatch(/\.perguntas\s*\{[^}]*order:\s*1/);
   });
 });

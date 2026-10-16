@@ -103,14 +103,26 @@ export function registrarRotasAssinatura(app: App): void {
   });
 
   // Trocar cartão, ver faturas e cancelar no fim do período: tudo no
-  // Portal da Stripe, configurado pelo dono no painel dela.
+  // Portal da Stripe, configurado pelo dono no painel dela. Com mais
+  // profissionais do que o Essencial aceita, o Portal não oferece a
+  // descida — a mesma regra do Checkout.
   app.post("/barbearias/me/assinatura/portal", { onRequest: exigirPapel("dono") }, async (request) => {
+    const { barbeariaId } = request.user;
     const linha = await prisma.assinatura.findUniqueOrThrow({
-      where: { barbeariaId: request.user.barbeariaId },
+      where: { barbeariaId },
       select: { stripeCustomerId: true },
     });
     if (!linha.stripeCustomerId) throw conflito("a barbearia ainda não assinou um plano");
-    const url = await app.cobranca.criarPortal({ customerId: linha.stripeCustomerId, urlDeVolta: telaDeFaturas() });
-    return { url };
+    const limiteDoEssencial = limiteDeProfissionais("essencial");
+    const semDescida = limiteDoEssencial !== null && (await contarProfissionais(barbeariaId)) > limiteDoEssencial;
+    const portal = await app.cobranca.criarPortal({
+      customerId: linha.stripeCustomerId,
+      urlDeVolta: telaDeFaturas(),
+      semDescida,
+    });
+    if (semDescida && !portal.semDescida) {
+      request.log.warn({ barbeariaId }, "Portal sem a configuração sem_descida: rode o script criar-precos");
+    }
+    return { url: portal.url };
   });
 }

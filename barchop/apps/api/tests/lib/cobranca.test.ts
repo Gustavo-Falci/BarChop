@@ -150,7 +150,7 @@ describe("configuracaoSemDescida", () => {
   it("a troca de plano só oferece os preços do Completo", () => {
     const produtos = configuracaoSemDescida(padrao).features.subscription_update?.products;
     expect(produtos).toEqual([
-      { product: "barchop_completo", prices: ["price_com_m", "price_com_a"], adjustable_quantity: { enabled: false, minimum: 1 } },
+      { product: "barchop_completo", prices: ["price_com_m", "price_com_a"], adjustable_quantity: { enabled: false } },
     ]);
   });
 
@@ -177,6 +177,25 @@ describe("configuracaoSemDescida", () => {
       schedule_at_period_end: { conditions: [{ type: "decreasing_item_amount" }, { type: "shortening_interval" }] },
       trial_update_behavior: "continue_trial",
     });
+  });
+
+  it("quantidade ligada no produto mas não na troca: a Stripe recusa, então vai desligada", () => {
+    // Assim estava o sandbox de teste em 16/10/2026; o painel aceita, a API não.
+    const trocar = padrao.features.subscription_update;
+    const misturada = {
+      ...padrao,
+      features: {
+        ...padrao.features,
+        subscription_update: {
+          ...trocar,
+          products: trocar.products!.map((p) => ({ ...p, adjustable_quantity: { enabled: true, maximum: 99, minimum: 1 } })),
+        },
+      },
+    } as Stripe.BillingPortal.Configuration;
+
+    expect(configuracaoSemDescida(misturada).features.subscription_update?.products).toEqual([
+      { product: "barchop_completo", prices: ["price_com_m", "price_com_a"], adjustable_quantity: { enabled: false } },
+    ]);
   });
 
   it("é achada pelo metadata e tem nome no painel da Stripe", () => {

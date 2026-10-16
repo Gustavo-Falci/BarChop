@@ -32,6 +32,12 @@ export function planoDaChave(chave: string | null | undefined): { plano: PlanoPa
   return { plano: plano as PlanoPago, ciclo: ciclo as Ciclo };
 }
 
+// O produto na Stripe tem id fixo: o script acha sem guardar nada, e a
+// configuração "sem descida" do Portal filtra por ele.
+export function idDoProduto(plano: PlanoPago): string {
+  return `barchop_${plano}`;
+}
+
 export interface PrecoNaStripe {
   chave: string;
   produto: { id: string; nome: string };
@@ -49,7 +55,7 @@ export function precosParaStripe(): PrecoNaStripe[] {
       const { base, extra } = precosDoCiclo(plano, ciclo);
       return {
         chave: chaveDoPreco(plano, ciclo),
-        produto: { id: `barchop_${plano}`, nome: `BarChop ${PLANOS[plano].nome}` },
+        produto: { id: idDoProduto(plano), nome: `BarChop ${PLANOS[plano].nome}` },
         intervalo: ciclo === "anual" ? ("year" as const) : ("month" as const),
         tiers: [
           { up_to: 1 as const, unit_amount: base },
@@ -131,6 +137,11 @@ export interface PedidoDeCheckout {
   urlDeCancelamento: string;
 }
 
+export interface PortalAberto {
+  url: string;
+  semDescida: boolean;
+}
+
 export interface Cobranca {
   nome: string;
   // Sem o segredo do webhook, a rota responde 503: em desenvolvimento dá
@@ -138,7 +149,10 @@ export interface Cobranca {
   webhookConfigurado: boolean;
   criarCliente(dados: { email: string | null; nome: string; barbeariaId: string }): Promise<string>;
   criarCheckout(pedido: PedidoDeCheckout): Promise<string>;
-  criarPortal(dados: { customerId: string; urlDeVolta: string }): Promise<string>;
+  // Com `semDescida`, o Portal só oferece o Completo (a equipe passa do
+  // limite do Essencial). Devolve se deu: sem a configuração na Stripe
+  // (o script criar-precos não rodou), abre o Portal padrão.
+  criarPortal(dados: { customerId: string; urlDeVolta: string; semDescida: boolean }): Promise<PortalAberto>;
   atualizarQuantidade(assinaturaId: string, profissionais: number): Promise<void>;
   lerAssinatura(assinaturaId: string): Promise<AssinaturaNaCobranca>;
   // Uma segunda assinatura da mesma barbearia (dois Checkouts antes do
@@ -204,7 +218,7 @@ export const SEGREDO_DO_WEBHOOK_DE_TESTE = "whsec_teste_do_barchop";
 export interface CobrancaDeMemoria extends Cobranca {
   clientes: { id: string; email: string | null; nome: string; barbeariaId: string }[];
   checkouts: PedidoDeCheckout[];
-  portais: { customerId: string; urlDeVolta: string }[];
+  portais: { customerId: string; urlDeVolta: string; semDescida: boolean }[];
   quantidades: { assinaturaId: string; profissionais: number }[];
   // O que a "Stripe" diz de cada assinatura quando o webhook relê.
   assinaturas: Map<string, AssinaturaNaCobranca>;
@@ -241,7 +255,7 @@ export function cobrancaDeMemoria(): CobrancaDeMemoria {
     },
     async criarPortal(dados) {
       cobranca.portais.push(dados);
-      return `https://billing.stripe.test/${cobranca.portais.length}`;
+      return { url: `https://billing.stripe.test/${cobranca.portais.length}`, semDescida: dados.semDescida };
     },
     async atualizarQuantidade(assinaturaId, profissionais) {
       if (cobranca.falharQuantidade) throw new Error("Stripe fora do ar (teste)");
@@ -278,6 +292,15 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
     return data[0].id;
   }
 
+  // O id da configuração "sem descida" não muda: achado uma vez, fica.
+  // Não achada, pergunta de novo na próxima (o script pode rodar depois).
+  let idSemDescida: string | null = null;
+  async function configuracaoDoPortal(semDescida: boolean): Promise<string | null> {
+    if (!semDescida) return null;
+    idSemDescida ??= (await acharConfiguracaoSemDescida(stripe))?.id ?? null;
+    return idSemDescida;
+  }
+
   return {
     nome: "stripe",
     webhookConfigurado: !!opcoes.segredoDoWebhook,
@@ -308,9 +331,14 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
       if (!sessao.url) throw new Error("a Stripe não devolveu o endereço do Checkout");
       return sessao.url;
     },
-    async criarPortal({ customerId, urlDeVolta }) {
-      const sessao = await stripe.billingPortal.sessions.create({ customer: customerId, return_url: urlDeVolta });
-      return sessao.url;
+    async criarPortal({ customerId, urlDeVolta, semDescida }) {
+      const configuracao = await configuracaoDoPortal(semDescida);
+      const sessao = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: urlDeVolta,
+        ...(configuracao ? { configuration: configuracao } : {}),
+      });
+      return { url: sessao.url, semDescida: configuracao !== null };
     },
     async atualizarQuantidade(assinaturaId, profissionais) {
       const assinatura = await stripe.subscriptions.retrieve(assinaturaId);
@@ -400,6 +428,87 @@ function cobrancaDesligada(): Cobranca {
     listarFaturas: async () => desligada(),
     lerEvento: () => desligada(),
   };
+}
+
+// A configuração do Portal pra quem tem mais profissionais do que o
+// Essencial aceita: a padrão (a que o dono ajusta no painel da Stripe)
+// com a troca de plano só entre os preços do Completo. O Checkout já
+// barra o Essencial nesse caso; o Portal, sozinho, só troca o preço.
+// O script criar-precos cria e atualiza; mudou a padrão, rodar de novo.
+const MARCA_SEM_DESCIDA = { barchop: "sem_descida" };
+
+export function configuracaoSemDescida(
+  padrao: Stripe.BillingPortal.Configuration
+): Stripe.BillingPortal.ConfigurationCreateParams {
+  const { business_profile: perfil, features: f } = padrao;
+  const cancelar = f.subscription_cancel;
+  const trocar = f.subscription_update;
+  const doCompleto = idDoProduto("completo");
+  // Quantidade ajustável no produto sem "quantity" na troca: o painel da
+  // Stripe aceita, a API recusa. Sem a troca, não teria efeito mesmo.
+  const quantidadeNaTroca = trocar.default_allowed_updates.includes("quantity");
+  return {
+    name: "BarChop — sem descida (mais de 3 profissionais)",
+    metadata: MARCA_SEM_DESCIDA,
+    business_profile: {
+      ...(perfil.headline ? { headline: perfil.headline } : {}),
+      ...(perfil.privacy_policy_url ? { privacy_policy_url: perfil.privacy_policy_url } : {}),
+      ...(perfil.terms_of_service_url ? { terms_of_service_url: perfil.terms_of_service_url } : {}),
+    },
+    ...(padrao.default_return_url ? { default_return_url: padrao.default_return_url } : {}),
+    features: {
+      customer_update: { allowed_updates: f.customer_update.allowed_updates, enabled: f.customer_update.enabled },
+      invoice_history: { enabled: f.invoice_history.enabled },
+      payment_method_update: {
+        enabled: f.payment_method_update.enabled,
+        ...(f.payment_method_update.payment_method_configuration
+          ? { payment_method_configuration: f.payment_method_update.payment_method_configuration }
+          : {}),
+      },
+      subscription_cancel: {
+        cancellation_reason: {
+          enabled: cancelar.cancellation_reason.enabled,
+          // Vazio a Stripe só aceita como "".
+          options: cancelar.cancellation_reason.options.length > 0 ? cancelar.cancellation_reason.options : "",
+        },
+        enabled: cancelar.enabled,
+        mode: cancelar.mode,
+        proration_behavior: cancelar.proration_behavior,
+      },
+      subscription_update: {
+        ...(trocar.billing_cycle_anchor ? { billing_cycle_anchor: trocar.billing_cycle_anchor } : {}),
+        default_allowed_updates: trocar.default_allowed_updates.length > 0 ? trocar.default_allowed_updates : "",
+        enabled: trocar.enabled,
+        products: (trocar.products ?? [])
+          .filter((p) => p.product === doCompleto)
+          .map((p) => ({
+            product: p.product,
+            prices: p.prices,
+            adjustable_quantity:
+              quantidadeNaTroca && p.adjustable_quantity.enabled
+                ? {
+                    enabled: true,
+                    minimum: p.adjustable_quantity.minimum,
+                    ...(p.adjustable_quantity.maximum !== null ? { maximum: p.adjustable_quantity.maximum } : {}),
+                  }
+                : { enabled: false },
+          })),
+        proration_behavior: trocar.proration_behavior,
+        schedule_at_period_end: { conditions: trocar.schedule_at_period_end.conditions },
+        trial_update_behavior: trocar.trial_update_behavior,
+      },
+    },
+  };
+}
+
+// Acha a "sem descida" pelo metadata, ativa ou não (o script reativa).
+export async function acharConfiguracaoSemDescida(
+  stripe: Stripe
+): Promise<Stripe.BillingPortal.Configuration | null> {
+  for await (const configuracao of stripe.billingPortal.configurations.list({ limit: 100 })) {
+    if (configuracao.metadata?.barchop === MARCA_SEM_DESCIDA.barchop) return configuracao;
+  }
+  return null;
 }
 
 // De que modo da Stripe é a chave: a secreta (`sk_`) e a restrita (`rk_`)

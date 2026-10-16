@@ -9,11 +9,13 @@ import {
 } from "@barchop/formato";
 import type {
   CaixaDoDia,
+  DivisaoDoDinheiro,
   FormaDoPagamento,
   MembroDoCaixa,
   MotivoDaParteDoPagamento,
   PagamentoDoAgendamento,
   PendenciaDoCaixa,
+  SalvarDivisao,
 } from "@barchop/types";
 import { ErroHttp } from "./erro-http";
 import { ErroDeNegocio } from "./erro-negocio";
@@ -345,5 +347,84 @@ export async function fecharODia(
   const acerto = contarOAcerto(await pagamentosDoDia(tx, barbeariaId, data));
   await tx.fechamentoDoDia.create({
     data: { barbeariaId, data, fechadoPorId, acerto: acerto as unknown as Prisma.InputJsonObject },
+  });
+}
+
+// Quem entra na divisão do dinheiro: membro ativo que atende (dono ou
+// profissional). A recepção não atende; quem saiu não leva parte
+// (dividirPagamento já ignora o dono do cliente inativo).
+function membrosDaDivisao(db: Prisma.TransactionClient, barbeariaId: string) {
+  return db.barbeiro.findMany({
+    where: { barbeariaId, ativo: true, atende: true, papel: { in: ["dono", "profissional"] } },
+    orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
+    select: { id: true, nome: true, parteDaCasa: true },
+  });
+}
+
+// O cliente só "é de" quem entra na divisão (PATCH /clientes/:id).
+export async function garantirMembroDaDivisao(
+  db: Prisma.TransactionClient,
+  barbeariaId: string,
+  membroId: string
+): Promise<void> {
+  if (!(await membrosDaDivisao(db, barbeariaId)).some((m) => m.id === membroId)) {
+    throw new ErroDeNegocio("o profissional não é um membro ativo que atende", "membro_invalido");
+  }
+}
+
+export async function divisaoDaBarbearia(db: Prisma.TransactionClient, barbeariaId: string): Promise<DivisaoDoDinheiro> {
+  const membros = await membrosDaDivisao(db, barbeariaId);
+  const posicao = new Map(membros.map((m, i) => [m.id, i]));
+  // Só os pares entre quem está na divisão: a regra de quem saiu fica
+  // guardada, mas não aparece.
+  const linhas = await db.regraDeDivisao.findMany({
+    where: { barbeariaId, donoDoClienteId: { in: [...posicao.keys()] }, atendenteId: { in: [...posicao.keys()] } },
+    select: { donoDoClienteId: true, atendenteId: true, percentual: true },
+  });
+  const ordem = (r: (typeof linhas)[number]) =>
+    (posicao.get(r.donoDoClienteId) ?? 0) * membros.length + (posicao.get(r.atendenteId) ?? 0);
+  return { membros, matriz: [...linhas].sort((a, b) => ordem(a) - ordem(b)) };
+}
+
+// Grava a divisão que o dono montou. A matriz substitui a dos pares
+// entre os membros da divisão (par em 0 não vira linha: ausente = 0); a
+// parte da casa muda só para quem veio. Tudo na transação de quem chama:
+// um membro inválido no meio não deixa metade gravada.
+export async function salvarDivisao(
+  tx: Prisma.TransactionClient,
+  barbeariaId: string,
+  divisao: SalvarDivisao
+): Promise<void> {
+  const ids = new Set((await membrosDaDivisao(tx, barbeariaId)).map((m) => m.id));
+  const garantirMembro = (id: string) => {
+    if (!ids.has(id)) throw new ErroDeNegocio("um dos membros não é um membro ativo que atende", "membro_invalido");
+  };
+
+  const vistos = new Set<string>();
+  for (const { membroId } of divisao.parteDaCasa) {
+    garantirMembro(membroId);
+    if (vistos.has(membroId)) throw new ErroDeNegocio("o mesmo membro veio duas vezes", "regra_invalida");
+    vistos.add(membroId);
+  }
+  const pares = new Set<string>();
+  for (const { donoDoClienteId, atendenteId } of divisao.matriz) {
+    garantirMembro(donoDoClienteId);
+    garantirMembro(atendenteId);
+    if (donoDoClienteId === atendenteId) {
+      throw new ErroDeNegocio("com o próprio cliente, quem atende fica com tudo", "regra_invalida");
+    }
+    const par = `${donoDoClienteId}:${atendenteId}`;
+    if (pares.has(par)) throw new ErroDeNegocio("o mesmo par veio duas vezes", "regra_invalida");
+    pares.add(par);
+  }
+
+  for (const { membroId, percentual } of divisao.parteDaCasa) {
+    await tx.barbeiro.update({ where: { id: membroId }, data: { parteDaCasa: percentual } });
+  }
+  await tx.regraDeDivisao.deleteMany({
+    where: { barbeariaId, donoDoClienteId: { in: [...ids] }, atendenteId: { in: [...ids] } },
+  });
+  await tx.regraDeDivisao.createMany({
+    data: divisao.matriz.filter((r) => r.percentual > 0).map((r) => ({ barbeariaId, ...r })),
   });
 }

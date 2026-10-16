@@ -676,3 +676,29 @@ export interface CaixaDoDia {
   acerto: { pessoas: LinhaDoAcertoDoCaixa[]; repasses: RepasseDoCaixa[] };
   pendencias: PendenciaDoCaixa[];
 }
+
+// GET e PUT /barbearias/me/divisao (só o dono). Entram os membros
+// ativos que atendem. Percentuais inteiros de 0 a 100.
+export interface MembroDaDivisao extends MembroDoCaixa {
+  // % que fica com a casa de tudo o que ele atende.
+  parteDaCasa: number;
+}
+
+// "Cliente de A, atendido por B → A leva X%." Par ausente = 0.
+export interface RegraDaMatriz {
+  donoDoClienteId: string;
+  atendenteId: string;
+  percentual: number;
+}
+
+export interface DivisaoDoDinheiro {
+  membros: MembroDaDivisao[];
+  matriz: RegraDaMatriz[];
+}
+
+// A matriz enviada substitui a dos membros listados; quem não vem em
+// `parteDaCasa` fica como estava.
+export interface SalvarDivisao {
+  parteDaCasa: { membroId: string; percentual: number }[];
+  matriz: RegraDaMatriz[];
+}

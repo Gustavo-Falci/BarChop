@@ -1,15 +1,17 @@
 import { prisma } from "@barchop/database";
 import { FORMAS_DE_PAGAMENTO } from "@barchop/formato";
-import type { CaixaDoDia, PagamentoDoAtendimento } from "@barchop/types";
+import type { CaixaDoDia, DivisaoDoDinheiro, PagamentoDoAtendimento } from "@barchop/types";
 import { garantirRecurso } from "../lib/assinatura";
 import {
   caixaDoDia,
   diaDoCaixa,
   diaEstaFechado,
+  divisaoDaBarbearia,
   fecharODia,
   garantirDiaAberto,
   INCLUDE_PAGAMENTO,
   registrarPagamento,
+  salvarDivisao,
   serializarPagamento,
 } from "../lib/caixa";
 import { PADRAO_DATA, PADRAO_UUID } from "../lib/padroes";
@@ -17,11 +19,47 @@ import { agendaVisivel, exigirPapel, membroDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
 // O caixa do dia (Onda 2, marco 2, plano caixa-do-dia): o pagamento de
-// cada atendimento, o caixa de um dia e o fechamento; as regras de
-// divisão chegam no PR 5. Dono e recepção mexem em qualquer atendimento,
-// o profissional só nos próprios (`agendaVisivel`, como no PATCH do
-// agendamento): o do colega é 404. Só o dono fecha e reabre o dia.
-// Plano sem `caixa` é 403.
+// cada atendimento, o caixa de um dia, o fechamento e a divisão do
+// dinheiro. Dono e recepção mexem em qualquer atendimento, o
+// profissional só nos próprios (`agendaVisivel`, como no PATCH do
+// agendamento): o do colega é 404. Só o dono fecha e reabre o dia e vê
+// ou muda a divisão. Plano sem `caixa` é 403.
+
+const PERCENTUAL = { type: "integer", minimum: 0, maximum: 100 } as const;
+
+// A tela manda a grade inteira: a matriz dos membros da divisão e a
+// parte da casa de cada um. Os tetos são de resposta, não de equipe.
+const corpoDivisao = {
+  type: "object",
+  additionalProperties: false,
+  required: ["parteDaCasa", "matriz"],
+  properties: {
+    parteDaCasa: {
+      type: "array",
+      maxItems: 100,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["membroId", "percentual"],
+        properties: { membroId: { type: "string", pattern: PADRAO_UUID }, percentual: PERCENTUAL },
+      },
+    },
+    matriz: {
+      type: "array",
+      maxItems: 2500,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["donoDoClienteId", "atendenteId", "percentual"],
+        properties: {
+          donoDoClienteId: { type: "string", pattern: PADRAO_UUID },
+          atendenteId: { type: "string", pattern: PADRAO_UUID },
+          percentual: PERCENTUAL,
+        },
+      },
+    },
+  },
+} as const;
 
 const filtroDoCaixa = {
   type: "object",
@@ -152,6 +190,29 @@ export function registrarRotasCaixa(app: App): void {
       const data = diaDoCaixa(request.params.data);
       await prisma.fechamentoDoDia.deleteMany({ where: { barbeariaId, data } });
       return reply.code(204).send();
+    }
+  );
+
+  app.get(
+    "/barbearias/me/divisao",
+    { onRequest: exigirPapel("dono") },
+    async (request): Promise<DivisaoDoDinheiro> => {
+      const { barbeariaId } = request.user;
+      await garantirRecurso(prisma, barbeariaId, "caixa", new Date());
+      return divisaoDaBarbearia(prisma, barbeariaId);
+    }
+  );
+
+  // Vale para os pagamentos registrados daqui pra frente: os antigos
+  // guardam a divisão de quando foram registrados (decisão 2 do plano).
+  app.put(
+    "/barbearias/me/divisao",
+    { onRequest: exigirPapel("dono"), schema: { body: corpoDivisao } },
+    async (request): Promise<DivisaoDoDinheiro> => {
+      const { barbeariaId } = request.user;
+      await garantirRecurso(prisma, barbeariaId, "caixa", new Date());
+      await prisma.$transaction((tx) => salvarDivisao(tx, barbeariaId, request.body));
+      return divisaoDaBarbearia(prisma, barbeariaId);
     }
   );
 }

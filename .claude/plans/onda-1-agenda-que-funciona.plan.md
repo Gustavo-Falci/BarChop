@@ -4,7 +4,38 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-16 — cobrança encerrada: testada de verdade, #147 a #150 no ar, sandbox limpo) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-16 — caixa do dia no ar: Onda 2, marco 2 completo, #153 a #160) — vale mais que as seções abaixo
+
+**Estado:**
+- **Produção = `main` = `4c6e6ab`** (#160). O dono fez o deploy: `migrar` (migração `20261017120000_caixa`), depois `api` e `web`.
+- **Conferido no ar com curl:** as rotas do caixa na API respondem 401 sem login (existem) e uma rota inexistente, 404; nos chunks do painel estão o Caixa ("Fechar o dia", "Entrou no dia"), a Divisão do dinheiro, "Concluir e registrar pagamento", "Salvar troca" (Cliente de X) e a novidade "Caixa do dia".
+- **Ainda não testado por dentro em produção:** entrar numa barbearia do Essencial ou do Completo, registrar um pagamento e fechar o dia. No dev local foi testado no navegador, em 1440 e 375.
+
+**O que entrou no marco 2** (plano `.claude/plans/caixa-do-dia.plan.md`, marcado FEITO; PRD da Onda 2 com o marco 2 `complete`):
+- #153: a conta em `@barchop/formato` (`caixa.ts`: `dividirPagamento` e `acertoDoDia`).
+- #154: a migração (`pagamento`, `pagamento_parte`, `regra_de_divisao`, `fechamento_do_dia`, `cliente.profissional_id` preenchido com quem atendeu o 1º concluído, `barbeiro.parte_da_casa`).
+- #155: API do pagamento (`PUT`/`DELETE`/`GET /agendamentos/:id/pagamento`; o PATCH de status solta o pagamento ao sair do concluído; 409 `dia_fechado`; 403 `recurso_do_plano` no Grátis).
+- #156: API do caixa do dia (`GET /barbearias/me/caixa?data=`; fechar e reabrir só o dono, com a foto do acerto).
+- #157: API da divisão (`GET`/`PUT /barbearias/me/divisao`) e o profissional do cliente (`profissionalId` no `PATCH /clientes/:id`, só o dono).
+- #158: o pagamento no detalhe do agendamento ("Concluir e registrar pagamento", resumo com a frase da divisão, editar, remover, dia fechado só leitura).
+- #159: a tela Caixa (`/painel/caixa`) e o item no menu, entre Agenda e Folgas.
+- #160: a Divisão do dinheiro (`/painel/configuracoes/divisao`), "Cliente de X" no detalhe do cliente, o tema Caixa na Central de ajuda, a novidade e as docs (`screens.md` com 34 rotas).
+
+**Para lembrar:**
+- Os clientes antigos ficaram com quem atendeu o 1º agendamento concluído de cada um; se algum estiver errado, o dono troca no detalhe do cliente.
+- A novidade "Caixa do dia" está com a data 2026-10-16.
+- Barbearia com agendamento não pode ser apagada (RESTRICT da init em `agendamento`; ver "Dívidas conhecidas" no roadmap). Pesa em apagar a `barbearia-teste`.
+- Ainda não visto no ar (da cobrança): o Portal "sem descida" com uma barbearia real de mais de 3 profissionais no Completo.
+
+**O que falta (o dono escolhe):**
+1. Testar o caixa por dentro em produção (registrar um pagamento, fechar e reabrir o dia).
+2. Onda 2, marco 3 — planos da barbearia para o cliente. Antes do `/plan`, decidir a pergunta aberta do PRD: o plano de um cliente que é do parceiro, de quem é a mensalidade no acerto? E o provedor para a barbearia receber dos clientes.
+3. Onda 2, marco 4 — relatórios (o que entrou por período, profissional e forma; histórico dos fechamentos).
+4. Onda 1, G3 — o piloto da GR Barber (adiado pelo dono para depois da Onda 2).
+5. Mais telas de UI/UX: o dono manda print por print.
+6. `barbearia-teste` em produção: apagar ou manter.
+
+## RETOMAR AQUI (2026-10-16 — cobrança encerrada: testada de verdade, #147 a #150 no ar, sandbox limpo) — histórico
 
 **Estado:**
 - **Produção = `main` = `2880d59`** (#148 `bb74899`, #149 `abeb799`, #150 `2880d59`, mesclados com "pode mergear"; #147 só docs). Sem migração nova.

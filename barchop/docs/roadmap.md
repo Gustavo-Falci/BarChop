@@ -12,7 +12,7 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 | 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | feita, na main (PR #13) — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
 | 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | no ar — blocos A a G2 e o G4 feitos (PRs #14 a #39, o G1 em #56 e #57); falta só o G3, o piloto da GR Barber, que o dono adiou para depois da Onda 2 — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md`; o que entrou está em "Onda 1 — o que está no ar", abaixo |
 | 1s — Site de marketing | Landing, termos e privacidade, robots/sitemap/Open Graph, preços e plano grátis | feita (mínimo), no ar — PRs #40, #70, #74 e #114 (imagem do link); a tabela de preços, `/precos` e `/gratis` entraram com a cobrança (#146) — plano em `.claude/plans/onda-1s-site-de-marketing.plan.md` |
-| 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | em andamento — marco 1 (o BarChop cobra a assinatura, pela Stripe) no ar desde 2026-10-15 e testado com cobrança real em 2026-10-16 (PRs #141 a #150); marcos 2 a 4 pendentes — PRD em `.claude/prds/onda-2-dinheiro.prd.md` |
+| 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | em andamento — marco 1 (o BarChop cobra a assinatura, pela Stripe) no ar desde 2026-10-15 e testado com cobrança real em 2026-10-16 (PRs #141 a #150); marco 2 (caixa do dia e comissões) no ar desde 2026-10-16 (PRs #153 a #160); marcos 3 e 4 pendentes — PRD em `.claude/prds/onda-2-dinheiro.prd.md` |
 | 3 — Retenção do cliente final | Pagamento e sinal online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações | pendente |
 | 4 — Crescimento | Indicação, loja, múltiplas unidades, campanhas, login social | pendente |
 | 5 — Diferenciais | IA no WhatsApp, NFS-e, domínio próprio, app do profissional | pendente |
@@ -75,7 +75,7 @@ O que falta pra Onda 1 virar `complete` no PRD: o G3, a GR Barber
 rodando no ar (dados, equipe e jornada reais, linha de base de faltas
 medida antes de ligar o lembrete).
 
-## Onda 2 — marco 1 no ar (2026-10-16)
+## Onda 2 — marcos 1 e 2 no ar (2026-10-16)
 
 O BarChop cobra a própria assinatura (ADR-0010, plano
 `.claude/plans/cobranca-do-barchop.plan.md`): planos Grátis, Essencial
@@ -88,8 +88,21 @@ Essencial a quem tem mais de 3 profissionais, e faturas reembolsadas
 marcadas como tal (#148 a #150). Testado em produção com cartão real:
 assinar, cobrar, reembolsar e cancelar.
 
-Os marcos 2 (caixa do dia e comissões), 3 (planos da barbearia para o
-cliente) e 4 (relatórios) seguem pendentes.
+**Marco 2 — caixa do dia e comissões** (plano
+`.claude/plans/caixa-do-dia.plan.md`, #153 a #160; migração
+`20261017120000_caixa`). Ao concluir um atendimento, o painel registra o
+pagamento (valor, desconto, gorjeta, forma e quem recebeu) e grava na
+hora a divisão entre quem atendeu, o profissional de quem o cliente é e
+a casa, pelas regras da barbearia: a parte da casa de cada um e a matriz
+"cliente de A, atendido por B" (`dividirPagamento` em
+`@barchop/formato`). A tela Caixa mostra o dia — quanto entrou por
+forma, o acerto por pessoa e quem repassa quanto a quem, as pendências —
+e o dono fecha o dia, que grava a foto do acerto e trava os pagamentos
+até reabrir. A Divisão do dinheiro fica nas Configurações; o detalhe do
+cliente diz de quem ele é. Só nos planos Essencial e Completo.
+
+Os marcos 3 (planos da barbearia para o cliente) e 4 (relatórios)
+seguem pendentes.
 
 ## Histórico — até 2026-10-02
 

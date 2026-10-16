@@ -6,10 +6,13 @@ import {
   PADRAO_INSTAGRAM,
   REGRAS_PADRAO,
   areasTocadas,
+  dividirPagamento,
   juntarAreas,
   normalizarAparencia,
   slugReservado,
+  temRecurso,
   type AreaDeConfiguracao,
+  type RegrasDeDivisao,
 } from "@barchop/formato";
 import type {
   AparenciaDaPagina,
@@ -32,7 +35,9 @@ import type {
   NovoAgendamentoBarbeiroInput,
   NovoAgendamentoPublicoInput,
   OcupacaoDoDia,
+  PagamentoDoAgendamento,
   PapelMembro,
+  RegistrarPagamento,
   PerfilPublicoBarbearia,
   ResumoDaAssinatura,
   FaturaDaAssinatura,
@@ -198,6 +203,14 @@ export interface EstadoFalso {
   assinatura?: ResumoDaAssinatura;
   // As faturas da Stripe, da mais nova. Sem semente, nenhuma.
   faturas?: FaturaDaAssinatura[];
+  // O caixa do dia (Onda 2, marco 2). Sem semente: nenhum pagamento,
+  // nenhum dia fechado e a divisão em 0 (quem atendeu fica com tudo).
+  pagamentos?: PagamentoDoAgendamento[];
+  diasFechados?: string[];
+  divisao?: Omit<RegrasDeDivisao, "ativos">;
+  // De quem cada cliente é, por id do cliente. Quem não aparece é de
+  // ninguém, e passa a ser de quem o atender, como na API.
+  donosDosClientes?: Record<string, string>;
 }
 
 const FIM_DO_TESTE_PADRAO = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -297,6 +310,12 @@ function limparTextoOpcional(texto: string | null | undefined): string | null {
 // Como o schema da API: só valor da lista fechada, ou null; fora dela, 400.
 // O tipo já barra valor de fora; a checagem é pra quem chega com `as`
 // (ou de um teste que testa a recusa).
+// Cópia funda o bastante: o teste que guarda um pagamento devolvido não
+// pode ver o dublê mudá-lo por baixo.
+function copiaDoPagamento(pagamento: PagamentoDoAgendamento): PagamentoDoAgendamento {
+  return JSON.parse(JSON.stringify(pagamento)) as PagamentoDoAgendamento;
+}
+
 function categoriaValida(categoria: CategoriaDeServico | null | undefined): CategoriaDeServico | null {
   if (categoria == null) return null;
   if (!(CATEGORIAS_DE_SERVICO as readonly string[]).includes(categoria)) {
@@ -347,6 +366,13 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     avisosPublicados: (semente.avisosPublicados ?? []).map((a) => ({ ...a })),
     assinatura: { ...(semente.assinatura ?? ASSINATURA_PADRAO) },
     faturas: (semente.faturas ?? []).map((f) => ({ ...f })),
+    pagamentos: (semente.pagamentos ?? []).map(copiaDoPagamento),
+    diasFechados: [...(semente.diasFechados ?? [])],
+    divisao: {
+      parteDaCasa: { ...(semente.divisao?.parteDaCasa ?? {}) },
+      matriz: [...(semente.divisao?.matriz ?? [])],
+    },
+    donosDosClientes: { ...(semente.donosDosClientes ?? {}) },
   };
 
   // O pedido como o dono o vê: sem a barbearia, que é a dele.
@@ -732,6 +758,34 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
 
   // O garantirAlteravel da API, sem o relógio: o dublê não sabe que
   // horas são.
+  // O caixa, como na API: plano sem o recurso é 403; dia fechado não
+  // aceita mudança de pagamento.
+  function exigirCaixa(): void {
+    if (!temRecurso(estado.assinatura!.planoEfetivo, "caixa")) {
+      throw new ErroDaApi(403, "recurso_do_plano", "o plano não tem este recurso: escolha um plano");
+    }
+  }
+
+  function exigirDiaAberto(data: string): void {
+    if (estado.diasFechados!.includes(data)) {
+      throw new ErroDaApi(409, "dia_fechado", "o caixa deste dia está fechado: o dono precisa reabrir");
+    }
+  }
+
+  function agendamentoOu404(id: string) {
+    const achado = estado.agendamentos.find((a) => a.id === id);
+    if (!achado) throw new ErroDaApi(404, "nao_encontrado", "agendamento não encontrado");
+    return achado;
+  }
+
+  function apagarPagamento(agendamentoId: string): void {
+    estado.pagamentos = estado.pagamentos!.filter((p) => p.agendamentoId !== agendamentoId);
+  }
+
+  function membroDoCaixa(id: string) {
+    return { id, nome: equipe().find((m) => m.id === id)?.nome ?? "" };
+  }
+
   function exigirAtivo(agendamento: AgendamentoSerializado): void {
     if (agendamento.status !== "pendente" && agendamento.status !== "confirmado") {
       throw new ErroDaApi(
@@ -1454,11 +1508,84 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             "agendamento não encontrado"
           );
         }
+        // Sair do concluído leva o pagamento junto, como na API.
+        const pago = estado.pagamentos!.some((p) => p.agendamentoId === id);
+        if (pago && edicao.status !== undefined && edicao.status !== "concluido") {
+          exigirDiaAberto(estado.agendamentos[indice].data);
+          apagarPagamento(id);
+        }
         estado.agendamentos[indice] = {
           ...estado.agendamentos[indice],
           ...edicao,
         };
         return comCliente(estado.agendamentos[indice]);
+      },
+      async pagamentoDoAgendamento(id: string) {
+        exigirCaixa();
+        const achado = agendamentoOu404(id);
+        const pagamento = estado.pagamentos!.find((p) => p.agendamentoId === id);
+        return {
+          pagamento: pagamento ? copiaDoPagamento(pagamento) : null,
+          diaFechado: estado.diasFechados!.includes(achado.data),
+        };
+      },
+      // A mesma conta da API (dividirPagamento); o resto, como em
+      // lib/caixa.ts: conclui, e o cliente sem dono passa a ser de quem
+      // atendeu.
+      async registrarPagamento(id: string, dados: RegistrarPagamento) {
+        exigirCaixa();
+        const achado = agendamentoOu404(id);
+        exigirDiaAberto(achado.data);
+        const soma = achado.servicos.reduce((total, s) => total + Math.round(Number(s.precoNoMomento) * 100), 0);
+        const servicosCentavos = dados.servicosCentavos ?? soma;
+        const descontoCentavos = dados.descontoCentavos ?? 0;
+        const gorjetaCentavos = dados.gorjetaCentavos ?? 0;
+        if (descontoCentavos > servicosCentavos) {
+          throw new ErroDaApi(422, "valor_invalido", "o desconto passa do valor dos serviços");
+        }
+        const atendente = achado.barbeiro.id;
+        const recebidoPorId = dados.recebidoPorId ?? atendente;
+        if (dados.recebidoPorId !== undefined && !equipe().some((m) => m.id === recebidoPorId && m.ativo)) {
+          throw new ErroDaApi(422, "membro_invalido", "quem recebeu não é um membro ativo da equipe");
+        }
+        const clienteId = achado.clienteId ?? estado.cliente.id;
+        const donos = estado.donosDosClientes!;
+        donos[clienteId] ??= atendente;
+        const partes = dividirPagamento(
+          { atendente, donoDoCliente: donos[clienteId], servicosCentavos, descontoCentavos, gorjetaCentavos },
+          { ativos: equipe().filter((m) => m.ativo).map((m) => m.id), ...estado.divisao! }
+        );
+        const anterior = estado.pagamentos!.find((p) => p.agendamentoId === id);
+        const pagamento: PagamentoDoAgendamento = {
+          id: anterior?.id ?? `p${estado.pagamentos!.length + 1}`,
+          agendamentoId: id,
+          data: achado.data,
+          forma: dados.forma,
+          servicosCentavos,
+          descontoCentavos,
+          gorjetaCentavos,
+          totalCentavos: servicosCentavos - descontoCentavos + gorjetaCentavos,
+          atendente: membroDoCaixa(atendente),
+          donoDoCliente: membroDoCaixa(donos[clienteId]),
+          recebidoPor: membroDoCaixa(recebidoPorId),
+          registradoPor: membroDoCaixa("bb1"),
+          registradoEm: new Date().toISOString(),
+          partes: partes.map((parte) => ({
+            beneficiario: parte.beneficiario === null ? null : membroDoCaixa(parte.beneficiario),
+            motivo: parte.motivo,
+            valorCentavos: parte.valorCentavos,
+          })),
+        };
+        apagarPagamento(id);
+        estado.pagamentos!.push(pagamento);
+        achado.status = "concluido";
+        return copiaDoPagamento(pagamento);
+      },
+      async removerPagamento(id: string) {
+        exigirCaixa();
+        const achado = agendamentoOu404(id);
+        exigirDiaAberto(achado.data);
+        apagarPagamento(id);
       },
     },
 

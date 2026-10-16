@@ -17,6 +17,9 @@ import type {
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
   OcupacaoDoDia,
+  PagamentoDoAgendamento,
+  PagamentoDoAtendimento,
+  RegistrarPagamento,
   FaixaDeCliente,
   FiltroDeNotificacoes,
   Notificacao,
@@ -674,6 +677,25 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
         corpo: edicao,
         comToken: true,
       });
+    },
+
+    // O caixa do dia (Onda 2, marco 2). Plano sem caixa: 403
+    // `recurso_do_plano`; dia fechado: 409 `dia_fechado` nas escritas.
+    pagamentoDoAgendamento(id: string): Promise<PagamentoDoAtendimento> {
+      return requisicao(`/agendamentos/${id}/pagamento`, { comToken: true });
+    },
+
+    // Cria ou refaz o pagamento e conclui o atendimento.
+    registrarPagamento(id: string, dados: RegistrarPagamento): Promise<PagamentoDoAgendamento> {
+      return requisicao(`/agendamentos/${id}/pagamento`, {
+        metodo: "PUT",
+        corpo: dados,
+        comToken: true,
+      });
+    },
+
+    async removerPagamento(id: string): Promise<void> {
+      await requisicao(`/agendamentos/${id}/pagamento`, { metodo: "DELETE", comToken: true });
     },
   };
 }

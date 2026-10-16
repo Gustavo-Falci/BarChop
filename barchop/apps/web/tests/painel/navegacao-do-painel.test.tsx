@@ -105,6 +105,21 @@ describe("navegação do painel", () => {
     );
   });
 
+  it("o Caixa fica entre Agenda e Folgas, pra toda a equipe", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/caixa" });
+
+    montar(criarApiClientFalso({ papel: "profissional" }));
+
+    const caixa = await screen.findByRole("link", { name: "Caixa" });
+    expect(caixa).toHaveAttribute("href", "/painel/caixa");
+    expect(caixa).toHaveAttribute("aria-current", "page");
+    const nomes = screen
+      .getAllByRole("link")
+      .map((link) => link.textContent)
+      .filter((nome) => ["Agenda", "Caixa", "Folgas"].includes(nome ?? ""));
+    expect(nomes).toEqual(["Agenda", "Caixa", "Folgas"]);
+  });
+
   it("tema e Sair não moram mais na barra lateral — foram pra barra de topo", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel" });
 

@@ -13,8 +13,18 @@
 // novo, leva a lookup_key pra ele (`transfer_lookup_key`) e arquiva o
 // antigo: quem assinar dali em diante paga o novo; as assinaturas que já
 // existem continuam no preço antigo até alguém trocá-las.
+//
+// Depois dos preços, a configuração "sem descida" do Portal (quem tem mais
+// de 3 profissionais só troca entre os preços do Completo): uma cópia da
+// configuração padrão. Mudou o Portal no painel da Stripe? Rodar de novo.
 import Stripe from "stripe";
-import { modoDaChave, precosParaStripe, type PrecoNaStripe } from "../src/lib/cobranca";
+import {
+  acharConfiguracaoSemDescida,
+  configuracaoSemDescida,
+  modoDaChave,
+  precosParaStripe,
+  type PrecoNaStripe,
+} from "../src/lib/cobranca";
 
 function mesmosDegraus(preco: Stripe.Price, esperado: PrecoNaStripe): boolean {
   const degraus = (preco.tiers ?? []).map((t) => ({ up_to: t.up_to ?? "inf", unit_amount: t.unit_amount }));
@@ -32,6 +42,29 @@ async function garantirProduto(stripe: Stripe, produto: PrecoNaStripe["produto"]
     if ((erro as { statusCode?: number }).statusCode !== 404) throw erro;
     await stripe.products.create({ id: produto.id, name: produto.nome });
     console.log(`produto criado: ${produto.id}`);
+  }
+}
+
+async function garantirPortalSemDescida(stripe: Stripe): Promise<void> {
+  // Os produtos da troca de plano só vêm quando pedidos.
+  const { data } = await stripe.billingPortal.configurations.list({
+    is_default: true,
+    limit: 1,
+    expand: ["data.features.subscription_update.products"],
+  });
+  if (!data[0]) throw new Error("o Portal não tem configuração padrão: salve-o uma vez no painel da Stripe");
+  const parametros = configuracaoSemDescida(data[0]);
+  const produtos = parametros.features.subscription_update?.products;
+  if (!Array.isArray(produtos) || produtos.length === 0) {
+    throw new Error("o Portal padrão não oferece o Completo na troca de plano: nada pra copiar");
+  }
+  const atual = await acharConfiguracaoSemDescida(stripe);
+  if (atual) {
+    await stripe.billingPortal.configurations.update(atual.id, { ...parametros, active: true });
+    console.log(`portal sem descida: atualizado (${atual.id})`);
+  } else {
+    const nova = await stripe.billingPortal.configurations.create(parametros);
+    console.log(`portal sem descida: criado → ${nova.id}`);
   }
 }
 
@@ -69,6 +102,8 @@ async function main() {
     if (atual) await stripe.prices.update(atual.id, { active: false });
     console.log(`${esperado.chave}: ${atual ? `trocado (${atual.id} arquivado)` : "criado"} → ${novo.id}`);
   }
+
+  await garantirPortalSemDescida(stripe);
 }
 
 main().catch((erro: unknown) => {

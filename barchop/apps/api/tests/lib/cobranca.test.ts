@@ -6,6 +6,7 @@ import {
   chaveDoPreco,
   cobrancaDeMemoria,
   cobrancaDoAmbiente,
+  configuracaoSemDescida,
   fimDoTesteNaCobranca,
   modoDaChave,
   planoDaChave,
@@ -89,6 +90,118 @@ describe("fimDoTesteNaCobranca", () => {
     expect(fimDoTesteNaCobranca(new Date(AGORA.getTime() + 47 * HORA), AGORA)).toBeNull();
     expect(fimDoTesteNaCobranca(new Date(AGORA.getTime() - HORA), AGORA)).toBeNull();
     expect(fimDoTesteNaCobranca(null, AGORA)).toBeNull();
+  });
+});
+
+describe("configuracaoSemDescida", () => {
+  // A configuração padrão do Portal como a Stripe devolve (o que o dono
+  // deixou no painel dela em 15/10/2026).
+  const padrao = {
+    id: "bpc_padrao",
+    object: "billing_portal.configuration",
+    active: true,
+    application: null,
+    business_profile: {
+      headline: null,
+      privacy_policy_url: "https://barchop.com.br/privacidade",
+      terms_of_service_url: "https://barchop.com.br/termos",
+    },
+    created: 1,
+    default_return_url: null,
+    features: {
+      customer_update: { allowed_updates: ["email", "address"], enabled: true },
+      invoice_history: { enabled: true },
+      payment_method_update: { enabled: true, payment_method_configuration: null },
+      subscription_cancel: {
+        cancellation_reason: { enabled: true, options: ["too_expensive", "other"] },
+        enabled: true,
+        mode: "at_period_end",
+        proration_behavior: "none",
+      },
+      subscription_update: {
+        billing_cycle_anchor: null,
+        default_allowed_updates: ["price"],
+        enabled: true,
+        products: [
+          {
+            adjustable_quantity: { enabled: false, maximum: null, minimum: 1 },
+            prices: ["price_ess_m", "price_ess_a"],
+            product: "barchop_essencial",
+          },
+          {
+            adjustable_quantity: { enabled: false, maximum: null, minimum: 1 },
+            prices: ["price_com_m", "price_com_a"],
+            product: "barchop_completo",
+          },
+        ],
+        proration_behavior: "always_invoice",
+        schedule_at_period_end: { conditions: [{ type: "decreasing_item_amount" }, { type: "shortening_interval" }] },
+        trial_update_behavior: "continue_trial",
+      },
+    },
+    is_default: true,
+    livemode: false,
+    login_page: { enabled: false, url: null },
+    metadata: {},
+    name: null,
+    updated: 1,
+  } as unknown as Stripe.BillingPortal.Configuration;
+
+  it("a troca de plano só oferece os preços do Completo", () => {
+    const produtos = configuracaoSemDescida(padrao).features.subscription_update?.products;
+    expect(produtos).toEqual([
+      { product: "barchop_completo", prices: ["price_com_m", "price_com_a"], adjustable_quantity: { enabled: false } },
+    ]);
+  });
+
+  it("o resto é cópia da padrão: links, cancelamento, cobrança da diferença, teste", () => {
+    const params = configuracaoSemDescida(padrao);
+    expect(params.business_profile).toEqual({
+      privacy_policy_url: "https://barchop.com.br/privacidade",
+      terms_of_service_url: "https://barchop.com.br/termos",
+    });
+    expect(params.default_return_url).toBeUndefined();
+    expect(params.features.customer_update).toEqual({ allowed_updates: ["email", "address"], enabled: true });
+    expect(params.features.invoice_history).toEqual({ enabled: true });
+    expect(params.features.payment_method_update).toEqual({ enabled: true });
+    expect(params.features.subscription_cancel).toEqual({
+      cancellation_reason: { enabled: true, options: ["too_expensive", "other"] },
+      enabled: true,
+      mode: "at_period_end",
+      proration_behavior: "none",
+    });
+    expect(params.features.subscription_update).toMatchObject({
+      default_allowed_updates: ["price"],
+      enabled: true,
+      proration_behavior: "always_invoice",
+      schedule_at_period_end: { conditions: [{ type: "decreasing_item_amount" }, { type: "shortening_interval" }] },
+      trial_update_behavior: "continue_trial",
+    });
+  });
+
+  it("quantidade ligada no produto mas não na troca: a Stripe recusa, então vai desligada", () => {
+    // Assim estava o sandbox de teste em 16/10/2026; o painel aceita, a API não.
+    const trocar = padrao.features.subscription_update;
+    const misturada = {
+      ...padrao,
+      features: {
+        ...padrao.features,
+        subscription_update: {
+          ...trocar,
+          products: trocar.products!.map((p) => ({ ...p, adjustable_quantity: { enabled: true, maximum: 99, minimum: 1 } })),
+        },
+      },
+    } as Stripe.BillingPortal.Configuration;
+
+    expect(configuracaoSemDescida(misturada).features.subscription_update?.products).toEqual([
+      { product: "barchop_completo", prices: ["price_com_m", "price_com_a"], adjustable_quantity: { enabled: false } },
+    ]);
+  });
+
+  it("é achada pelo metadata e tem nome no painel da Stripe", () => {
+    const params = configuracaoSemDescida(padrao);
+    expect(params.metadata).toEqual({ barchop: "sem_descida" });
+    expect(params.name).toMatch(/sem descida/i);
   });
 });
 

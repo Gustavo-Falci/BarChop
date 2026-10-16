@@ -48,6 +48,9 @@ const SO_DO_DONO = [
   { method: "GET", url: "/barbearias/me/assinatura" },
   { method: "POST", url: "/barbearias/me/assinatura/checkout" },
   { method: "POST", url: "/barbearias/me/assinatura/portal" },
+  // Fechar e reabrir o caixa do dia (Onda 2, marco 2).
+  { method: "POST", url: "/barbearias/me/caixa/2026-01-08/fechamento" },
+  { method: "DELETE", url: "/barbearias/me/caixa/2026-01-08/fechamento" },
 ] as const;
 
 async function prepararEquipe(app: App) {

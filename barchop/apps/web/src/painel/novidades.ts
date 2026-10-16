@@ -10,6 +10,12 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    data: "2026-10-16",
+    titulo: "Caixa do dia",
+    texto:
+      "Ao concluir um atendimento, registre o pagamento: forma, desconto, gorjeta e quem recebeu. No Caixa, veja quanto entrou, quem repassa quanto a quem e feche o dia. A divisão entre a equipe e a casa fica em Configurações. Nos planos Essencial e Completo.",
+  },
+  {
     data: "2026-10-15",
     titulo: "Faturas e assinatura",
     texto:

@@ -37,7 +37,9 @@ import type {
   NovoAgendamentoPublicoInput,
   OcupacaoDoDia,
   CaixaDoDia,
+  DivisaoDoDinheiro,
   MembroDoCaixa,
+  SalvarDivisao,
   PagamentoDoAgendamento,
   PapelMembro,
   PendenciaDoCaixa,
@@ -790,6 +792,29 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     return { id, nome: equipe().find((m) => m.id === id)?.nome ?? "" };
   }
 
+  // A divisão como o GET /barbearias/me/divisao: os membros ativos que
+  // atendem e a matriz entre eles, sem par em 0.
+  function membrosDaDivisao() {
+    return equipe().filter((m) => m.ativo && m.atende && m.papel !== "recepcao");
+  }
+
+  function divisaoFalsa(): DivisaoDoDinheiro {
+    const membros = membrosDaDivisao();
+    const ids = new Set(membros.map((m) => m.id));
+    return {
+      membros: membros.map((m) => ({ id: m.id, nome: m.nome, parteDaCasa: estado.divisao!.parteDaCasa[m.id] ?? 0 })),
+      matriz: estado
+        .divisao!.matriz.filter((r) => r.percentual > 0 && ids.has(r.donoDoCliente) && ids.has(r.atendente))
+        .map((r) => ({ donoDoClienteId: r.donoDoCliente, atendenteId: r.atendente, percentual: r.percentual })),
+    };
+  }
+
+  function exigirMembroDaDivisao(id: string): void {
+    if (!membrosDaDivisao().some((m) => m.id === id)) {
+      throw new ErroDaApi(422, "membro_invalido", "um dos membros não é um membro ativo que atende");
+    }
+  }
+
   // Quem fechou cada dia e quando. Dia fechado pela semente sem registro
   // aqui: fechado pelo dono, no fim do dia.
   const fechamentos = new Map<string, { fechadoEm: string; fechadoPor: MembroDoCaixa }>();
@@ -1373,15 +1398,27 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         if (!achado) {
           throw new ErroDaApi(404, "nao_encontrado", "cliente não encontrado");
         }
+        const dono = estado.donosDosClientes![id];
         return {
           ...achado,
           agendamentos: estado.agendamentos.filter((a) => a.clienteId === id),
+          profissional: dono ? membroDoCaixa(dono) : null,
         };
       },
-      async atualizarCliente(id: string, edicao: EdicaoDoCliente) {
+      async atualizarCliente(id: string, { profissionalId, ...edicao }: EdicaoDoCliente) {
         const indice = estado.clientes.findIndex((c) => c.id === id);
         if (indice < 0) {
           throw new ErroDaApi(404, "nao_encontrado", "cliente não encontrado");
+        }
+        // Como a API: trocar de quem o cliente é é só do dono, e vale um
+        // membro ativo que atende.
+        if (profissionalId !== undefined) {
+          exigirDono();
+          if (profissionalId === null) delete estado.donosDosClientes![id];
+          else {
+            exigirMembroDaDivisao(profissionalId);
+            estado.donosDosClientes![id] = profissionalId;
+          }
         }
         estado.clientes[indice] = { ...estado.clientes[indice], ...edicao };
         return estado.clientes[indice];
@@ -1684,6 +1721,39 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         exigirCaixa();
         estado.diasFechados = estado.diasFechados!.filter((d) => d !== data);
         fechamentos.delete(data);
+      },
+      async divisao() {
+        exigirDono();
+        exigirCaixa();
+        return divisaoFalsa();
+      },
+      // Como lib/caixa.ts: a matriz enviada substitui a dos pares entre os
+      // membros da divisão; a parte da casa muda só pra quem veio.
+      async salvarDivisao(divisao: SalvarDivisao) {
+        exigirDono();
+        exigirCaixa();
+        for (const { membroId } of divisao.parteDaCasa) exigirMembroDaDivisao(membroId);
+        const pares = new Set<string>();
+        for (const regra of divisao.matriz) {
+          exigirMembroDaDivisao(regra.donoDoClienteId);
+          exigirMembroDaDivisao(regra.atendenteId);
+          const par = `${regra.donoDoClienteId}:${regra.atendenteId}`;
+          if (regra.donoDoClienteId === regra.atendenteId || pares.has(par)) {
+            throw new ErroDaApi(422, "regra_invalida", "par com a mesma pessoa ou repetido");
+          }
+          pares.add(par);
+        }
+        const ids = new Set(membrosDaDivisao().map((m) => m.id));
+        const parteDaCasa = { ...estado.divisao!.parteDaCasa };
+        for (const { membroId, percentual } of divisao.parteDaCasa) parteDaCasa[membroId] = percentual;
+        estado.divisao!.parteDaCasa = parteDaCasa;
+        estado.divisao!.matriz = [
+          ...estado.divisao!.matriz.filter((r) => !(ids.has(r.donoDoCliente) && ids.has(r.atendente))),
+          ...divisao.matriz
+            .filter((r) => r.percentual > 0)
+            .map((r) => ({ donoDoCliente: r.donoDoClienteId, atendente: r.atendenteId, percentual: r.percentual })),
+        ];
+        return divisaoFalsa();
       },
     },
 

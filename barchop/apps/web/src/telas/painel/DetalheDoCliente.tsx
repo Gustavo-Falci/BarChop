@@ -26,7 +26,9 @@ import {
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
 import { rotuloDoStatus } from "../../formato/status";
 import { IconeSeta } from "../../painel/icones";
+import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { usePainel } from "../../painel/SessaoDoPainel";
 import { linkDoZap } from "../../painel/whatsapp";
 import estilos from "./DetalheDoCliente.module.css";
 
@@ -48,6 +50,93 @@ function resumoDoHistorico(agendamentos: AgendamentoSerializado[], hoje: string)
   if (proximo) partes.push(`próximo em ${formatarDataLonga(proximo.data)}`);
   if (ultimo) partes.push(`último em ${formatarDataLonga(ultimo.data)}`);
   return partes.join(" · ");
+}
+
+// De quem o cliente "é" no caixa (Onda 2, marco 2): quem o atendeu
+// primeiro, e só o dono troca. Pesa na divisão do dinheiro quando outro
+// profissional o atende.
+function ProfissionalDoCliente({
+  clienteId,
+  profissional,
+  aoTrocar,
+}: {
+  clienteId: string;
+  profissional: { id: string; nome: string } | null;
+  aoTrocar: () => void;
+}) {
+  const api = useApiDoPainel();
+  const { perfil } = usePainel();
+  const dono = perfil.papel === "dono";
+  // Quem pode ser o profissional do cliente: membro ativo que atende. Só
+  // o dono precisa da lista.
+  const equipe = useRequisicao(() => (dono ? api.barbeiro.equipe() : Promise.resolve([])), [dono]);
+  const [trocando, setTrocando] = useState(false);
+  const [escolhido, setEscolhido] = useState(profissional?.id ?? "");
+  const [salvando, setSalvando] = useState(false);
+  const [aviso, setAviso] = useState<string | undefined>();
+
+  const opcoes = [
+    ...(equipe.dados ?? [])
+      .filter((m) => m.ativo && m.atende && m.papel !== "recepcao")
+      .map((m) => ({ valor: m.id, rotulo: m.nome })),
+    { valor: "", rotulo: "Ninguém" },
+  ];
+
+  async function salvar() {
+    setAviso(undefined);
+    setSalvando(true);
+    try {
+      await api.barbeiro.atualizarCliente(clienteId, { profissionalId: escolhido || null });
+      setTrocando(false);
+      aoTrocar();
+    } catch (causa) {
+      setAviso((causa as ErroDaApi).mensagem || "Não foi possível trocar agora.");
+    }
+    setSalvando(false);
+  }
+
+  return (
+    <div className={estilos.profissional}>
+      <p className={estilos.deQuem}>
+        {profissional ? (
+          `Cliente de ${profissional.nome}`
+        ) : (
+          <>Ainda não é cliente de ninguém: passa a ser de quem atender primeiro.</>
+        )}
+      </p>
+      {dono && !trocando ? (
+        <Botao
+          variante="fantasma"
+          onClick={() => {
+            setEscolhido(profissional?.id ?? "");
+            setTrocando(true);
+          }}
+        >
+          Trocar
+        </Botao>
+      ) : null}
+      {trocando ? (
+        <div className={estilos.troca}>
+          <SeletorEmPilulas
+            nome={`profissional-${clienteId}`}
+            legenda="De quem é este cliente"
+            opcoes={opcoes}
+            valor={escolhido}
+            aoTrocar={setEscolhido}
+          />
+          {aviso ? <Aviso>{aviso}</Aviso> : null}
+          <div className={estilos.botoesDosDados}>
+            <Botao variante="fantasma" onClick={() => setTrocando(false)} disabled={salvando}>
+              Cancelar
+            </Botao>
+            <Botao onClick={salvar} carregando={salvando}>
+              Salvar troca
+            </Botao>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 const TOM_DO_STATUS: Record<string, "ok" | "atencao" | "neutro" | "erro"> = {
@@ -292,6 +381,11 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
           <h2 id="dados-do-cliente" className={estilos.rotuloDoGrupo}>
             Dados
           </h2>
+          <ProfissionalDoCliente
+            clienteId={dados.id}
+            profissional={dados.profissional}
+            aoTrocar={() => cliente.recarregar()}
+          />
           <Campo
             rotulo="Nome"
             maxLength={NOME_MAX}

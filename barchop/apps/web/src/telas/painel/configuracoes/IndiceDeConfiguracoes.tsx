@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import type { AreaDeConfiguracao, BarbeariaDoPainel, HorarioSerializado } from "@barchop/types";
+import type {
+  AreaDeConfiguracao,
+  BarbeariaDoPainel,
+  DivisaoDoDinheiro,
+  HorarioSerializado,
+} from "@barchop/types";
 import { Aviso } from "../../../componentes/Aviso";
 import { CabecalhoDaPagina } from "../../../componentes/CabecalhoDaPagina";
 import { SecaoNumerada } from "../../../componentes/SecaoNumerada";
@@ -18,6 +23,22 @@ const GRUPOS: { titulo: string; areas: AreaDeConfiguracao[] }[] = [
   { titulo: "Operação", areas: ["horarios", "regras_de_agendamento"] },
   { titulo: "Canais com clientes", areas: ["dados_do_negocio", "aparencia", "comunicacao", "notificacoes"] },
 ];
+
+function plural(quantidade: number, singular: string, plural: string): string {
+  return `${quantidade} ${quantidade === 1 ? singular : plural}`;
+}
+
+// O que vale hoje na divisão, numa frase.
+function resumoDaDivisao(divisao: DivisaoDoDinheiro | null, erro?: string): string {
+  if (erro === "recurso_do_plano") return "Nos planos Essencial e Completo";
+  if (!divisao) return "Quanto fica com a casa e com o profissional do cliente";
+  const comCasa = divisao.membros.filter((m) => m.parteDaCasa > 0).length;
+  if (divisao.matriz.length === 0 && comCasa === 0) return "Quem atendeu fica com tudo";
+  const partes: string[] = [];
+  if (divisao.matriz.length > 0) partes.push(plural(divisao.matriz.length, "regra de cliente", "regras de cliente"));
+  if (comCasa > 0) partes.push(`parte da casa em ${plural(comCasa, "profissional", "profissionais")}`);
+  return partes.join(" · ");
+}
 
 function LinhaDaArea({
   descricao,
@@ -66,6 +87,8 @@ function IndiceDoDono() {
   const { perfil } = usePainel();
   const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
   const horarios = useRequisicao(() => api.barbeiro.horarios(), []);
+  // Só pro resumo da linha; se falhar, a linha fica com a frase geral.
+  const divisao = useRequisicao(() => api.barbeiro.divisao(), []);
 
   const erro = barbearia.erro ?? horarios.erro;
   if (erro) return <Aviso>{erro.mensagem || "Não foi possível carregar as configurações agora."}</Aviso>;
@@ -120,6 +143,23 @@ function IndiceDoDono() {
           </SecaoNumerada>
         );
       })}
+
+      {/* A divisão do dinheiro (caixa do dia) também fica fora da
+          contagem: começar em 0 — quem atendeu fica com tudo — é uma
+          escolha válida, não algo esquecido. */}
+      <SecaoNumerada titulo="Dinheiro">
+        <ul className={estilos.lista}>
+          <li>
+            <Link href="/painel/configuracoes/divisao" className={estilos.linha}>
+              <strong className={estilos.nomeDaArea}>Divisão do dinheiro</strong>
+              <span className={estilos.valor}>{resumoDaDivisao(divisao.dados, divisao.erro?.codigo)}</span>
+              <span className={estilos.seta} aria-hidden="true">
+                ›
+              </span>
+            </Link>
+          </li>
+        </ul>
+      </SecaoNumerada>
 
       {/* O perfil é de cada pessoa da equipe, não da barbearia: fica
           fora da contagem e sem o "Configurar". */}

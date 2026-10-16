@@ -1,0 +1,193 @@
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+}
+
+/* Desktop: a parte da casa numa coluna estreita, a grade larga ao lado,
+   separadas por um fio. Sem caixas. */
+.corpo {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) minmax(0, 2.4fr);
+  max-width: 1240px;
+}
+
+.casa,
+.grade {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+  min-width: 0;
+  margin: 0;
+  border: none;
+}
+
+.casa {
+  padding: 0 var(--espaco-xl) 0 0;
+}
+
+.grade {
+  padding: 0 0 0 var(--espaco-xl);
+  border-left: var(--borda-hairline) solid var(--cor-line);
+}
+
+.rotulo {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+.apoio {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.linhaDaCasa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaco-xs) var(--espaco-sm);
+  font-weight: 700;
+}
+
+.percentual {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  font-weight: 700;
+}
+
+.entrada {
+  width: 4.5rem;
+  min-height: 44px;
+  padding: 0 var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.entrada[aria-invalid="true"] {
+  border-color: var(--cor-erro);
+}
+
+.erro {
+  grid-column: 1 / -1;
+  display: block;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  color: var(--cor-erro);
+}
+
+/* A grade rola sozinha quando a equipe é grande; a página não. */
+.rolagem {
+  overflow-x: auto;
+}
+
+.tabela {
+  border-collapse: collapse;
+}
+
+.tabela th,
+.tabela td {
+  padding: var(--espaco-sm);
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabela thead th {
+  font-size: var(--texto-sm);
+}
+
+.tabela .canto {
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  color: var(--cor-ink-soft);
+  white-space: nowrap;
+}
+
+.tabela .diagonal {
+  color: var(--cor-ink-soft);
+  text-align: center;
+}
+
+.exemplo {
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-left: 4px solid var(--cor-accent);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.botoes {
+  display: flex;
+  gap: var(--espaco-sm);
+}
+
+.salvo {
+  font-weight: 700;
+  color: var(--cor-ok);
+}
+
+.convite {
+  display: grid;
+  gap: var(--espaco-md);
+  justify-items: start;
+  max-width: 40rem;
+}
+
+.convite p {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.verPlanos {
+  composes: principal from "../DetalheDoAgendamento.module.css";
+}
+
+@media (max-width: 60rem) {
+  .corpo {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--espaco-lg);
+  }
+
+  .casa {
+    padding: 0;
+  }
+
+  .grade {
+    padding: var(--espaco-lg) 0 0;
+    border-left: none;
+    border-top: var(--borda-hairline) solid var(--cor-line);
+  }
+}
+
+/* Celular: a grade de duas ou três pessoas cabe sem rolar — o canto
+   quebra a linha e as células apertam. */
+@media (max-width: 30rem) {
+  .tabela th,
+  .tabela td {
+    padding: var(--espaco-xs);
+  }
+
+  .tabela .canto {
+    max-width: 6rem;
+    white-space: normal;
+  }
+
+  .entrada {
+    width: 3.25rem;
+  }
+}

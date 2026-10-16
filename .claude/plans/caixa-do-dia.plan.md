@@ -3,6 +3,12 @@
 **Source PRD**: `.claude/prds/onda-2-dinheiro.prd.md`
 **Selected Milestone**: 2 — Caixa do dia e comissões
 **Complexity**: Large (8 PRs, 1 migração no PR 2)
+**Status**: FEITO em 2026-10-16 — PRs #153 (conta), #154 (migração), #155 (registrar pagamento), #156 (caixa do dia), #157 (divisão e dono do cliente), #158 (pagamento no detalhe), #159 (tela Caixa e menu), #160 (divisão do dinheiro, "Cliente de X", ajuda, novidade e docs).
+
+Diferenças do plano, combinadas no caminho:
+- O PR 3 ganhou `GET /agendamentos/:id/pagamento` (pagamento ou nulo, e se o dia está fechado), pra tela do PR 6.
+- A frase do efeito no detalhe do agendamento aparece no resumo, logo depois de registrar, e não antes: só o dono lê as regras, e o resumo usa as partes gravadas.
+- A divisão é fora do "X de N decididas" e tem linha própria no índice das Configurações, com o resumo do que vale.
 
 ## Summary
 Ao concluir um atendimento, o painel registra quanto foi pago, a forma de pagamento, o desconto, a gorjeta e quem recebeu o dinheiro. Na mesma hora, o pagamento é dividido entre quem atendeu, o profissional de quem o cliente é e a casa, pelas regras da barbearia. No fim do dia, a tela Caixa mostra, por profissional, quanto recebeu, quanto lhe cabe e quanto deve repassar a quem. Quando o dono fecha o dia, esse acerto fica gravado. Tudo isso é recurso dos planos Essencial e Completo (`caixa` em `planos.ts`).

@@ -625,3 +625,54 @@ export interface PagamentoDoAtendimento {
   pagamento: PagamentoDoAgendamento | null;
   diaFechado: boolean;
 }
+
+// GET /barbearias/me/caixa?data= — o caixa de um dia. O profissional
+// recebe só o que é dele: os pagamentos em que entra, a linha dele no
+// acerto, os repasses dele e as pendências da agenda dele.
+export interface PagamentoDoCaixa extends PagamentoDoAgendamento {
+  horaInicio: string;
+  cliente: { id: string; nome: string };
+}
+
+export interface TotalDaForma {
+  forma: FormaDoPagamento;
+  quantidade: number;
+  valorCentavos: number;
+}
+
+export interface LinhaDoAcertoDoCaixa {
+  // `null` = a casa.
+  pessoa: MembroDoCaixa | null;
+  recebeuCentavos: number;
+  cabeCentavos: number;
+  // cabe − recebeu: positivo tem a receber, negativo tem a repassar.
+  saldoCentavos: number;
+}
+
+export interface RepasseDoCaixa {
+  de: MembroDoCaixa;
+  // `null` = a casa.
+  para: MembroDoCaixa | null;
+  valorCentavos: number;
+}
+
+// Atendimento do dia que o caixa ainda não resolveu: concluído sem
+// pagamento, ou ainda marcado (pendente ou confirmado).
+export interface PendenciaDoCaixa {
+  agendamentoId: string;
+  horaInicio: string;
+  status: "pendente" | "confirmado" | "concluido";
+  cliente: { id: string; nome: string };
+  barbeiro: MembroDoCaixa;
+}
+
+export interface CaixaDoDia {
+  data: string;
+  // Com o dia fechado, o acerto é a foto gravada ao fechar.
+  fechamento: { fechadoEm: string; fechadoPor: MembroDoCaixa } | null;
+  pagamentos: PagamentoDoCaixa[];
+  // As quatro formas, sempre na ordem de FORMAS_DE_PAGAMENTO.
+  totais: { totalCentavos: number; porForma: TotalDaForma[] };
+  acerto: { pessoas: LinhaDoAcertoDoCaixa[]; repasses: RepasseDoCaixa[] };
+  pendencias: PendenciaDoCaixa[];
+}

@@ -117,6 +117,9 @@ model Barbearia {
   slugsAntigos          SlugAntigo[]
   solicitacoesDeLink    SolicitacaoTrocaLink[]
   assinatura            Assinatura?
+  regrasDeDivisao       RegraDeDivisao[]
+  pagamentos            Pagamento[]
+  fechamentos           FechamentoDoDia[]
 
   @@map("barbearia")
 }
@@ -265,6 +268,9 @@ model Barbeiro {
   criadoEm        DateTime    @default(now()) @map("criado_em") @db.Timestamptz
   // Token com `iat` anterior a isto é recusado (plugins/auth.ts).
   senhaAlteradaEm DateTime?   @map("senha_alterada_em") @db.Timestamptz
+  // % que fica com a casa de tudo o que o membro atende (caixa, marco 2
+  // da Onda 2; CHECK 0..100 na migration 20261017120000_caixa).
+  parteDaCasa     Int         @default(0) @map("parte_da_casa") @db.SmallInt
 
   barbearia    Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
@@ -274,6 +280,16 @@ model Barbeiro {
   servicos     ProfissionalServico[]
   bloqueios    Bloqueio[]
   notificacoes Notificacao[]
+  // O caixa (migration 20261017120000_caixa).
+  clientes              Cliente[]          @relation("DonoDoCliente")
+  regrasComoDono        RegraDeDivisao[]   @relation("RegraDonoDoCliente")
+  regrasComoAtendente   RegraDeDivisao[]   @relation("RegraAtendente")
+  pagamentosAtendidos   Pagamento[]        @relation("PagamentoAtendente")
+  pagamentosDosClientes Pagamento[]        @relation("PagamentoDonoDoCliente")
+  pagamentosRecebidos   Pagamento[]        @relation("PagamentoRecebidoPor")
+  pagamentosRegistrados Pagamento[]        @relation("PagamentoRegistradoPor")
+  partesRecebidas       PagamentoParte[]
+  fechamentos           FechamentoDoDia[]
 
   @@index([barbeariaId])
   @@map("barbeiro")
@@ -341,9 +357,13 @@ model Cliente {
   criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz
   // Token com `iat` anterior a isto é recusado (plugins/auth.ts).
   senhaAlteradaEm DateTime? @map("senha_alterada_em") @db.Timestamptz
+  // De quem o cliente "é" no caixa: quem atendeu primeiro, e o dono
+  // troca à mão. Nulo = de ninguém ainda (migration 20261017120000_caixa).
+  profissionalId  String?   @map("profissional_id") @db.Uuid
 
   barbearia    Barbearia     @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
+  profissional Barbeiro?     @relation("DonoDoCliente", fields: [profissionalId], references: [id], onDelete: SetNull)
 
   // Telefone é único dentro da barbearia, não na plataforma: o mesmo
   // cliente pode ser cliente de duas barbearias, com um cadastro em
@@ -351,6 +371,7 @@ model Cliente {
   @@unique([barbeariaId, telefone])
   @@unique([barbeariaId, email])
   @@index([barbeariaId])
+  @@index([profissionalId])
   @@map("cliente")
 }
 
@@ -404,6 +425,7 @@ model Agendamento {
   barbeiro  Barbeiro             @relation(fields: [barbeiroId], references: [id])
   cliente   Cliente              @relation(fields: [clienteId], references: [id])
   servicos  AgendamentoServico[]
+  pagamento Pagamento?
 
   @@index([barbeiroId, data])
   @@index([clienteId])
@@ -423,6 +445,88 @@ model AgendamentoServico {
 
   @@index([agendamentoId])
   @@map("agendamento_servico")
+}
+
+// O caixa do dia (Onda 2, marco 2; migration 20261017120000_caixa). A
+// conta mora em packages/formato/src/caixa.ts. Dinheiro em centavos.
+
+// A matriz "cliente de A, atendido por B" → % de A. Par sem linha = 0;
+// CHECK de A ≠ B e de 0..100 na migration.
+model RegraDeDivisao {
+  barbeariaId     String @map("barbearia_id") @db.Uuid
+  donoDoClienteId String @map("dono_do_cliente_id") @db.Uuid
+  atendenteId     String @map("atendente_id") @db.Uuid
+  percentual      Int    @db.SmallInt
+
+  barbearia     Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  donoDoCliente Barbeiro  @relation("RegraDonoDoCliente", fields: [donoDoClienteId], references: [id], onDelete: Cascade)
+  atendente     Barbeiro  @relation("RegraAtendente", fields: [atendenteId], references: [id], onDelete: Cascade)
+
+  @@id([barbeariaId, donoDoClienteId, atendenteId])
+  @@map("regra_de_divisao")
+}
+
+// Um por agendamento. `data` é a do agendamento (o dia do caixa). Quem
+// atendeu, de quem era o cliente e quem recebeu ficam congelados no
+// registro. `forma` com CHECK de FORMAS_DE_PAGAMENTO.
+model Pagamento {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId      String   @map("barbearia_id") @db.Uuid
+  agendamentoId    String   @unique @map("agendamento_id") @db.Uuid
+  data             DateTime @db.Date
+  atendenteId      String   @map("atendente_id") @db.Uuid
+  donoDoClienteId  String?  @map("dono_do_cliente_id") @db.Uuid
+  recebidoPorId    String   @map("recebido_por_id") @db.Uuid
+  forma            String
+  servicosCentavos Int      @map("servicos_centavos")
+  descontoCentavos Int      @default(0) @map("desconto_centavos")
+  gorjetaCentavos  Int      @default(0) @map("gorjeta_centavos")
+  registradoPorId  String   @map("registrado_por_id") @db.Uuid
+  registradoEm     DateTime @default(now()) @map("registrado_em") @db.Timestamptz
+
+  barbearia     Barbearia        @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  agendamento   Agendamento      @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  atendente     Barbeiro         @relation("PagamentoAtendente", fields: [atendenteId], references: [id], onDelete: NoAction)
+  donoDoCliente Barbeiro?        @relation("PagamentoDonoDoCliente", fields: [donoDoClienteId], references: [id], onDelete: NoAction)
+  recebidoPor   Barbeiro         @relation("PagamentoRecebidoPor", fields: [recebidoPorId], references: [id], onDelete: NoAction)
+  registradoPor Barbeiro         @relation("PagamentoRegistradoPor", fields: [registradoPorId], references: [id], onDelete: NoAction)
+  partes        PagamentoParte[]
+
+  @@index([barbeariaId, data])
+  @@map("pagamento")
+}
+
+// A divisão congelada de um pagamento. Beneficiário nulo = a casa.
+// `motivo` com CHECK de MOTIVOS_DA_PARTE.
+model PagamentoParte {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pagamentoId    String  @map("pagamento_id") @db.Uuid
+  beneficiarioId String? @map("beneficiario_id") @db.Uuid
+  motivo         String
+  valorCentavos  Int     @map("valor_centavos")
+
+  pagamento    Pagamento @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
+  beneficiario Barbeiro? @relation(fields: [beneficiarioId], references: [id], onDelete: NoAction)
+
+  @@index([pagamentoId])
+  @@map("pagamento_parte")
+}
+
+// Um por barbearia e dia: a foto do acerto na hora de fechar. Com ele, o
+// dia não aceita mudança de pagamento até o dono reabrir.
+model FechamentoDoDia {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId  String   @map("barbearia_id") @db.Uuid
+  data         DateTime @db.Date
+  fechadoPorId String   @map("fechado_por_id") @db.Uuid
+  fechadoEm    DateTime @default(now()) @map("fechado_em") @db.Timestamptz
+  acerto       Json
+
+  barbearia  Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  fechadoPor Barbeiro  @relation(fields: [fechadoPorId], references: [id], onDelete: NoAction)
+
+  @@unique([barbeariaId, data])
+  @@map("fechamento_do_dia")
 }
 
 // O código de verificação do primeiro acesso e da recuperação de senha.

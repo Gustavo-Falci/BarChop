@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { FORMAS_DE_PAGAMENTO, MOTIVOS_DA_PARTE } from "@barchop/formato";
@@ -173,7 +175,71 @@ describe("fechamento_do_dia", () => {
   });
 });
 
+describe("o preenchimento da migração", () => {
+  // O UPDATE do fim da migration roda uma vez só, no deploy, e o banco de
+  // teste chega vazio nele. Este teste lê o mesmo SQL do arquivo e roda de
+  // novo, com clientes de verdade na mesa.
+  async function preencher() {
+    const arquivo = join(__dirname, "../../../packages/database/prisma/migrations/20261017120000_caixa/migration.sql");
+    const sql = readFileSync(arquivo, "utf-8");
+    const marca = "-- De quem cada cliente atual é";
+    const update = sql.slice(sql.indexOf(marca)).split("\n").slice(1).join("\n").trim().replace(/;$/, "");
+    await prisma.$executeRawUnsafe(update);
+  }
+
+  it("cada cliente passa a ser de quem atendeu o 1º concluído; sem concluído, de ninguém", async () => {
+    const c = await cenario();
+    const outro = (
+      await c.app.inject({
+        method: "POST",
+        url: "/clientes",
+        headers: { authorization: `Bearer ${c.agenda.token}` },
+        payload: { nome: "Sem concluído", telefone: "11977776666" },
+      })
+    ).json();
+    const marcar = (barbeiroId: string, data: string, status: "concluido" | "cancelado") =>
+      prisma.agendamento.create({
+        data: {
+          barbeariaId: c.agenda.barbeariaId,
+          barbeiroId,
+          clienteId: c.agenda.cliente.id,
+          data: dataParaDate(data),
+          horaInicio: new Date("1970-01-01T09:00:00Z"),
+          horaFim: new Date("1970-01-01T09:45:00Z"),
+          status,
+          origem: "barbeiro",
+        },
+      });
+    // Cancelado mais antigo com o dono, 1º concluído com o parceiro, um
+    // concluído depois com o dono: vale o parceiro.
+    await marcar(c.agenda.barbeiroId, "2026-01-05", "cancelado");
+    await marcar(c.parceiro.id, "2026-01-12", "concluido");
+    await marcar(c.agenda.barbeiroId, "2026-02-02", "concluido");
+
+    await preencher();
+
+    const cliente = await prisma.cliente.findUniqueOrThrow({ where: { id: c.agenda.cliente.id } });
+    expect(cliente.profissionalId).toBe(c.parceiro.id);
+    const semConcluido = await prisma.cliente.findUniqueOrThrow({ where: { id: outro.id } });
+    expect(semConcluido.profissionalId).toBeNull();
+    await c.app.close();
+  });
+});
+
+describe("apagar um membro", () => {
+  it("com pagamento é recusado (membro sai com ativo = false)", async () => {
+    const c = await cenario();
+    await prisma.pagamento.create({ data: dadosDoPagamento(c, { recebidoPorId: c.parceiro.id }) });
+    await expect(prisma.barbeiro.delete({ where: { id: c.parceiro.id } })).rejects.toThrow();
+    await c.app.close();
+  });
+});
+
 describe("apagar a barbearia", () => {
+  // Barbearia com agendamento não sai: o `agendamento` tem RESTRICT pra
+  // barbeiro e cliente desde a init (dívida antiga, fora do caixa). Aqui
+  // o agendamento sai antes — levando o pagamento — e o resto do caixa
+  // vai com a barbearia.
   it("leva o caixa inteiro junto", async () => {
     const c = await cenario();
     await prisma.cliente.update({ where: { id: c.agenda.cliente.id }, data: { profissionalId: c.parceiro.id } });
@@ -188,6 +254,7 @@ describe("apagar a barbearia", () => {
       data: { barbeariaId: c.agenda.barbeariaId, data: dataParaDate(QUINTA), fechadoPorId: c.agenda.barbeiroId, acerto: {} },
     });
 
+    await prisma.agendamento.delete({ where: { id: c.agendamento.id } });
     await prisma.barbearia.delete({ where: { id: c.agenda.barbeariaId } });
 
     expect(await prisma.pagamento.count()).toBe(0);

@@ -6,6 +6,7 @@ import {
   INCLUDE_AGENDAMENTO,
 } from "../lib/agendamento";
 import { garantirAlteravel, garantirFuturo } from "../lib/agendamento-alteravel";
+import { soltarPagamento } from "../lib/caixa";
 import { travarQualquerUm } from "../lib/disponibilidade";
 import { enderecoDasBarbearias } from "../lib/endereco";
 import { ErroDeNegocio } from "../lib/erro-negocio";
@@ -290,15 +291,18 @@ export function registrarRotasAgendamentos(app: App): void {
       // sobre o próprio dia. A única recusa vem do banco — reativar um
       // cancelado cujo horário já foi tomado faz a linha voltar pro
       // escopo da constraint parcial, o Postgres re-checa, e o conflito
-      // sai como 409.
-      const agendamento = await prisma.agendamento.update({
-        where: {
-          id: request.params.id,
-          barbeariaId: request.user.barbeariaId,
-          ...agendaVisivel(request),
-        },
-        data: request.body,
-        include: INCLUDE_AGENDAMENTO,
+      // sai como 409. Sair do `concluido` leva o pagamento junto — ou dá
+      // 409 `dia_fechado` (caixa do dia, decisão 6 do plano).
+      const onde = {
+        id: request.params.id,
+        barbeariaId: request.user.barbeariaId,
+        ...agendaVisivel(request),
+      };
+      const agendamento = await prisma.$transaction(async (tx) => {
+        if (request.body.status !== undefined && request.body.status !== "concluido") {
+          await soltarPagamento(tx, onde);
+        }
+        return tx.agendamento.update({ where: onde, data: request.body, include: INCLUDE_AGENDAMENTO });
       });
 
       // Reativar um cancelado agenda de novo: o trabalho da criação pode

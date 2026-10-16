@@ -570,3 +570,58 @@ export interface FaturaDaAssinatura {
   pdfUrl: string | null;
   paginaUrl: string | null;
 }
+
+// O caixa do dia (Onda 2, marco 2). Dinheiro em centavos inteiros; as
+// listas são FORMAS_DE_PAGAMENTO e MOTIVOS_DA_PARTE do @barchop/formato.
+export type FormaDoPagamento = "pix" | "dinheiro" | "debito" | "credito";
+export type MotivoDaParteDoPagamento = "atendimento" | "cliente" | "casa" | "gorjeta";
+
+export interface MembroDoCaixa {
+  id: string;
+  nome: string;
+}
+
+export interface ParteDoPagamento {
+  // `null` = a casa.
+  beneficiario: MembroDoCaixa | null;
+  motivo: MotivoDaParteDoPagamento;
+  valorCentavos: number;
+}
+
+// O pagamento de um atendimento, com a divisão congelada no registro.
+export interface PagamentoDoAgendamento {
+  id: string;
+  agendamentoId: string;
+  // O dia do caixa: a data do agendamento.
+  data: string;
+  forma: FormaDoPagamento;
+  servicosCentavos: number;
+  descontoCentavos: number;
+  gorjetaCentavos: number;
+  // serviços − desconto + gorjeta: o que o cliente pagou.
+  totalCentavos: number;
+  atendente: MembroDoCaixa;
+  // De quem o cliente era no registro; `null` = de ninguém.
+  donoDoCliente: MembroDoCaixa | null;
+  recebidoPor: MembroDoCaixa;
+  registradoPor: MembroDoCaixa;
+  registradoEm: string;
+  partes: ParteDoPagamento[];
+}
+
+// Body de PUT /agendamentos/:id/pagamento. Sem `servicosCentavos`, vale
+// a soma dos serviços do agendamento; sem `recebidoPorId`, quem atendeu.
+export interface RegistrarPagamento {
+  forma: FormaDoPagamento;
+  servicosCentavos?: number;
+  descontoCentavos?: number;
+  gorjetaCentavos?: number;
+  recebidoPorId?: string;
+}
+
+// GET /agendamentos/:id/pagamento. Com o dia fechado, o pagamento só
+// muda depois de o dono reabrir.
+export interface PagamentoDoAtendimento {
+  pagamento: PagamentoDoAgendamento | null;
+  diaFechado: boolean;
+}

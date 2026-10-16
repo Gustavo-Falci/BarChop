@@ -4,12 +4,15 @@ import {
   PLANOS,
   limiteDeProfissionais,
   planoEfetivo,
+  temRecurso,
   type Ciclo,
   type IdDoPlano,
+  type Recurso,
   type SituacaoDaAssinatura,
 } from "@barchop/formato";
 import type { ResumoDaAssinatura, UsoNoTeste } from "@barchop/types";
 import type { Cobranca } from "./cobranca";
+import { ErroHttp } from "./erro-http";
 import { ErroDeNegocio } from "./erro-negocio";
 
 // A assinatura do BarChop (Onda 2, marco 1): o que a API lê dela e o
@@ -88,6 +91,21 @@ export async function garantirVagaNoPlano(
   if ((await contarProfissionais(barbeariaId, tx)) >= limite) {
     throw new ErroDeNegocio(mensagemDoLimite(plano, limite), "limite_do_plano");
   }
+}
+
+// Antes de usar um recurso que nem todo plano tem (o caixa, no
+// Essencial e no Completo): 403, e não 422 — não é regra violada, o
+// recurso não existe no plano que vale agora. Barbearia sem assinatura
+// (só nos testes) passa, como no limite de profissionais.
+export async function garantirRecurso(
+  db: Prisma.TransactionClient,
+  barbeariaId: string,
+  recurso: Recurso,
+  agora: Date
+): Promise<void> {
+  const plano = await planoQueVale(db, barbeariaId, agora);
+  if (plano === null || temRecurso(plano, recurso)) return;
+  throw new ErroHttp(403, "recurso_do_plano", `o plano ${PLANOS[plano].nome} não tem este recurso: escolha um plano`);
 }
 
 // Quem fica fora do link público quando a equipe passa do limite do

@@ -15,6 +15,7 @@ import { registrarRotasAssinatura } from "./routers/assinatura";
 import { registrarRotasAuth } from "./routers/auth";
 import { registrarRotaWebhookStripe } from "./routers/webhook-stripe";
 import { registrarRotasAuthCliente } from "./routers/auth-cliente";
+import { registrarRotasCaixa } from "./routers/caixa";
 import {
   registrarRotasAgendamentos,
   registrarRotasAgendamentosPublicas,
@@ -202,6 +203,7 @@ export function buildApp(
     registrarRotasServicos(protegidas);
     registrarRotasClientes(protegidas);
     registrarRotasAgendamentos(protegidas);
+    registrarRotasCaixa(protegidas);
     registrarRotasEquipe(protegidas, limitesDeEquipe);
     registrarRotasBloqueios(protegidas);
     registrarRotasOnboarding(protegidas);

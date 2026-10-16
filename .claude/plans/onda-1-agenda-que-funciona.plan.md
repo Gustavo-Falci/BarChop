@@ -4,7 +4,33 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-15 — cobrança no ar: #144, #145 e #146 em produção, Stripe real configurada) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-16 — cobrança encerrada: testada de verdade, #147 a #150 no ar, sandbox limpo) — vale mais que as seções abaixo
+
+**Estado:**
+- **Produção = `main` = `2880d59`** (#148 `bb74899`, #149 `abeb799`, #150 `2880d59`, mesclados com "pode mergear"; #147 só docs). Sem migração nova.
+- **Conferido no ar com curl:** API 200; `POST /stripe/webhook` sem assinatura responde 400; nos chunks do painel, a novidade "Faturas e assinatura" com data 2026-10-15 e o rótulo "Reembolsada em parte".
+- **O que entrou:**
+  - #148: data da novidade; o `criar-precos` reconhece `rk_live_` como modo real.
+  - #149: Portal "sem descida". Com mais de 3 profissionais (dono e profissionais ativos; recepção não conta), a sessão do Portal usa uma configuração que só oferece os 2 preços do Completo. É uma cópia da padrão, achada pelo metadata `barchop=sem_descida` e criada ou atualizada pelo `criar-precos`. Sem a configuração, abre a padrão e avisa no log.
+  - #150: Faturas mostram "Reembolsada" ou "Reembolsada em parte" (a Stripe deixa a fatura `paid`). Lido na hora: `expand: data.payments` + `charges.list` do cliente.
+- **Stripe real:** links de Termos e Privacidade no Portal. O dono rodou `criar-precos` no real (a `rk_live_` teve permissão): configuração `bpc_1URCCv2Lldv3THCmy92C3kbo` "BarChop — sem descida (mais de 3 profissionais)", conferida no painel com só os 2 preços do Completo.
+- **Teste de verdade feito em 16/10, ciclo completo:** `barbearia-teste` assinou o Completo mensal com o cartão do dono; teste encerrado → cobrança real de R$ 44,90; reembolso; cancelamento no fim do período; cancelamento imediato → voltou ao Grátis ("Nada foi apagado"). 8 webhooks, todos 200.
+- **Sandbox de teste limpo:** quantidade desligada nos 2 produtos do Portal padrão (`bpc_1UQSPVRszmqdCj2a5Iu7wDXF`); produto "myproduct" arquivado. A configuração "sem descida" do sandbox é `bpc_1URBRrRszmqdCj2awKDHjfty`.
+
+**Para lembrar:**
+- **Mudou o Portal padrão no painel da Stripe? Rodar `criar-precos` de novo**, porque a "sem descida" é uma cópia. Na VM, em `~/BarChop/barchop/infra`: `docker compose exec api node dist/criar-precos-no-stripe.js`. No PC (sandbox): `pnpm --filter @barchop/api criar-precos`.
+- A `sk_test_` do `apps/api/.env` é de um **Sandbox** da Stripe (outra conta), não do modo de teste da conta real, que fica vazio. No painel, entrar pela lista de Sandboxes.
+- A quantidade por produto do Portal não aparece no painel; só muda pela API ou pelo Workbench → Shell (`stripe billing_portal configurations update <id> -d ...`, listando todos os preços; `stripe post` não roda lá).
+- Ainda não visto no ar: o Portal "sem descida" com uma barbearia real de mais de 3 profissionais no Completo (no sandbox funcionou).
+
+**Próximo passo (o dono escolhe):**
+1. Mais telas de UI/UX: o dono manda print por print.
+2. `barbearia-teste` em produção: apagar ou manter (ela também recebe os avisos da plataforma).
+3. G4: docs da Onda 1.
+
+## RETOMAR AQUI (noite de 2026-10-15 — cobrança no ar: #144, #145 e #146 em produção, Stripe real configurada) — histórico
+
+> Os passos 1 a 5 abaixo foram todos feitos em 16/10 (seção acima).
 
 **Estado:**
 - **Produção = `main` = `774581c`** (#144 `070be6c`, #145 `e0b0689`, #146 `774581c`, mesclados em ordem com "pode mergear"). Deploy do dono com o `migrar` (última migração `20261015120000_assinatura_cancela_em`).

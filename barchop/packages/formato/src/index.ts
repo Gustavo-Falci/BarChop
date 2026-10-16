@@ -53,6 +53,19 @@ export {
   type SituacaoParaOPlano,
 } from "./planos";
 export {
+  MOTIVOS_DA_PARTE,
+  acertoDoDia,
+  dividirPagamento,
+  type AcertoDoDia,
+  type AtendimentoPago,
+  type LinhaDoAcerto,
+  type MotivoDaParte,
+  type PagamentoDoAcerto,
+  type Parte,
+  type RegrasDeDivisao,
+  type Repasse,
+} from "./caixa";
+export {
   APARENCIA_PADRAO,
   BOTOES,
   CANTOS,

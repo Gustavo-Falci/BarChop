@@ -19,7 +19,7 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 Tudo no ar. As tabelas por onda, mais abaixo, guardam de onde cada
 tela veio; esta é a foto de agora.
 
-### Painel — 32 rotas
+### Painel — 34 rotas
 
 | Rota | O que faz | Muda em |
 |---|---|---|
@@ -30,17 +30,19 @@ tela veio; esta é a foto de agora.
 | `/painel/cartaz` | Cartaz do link com QR, pra imprimir | — |
 | `/painel/agenda` | Dia, semana e mês, com eixo de tempo; dia em colunas por profissional, semana com pílulas por profissional; fora do expediente e pausa sombreados; horários livres com a hora escrita, clique de 15 em 15; faixa de resumo, "Agora" e "Bloquear" | — |
 | `/painel/agendamentos/novo` | Cliente, serviços, profissional, data e horário; Cancelar volta pra tela anterior | — |
-| `/painel/agendamentos/[id]` | Status e observações, sem caixas (Salvar/Descartar só quando muda); "Lembrar pelo WhatsApp"; presença confirmada pelo lembrete | 🔧 Onda 2 (registrar pagamento) |
+| `/painel/agendamentos/[id]` | Status e observações, sem caixas (Salvar/Descartar só quando muda); "Lembrar pelo WhatsApp"; presença confirmada pelo lembrete; "Concluir e registrar pagamento" (valor, desconto, gorjeta, forma e quem recebeu) com o resumo e a frase da divisão; dia fechado só leitura | — |
+| `/painel/caixa` | Caixa do dia (anterior, hoje, próximo): acerto por pessoa e repasses em frases, quanto entrou por forma, pagamentos e pendências com link; "Fechar o dia" e reabrir só do dono; o profissional vê o dele; Grátis vê o convite | — |
 | `/painel/clientes` | Lista com busca e pílulas Todos / Vieram em 30 dias / Sem registro em 90 dias, contadas no servidor | 🔧 Onda 3 (segmentos) |
 | `/painel/clientes/novo` | Nome, telefone e e-mail | — |
-| `/painel/clientes/[id]` | Resumo, WhatsApp e Agendar no topo; histórico em Próximos e Anteriores; dados | 🔧 Onda 3 (pontos, assinatura) |
+| `/painel/clientes/[id]` | Resumo, WhatsApp e Agendar no topo; histórico em Próximos e Anteriores; dados; "Cliente de X" (de quem é no caixa), com Trocar pro dono | 🔧 Onda 3 (pontos, assinatura) |
 | `/painel/servicos` | Lista por categoria (lista fechada), pílulas, busca, "Onde aparece"; inativos atenuados | — |
 | `/painel/servicos/novo`, `/painel/servicos/[id]` | Nome, duração, preço, categoria em pílulas, descrição e foto, com a prévia "Como o cliente vê"; desativar e reativar | — |
 | `/painel/equipe` | Lista com papel e situação, pílulas Todos / Atendem / Convites pendentes / Inativos | — |
 | `/painel/equipe/novo` | Convidar por e-mail (só o dono); respeita o limite de profissionais do plano | — |
 | `/painel/equipe/[id]` | Dados, foto, papel, serviços que faz, jornada da semana com pausa, situação — cada grupo salva sozinho | — |
 | `/painel/bloqueios` | Folgas e bloqueios: dia inteiro ou só algumas horas, atalhos de motivo | — |
-| `/painel/configuracoes` | Índice "X de N decididas": Operação (Horários, Regras de agendamento) e Canais com clientes (Dados do negócio, Aparência, Comunicação, Notificações), mais o Seu perfil | — |
+| `/painel/configuracoes` | Índice "X de N decididas": Operação (Horários, Regras de agendamento) e Canais com clientes (Dados do negócio, Aparência, Comunicação, Notificações); fora da contagem, Divisão do dinheiro e o Seu perfil | — |
+| `/painel/configuracoes/divisao` | Só o dono. Parte da casa de cada um e a grade "cliente de ↓ × atendeu →", com o exemplo de R$ 100,00 do efeito; Salvar/Descartar só quando muda | — |
 | `/painel/configuracoes/horarios` | Horário da semana com pausa, rotina pronta, exceções por data | — |
 | `/painel/configuracoes/regras-de-agendamento` | Intervalo entre horários, antecedência mínima, janela da agenda, prazo pro cliente remarcar ou cancelar | — |
 | `/painel/configuracoes/dados-do-negocio` | Abas Identidade (nome, endereço, apresentação, link), Marca (logo e capa) e Comodidades (comodidades e formas de pagamento) | — |
@@ -130,11 +132,11 @@ Depois do mínimo: páginas de funcionalidade (template de 9 blocos),
 
 | Tela | Superfície | O que faz | Referência |
 |---|---|---|---|
-| 🆕 Caixa do dia | painel | Entradas por forma de pagamento, abrir e fechar caixa | caixa do dia |
-| 🆕 Comissões | painel | Regras por profissional e serviço; extrato do profissional | comissões |
+| ✅ Caixa do dia | painel | `/painel/caixa`: entradas por forma de pagamento, acerto e repasses entre a equipe, pendências, fechar e reabrir o dia (marco 2, #153 a #160) | caixa do dia |
+| ✅ Comissões | painel | `/painel/configuracoes/divisao`: parte da casa por profissional e a matriz "cliente de × atendeu" (marco 2). Regra por serviço e extrato do profissional ficam pro marco 4, se o dono pedir | comissões |
 | 🆕 Relatórios | painel | Faturamento, ocupação, faltas, clientes novos e recorrentes | relatórios |
 | ✅ Plano e assinatura | painel | `/painel/faturas`: plano atual, teste de 14 dias, assinar pelo Checkout da Stripe, faturas, trocar de plano e cancelar pelo Portal (marco 1, #141 a #150) | Faturas |
-| 🔧 Detalhe do agendamento | painel | Concluir com pagamento | — |
+| ✅ Detalhe do agendamento | painel | Concluir e registrar pagamento, com a divisão (marco 2) | — |
 
 ## Onda 3 — Retenção do cliente final
 

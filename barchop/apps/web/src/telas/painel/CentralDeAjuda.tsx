@@ -102,6 +102,35 @@ const TEMAS: { tema: string; perguntas: Pergunta[] }[] = [
     ],
   },
   {
+    tema: "Caixa",
+    perguntas: [
+      {
+        pergunta: "Como registro o pagamento de um atendimento?",
+        resposta: [
+          "No atendimento, em Concluir e registrar pagamento: o valor já vem com a soma dos serviços; escolha a forma e quem recebeu. O resumo mostra na hora como o dinheiro se divide. Tudo aparece no ",
+          { href: "/painel/caixa", rotulo: "Caixa" },
+          " do dia.",
+        ],
+      },
+      {
+        pergunta: "Como fecho o caixa do dia?",
+        resposta: [
+          "No ",
+          { href: "/painel/caixa", rotulo: "Caixa" },
+          ", o dono confere o acerto (quem repassa quanto a quem) e as pendências e clica em Fechar o dia. Fechado, os pagamentos daquele dia só mudam se o dono reabrir.",
+        ],
+      },
+      {
+        pergunta: "Como o dinheiro do caixa se divide entre a equipe?",
+        resposta: [
+          "Em ",
+          { href: "/painel/configuracoes/divisao", rotulo: "Divisão do dinheiro" },
+          ", o dono define a parte da casa de cada um e quanto vai pro profissional de quem o cliente é quando outro atende. A gorjeta é sempre de quem atendeu.",
+        ],
+      },
+    ],
+  },
+  {
     tema: "Equipe e conta",
     perguntas: [
       {

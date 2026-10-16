@@ -124,3 +124,65 @@ describe("detalhe do cliente", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: /salvar/i })).toBeNull());
   });
 });
+
+// De quem o cliente "é" no caixa (Onda 2, marco 2, PR 8 do plano
+// caixa-do-dia): aparece no detalhe, e só o dono troca.
+describe("o profissional do cliente", () => {
+  const membro = (id: string, nome: string, papel: "dono" | "profissional") => ({
+    id,
+    nome,
+    email: `${id}@gr.com`,
+    telefone: null,
+    papel,
+    atende: true,
+    ativo: true,
+    fotoUrl: null,
+    convitePendente: false,
+  });
+
+  function semearComEquipe(papel: "dono" | "profissional", donos: Record<string, string> = { c1: "bb0" }) {
+    return criarApiClientFalso({
+      hoje: "2026-09-08",
+      papel,
+      equipe: [membro("bb1", "Rafael", papel), membro("bb0", "Gustavo", papel === "dono" ? "profissional" : "dono")],
+      clientes: [{ id: "c1", nome: "João Silva", telefone: "(11) 99999-0001", email: null, temConta: false }],
+      donosDosClientes: donos,
+    });
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c1", params: { id: "c1" } });
+  });
+
+  it("o dono vê de quem é e troca", async () => {
+    const falso = semearComEquipe("dono");
+    const atualizar = vi.spyOn(falso.barbeiro, "atualizarCliente");
+    montarPainel(<DetalheDoCliente agora={AGORA} />, falso);
+
+    expect(await screen.findByText("Cliente de Gustavo")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /trocar/i }));
+    const escolha = screen.getByRole("group", { name: /de quem é este cliente/i });
+    expect(within(escolha).getByRole("radio", { name: "Gustavo" })).toBeChecked();
+    expect(within(escolha).getByRole("radio", { name: "Ninguém" })).toBeInTheDocument();
+
+    await userEvent.click(within(escolha).getByRole("radio", { name: "Rafael" }));
+    await userEvent.click(screen.getByRole("button", { name: /salvar troca/i }));
+
+    await waitFor(() => expect(atualizar).toHaveBeenCalledWith("c1", { profissionalId: "bb1" }));
+    expect(await screen.findByText("Cliente de Rafael")).toBeInTheDocument();
+  });
+
+  it("sem dono, diz que passa a ser de quem atender primeiro", async () => {
+    montarPainel(<DetalheDoCliente agora={AGORA} />, semearComEquipe("dono", {}));
+
+    expect(await screen.findByText(/ainda não é cliente de ninguém/i)).toBeInTheDocument();
+  });
+
+  it("o profissional vê, mas não troca", async () => {
+    montarPainel(<DetalheDoCliente agora={AGORA} />, semearComEquipe("profissional"));
+
+    expect(await screen.findByText("Cliente de Gustavo")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /trocar/i })).not.toBeInTheDocument();
+  });
+});

@@ -158,3 +158,26 @@
   justify-content: flex-end;
   gap: var(--espaco-sm);
 }
+
+/* De quem é o cliente: uma linha com o Trocar ao lado; trocando, as
+   pílulas embaixo, ocupando a coluna. */
+.profissional {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  padding-bottom: var(--espaco-sm);
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.deQuem {
+  margin: 0;
+  font-weight: 700;
+}
+
+.troca {
+  display: grid;
+  flex-basis: 100%;
+  gap: var(--espaco-sm);
+}

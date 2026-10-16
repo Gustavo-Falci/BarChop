@@ -18,6 +18,9 @@ import type {
   NovoAgendamentoBarbeiroInput,
   OcupacaoDoDia,
   CaixaDoDia,
+  DivisaoDoDinheiro,
+  MembroDoCaixa,
+  SalvarDivisao,
   PagamentoDoAgendamento,
   PagamentoDoAtendimento,
   RegistrarPagamento,
@@ -118,7 +121,9 @@ export interface NovoCliente {
   email?: string | null;
 }
 
-export type EdicaoDoCliente = Partial<NovoCliente>;
+// `profissionalId`: de quem o cliente é no caixa (null = de ninguém).
+// Só o dono troca; a API responde 403 pros outros.
+export type EdicaoDoCliente = Partial<NovoCliente> & { profissionalId?: string | null };
 
 export interface EdicaoDoAgendamento {
   status?: "pendente" | "confirmado" | "concluido" | "cancelado" | "no_show";
@@ -127,6 +132,8 @@ export interface EdicaoDoAgendamento {
 
 export interface ClienteComHistorico extends ClienteSerializado {
   agendamentos: AgendamentoSerializado[];
+  // De quem o cliente é no caixa; null = de ninguém ainda.
+  profissional: MembroDoCaixa | null;
 }
 
 // POST /equipe. O e-mail é a chave do login do membro, única na
@@ -711,6 +718,15 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     async reabrirODia(data: string): Promise<void> {
       await requisicao(`/barbearias/me/caixa/${data}/fechamento`, { metodo: "DELETE", comToken: true });
+    },
+
+    // A divisão do dinheiro (só o dono): parte da casa e matriz.
+    divisao(): Promise<DivisaoDoDinheiro> {
+      return requisicao("/barbearias/me/divisao", { comToken: true });
+    },
+
+    salvarDivisao(divisao: SalvarDivisao): Promise<DivisaoDoDinheiro> {
+      return requisicao("/barbearias/me/divisao", { metodo: "PUT", corpo: divisao, comToken: true });
     },
   };
 }

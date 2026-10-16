@@ -9,6 +9,7 @@ import {
   IconeBloqueio,
   IconeCalendario,
   IconeCasa,
+  IconeCedula,
   IconeCliente,
   IconeEngrenagem,
   IconeEquipe,
@@ -24,6 +25,8 @@ import estilos from "./NavegacaoDoPainel.module.css";
 const LINKS = [
   { href: "/painel", rotulo: "Hoje", Icone: IconeCasa },
   { href: "/painel/agenda", rotulo: "Agenda", Icone: IconeCalendario },
+  // Pra todos: o profissional vê o próprio acerto; no Grátis, o convite.
+  { href: "/painel/caixa", rotulo: "Caixa", Icone: IconeCedula },
   // Pra todos: o profissional bloqueia a própria agenda.
   { href: "/painel/bloqueios", rotulo: "Folgas", Icone: IconeBloqueio },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: IconeCliente },

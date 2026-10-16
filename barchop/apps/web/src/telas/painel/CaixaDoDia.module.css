@@ -1,0 +1,284 @@
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+}
+
+/* ---------- Os dias ---------- */
+
+.dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+/* `gap` e não espaço no texto: no inline-flex, a seta e a palavra viram
+   itens separados e o espaço entre eles some. */
+.dia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  min-height: 40px;
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-pill);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink);
+}
+
+.dia:hover {
+  border-color: var(--cor-ink);
+}
+
+.dia[aria-current="date"] {
+  border-color: var(--cor-ink);
+  background: var(--cor-pale-yellow);
+}
+
+.fechado {
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-left: 6px solid var(--cor-ok);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  font-weight: 700;
+}
+
+/* ---------- O corpo, sem caixas ---------- */
+
+/* Em cima: o acerto (largo) e quanto entrou, separados por um fio. */
+.topo,
+.listas {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+
+.listas {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  padding-top: var(--espaco-lg);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.grupo {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+  padding: 0 var(--espaco-xl);
+}
+
+.grupo:first-child {
+  padding-left: 0;
+}
+
+.grupo + .grupo {
+  padding-right: 0;
+  border-left: var(--borda-hairline) solid var(--cor-line);
+}
+
+.rotulo {
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-ink-soft);
+}
+
+.vazio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+/* Cada pessoa numa coluna: dá pra comparar os saldos de relance. */
+.pessoas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--espaco-lg);
+}
+
+.pessoa {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nome {
+  font-weight: 700;
+}
+
+.saldo {
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.saldo[data-sinal="1"] {
+  color: var(--cor-ok);
+}
+
+.saldo[data-sinal="-1"] {
+  color: var(--cor-erro);
+}
+
+.detalhe {
+  font-size: var(--texto-sm);
+  font-weight: 400;
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.repasses {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: var(--espaco-sm) 0 0;
+  border-top: var(--borda-hairline) dashed var(--cor-line);
+  list-style: none;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.formas {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+}
+
+.forma {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.forma dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.forma[data-vazia] {
+  color: var(--cor-ink-soft);
+}
+
+.forma[data-vazia] dd {
+  font-weight: 400;
+}
+
+.lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A linha inteira leva ao atendimento. */
+.item {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-sm) 0;
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+  color: var(--cor-ink);
+}
+
+.item:hover .quem {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.hora,
+.valor {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.quem {
+  min-width: 0;
+}
+
+.valor,
+.situacao {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.situacao {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}
+
+/* ---------- Botões (os da faixa do detalhe) ---------- */
+
+.principal {
+  composes: principal from "./DetalheDoAgendamento.module.css";
+}
+
+.secundaria {
+  composes: secundaria from "./DetalheDoAgendamento.module.css";
+}
+
+.discreta {
+  composes: discreta from "./DetalheDoAgendamento.module.css";
+}
+
+.confirmar {
+  composes: confirmar from "./DetalheDoAgendamento.module.css";
+  max-width: 34rem;
+}
+
+.convite {
+  display: grid;
+  gap: var(--espaco-md);
+  justify-items: start;
+  max-width: 40rem;
+}
+
+.convite p {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+/* ---------- Tela estreita: uma coluna, os fios deitados ---------- */
+
+@media (max-width: 60rem) {
+  .topo,
+  .listas {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--espaco-lg);
+  }
+
+  .grupo,
+  .grupo:first-child,
+  .grupo + .grupo {
+    padding: 0;
+  }
+
+  .grupo + .grupo {
+    padding-top: var(--espaco-lg);
+    border-left: none;
+    border-top: var(--borda-hairline) solid var(--cor-line);
+  }
+}
+
+@media (max-width: 30rem) {
+  .item {
+    grid-template-columns: 3rem minmax(0, 1fr);
+  }
+
+  .valor,
+  .situacao {
+    grid-column: 2;
+    text-align: left;
+  }
+}

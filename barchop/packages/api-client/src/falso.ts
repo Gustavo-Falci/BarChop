@@ -5,6 +5,7 @@ import {
   FORMAS_DE_PAGAMENTO,
   PADRAO_INSTAGRAM,
   REGRAS_PADRAO,
+  acertoDoDia,
   areasTocadas,
   dividirPagamento,
   juntarAreas,
@@ -35,8 +36,11 @@ import type {
   NovoAgendamentoBarbeiroInput,
   NovoAgendamentoPublicoInput,
   OcupacaoDoDia,
+  CaixaDoDia,
+  MembroDoCaixa,
   PagamentoDoAgendamento,
   PapelMembro,
+  PendenciaDoCaixa,
   RegistrarPagamento,
   PerfilPublicoBarbearia,
   ResumoDaAssinatura,
@@ -782,8 +786,83 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     estado.pagamentos = estado.pagamentos!.filter((p) => p.agendamentoId !== agendamentoId);
   }
 
-  function membroDoCaixa(id: string) {
+  function membroDoCaixa(id: string): MembroDoCaixa {
     return { id, nome: equipe().find((m) => m.id === id)?.nome ?? "" };
+  }
+
+  // Quem fechou cada dia e quando. Dia fechado pela semente sem registro
+  // aqui: fechado pelo dono, no fim do dia.
+  const fechamentos = new Map<string, { fechadoEm: string; fechadoPor: MembroDoCaixa }>();
+
+  // O GET /barbearias/me/caixa da API (lib/caixa.ts): a mesma conta do
+  // acerto (acertoDoDia), recortada pro profissional logado. O dublê não
+  // guarda a foto do fechamento: o dia fechado não muda, então a conta
+  // de agora é a mesma.
+  function caixaDoDiaFalso(data: string): CaixaDoDia {
+    const somente = estado.papel === "profissional" ? "bb1" : undefined;
+    const doDia = estado.agendamentos.filter((a) => a.data === data);
+    const hora = (agendamentoId: string) => doDia.find((a) => a.id === agendamentoId)?.horaInicio ?? "";
+    const todos = estado
+      .pagamentos!.filter((p) => p.data === data)
+      .sort((a, b) => hora(a.agendamentoId).localeCompare(hora(b.agendamentoId)));
+    const acerto = acertoDoDia(
+      todos.map((p) => ({
+        recebidoPor: p.recebidoPor.id,
+        partes: p.partes.map((parte) => ({
+          beneficiario: parte.beneficiario?.id ?? null,
+          motivo: parte.motivo,
+          valorCentavos: parte.valorCentavos,
+        })),
+      }))
+    );
+    const entra = (p: PagamentoDoAgendamento) =>
+      p.atendente.id === somente || p.recebidoPor.id === somente || p.partes.some((x) => x.beneficiario?.id === somente);
+    const pagamentos = somente ? todos.filter(entra) : todos;
+    const porForma = FORMAS_DE_PAGAMENTO.map((forma) => {
+      const daForma = pagamentos.filter((p) => p.forma === forma);
+      return { forma, quantidade: daForma.length, valorCentavos: daForma.reduce((s, p) => s + p.totalCentavos, 0) };
+    });
+    const pagos = new Set(todos.map((p) => p.agendamentoId));
+    const pendencias = doDia
+      .filter((a) => a.status === "pendente" || a.status === "confirmado" || (a.status === "concluido" && !pagos.has(a.id)))
+      .filter((a) => !somente || a.barbeiro.id === somente)
+      .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+      .map((a) => {
+        const { cliente } = comCliente(a);
+        return {
+          agendamentoId: a.id,
+          horaInicio: a.horaInicio,
+          status: a.status as PendenciaDoCaixa["status"],
+          cliente: { id: cliente.id, nome: cliente.nome },
+          barbeiro: { ...a.barbeiro },
+        };
+      });
+    const dono = equipe().find((m) => m.papel === "dono")?.id ?? "bb1";
+    return {
+      data,
+      fechamento: estado.diasFechados!.includes(data)
+        ? (fechamentos.get(data) ?? { fechadoEm: `${data}T23:00:00.000Z`, fechadoPor: membroDoCaixa(dono) })
+        : null,
+      pagamentos: pagamentos.map((p) => {
+        const agendamento = doDia.find((a) => a.id === p.agendamentoId);
+        const cliente = agendamento ? comCliente(agendamento).cliente : estado.cliente;
+        return { ...copiaDoPagamento(p), horaInicio: hora(p.agendamentoId), cliente: { id: cliente.id, nome: cliente.nome } };
+      }),
+      totais: { totalCentavos: porForma.reduce((s, f) => s + f.valorCentavos, 0), porForma },
+      acerto: {
+        pessoas: acerto.pessoas
+          .filter((l) => !somente || l.pessoa === somente)
+          .map((l) => ({ ...l, pessoa: l.pessoa === null ? null : membroDoCaixa(l.pessoa) })),
+        repasses: acerto.repasses
+          .filter((r) => !somente || r.de === somente || r.para === somente)
+          .map((r) => ({
+            de: membroDoCaixa(r.de),
+            para: r.para === null ? null : membroDoCaixa(r.para),
+            valorCentavos: r.valorCentavos,
+          })),
+      },
+      pendencias,
+    };
   }
 
   function exigirAtivo(agendamento: AgendamentoSerializado): void {
@@ -1586,6 +1665,25 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         const achado = agendamentoOu404(id);
         exigirDiaAberto(achado.data);
         apagarPagamento(id);
+      },
+      async caixaDoDia(data: string) {
+        exigirCaixa();
+        return caixaDoDiaFalso(data);
+      },
+      // Como a API: o papel antes do plano; dia já fechado é 409.
+      async fecharODia(data: string) {
+        exigirDono();
+        exigirCaixa();
+        exigirDiaAberto(data);
+        estado.diasFechados!.push(data);
+        fechamentos.set(data, { fechadoEm: new Date().toISOString(), fechadoPor: membroDoCaixa("bb1") });
+        return caixaDoDiaFalso(data);
+      },
+      async reabrirODia(data: string) {
+        exigirDono();
+        exigirCaixa();
+        estado.diasFechados = estado.diasFechados!.filter((d) => d !== data);
+        fechamentos.delete(data);
       },
     },
 

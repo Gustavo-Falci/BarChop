@@ -4,9 +4,30 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-15 — PRs 4, 5 e 6 da cobrança abertos e empilhados: #144 → #145 → #146) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-15 — cobrança no ar: #144, #145 e #146 em produção, Stripe real configurada) — vale mais que as seções abaixo
 
-> **Este RETOMAR AQUI vive no branch `site-e-termos` (#146)**, empilhado no `tela-do-plano` (#145), que está empilhado no `stripe-na-cobranca` (#144). Nenhum foi mesclado. Na outra máquina: `git fetch` e `git checkout site-e-termos`. A `main` ainda mostra o RETOMAR AQUI de 13/10.
+**Estado:**
+- **Produção = `main` = `774581c`** (#144 `070be6c`, #145 `e0b0689`, #146 `774581c`, mesclados em ordem com "pode mergear"). Deploy do dono com o `migrar` (última migração `20261015120000_assinatura_cancela_em`).
+- **Conferido no ar com curl:** `/`, `/precos`, `/gratis`, `/termos` e `/privacidade` respondem 200; `/precos` com Essencial R$ 34,90/R$ 349,00 e Completo R$ 44,90/R$ 449,00; termos com nome, CPF e e-mail de quem vende e vigência 15/10, sem "a preencher"; `POST /stripe/webhook` sem assinatura responde 400 `assinatura_invalida` (a API subiu com as chaves).
+- **Stripe real** (a conta, não o sandbox de teste — são contas com ids diferentes), conferida no painel:
+  - conta ativa (pagamentos e repasses); nome público BarChop; descrição na fatura `BARCHOP.COM.BR`;
+  - produtos `barchop_essencial` e `barchop_completo` com os 4 preços (o `criar-precos` rodou do PC do dono com a chave real);
+  - Portal do cliente: troca de plano com os 4 preços, **quantidade desligada** (a quantidade é o número de profissionais, o app cuida), troca **não** encerra o teste, rateio cobrado na hora, plano mais barato e anual → mensal no fim do período, cancelar no fim do período com motivo;
+  - Pix e Boleto desligados (as Faturas dizem "Em breve");
+  - webhook `https://api.barchop.com.br/stripe/webhook`, versão `2026-09-30.endive`, os 6 eventos;
+  - a chave da API é **restrita** ("acesso total, exceto operações sensíveis", `rk_live_…`), no `infra/api.env` com o `whsec_…`.
+- **Ambiente local:** `apps/api/.env` sempre com `sk_test_` (a chave real só na VM).
+
+**Próximo passo (nesta ordem):**
+1. **Dono, na Stripe real:** Dados públicos → links de Termos (`https://barchop.com.br/termos`) e Privacidade (`/privacidade`); hoje o rodapé do Portal mostra "Nenhum link".
+2. **Teste de verdade:** o dono assina um plano com cartão próprio; conferir plano ativo no painel, a fatura em `/painel/faturas` e as entregas do webhook na Stripe; depois cancelar ou reembolsar.
+3. **PR pequeno:** data da novidade "Faturas e assinatura" (`novidades.ts`); o `criar-precos` escreve "modo: teste" para chave `rk_live_` (só reconhece `sk_live_`) — corrigir.
+4. **Depois:** o Portal só troca o preço; quem desce do Completo para o Essencial com mais de 3 profissionais não é barrado lá — segurar no app.
+5. Opcional, no sandbox: desligar a quantidade no Portal (lá ficou ligada) e arquivar o produto "myproduct".
+
+## RETOMAR AQUI (2026-10-15 — PRs 4, 5 e 6 da cobrança abertos e empilhados: #144 → #145 → #146) — histórico
+
+> Na época, este RETOMAR AQUI vivia no branch `site-e-termos` (#146); os três foram mesclados e estão em produção (seção acima).
 
 **Estado:**
 - **Produção:** igual à seção de 14/10 abaixo (`main` = `10ff35c`; última migração em produção `20261014120000_assinatura`).

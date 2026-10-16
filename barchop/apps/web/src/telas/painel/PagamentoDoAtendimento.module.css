@@ -1,0 +1,128 @@
+/* O pagamento dentro da faixa do próximo passo: ocupa a largura toda,
+   separado do resto da faixa por um fio, como a nota de remarcar. Sem
+   caixa própria — a faixa já é a moldura. */
+
+.formulario,
+.resumo {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--espaco-md);
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* Desktop: valores à esquerda, forma e quem recebeu à direita. */
+.campos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: var(--espaco-lg) var(--espaco-xl);
+  align-items: start;
+}
+
+.valores {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--espaco-md);
+  align-items: start;
+}
+
+.escolhas {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.rodape {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.resumo {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.texto {
+  display: grid;
+  gap: var(--espaco-xs);
+  min-width: 0;
+}
+
+.pago {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.divisao {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.fechado {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--cor-ink);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--espaco-sm);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}
+
+.principal {
+  composes: principal from "./DetalheDoAgendamento.module.css";
+}
+
+/* Falta escolher a forma (ou um valor está torto): apagado de verdade,
+   e não o "salvando" da faixa, que só esmaece. */
+.principal:disabled:not([aria-busy]) {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.secundaria {
+  composes: secundaria from "./DetalheDoAgendamento.module.css";
+}
+
+.perigo {
+  composes: perigo from "./DetalheDoAgendamento.module.css";
+}
+
+.discreta {
+  composes: discreta from "./DetalheDoAgendamento.module.css";
+}
+
+.discretaPerigo {
+  composes: discretaPerigo from "./DetalheDoAgendamento.module.css";
+}
+
+/* Tela média: forma e quem recebeu descem pra baixo dos valores. */
+@media (max-width: 60rem) {
+  .campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Celular: tudo numa coluna. */
+@media (max-width: 30rem) {
+  .valores,
+  .resumo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .acoes,
+  .rodape {
+    justify-content: flex-start;
+  }
+}

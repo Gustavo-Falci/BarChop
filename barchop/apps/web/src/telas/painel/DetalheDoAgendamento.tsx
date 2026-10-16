@@ -14,7 +14,9 @@ import { formatarDataComSemana } from "../../formato/datas";
 import { rotuloDoStatus } from "../../formato/status";
 import { IconeCheck, IconeConversa } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./DetalheDoAgendamento.module.css";
+import { FormularioDoPagamento, ResumoDoPagamento } from "./PagamentoDoAtendimento";
 
 type Status = "pendente" | "confirmado" | "concluido" | "cancelado" | "no_show";
 
@@ -35,8 +37,9 @@ const TOM_DO_STATUS: Record<string, "acento" | "neutro" | "ok" | "atencao" | "er
 // A API aceita qualquer transição (o barbeiro é a autoridade sobre o
 // próprio dia), mas a tela oferece só o que faz sentido a partir de
 // cada estado, com verbo: "Confirmar", não "confirmado". Cinco botões
-// iguais obrigavam a ler todos pra achar o próximo passo.
-type Acao = { para: Status; rotulo: string; peso: "principal" | "secundaria" | "perigo" };
+// iguais obrigavam a ler todos pra achar o próximo passo. `pagar` abre o
+// formulário do pagamento em vez de mudar o status: registrar conclui.
+type Acao = { para: Status; rotulo: string; peso: "principal" | "secundaria" | "perigo"; pagar?: boolean };
 const ACOES: Record<string, Acao[]> = {
   pendente: [
     { para: "confirmado", rotulo: "Confirmar", peso: "principal" },
@@ -55,6 +58,24 @@ const ACOES: Record<string, Acao[]> = {
   cancelado: [{ para: "confirmado", rotulo: "Reativar agendamento", peso: "secundaria" }],
   no_show: [{ para: "confirmado", rotulo: "Desfazer falta", peso: "secundaria" }],
 };
+
+// Com o caixa no plano (Onda 2, marco 2), concluir é registrar o
+// pagamento. Concluído sem pagamento é pendência no Caixa: o próximo
+// passo é registrar. Pago, sobra reabrir — e com o dia fechado, nem isso.
+function acoesComCaixa(status: string, pago: boolean, diaFechado: boolean): Acao[] {
+  const pagar: Acao = { para: "concluido", rotulo: "Concluir e registrar pagamento", peso: "principal", pagar: true };
+  switch (status) {
+    case "pendente":
+      return ACOES.pendente.map((acao) => (acao.para === "concluido" ? { ...pagar, peso: "secundaria" } : acao));
+    case "confirmado":
+      return ACOES.confirmado.map((acao) => (acao.para === "concluido" ? pagar : acao));
+    case "concluido":
+      if (diaFechado) return [];
+      return pago ? ACOES.concluido : [{ ...pagar, rotulo: "Registrar pagamento" }, ...ACOES.concluido];
+    default:
+      return ACOES[status] ?? [];
+  }
+}
 
 function maiuscula(texto: string) {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
@@ -95,6 +116,16 @@ export function DetalheDoAgendamento() {
     () => (lembravel ? api.barbeiro.lembreteWhatsApp(id) : Promise.resolve(null)),
     [id, lembravel]
   );
+
+  // O pagamento do atendimento. 403 `recurso_do_plano` = plano sem
+  // caixa: a tela fica como antes, com o convite pro dono.
+  const caixa = useRequisicao(() => api.barbeiro.pagamentoDoAgendamento(id), [id]);
+  const equipe = useRequisicao(() => api.barbeiro.equipe(), []);
+  const { perfil } = usePainel();
+  // O formulário do pagamento aberto: registrando (null) ou editando.
+  const [pagando, setPagando] = useState(false);
+  // Reabrir um atendimento pago apaga o pagamento: pede um segundo clique.
+  const [confirmandoReabrir, setConfirmandoReabrir] = useState(false);
 
   const [observacoes, setObservacoes] = useState("");
   const [aviso, setAviso] = useState<string | undefined>();
@@ -142,15 +173,34 @@ export function DetalheDoAgendamento() {
     setAviso(undefined);
     setObservacoesSalvas(false);
     setConfirmandoCancelar(false);
+    setConfirmandoReabrir(false);
     setSalvando(qual);
     try {
       await api.barbeiro.atualizarAgendamento(id, edicao);
       if (qual === "observacoes") setObservacoesSalvas(true);
       agendamento.recarregar();
+      // Sair do concluído apaga o pagamento na API.
+      if (edicao.status !== undefined) caixa.recarregar();
     } catch (causa) {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
     }
     setSalvando(null);
+  }
+
+  async function removerPagamento() {
+    setAviso(undefined);
+    try {
+      await api.barbeiro.removerPagamento(id);
+      caixa.recarregar();
+    } catch (causa) {
+      setAviso((causa as ErroDaApi).mensagem || "Não foi possível remover agora.");
+    }
+  }
+
+  function pagamentoRegistrado() {
+    setPagando(false);
+    agendamento.recarregar();
+    caixa.recarregar();
   }
 
   const total = atual.servicos.reduce(
@@ -159,7 +209,11 @@ export function DetalheDoAgendamento() {
   );
   const duracao = atual.servicos.reduce((soma, s) => soma + s.duracaoNoMomento, 0);
   const telefoneDiscavel = atual.cliente.telefone.replace(/\D/g, "");
-  const acoes = ACOES[atual.status] ?? [];
+  const semCaixa = caixa.erro?.codigo === "recurso_do_plano";
+  const pago = caixa.dados?.pagamento ?? null;
+  const diaFechado = caixa.dados?.diaFechado ?? false;
+  const acoes = caixa.dados ? acoesComCaixa(atual.status, pago !== null, diaFechado) : (ACOES[atual.status] ?? []);
+  const membros = (equipe.dados ?? []).filter((m) => m.ativo).map((m) => ({ id: m.id, nome: m.nome }));
   const noCaminho = CAMINHO.indexOf(atual.status as Status);
 
   return (
@@ -220,7 +274,23 @@ export function DetalheDoAgendamento() {
         </div>
 
         <div className={estilos.acoes}>
-          {confirmandoCancelar ? (
+          {pagando ? null : confirmandoReabrir ? (
+            <div className={estilos.confirmar} role="group" aria-label="Confirmar reabertura">
+              <span>Reabrir? O pagamento registrado sai do caixa.</span>
+              <button
+                type="button"
+                className={estilos.perigo}
+                aria-busy={salvando === "confirmado" || undefined}
+                disabled={salvando !== null}
+                onClick={() => void aplicar({ status: "confirmado" }, "confirmado")}
+              >
+                Sim, reabrir
+              </button>
+              <button type="button" className={estilos.discreta} onClick={() => setConfirmandoReabrir(false)}>
+                Não
+              </button>
+            </div>
+          ) : confirmandoCancelar ? (
             <div className={estilos.confirmar} role="group" aria-label="Confirmar cancelamento">
               <span>Cancelar? O horário volta a ficar livre.</span>
               <button
@@ -239,7 +309,7 @@ export function DetalheDoAgendamento() {
           ) : (
             acoes.map((acao) => (
               <button
-                key={acao.para}
+                key={acao.pagar ? "pagar" : acao.para}
                 type="button"
                 className={
                   acao.peso === "principal"
@@ -248,19 +318,51 @@ export function DetalheDoAgendamento() {
                       ? estilos.discretaPerigo
                       : estilos.secundaria
                 }
-                aria-busy={salvando === acao.para || undefined}
+                aria-busy={(!acao.pagar && salvando === acao.para) || undefined}
                 disabled={salvando !== null}
                 onClick={() =>
-                  acao.para === "cancelado"
-                    ? setConfirmandoCancelar(true)
-                    : void aplicar({ status: acao.para }, acao.para)
+                  acao.pagar
+                    ? setPagando(true)
+                    : acao.para === "cancelado"
+                      ? setConfirmandoCancelar(true)
+                      : atual.status === "concluido" && pago
+                        ? setConfirmandoReabrir(true)
+                        : void aplicar({ status: acao.para }, acao.para)
                 }
               >
-                {salvando === acao.para ? "Salvando…" : acao.rotulo}
+                {!acao.pagar && salvando === acao.para ? "Salvando…" : acao.rotulo}
               </button>
             ))
           )}
         </div>
+        {pagando ? (
+          <FormularioDoPagamento
+            agendamentoId={id}
+            somaDosServicos={total}
+            atendenteId={atual.barbeiro.id}
+            membros={membros}
+            atual={pago}
+            aoRegistrar={pagamentoRegistrado}
+            aoCancelar={() => setPagando(false)}
+          />
+        ) : pago ? (
+          <ResumoDoPagamento
+            pagamento={pago}
+            diaFechado={diaFechado}
+            aoEditar={() => setPagando(true)}
+            aoRemover={removerPagamento}
+          />
+        ) : null}
+        {semCaixa && atual.status !== "cancelado" && atual.status !== "no_show" ? (
+          <p className={estilos.nota}>
+            Registrar o pagamento e ver o caixa do dia é dos planos Essencial e Completo.{" "}
+            {perfil.papel === "dono" ? (
+              <Link className={estilos.link} href="/painel/faturas">
+                Ver os planos
+              </Link>
+            ) : null}
+          </p>
+        ) : null}
         {/* A API não tem remarcar no escopo do barbeiro, e aceitar data e
             hora no PATCH pularia a checagem de disponibilidade inteira.
             Dizer isso — perto do Cancelar, que é o caminho — é melhor do

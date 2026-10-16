@@ -95,7 +95,8 @@ describe("registrar o pagamento no detalhe do agendamento", () => {
 
     await userEvent.click(screen.getByRole("radio", { name: "Dinheiro" }));
     await userEvent.type(screen.getByLabelText(/gorjeta/i), "5");
-    await userEvent.click(screen.getByRole("button", { name: "Registrar R$ 45,00" }));
+    // `\s`: o Intl põe espaço não separável entre "R$" e o número.
+    await userEvent.click(screen.getByRole("button", { name: /^Registrar R\$\s45,00$/ }));
 
     await waitFor(() =>
       expect(registrar).toHaveBeenCalledWith("a1", {
@@ -126,7 +127,7 @@ describe("registrar o pagamento no detalhe do agendamento", () => {
 
     await userEvent.click(within(quem).getByRole("radio", { name: "Gustavo" }));
     await userEvent.click(screen.getByRole("radio", { name: "Pix" }));
-    await userEvent.click(screen.getByRole("button", { name: "Registrar R$ 40,00" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Registrar R\$\s40,00$/ }));
 
     await waitFor(() => expect(registrar).toHaveBeenCalledWith("a1", expect.objectContaining({ recebidoPorId: "bb0" })));
   });

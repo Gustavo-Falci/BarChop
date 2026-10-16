@@ -343,6 +343,12 @@ G1).
   Aceito: troca de slug é rara, e o redirect leva a pessoa ao lugar
   certo — ela só entra de novo. Fecharia com a sessão do cliente num
   cookie do domínio `.barchop.com.br`.
+- **Barbearia com agendamento não pode ser apagada.** O `agendamento`
+  aponta pra `barbeiro` e `cliente` com `ON DELETE RESTRICT` desde a
+  init, e a cascata da barbearia esbarra nisso (achado no caixa, PR 2,
+  2026-10-16). Apagar a `barbearia-teste` em produção pede apagar os
+  agendamentos antes. Fecha trocando as duas FKs por `NO ACTION`, como
+  as do caixa.
 - **O suporte não troca nem recupera a própria senha.** A conta de
   suporte existe em produção desde o G1 (`criar-suporte`, que não roda
   de novo pro mesmo e-mail). Trocar a senha é `UPDATE` com

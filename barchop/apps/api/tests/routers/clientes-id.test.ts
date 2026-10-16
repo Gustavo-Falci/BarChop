@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { dataParaDate, horaParaDate } from "../../src/lib/horas";
-import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
+import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
 import type { App } from "../../src/tipos";
 
 const JOAO = { nome: "João da Silva", telefone: "11999998888" };
@@ -262,5 +262,74 @@ describe("PATCH /clientes/:id", () => {
     expect(resposta.statusCode).toBe(401);
 
     await app.close();
+  });
+});
+
+// De quem o cliente "é" no caixa (Onda 2, marco 2, PR 5 do plano
+// caixa-do-dia): aparece no detalhe e só o dono troca. Vale um membro
+// ativo que atende, ou `null` (de ninguém).
+describe("o profissional do cliente", () => {
+  async function cenario() {
+    const app = buildApp();
+    const dono = await criarBarbeariaComToken(app, "um");
+    const parceiro = await criarMembroComToken(app, dono.barbeariaId, "profissional", "parceiro");
+    const recepcao = await criarMembroComToken(app, dono.barbeariaId, "recepcao", "balcao");
+    const cliente = await criarCliente(app, dono.token);
+    return { app, dono, parceiro, recepcao, cliente };
+  }
+
+  function trocar(app: App, token: string, clienteId: string, corpo: Record<string, unknown>) {
+    return app.inject({ method: "PATCH", url: `/clientes/${clienteId}`, headers: auth(token), payload: corpo });
+  }
+
+  async function profissionalNoDetalhe(app: App, token: string, clienteId: string) {
+    const resposta = await app.inject({ method: "GET", url: `/clientes/${clienteId}`, headers: auth(token) });
+    return resposta.json().profissional;
+  }
+
+  it("começa de ninguém; o dono passa para um membro e depois limpa", async () => {
+    const c = await cenario();
+    expect(await profissionalNoDetalhe(c.app, c.dono.token, c.cliente.id)).toBeNull();
+
+    const trocou = await trocar(c.app, c.dono.token, c.cliente.id, { profissionalId: c.parceiro.barbeiroId });
+    expect(trocou.statusCode).toBe(200);
+    expect(await profissionalNoDetalhe(c.app, c.dono.token, c.cliente.id)).toEqual({
+      id: c.parceiro.barbeiroId,
+      nome: "Membro parceiro",
+    });
+
+    expect((await trocar(c.app, c.dono.token, c.cliente.id, { profissionalId: null })).statusCode).toBe(200);
+    expect(await profissionalNoDetalhe(c.app, c.dono.token, c.cliente.id)).toBeNull();
+    await c.app.close();
+  });
+
+  it("profissional e recepção não trocam (403), mas seguem editando o resto", async () => {
+    const c = await cenario();
+
+    for (const token of [c.parceiro.token, c.recepcao.token]) {
+      const resposta = await trocar(c.app, token, c.cliente.id, { profissionalId: c.parceiro.barbeiroId });
+      expect(resposta.statusCode).toBe(403);
+      expect(resposta.json().erro).toBe("sem_permissao");
+    }
+    expect((await trocar(c.app, c.parceiro.token, c.cliente.id, { nome: "João Souza" })).statusCode).toBe(200);
+    const cliente = await prisma.cliente.findUniqueOrThrow({ where: { id: c.cliente.id } });
+    expect(cliente.profissionalId).toBeNull();
+    expect(cliente.nome).toBe("João Souza");
+    await c.app.close();
+  });
+
+  it("recepção, membro que saiu ou de outra barbearia é 422 membro_invalido", async () => {
+    const c = await cenario();
+    const outra = await criarBarbeariaComToken(c.app, "outra");
+    const saiu = await criarMembroComToken(c.app, c.dono.barbeariaId, "profissional", "saiu");
+    await prisma.barbeiro.update({ where: { id: saiu.barbeiroId }, data: { ativo: false } });
+
+    for (const profissionalId of [c.recepcao.barbeiroId, saiu.barbeiroId, outra.barbeiroId]) {
+      const resposta = await trocar(c.app, c.dono.token, c.cliente.id, { profissionalId });
+      expect(resposta.statusCode).toBe(422);
+      expect(resposta.json().erro).toBe("membro_invalido");
+    }
+    expect((await trocar(c.app, c.dono.token, c.cliente.id, { profissionalId: "nao-e-uuid" })).statusCode).toBe(400);
+    await c.app.close();
   });
 });

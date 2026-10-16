@@ -8,6 +8,9 @@ import {
   apenasDigitos,
   normalizarTelefoneObrigatorio,
 } from "../lib/telefone";
+import { garantirMembroDaDivisao } from "../lib/caixa";
+import { ErroHttp } from "../lib/erro-http";
+import { membroDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
 const corpoNovoCliente = {
@@ -36,6 +39,8 @@ const corpoPatchCliente = {
     nome: { type: "string", minLength: 2, maxLength: 120 },
     telefone: { type: "string", pattern: PADRAO_TELEFONE, maxLength: 20 },
     email: { type: ["string", "null"], pattern: PADRAO_EMAIL, maxLength: 160 },
+    // De quem o cliente "é" no caixa; null = de ninguém. Só o dono troca.
+    profissionalId: { type: ["string", "null"], pattern: PADRAO_UUID },
   },
 } as const;
 
@@ -269,11 +274,13 @@ export function registrarRotasClientes(app: App): void {
               barbeiro: { select: { id: true, nome: true } },
             },
           },
+          profissional: { select: { id: true, nome: true } },
         },
       });
 
       return {
         ...serializarCliente(cliente),
+        profissional: cliente.profissional,
         agendamentos: cliente.agendamentos.map(serializarAgendamento),
       };
     }
@@ -283,14 +290,26 @@ export function registrarRotasClientes(app: App): void {
     "/clientes/:id",
     { schema: { params: paramsComId, body: corpoPatchCliente } },
     async (request) => {
-      const { nome, telefone, email } = request.body;
+      const { nome, telefone, email, profissionalId } = request.body;
+      const barbeariaId = request.user.barbeariaId;
+
+      // Trocar de quem o cliente é mexe na divisão do dinheiro: só o
+      // dono (caixa do dia, plano caixa-do-dia). O resto do cadastro
+      // segue aberto a toda a equipe.
+      if (profissionalId !== undefined) {
+        if (membroDoToken(request).papel !== "dono") {
+          throw new ErroHttp(403, "sem_permissao", "seu papel na equipe não permite isto");
+        }
+        if (profissionalId !== null) await garantirMembroDaDivisao(prisma, barbeariaId, profissionalId);
+      }
 
       const cliente = await prisma.cliente.update({
         // barbeariaId no mesmo where da escrita: cliente de outra
         // barbearia vira P2025 -> 404, nunca uma edição silenciosa.
-        where: { id: request.params.id, barbeariaId: request.user.barbeariaId },
+        where: { id: request.params.id, barbeariaId },
         data: {
           ...(nome !== undefined ? { nome } : {}),
+          ...(profissionalId !== undefined ? { profissionalId } : {}),
           // Mesmo tratamento do email: só entra no `data` quando veio no
           // corpo, e sempre normalizado — os dois escrevem numa coluna
           // que faz parte de uma chave única.

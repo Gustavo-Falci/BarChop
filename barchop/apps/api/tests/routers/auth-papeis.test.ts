@@ -51,6 +51,9 @@ const SO_DO_DONO = [
   // Fechar e reabrir o caixa do dia (Onda 2, marco 2).
   { method: "POST", url: "/barbearias/me/caixa/2026-01-08/fechamento" },
   { method: "DELETE", url: "/barbearias/me/caixa/2026-01-08/fechamento" },
+  // A divisão do dinheiro.
+  { method: "GET", url: "/barbearias/me/divisao" },
+  { method: "PUT", url: "/barbearias/me/divisao" },
 ] as const;
 
 async function prepararEquipe(app: App) {

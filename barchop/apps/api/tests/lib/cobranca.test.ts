@@ -11,6 +11,7 @@ import {
   modoDaChave,
   planoDaChave,
   precosParaStripe,
+  situacaoComReembolso,
   situacaoDaFatura,
   situacaoDaStripe,
 } from "../../src/lib/cobranca";
@@ -309,6 +310,25 @@ describe("lerEvento", () => {
   it("assinatura que não confere lança", () => {
     const { corpo } = assinado({ id: "evt_5", object: "event", type: "invoice.paid", data: { object: {} } });
     expect(() => cobrancaDeMemoria().lerEvento(corpo, "t=1,v1=errada")).toThrow();
+  });
+});
+
+describe("situacaoComReembolso", () => {
+  // A Stripe deixa a fatura `paid` depois do reembolso: quem diz quanto
+  // voltou é a cobrança do cartão.
+  it("paga e devolvida inteira é reembolsada; em parte, reembolsada em parte", () => {
+    expect(situacaoComReembolso("paga", 4490, 4490)).toBe("reembolsada");
+    expect(situacaoComReembolso("paga", 4490, 1000)).toBe("reembolsada_em_parte");
+  });
+
+  it("sem nada devolvido, fica como estava (inclusive a de R$ 0 do teste)", () => {
+    expect(situacaoComReembolso("paga", 4490, 0)).toBe("paga");
+    expect(situacaoComReembolso("paga", 0, 0)).toBe("paga");
+  });
+
+  it("só fatura paga vira reembolsada", () => {
+    expect(situacaoComReembolso("aberta", 4490, 4490)).toBe("aberta");
+    expect(situacaoComReembolso("anulada", 4490, 4490)).toBe("anulada");
   });
 });
 

@@ -14,7 +14,7 @@
 // antigo: quem assinar dali em diante paga o novo; as assinaturas que já
 // existem continuam no preço antigo até alguém trocá-las.
 import Stripe from "stripe";
-import { precosParaStripe, type PrecoNaStripe } from "../src/lib/cobranca";
+import { modoDaChave, precosParaStripe, type PrecoNaStripe } from "../src/lib/cobranca";
 
 function mesmosDegraus(preco: Stripe.Price, esperado: PrecoNaStripe): boolean {
   const degraus = (preco.tiers ?? []).map((t) => ({ up_to: t.up_to ?? "inf", unit_amount: t.unit_amount }));
@@ -39,7 +39,7 @@ async function main() {
   const chave = process.env.STRIPE_SECRET_KEY;
   if (!chave) throw new Error("STRIPE_SECRET_KEY ausente");
   const stripe = new Stripe(chave);
-  console.log(`modo: ${chave.startsWith("sk_live_") ? "REAL" : "teste"}`);
+  console.log(`modo: ${modoDaChave(chave) === "real" ? "REAL" : "teste"}`);
 
   for (const esperado of precosParaStripe()) {
     await garantirProduto(stripe, esperado.produto);

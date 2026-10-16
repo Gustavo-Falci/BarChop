@@ -7,6 +7,7 @@ import {
   cobrancaDeMemoria,
   cobrancaDoAmbiente,
   fimDoTesteNaCobranca,
+  modoDaChave,
   planoDaChave,
   precosParaStripe,
   situacaoDaFatura,
@@ -88,6 +89,19 @@ describe("fimDoTesteNaCobranca", () => {
     expect(fimDoTesteNaCobranca(new Date(AGORA.getTime() + 47 * HORA), AGORA)).toBeNull();
     expect(fimDoTesteNaCobranca(new Date(AGORA.getTime() - HORA), AGORA)).toBeNull();
     expect(fimDoTesteNaCobranca(null, AGORA)).toBeNull();
+  });
+});
+
+describe("modoDaChave", () => {
+  it("secreta ou restrita do modo real é REAL", () => {
+    expect(modoDaChave("sk_live_x")).toBe("real");
+    expect(modoDaChave("rk_live_x")).toBe("real");
+  });
+
+  it("as de teste, ou qualquer outra, são teste", () => {
+    expect(modoDaChave("sk_test_x")).toBe("teste");
+    expect(modoDaChave("rk_test_x")).toBe("teste");
+    expect(modoDaChave("banana")).toBe("teste");
   });
 });
 

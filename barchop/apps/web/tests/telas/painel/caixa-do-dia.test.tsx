@@ -144,7 +144,18 @@ describe("tela do Caixa", () => {
   });
 
   it("o profissional vê o caixa, mas não fecha nem reabre", async () => {
-    montarPainel(<CaixaDoDia />, await semear({ papel: "profissional" }));
+    // O papel do logado vem do membro bb1 da equipe: o Rafael passa a
+    // profissional e o Gustavo, a dono.
+    montarPainel(
+      <CaixaDoDia />,
+      await semear({
+        papel: "profissional",
+        equipe: [
+          { ...RAFAEL, papel: "profissional" },
+          { ...GUSTAVO, papel: "dono" },
+        ],
+      })
+    );
 
     expect(await screen.findByRole("region", { name: /acerto/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /fechar o dia/i })).not.toBeInTheDocument();

@@ -17,6 +17,7 @@ import type {
   MembroDaEquipe,
   NovoAgendamentoBarbeiroInput,
   OcupacaoDoDia,
+  CaixaDoDia,
   PagamentoDoAgendamento,
   PagamentoDoAtendimento,
   RegistrarPagamento,
@@ -696,6 +697,20 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     async removerPagamento(id: string): Promise<void> {
       await requisicao(`/agendamentos/${id}/pagamento`, { metodo: "DELETE", comToken: true });
+    },
+
+    // O caixa de um dia ("YYYY-MM-DD"). O profissional recebe só o dele.
+    caixaDoDia(data: string): Promise<CaixaDoDia> {
+      return requisicao(`/barbearias/me/caixa?data=${data}`, { comToken: true });
+    },
+
+    // Só o dono. Fechar grava a foto do acerto e devolve o caixa.
+    fecharODia(data: string): Promise<CaixaDoDia> {
+      return requisicao(`/barbearias/me/caixa/${data}/fechamento`, { metodo: "POST", comToken: true });
+    },
+
+    async reabrirODia(data: string): Promise<void> {
+      await requisicao(`/barbearias/me/caixa/${data}/fechamento`, { metodo: "DELETE", comToken: true });
     },
   };
 }

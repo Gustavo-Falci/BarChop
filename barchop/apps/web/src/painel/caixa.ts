@@ -43,6 +43,23 @@ export function centavosNoCampo(centavos: number): string {
   return centavos === 0 ? "" : (centavos / 100).toFixed(2).replace(".", ",");
 }
 
+// A linha de cada um no acerto do dia: o saldo é cabe − recebeu.
+export function fraseDoSaldo(saldoCentavos: number): string {
+  if (saldoCentavos > 0) return `Tem a receber ${reais(saldoCentavos)}`;
+  if (saldoCentavos < 0) return `Tem a repassar ${reais(-saldoCentavos)}`;
+  return "Está acertado";
+}
+
+// "Gustavo repassa R$ 60,00 para Rafael." Repasse pra casa = pro caixa
+// da barbearia.
+export function fraseDoRepasse(repasse: {
+  de: { nome: string };
+  para: { nome: string } | null;
+  valorCentavos: number;
+}): string {
+  return `${repasse.de.nome} repassa ${reais(repasse.valorCentavos)} para ${repasse.para?.nome ?? "a casa"}.`;
+}
+
 // "Rafael fica com R$ 16,00 e Gustavo com R$ 24,00." Atendimento e
 // gorjeta da mesma pessoa somam numa linha só; a casa vem por último.
 export function fraseDaDivisao(partes: readonly ParteDoPagamento[]): string {

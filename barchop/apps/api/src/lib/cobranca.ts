@@ -402,6 +402,12 @@ function cobrancaDesligada(): Cobranca {
   };
 }
 
+// De que modo da Stripe é a chave: a secreta (`sk_`) e a restrita (`rk_`)
+// do modo real começam com `_live_`; qualquer outra conta como teste.
+export function modoDaChave(chave: string): "real" | "teste" {
+  return /^(sk|rk)_live_/.test(chave) ? "real" : "teste";
+}
+
 // Escolhe pelo ambiente. Em produção a API não sobe sem as duas chaves:
 // sem a do webhook, ninguém ficaria sabendo que a barbearia pagou.
 export function cobrancaDoAmbiente(env: Record<string, string | undefined> = process.env): Cobranca {

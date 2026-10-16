@@ -1,9 +1,23 @@
 import type { Prisma } from "@barchop/database";
-import { MOTIVOS_DA_PARTE, dividirPagamento, type FormaDePagamento } from "@barchop/formato";
-import type { FormaDoPagamento, MotivoDaParteDoPagamento, PagamentoDoAgendamento } from "@barchop/types";
+import {
+  FORMAS_DE_PAGAMENTO,
+  MOTIVOS_DA_PARTE,
+  acertoDoDia,
+  dividirPagamento,
+  type AcertoDoDia,
+  type FormaDePagamento,
+} from "@barchop/formato";
+import type {
+  CaixaDoDia,
+  FormaDoPagamento,
+  MembroDoCaixa,
+  MotivoDaParteDoPagamento,
+  PagamentoDoAgendamento,
+  PendenciaDoCaixa,
+} from "@barchop/types";
 import { ErroHttp } from "./erro-http";
 import { ErroDeNegocio } from "./erro-negocio";
-import { dateParaData } from "./horas";
+import { dataParaDate, dateParaData, dateParaHora } from "./horas";
 
 // O caixa do dia (Onda 2, marco 2, plano caixa-do-dia): gravar o
 // pagamento de um atendimento com a divisão congelada e garantir que o
@@ -22,11 +36,15 @@ export const INCLUDE_PAGAMENTO = {
 
 type PagamentoComTudo = Prisma.PagamentoGetPayload<{ include: typeof INCLUDE_PAGAMENTO }>;
 
-export function serializarPagamento(pagamento: PagamentoComTudo): PagamentoDoAgendamento {
-  // As partes saem na ordem da conta (atendimento, cliente, casa,
-  // gorjeta), e não na do banco, que não garante nenhuma.
+// As partes na ordem da conta (atendimento, cliente, casa, gorjeta), e
+// não na do banco, que não garante nenhuma.
+function naOrdemDaConta<T extends { motivo: string }>(partes: readonly T[]): T[] {
   const ordem = (motivo: string) => MOTIVOS_DA_PARTE.indexOf(motivo as MotivoDaParteDoPagamento);
-  const partes = [...pagamento.partes].sort((a, b) => ordem(a.motivo) - ordem(b.motivo));
+  return [...partes].sort((a, b) => ordem(a.motivo) - ordem(b.motivo));
+}
+
+export function serializarPagamento(pagamento: PagamentoComTudo): PagamentoDoAgendamento {
+  const partes = naOrdemDaConta(pagamento.partes);
   return {
     id: pagamento.id,
     agendamentoId: pagamento.agendamentoId,
@@ -190,4 +208,142 @@ export async function soltarPagamento(
   if (!pagamento) return;
   await garantirDiaAberto(tx, pagamento.barbeariaId, pagamento.data);
   await tx.pagamento.delete({ where: { id: pagamento.id } });
+}
+
+// A data do caixa vem da tela, como na ocupação: a API não decide que
+// dia é hoje. "2026-02-30" passa no pattern e morre aqui.
+export function diaDoCaixa(data: string): Date {
+  try {
+    return dataParaDate(data);
+  } catch {
+    throw new ErroDeNegocio(`a data ${data} não existe`, "data_invalida");
+  }
+}
+
+const INCLUDE_PAGAMENTO_DO_CAIXA = {
+  ...INCLUDE_PAGAMENTO,
+  agendamento: { select: { horaInicio: true, cliente: { select: { id: true, nome: true } } } },
+} as const;
+
+type PagamentoDoDia = Prisma.PagamentoGetPayload<{ include: typeof INCLUDE_PAGAMENTO_DO_CAIXA }>;
+
+// Na ordem do dia; no mesmo horário (dois profissionais), por id, pra a
+// ordem — e com ela o acerto — não mudar de uma leitura pra outra.
+function pagamentosDoDia(db: Prisma.TransactionClient, barbeariaId: string, data: Date): Promise<PagamentoDoDia[]> {
+  return db.pagamento.findMany({
+    where: { barbeariaId, data },
+    include: INCLUDE_PAGAMENTO_DO_CAIXA,
+    orderBy: [{ agendamento: { horaInicio: "asc" } }, { id: "asc" }],
+  });
+}
+
+function contarOAcerto(pagamentos: readonly PagamentoDoDia[]): AcertoDoDia {
+  return acertoDoDia(
+    pagamentos.map((pagamento) => ({
+      recebidoPor: pagamento.recebidoPorId,
+      partes: naOrdemDaConta(pagamento.partes).map((parte) => ({
+        beneficiario: parte.beneficiarioId,
+        motivo: parte.motivo as MotivoDaParteDoPagamento,
+        valorCentavos: parte.valorCentavos,
+      })),
+    }))
+  );
+}
+
+// O caixa de um dia. `somente` = o profissional logado: ele vê os
+// pagamentos em que entra (atendeu, recebeu ou leva parte), a linha dele
+// no acerto, os repasses dele e as pendências da agenda dele. O acerto
+// é contado com o dia inteiro e só depois recortado — o saldo dele
+// depende do que os outros receberam por ele.
+export async function caixaDoDia(
+  db: Prisma.TransactionClient,
+  params: { barbeariaId: string; data: Date; somente?: string }
+): Promise<CaixaDoDia> {
+  const { barbeariaId, data, somente } = params;
+  const fechamento = await db.fechamentoDoDia.findUnique({
+    where: { barbeariaId_data: { barbeariaId, data } },
+    include: { fechadoPor: MEMBRO },
+  });
+  const todos = await pagamentosDoDia(db, barbeariaId, data);
+  // Dia fechado: vale a foto gravada ao fechar, não uma conta nova.
+  const acerto = fechamento ? (fechamento.acerto as unknown as AcertoDoDia) : contarOAcerto(todos);
+
+  const pendentes = await db.agendamento.findMany({
+    where: {
+      barbeariaId,
+      data,
+      ...(somente ? { barbeiroId: somente } : {}),
+      OR: [{ status: { in: ["pendente", "confirmado"] } }, { status: "concluido", pagamento: { is: null } }],
+    },
+    select: {
+      id: true,
+      horaInicio: true,
+      status: true,
+      cliente: { select: { id: true, nome: true } },
+      barbeiro: MEMBRO,
+    },
+    orderBy: [{ horaInicio: "asc" }, { id: "asc" }],
+  });
+
+  const membros = await db.barbeiro.findMany({ where: { barbeariaId }, select: { id: true, nome: true } });
+  const nomes = new Map(membros.map((m) => [m.id, m.nome]));
+  const membro = (id: string): MembroDoCaixa => ({ id, nome: nomes.get(id) ?? "" });
+
+  const entra = (p: PagamentoDoDia) =>
+    p.atendenteId === somente || p.recebidoPorId === somente || p.partes.some((parte) => parte.beneficiarioId === somente);
+  const pagamentos = somente ? todos.filter(entra) : todos;
+  const pessoas = somente ? acerto.pessoas.filter((l) => l.pessoa === somente) : acerto.pessoas;
+  const repasses = somente ? acerto.repasses.filter((r) => r.de === somente || r.para === somente) : acerto.repasses;
+
+  const porForma = FORMAS_DE_PAGAMENTO.map((forma) => {
+    const daForma = pagamentos.filter((p) => p.forma === forma);
+    return {
+      forma,
+      quantidade: daForma.length,
+      valorCentavos: daForma.reduce((soma, p) => soma + p.servicosCentavos - p.descontoCentavos + p.gorjetaCentavos, 0),
+    };
+  });
+
+  return {
+    data: dateParaData(data),
+    fechamento: fechamento
+      ? { fechadoEm: fechamento.fechadoEm.toISOString(), fechadoPor: fechamento.fechadoPor }
+      : null,
+    pagamentos: pagamentos.map((p) => ({
+      ...serializarPagamento(p),
+      horaInicio: dateParaHora(p.agendamento.horaInicio),
+      cliente: p.agendamento.cliente,
+    })),
+    totais: { totalCentavos: porForma.reduce((soma, f) => soma + f.valorCentavos, 0), porForma },
+    acerto: {
+      pessoas: pessoas.map((l) => ({ ...l, pessoa: l.pessoa === null ? null : membro(l.pessoa) })),
+      repasses: repasses.map((r) => ({
+        de: membro(r.de),
+        para: r.para === null ? null : membro(r.para),
+        valorCentavos: r.valorCentavos,
+      })),
+    },
+    pendencias: pendentes.map((a) => ({
+      agendamentoId: a.id,
+      horaInicio: dateParaHora(a.horaInicio),
+      status: a.status as PendenciaDoCaixa["status"],
+      cliente: a.cliente,
+      barbeiro: a.barbeiro,
+    })),
+  };
+}
+
+// Fechar o dia (só o dono): grava a foto do acerto. A trava da
+// barbearia em garantirDiaAberto deixa o fechar e os pagamentos em fila
+// — nenhum pagamento entra depois da foto. Dia já fechado é 409.
+export async function fecharODia(
+  tx: Prisma.TransactionClient,
+  params: { barbeariaId: string; data: Date; fechadoPorId: string }
+): Promise<void> {
+  const { barbeariaId, data, fechadoPorId } = params;
+  await garantirDiaAberto(tx, barbeariaId, data);
+  const acerto = contarOAcerto(await pagamentosDoDia(tx, barbeariaId, data));
+  await tx.fechamentoDoDia.create({
+    data: { barbeariaId, data, fechadoPorId, acerto: acerto as unknown as Prisma.InputJsonObject },
+  });
 }

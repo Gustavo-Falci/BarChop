@@ -199,6 +199,31 @@ describe("POST /barbearias/me/assinatura/portal", () => {
     expect(resposta.json().url).toMatch(/^https:\/\//);
     expect(cobranca.portais[0].customerId).toBe("cus_9");
     expect(cobranca.portais[0].urlDeVolta).toMatch(/\/painel\/faturas$/);
+    expect(cobranca.portais[0].semDescida).toBe(false);
+    await app.close();
+  });
+
+  it("com mais profissionais do que o Essencial aceita, o Portal não oferece a descida", async () => {
+    const { app, cobranca } = montar();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    await prisma.assinatura.update({ where: { barbeariaId }, data: { stripeCustomerId: "cus_9" } });
+    // O dono e mais 3: 4 profissionais, um a mais que o limite do Essencial.
+    for (const nome of ["p1", "p2", "p3"]) await criarMembroComToken(app, barbeariaId, "profissional", nome);
+
+    expect((await portal(app, token)).statusCode).toBe(200);
+    expect(cobranca.portais[0].semDescida).toBe(true);
+    await app.close();
+  });
+
+  it("no limite do Essencial (3), a descida continua no Portal; a recepção não conta", async () => {
+    const { app, cobranca } = montar();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    await prisma.assinatura.update({ where: { barbeariaId }, data: { stripeCustomerId: "cus_9" } });
+    for (const nome of ["p1", "p2"]) await criarMembroComToken(app, barbeariaId, "profissional", nome);
+    await criarMembroComToken(app, barbeariaId, "recepcao", "r");
+
+    expect((await portal(app, token)).statusCode).toBe(200);
+    expect(cobranca.portais[0].semDescida).toBe(false);
     await app.close();
   });
 });

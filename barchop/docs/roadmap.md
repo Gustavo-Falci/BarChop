@@ -10,14 +10,16 @@ cada onda em andamento tem plano próprio em `.claude/plans/`, feito com
 | Onda | Resultado | Estado |
 |---|---|---|
 | 0 — Casa arrumada | Recuperação de senha do dono, trocar senha derruba sessões, slugs reservados e trocáveis, nada agendado no passado, docs do SaaS | feita, na main (PR #13) — plano em `.claude/plans/onda-0-casa-arrumada.plan.md`, revisão em `.claude/reviews/onda-0-review.md` |
-| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | em andamento — blocos A a F na main (PRs #14 a #30, um PR por tarefa desde o D); próximo é o G (produção na OCI e piloto) — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
-| 1s — Site de marketing | Landing, termos e privacidade, robots/sitemap/Open Graph | feita (mínimo), na main — PRs #40, #70 e `onda-1s-c`; preços e plano grátis foram pra Onda 2, com a cobrança — plano em `.claude/plans/onda-1s-site-de-marketing.plan.md` |
-| 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | pendente |
+| 1 — Agenda que funciona | Equipe com papéis e jornada por profissional, cliente escolhe o profissional, página pública rica no subdomínio, lembrete com confirmar/cancelar, cadastro self-service com onboarding, painel do dia, deploy na OCI e piloto com a GR Barber | no ar — blocos A a G2 e o G4 feitos (PRs #14 a #39, o G1 em #56 e #57); falta só o G3, o piloto da GR Barber, que o dono adiou para depois da Onda 2 — plano em `.claude/plans/onda-1-agenda-que-funciona.plan.md`; o que entrou está em "Onda 1 — o que está no ar", abaixo |
+| 1s — Site de marketing | Landing, termos e privacidade, robots/sitemap/Open Graph, preços e plano grátis | feita (mínimo), no ar — PRs #40, #70, #74 e #114 (imagem do link); a tabela de preços, `/precos` e `/gratis` entraram com a cobrança (#146) — plano em `.claude/plans/onda-1s-site-de-marketing.plan.md` |
+| 2 — Dinheiro | Caixa do dia, comissões, relatórios, cobrança da assinatura do BarChop | em andamento — marco 1 (o BarChop cobra a assinatura, pela Stripe) no ar desde 2026-10-15 e testado com cobrança real em 2026-10-16 (PRs #141 a #150); marcos 2 a 4 pendentes — PRD em `.claude/prds/onda-2-dinheiro.prd.md` |
 | 3 — Retenção do cliente final | Pagamento e sinal online, pacotes, clube de assinatura, fidelidade, lista de espera, avaliações | pendente |
 | 4 — Crescimento | Indicação, loja, múltiplas unidades, campanhas, login social | pendente |
 | 5 — Diferenciais | IA no WhatsApp, NFS-e, domínio próprio, app do profissional | pendente |
 
-Nenhuma onda nova abre antes de o piloto rodar a Onda 1.
+O piloto da GR Barber começa com o sistema pronto, Onda 2 incluída
+(decisão do dono, 2026-10-12); por isso a Onda 2 abriu antes do G3. As
+Ondas 3 a 5 continuam esperando o piloto.
 
 **Verificação da Meta em standby (decisão de 2026-10-03).** Ela exige
 CNPJ e leva semanas; até sair, a Onda 1 não depende do WhatsApp: o
@@ -25,6 +27,69 @@ lembrete automático e os códigos do cliente saem por e-mail, e o painel
 oferece lembrar pelo WhatsApp à mão (`wa.me`). O canal da Cloud API
 (ADR-0004) já existe, atrás de `WHATSAPP_ATIVO`, desligada (ADR-0009,
 que lista o que precisa existir antes de ligar).
+
+## Onda 1 — o que está no ar (2026-10-16)
+
+Produção numa VM da OCI desde 2026-10-06: `barchop.com.br` (site),
+`painel.barchop.com.br`, `api.barchop.com.br` e cada barbearia em
+`<slug>.barchop.com.br`. As telas de cada bloco estão em
+`docs/screens.md`.
+
+- **A — Equipe e papéis** (#14): dono, profissional e recepção; convite
+  por e-mail; profissional vê só a própria agenda.
+- **B — Jornada por profissional** (#15): horário próprio, folgas e
+  bloqueios; a disponibilidade respeita a jornada de cada um.
+- **C — Agenda da equipe** (#16): o cliente escolhe o profissional ou
+  "qualquer um"; agenda do painel em colunas por profissional.
+- **D — Lembrete** (#17 a #21): fila pg-boss (ADR-0003), lembrete por
+  e-mail com confirmar ou cancelar num toque, "Lembrar pelo WhatsApp" à
+  mão no painel; o canal da Cloud API existe, desligado (ADR-0009).
+- **E — Página da barbearia** (#22 a #26): capa, comodidades,
+  contatos, mapa, formas de pagamento, equipe com foto; imagens no
+  bucket da OCI; tenant por subdomínio, com o link antigo levando ao
+  novo.
+- **F — Cadastro e onboarding** (#27 a #35): cadastro do dono com código
+  no e-mail, trilha dos primeiros passos, link único pra sempre (só o
+  suporte troca, a pedido do dono).
+- **G1 e G2 — Produção** (#37 a #39, #56, #57): Docker Compose (api com
+  worker, web, Postgres com backup diário, Caddy com certificado
+  coringa), CORS por lista, limites nas rotas públicas, e-mail pelo
+  Resend.
+
+Depois dos blocos, ainda na Onda 1:
+
+- **Painel v2** (PRD `.claude/prds/painel-v2.prd.md`, 6 marcos, PRs #45
+  a #87): peças comuns, Configurações em subtelas, regras de
+  agendamento (pausa do almoço, exceções por data, antecedência,
+  prazos do cliente), Hoje (ocupação por profissional, link com QR e
+  cartaz), listas com pílulas, agenda com expediente sombreado, resumo,
+  "Agora" e "Bloquear".
+- **Acabamento de UI/UX** (#41 a #44 e #92 a #139): telas sem caixas, categoria do
+  serviço em lista fechada, serviço com foto e descrição, logo e capa
+  com medida recomendada, a semana da agenda por profissional, a tela
+  Aparência (17 temas, rascunho e publicar, prévia), a barra do topo
+  (novidades, central de ajuda, tema claro/escuro/sistema), o sino de
+  notificações e os avisos da plataforma pelo suporte.
+
+O que falta pra Onda 1 virar `complete` no PRD: o G3, a GR Barber
+rodando no ar (dados, equipe e jornada reais, linha de base de faltas
+medida antes de ligar o lembrete).
+
+## Onda 2 — marco 1 no ar (2026-10-16)
+
+O BarChop cobra a própria assinatura (ADR-0010, plano
+`.claude/plans/cobranca-do-barchop.plan.md`): planos Grátis, Essencial
+e Completo em `@barchop/formato` (`planos.ts`), teste de 14 dias,
+limite de profissionais por plano, Checkout e Portal do cliente da
+Stripe com webhook, a tela Faturas no painel, e no site a tabela de
+preços, `/precos`, `/gratis` e os termos com a cobrança (#141 a #146).
+Depois de no ar: chave restrita da Stripe, Portal que não oferece o
+Essencial a quem tem mais de 3 profissionais, e faturas reembolsadas
+marcadas como tal (#148 a #150). Testado em produção com cartão real:
+assinar, cobrar, reembolsar e cancelar.
+
+Os marcos 2 (caixa do dia e comissões), 3 (planos da barbearia para o
+cliente) e 4 (relatórios) seguem pendentes.
 
 ## Histórico — até 2026-10-02
 
@@ -250,6 +315,15 @@ gastar, a sessão do cliente que cai quando o slug muda, e o monorepo
 sem lint. Esta saiu na Onda 1: `pnpm lint` roda o ESLint da raiz, com a
 config compartilhada em `packages/config/eslint.mjs`.
 
+Saíram também, depois dos blocos: a agenda oferecendo o horário da
+barbearia em vez da jornada de cada profissional (o expediente de cada
+um vem de `GET /barbearias/me/ocupacao`, no dia pelo #85 e na semana
+pelo #115); a ocupação do painel do dia que passava de 100% com dois
+atendendo (#75, por profissional e da casa); a semana da agenda
+misturando a equipe (#116, pílulas por profissional); e o cadastro do
+dono sem e-mail em produção (o código chega pelo Resend, conferido no
+G1).
+
 - **O orçamento de pedido de código é gastável por terceiros.** O
   limite de 3 pedidos por destino em 15 minutos (`codigoDoCliente` e
   `codigoDoBarbeiro` em `lib/limites.ts`) é por telefone ou e-mail, não
@@ -269,22 +343,11 @@ config compartilhada em `packages/config/eslint.mjs`.
   Aceito: troca de slug é rara, e o redirect leva a pessoa ao lugar
   certo — ela só entra de novo. Fecharia com a sessão do cliente num
   cookie do domínio `.barchop.com.br`.
-- **A conta de suporte do G ainda não existe.** Desde o F4 o link é
-  único pra sempre (o atual e os antigos de uma barbearia nunca vão pra
-  outra) e só o suporte troca, aprovando o pedido do dono. Em produção:
-  criar a conta com `SENHA_DO_SUPORTE=... pnpm --filter @barchop/api
-  criar-suporte "Nome" email` na VM. Não há troca de senha nem
-  recuperação pro suporte ainda — trocar é `UPDATE` com
+- **O suporte não troca nem recupera a própria senha.** A conta de
+  suporte existe em produção desde o G1 (`criar-suporte`, que não roda
+  de novo pro mesmo e-mail). Trocar a senha é `UPDATE` com
   `gerarHashSenha`, e desativar é `ativo = false` (derruba o token na
-  hora).
-- **O cadastro do dono depende do e-mail em produção.** Desde o F3 da
-  Onda 1 o signup exige o código que chega no e-mail
-  (`POST /auth/cadastro/codigo`) — o que fechou a dívida do `409` que
-  dizia se um e-mail estava cadastrado: a rota do código responde igual
-  pros dois casos, e e-mail tomado nunca recebe código. Sem
-  `CANAL_DE_MENSAGEM=email` e o Resend com o domínio verificado,
-  ninguém consegue se cadastrar: no G, testar um cadastro de ponta a
-  ponta antes de divulgar o link.
+  hora). Fecha com um script `trocar-senha-do-suporte`.
 - **O telefone do cliente não recebe código.** Desde a Onda 1 o canal
   real é o e-mail (`lib/canal-email.ts`, Resend, com
   `CANAL_DE_MENSAGEM=email`), e o cliente entra e recupera a senha por
@@ -292,17 +355,6 @@ config compartilhada em `packages/config/eslint.mjs`.
   telefone com o canal de e-mail responde 422 `destino_indisponivel`.
   Fecha com o canal do WhatsApp (ADR-0004), quando a verificação da Meta
   sair do standby.
-- **A coluna de cada profissional na agenda oferece o horário da
-  barbearia, não a jornada dele.** As faixas livres da vista de dia
-  descontam agendamentos e bloqueios, mas não a jornada (horário
-  próprio, folga): tocar numa faixa fora dela leva ao Novo agendamento,
-  que mostra a lista certa (a API calcula pela jornada) e recusa o
-  horário. Fecha buscando a jornada de cada membro na agenda.
-- **A ocupação do painel do dia não sabe que há equipe.** Ela compara
-  os agendamentos do dia inteiro com o horário de UMA pessoa — com dois
-  atendendo, passa de 100%. Fecha somando a janela de cada um.
-- **A semana da agenda mistura a equipe.** Colunas por profissional só
-  na vista de dia; a semana segue uma coluna por dia com todos juntos.
 - **Remarcar com profissional que saiu da equipe.** O link de remarcar
   leva o profissional original; se ele foi desativado ou deixou de
   fazer o serviço, o passo de data devolve pro passo do profissional, e

@@ -43,16 +43,16 @@ We'll know we're right when **a GR Barber tiver ≥ 50% dos agendamentos feitos 
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
 | 0 | Onda 0 — Casa arrumada | Dono recupera a própria senha; trocar senha derruba sessões; nenhum slug sombreia rotas do sistema; ninguém agenda ou remarca para o passado; documentação descreve o BarChop como SaaS | complete | `.claude/plans/onda-0-casa-arrumada.plan.md` |
-| 1 | Onda 1 — Agenda que funciona (MVP + piloto) | Barbearia com vários profissionais e papéis; cliente agenda com o profissional que quer, na página da barbearia no endereço próprio; lembrete chega e cliente confirma/cancela; dono se cadastra e configura sozinho; pronto para o piloto da GR Barber (que começa depois da Onda 2) | in-progress | `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
-| 1s | Site de marketing (mínimo, em paralelo à Onda 1) | Visitante entende a promessa, vê preços e cria a conta da barbearia sem falar com ninguém (preços: "grátis durante o lançamento"; tabela e `/gratis` na Onda 2) | complete | `.claude/plans/onda-1s-site-de-marketing.plan.md` |
-| 2 | Onda 2 — Dinheiro | BarChop cobra a própria assinatura (grátis + planos por profissional, teste de 14 dias); dono fecha o caixa do dia com o acerto entre profissionais e vê relatórios; barbearia vende planos de assinatura ao cliente com pagamento online | in-progress | PRD: `.claude/prds/onda-2-dinheiro.prd.md` |
+| 1 | Onda 1 — Agenda que funciona (MVP + piloto) | Barbearia com vários profissionais e papéis; cliente agenda com o profissional que quer, na página da barbearia no endereço próprio; lembrete chega e cliente confirma/cancela; dono se cadastra e configura sozinho; pronto para o piloto da GR Barber (que começa depois da Onda 2) | in-progress — no ar desde 2026-10-06, só falta o G3 (o piloto, adiado pelo dono); vira `complete` com a GR Barber rodando | `.claude/plans/onda-1-agenda-que-funciona.plan.md` |
+| 1s | Site de marketing (mínimo, em paralelo à Onda 1) | Visitante entende a promessa, vê preços e cria a conta da barbearia sem falar com ninguém (tabela dos planos, `/precos` e `/gratis` no ar desde 2026-10-15, com a cobrança da Onda 2) | complete | `.claude/plans/onda-1s-site-de-marketing.plan.md` |
+| 2 | Onda 2 — Dinheiro | BarChop cobra a própria assinatura (grátis + planos por profissional, teste de 14 dias); dono fecha o caixa do dia com o acerto entre profissionais e vê relatórios; barbearia vende planos de assinatura ao cliente com pagamento online | in-progress — marco 1 (cobrança da assinatura) no ar desde 2026-10-15 | PRD: `.claude/prds/onda-2-dinheiro.prd.md` |
 | 3 | Onda 3 — Retenção do cliente final | Cliente paga ou deixa sinal online no agendamento avulso, acumula pontos, entra em lista de espera e avalia o atendimento | pending | — |
 | 4 | Onda 4 — Crescimento | Indicação, loja com estoque, múltiplas unidades, campanhas, login com Google/Apple | pending | — |
 | 5 | Onda 5 — Diferenciais | Assistente de IA no WhatsApp, NFS-e, domínio próprio, app do profissional | pending | — |
 
 ## Open Questions
 - [ ] Qual é o diferencial do BarChop frente ao Barbeiro.app, Trinks e AppBarber (a promessa de uma frase do site)?
-- [ ] Preço e nomes dos planos (o grátis tem quais limites?) — acompanhada no PRD da Onda 2.
+- [x] Preço e nomes dos planos — Grátis (1 profissional), Essencial e Completo, decididos em 12/10/2026 e no ar desde 15/10 (PRD da Onda 2).
 - [ ] Existe CNPJ para a verificação de negócio na Meta (pré-requisito do WhatsApp oficial)?
 - [ ] Abrir para a 2ª barbearia só depois dos 60 dias de piloto, ou antes?
 - [ ] Linha de base de faltas da GR Barber — como medir antes do lembrete existir?

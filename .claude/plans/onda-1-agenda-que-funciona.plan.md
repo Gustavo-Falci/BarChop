@@ -26,7 +26,8 @@
 **Próximo passo (o dono escolhe):**
 1. Mais telas de UI/UX: o dono manda print por print.
 2. `barbearia-teste` em produção: apagar ou manter (ela também recebe os avisos da plataforma).
-3. G4: docs da Onda 1.
+
+**G4 feito em 16/10** (este PR, só docs): `docs/roadmap.md` (o que está no ar da Onda 1 e da Onda 2, dívidas fechadas), `docs/screens.md` (foto de hoje: 32 rotas do painel, 8 telas públicas, 5 do site) e os PRDs (Onda 2 marco 1 `complete`; a linha da Onda 1 segue `in-progress` até o G3). Da Onda 1 só falta o G3.
 
 ## RETOMAR AQUI (noite de 2026-10-15 — cobrança no ar: #144, #145 e #146 em produção, Stripe real configurada) — histórico
 
@@ -777,7 +778,7 @@ A onda é grande demais para um PR só. Ela é executada em **7 blocos (A–G)**
 #### Task G1: `infra/`: docker compose (api+worker, web, postgres com backup diário), Caddy com certificado coringa por DNS-01
 #### Task G2: `trustProxy` atrás do Caddy, CORS por lista, `CANAL_DE_MENSAGEM=email`, segredos fora do repo
 #### Task G3: GR Barber migrada: dados atuais, equipe real, jornada; medir linha de base de faltas (open question do PRD) antes de ligar o lembrete
-#### Task G4: Roteiro/screens.md/PRD atualizados; linha 1 do PRD → `complete` só com o piloto rodando
+#### Task G4: Roteiro/screens.md/PRD atualizados; linha 1 do PRD → `complete` só com o piloto rodando — FEITO em 2026-10-16 (a linha 1 espera o G3)
 
 ## Validation
 ```bash

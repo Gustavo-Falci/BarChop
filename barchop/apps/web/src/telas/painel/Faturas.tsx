@@ -699,7 +699,16 @@ const ROTULO_DA_SITUACAO: Record<FaturaDaAssinatura["situacao"], string> = {
   aberta: "Em aberto",
   falhou: "Não paga",
   anulada: "Anulada",
+  reembolsada: "Reembolsada",
+  reembolsada_em_parte: "Reembolsada em parte",
 };
+
+// Com recibo: a que foi paga, mesmo que o dinheiro tenha voltado depois.
+const COM_RECIBO: ReadonlySet<FaturaDaAssinatura["situacao"]> = new Set([
+  "paga",
+  "reembolsada",
+  "reembolsada_em_parte",
+]);
 
 function ListaDeFaturas() {
   const api = useApiDoPainel();
@@ -762,7 +771,7 @@ function ListaDeFaturas() {
                     {doTeste ? "Sem cobrança (teste)" : ROTULO_DA_SITUACAO[fatura.situacao]}
                   </td>
                   <td>
-                    {fatura.pdfUrl && fatura.situacao === "paga" ? (
+                    {fatura.pdfUrl && COM_RECIBO.has(fatura.situacao) ? (
                       <a href={fatura.pdfUrl} target="_blank" rel="noreferrer">
                         PDF
                       </a>

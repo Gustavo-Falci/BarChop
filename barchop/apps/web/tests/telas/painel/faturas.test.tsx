@@ -314,6 +314,23 @@ describe("Faturas com plano pago", () => {
     expect(within(falhou).queryByRole("link", { name: /PDF/ })).not.toBeInTheDocument();
   });
 
+  it("fatura reembolsada diz quanto voltou, e o PDF continua lá", async () => {
+    montar(resumo(PAGA), {
+      faturas: [
+        fatura({ situacao: "reembolsada" }),
+        fatura({ id: "in_2", numero: "BARCHOP-0002", situacao: "reembolsada_em_parte" }),
+      ],
+    });
+
+    const tabela = await screen.findByRole("table", { name: "Faturas" });
+    const inteira = within(tabela).getByRole("row", { name: /BARCHOP-0001/ });
+    expect(inteira).toHaveTextContent("Reembolsada");
+    expect(inteira).not.toHaveTextContent("Paga");
+    expect(within(inteira).getByRole("link", { name: /PDF/ })).toHaveAttribute("href", "https://pay.stripe.test/in_1.pdf");
+    const parte = within(tabela).getByRole("row", { name: /BARCHOP-0002/ });
+    expect(parte).toHaveTextContent("Reembolsada em parte");
+  });
+
   it("a fatura de R$ 0 do teste diz que não houve cobrança", async () => {
     montar(resumo(PAGA), { faturas: [fatura({ valorCentavos: 0 })] });
 

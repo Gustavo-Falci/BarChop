@@ -87,6 +87,17 @@ export function situacaoDaFatura(status: string | null, tentativas: number): Sit
   return null;
 }
 
+// A Stripe deixa a fatura `paid` depois do reembolso; quanto voltou mora
+// na cobrança do cartão. Só a paga vira reembolsada.
+export function situacaoComReembolso(
+  situacao: SituacaoDaFatura,
+  pagoCentavos: number,
+  devolvidoCentavos: number
+): SituacaoDaFatura {
+  if (situacao !== "paga" || devolvidoCentavos <= 0) return situacao;
+  return devolvidoCentavos >= pagoCentavos ? "reembolsada" : "reembolsada_em_parte";
+}
+
 // As últimas faturas bastam: o histórico inteiro fica no Portal.
 const FATURAS_NA_TELA = 24;
 
@@ -385,17 +396,38 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
       }
     },
     async listarFaturas(customerId) {
-      const { data } = await stripe.invoices.list({ customer: customerId, limit: FATURAS_NA_TELA });
+      const { data } = await stripe.invoices.list({
+        customer: customerId,
+        limit: FATURAS_NA_TELA,
+        // Os pagamentos da fatura só vêm quando pedidos: deles sai a
+        // intenção de pagamento, que liga a fatura à cobrança do cartão.
+        expand: ["data.payments"],
+      });
+      // Quanto voltou de cada intenção de pagamento. Só pergunta se
+      // alguma fatura cobrou de verdade.
+      const devolvido = new Map<string, number>();
+      if (data.some((fatura) => fatura.status === "paid" && fatura.amount_paid > 0)) {
+        const { data: cobrancas } = await stripe.charges.list({ customer: customerId, limit: 100 });
+        for (const cobranca of cobrancas) {
+          const intencao = idDe(cobranca.payment_intent);
+          if (intencao) devolvido.set(intencao, (devolvido.get(intencao) ?? 0) + cobranca.amount_refunded);
+        }
+      }
       return data.flatMap((fatura) => {
-        const situacao = situacaoDaFatura(fatura.status, fatura.attempt_count);
-        if (situacao === null) return [];
+        const lida = situacaoDaFatura(fatura.status, fatura.attempt_count);
+        if (lida === null) return [];
+        const devolvidoDaFatura = (fatura.payments?.data ?? []).reduce(
+          (soma, pagamento) => soma + (devolvido.get(idDe(pagamento.payment.payment_intent) ?? "") ?? 0),
+          0
+        );
+        const situacao = situacaoComReembolso(lida, fatura.amount_paid, devolvidoDaFatura);
         return [
           {
             id: fatura.id!,
             numero: fatura.number,
             emitidaEm: new Date(fatura.created * 1000).toISOString(),
-            // Paga: o que entrou; senão, o que ainda deve.
-            valorCentavos: situacao === "paga" ? fatura.amount_paid : fatura.amount_due,
+            // Paga (reembolsada ou não): o que entrou; senão, o que ainda deve.
+            valorCentavos: lida === "paga" ? fatura.amount_paid : fatura.amount_due,
             situacao,
             pdfUrl: fatura.invoice_pdf ?? null,
             paginaUrl: fatura.hosted_invoice_url ?? null,

@@ -28,6 +28,18 @@ describe("central de ajuda", () => {
     );
   });
 
+  it("o caixa tem perguntas que levam ao Caixa e à divisão do dinheiro", async () => {
+    render(<CentralDeAjuda />);
+
+    await userEvent.type(screen.getByRole("searchbox", { name: "Buscar na ajuda" }), "caixa");
+
+    const perguntas = screen.getAllByRole("group");
+    const links = perguntas.flatMap((p) => within(p).queryAllByRole("link", { hidden: true }));
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(
+      expect.arrayContaining(["/painel/caixa", "/painel/configuracoes/divisao"])
+    );
+  });
+
   it("a busca filtra as perguntas e diz quando nada casa", async () => {
     render(<CentralDeAjuda />);
 

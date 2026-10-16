@@ -23,6 +23,15 @@ describe("índice das configurações", () => {
     expect(screen.getByRole("progressbar", { name: /decididas/i })).toHaveAttribute("aria-valuenow", "2");
   });
 
+  it("a divisão do dinheiro tem linha própria, fora da contagem", async () => {
+    montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ areasDecididas: ["horarios", "comunicacao"] }));
+
+    const divisao = await screen.findByRole("link", { name: /^Divisão do dinheiro/ });
+    expect(divisao).toHaveAttribute("href", "/painel/configuracoes/divisao");
+    expect(divisao).toHaveTextContent(/quem atendeu fica com tudo/i);
+    expect(screen.getByText("2 de 6 decididas")).toBeInTheDocument();
+  });
+
   it("cada área leva à subtela dela", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso());
 

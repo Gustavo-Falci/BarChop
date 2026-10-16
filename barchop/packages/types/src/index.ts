@@ -556,8 +556,9 @@ export interface UsoNoTeste {
 
 // GET /barbearias/me/assinatura/faturas — as faturas da assinatura,
 // lidas da Stripe, da mais nova pra mais velha. `falhou` = a Stripe
-// tentou cobrar e não conseguiu (ou desistiu); `anulada` não cobra mais.
-export type SituacaoDaFatura = "paga" | "aberta" | "falhou" | "anulada";
+// tentou cobrar e não conseguiu (ou desistiu); `anulada` não cobra mais;
+// `reembolsada` (ou `reembolsada_em_parte`) foi paga e o dinheiro voltou.
+export type SituacaoDaFatura = "paga" | "aberta" | "falhou" | "anulada" | "reembolsada" | "reembolsada_em_parte";
 
 export interface FaturaDaAssinatura {
   id: string;

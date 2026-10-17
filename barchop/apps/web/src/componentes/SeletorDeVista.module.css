@@ -88,6 +88,26 @@
   border-radius: var(--raio-pill);
 }
 
+/* "Agora" é um atalho, não uma vista: botão de texto, sem moldura. Sete
+   botões com o mesmo contorno no topo não diziam o que era escolha e o
+   que era ação. */
+.textual {
+  min-height: 40px;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: 0;
+  border-radius: var(--raio-md);
+  background: none;
+  color: var(--cor-ink-soft);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+}
+
+.textual:hover {
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+}
+
 /* As setas são redondas e sem moldura: na referência elas são navegação
    discreta ao lado do "Hoje", não três botões de mesmo peso. */
 .passo {

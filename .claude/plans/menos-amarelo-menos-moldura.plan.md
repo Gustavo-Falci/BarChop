@@ -2,7 +2,7 @@
 
 **Fonte**: análise de UI/UX do dono no claude.ai/design (`Analise UI-UX BarChop.dc.html`, 17/10), feita a partir dos prints do painel e do código de `apps/web`.
 **Complexidade**: Large (6 PRs, sem migração)
-**Status**: PR 1 aberto (#162, `paleta-e-base`); PR 2 aberto, empilhado sobre ele (`shell-e-hoje`)
+**Status**: os PRs da série estão abertos e empilhados: #162 → #163 → #164 → #165 → #166 → #167 → #168 → PR 6 (`pagina-publica`). Entram juntos, na ordem, com o "pode mergear" do dono.
 
 ## Summary
 O painel fica mais calmo de olhar o dia inteiro:
@@ -112,49 +112,75 @@ Medido: no escuro, `muted` dá 5,13:1 sobre a surface e 4,76:1 sobre o paperSoft
 - **Muda comportamento (ordem dos passos): RED/GREEN.**
 
 ## PR 4 — Configurações em lista com um Salvar só
-- Regras de agendamento: as 7 regras numa lista (rótulo, efeito e segmentado), com um Salvar só numa barra que sobe quando algo muda e mostra o que mudou. O mesmo molde vale para Notificações, Comunicação e o Ajuste fino.
-- Aparência:
-  - abas Tema, Cor, Letra, Serviços e Ajuste fino, ao lado da prévia;
-  - descrição do tema no hover;
-  - as nove cores fechadas atrás de "Editar".
-- Dados do negócio: um Salvar só para "Salvar dados" e "Pedir troca", e a aba Marca sem as áreas vazias.
-- Membro da equipe: abas Dados, Jornada e Serviços; jornada em grade semanal com Folga, Horário da barbearia e Próprio, sem os 7 selects nativos.
-- Configurações (índice):
-  - selo "Faltando" e resumo curto;
-  - o "X de N decididas" com o progresso fino.
-- Comodidades: tom suave com check.
-- Convidar: papel em segmentado.
-- **Muda comportamento (salvar): RED/GREEN.**
+Feito (empilhado sobre o PR 3):
+- **BarraDeMudancas** (componente novo):
+  - fica presa no pé da tela e sobe quando algo muda;
+  - diz o que mudou ("Intervalo entre horários: 15 min → 30 min") e oferece Descartar e Salvar;
+  - enquanto a área não foi decidida, oferece salvar assim ("Ainda não decidido: salve pra manter assim.", **texto novo, pede OK do dono**);
+  - o erro do salvar aparece dentro dela;
+  - no celular, fica acima da barra de navegação.
+- **Regras de agendamento:** as sete numa lista, com um Salvar só que grava as sete.
+- **Índice das Configurações:** a linha faltando perde o fundo âmbar. A frase da consequência fica no cinza de apoio e o "Configurar" vira um selo âmbar; o texto é o mesmo.
+- **Comodidades e formas de pagamento:** o marcado em tom suave com check.
+- **Convidar/editar membro:** o papel em segmentado, com a descrição só da escolhida.
+- **Mantidos como estão:**
+  - Notificações e Comunicação: já têm um Salvar só cada uma;
+  - "Pedir troca" dos Dados do negócio: é um pedido de troca do link, não um salvar.
 
-## PR 5 — Clientes, Serviços, Equipe, Faturas, Caixa e Folgas
-- **Clientes:** filtros em segmentado com contagem e lista que vira cartão no celular.
-- **Cliente:** dados em leitura com "Editar", e status com as mesmas cores do Detalhe.
-- **Serviços:**
-  - avatar em tom suave;
-  - ajudas em 13px;
-  - "Desativar" separado como zona de perigo.
-- **Equipe:** a coluna Telefone some quando está vazia.
+## PR 4b — Aparência e Membro da equipe em abas (OK do dono no molde da barra em 17/10)
+Feito:
+- **Abas** (componente): todos os painéis ficam montados e os inativos vão com `hidden`; trocar de aba não perde o que não foi salvo.
+- **Membro da equipe:** abas Dados (com foto e situação), Jornada e Serviços.
+  - Jornada: segmentado por dia, sem os 7 selects, com a barra de mudanças ("Segunda: Horário da barbearia → Folga").
+  - Dados: o salvar continua sendo o botão do grupo. É de propósito: é um formulário com Enviar convite e Cancelar.
+- **Aparência:**
+  - abas Tema, Cor, Letra, Serviços e Ajuste fino, com a loja acima e a publicação abaixo;
+  - o Ajuste fino aparece direto na aba, e só as nove cores ficam atrás de "Editar".
+- **Dados do negócio › Marca:** a capa vazia fica em 4 por 1.
+
+Ficou pendente:
+- a descrição do tema no hover;
+- compactar "A cara da sua loja" numa linha: muda texto e é pergunta pro dono;
+- a barra de mudanças nos Dados do negócio (Identidade): foi pro PR 5.
+
+## PR 5 — listas, dados do negócio e texto de apoio
+Feito (empilhado sobre o 4b):
+- **Aparência:** "A cara da sua loja" numa linha (OK do dono). As medidas ficam na tela de envio.
+- **Dados do negócio:** um Salvar só na barra de mudanças, para Identidade e Comodidades. Manda só o grupo que mudou.
+- **Tabela:** no celular, cada linha vira cartão, com o rótulo antes de cada valor e as ações (WhatsApp, Agendar) no pé. Vale para Clientes, Equipe e Serviços.
+- **Equipe:** a coluna Telefone some quando ninguém tem.
+- **Serviços:** a inicial em tom suave, sem contorno, com a letra em ouro.
+- **Ajudas sob os campos:** de 12px para 14px.
+- **Compartilhar link:** Copiar em destaque, e as outras ações numa grade 2×2.
+
+## PR 5b — Faturas, Caixa, Folgas e detalhe do cliente (feito)
 - **Faturas:**
   - escolher o plano com 2 cartões lado a lado;
-  - comparar planos e perguntas frequentes em acordeão;
-  - a lista de faturas vira lista no celular.
+  - comparar planos e perguntas frequentes em acordeão.
 - **Caixa:**
-  - um número por pessoa com selo "a receber", "a repassar" ou "acertado";
+  - um número por pessoa, com selo "a receber", "a repassar" ou "acertado";
   - repasse como "De → Para · valor";
   - fechar o dia confirma numa janela com as pendências.
 - **Folgas:** a lista primeiro, e "+ Bloquear" abre a mesma janela da Agenda.
-- **Compartilhar link:** Copiar em destaque e os outros 4 numa grade 2×2.
-- Texto de apoio de 11–12px sobe para 13–14px.
+- **Cliente:**
+  - dados em leitura, com "Editar";
+  - status com as mesmas cores do Detalhe.
+- **Serviços:** "Desativar" separado como zona de perigo.
 
-## PR 6 — página pública
-- Nos outros 16 temas da Aparência, entra só a regra de fio de 1px com sombra difusa.
-- Página:
-  - os 3 próximos horários por serviço ficam clicáveis e levam ao passo 4;
-  - "Agendar agora" com um degradê de saída.
-- Fluxo:
-  - indicador de passo em 4 segmentos;
-  - resumo fixo no rodapé desde o passo 3;
-  - horários em grade de 4 colunas de 46px.
+## PR 6 — página pública e a novidade
+Feito:
+- **Novidade "Visual novo: menos amarelo, mais respiro"** em `novidades.ts` (decisão do dono, 17/10).
+- **Fluxo de agendar:**
+  - indicador de passo em 4 segmentos, com "Passo 3 de 4" em texto;
+  - horários em grade de 4 colunas, com alvos de 46px.
+- **Telas públicas:** esqueleto no lugar do "Carregando…" solto.
+- **Já estavam prontos:**
+  - os próximos horários por serviço, clicáveis e levando direto à confirmação;
+  - o degradê de saída do "Agendar agora";
+  - fio de 1px e sombra difusa nos outros temas (veio com o PR 1).
+
+Ficou pendente:
+- o resumo fixo no rodapé desde o passo 3 (hoje ele aparece só no passo 4).
 
 ## Fora deste plano
 - As sugestões de texto da seção 6, que esperam o OK do dono.

@@ -4,7 +4,37 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-16 — caixa do dia no ar: Onda 2, marco 2 completo, #153 a #160) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-17 — redesenho "menos amarelo, menos moldura" mesclado: #162 a #169) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = `cd57bdb`** (merge do #162; os 8 PRs foram mesclados de cima pra baixo e a `main` ficou idêntica ao topo da pilha).
+- **Produção:** o deploy ainda não tinha sido feito ao fechar o dia. Só o `web` mudou: sem migração e sem mudança na API (não precisa do `migrar` nem da `api`).
+- **A série:** a análise de UI/UX do dono no claude.ai/design (17/10) virou o plano `.claude/plans/menos-amarelo-menos-moldura.plan.md`, em 8 PRs:
+  - #162: paleta (escuro neutro quente, ouro #E8C547 / #F0C93A), fio de 1px e sombra difusa, segmentado, ícone do app com o "B" sobre o ouro;
+  - #163: barra lateral com monograma, barra inferior no celular (Hoje, Agenda, + Novo, Caixa, Mais), Hoje mais enxuto, faixa da assinatura que fecha por 24h, esqueleto no carregando;
+  - #164: Agenda (hora livre só no hover, decisão do dono que substitui a de 11/10; tom por profissional), Novo agendamento com profissional em chips, detalhe com a ação presa no pé do celular;
+  - #165: BarraDeMudancas (um Salvar só por tela, diz o que mudou), Regras, índice, Comodidades, papel em segmentado;
+  - #166: Aparência e Membro da equipe em abas (jornada em segmentado por dia);
+  - #167: listas viram cartão no celular, Dados do negócio com a barra, ajudas em 14px;
+  - #168: Caixa (número por pessoa, fechar numa janela), Folgas abrem na lista, Faturas lado a lado, cliente em leitura com Editar;
+  - #169: indicador de passo no fluxo público, horários em 4 colunas, a novidade "Visual novo".
+- **Decisões do dono (17/10):** a bolinha "Amarelo BarChop" foi pro ouro novo; a descrição do tema BarChop fica; textos novos aprovados ("Ainda não decidido: salve pra manter assim.", "Segunda: horário ou pausa", "Editar as nove cores"); a loja da Aparência numa linha.
+
+**Para lembrar:**
+- Depois do deploy, conferir no ar: Home, painel (barra inferior no celular, Agenda, Regras) e a página pública de uma barbearia.
+- Pendentes do redesenho (no plano): o resumo fixo no rodapé do fluxo público desde o passo 3; a descrição de cada tema no hover da Aparência; o app mobile não foi aberto num emulador (só as imagens do ícone).
+- No banco dev desta máquina, as Regras da Barbearia do Gu ficaram "Configurado" (salvas pra testar a barra).
+- O `apps/api/.env` desta máquina tem o `STRIPE_WEBHOOK_SECRET` do `stripe listen` (fora do git): no local, o webhook só chega com o `stripe listen --events ... --forward-to localhost:3333/stripe/webhook` rodando.
+
+**O que falta (o dono escolhe):**
+1. Deploy do redesenho e a conferência no ar.
+2. Testar o caixa por dentro em produção (registrar um pagamento, fechar e reabrir o dia).
+3. Onda 2, marco 3 — planos da barbearia para o cliente (antes do `/plan`, a pergunta aberta do PRD: de quem é a mensalidade no acerto, e o provedor pra barbearia receber).
+4. Onda 2, marco 4 — relatórios.
+5. Onda 1, G3 — o piloto da GR Barber.
+6. `barbearia-teste` em produção: apagar ou manter.
+
+## RETOMAR AQUI (noite de 2026-10-16 — caixa do dia no ar: Onda 2, marco 2 completo, #153 a #160) — histórico
 
 **Estado:**
 - **Produção = `main` = `4c6e6ab`** (#160). O dono fez o deploy: `migrar` (migração `20261017120000_caixa`), depois `api` e `web`.

@@ -20,6 +20,7 @@ import { TrocaDeModo } from "../fluxo/TrocaDeModo";
 import { IconeCamera, IconeConversa, IconeMapa } from "../painel/icones";
 import estilos from "./PerfilDaBarbearia.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
+import { Carregando } from "../componentes/Carregando";
 
 // `agora` é prop com padrão, como nas telas do fluxo: é o que deixa o
 // teste fixar "terça às dez" pra conferir o "aberto agora".
@@ -51,7 +52,7 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
     (proximos.dados ?? []).map((item) => [item.servicoId, item.horarios])
   );
 
-  if (carregando) return <main className={estilos.pagina}>Carregando…</main>;
+  if (carregando) return <main className={estilos.pagina}><Carregando /></main>;
 
   // 404 é o caso comum aqui, não excepcional: o link circula por
   // WhatsApp e o slug pode ter mudado.

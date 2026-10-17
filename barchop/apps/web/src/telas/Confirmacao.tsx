@@ -29,6 +29,8 @@ import {
 } from "../formato/datas";
 import estilos from "./Confirmacao.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
+import { Carregando } from "../componentes/Carregando";
+import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
 
 // O último passo, e também onde a pessoa diz quem é. Eram duas telas —
 // "Quem é você?" com dois botões, depois o resumo — e a pergunta
@@ -98,7 +100,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
   const diaConfirmado = data;
   const horaConfirmada = hora;
 
-  if (carregando) return <main className={estilos.pagina}>Carregando…</main>;
+  if (carregando) return <main className={estilos.pagina}><Carregando /></main>;
 
   if (erro) {
     return (
@@ -301,6 +303,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
 
   return (
     <main className={`${estilos.pagina} ${estilos.duasColunas}`}>
+      <IndicadorDePasso atual={4} />
       <h1 className={estilos.titulo}>Confirmar</h1>
 
       {/* O que vai ser agendado. No desktop é a coluna da esquerda, ao

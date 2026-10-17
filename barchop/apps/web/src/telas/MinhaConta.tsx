@@ -17,6 +17,7 @@ import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./MinhaConta.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { AvisoDoPrazo } from "./AvisoDoPrazo";
+import { Carregando } from "../componentes/Carregando";
 
 // `agora` é prop com padrão, como na EscolhaDaData: os prazos dependem
 // do relógio, e o teste fixa o instante sem fake timers.
@@ -65,7 +66,7 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
 
   if (!temSessao) return null;
 
-  if (carregando) return <main className={estilos.pagina}>Carregando…</main>;
+  if (carregando) return <main className={estilos.pagina}><Carregando /></main>;
 
   // Uma falha que não seja 401 não pode virar lista vazia: um
   // histórico vazio de verdade e uma requisição quebrada teriam a

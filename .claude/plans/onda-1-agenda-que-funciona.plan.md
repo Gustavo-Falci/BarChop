@@ -4,11 +4,12 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-17 — redesenho "menos amarelo, menos moldura" mesclado: #162 a #169) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-17 — redesenho "menos amarelo, menos moldura" no ar: #162 a #169) — vale mais que as seções abaixo
 
 **Estado:**
-- **`main` = `cd57bdb`** (merge do #162; os 8 PRs foram mesclados de cima pra baixo e a `main` ficou idêntica ao topo da pilha).
-- **Produção:** o deploy ainda não tinha sido feito ao fechar o dia. Só o `web` mudou: sem migração e sem mudança na API (não precisa do `migrar` nem da `api`).
+- **Código do redesenho = `cd57bdb`** (merge do #162; os 8 PRs foram mesclados de cima pra baixo e a `main` ficou idêntica ao topo da pilha). Depois disso, só PRs de docs (#170 e este).
+- **Produção:** o dono fez o deploy do `web` em 17/10 (sem migração, sem mudança na API).
+- **Conferido no ar:** Home com o ouro novo (`#F0C93A` no HTML, nada do `#FFD900` antigo); página pública da `barbearia-teste` no celular, com "Agendar agora" preso no pé; fluxo público com "Passo 1 de 4" e a barra de passos, sem erro no console; a novidade "Visual novo" nos chunks do painel. A conferência do painel logado foi dispensada pelo dono.
 - **A série:** a análise de UI/UX do dono no claude.ai/design (17/10) virou o plano `.claude/plans/menos-amarelo-menos-moldura.plan.md`, em 8 PRs:
   - #162: paleta (escuro neutro quente, ouro #E8C547 / #F0C93A), fio de 1px e sombra difusa, segmentado, ícone do app com o "B" sobre o ouro;
   - #163: barra lateral com monograma, barra inferior no celular (Hoje, Agenda, + Novo, Caixa, Mais), Hoje mais enxuto, faixa da assinatura que fecha por 24h, esqueleto no carregando;
@@ -21,18 +22,16 @@
 - **Decisões do dono (17/10):** a bolinha "Amarelo BarChop" foi pro ouro novo; a descrição do tema BarChop fica; textos novos aprovados ("Ainda não decidido: salve pra manter assim.", "Segunda: horário ou pausa", "Editar as nove cores"); a loja da Aparência numa linha.
 
 **Para lembrar:**
-- Depois do deploy, conferir no ar: Home, painel (barra inferior no celular, Agenda, Regras) e a página pública de uma barbearia.
 - Pendentes do redesenho (no plano): o resumo fixo no rodapé do fluxo público desde o passo 3; a descrição de cada tema no hover da Aparência; o app mobile não foi aberto num emulador (só as imagens do ícone).
 - No banco dev desta máquina, as Regras da Barbearia do Gu ficaram "Configurado" (salvas pra testar a barra).
 - O `apps/api/.env` desta máquina tem o `STRIPE_WEBHOOK_SECRET` do `stripe listen` (fora do git): no local, o webhook só chega com o `stripe listen --events ... --forward-to localhost:3333/stripe/webhook` rodando.
 
 **O que falta (o dono escolhe):**
-1. Deploy do redesenho e a conferência no ar.
-2. Testar o caixa por dentro em produção (registrar um pagamento, fechar e reabrir o dia).
-3. Onda 2, marco 3 — planos da barbearia para o cliente (antes do `/plan`, a pergunta aberta do PRD: de quem é a mensalidade no acerto, e o provedor pra barbearia receber).
-4. Onda 2, marco 4 — relatórios.
-5. Onda 1, G3 — o piloto da GR Barber.
-6. `barbearia-teste` em produção: apagar ou manter.
+1. Testar o caixa por dentro em produção (registrar um pagamento, fechar e reabrir o dia).
+2. Onda 2, marco 3 — planos da barbearia para o cliente (antes do `/plan`, a pergunta aberta do PRD: de quem é a mensalidade no acerto, e o provedor pra barbearia receber).
+3. Onda 2, marco 4 — relatórios.
+4. Onda 1, G3 — o piloto da GR Barber.
+5. `barbearia-teste` em produção: apagar ou manter.
 
 ## RETOMAR AQUI (noite de 2026-10-16 — caixa do dia no ar: Onda 2, marco 2 completo, #153 a #160) — histórico
 

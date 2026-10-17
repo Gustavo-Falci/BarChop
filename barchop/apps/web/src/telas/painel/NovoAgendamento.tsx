@@ -11,6 +11,7 @@ import { Calendario } from "../../componentes/Calendario";
 import { Vazio } from "../../componentes/Vazio";
 import { formatarPreco, ItemDeServico } from "../../componentes/ItemDeServico";
 import { ListaDeHorarios } from "../../componentes/ListaDeHorarios";
+import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import { useRequisicao } from "../../api/useRequisicao";
 import { ehPassado, formatarDataLonga, hojeIso } from "../../formato/datas";
 import { deslocamentoDoFecho } from "./fecho";
@@ -276,21 +277,18 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
     <div className={estilos.pagina}>
       <h1>Novo agendamento</h1>
 
-      {soOProprio ? null : (
+      {/* Chips à vista no lugar do <select> nativo, que abria com o azul
+          do sistema. Só com a equipe em mãos: antes dela não há o que
+          escolher. */}
+      {soOProprio || atendentes.length === 0 ? null : (
         <div className={estilos.profissional}>
-          <label htmlFor={idDoProfissional}>Profissional</label>
-          <select
-            id={idDoProfissional}
-            value={profissionalId ?? ""}
-            onChange={(evento) => setEscolhido(evento.target.value)}
-            disabled={!equipe.dados}
-          >
-            {atendentes.map((membro) => (
-              <option key={membro.id} value={membro.id}>
-                {membro.nome}
-              </option>
-            ))}
-          </select>
+          <SeletorEmPilulas
+            nome={idDoProfissional}
+            legenda="Profissional"
+            opcoes={atendentes.map((membro) => ({ valor: membro.id, rotulo: membro.nome }))}
+            valor={profissionalId ?? ""}
+            aoTrocar={setEscolhido}
+          />
         </div>
       )}
 
@@ -480,10 +478,6 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
           </label>
         ) : null}
 
-        {aEscolher.length === 0 ? null : (
-          <p className={estilos.falta}>Falta escolher: {emLista(aEscolher)}</p>
-        )}
-
         {/* Junto do botão que o causou: numa coluna à parte, o aviso
             ficaria longe dele — e, com a página rolada, fora da vista. */}
         {aviso ? <Aviso>{aviso}</Aviso> : null}
@@ -491,6 +485,11 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
         <Botao disabled={!pronto} carregando={enviando} onClick={agendar}>
           Agendar
         </Botao>
+        {/* O motivo logo embaixo do botão desligado: é ali que o olho vai
+            quando o clique não faz nada. */}
+        {aEscolher.length === 0 ? null : (
+          <p className={estilos.falta}>Falta escolher: {emLista(aEscolher)}</p>
+        )}
         {/* Volta no histórico, e não pra um destino fixo: a tela abre da
             agenda, do Hoje, da lista e do detalhe do cliente. Sem
             `carregando`: desistir tem que funcionar inclusive enquanto o

@@ -324,6 +324,13 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
                 : expedienteDaSemana,
           })}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
+          // Com mais de uma pessoa, cada uma ganha um matiz (mesmo croma),
+          // na ordem da equipe; sozinho, a cor da casa.
+          tons={
+            atendentes.length > 1
+              ? Object.fromEntries(atendentes.map((pessoa, indice) => [pessoa.id, indice % 6]))
+              : undefined
+          }
           aoCriar={(dia, hora, barbeiroId, profissionais) => {
             // Na coluna que junta a equipe, só quem pode atender naquela
             // hora; sendo um só, ele já vem escolhido.

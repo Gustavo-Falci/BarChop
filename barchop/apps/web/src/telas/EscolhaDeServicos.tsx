@@ -14,6 +14,7 @@ import { caminhoDoPasso } from "../fluxo/passos";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
 import estilos from "./EscolhaDeServicos.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
+import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
 
 function contagem(quantos: number): string {
   return `${quantos} ${quantos === 1 ? "serviço" : "serviços"}`;
@@ -115,6 +116,7 @@ export function EscolhaDeServicos({ agora = new Date() }: { agora?: Date }) {
         nadaEscolhido ? "" : estilos.comBarra
       }`}
     >
+      <IndicadorDePasso atual={1} />
       <header className={estilos.cabecalho}>
         <h1 className={estilos.titulo}>Escolha os serviços</h1>
         <p className={estilos.apoio}>

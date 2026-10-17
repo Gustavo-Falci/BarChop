@@ -2,7 +2,7 @@
 
 **Fonte**: análise de UI/UX do dono no claude.ai/design (`Analise UI-UX BarChop.dc.html`, 17/10), feita a partir dos prints do painel e do código de `apps/web`.
 **Complexidade**: Large (6 PRs, sem migração)
-**Status**: PRs 1 a 5 abertos e empilhados: #162 → #163 → #164 → #165 → #166 → PR 5 (`listas-e-apoio`). Próximo: PR 5b.
+**Status**: os PRs da série estão abertos e empilhados: #162 → #163 → #164 → #165 → #166 → #167 → #168 → PR 6 (`pagina-publica`). Entram juntos, na ordem, com o "pode mergear" do dono.
 
 ## Summary
 O painel fica mais calmo de olhar o dia inteiro:
@@ -153,7 +153,7 @@ Feito (empilhado sobre o 4b):
 - **Ajudas sob os campos:** de 12px para 14px.
 - **Compartilhar link:** Copiar em destaque, e as outras ações numa grade 2×2.
 
-## PR 5b — Faturas, Caixa, Folgas e detalhe do cliente
+## PR 5b — Faturas, Caixa, Folgas e detalhe do cliente (feito)
 - **Faturas:**
   - escolher o plano com 2 cartões lado a lado;
   - comparar planos e perguntas frequentes em acordeão.
@@ -167,15 +167,20 @@ Feito (empilhado sobre o 4b):
   - status com as mesmas cores do Detalhe.
 - **Serviços:** "Desativar" separado como zona de perigo.
 
-## PR 6 — página pública
-- Nos outros 16 temas da Aparência, entra só a regra de fio de 1px com sombra difusa.
-- Página:
-  - os 3 próximos horários por serviço ficam clicáveis e levam ao passo 4;
-  - "Agendar agora" com um degradê de saída.
-- Fluxo:
-  - indicador de passo em 4 segmentos;
-  - resumo fixo no rodapé desde o passo 3;
-  - horários em grade de 4 colunas de 46px.
+## PR 6 — página pública e a novidade
+Feito:
+- **Novidade "Visual novo: menos amarelo, mais respiro"** em `novidades.ts` (decisão do dono, 17/10).
+- **Fluxo de agendar:**
+  - indicador de passo em 4 segmentos, com "Passo 3 de 4" em texto;
+  - horários em grade de 4 colunas, com alvos de 46px.
+- **Telas públicas:** esqueleto no lugar do "Carregando…" solto.
+- **Já estavam prontos:**
+  - os próximos horários por serviço, clicáveis e levando direto à confirmação;
+  - o degradê de saída do "Agendar agora";
+  - fio de 1px e sombra difusa nos outros temas (veio com o PR 1).
+
+Ficou pendente:
+- o resumo fixo no rodapé desde o passo 3 (hoje ele aparece só no passo 4).
 
 ## Fora deste plano
 - As sugestões de texto da seção 6, que esperam o OK do dono.

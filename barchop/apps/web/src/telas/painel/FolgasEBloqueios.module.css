@@ -13,11 +13,8 @@
   align-items: start;
 }
 
-@media (min-width: 1000px) {
-  .corpo {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
+/* Uma coluna só: a lista ocupa a medida; o formulário mora na janela
+   "Bloquear horário" (17/10). */
 
 .coluna {
   display: grid;

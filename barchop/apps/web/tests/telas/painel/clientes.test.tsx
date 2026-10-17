@@ -61,6 +61,12 @@ function semear(extra: Parameters<typeof criarApiClientFalso>[0] = {}) {
   });
 }
 
+// O detalhe do cliente abre em leitura (17/10): os campos aparecem no
+// Editar.
+async function editarDados() {
+  await userEvent.click(await screen.findByRole("button", { name: "Editar" }));
+}
+
 describe("clientes no painel", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -364,6 +370,7 @@ describe("clientes no painel", () => {
   it("o detalhe mostra os dados e o histórico", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c1", params: { id: "c1" } });
     montarPainel(<DetalheDoCliente />, semear());
+    await editarDados();
 
     expect(await screen.findByDisplayValue("João Silva")).toBeInTheDocument();
     const anteriores = screen.getByRole("region", { name: "Anteriores" });
@@ -383,6 +390,8 @@ describe("clientes no painel", () => {
     falso.barbeiro.atualizarCliente = atualizar;
 
     montarPainel(<DetalheDoCliente />, falso);
+
+    await editarDados();
 
     const campo = await screen.findByLabelText(/nome/i);
     await userEvent.clear(campo);
@@ -544,6 +553,7 @@ describe("clientes no painel", () => {
       throw new ErroDaApi(400, "requisicao_invalida", "");
     };
     montarPainel(<DetalheDoCliente />, falso);
+    await editarDados();
 
     const campo = await screen.findByLabelText(/nome/i);
     await userEvent.clear(campo);
@@ -560,6 +570,7 @@ describe("clientes no painel", () => {
       throw new ErroDaApi(409, "conflito", "");
     };
     montarPainel(<DetalheDoCliente />, falso);
+    await editarDados();
 
     const campo = await screen.findByLabelText(/telefone/i);
     await userEvent.clear(campo);
@@ -626,6 +637,7 @@ describe("clientes no painel", () => {
       query: { novo: "1" },
     });
     montarPainel(<DetalheDoCliente />, semear());
+    await editarDados();
 
     expect(await screen.findByText(/cliente cadastrado/i)).toBeInTheDocument();
   });
@@ -635,6 +647,7 @@ describe("clientes no painel", () => {
     // antigo leria "cliente cadastrado" toda vez.
     navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c1", params: { id: "c1" } });
     montarPainel(<DetalheDoCliente />, semear());
+    await editarDados();
 
     expect(await screen.findByDisplayValue("João Silva")).toBeInTheDocument();
     expect(screen.queryByText(/cliente cadastrado/i)).not.toBeInTheDocument();
@@ -758,6 +771,9 @@ describe("clientes no painel", () => {
     liberar();
 
     await prontinho;
+    // Os campos só existem em edição (17/10): o Editar vem depois de os
+    // dados chegarem, e a edição tem de começar do que chegou.
+    await userEvent.click(screen.getByRole("button", { name: "Editar" }));
     const campo = screen.getByLabelText(/^nome$/i) as HTMLInputElement;
     fireEvent.change(campo, { target: { value: "João da Silva" } });
 
@@ -774,6 +790,7 @@ describe("clientes no painel", () => {
   it("o histórico do detalhe mostra o status traduzido, não o enum cru", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c1", params: { id: "c1" } });
     montarPainel(<DetalheDoCliente />, semear());
+    await editarDados();
 
     // O agendamento de João em `semear()` tem status "concluido".
     expect(await screen.findByText("concluído")).toBeInTheDocument();
@@ -802,6 +819,7 @@ describe("clientes no painel", () => {
       throw new ErroDaApi(409, "conflito", "");
     };
     montarPainel(<DetalheDoCliente />, falso);
+    await editarDados();
 
     await screen.findByDisplayValue("João Silva");
     // O conflito vem de trocar o telefone pelo de outro cliente — e só

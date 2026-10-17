@@ -260,24 +260,23 @@ describe("editar um membro", () => {
     expect(screen.getByText("Convite pendente")).toBeInTheDocument();
   });
 
-  it("dados e jornada na coluna principal; serviços e situação na lateral", async () => {
+  // Abas na edição (17/10): Dados (com a situação ao lado), Jornada e
+  // Serviços. A tela do membro era a mais longa do painel.
+  it("abre na aba Dados, com a situação; jornada e serviços nas próprias abas", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
     montarPainel(<CadastroDeMembro />, comEquipe());
 
-    const dados = await screen.findByRole("region", { name: "Dados" });
-    const jornada = screen.getByRole("region", { name: "Jornada" });
-    const servicos = screen.getByRole("region", { name: "Serviços que faz" });
-    const situacao = screen.getByRole("region", { name: "Situação" });
+    expect(await screen.findByRole("region", { name: "Dados" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Situação" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Jornada" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Serviços que faz" })).not.toBeInTheDocument();
 
-    // A coluna de cada grupo: a principal tem dados e jornada, nessa
-    // ordem; a lateral, serviços e situação.
-    const principal = jornada.parentElement!;
-    expect(principal).toContainElement(dados);
-    expect(principal).not.toContainElement(servicos);
-    expect(dados.compareDocumentPosition(jornada) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const lateral = situacao.parentElement!;
-    expect(lateral).toContainElement(servicos);
-    expect(lateral).not.toContainElement(dados);
+    await userEvent.click(screen.getByRole("tab", { name: "Jornada" }));
+    expect(await screen.findByRole("region", { name: "Jornada" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Dados" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Serviços" }));
+    expect(await screen.findByRole("region", { name: "Serviços que faz" })).toBeInTheDocument();
   });
 
   it("Salvar e Descartar só aparecem depois de mudar os dados; Descartar volta o que estava", async () => {

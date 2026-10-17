@@ -52,9 +52,19 @@
   height: 100%;
 }
 
+/* Copiar em destaque, na largura toda; as outras ações numa grade 2×2
+   de blocos suaves. Cinco botões empilhados com o mesmo contorno não
+   diziam qual era o principal (análise de 17/10). */
 .acoes {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--espaco-sm);
+}
+
+.link,
+.principal,
+.aviso {
+  grid-column: 1 / -1;
 }
 
 .link {
@@ -84,7 +94,18 @@
   color: var(--cor-dark);
 }
 
-.secundaria,
+.secundaria {
+  border-color: transparent;
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+  text-align: center;
+}
+
+.secundaria:hover {
+  background: var(--cor-line);
+}
+
 .fechar {
   background: transparent;
   color: var(--cor-ink);

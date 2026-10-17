@@ -10,6 +10,12 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    data: "2026-10-17",
+    titulo: "Visual novo: menos amarelo, mais respiro",
+    texto:
+      "Cores mais calmas pra olhar o dia inteiro, contornos finos no lugar das molduras e um Salvar só por tela, que diz o que mudou. No celular, a navegação desceu pro pé da tela, com o Novo agendamento no centro. A Agenda escreve só as horas cheias, e a Aparência e o Membro da equipe ganharam abas.",
+  },
+  {
     data: "2026-10-16",
     titulo: "Caixa do dia",
     texto:

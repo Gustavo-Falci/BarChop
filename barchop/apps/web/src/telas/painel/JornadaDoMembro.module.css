@@ -2,7 +2,7 @@
    horas, com altura mínima pra a linha não pular quando as horas somem. */
 .dia {
   display: grid;
-  grid-template-columns: 6rem 13rem 1fr;
+  grid-template-columns: 6rem auto minmax(0, 1fr);
   align-items: center;
   gap: var(--espaco-md);
   min-height: 68px;
@@ -14,19 +14,9 @@
   border-block-end: none;
 }
 
+/* O segmentado do dia (Folga, Horário da barbearia, Horário próprio). */
 .modo {
-  min-height: 44px;
-  padding-inline: var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-sm);
-  background: var(--cor-surface);
-  color: var(--cor-ink);
-  font: inherit;
-}
-
-.modo:focus-visible {
-  outline: 3px solid var(--cor-foco);
-  outline-offset: 2px;
+  min-width: 0;
 }
 
 .horas {

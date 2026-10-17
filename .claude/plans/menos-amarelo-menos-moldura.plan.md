@@ -2,7 +2,7 @@
 
 **Fonte**: análise de UI/UX do dono no claude.ai/design (`Analise UI-UX BarChop.dc.html`, 17/10), feita a partir dos prints do painel e do código de `apps/web`.
 **Complexidade**: Large (6 PRs, sem migração)
-**Status**: PR 1 aberto (#162, `paleta-e-base`); PR 2 aberto, empilhado sobre ele (`shell-e-hoje`)
+**Status**: PRs 1 a 3 abertos e empilhados: #162 (`paleta-e-base`) → #163 (`shell-e-hoje`) → #164 (`agenda-e-novo`). Próximo: PR 4, depois do OK do dono no #164.
 
 ## Summary
 O painel fica mais calmo de olhar o dia inteiro:

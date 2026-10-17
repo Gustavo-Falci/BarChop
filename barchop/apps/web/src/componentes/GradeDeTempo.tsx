@@ -94,8 +94,12 @@ export function GradeDeTempo({
   aoAbrir,
   aoCriar,
   aoAbrirDia,
+  tons,
 }: {
   grade: Grade;
+  // O tom de cada profissional (0 a 5), pela ordem da equipe. Sem ele (ou
+  // com uma pessoa só) todo agendamento sai na cor da casa.
+  tons?: Record<string, number>;
   aoAbrir: (id: string) => void;
   // O dia vai junto da hora: na vista de semana a hora sozinha não diz
   // qual coluna foi clicada.
@@ -293,6 +297,7 @@ export function GradeDeTempo({
                   key={evento.agendamento.id}
                   type="button"
                   className={estilos.evento}
+                  data-tom={tons?.[evento.agendamento.barbeiro.id]}
                   style={
                     {
                       "--linha": evento.linha,

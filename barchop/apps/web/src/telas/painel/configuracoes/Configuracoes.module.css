@@ -202,25 +202,21 @@
   font-size: var(--texto-sm);
 }
 
-/* Ainda não decidida: a frase é a consequência, na cor de atenção, sobre
-   o fundo claro do mesmo estado. */
-.faltando {
-  background: var(--cor-atencao-fundo);
+/* Ainda não decidida: a frase da consequência no cinza de apoio e o
+   "Configurar" num selo âmbar. Antes a linha inteira era âmbar, e com
+   quatro de seis faltando o índice virava um bloco laranja de texto. */
+.faltando .valor {
+  color: var(--cor-ink-soft);
 }
 
-.faltando:hover {
-  background: var(--cor-atencao-fundo);
-}
-
-.faltando .valor,
 .configurar {
+  padding: 2px var(--espaco-sm);
+  border-radius: var(--raio-pill);
+  background: var(--cor-atencao-fundo);
   color: var(--cor-atencao);
-  font-weight: 600;
-}
-
-.configurar {
+  font-size: var(--texto-xs);
+  font-weight: 700;
   white-space: nowrap;
-  font-size: var(--texto-sm);
 }
 
 .seta {
@@ -427,16 +423,15 @@
   border-color: var(--cor-ink);
 }
 
-/* Marcado: o desenho da pílula escolhida (SeletorEmPilulas), mais o
-   check, pra que a diferença não seja só a cor. */
+/* Marcado: tom suave da marca com o check, pra que a diferença não seja
+   só a cor. O amarelo cheio acendia o cartão inteiro. */
 .caixaEscondida:checked + .desenhoDoCartao {
-  border-color: var(--cor-ink);
-  background: var(--cor-accent);
-  box-shadow: var(--sombra-botao);
-  color: var(--cor-dark);
+  border-color: color-mix(in srgb, var(--cor-accent) 45%, var(--cor-line));
+  background: var(--cor-pale-yellow);
+  color: var(--cor-ink);
 }
 .caixaEscondida:checked + .desenhoDoCartao .iconeDoCartao {
-  color: var(--cor-dark);
+  color: var(--cor-accent-text);
 }
 .caixaEscondida:checked + .desenhoDoCartao .checkDoCartao {
   visibility: visible;

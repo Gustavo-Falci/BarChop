@@ -18,6 +18,7 @@ import estilos from "./DashboardDoDia.module.css";
 import { BarraDeOcupacao } from "./hoje/BarraDeOcupacao";
 import { CartaoDoLink } from "./hoje/CartaoDoLink";
 import { JanelaDeCompartilhar } from "./hoje/JanelaDeCompartilhar";
+import { ProximoEmDestaque } from "./hoje/ProximoEmDestaque";
 import { ProximosAtendimentos } from "./hoje/ProximosAtendimentos";
 import { TrilhaDoOnboarding } from "./TrilhaDoOnboarding";
 import { Carregando } from "../../componentes/Carregando";
@@ -74,6 +75,12 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
             Novo agendamento
           </Botao>
         }
+      />
+
+      <ProximoEmDestaque
+        doDia={doDia}
+        agora={agora}
+        aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
       />
 
       {/* Só pro dono: a rota da trilha é dele, e os passos apontam pra

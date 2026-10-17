@@ -86,7 +86,7 @@ describe("Hoje", () => {
       expect(regiao).toHaveTextContent("11:00");
       expect(regiao).toHaveTextContent("João Silva");
       expect(regiao).toHaveTextContent("Corte");
-      expect(regiao).toHaveTextContent(/em 1 h/i);
+      expect(regiao).toHaveTextContent(/em 1h/i);
     });
 
     it("WhatsApp abre a conversa com o cliente", async () => {

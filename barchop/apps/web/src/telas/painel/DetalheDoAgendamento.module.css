@@ -47,7 +47,7 @@
   gap: var(--espaco-md) var(--espaco-lg);
   padding: var(--espaco-md) var(--espaco-lg);
   border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-left-width: 8px;
+  border-left-width: 3px;
   border-left-color: var(--tom);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);

@@ -38,6 +38,7 @@ import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import { PreviaDaPagina } from "./PreviaDaPagina";
+import { Abas } from "../../../componentes/Abas";
 import estilos from "./Aparencia.module.css";
 import { Carregando } from "../../../componentes/Carregando";
 
@@ -156,6 +157,16 @@ function comCor(aparencia: Aparencia, modo: Modo, nome: NomeDaCor, cor: string |
 }
 
 // /painel/configuracoes/aparencia. Só o dono.
+const ABAS_DA_APARENCIA = [
+  { id: "tema", rotulo: "Tema" },
+  { id: "cor", rotulo: "Cor" },
+  { id: "letra", rotulo: "Letra" },
+  { id: "servicos", rotulo: "Serviços" },
+  { id: "ajuste", rotulo: "Ajuste fino" },
+] as const;
+
+type AbaDaAparencia = (typeof ABAS_DA_APARENCIA)[number]["id"];
+
 export function AparenciaDaBarbearia() {
   const { perfil } = usePainel();
   if (perfil.papel !== "dono") return <SoODono area="aparencia" />;
@@ -163,6 +174,7 @@ export function AparenciaDaBarbearia() {
 }
 
 function TelaDaAparencia() {
+  const [aba, setAba] = useState<AbaDaAparencia>("tema");
   const api = useApiDoPainel();
   const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
   const { decididas, marcar } = useAreasDecididas(barbearia.dados?.areasDecididas);
@@ -309,7 +321,6 @@ function TelaDaAparencia() {
       <div className={estilos.comPrevia}>
         <div className={estilos.tela}>
           <SecaoNumerada
-            numero={1}
             titulo="A cara da sua loja"
             lado="Salva na hora"
             apoio="Logo e capa ficam em Dados do negócio › Marca e entram no ar assim que você envia."
@@ -335,271 +346,276 @@ function TelaDaAparencia() {
             ) : null}
           </SecaoNumerada>
 
-          <SecaoNumerada
-            numero={2}
-            titulo="O tema da página"
-            apoio="Cada tema traz a versão clara e a escura de uma vez. O selo marca os que abrem no escuro."
-          >
-            <SeletorEmPilulas<Filtro>
-              nome="filtro-dos-temas"
-              legenda="Mostrar temas"
-              opcoes={[
-                { valor: "todos", rotulo: "Todos" },
-                { valor: "claros", rotulo: "Claros" },
-                { valor: "escuros", rotulo: "Escuros" },
-              ]}
-              valor={filtro}
-              aoTrocar={setFiltro}
-            />
-
-            {personalizada(rascunho) ? (
-              <div className={estilos.personalizado}>
-                <span>{tema.nome} · personalizado</span>
-                <Botao
-                  variante="fantasma"
-                  onClick={() => mudar({ ...rascunho, cores: { claro: {}, escuro: {} } })}
-                >
-                  Voltar ao original
-                </Botao>
-              </div>
-            ) : null}
-
-            <div className={estilos.temas}>
-              {temasVisiveis.map((item) => (
-                <CartaoDoTema
-                  key={item.id}
-                  id={item.id}
-                  ativo={item.id === rascunho.tema}
-                  aoEscolher={() => mudar(aplicarTema(rascunho, item.id))}
-                />
-              ))}
-            </div>
-
-            <div className={estilos.duasColunas}>
-              <SeletorEmPilulas<ModoDeCor>
-                nome="modo-padrao"
-                legenda="Modo padrão"
-                opcoes={[
-                  { valor: "claro", rotulo: "Claro" },
-                  { valor: "escuro", rotulo: "Escuro" },
-                  { valor: "automatico", rotulo: "Automático" },
-                ]}
-                valor={rascunho.modoPadrao}
-                aoTrocar={(modoPadrao) => mudar({ ...rascunho, modoPadrao })}
-                efeito={EFEITO_DO_MODO[rascunho.modoPadrao]}
-              />
-              <SeletorEmPilulas<"sim" | "nao">
-                nome="cliente-troca-modo"
-                legenda="Deixar o cliente trocar entre claro e escuro"
-                opcoes={[
-                  { valor: "sim", rotulo: "Sim" },
-                  { valor: "nao", rotulo: "Não" },
-                ]}
-                valor={rascunho.clienteTrocaModo ? "sim" : "nao"}
-                aoTrocar={(valor) => mudar({ ...rascunho, clienteTrocaModo: valor === "sim" })}
-                efeito={
-                  rascunho.clienteTrocaModo
-                    ? "Aparece o botão de lua e sol na sua página; a escolha fica guardada no aparelho do cliente."
-                    : "Sua página fica sempre no modo padrão, sem o botão de lua e sol."
-                }
-              />
-            </div>
-          </SecaoNumerada>
-
-          <SecaoNumerada
-            numero={3}
-            titulo="A cor da marca"
-            apoio="É ela que pinta o botão de agendar e os destaques da sua página. O texto em cima dela se ajusta sozinho pra ser lido."
-          >
-            <div role="group" aria-label="Cor da marca" className={estilos.bolinhas}>
-              {CORES_DA_MARCA.map((cor) => (
-                <button
-                  key={cor}
-                  type="button"
-                  className={estilos.bolinha}
-                  style={{ background: cor }}
-                  aria-label={NOME_DA_COR[cor]}
-                  title={NOME_DA_COR[cor]}
-                  aria-pressed={paleta.claro.accent === cor}
-                  onClick={() => escolherMarca(cor)}
-                />
-              ))}
-            </div>
-            <CampoDeCor
-              key="marca"
-              rotulo="Outra cor"
-              valor={paleta.claro.accent}
-              aoAplicar={escolherMarca}
-            />
-            <p className={estilos.efeito}>
-              Trocar a cor deixa o tema <strong>personalizado</strong>: ele para de acompanhar o tema original. “Voltar ao
-              original” desfaz.
-            </p>
-
-            <div className={estilos.fundo}>
-              <SeletorEmPilulas<Modo>
-                nome="fundo-de-qual-modo"
-                legenda="Fundo de qual modo"
-                opcoes={[
-                  { valor: "claro", rotulo: "Modo claro" },
-                  { valor: "escuro", rotulo: "Modo escuro" },
-                ]}
-                valor={modoDoFundo}
-                aoTrocar={setModoDoFundo}
-              />
-              <CampoDeCor
-                key="fundo"
-                rotulo="Cor de fundo"
-                valor={paleta[modoDoFundo].paper}
-                aoAplicar={escolherFundo}
-              />
-              <p className={estilos.efeito}>
-                A cor atrás de tudo. Cartões, bordas e textos acompanham o fundo sozinhos, sempre com contraste pra leitura.
-              </p>
-            </div>
-          </SecaoNumerada>
-
-          <SecaoNumerada numero={4} titulo="A letra" apoio="A fonte de todo o texto da sua página.">
-            <EscolhaDeFonte
-              rotulo="A fonte do texto"
-              opcoes={FONTES_DO_TEXTO}
-              valor={rascunho.fonte}
-              aoEscolher={(fonte) => mudar({ ...rascunho, fonte: fonte as FonteDoTexto })}
-            />
-          </SecaoNumerada>
-
-          <SecaoNumerada
-            numero={5}
-            titulo="Ajuste fino"
-            lado={
-              <button
-                type="button"
-                className={estilos.abrir}
-                aria-expanded={ajusteAberto}
-                aria-controls="ajuste-fino"
-                aria-label={ajusteAberto ? "Fechar o ajuste fino" : "Abrir o ajuste fino"}
-                onClick={() => setAjusteAberto(!ajusteAberto)}
+          {/* Abas no lugar das seções empilhadas (análise de 17/10): a tela
+              tinha cinco vezes a altura da janela, e pra chegar no layout
+              dos serviços era preciso passar pelo ajuste fino. Cada aba
+              cabe ao lado da prévia. A loja (acima) e a publicação (abaixo)
+              valem pra todas. */}
+          <Abas rotulo="Aparência" abas={ABAS_DA_APARENCIA} atual={aba} aoTrocar={setAba}>
+            {aba === "tema" ? (
+              <SecaoNumerada
+                titulo="O tema da página"
+                apoio="Cada tema traz a versão clara e a escura de uma vez. O selo marca os que abrem no escuro."
               >
-                {ajusteAberto ? "Fechar" : "Abrir"}
-              </button>
-            }
-            apoio="Cantos, botão, cards e as cores uma a uma. Quase ninguém precisa — o tema já resolve."
-          >
-            {ajusteAberto ? (
-              <div id="ajuste-fino" className={estilos.ajuste}>
-                <div className={estilos.tresColunas}>
+                <SeletorEmPilulas<Filtro>
+                  nome="filtro-dos-temas"
+                  legenda="Mostrar temas"
+                  opcoes={[
+                    { valor: "todos", rotulo: "Todos" },
+                    { valor: "claros", rotulo: "Claros" },
+                    { valor: "escuros", rotulo: "Escuros" },
+                  ]}
+                  valor={filtro}
+                  aoTrocar={setFiltro}
+                />
+
+                {personalizada(rascunho) ? (
+                  <div className={estilos.personalizado}>
+                    <span>{tema.nome} · personalizado</span>
+                    <Botao
+                      variante="fantasma"
+                      onClick={() => mudar({ ...rascunho, cores: { claro: {}, escuro: {} } })}
+                    >
+                      Voltar ao original
+                    </Botao>
+                  </div>
+                ) : null}
+
+                <div className={estilos.temas}>
+                  {temasVisiveis.map((item) => (
+                    <CartaoDoTema
+                      key={item.id}
+                      id={item.id}
+                      ativo={item.id === rascunho.tema}
+                      aoEscolher={() => mudar(aplicarTema(rascunho, item.id))}
+                    />
+                  ))}
+                </div>
+
+                <div className={estilos.duasColunas}>
+                  <SeletorEmPilulas<ModoDeCor>
+                    nome="modo-padrao"
+                    legenda="Modo padrão"
+                    opcoes={[
+                      { valor: "claro", rotulo: "Claro" },
+                      { valor: "escuro", rotulo: "Escuro" },
+                      { valor: "automatico", rotulo: "Automático" },
+                    ]}
+                    valor={rascunho.modoPadrao}
+                    aoTrocar={(modoPadrao) => mudar({ ...rascunho, modoPadrao })}
+                    efeito={EFEITO_DO_MODO[rascunho.modoPadrao]}
+                  />
                   <SeletorEmPilulas<"sim" | "nao">
-                    nome="titulos-outra-fonte"
-                    legenda="Os títulos usam outra fonte"
+                    nome="cliente-troca-modo"
+                    legenda="Deixar o cliente trocar entre claro e escuro"
                     opcoes={[
                       { valor: "sim", rotulo: "Sim" },
                       { valor: "nao", rotulo: "Não" },
                     ]}
-                    valor={rascunho.fonteDosTitulos === null ? "nao" : "sim"}
-                    aoTrocar={(valor) =>
-                      mudar({ ...rascunho, fonteDosTitulos: valor === "sim" ? (rascunho.fonteDosTitulos ?? "clash") : null })
-                    }
+                    valor={rascunho.clienteTrocaModo ? "sim" : "nao"}
+                    aoTrocar={(valor) => mudar({ ...rascunho, clienteTrocaModo: valor === "sim" })}
                     efeito={
-                      rascunho.fonteDosTitulos === null
-                        ? "Títulos e texto na mesma fonte."
-                        : `Os títulos em ${FONTES[rascunho.fonteDosTitulos].nome}, o texto em ${FONTES[rascunho.fonte].nome}.`
+                      rascunho.clienteTrocaModo
+                        ? "Aparece o botão de lua e sol na sua página; a escolha fica guardada no aparelho do cliente."
+                        : "Sua página fica sempre no modo padrão, sem o botão de lua e sol."
                     }
                   />
-                  <SeletorEmPilulas<TamanhoDoTexto>
-                    nome="tamanho-do-texto"
-                    legenda="Tamanho do texto"
-                    opcoes={TAMANHOS}
-                    valor={rascunho.tamanhoDoTexto}
-                    aoTrocar={(tamanhoDoTexto) => mudar({ ...rascunho, tamanhoDoTexto })}
-                    efeito={TAMANHOS.find((item) => item.valor === rascunho.tamanhoDoTexto)!.efeito}
-                  />
                 </div>
-                {rascunho.fonteDosTitulos !== null ? (
-                  <EscolhaDeFonte
-                    rotulo="A fonte dos títulos"
-                    opcoes={FONTES_DOS_TITULOS}
-                    valor={rascunho.fonteDosTitulos}
-                    aoEscolher={(fonteDosTitulos) => mudar({ ...rascunho, fonteDosTitulos })}
-                  />
-                ) : null}
-                <div className={estilos.tresColunas}>
-                  <SeletorEmPilulas<Cantos>
-                    nome="cantos"
-                    legenda="Os cantos"
-                    opcoes={CANTOS}
-                    valor={rascunho.cantos}
-                    aoTrocar={(cantos) => mudar({ ...rascunho, cantos })}
-                    efeito={CANTOS.find((item) => item.valor === rascunho.cantos)!.efeito}
-                  />
-                  <SeletorEmPilulas<EstiloDoBotao>
-                    nome="botao"
-                    legenda="O botão principal"
-                    opcoes={BOTOES}
-                    valor={rascunho.botao}
-                    aoTrocar={(botao) => mudar({ ...rascunho, botao })}
-                    efeito={BOTOES.find((item) => item.valor === rascunho.botao)!.efeito}
-                  />
-                  <SeletorEmPilulas<Cards>
-                    nome="cards"
-                    legenda="Os cards"
-                    opcoes={CARDS}
-                    valor={rascunho.cards}
-                    aoTrocar={(cards) => mudar({ ...rascunho, cards })}
-                    efeito={CARDS.find((item) => item.valor === rascunho.cards)!.efeito}
-                  />
+              </SecaoNumerada>
+            ) : aba === "cor" ? (
+              <SecaoNumerada
+                titulo="A cor da marca"
+                apoio="É ela que pinta o botão de agendar e os destaques da sua página. O texto em cima dela se ajusta sozinho pra ser lido."
+              >
+                <div role="group" aria-label="Cor da marca" className={estilos.bolinhas}>
+                  {CORES_DA_MARCA.map((cor) => (
+                    <button
+                      key={cor}
+                      type="button"
+                      className={estilos.bolinha}
+                      style={{ background: cor }}
+                      aria-label={NOME_DA_COR[cor]}
+                      title={NOME_DA_COR[cor]}
+                      aria-pressed={paleta.claro.accent === cor}
+                      onClick={() => escolherMarca(cor)}
+                    />
+                  ))}
                 </div>
+                <CampoDeCor
+                  key="marca"
+                  rotulo="Outra cor"
+                  valor={paleta.claro.accent}
+                  aoAplicar={escolherMarca}
+                />
+                <p className={estilos.efeito}>
+                  Trocar a cor deixa o tema <strong>personalizado</strong>: ele para de acompanhar o tema original. “Voltar ao
+                  original” desfaz.
+                </p>
 
                 <div className={estilos.fundo}>
                   <SeletorEmPilulas<Modo>
-                    nome="nove-cores-modo"
-                    legenda="As nove cores de qual modo"
+                    nome="fundo-de-qual-modo"
+                    legenda="Fundo de qual modo"
                     opcoes={[
                       { valor: "claro", rotulo: "Modo claro" },
                       { valor: "escuro", rotulo: "Modo escuro" },
                     ]}
-                    valor={modoDasNove}
-                    aoTrocar={setModoDasNove}
+                    valor={modoDoFundo}
+                    aoTrocar={setModoDoFundo}
                   />
-                  <div className={estilos.nove}>
-                    {NOVE_CORES.map((nome) => (
-                      <CampoDeCor
-                        key={nome}
-                        rotulo={NOME_DA_NOVE[nome]}
-                        valor={paleta[modoDasNove][TOKEN_DA_COR[nome]]}
-                        aoAplicar={(cor) => escolherUmaDasNove(nome, cor)}
-                      />
-                    ))}
-                  </div>
+                  <CampoDeCor
+                    key="fundo"
+                    rotulo="Cor de fundo"
+                    valor={paleta[modoDoFundo].paper}
+                    aoAplicar={escolherFundo}
+                  />
                   <p className={estilos.efeito}>
-                    No escuro, a cor da marca acompanha a do claro e o resto vem do tema. Mexa só no que estiver errado.
+                    A cor atrás de tudo. Cartões, bordas e textos acompanham o fundo sozinhos, sempre com contraste pra leitura.
                   </p>
                 </div>
-              </div>
-            ) : null}
-          </SecaoNumerada>
+              </SecaoNumerada>
+            ) : aba === "letra" ? (
+              <SecaoNumerada titulo="A letra" apoio="A fonte de todo o texto da sua página.">
+                <EscolhaDeFonte
+                  rotulo="A fonte do texto"
+                  opcoes={FONTES_DO_TEXTO}
+                  valor={rascunho.fonte}
+                  aoEscolher={(fonte) => mudar({ ...rascunho, fonte: fonte as FonteDoTexto })}
+                />
+              </SecaoNumerada>
+            ) : aba === "servicos" ? (
+              <SecaoNumerada
+                titulo="Layout dos serviços"
+                lado="Salva na hora"
+                apoio="Como a lista de serviços aparece na página inicial."
+              >
+                <div className={estilos.layouts}>
+                  {LAYOUTS.map((layout) => (
+                    <button
+                      key={layout.valor}
+                      type="button"
+                      className={estilos.layout}
+                      aria-pressed={noAr.layoutDosServicos === layout.valor}
+                      disabled={salvandoLayout}
+                      onClick={() => escolherLayout(layout.valor)}
+                    >
+                      <strong>{layout.rotulo}</strong>
+                      <span className={estilos.efeito}>{layout.efeito}</span>
+                    </button>
+                  ))}
+                </div>
+              </SecaoNumerada>
+            ) : (
+              <SecaoNumerada
+                titulo="Ajuste fino"
+                lado={
+                  <button
+                    type="button"
+                    className={estilos.abrir}
+                    aria-expanded={ajusteAberto}
+                    aria-controls="ajuste-fino"
+                    aria-label={ajusteAberto ? "Fechar o ajuste fino" : "Abrir o ajuste fino"}
+                    onClick={() => setAjusteAberto(!ajusteAberto)}
+                  >
+                    {ajusteAberto ? "Fechar" : "Abrir"}
+                  </button>
+                }
+                apoio="Cantos, botão, cards e as cores uma a uma. Quase ninguém precisa — o tema já resolve."
+              >
+                {ajusteAberto ? (
+                  <div id="ajuste-fino" className={estilos.ajuste}>
+                    <div className={estilos.tresColunas}>
+                      <SeletorEmPilulas<"sim" | "nao">
+                        nome="titulos-outra-fonte"
+                        legenda="Os títulos usam outra fonte"
+                        opcoes={[
+                          { valor: "sim", rotulo: "Sim" },
+                          { valor: "nao", rotulo: "Não" },
+                        ]}
+                        valor={rascunho.fonteDosTitulos === null ? "nao" : "sim"}
+                        aoTrocar={(valor) =>
+                          mudar({ ...rascunho, fonteDosTitulos: valor === "sim" ? (rascunho.fonteDosTitulos ?? "clash") : null })
+                        }
+                        efeito={
+                          rascunho.fonteDosTitulos === null
+                            ? "Títulos e texto na mesma fonte."
+                            : `Os títulos em ${FONTES[rascunho.fonteDosTitulos].nome}, o texto em ${FONTES[rascunho.fonte].nome}.`
+                        }
+                      />
+                      <SeletorEmPilulas<TamanhoDoTexto>
+                        nome="tamanho-do-texto"
+                        legenda="Tamanho do texto"
+                        opcoes={TAMANHOS}
+                        valor={rascunho.tamanhoDoTexto}
+                        aoTrocar={(tamanhoDoTexto) => mudar({ ...rascunho, tamanhoDoTexto })}
+                        efeito={TAMANHOS.find((item) => item.valor === rascunho.tamanhoDoTexto)!.efeito}
+                      />
+                    </div>
+                    {rascunho.fonteDosTitulos !== null ? (
+                      <EscolhaDeFonte
+                        rotulo="A fonte dos títulos"
+                        opcoes={FONTES_DOS_TITULOS}
+                        valor={rascunho.fonteDosTitulos}
+                        aoEscolher={(fonteDosTitulos) => mudar({ ...rascunho, fonteDosTitulos })}
+                      />
+                    ) : null}
+                    <div className={estilos.tresColunas}>
+                      <SeletorEmPilulas<Cantos>
+                        nome="cantos"
+                        legenda="Os cantos"
+                        opcoes={CANTOS}
+                        valor={rascunho.cantos}
+                        aoTrocar={(cantos) => mudar({ ...rascunho, cantos })}
+                        efeito={CANTOS.find((item) => item.valor === rascunho.cantos)!.efeito}
+                      />
+                      <SeletorEmPilulas<EstiloDoBotao>
+                        nome="botao"
+                        legenda="O botão principal"
+                        opcoes={BOTOES}
+                        valor={rascunho.botao}
+                        aoTrocar={(botao) => mudar({ ...rascunho, botao })}
+                        efeito={BOTOES.find((item) => item.valor === rascunho.botao)!.efeito}
+                      />
+                      <SeletorEmPilulas<Cards>
+                        nome="cards"
+                        legenda="Os cards"
+                        opcoes={CARDS}
+                        valor={rascunho.cards}
+                        aoTrocar={(cards) => mudar({ ...rascunho, cards })}
+                        efeito={CARDS.find((item) => item.valor === rascunho.cards)!.efeito}
+                      />
+                    </div>
 
-          <SecaoNumerada
-            numero={6}
-            titulo="Layout dos serviços"
-            lado="Salva na hora"
-            apoio="Como a lista de serviços aparece na página inicial."
-          >
-            <div className={estilos.layouts}>
-              {LAYOUTS.map((layout) => (
-                <button
-                  key={layout.valor}
-                  type="button"
-                  className={estilos.layout}
-                  aria-pressed={noAr.layoutDosServicos === layout.valor}
-                  disabled={salvandoLayout}
-                  onClick={() => escolherLayout(layout.valor)}
-                >
-                  <strong>{layout.rotulo}</strong>
-                  <span className={estilos.efeito}>{layout.efeito}</span>
-                </button>
-              ))}
-            </div>
-          </SecaoNumerada>
+                    <div className={estilos.fundo}>
+                      <SeletorEmPilulas<Modo>
+                        nome="nove-cores-modo"
+                        legenda="As nove cores de qual modo"
+                        opcoes={[
+                          { valor: "claro", rotulo: "Modo claro" },
+                          { valor: "escuro", rotulo: "Modo escuro" },
+                        ]}
+                        valor={modoDasNove}
+                        aoTrocar={setModoDasNove}
+                      />
+                      <div className={estilos.nove}>
+                        {NOVE_CORES.map((nome) => (
+                          <CampoDeCor
+                            key={nome}
+                            rotulo={NOME_DA_NOVE[nome]}
+                            valor={paleta[modoDasNove][TOKEN_DA_COR[nome]]}
+                            aoAplicar={(cor) => escolherUmaDasNove(nome, cor)}
+                          />
+                        ))}
+                      </div>
+                      <p className={estilos.efeito}>
+                        No escuro, a cor da marca acompanha a do claro e o resto vem do tema. Mexa só no que estiver errado.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+              </SecaoNumerada>
+            )}
+          </Abas>
 
           {pendente ? (
             <div className={estilos.barra} aria-live="polite">

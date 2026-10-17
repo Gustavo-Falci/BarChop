@@ -316,7 +316,7 @@ describe("aparência", () => {
     await aba("Cor");
     expect(screen.getByRole("group", { name: /cor da marca/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Oceano" })).not.toBeInTheDocument();
-    expect(screen.getByText(/no ar/i)).toBeInTheDocument();
+    expect(screen.getByText("No ar")).toBeInTheDocument();
   });
 
   it("quem não é dono não mexe", async () => {

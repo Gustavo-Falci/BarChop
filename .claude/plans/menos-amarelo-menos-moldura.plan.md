@@ -2,7 +2,7 @@
 
 **Fonte**: análise de UI/UX do dono no claude.ai/design (`Analise UI-UX BarChop.dc.html`, 17/10), feita a partir dos prints do painel e do código de `apps/web`.
 **Complexidade**: Large (6 PRs, sem migração)
-**Status**: PRs 1 a 4 abertos e empilhados: #162 → #163 → #164 → PR 4 (`configuracoes-um-salvar`). Próximo: PR 4b, depois do OK do dono no molde da barra de salvar.
+**Status**: PRs 1 a 4b abertos e empilhados: #162 → #163 → #164 → #165 → PR 4b (`aparencia-e-membro`). Próximo: PR 5, depois do OK do dono no 4b.
 
 ## Summary
 O painel fica mais calmo de olhar o dia inteiro:
@@ -127,7 +127,7 @@ Feito (empilhado sobre o PR 3):
   - Notificações e Comunicação: já têm um Salvar só cada uma;
   - "Pedir troca" dos Dados do negócio: é um pedido de troca do link, não um salvar.
 
-## PR 4b — Aparência e Membro da equipe em abas (depois do OK no molde da barra)
+## PR 4b — Aparência e Membro da equipe em abas (OK do dono no molde da barra em 17/10)
 - **Aparência:**
   - abas Tema, Cor, Letra, Serviços e Ajuste fino, ao lado da prévia;
   - descrição do tema no hover;

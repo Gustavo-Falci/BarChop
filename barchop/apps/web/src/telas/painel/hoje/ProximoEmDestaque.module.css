@@ -1,0 +1,89 @@
+/* Só no celular: no desktop a lista de próximos já está à vista, ao lado
+   dos números. */
+.destaque {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .destaque {
+    display: grid;
+    gap: var(--espaco-sm);
+    padding: var(--espaco-md);
+    border: var(--borda-padrao) solid var(--cor-line-strong);
+    border-radius: var(--raio-lg);
+    background: var(--cor-surface);
+    box-shadow: var(--sombra-1);
+  }
+}
+
+.etiqueta {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.quando {
+  color: var(--cor-accent-text);
+}
+
+.linha {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaco-md);
+}
+
+.hora {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.quem {
+  display: grid;
+  min-width: 0;
+}
+
+.cliente {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.servicos {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.acoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espaco-sm);
+}
+
+.zap,
+.abrir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: var(--raio-md);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.zap {
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+}
+
+.abrir {
+  border: 0;
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+}

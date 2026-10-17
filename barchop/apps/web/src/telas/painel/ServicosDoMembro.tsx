@@ -8,6 +8,7 @@ import { Grupo } from "../../componentes/Grupo";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./ServicosDoMembro.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 // Os serviços que o membro faz. Quem não faz um serviço não aparece pra
 // ele na agenda nem no agendamento online. Serviço novo entra pra equipe
@@ -98,7 +99,7 @@ export function ServicosDoMembro({ membroId }: { membroId: string }) {
       }
     >
       {carregando ? (
-        <p>Carregando…</p>
+        <Carregando compacto />
       ) : catalogo.dados!.length === 0 ? (
         <p className={estilos.vazio}>Nenhum serviço cadastrado ainda.</p>
       ) : (

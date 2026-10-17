@@ -37,6 +37,10 @@ export const colors = {
     // capa). O amarelo da casa já passa; com outra marca, a Aparência
     // clareia até passar de 4,5:1.
     accentOnDark: "#F0C93A",
+    // A marca como texto e ícone sobre fundo claro (o item ativo da
+    // barra, o selecionado): 5,20:1 sobre o paleYellow, 5,89:1 sobre a
+    // surface. O ouro puro some no creme.
+    accentText: "#7D5F00",
     // O anel de foco: a tinta no claro, o ouro no escuro (o anel claro
     // se confundia com a moldura que havia em tudo).
     foco: "#26221C",
@@ -88,6 +92,7 @@ export const colors = {
     dark: "#1A1A1A",
     onAccent: "#1A1A1A",
     accentOnDark: "#E8C547",
+    accentText: "#EBCB5E",
     foco: "#E8C547",
     // A sombra deixou de ser clara: o mesmo tom do texto contornando
     // cada cartão era a moldura que brilhava. Agora a profundidade vem

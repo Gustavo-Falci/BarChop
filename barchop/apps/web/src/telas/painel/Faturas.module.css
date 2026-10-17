@@ -127,8 +127,11 @@
 
 /* Os dois planos pagos em cartões: o rádio fica escondido e o cartão
    inteiro é o alvo do toque. */
+/* Os dois planos lado a lado quando cabem (17/10): empilhados, o mesmo
+   preço aparecia em quatro lugares antes de dar pra comparar. */
 .planos {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--espaco-md);
   margin: 0;
   padding: 0;

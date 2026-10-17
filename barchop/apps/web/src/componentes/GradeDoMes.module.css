@@ -90,12 +90,16 @@
   font-size: var(--texto-sm);
 }
 
+/* Chip discreto: o fio da cor à esquerda e o fundo tingido, como o
+   agendamento da semana. Os chips amarelos cheios gritavam mais que os
+   números dos dias. */
 .chip {
   overflow: hidden;
   padding: 1px var(--espaco-xs);
+  border-inline-start: 2px solid var(--cor-accent);
   border-radius: var(--raio-sm);
-  background: var(--cor-accent);
-  color: var(--cor-on-accent);
+  background: color-mix(in srgb, var(--cor-accent) 16%, var(--cor-surface));
+  color: var(--cor-ink);
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: var(--texto-xs);

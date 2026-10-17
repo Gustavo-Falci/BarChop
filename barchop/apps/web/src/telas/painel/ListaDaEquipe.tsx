@@ -13,6 +13,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { situacaoDoMembro, type SituacaoDoMembro } from "../../painel/listas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./ListaDaEquipe.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 export const ROTULO_DO_PAPEL: Record<PapelMembro, string> = {
   dono: "Dono",
@@ -83,6 +84,7 @@ export function ListaDaEquipe() {
   const contar = (qual: Filtro) => todos.filter(NO_FILTRO[qual]).length;
   const atendem = contar("atendem");
   const listados = todos.filter(NO_FILTRO[filtro]);
+  const comTelefone = (equipe.dados ?? []).some((membro) => membro.telefone);
 
   return (
     <div className={estilos.pagina}>
@@ -101,7 +103,7 @@ export function ListaDaEquipe() {
       {/* Mesma guarda de ListaDeServicos: sem ela a tabela pintaria o
           estado vazio no primeiro paint. */}
       {!equipe.dados ? (
-        <p>Carregando…</p>
+        <Carregando />
       ) : (
         <>
           <PilulasDeFiltro
@@ -118,9 +120,11 @@ export function ListaDaEquipe() {
             ]}
           />
 
+          {/* A coluna Telefone só quando alguém tem: com "—" em todas as
+              linhas ela era largura gasta com nada (análise de 17/10). */}
           <Tabela
-            cabecalho={["Nome", "Papel", "Telefone", "Atende", "Situação", ""]}
-            larguras={["34%", "14%", "16%", "10%", "18%", "8%"]}
+            cabecalho={comTelefone ? ["Nome", "Papel", "Telefone", "Atende", "Situação", ""] : ["Nome", "Papel", "Atende", "Situação", ""]}
+            larguras={comTelefone ? ["34%", "14%", "16%", "10%", "18%", "8%"] : ["42%", "18%", "12%", "20%", "8%"]}
             vazio={filtro === "todos" ? "Ninguém na equipe ainda." : "Ninguém neste filtro."}
             acaoVazio={
               filtro === "todos" ? undefined : (
@@ -146,7 +150,7 @@ export function ListaDaEquipe() {
                     {membro.email ? <span className={estilos.email}>{membro.email}</span> : null}
                   </span>,
                   ROTULO_DO_PAPEL[membro.papel],
-                  membro.telefone ?? "—",
+                  ...(comTelefone ? [membro.telefone ?? "—"] : []),
                   membro.atende ? "Sim" : "Não",
                   <Chip key="situacao" tom={selo.tom} tamanho="pequeno">
                     {selo.rotulo}

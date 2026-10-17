@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
@@ -14,6 +14,7 @@ import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
 import estilos from "./CaixaDoDia.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 // O Caixa (Onda 2, marco 2, PR 7 do plano caixa-do-dia): o dia do
 // caixa é o do agendamento, escolhido na URL (`?data=`), como na
@@ -106,22 +107,6 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
       >
         Reabrir o dia
       </button>
-    ) : confirmandoFechar ? (
-      <div className={estilos.confirmar} role="group" aria-label="Confirmar fechamento">
-        <span>{avisoDasPendencias(pendencias.length)} Fechar mesmo assim?</span>
-        <button
-          type="button"
-          className={estilos.principal}
-          disabled={salvando}
-          aria-busy={salvando || undefined}
-          onClick={fechar}
-        >
-          Sim, fechar
-        </button>
-        <button type="button" className={estilos.discreta} onClick={() => setConfirmandoFechar(false)}>
-          Não
-        </button>
-      </div>
     ) : (
       <button
         type="button"
@@ -140,6 +125,15 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
     <div className={estilos.pagina}>
       <CabecalhoDaPagina titulo="Caixa" apoio={apoio} acao={acaoDoDono} />
 
+      {confirmandoFechar ? (
+        <JanelaDeFechamento
+          pendencias={pendencias}
+          salvando={salvando}
+          aoFechar={fechar}
+          aoDesistir={() => setConfirmandoFechar(false)}
+        />
+      ) : null}
+
       <nav className={estilos.dias} aria-label="Dias do caixa">
         <Link className={estilos.dia} href={`/painel/caixa?data=${somarDias(data, -1)}`}>
           <span aria-hidden="true">←</span>Dia anterior
@@ -155,7 +149,7 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
       {aviso ? <Aviso>{aviso}</Aviso> : null}
       {caixa.erro ? <Aviso>{caixa.erro.mensagem || "Não foi possível carregar o caixa."}</Aviso> : null}
       {!atual ? (
-        caixa.erro ? null : <p>Carregando…</p>
+        caixa.erro ? null : <Carregando />
       ) : (
         <>
           {fechado ? (
@@ -181,8 +175,11 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
                     return (
                       <div key={linha.pessoa?.id ?? "casa"} className={estilos.pessoa} role="group" aria-label={nome}>
                         <span className={estilos.nome}>{nome}</span>
+                        {/* Um número por pessoa, grande, com o selo do que ele
+                            é. O texto é a mesma frase de antes ("Tem a receber
+                            R$ 60,00"), só dividida em selo e valor. */}
                         <span className={estilos.saldo} data-sinal={Math.sign(linha.saldoCentavos)}>
-                          {fraseDoSaldo(linha.saldoCentavos)}
+                          <SaldoEmDestaque saldoCentavos={linha.saldoCentavos} />
                         </span>
                         <span className={estilos.detalhe}>
                           Recebeu {reais(linha.recebeuCentavos)} · cabe {reais(linha.cabeCentavos)}
@@ -195,7 +192,15 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
               {atual.acerto.repasses.length > 0 ? (
                 <ul className={estilos.repasses}>
                   {atual.acerto.repasses.map((repasse) => (
-                    <li key={`${repasse.de.id}-${repasse.para?.id ?? "casa"}`}>{fraseDoRepasse(repasse)}</li>
+                    <li key={`${repasse.de.id}-${repasse.para?.id ?? "casa"}`} className={estilos.repasse}>
+                      {/* À vista, uma seta de quem pra quem; o leitor de tela
+                          ouve a frase inteira. */}
+                      <span aria-hidden="true">
+                        {repasse.de.nome} <span className={estilos.seta}>→</span> {repasse.para?.nome ?? "a casa"}
+                      </span>
+                      <strong aria-hidden="true">{reais(repasse.valorCentavos)}</strong>
+                      <span className={estilos.somenteLeitor}>{fraseDoRepasse(repasse)}</span>
+                    </li>
                   ))}
                 </ul>
               ) : null}
@@ -271,5 +276,78 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
         </>
       )}
     </div>
+  );
+}
+
+// "Tem a receber" num selo e o valor grande ao lado — a mesma frase, em
+// duas partes à vista e inteira pro leitor de tela. Acertado não tem
+// valor.
+function SaldoEmDestaque({ saldoCentavos }: { saldoCentavos: number }) {
+  if (saldoCentavos === 0) return <span className={estilos.seloDoSaldo}>{fraseDoSaldo(0)}</span>;
+  const frase = fraseDoSaldo(saldoCentavos);
+  const valor = reais(Math.abs(saldoCentavos));
+  return (
+    <>
+      <span className={estilos.seloDoSaldo} aria-hidden="true">
+        {frase.replace(` ${valor}`, "")}
+      </span>
+      <span className={estilos.valorDoSaldo} aria-hidden="true">
+        {valor}
+      </span>
+      <span className={estilos.somenteLeitor}>{frase}</span>
+    </>
+  );
+}
+
+// A confirmação de fechar com pendência (17/10): numa janela, com a
+// lista do que fica de fora do acerto, em vez de uma frase longa ao lado
+// dos botões.
+function JanelaDeFechamento({
+  pendencias,
+  salvando,
+  aoFechar,
+  aoDesistir,
+}: {
+  pendencias: PendenciaDoCaixa[];
+  salvando: boolean;
+  aoFechar: () => void;
+  aoDesistir: () => void;
+}) {
+  const janela = useRef<HTMLDialogElement>(null);
+  const titulo = useId();
+
+  useEffect(() => {
+    janela.current?.showModal();
+  }, []);
+
+  return (
+    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={aoDesistir}>
+      <h2 id={titulo} className={estilos.tituloDaJanela}>
+        Fechar o dia?
+      </h2>
+      <p>{avisoDasPendencias(pendencias.length)}</p>
+      <ul className={estilos.listaDaJanela}>
+        {pendencias.map((pendencia) => (
+          <li key={pendencia.agendamentoId}>
+            <span className={estilos.hora}>{pendencia.horaInicio}</span> {pendencia.cliente.nome} ·{" "}
+            {SITUACAO_DA_PENDENCIA[pendencia.status]}
+          </li>
+        ))}
+      </ul>
+      <div className={estilos.botoesDaJanela}>
+        <button type="button" className={estilos.discreta} onClick={() => janela.current?.close()}>
+          Não
+        </button>
+        <button
+          type="button"
+          className={estilos.principal}
+          disabled={salvando}
+          aria-busy={salvando || undefined}
+          onClick={aoFechar}
+        >
+          Sim, fechar
+        </button>
+      </div>
+    </dialog>
   );
 }

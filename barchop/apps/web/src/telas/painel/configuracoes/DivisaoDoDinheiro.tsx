@@ -13,6 +13,7 @@ import { fraseDaDivisao, reais } from "../../../painel/caixa";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
 import estilos from "./DivisaoDoDinheiro.module.css";
+import { Carregando } from "../../../componentes/Carregando";
 
 // A divisão do dinheiro (Onda 2, marco 2, PR 8 do plano caixa-do-dia):
 // quanto de cada atendimento fica com a casa e, quando o cliente é de
@@ -131,7 +132,7 @@ function DivisaoDoDono() {
     );
   }
   if (divisao.erro) return <Aviso>{divisao.erro.mensagem || "Não foi possível carregar a divisão agora."}</Aviso>;
-  if (!divisao.dados || divisao.dados !== sincronizada) return <p>Carregando…</p>;
+  if (!divisao.dados || divisao.dados !== sincronizada) return <Carregando />;
 
   const atual = divisao.dados;
   const membros = atual.membros;

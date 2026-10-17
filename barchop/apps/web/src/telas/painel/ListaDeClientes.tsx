@@ -16,6 +16,7 @@ import { IconeCalendario } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { linkDoZap } from "../../painel/whatsapp";
 import estilos from "./ListaDeClientes.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 // Quanto a busca espera parada antes de virar navegação e requisição.
 // 300ms é o intervalo em que uma digitação normal não tem pausa — e a
@@ -269,7 +270,7 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
           tela inteira virar "Carregando…": o campo desmontado no meio da
           digitação levaria o foco junto. */}
       {carregando ? (
-        <p>Carregando…</p>
+        <Carregando />
       ) : (
         <>
           {/* Sem a contagem, uma lista curta não se distingue de um

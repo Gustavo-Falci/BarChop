@@ -4,13 +4,16 @@ import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { DiaDaJornada, ModoJornada } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
+import { BarraDeMudancas } from "../../componentes/BarraDeMudancas";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
 import { Grupo } from "../../componentes/Grupo";
+import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./JornadaDoMembro.module.css";
 import { temPausa } from "./pausa";
+import { Carregando } from "../../componentes/Carregando";
 
 // A pausa que o "Adicionar pausa" e o "Aplicar" usam quando a pessoa
 // ainda não tem nenhuma: o almoço mais comum.
@@ -49,6 +52,23 @@ const MODOS: { valor: ModoJornada; rotulo: string }[] = [
 
 function capitalizar(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+function rotuloDoModo(modo: ModoJornada): string {
+  return MODOS.find((opcao) => opcao.valor === modo)?.rotulo ?? modo;
+}
+
+// O que a barra de salvar diz: "Segunda: Horário da barbearia → Folga",
+// ou só que o horário ou a pausa do dia mudou.
+function oQueMudou(gravada: DiaDaJornada[], semana: DiaDaJornada[]): string[] {
+  return semana.flatMap((dia) => {
+    const antes = gravada.find((outro) => outro.diaSemana === dia.diaSemana);
+    if (!antes || JSON.stringify(antes) === JSON.stringify(dia)) return [];
+    const nome = capitalizar(DIAS[dia.diaSemana].nome);
+    return antes.modo !== dia.modo
+      ? [`${nome}: ${rotuloDoModo(antes.modo)} → ${rotuloDoModo(dia.modo)}`]
+      : [`${nome}: horário ou pausa`];
+  });
 }
 
 // A semana de trabalho do membro: em cada dia ele acompanha o horário
@@ -175,20 +195,8 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
     <Grupo
       titulo="Jornada"
       descricao="Em que dias e horários a pessoa atende. O horário próprio vale só dentro do horário da barbearia; na pausa, ninguém marca com ela."
-      acao={
-        mudou ? (
-          <>
-            <Botao onClick={salvar} carregando={salvando}>
-              Salvar jornada
-            </Botao>
-            <Botao variante="contorno" onClick={descartar}>
-              Descartar
-            </Botao>
-          </>
-        ) : undefined
-      }
     >
-      {!salva.dados ? <p>Carregando…</p> : null}
+      {!salva.dados ? <Carregando compacto /> : null}
       {/* Um atalho pra pausa de todo dia, como a rotina em Horários: a
           pausa de cada dia continua editável aqui embaixo. */}
       <div className={estilos.pausaDeSempre}>
@@ -218,18 +226,19 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
           return (
             <div key={dia.diaSemana} className={estilos.dia}>
               <span>{capitalizar(nome)}</span>
-              <select
-                className={estilos.modo}
-                aria-label={`Jornada ${em} ${nome}`}
-                value={dia.modo}
-                onChange={(evento) => escolherModo(dia, evento.target.value as ModoJornada)}
-              >
-                {MODOS.map((modo) => (
-                  <option key={modo.valor} value={modo.valor}>
-                    {modo.rotulo}
-                  </option>
-                ))}
-              </select>
+              {/* Segmentado no lugar do <select> nativo (que abria com o
+                  azul do sistema). A legenda carrega o dia pro leitor de
+                  tela; à vista, o nome já está ao lado. */}
+              <div className={estilos.modo}>
+                <SeletorEmPilulas
+                  nome={`jornada-${membroId}-${dia.diaSemana}`}
+                  legenda={`Jornada ${em} ${nome}`}
+                  legendaOculta
+                  opcoes={MODOS}
+                  valor={dia.modo}
+                  aoTrocar={(modo) => escolherModo(dia, modo)}
+                />
+              </div>
               {/* Embrulhado, como em Configurações: as linhas mantêm o
                   mesmo número de colunas com ou sem as horas. O horário
                   e a pausa em faixas próprias: juntos numa linha só, o
@@ -293,8 +302,16 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
           );
         })}
       </div>
-      {erro ? <Aviso>{erro}</Aviso> : null}
       {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
+      {/* Um Salvar só, na barra do pé: o que mudou, Descartar e o erro
+          (da validação ou da API) junto do botão. */}
+      <BarraDeMudancas
+        mudancas={gravada && mudou ? oQueMudou(gravada, semana) : []}
+        aviso={erro}
+        salvando={salvando}
+        aoSalvar={() => void salvar()}
+        aoDescartar={descartar}
+      />
     </Grupo>
   );
 }

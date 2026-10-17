@@ -105,3 +105,27 @@ summary,
     scroll-behavior: auto !important;
   }
 }
+
+/* Toda janela (<dialog> aberta com showModal) entra com fade e uma
+   escala curta, e o véu atrás dela aparece junto. Antes ela surgia de
+   uma vez. 180ms: ferramenta de trabalho, não vitrine. */
+dialog[open] {
+  animation: janela-entra 180ms var(--curva-entrada);
+}
+
+dialog[open]::backdrop {
+  animation: veu-entra 180ms ease;
+}
+
+@keyframes janela-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes veu-entra {
+  from {
+    opacity: 0;
+  }
+}

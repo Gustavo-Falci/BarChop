@@ -1,0 +1,52 @@
+/* Presa no pé da área de conteúdo enquanto houver o que salvar; no
+   celular, acima da barra de navegação (--recuo-inferior vem do shell).
+   Sobe em 200ms quando aparece. */
+.barra {
+  position: sticky;
+  z-index: 10;
+  inset-block-end: calc(var(--espaco-md) + var(--recuo-inferior, 0px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm) var(--espaco-md);
+  margin-block-start: var(--espaco-lg);
+  padding: var(--espaco-sm) var(--espaco-sm) var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  box-shadow: var(--sombra-2);
+  animation: subir var(--duracao-media) var(--curva-entrada);
+}
+
+.resumo {
+  flex: 1 1 240px;
+  min-width: 0;
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.aviso {
+  flex: 1 1 100%;
+  order: 3;
+  margin: 0;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border-radius: var(--raio-sm);
+  background: var(--cor-erro-fundo);
+  color: var(--cor-erro);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.botoes {
+  display: flex;
+  gap: var(--espaco-xs);
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

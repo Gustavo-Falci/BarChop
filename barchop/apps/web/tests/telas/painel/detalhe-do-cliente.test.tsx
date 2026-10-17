@@ -92,9 +92,20 @@ describe("detalhe do cliente", () => {
     expect(within(anteriores).getByText("concluído")).toBeInTheDocument();
   });
 
+  // Os dados em leitura (17/10): a tela parecia um formulário. "Editar"
+  // abre os campos; Descartar volta ao que era e à leitura.
+  it("abre em leitura: telefone e e-mail à vista, sem campos", async () => {
+    montar();
+
+    expect(await screen.findByRole("button", { name: "Editar" })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^nome/i)).toBeNull();
+    expect(screen.getByText("(11) 99999-0001")).toBeInTheDocument();
+  });
+
   it("Salvar só aparece quando um dado muda, e Descartar volta ao que era", async () => {
     montar();
 
+    await userEvent.click(await screen.findByRole("button", { name: "Editar" }));
     const nome = await screen.findByLabelText(/^nome/i);
     expect(screen.queryByRole("button", { name: /salvar/i })).toBeNull();
 
@@ -103,7 +114,8 @@ describe("detalhe do cliente", () => {
     expect(screen.getByRole("button", { name: /salvar/i })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /descartar/i }));
-    expect(nome).toHaveValue("João Silva");
+    expect(screen.queryByLabelText(/^nome/i)).toBeNull();
+    expect(screen.getByRole("button", { name: "Editar" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /salvar/i })).toBeNull();
   });
 
@@ -113,6 +125,7 @@ describe("detalhe do cliente", () => {
     const atualizar = vi.spyOn(falso.barbeiro, "atualizarCliente");
     montarPainel(<DetalheDoCliente agora={AGORA} />, falso);
 
+    await userEvent.click(await screen.findByRole("button", { name: "Editar" }));
     const nome = await screen.findByLabelText(/^nome/i);
     await userEvent.clear(nome);
     await userEvent.type(nome, "João da Silva");

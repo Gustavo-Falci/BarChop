@@ -1,12 +1,11 @@
 /* Estado vazio: a tela sem conteúdo não pode parecer tela quebrada.
-   Borda tracejada em vez da sólida da casa justamente pra dizer
-   "espaço reservado, ainda sem nada" e não "cartão com conteúdo". */
+   Fundo suave sem moldura: diz "espaço reservado, ainda sem nada" sem
+   a caixa tracejada, que era mais uma moldura disputando a tela. */
 .vazio {
   display: grid;
   justify-items: center;
   gap: var(--espaco-md);
   padding: var(--espaco-xl) var(--espaco-lg);
-  border: var(--borda-padrao) dashed var(--cor-line);
   border-radius: var(--raio-lg);
   background: var(--cor-paper-soft);
   text-align: center;

@@ -42,7 +42,7 @@ export function SeletorDeVista({
           Hoje
         </button>
         {aoIrParaAgora ? (
-          <button type="button" className={estilos.hoje} onClick={aoIrParaAgora}>
+          <button type="button" className={estilos.textual} onClick={aoIrParaAgora}>
             Agora
           </button>
         ) : null}

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, type SementeFalsa } from "@barchop/api-client";
@@ -172,6 +172,103 @@ describe("faixa da assinatura", () => {
     await waitFor(() => expect(leitura).toHaveBeenCalled());
     await screen.findByText("conteúdo da tela");
     expect(screen.queryByRole("region", { name: "Assinatura" })).not.toBeInTheDocument();
+  });
+
+  // A faixa ocupava 38px em todas as telas, sem fechar. O recado neutro
+  // (teste correndo, cancelamento marcado) fecha por 24h; nos últimos 3
+  // dias ele fica, e o de atenção nunca fecha.
+  describe("fechar a faixa", () => {
+    const DIA = 24 * 60 * 60 * 1000;
+    const daqui = (dias: number) => new Date(Date.now() + dias * DIA).toISOString();
+
+    it("o recado neutro fecha e some", async () => {
+      montar({ assinatura: resumo({ diasDeTesteRestantes: 10 }) });
+
+      await userEvent.click(within(await faixa()).getByRole("button", { name: "Fechar aviso" }));
+
+      expect(screen.queryByRole("region", { name: "Assinatura" })).not.toBeInTheDocument();
+    });
+
+    it("fechada, continua fechada ao voltar ao painel no mesmo dia", async () => {
+      const primeiro = montar({ assinatura: resumo({ diasDeTesteRestantes: 10 }) });
+      await userEvent.click(within(await faixa()).getByRole("button", { name: "Fechar aviso" }));
+      cleanup();
+
+      const { leitura } = montar({ assinatura: resumo({ diasDeTesteRestantes: 10 }) });
+
+      await waitFor(() => expect(leitura).toHaveBeenCalled());
+      await screen.findByText("conteúdo da tela");
+      expect(screen.queryByRole("region", { name: "Assinatura" })).not.toBeInTheDocument();
+      expect(primeiro.leitura).toHaveBeenCalled();
+    });
+
+    it("passadas 24h, volta", async () => {
+      montar({ assinatura: resumo({ diasDeTesteRestantes: 10 }) });
+      await userEvent.click(within(await faixa()).getByRole("button", { name: "Fechar aviso" }));
+      cleanup();
+      const agora = Date.now();
+      const relogio = vi.spyOn(Date, "now").mockReturnValue(agora + DIA + 1000);
+
+      montar({ assinatura: resumo({ diasDeTesteRestantes: 9 }) });
+
+      expect(await faixa()).toHaveTextContent("Teste grátis: faltam 9 dias");
+      relogio.mockRestore();
+    });
+
+    it("a contagem de dias virar no meio das 24h não traz a faixa de volta", async () => {
+      // "faltam 10 dias" vira "faltam 9 dias" à meia-noite (ou na hora
+      // em que o teste começou); o recado é o mesmo, e fechado continua.
+      montar({ assinatura: resumo({ diasDeTesteRestantes: 10 }) });
+      await userEvent.click(within(await faixa()).getByRole("button", { name: "Fechar aviso" }));
+      cleanup();
+
+      const { leitura } = montar({ assinatura: resumo({ diasDeTesteRestantes: 9 }) });
+
+      await waitFor(() => expect(leitura).toHaveBeenCalled());
+      await screen.findByText("conteúdo da tela");
+      expect(screen.queryByRole("region", { name: "Assinatura" })).not.toBeInTheDocument();
+    });
+
+    it("nos últimos 3 dias do teste, não fecha", async () => {
+      montar({ assinatura: resumo({ diasDeTesteRestantes: 3 }) });
+
+      const regiao = await faixa();
+
+      expect(within(regiao).queryByRole("button", { name: "Fechar aviso" })).not.toBeInTheDocument();
+    });
+
+    it("nos últimos 3 dias do plano cancelado, não fecha", async () => {
+      montar({ assinatura: resumo({ ...ATIVA, cancelaEm: daqui(2) }) });
+
+      const regiao = await faixa();
+
+      expect(regiao).toHaveTextContent(/Assinatura cancelada/);
+      expect(within(regiao).queryByRole("button", { name: "Fechar aviso" })).not.toBeInTheDocument();
+    });
+
+    it("cancelado com mais de 3 dias pela frente, fecha", async () => {
+      montar({ assinatura: resumo({ ...ATIVA, cancelaEm: daqui(20) }) });
+
+      expect(within(await faixa()).getByRole("button", { name: "Fechar aviso" })).toBeInTheDocument();
+    });
+
+    it("o recado de atenção não fecha", async () => {
+      montar({ assinatura: resumo({ ...ATIVA, situacao: "em_atraso" }) });
+
+      const regiao = await faixa();
+
+      expect(within(regiao).queryByRole("button", { name: "Fechar aviso" })).not.toBeInTheDocument();
+    });
+
+    it("fechar um recado não esconde outro que chegue depois", async () => {
+      montar({ assinatura: resumo({ diasDeTesteRestantes: 10 }) });
+      await userEvent.click(within(await faixa()).getByRole("button", { name: "Fechar aviso" }));
+      cleanup();
+
+      montar({ assinatura: resumo({ ...ATIVA, cancelaEm: daqui(20) }) });
+
+      expect(await faixa()).toHaveTextContent(/Assinatura cancelada/);
+    });
   });
 
   it("quem não é dono não vê a faixa, e a assinatura nem é pedida", async () => {

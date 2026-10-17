@@ -13,6 +13,16 @@
   font-weight: 600;
 }
 
+.legendaOculta {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Controle segmentado: as opções num trilho só, a escolhida com o fundo
    do cartão elevado. Sem amarelo — com várias regras na mesma tela, o
    amarelo cheio em cada escolha acendia oito botões de uma vez e nada

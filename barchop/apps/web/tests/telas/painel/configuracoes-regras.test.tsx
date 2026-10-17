@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
 import { HorariosDaBarbearia } from "../../../src/telas/painel/configuracoes/HorariosDaBarbearia";
 import { RegrasDeAgendamento } from "../../../src/telas/painel/configuracoes/RegrasDeAgendamento";
@@ -13,6 +13,12 @@ import { montarPainel } from "../../ajudantes/painel";
 
 function grupo(nome: RegExp) {
   return within(screen.getByRole("group", { name: nome }));
+}
+
+// Um Salvar só (17/10): a barra no pé da tela aparece quando algo muda
+// (ou enquanto a área não foi decidida) e diz o que mudou.
+function barra() {
+  return screen.getByRole("region", { name: "Mudanças" });
 }
 
 beforeEach(() => {
@@ -60,7 +66,7 @@ describe("regras de agendamento", () => {
     await userEvent.click(grupo(/intervalo entre horários/i).getByRole("radio", { name: "1 h" }));
     await userEvent.click(grupo(/caber antes de fechar/i).getByRole("radio", { name: "Não" }));
     await userEvent.click(grupo(/até quando a agenda abre/i).getByRole("radio", { name: "14 dias" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar regras de marcar/i }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(screen.getByRole("banner")).toHaveTextContent("Configurado"));
     expect(falso.estado.perfil).toMatchObject({
@@ -79,9 +85,66 @@ describe("regras de agendamento", () => {
     await screen.findByRole("group", { name: /cliente remarca/i });
     await userEvent.click(grupo(/cliente remarca/i).getByRole("radio", { name: "6 h" }));
     await userEvent.click(grupo(/cliente cancela/i).getByRole("radio", { name: "12 h" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar prazos/i }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(falso.estado.perfil).toMatchObject({ prazoRemarcarHoras: 6, prazoCancelarHoras: 12 }));
+  });
+
+  it("a barra diz o que mudou, e Descartar volta ao que estava", async () => {
+    const falso = criarApiClientFalso({ areasDecididas: ["regras_de_agendamento"] });
+    montarPainel(<RegrasDeAgendamento />, falso);
+
+    await screen.findByRole("group", { name: /intervalo entre horários/i });
+    await userEvent.click(grupo(/intervalo entre horários/i).getByRole("radio", { name: "30 min" }));
+
+    expect(barra()).toHaveTextContent("1 mudança");
+    expect(barra()).toHaveTextContent("Intervalo entre horários: 15 min → 30 min");
+
+    await userEvent.click(within(barra()).getByRole("button", { name: "Descartar" }));
+
+    expect(grupo(/intervalo entre horários/i).getByRole("radio", { name: "15 min" })).toBeChecked();
+  });
+
+  it("um Salvar só grava as sete regras de uma vez", async () => {
+    const falso = criarApiClientFalso();
+    montarPainel(<RegrasDeAgendamento />, falso);
+
+    await screen.findByRole("group", { name: /intervalo entre horários/i });
+    await userEvent.click(grupo(/intervalo entre horários/i).getByRole("radio", { name: "30 min" }));
+    await userEvent.click(grupo(/cliente cancela/i).getByRole("radio", { name: "24 h" }));
+
+    expect(barra()).toHaveTextContent("2 mudanças");
+    expect(screen.getAllByRole("button", { name: /salvar/i })).toHaveLength(1);
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() =>
+      expect(falso.estado.perfil).toMatchObject({ intervaloMinutos: 30, prazoCancelarHoras: 24 })
+    );
+  });
+
+  it("ainda não decidida, sem mudança, a barra oferece salvar assim", async () => {
+    montarPainel(<RegrasDeAgendamento />, criarApiClientFalso());
+
+    await screen.findByRole("group", { name: /intervalo entre horários/i });
+    expect(barra()).toHaveTextContent(/ainda não decidid/i);
+    expect(within(barra()).queryByRole("button", { name: "Descartar" })).toBeNull();
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() => expect(screen.getByRole("banner")).toHaveTextContent("Configurado"));
+  });
+
+  it("erro ao salvar aparece na própria barra, junto do Salvar", async () => {
+    // A barra fica presa no pé; o aviso no topo da página ficaria fora da
+    // vista com a página rolada ou no celular.
+    const falso = criarApiClientFalso();
+    vi.spyOn(falso.barbeiro, "atualizarMinhaBarbearia").mockRejectedValue({ mensagem: "Sem conexão agora." });
+    montarPainel(<RegrasDeAgendamento />, falso);
+
+    await screen.findByRole("group", { name: /intervalo entre horários/i });
+    await userEvent.click(grupo(/intervalo entre horários/i).getByRole("radio", { name: "30 min" }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
+
+    expect(await within(barra()).findByText("Sem conexão agora.")).toBeInTheDocument();
   });
 
   it("abre no que a barbearia já decidiu", async () => {

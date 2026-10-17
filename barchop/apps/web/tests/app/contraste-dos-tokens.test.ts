@@ -77,6 +77,14 @@ describe("contraste do texto sobre os fundos", () => {
     it(`${tema}: o texto sobre o selecionado (paleYellow) passa 4,5:1`, () => {
       expect(contraste(cores.ink!, cores.paleYellow!)).toBeGreaterThanOrEqual(4.5);
     });
+
+    // O ícone e o texto em ouro do item ativo: o ouro da marca puro some
+    // no creme do claro, então há um tom próprio pra texto.
+    for (const fundo of ["paleYellow", "surface", "paperSoft"] as const) {
+      it(`${tema}: a marca como texto sobre ${fundo} passa 4,5:1`, () => {
+        expect(contraste(cores.accentText!, cores[fundo]!)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
   }
 });
 

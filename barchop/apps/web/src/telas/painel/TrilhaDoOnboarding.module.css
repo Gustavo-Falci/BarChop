@@ -122,36 +122,76 @@
   background: var(--cor-paper-soft);
 }
 
-/* O passo atual ganha a borda cheia e a sombra do idioma do painel: é
-   pra onde o olho vai primeiro. */
+/* O próximo passo ganha o espaço: sobe pro começo da lista, na largura
+   inteira, em fundo suave. Os outros (feitos e os que faltam) viram uma
+   linha de selos pequenos logo abaixo — os concluídos tinham o mesmo
+   peso do próximo, e a trilha ocupava 330px pra dizer "falta 1". */
 .passo[data-atual="true"] {
-  border: var(--borda-padrao) solid var(--cor-ink);
-  background: var(--cor-surface);
-  box-shadow: var(--sombra-botao);
+  order: -1;
+  flex: 1 1 100%;
+  border-color: transparent;
+  background: var(--cor-paper-soft);
 }
 
-/* Feito sai do caminho: vira selo do tamanho do texto, sem fundo, no
-   alto da linha. */
-.passo[data-feito="true"] {
+.passo:not([data-atual="true"]) {
   flex: 0 1 auto;
-  align-self: flex-start;
-  max-width: 220px;
-  background: transparent;
-  border-style: dashed;
+  align-self: center;
+  padding: 2px var(--espaco-xs);
+  border: 0;
+  background: none;
 }
 
-/* No celular, uma coluna só: selo e cartão misturados na mesma linha
-   embaralhavam a ordem dos passos. */
-@media (max-width: 640px) {
-  .passos {
-    flex-direction: column;
-  }
+.passo:not([data-atual="true"]) .linha {
+  align-items: center;
+  gap: 6px;
+}
 
-  .passo,
-  .passo[data-feito="true"] {
-    flex: none;
-    align-self: stretch;
-    max-width: none;
+.passo:not([data-atual="true"]) .nome {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.passo:not([data-atual="true"]) .marca {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* A dica e o "Feito" saem da vista, não do leitor de tela: o selo com o
+   check já diz que foi feito, e a dica é do passo que importa agora. */
+.passo:not([data-atual="true"]) .dica,
+.passo:not([data-atual="true"]) .feito {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Os que faltam (e não são o próximo) não mostram a ação: ela é do
+   próximo passo. */
+.passo:not([data-atual="true"]):not([data-feito="true"]) .acoes {
+  display: none;
+}
+
+/* No próximo passo, a ação e o "Trabalho sozinho" lado a lado, do
+   tamanho do texto: largos, viravam uma faixa amarela de ponta a ponta. */
+.passo[data-atual="true"] .acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm) var(--espaco-md);
+}
+
+.passo[data-atual="true"] .acao {
+  width: auto;
+}
+
+/* No celular, o próximo em cima e os selos quebrando em linhas. */
+@media (max-width: 640px) {
+  .passo[data-atual="true"] {
+    flex: 1 1 100%;
   }
 }
 
@@ -180,8 +220,9 @@
 }
 
 .passo[data-feito="true"] .marca {
-  background: var(--cor-accent);
-  color: var(--cor-dark);
+  border-color: transparent;
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
 }
 
 .corpo {

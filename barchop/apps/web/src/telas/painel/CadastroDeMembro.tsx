@@ -21,6 +21,7 @@ import { JornadaDoMembro } from "./JornadaDoMembro";
 import { ROTULO_DO_PAPEL, SELO_DA_SITUACAO } from "./ListaDaEquipe";
 import { ServicosDoMembro } from "./ServicosDoMembro";
 import estilos from "./CadastroDeMembro.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 // Os limites ESPELHAM o schema de apps/api/src/routers/equipe.ts — o
 // que passar daqui e a API recusar volta como 400 de ajv, numa frase
@@ -88,7 +89,7 @@ export function CadastroDeMembro() {
   if (equipe.erro) {
     return <Aviso>{equipe.erro.mensagem || "Não foi possível carregar a equipe agora."}</Aviso>;
   }
-  if (id && !equipe.dados) return <p>Carregando…</p>;
+  if (id && !equipe.dados) return <Carregando />;
   if (id && !atual) return <Aviso>Membro não encontrado.</Aviso>;
 
   // Na edição, Salvar e Descartar só aparecem quando os dados diferem do

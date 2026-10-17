@@ -25,6 +25,7 @@ import {
   efeitoDoPrazo,
 } from "./regras";
 import estilos from "./Configuracoes.module.css";
+import { Carregando } from "../../../componentes/Carregando";
 
 // Regras de agendamento (painel v2, marco 3): como o cliente marca,
 // remarca e cancela pelo link. O painel não passa por nenhuma — encaixa
@@ -92,7 +93,7 @@ function TelaDasRegras() {
   if (barbearia.erro) {
     return <Aviso>{barbearia.erro.mensagem || "Não foi possível carregar a barbearia agora."}</Aviso>;
   }
-  if (!barbearia.dados || !regras) return <p>Carregando…</p>;
+  if (!barbearia.dados || !regras) return <Carregando />;
 
   return (
     <MolduraDaArea area="regras_de_agendamento" decididas={decididas} aviso={aviso}>

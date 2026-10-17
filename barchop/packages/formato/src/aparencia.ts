@@ -486,6 +486,11 @@ function paletaDoModo(aparencia: Aparencia, modo: Modo): CoresDaPagina {
     paleta.onAccent = textoSobre(visivel);
     paleta.accentOnDark = marcaSobreOEscuro(visivel);
   }
+  // A marca como texto acompanha a marca de cada tema; no BarChop puro
+  // fica o tom do token, que já é o ouro escurecido.
+  if (paleta.accent !== (modo === "escuro" ? colors.dark.accent : colors.light.accent)) {
+    paleta.accentText = textoDaMarca(paleta);
+  }
   return paleta;
 }
 

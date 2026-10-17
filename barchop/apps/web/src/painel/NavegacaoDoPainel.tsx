@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoDaBarbearia } from "../componentes/LogoDaBarbearia";
@@ -13,6 +13,8 @@ import {
   IconeCliente,
   IconeEngrenagem,
   IconeEquipe,
+  IconeGrade,
+  IconeMais,
   IconeRecolher,
   IconeTesoura,
 } from "./icones";
@@ -22,11 +24,18 @@ import estilos from "./NavegacaoDoPainel.module.css";
 // `soDoDono` some da barra pra quem não é dono. Serviços fica pra todos
 // (a recepção consulta preço) e Configurações também — o "Seu perfil"
 // de cada um mora lá. A tela de cada link decide o resto.
-const LINKS = [
+//
+// As três primeiras são as da barra inferior do celular, onde o polegar
+// alcança; as outras moram atrás do "Mais" lá. No desktop, a lista é uma
+// só e na mesma ordem.
+const PRINCIPAIS = [
   { href: "/painel", rotulo: "Hoje", Icone: IconeCasa },
   { href: "/painel/agenda", rotulo: "Agenda", Icone: IconeCalendario },
   // Pra todos: o profissional vê o próprio acerto; no Grátis, o convite.
   { href: "/painel/caixa", rotulo: "Caixa", Icone: IconeCedula },
+];
+
+const SECUNDARIAS = [
   // Pra todos: o profissional bloqueia a própria agenda.
   { href: "/painel/bloqueios", rotulo: "Folgas", Icone: IconeBloqueio },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: IconeCliente },
@@ -37,14 +46,61 @@ const LINKS = [
 
 // O <nav> precisa de id para o aria-controls do botão que o recolhe.
 const ID_DAS_SECOES = "secoes-do-painel";
+const ID_DO_MAIS = "secoes-do-mais";
+
+// O "Hoje" é /painel exato: com startsWith, ele ficaria ativo em todas
+// as rotas do painel ao mesmo tempo.
+function ehAtual(href: string, caminho: string): boolean {
+  return href === "/painel" ? caminho === href : caminho.startsWith(href);
+}
 
 export function NavegacaoDoPainel() {
   const { slug, perfil, marca } = usePainel();
-  const links = LINKS.filter((link) => !link.soDoDono || perfil.papel === "dono");
+  const secundarias = SECUNDARIAS.filter((link) => !link.soDoDono || perfil.papel === "dono");
   const caminho = usePathname();
   const [recolhida, setRecolhida] = useState(false);
+  const [maisAberto, setMaisAberto] = useState(false);
+  const raizDoMais = useRef<HTMLDivElement>(null);
 
   useEffect(() => setRecolhida(lerBarra() === "recolhida"), []);
+
+  // Escolheu uma seção, o "Mais" fecha: a folha cobriria a tela nova.
+  useEffect(() => setMaisAberto(false), [caminho]);
+
+  // Aberto, fecha com Esc e com toque fora — o mesmo de qualquer menu.
+  useEffect(() => {
+    if (!maisAberto) return;
+    function aoTeclar(evento: KeyboardEvent) {
+      if (evento.key === "Escape") setMaisAberto(false);
+    }
+    function aoTocar(evento: PointerEvent) {
+      if (raizDoMais.current && !raizDoMais.current.contains(evento.target as Node)) setMaisAberto(false);
+    }
+    document.addEventListener("keydown", aoTeclar);
+    document.addEventListener("pointerdown", aoTocar);
+    return () => {
+      document.removeEventListener("keydown", aoTeclar);
+      document.removeEventListener("pointerdown", aoTocar);
+    };
+  }, [maisAberto]);
+
+  const maisEhAtual = secundarias.some((link) => ehAtual(link.href, caminho));
+
+  function link({ href, rotulo, Icone }: (typeof SECUNDARIAS)[number]) {
+    return (
+      <Link
+        key={href}
+        href={href}
+        aria-current={ehAtual(href, caminho) ? "page" : undefined}
+        // Só recolhida: expandida, o title repetiria em tooltip o
+        // texto que já está ao lado do ícone.
+        title={recolhida ? rotulo : undefined}
+      >
+        <Icone />
+        <span className={estilos.rotulo}>{rotulo}</span>
+      </Link>
+    );
+  }
 
   // Quem manda no visual é o atributo no <html>, não este estado: é o
   // mesmo que o script do <head> escreve antes da primeira pintura, e
@@ -80,7 +136,13 @@ export function NavegacaoDoPainel() {
             tamanho="p"
             decorativa
           />
-        ) : null}
+        ) : (
+          // Sem logo, a inicial num quadrado da cor da casa faz as vezes
+          // dela: o amarelo cabe num selo pequeno, não na marca inteira.
+          <span className={estilos.monograma} aria-hidden="true">
+            {slug.slice(0, 1).toUpperCase()}
+          </span>
+        )}
         <span className={estilos.nomeDaMarca}>{slug}</span>
       </strong>
 
@@ -100,25 +162,36 @@ export function NavegacaoDoPainel() {
       </button>
 
       <nav id={ID_DAS_SECOES} className={estilos.links} aria-label="Seções do painel">
-        {links.map(({ href, rotulo, Icone }) => (
-          <Link
-            key={href}
-            href={href}
-            // O "Hoje" é /painel exato: com startsWith, ele ficaria
-            // ativo em todas as rotas do painel ao mesmo tempo.
-            aria-current={
-              (href === "/painel" ? caminho === href : caminho.startsWith(href))
-                ? "page"
-                : undefined
-            }
-            // Só recolhida: expandida, o title repetiria em tooltip o
-            // texto que já está ao lado do ícone.
-            title={recolhida ? rotulo : undefined}
+        {link(PRINCIPAIS[0]!)}
+        {link(PRINCIPAIS[1]!)}
+        {/* Só no celular, no centro da barra: a ação do dia a um toque.
+            No desktop o "Novo agendamento" mora no cabeçalho de cada
+            tela e este some (display: none tira também do leitor). */}
+        <Link href="/painel/agendamentos/novo" className={estilos.novo}>
+          <IconeMais />
+          <span className={estilos.rotulo}>Novo</span>
+        </Link>
+        {link(PRINCIPAIS[2]!)}
+
+        {/* No desktop o grupo não existe pra layout (display: contents)
+            e as seções seguem na lista. No celular vira a folha que o
+            "Mais" abre por cima da barra. */}
+        <div ref={raizDoMais} className={estilos.grupoDoMais}>
+          <div id={ID_DO_MAIS} className={estilos.secundarias} data-aberto={maisAberto ? "" : undefined}>
+            {secundarias.map(link)}
+          </div>
+          <button
+            type="button"
+            className={estilos.mais}
+            aria-expanded={maisAberto}
+            aria-controls={ID_DO_MAIS}
+            data-atual={maisEhAtual ? "true" : undefined}
+            onClick={() => setMaisAberto(!maisAberto)}
           >
-            <Icone />
-            <span className={estilos.rotulo}>{rotulo}</span>
-          </Link>
-        ))}
+            <IconeGrade />
+            <span className={estilos.rotulo}>Mais</span>
+          </button>
+        </div>
       </nav>
 
       {/* Tema e Sair moravam aqui embaixo; foram pra barra de topo

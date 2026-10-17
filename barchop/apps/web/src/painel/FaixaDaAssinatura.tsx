@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { ResumoDaAssinatura } from "@barchop/types";
 import { diaEMes, diasQueFaltam, emLista, nomeDoPlano, profissionais, temPlanoPago } from "./assinatura";
+import { faixaFechada, fecharFaixa } from "./faixa";
+import { IconeFechar } from "./icones";
 import { useAssinatura } from "./ProvedorDaAssinatura";
 import estilos from "./FaixaDaAssinatura.module.css";
 
@@ -10,6 +13,16 @@ interface Recado {
   tom: "neutro" | "atencao";
   texto: string;
   acao: string;
+  // Só o recado neutro com folga de prazo fecha: nos últimos 3 dias, e
+  // no de atenção, a faixa é o aviso que não pode sumir.
+  fechavel: boolean;
+}
+
+const DIA = 24 * 60 * 60 * 1000;
+const ULTIMOS_DIAS = 3;
+
+function diasAte(instante: string): number {
+  return Math.ceil((Date.parse(instante) - Date.now()) / DIA);
 }
 
 // O que a assinatura pede de atenção agora, do mais urgente pro menos.
@@ -20,6 +33,7 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       tom: "atencao",
       texto: "Pagamento pendente: atualize o cartão para não perder o plano.",
       acao: "Resolver",
+      fechavel: false,
     };
   }
   // Só enquanto o plano pago vale: acabado, o que importa é o Grátis.
@@ -28,6 +42,7 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       tom: "neutro",
       texto: `Assinatura cancelada: o ${nomeDoPlano(resumo)} vale até ${diaEMes(resumo.cancelaEm)}.`,
       acao: "Ver plano",
+      fechavel: diasAte(resumo.cancelaEm) > ULTIMOS_DIAS,
     };
   }
   if (resumo.situacao === "teste" && resumo.diasDeTesteRestantes) {
@@ -35,6 +50,7 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       tom: "neutro",
       texto: `Teste grátis: ${diasQueFaltam(resumo.diasDeTesteRestantes)}.`,
       acao: "Escolher plano",
+      fechavel: resumo.diasDeTesteRestantes > ULTIMOS_DIAS,
     };
   }
   if (resumo.excedente && resumo.limiteDeProfissionais !== null) {
@@ -45,10 +61,16 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
         `No Grátis, só ${profissionais(resumo.limiteDeProfissionais)} aparece no seu link.` +
         (fora.length > 0 ? ` Fora do link: ${emLista(fora)}.` : ""),
       acao: "Escolher plano",
+      fechavel: false,
     };
   }
   if (resumo.situacao === "teste") {
-    return { tom: "atencao", texto: "Seu teste acabou: a barbearia está no Grátis.", acao: "Escolher plano" };
+    return {
+      tom: "atencao",
+      texto: "Seu teste acabou: a barbearia está no Grátis.",
+      acao: "Escolher plano",
+      fechavel: false,
+    };
   }
   return null;
 }
@@ -58,14 +80,34 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
 export function FaixaDaAssinatura() {
   const { resumo } = useAssinatura();
   const recado = resumo ? recadoDa(resumo) : null;
-  if (!recado) return null;
+  // O que foi fechado mora no navegador; lido depois de montar, pra o
+  // HTML do servidor e o primeiro quadro do cliente não discordarem.
+  const [fechadaAgora, setFechadaAgora] = useState<string | null>(null);
+  const [lida, setLida] = useState(false);
+  useEffect(() => setLida(true), []);
+
+  if (!recado || !lida) return null;
+  if (recado.fechavel && (fechadaAgora === recado.texto || faixaFechada(recado.texto))) return null;
+
+  function fechar() {
+    if (!recado) return;
+    fecharFaixa(recado.texto);
+    setFechadaAgora(recado.texto);
+  }
 
   return (
     <section aria-label="Assinatura" className={`${estilos.faixa} ${estilos[recado.tom]}`}>
       <p className={estilos.texto}>{recado.texto}</p>
-      <Link href="/painel/faturas" className={estilos.acao}>
-        {recado.acao}
-      </Link>
+      <div className={estilos.acoes}>
+        <Link href="/painel/faturas" className={estilos.acao}>
+          {recado.acao}
+        </Link>
+        {recado.fechavel ? (
+          <button type="button" className={estilos.fechar} onClick={fechar} aria-label="Fechar aviso" title="Fechar por hoje">
+            <IconeFechar width={16} height={16} />
+          </button>
+        ) : null}
+      </div>
     </section>
   );
 }

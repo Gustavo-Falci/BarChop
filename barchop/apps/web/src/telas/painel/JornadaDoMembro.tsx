@@ -11,6 +11,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./JornadaDoMembro.module.css";
 import { temPausa } from "./pausa";
+import { Carregando } from "../../componentes/Carregando";
 
 // A pausa que o "Adicionar pausa" e o "Aplicar" usam quando a pessoa
 // ainda não tem nenhuma: o almoço mais comum.
@@ -188,7 +189,7 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
         ) : undefined
       }
     >
-      {!salva.dados ? <p>Carregando…</p> : null}
+      {!salva.dados ? <Carregando /> : null}
       {/* Um atalho pra pausa de todo dia, como a rotina em Horários: a
           pausa de cada dia continua editável aqui embaixo. */}
       <div className={estilos.pausaDeSempre}>

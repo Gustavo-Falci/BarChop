@@ -31,6 +31,7 @@ import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { linkDoZap } from "../../painel/whatsapp";
 import estilos from "./DetalheDoCliente.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 // Quem não vai (cancelado, não compareceu) não conta como "próximo" nem
 // como "último" no resumo — continua na lista, com o status.
@@ -261,7 +262,7 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
       </Aviso>
     );
   }
-  if (!cliente.dados) return <p>Carregando…</p>;
+  if (!cliente.dados) return <Carregando />;
 
   function validarTelefone(digitado: string) {
     try {

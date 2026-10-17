@@ -14,6 +14,7 @@ import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
 import estilos from "./CaixaDoDia.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 // O Caixa (Onda 2, marco 2, PR 7 do plano caixa-do-dia): o dia do
 // caixa é o do agendamento, escolhido na URL (`?data=`), como na
@@ -155,7 +156,7 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
       {aviso ? <Aviso>{aviso}</Aviso> : null}
       {caixa.erro ? <Aviso>{caixa.erro.mensagem || "Não foi possível carregar o caixa."}</Aviso> : null}
       {!atual ? (
-        caixa.erro ? null : <p>Carregando…</p>
+        caixa.erro ? null : <Carregando />
       ) : (
         <>
           {fechado ? (

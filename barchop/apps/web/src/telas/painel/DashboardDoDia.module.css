@@ -8,13 +8,28 @@
   align-content: start;
 }
 
-/* `auto-fit` com mínimo em vez de `repeat(3, 1fr)` fixo: em tela
-   estreita os três números empilham sozinhos, sem precisar de uma
-   media query só pra isso. */
+/* Os três números num cartão só, com divisórias: três cartões de borda
+   própria competiam com o resto da tela. `auto-fit` com mínimo: em tela
+   estreita o terceiro desce sozinho, sem media query. */
 .numeros {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--espaco-md);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: var(--sombra-1);
+  overflow: hidden;
+}
+
+/* Cada número perde a moldura e ganha a divisória da esquerda. A
+   margem negativa esconde a do primeiro de cada linha atrás da borda. */
+.numeros > * {
+  margin-inline-start: -1px;
+  border: 0;
+  border-inline-start: var(--borda-hairline) solid var(--cor-line);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
 /* A coluna da direita no desktop: o link e a ocupação, um embaixo do

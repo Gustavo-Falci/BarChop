@@ -16,6 +16,7 @@ import { usePainel } from "../../../painel/SessaoDoPainel";
 import { AREAS, resumoDaArea, type DescricaoDaArea } from "./areas";
 import { SeuPerfil } from "./SeuPerfil";
 import estilos from "./Configuracoes.module.css";
+import { Carregando } from "../../../componentes/Carregando";
 
 // Os grupos do índice, como no concorrente de referência: o que faz a
 // agenda funcionar e o que o cliente vê.
@@ -92,7 +93,7 @@ function IndiceDoDono() {
 
   const erro = barbearia.erro ?? horarios.erro;
   if (erro) return <Aviso>{erro.mensagem || "Não foi possível carregar as configurações agora."}</Aviso>;
-  if (!barbearia.dados || !horarios.dados) return <p>Carregando…</p>;
+  if (!barbearia.dados || !horarios.dados) return <Carregando />;
 
   const decididas = barbearia.dados.areasDecididas;
   const total = AREAS.length;

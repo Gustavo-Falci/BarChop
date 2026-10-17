@@ -108,18 +108,39 @@
   font-weight: 700;
 }
 
+/* Um número por pessoa, grande, com o selo do que ele é: a receber
+   (verde), a repassar (âmbar) ou acertado. A cor fica no selo; o número
+   em tinta, que é o que se lê. */
 .saldo {
-  font-size: var(--texto-lg);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espaco-xs) var(--espaco-sm);
 }
 
-.saldo[data-sinal="1"] {
+.seloDoSaldo {
+  padding: 1px var(--espaco-sm);
+  border-radius: var(--raio-pill);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.saldo[data-sinal="1"] .seloDoSaldo {
+  background: var(--cor-ok-fundo);
   color: var(--cor-ok);
 }
 
-.saldo[data-sinal="-1"] {
-  color: var(--cor-erro);
+.saldo[data-sinal="-1"] .seloDoSaldo {
+  background: var(--cor-atencao-fundo);
+  color: var(--cor-atencao);
+}
+
+.valorDoSaldo {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  font-variant-numeric: tabular-nums;
 }
 
 .detalhe {
@@ -134,7 +155,7 @@
   gap: var(--espaco-xs);
   margin: 0;
   padding: var(--espaco-sm) 0 0;
-  border-top: var(--borda-hairline) dashed var(--cor-line);
+  border-top: var(--borda-hairline) solid var(--cor-line);
   list-style: none;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -232,11 +253,6 @@
   composes: discreta from "./DetalheDoAgendamento.module.css";
 }
 
-.confirmar {
-  composes: confirmar from "./DetalheDoAgendamento.module.css";
-  max-width: 34rem;
-}
-
 .convite {
   display: grid;
   gap: var(--espaco-md);
@@ -281,4 +297,61 @@
     grid-column: 2;
     text-align: left;
   }
+}
+
+/* "Gustavo → Rafael" à esquerda e o valor à direita. */
+.repasse {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+}
+
+.seta {
+  color: var(--cor-muted);
+}
+
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* A janela de confirmar o fechamento com pendência. */
+.janela {
+  width: min(28rem, calc(100vw - 32px));
+  padding: var(--espaco-lg);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: var(--sombra-2);
+  color: var(--cor-ink);
+}
+
+.janela::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.tituloDaJanela {
+  margin-block-end: var(--espaco-sm);
+  font-size: var(--texto-lg);
+}
+
+.listaDaJanela {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: var(--espaco-md) 0;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  list-style: none;
+  font-size: var(--texto-sm);
+}
+
+.botoesDaJanela {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaco-sm);
 }

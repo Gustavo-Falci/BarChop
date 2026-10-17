@@ -31,10 +31,36 @@ function comAna(semente: Parameters<typeof criarApiClientFalso>[0] = {}) {
   return falso;
 }
 
+// A edição do membro tem abas (17/10): Dados, Jornada e Serviços. Na
+// jornada, cada dia é um segmentado (Folga, Horário da barbearia,
+// Horário próprio) no lugar do <select>, e o salvar é a barra de
+// mudanças no pé da tela.
+async function abrirAba(nome: "Jornada" | "Serviços") {
+  await userEvent.click(await screen.findByRole("tab", { name: nome }));
+}
+
+function diaDaJornada(dia: string) {
+  return within(screen.getByRole("group", { name: `Jornada ${dia}` }));
+}
+
+async function escolherModo(dia: string, modo: string) {
+  await userEvent.click(diaDaJornada(dia).getByRole("radio", { name: modo }));
+}
+
+function barra() {
+  return screen.getByRole("region", { name: "Mudanças" });
+}
+
 beforeEach(() => {
   localStorage.clear();
   navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
 });
+
+// As Folgas abrem na lista (17/10); o formulário mora na mesma janela
+// "Bloquear horário" da Agenda, aberta pelo "+ Bloquear" do cabeçalho.
+async function abrirBloquear() {
+  await userEvent.click(await screen.findByRole("button", { name: "+ Bloquear" }));
+}
 
 describe("jornada do membro", () => {
   it("troca a segunda pra horário próprio e salva a semana inteira", async () => {
@@ -42,10 +68,11 @@ describe("jornada do membro", () => {
     const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
     montarPainel(<CadastroDeMembro />, falso);
 
-    await userEvent.selectOptions(await screen.findByLabelText("Jornada na segunda"), "proprio");
+    await abrirAba("Jornada");
+    await escolherModo("na segunda", "Horário próprio");
     fireEvent.change(screen.getByLabelText("Entrada na segunda"), { target: { value: "13:00" } });
     fireEvent.change(screen.getByLabelText("Saída na segunda"), { target: { value: "20:00" } });
-    await userEvent.click(screen.getByRole("button", { name: /salvar jornada/i }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
     const [id, semana] = salvar.mock.calls[0];
@@ -62,7 +89,7 @@ describe("jornada do membro", () => {
     expect(semana[2]).toMatchObject({ modo: "barbearia" });
     expect(await screen.findByText(/jornada salva/i)).toBeInTheDocument();
     // A tela fica com o que salvou, e não volta pra semana de antes.
-    expect(screen.getByLabelText("Jornada na segunda")).toHaveValue("proprio");
+    expect(diaDaJornada("na segunda").getByRole("radio", { name: "Horário próprio" })).toBeChecked();
     expect(screen.getByLabelText("Entrada na segunda")).toHaveValue("13:00");
   });
 
@@ -71,33 +98,61 @@ describe("jornada do membro", () => {
     const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
     montarPainel(<CadastroDeMembro />, falso);
 
-    await userEvent.selectOptions(await screen.findByLabelText("Jornada na segunda"), "proprio");
+    await abrirAba("Jornada");
+    await escolherModo("na segunda", "Horário próprio");
     fireEvent.change(screen.getByLabelText("Entrada na segunda"), { target: { value: "13:00" } });
-    await userEvent.click(screen.getByRole("button", { name: /salvar jornada/i }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     expect(await screen.findByText(/segunda.*entrada e a saída/i)).toBeInTheDocument();
     expect(salvar).not.toHaveBeenCalled();
   });
 
-  it("Salvar jornada só aparece depois de mudar a semana; Descartar volta como estava", async () => {
+  it("a barra só aparece depois de mudar a semana, diz o que mudou, e Descartar volta como estava", async () => {
     montarPainel(<CadastroDeMembro />, comAna());
 
-    const segunda = await screen.findByLabelText("Jornada na segunda");
-    expect(screen.queryByRole("button", { name: /salvar jornada/i })).not.toBeInTheDocument();
+    await abrirAba("Jornada");
+    await screen.findByRole("group", { name: "Jornada na segunda" });
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
 
-    await userEvent.selectOptions(segunda, "folga");
-    const jornada = screen.getByRole("region", { name: "Jornada" });
-    expect(within(jornada).getByRole("button", { name: /salvar jornada/i })).toBeInTheDocument();
+    await escolherModo("na segunda", "Folga");
+    expect(barra()).toHaveTextContent("Segunda: Horário da barbearia → Folga");
 
-    await userEvent.click(within(jornada).getByRole("button", { name: "Descartar" }));
-    expect(screen.getByLabelText("Jornada na segunda")).toHaveValue("barbearia");
-    expect(screen.queryByRole("button", { name: /salvar jornada/i })).not.toBeInTheDocument();
+    await userEvent.click(within(barra()).getByRole("button", { name: "Descartar" }));
+    expect(diaDaJornada("na segunda").getByRole("radio", { name: "Horário da barbearia" })).toBeChecked();
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+  });
+
+  it("trocar de aba não perde o que ainda não foi salvo", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    await abrirAba("Jornada");
+    await screen.findByRole("group", { name: "Jornada na segunda" });
+    await escolherModo("na segunda", "Folga");
+    await abrirAba("Serviços");
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Barba" }));
+    await abrirAba("Jornada");
+
+    expect(diaDaJornada("na segunda").getByRole("radio", { name: "Folga" })).toBeChecked();
+    expect(barra()).toHaveTextContent("Segunda: Horário da barbearia → Folga");
+    await abrirAba("Serviços");
+    expect(screen.getByRole("checkbox", { name: "Barba" })).not.toBeChecked();
+  });
+
+  it("a edição abre na aba Dados; Jornada e Serviços ficam nas próprias abas", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    expect(await screen.findByRole("tab", { name: "Dados" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("group", { name: "Jornada na segunda" })).not.toBeInTheDocument();
+
+    await abrirAba("Jornada");
+    expect(await screen.findByRole("group", { name: "Jornada na segunda" })).toBeInTheDocument();
   });
 
   it("folga esconde as horas do dia", async () => {
     montarPainel(<CadastroDeMembro />, comAna());
 
-    await userEvent.selectOptions(await screen.findByLabelText("Jornada no domingo"), "folga");
+    await abrirAba("Jornada");
+    await escolherModo("no domingo", "Folga");
 
     expect(screen.queryByLabelText("Entrada no domingo")).not.toBeInTheDocument();
   });
@@ -111,11 +166,12 @@ describe("pausa na jornada", () => {
     const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
     montarPainel(<CadastroDeMembro />, falso);
 
-    await userEvent.selectOptions(await screen.findByLabelText("Jornada no domingo"), "folga");
+    await abrirAba("Jornada");
+    await escolherModo("no domingo", "Folga");
     fireEvent.change(screen.getByLabelText("Pausa de sempre: início"), { target: { value: "12:00" } });
     fireEvent.change(screen.getByLabelText("Pausa de sempre: fim"), { target: { value: "13:00" } });
     await userEvent.click(screen.getByRole("button", { name: /aplicar aos dias de trabalho/i }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar jornada/i }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
     const [, semana] = salvar.mock.calls[0];
@@ -129,12 +185,13 @@ describe("pausa na jornada", () => {
     const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
     montarPainel(<CadastroDeMembro />, falso);
 
+    await abrirAba("Jornada");
     await userEvent.click(await screen.findByRole("button", { name: "Adicionar pausa na terça" }));
     fireEvent.change(screen.getByLabelText("Início da pausa na terça"), { target: { value: "14:00" } });
     fireEvent.change(screen.getByLabelText("Fim da pausa na terça"), { target: { value: "14:30" } });
     await userEvent.click(screen.getByRole("button", { name: "Adicionar pausa na quarta" }));
     await userEvent.click(screen.getByRole("button", { name: "Tirar pausa na quarta" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar jornada/i }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
     const [, semana] = salvar.mock.calls[0];
@@ -147,10 +204,11 @@ describe("pausa na jornada", () => {
     const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
     montarPainel(<CadastroDeMembro />, falso);
 
+    await abrirAba("Jornada");
     await userEvent.click(await screen.findByRole("button", { name: "Adicionar pausa na segunda" }));
     fireEvent.change(screen.getByLabelText("Início da pausa na segunda"), { target: { value: "13:00" } });
     fireEvent.change(screen.getByLabelText("Fim da pausa na segunda"), { target: { value: "12:00" } });
-    await userEvent.click(screen.getByRole("button", { name: /salvar jornada/i }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     expect(await screen.findByText(/segunda.*pausa precisa começar antes de terminar/i)).toBeInTheDocument();
     expect(salvar).not.toHaveBeenCalled();
@@ -159,8 +217,9 @@ describe("pausa na jornada", () => {
   it("folga não tem pausa: escolher folga tira a do dia", async () => {
     montarPainel(<CadastroDeMembro />, comAna());
 
+    await abrirAba("Jornada");
     await userEvent.click(await screen.findByRole("button", { name: "Adicionar pausa na sexta" }));
-    await userEvent.selectOptions(screen.getByLabelText("Jornada na sexta"), "folga");
+    await escolherModo("na sexta", "Folga");
 
     expect(screen.queryByLabelText("Início da pausa na sexta")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Adicionar pausa na sexta" })).not.toBeInTheDocument();
@@ -173,6 +232,7 @@ describe("serviços do membro", () => {
     const salvar = vi.spyOn(falso.barbeiro, "salvarServicosDoMembro");
     montarPainel(<CadastroDeMembro />, falso);
 
+    await abrirAba("Serviços");
     const barba = await screen.findByRole("checkbox", { name: "Barba" });
     expect(barba).toBeChecked();
     await userEvent.click(barba);
@@ -186,6 +246,7 @@ describe("serviços do membro", () => {
   it("Salvar serviços só aparece enquanto a marcação difere da salva", async () => {
     montarPainel(<CadastroDeMembro />, comAna());
 
+    await abrirAba("Serviços");
     const barba = await screen.findByRole("checkbox", { name: "Barba" });
     expect(screen.queryByRole("button", { name: /salvar serviços/i })).not.toBeInTheDocument();
 
@@ -215,6 +276,7 @@ describe("folgas e bloqueios", () => {
       ],
     });
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     // Pelo período: "Férias" também é um atalho do motivo no formulário.
     const item = (await screen.findByText("5 a 9 de janeiro")).closest("li") as HTMLElement;
@@ -227,6 +289,7 @@ describe("folgas e bloqueios", () => {
     const falso = comAna();
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     // Espera a pílula da Ana: o grupo aparece antes de a equipe chegar.
     await userEvent.click(await screen.findByRole("radio", { name: "Ana" }));
@@ -257,6 +320,7 @@ describe("folgas e bloqueios", () => {
     const falso = comAna();
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     fireEvent.change(await screen.findByLabelText("De"), { target: { value: "2037-01-16" } });
     fireEvent.change(screen.getByLabelText("Até"), { target: { value: "2037-01-12" } });
@@ -282,6 +346,7 @@ describe("folgas e bloqueios", () => {
     });
     const apagar = vi.spyOn(falso.barbeiro, "apagarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     const item = (await screen.findByText("5 de janeiro")).closest("li") as HTMLElement;
     await userEvent.click(within(item).getByRole("button", { name: /remover/i }));
@@ -294,6 +359,7 @@ describe("folgas e bloqueios", () => {
     const falso = comAna({ papel: "profissional" });
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     fireEvent.change(await screen.findByLabelText("De"), { target: { value: "2037-01-05" } });
     fireEvent.change(screen.getByLabelText("Até"), { target: { value: "2037-01-05" } });

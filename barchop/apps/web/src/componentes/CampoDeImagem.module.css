@@ -38,6 +38,10 @@
 /* A foto do serviço: quadrada como a miniatura do cartão. */
 .quadrado { width: 120px; height: 120px; border-radius: var(--raio-md); }
 
+/* Vazia, a paisagem (a capa) fica na proporção da capa, 4 por 1: em 16:9
+   ela era uma área vazia de quase 240px empurrando a aba Marca. */
+.vazia.paisagem { aspect-ratio: 4 / 1; }
+
 .controles {
   display: grid;
   gap: var(--espaco-xs);

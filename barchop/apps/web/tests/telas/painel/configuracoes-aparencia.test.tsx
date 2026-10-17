@@ -209,14 +209,15 @@ describe("aparência", () => {
     expect(screen.getByRole("button", { name: "Tentar de novo" })).toBeInTheDocument();
   });
 
-  it("o ajuste fino vem recolhido; aberto, cantos, botão e cards entram no rascunho", async () => {
+  // Na aba própria (17/10), o ajuste fino aparece direto; só as nove
+  // cores, controle de designer, ficam atrás de "Editar".
+  it("o ajuste fino aparece direto na aba; cantos, botão e cards entram no rascunho", async () => {
     const falso = await abrir();
     await aba("Ajuste fino");
-    const abrirAjuste = screen.getByRole("button", { name: /abrir o ajuste fino/i });
-    expect(abrirAjuste).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("group", { name: /os cantos/i })).not.toBeInTheDocument();
+    const editarCores = screen.getByRole("button", { name: /editar as nove cores/i });
+    expect(editarCores).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("textbox", { name: "Card" })).not.toBeInTheDocument();
 
-    await userEvent.click(abrirAjuste);
     await userEvent.click(grupo(/os cantos/i).getByRole("radio", { name: "Retos" }));
     await userEvent.click(grupo(/o botão principal/i).getByRole("radio", { name: "Contorno" }));
     await userEvent.click(grupo(/os cards/i).getByRole("radio", { name: "Planos" }));
@@ -224,13 +225,12 @@ describe("aparência", () => {
     await waitFor(async () =>
       expect(await rascunho(falso)).toMatchObject({ cantos: "retos", botao: "contorno", cards: "plano" })
     );
-    expect(screen.getByRole("button", { name: /fechar o ajuste fino/i })).toHaveAttribute("aria-expanded", "true");
   });
 
   it("as nove cores, uma a uma, em cada modo", async () => {
     const falso = await abrir();
     await aba("Ajuste fino");
-    await userEvent.click(screen.getByRole("button", { name: /abrir o ajuste fino/i }));
+    await userEvent.click(screen.getByRole("button", { name: /editar as nove cores/i }));
 
     await userEvent.click(grupo(/as nove cores de qual modo/i).getByRole("radio", { name: "Modo escuro" }));
     const card = screen.getByRole("textbox", { name: "Card" });
@@ -255,7 +255,6 @@ describe("aparência", () => {
   it("títulos na mesma fonte, ou numa própria; e o tamanho do texto", async () => {
     const falso = await abrir();
     await aba("Ajuste fino");
-    await userEvent.click(screen.getByRole("button", { name: /abrir o ajuste fino/i }));
 
     // O padrão: títulos em outra fonte, a Clash.
     expect(grupo(/os títulos usam outra fonte/i).getByRole("radio", { name: "Sim" })).toBeChecked();

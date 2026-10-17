@@ -402,8 +402,13 @@ export function CadastroDeMembro() {
           ganham a própria aba, cada uma com o seu salvar. No convite não
           há abas: só os dados existem antes de a pessoa entrar. */}
       {atual ? (
-        <Abas rotulo="Membro da equipe" abas={ABAS_DO_MEMBRO} atual={aba} aoTrocar={setAba}>
-          {aba === "dados" ? (
+        <Abas
+          rotulo="Membro da equipe"
+          abas={ABAS_DO_MEMBRO}
+          atual={aba}
+          aoTrocar={setAba}
+          paineis={{
+            dados: (
             <div className={estilos.corpo}>
               <div className={estilos.principal}>{formulario}</div>
               <div className={estilos.lateral}>
@@ -446,12 +451,11 @@ export function CadastroDeMembro() {
                 </Grupo>
               </div>
             </div>
-          ) : aba === "jornada" ? (
-            <JornadaDoMembro membroId={atual.id} />
-          ) : (
-            <ServicosDoMembro membroId={atual.id} />
-          )}
-        </Abas>
+            ),
+            jornada: <JornadaDoMembro membroId={atual.id} />,
+            servicos: <ServicosDoMembro membroId={atual.id} />,
+          }}
+        />
       ) : (
         formulario
       )}

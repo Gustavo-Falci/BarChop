@@ -128,15 +128,23 @@ Feito (empilhado sobre o PR 3):
   - "Pedir troca" dos Dados do negócio: é um pedido de troca do link, não um salvar.
 
 ## PR 4b — Aparência e Membro da equipe em abas (OK do dono no molde da barra em 17/10)
+Feito:
+- **Abas** (componente): todos os painéis ficam montados e os inativos vão com `hidden`; trocar de aba não perde o que não foi salvo.
+- **Membro da equipe:** abas Dados (com foto e situação), Jornada e Serviços.
+  - Jornada: segmentado por dia, sem os 7 selects, com a barra de mudanças ("Segunda: Horário da barbearia → Folga").
+  - Dados: o salvar continua sendo o botão do grupo. É de propósito: é um formulário com Enviar convite e Cancelar.
 - **Aparência:**
-  - abas Tema, Cor, Letra, Serviços e Ajuste fino, ao lado da prévia;
-  - descrição do tema no hover;
-  - as nove cores fechadas atrás de "Editar".
-- **Membro da equipe:** abas Dados, Jornada e Serviços; jornada em grade semanal com Folga, Horário da barbearia e Próprio, sem os 7 selects nativos.
-- **Dados do negócio:** a aba Marca sem as áreas vazias.
-- **BarraDeMudancas** nas telas com mais de um grupo salvável (Membro e Dados do negócio). Notificações e Comunicação só se o dono pedir.
+  - abas Tema, Cor, Letra, Serviços e Ajuste fino, com a loja acima e a publicação abaixo;
+  - o Ajuste fino aparece direto na aba, e só as nove cores ficam atrás de "Editar".
+- **Dados do negócio › Marca:** a capa vazia fica em 4 por 1.
+
+Ficou pendente:
+- a descrição do tema no hover;
+- compactar "A cara da sua loja" numa linha: muda texto e é pergunta pro dono;
+- a barra de mudanças nos Dados do negócio (Identidade): foi pro PR 5.
 
 ## PR 5 — Clientes, Serviços, Equipe, Faturas, Caixa e Folgas
+- **Dados do negócio (Identidade):** a barra de mudanças no lugar do "Salvar dados" (veio do 4b).
 - **Clientes:** filtros em segmentado com contagem e lista que vira cartão no celular.
 - **Cliente:** dados em leitura com "Editar", e status com as mesmas cores do Detalhe.
 - **Serviços:**

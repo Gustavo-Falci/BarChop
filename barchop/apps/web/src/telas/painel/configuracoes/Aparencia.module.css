@@ -343,6 +343,7 @@
 
 /* 4 · ajuste fino: recolhido; o Abrir/Fechar mora na ponta da régua. */
 .abrir {
+  justify-self: start;
   padding: 2px var(--espaco-md);
   border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);

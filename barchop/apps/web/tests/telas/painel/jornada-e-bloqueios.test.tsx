@@ -116,6 +116,22 @@ describe("jornada do membro", () => {
     expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
   });
 
+  it("trocar de aba não perde o que ainda não foi salvo", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    await abrirAba("Jornada");
+    await screen.findByRole("group", { name: "Jornada na segunda" });
+    await escolherModo("na segunda", "Folga");
+    await abrirAba("Serviços");
+    await userEvent.click(await screen.findByRole("checkbox", { name: "Barba" }));
+    await abrirAba("Jornada");
+
+    expect(diaDaJornada("na segunda").getByRole("radio", { name: "Folga" })).toBeChecked();
+    expect(barra()).toHaveTextContent("Segunda: Horário da barbearia → Folga");
+    await abrirAba("Serviços");
+    expect(screen.getByRole("checkbox", { name: "Barba" })).not.toBeChecked();
+  });
+
   it("a edição abre na aba Dados; Jornada e Serviços ficam nas próprias abas", async () => {
     montarPainel(<CadastroDeMembro />, comAna());
 

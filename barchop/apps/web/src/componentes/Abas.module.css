@@ -27,7 +27,9 @@
   color: var(--cor-ink);
 }
 
-.painel {
+/* O fade a cada troca: o painel que volta a aparecer (hidden sai)
+   reinicia a animação, sem remontar nada. */
+.painel:not([hidden]) {
   display: grid;
   gap: var(--espaco-lg);
   margin-block-start: var(--espaco-lg);

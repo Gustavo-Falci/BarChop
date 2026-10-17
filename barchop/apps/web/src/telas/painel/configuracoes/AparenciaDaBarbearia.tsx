@@ -351,8 +351,13 @@ function TelaDaAparencia() {
               dos serviços era preciso passar pelo ajuste fino. Cada aba
               cabe ao lado da prévia. A loja (acima) e a publicação (abaixo)
               valem pra todas. */}
-          <Abas rotulo="Aparência" abas={ABAS_DA_APARENCIA} atual={aba} aoTrocar={setAba}>
-            {aba === "tema" ? (
+          <Abas
+            rotulo="Aparência"
+            abas={ABAS_DA_APARENCIA}
+            atual={aba}
+            aoTrocar={setAba}
+            paineis={{
+              tema: (
               <SecaoNumerada
                 titulo="O tema da página"
                 apoio="Cada tema traz a versão clara e a escura de uma vez. O selo marca os que abrem no escuro."
@@ -422,7 +427,8 @@ function TelaDaAparencia() {
                   />
                 </div>
               </SecaoNumerada>
-            ) : aba === "cor" ? (
+              ),
+              cor: (
               <SecaoNumerada
                 titulo="A cor da marca"
                 apoio="É ela que pinta o botão de agendar e os destaques da sua página. O texto em cima dela se ajusta sozinho pra ser lido."
@@ -474,7 +480,8 @@ function TelaDaAparencia() {
                   </p>
                 </div>
               </SecaoNumerada>
-            ) : aba === "letra" ? (
+              ),
+              letra: (
               <SecaoNumerada titulo="A letra" apoio="A fonte de todo o texto da sua página.">
                 <EscolhaDeFonte
                   rotulo="A fonte do texto"
@@ -483,7 +490,8 @@ function TelaDaAparencia() {
                   aoEscolher={(fonte) => mudar({ ...rascunho, fonte: fonte as FonteDoTexto })}
                 />
               </SecaoNumerada>
-            ) : aba === "servicos" ? (
+              ),
+              servicos: (
               <SecaoNumerada
                 titulo="Layout dos serviços"
                 lado="Salva na hora"
@@ -505,25 +513,13 @@ function TelaDaAparencia() {
                   ))}
                 </div>
               </SecaoNumerada>
-            ) : (
+              ),
+              ajuste: (
               <SecaoNumerada
                 titulo="Ajuste fino"
-                lado={
-                  <button
-                    type="button"
-                    className={estilos.abrir}
-                    aria-expanded={ajusteAberto}
-                    aria-controls="ajuste-fino"
-                    aria-label={ajusteAberto ? "Fechar o ajuste fino" : "Abrir o ajuste fino"}
-                    onClick={() => setAjusteAberto(!ajusteAberto)}
-                  >
-                    {ajusteAberto ? "Fechar" : "Abrir"}
-                  </button>
-                }
                 apoio="Cantos, botão, cards e as cores uma a uma. Quase ninguém precisa — o tema já resolve."
               >
-                {ajusteAberto ? (
-                  <div id="ajuste-fino" className={estilos.ajuste}>
+                <div id="ajuste-fino" className={estilos.ajuste}>
                     <div className={estilos.tresColunas}>
                       <SeletorEmPilulas<"sim" | "nao">
                         nome="titulos-outra-fonte"
@@ -586,7 +582,19 @@ function TelaDaAparencia() {
                       />
                     </div>
 
-                    <div className={estilos.fundo}>
+                    {/* As nove cores uma a uma são controle de designer: ficam atrás
+                        de "Editar" (análise de 17/10). O resto do ajuste fica à vista. */}
+                    <button
+                      type="button"
+                      className={estilos.abrir}
+                      aria-expanded={ajusteAberto}
+                      aria-controls="nove-cores"
+                      onClick={() => setAjusteAberto(!ajusteAberto)}
+                    >
+                      {ajusteAberto ? "Fechar as nove cores" : "Editar as nove cores"}
+                    </button>
+                    {ajusteAberto ? (
+                    <div id="nove-cores" className={estilos.fundo}>
                       <SeletorEmPilulas<Modo>
                         nome="nove-cores-modo"
                         legenda="As nove cores de qual modo"
@@ -611,11 +619,13 @@ function TelaDaAparencia() {
                         No escuro, a cor da marca acompanha a do claro e o resto vem do tema. Mexa só no que estiver errado.
                       </p>
                     </div>
+                    ) : null}
                   </div>
-                ) : null}
+                
               </SecaoNumerada>
-            )}
-          </Abas>
+              ),
+            }}
+          />
 
           {pendente ? (
             <div className={estilos.barra} aria-live="polite">

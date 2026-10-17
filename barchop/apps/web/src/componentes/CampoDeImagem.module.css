@@ -81,7 +81,9 @@
   cursor: progress;
 }
 
+/* 14px: a ajuda sob o campo é texto de leitura (análise de 17/10); em
+   12px ficava abaixo do mínimo confortável. */
 .apoio {
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
 }

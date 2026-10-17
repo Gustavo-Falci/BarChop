@@ -59,11 +59,14 @@ describe("aparência", () => {
     expect(screen.getAllByText("falta")).toHaveLength(2);
   });
 
-  it("logo e capa: diz a medida e os tipos de arquivo recomendados", async () => {
+  // A loja numa linha (17/10, OK do dono): as medidas e os tipos de
+  // arquivo moram na tela de envio (Dados do negócio › Marca), onde o
+  // arquivo é escolhido — aqui empurravam as abas pra baixo da dobra.
+  it("logo e capa numa linha, sem repetir as medidas da tela de envio", async () => {
     await abrir();
 
-    expect(screen.getByText(/512 × 512 px \(quadrada\) · PNG com fundo transparente, JPG ou WebP/)).toBeInTheDocument();
-    expect(screen.getByText(/1600 × 400 px \(4 por 1\) · JPG, PNG ou WebP/)).toBeInTheDocument();
+    expect(screen.queryByText(/512 × 512 px/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1600 × 400 px/)).not.toBeInTheDocument();
   });
 
   it("escolher um tema guarda o rascunho, mas a página do cliente não muda", async () => {

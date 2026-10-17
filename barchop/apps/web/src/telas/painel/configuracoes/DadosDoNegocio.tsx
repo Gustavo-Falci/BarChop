@@ -38,6 +38,7 @@ import {
 import { enderecoDaBarbearia } from "../../../tenant/endereco";
 import { CampoDaLogo } from "./CampoDaLogo";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
+import { BarraDeMudancas } from "../../../componentes/BarraDeMudancas";
 import estilos from "./Configuracoes.module.css";
 import { Carregando } from "../../../componentes/Carregando";
 
@@ -112,6 +113,28 @@ function CartaoDeEscolha({
 // (a capa) e Comodidades (comodidades e formas de pagamento). Cada aba
 // salva o seu; o estado mora aqui em cima, então trocar de aba não
 // perde o que foi digitado e ainda não salvo.
+// O que a tela edita e a barra de salvar compara com o gravado.
+interface Gravado {
+  nome: string;
+  endereco: string;
+  sobre: string;
+  comodidades: string[];
+  formasDePagamento: string[];
+}
+
+const ROTULO_DO_CAMPO: Record<keyof Gravado, string> = {
+  nome: "Nome da barbearia",
+  endereco: "Endereço",
+  sobre: "Sobre a barbearia",
+  comodidades: "Comodidades",
+  formasDePagamento: "Formas de pagamento",
+};
+
+// As listas comparam sem a ordem dos cliques.
+function mesmaOrdem(valor: string | string[]): string | string[] {
+  return Array.isArray(valor) ? [...valor].sort() : valor;
+}
+
 export function DadosDoNegocio() {
   const { perfil } = usePainel();
   if (perfil.papel !== "dono") return <SoODono area="dados_do_negocio" />;
@@ -143,6 +166,7 @@ function Dados() {
   const [motivo, setMotivo] = useState("");
   const [erro, setErro] = useState<Record<string, string | undefined>>({});
   const [aviso, setAviso] = useState<string | undefined>();
+  const [avisoDoSalvar, setAvisoDoSalvar] = useState<string | undefined>();
   // Um só, e não um por aba: só uma aba está em edição por vez.
   const [salvando, setSalvando] = useState(false);
 
@@ -161,48 +185,70 @@ function Dados() {
   // 181514d). O React descarta esta renderização e refaz com o valor
   // certo antes de pintar. O `!==` contra o rastreador impede o loop.
   const [sincronizada, setSincronizada] = useState<typeof barbearia.dados>(null);
+  // O que está gravado: é com ele que a barra de salvar compara, e é pra
+  // ele que o Descartar volta.
+  const [original, setOriginal] = useState<Gravado | null>(null);
   if (barbearia.dados && barbearia.dados !== sincronizada) {
     setSincronizada(barbearia.dados);
-    setNomeDaBarbearia(barbearia.dados.nome);
-    setEndereco(barbearia.dados.endereco ?? "");
-    setSobre(barbearia.dados.sobre ?? "");
-    setComodidades(barbearia.dados.comodidades);
-    setFormasDePagamento(barbearia.dados.formasDePagamento);
+    const lido: Gravado = {
+      nome: barbearia.dados.nome,
+      endereco: barbearia.dados.endereco ?? "",
+      sobre: barbearia.dados.sobre ?? "",
+      comodidades: barbearia.dados.comodidades,
+      formasDePagamento: barbearia.dados.formasDePagamento,
+    };
+    setOriginal(lido);
+    voltarPara(lido);
   }
 
-  async function salvarIdentidade() {
-    setAviso(undefined);
+  function voltarPara(gravado: Gravado) {
+    setNomeDaBarbearia(gravado.nome);
+    setEndereco(gravado.endereco);
+    setSobre(gravado.sobre);
+    setComodidades(gravado.comodidades);
+    setFormasDePagamento(gravado.formasDePagamento);
+  }
+
+  const atual: Gravado = { nome: nomeDaBarbearia, endereco, sobre, comodidades, formasDePagamento };
+  const mudou = (campo: keyof Gravado) =>
+    original !== null && JSON.stringify(mesmaOrdem(original[campo])) !== JSON.stringify(mesmaOrdem(atual[campo]));
+  const mudouIdentidade = mudou("nome") || mudou("endereco") || mudou("sobre");
+  const mudouComodidades = mudou("comodidades") || mudou("formasDePagamento");
+  const mudancas = (Object.keys(ROTULO_DO_CAMPO) as (keyof Gravado)[]).filter(mudou).map((campo) => ROTULO_DO_CAMPO[campo]);
+
+  // Um Salvar só pra tela (17/10): manda o grupo que mudou — a
+  // identidade, as comodidades ou os dois. Sem mudança (a área ainda não
+  // decidida), manda a identidade como está: é o que decide a área.
+  async function salvar() {
+    if (salvando) return;
+    setAvisoDoSalvar(undefined);
     setErro({});
     setSalvando(true);
+    const identidade = mudouIdentidade || !mudouComodidades;
     try {
       await api.barbeiro.atualizarMinhaBarbearia({
-        nome: nomeDaBarbearia.trim(),
-        endereco: endereco.trim() || null,
-        // Vazio vira `null`, não string vazia: é `null` que a home lê
-        // como "esta barbearia ainda não escreveu apresentação".
-        sobre: sobre.trim() || null,
+        ...(identidade
+          ? {
+              nome: nomeDaBarbearia.trim(),
+              endereco: endereco.trim() || null,
+              // Vazio vira `null`, não string vazia: é `null` que a home
+              // lê como "esta barbearia ainda não escreveu apresentação".
+              sobre: sobre.trim() || null,
+            }
+          : {}),
+        ...(mudouComodidades
+          ? {
+              // Na ordem da lista, não na dos cliques: a página mostra
+              // igual pra todo mundo, seja qual for a ordem do dono.
+              comodidades: COMODIDADES.filter((c) => comodidades.includes(c)),
+              formasDePagamento: FORMAS_DE_PAGAMENTO.filter((f) => formasDePagamento.includes(f)),
+            }
+          : {}),
       });
+      setOriginal(atual);
       marcar("dados_do_negocio");
     } catch (causa) {
-      setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
-    } finally {
-      setSalvando(false);
-    }
-  }
-
-  async function salvarComodidades() {
-    setAviso(undefined);
-    setSalvando(true);
-    try {
-      await api.barbeiro.atualizarMinhaBarbearia({
-        // Na ordem da lista, não na dos cliques: a página mostra igual
-        // pra todo mundo, seja qual for a ordem em que o dono marcou.
-        comodidades: COMODIDADES.filter((c) => comodidades.includes(c)),
-        formasDePagamento: FORMAS_DE_PAGAMENTO.filter((f) => formasDePagamento.includes(f)),
-      });
-      marcar("dados_do_negocio");
-    } catch (causa) {
-      setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
+      setAvisoDoSalvar((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
     } finally {
       setSalvando(false);
     }
@@ -312,11 +358,6 @@ function Dados() {
             <Secao
               titulo="Como o negócio se apresenta"
               descricao="O que o cliente vê no topo da página pública."
-              acao={
-                <Botao onClick={salvarIdentidade} carregando={salvando}>
-                  Salvar dados
-                </Botao>
-              }
             >
               <Campo rotulo="Nome da barbearia" valor={nomeDaBarbearia} onChange={setNomeDaBarbearia} />
               <Campo rotulo="Endereço" valor={endereco} onChange={setEndereco} />
@@ -435,11 +476,6 @@ function Dados() {
           <Secao
             titulo="Comodidades e pagamento"
             descricao="O que a barbearia oferece e como o cliente paga — aparece na página pública."
-            acao={
-              <Botao onClick={salvarComodidades} carregando={salvando}>
-                Salvar comodidades
-              </Botao>
-            }
           >
             <fieldset className={estilos.grade}>
               <legend className={estilos.rotulo}>Comodidades</legend>
@@ -468,6 +504,16 @@ function Dados() {
           </Secao>
         ) : null}
       </div>
+      {/* Um Salvar só pra tela inteira, com o que mudou em cada aba. O
+          pedido de troca do link fica fora: é um pedido ao suporte. */}
+      <BarraDeMudancas
+        mudancas={mudancas}
+        pendente={!decididas.includes("dados_do_negocio")}
+        aviso={avisoDoSalvar}
+        salvando={salvando}
+        aoSalvar={() => void salvar()}
+        aoDescartar={() => original && voltarPara(original)}
+      />
     </MolduraDaArea>
   );
 }

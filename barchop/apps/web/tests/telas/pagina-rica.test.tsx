@@ -226,7 +226,7 @@ describe("página da barbearia nas configurações", () => {
 
     await userEvent.click(await screen.findByRole("checkbox", { name: "Wi-Fi" }));
     await userEvent.click(screen.getByRole("checkbox", { name: "Pix" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar comodidades/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(atualizar).toHaveBeenCalledWith({ comodidades: ["wifi"], formasDePagamento: ["pix"] })

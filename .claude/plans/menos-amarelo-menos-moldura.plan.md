@@ -2,7 +2,7 @@
 
 **Fonte**: análise de UI/UX do dono no claude.ai/design (`Analise UI-UX BarChop.dc.html`, 17/10), feita a partir dos prints do painel e do código de `apps/web`.
 **Complexidade**: Large (6 PRs, sem migração)
-**Status**: PRs 1 a 4b abertos e empilhados: #162 → #163 → #164 → #165 → PR 4b (`aparencia-e-membro`). Próximo: PR 5, depois do OK do dono no 4b.
+**Status**: PRs 1 a 5 abertos e empilhados: #162 → #163 → #164 → #165 → #166 → PR 5 (`listas-e-apoio`). Próximo: PR 5b.
 
 ## Summary
 O painel fica mais calmo de olhar o dia inteiro:
@@ -143,26 +143,29 @@ Ficou pendente:
 - compactar "A cara da sua loja" numa linha: muda texto e é pergunta pro dono;
 - a barra de mudanças nos Dados do negócio (Identidade): foi pro PR 5.
 
-## PR 5 — Clientes, Serviços, Equipe, Faturas, Caixa e Folgas
-- **Dados do negócio (Identidade):** a barra de mudanças no lugar do "Salvar dados" (veio do 4b).
-- **Clientes:** filtros em segmentado com contagem e lista que vira cartão no celular.
-- **Cliente:** dados em leitura com "Editar", e status com as mesmas cores do Detalhe.
-- **Serviços:**
-  - avatar em tom suave;
-  - ajudas em 13px;
-  - "Desativar" separado como zona de perigo.
-- **Equipe:** a coluna Telefone some quando está vazia.
+## PR 5 — listas, dados do negócio e texto de apoio
+Feito (empilhado sobre o 4b):
+- **Aparência:** "A cara da sua loja" numa linha (OK do dono). As medidas ficam na tela de envio.
+- **Dados do negócio:** um Salvar só na barra de mudanças, para Identidade e Comodidades. Manda só o grupo que mudou.
+- **Tabela:** no celular, cada linha vira cartão, com o rótulo antes de cada valor e as ações (WhatsApp, Agendar) no pé. Vale para Clientes, Equipe e Serviços.
+- **Equipe:** a coluna Telefone some quando ninguém tem.
+- **Serviços:** a inicial em tom suave, sem contorno, com a letra em ouro.
+- **Ajudas sob os campos:** de 12px para 14px.
+- **Compartilhar link:** Copiar em destaque, e as outras ações numa grade 2×2.
+
+## PR 5b — Faturas, Caixa, Folgas e detalhe do cliente
 - **Faturas:**
   - escolher o plano com 2 cartões lado a lado;
-  - comparar planos e perguntas frequentes em acordeão;
-  - a lista de faturas vira lista no celular.
+  - comparar planos e perguntas frequentes em acordeão.
 - **Caixa:**
-  - um número por pessoa com selo "a receber", "a repassar" ou "acertado";
+  - um número por pessoa, com selo "a receber", "a repassar" ou "acertado";
   - repasse como "De → Para · valor";
   - fechar o dia confirma numa janela com as pendências.
 - **Folgas:** a lista primeiro, e "+ Bloquear" abre a mesma janela da Agenda.
-- **Compartilhar link:** Copiar em destaque e os outros 4 numa grade 2×2.
-- Texto de apoio de 11–12px sobe para 13–14px.
+- **Cliente:**
+  - dados em leitura, com "Editar";
+  - status com as mesmas cores do Detalhe.
+- **Serviços:** "Desativar" separado como zona de perigo.
 
 ## PR 6 — página pública
 - Nos outros 16 temas da Aparência, entra só a regra de fio de 1px com sombra difusa.

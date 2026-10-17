@@ -89,7 +89,9 @@ export function Tabela({
         onClick={aoAbrir ? () => aoAbrir(linha.id) : undefined}
       >
         {linha.celulas.map((celula, indice) => (
-          <td key={indice} className={classeDaColuna(indice)}>
+          // O nome da coluna vai junto da célula: no celular a linha vira
+          // cartão, e o CSS escreve o rótulo antes do valor.
+          <td key={indice} className={classeDaColuna(indice)} data-rotulo={cabecalho[indice] || undefined}>
             {/* O botão continua na primeira célula, e não some com
               a linha clicável: <tr> com onClick não chega pelo
               teclado, e é ele que dá foco, Enter e nome acessível.

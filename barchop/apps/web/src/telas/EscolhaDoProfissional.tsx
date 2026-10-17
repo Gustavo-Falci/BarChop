@@ -10,6 +10,8 @@ import { profissionaisQueFazem } from "../fluxo/profissionais";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
 import estilos from "./EscolhaDoProfissional.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
+import { Carregando } from "../componentes/Carregando";
+import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
 
 // O passo entre os serviços e o dia: com quem, ou "qualquer um". Só
 // aparece quem faz todos os serviços escolhidos. Com uma pessoa só não
@@ -50,7 +52,7 @@ export function EscolhaDoProfissional() {
       </main>
     );
   }
-  if (!elegiveis || sozinho) return <main className={estilos.pagina}>Carregando…</main>;
+  if (!elegiveis || sozinho) return <main className={estilos.pagina}><Carregando /></main>;
 
   if (elegiveis.length === 0) {
     return (
@@ -66,6 +68,7 @@ export function EscolhaDoProfissional() {
 
   return (
     <main className={estilos.pagina}>
+      <IndicadorDePasso atual={2} />
       <h1>Com quem?</h1>
       <ul className={estilos.lista}>
         {/* Primeiro: é o que mais abre horário — a agenda de todo mundo

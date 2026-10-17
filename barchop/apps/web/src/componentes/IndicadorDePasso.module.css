@@ -1,0 +1,31 @@
+/* A linha inteira, mesmo nas telas do fluxo que são grade de duas
+   colunas no desktop. */
+.indicador {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.texto {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.segmentos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.segmento {
+  height: 4px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-line);
+}
+
+.segmento[data-feito] {
+  background: var(--cor-accent);
+}

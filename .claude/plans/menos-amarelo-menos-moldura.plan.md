@@ -2,7 +2,7 @@
 
 **Fonte**: análise de UI/UX do dono no claude.ai/design (`Analise UI-UX BarChop.dc.html`, 17/10), feita a partir dos prints do painel e do código de `apps/web`.
 **Complexidade**: Large (6 PRs, sem migração)
-**Status**: PRs 1 a 3 abertos e empilhados: #162 (`paleta-e-base`) → #163 (`shell-e-hoje`) → #164 (`agenda-e-novo`). Próximo: PR 4, depois do OK do dono no #164.
+**Status**: PRs 1 a 4 abertos e empilhados: #162 → #163 → #164 → PR 4 (`configuracoes-um-salvar`). Próximo: PR 4b, depois do OK do dono no molde da barra de salvar.
 
 ## Summary
 O painel fica mais calmo de olhar o dia inteiro:
@@ -112,19 +112,29 @@ Medido: no escuro, `muted` dá 5,13:1 sobre a surface e 4,76:1 sobre o paperSoft
 - **Muda comportamento (ordem dos passos): RED/GREEN.**
 
 ## PR 4 — Configurações em lista com um Salvar só
-- Regras de agendamento: as 7 regras numa lista (rótulo, efeito e segmentado), com um Salvar só numa barra que sobe quando algo muda e mostra o que mudou. O mesmo molde vale para Notificações, Comunicação e o Ajuste fino.
-- Aparência:
+Feito (empilhado sobre o PR 3):
+- **BarraDeMudancas** (componente novo):
+  - fica presa no pé da tela e sobe quando algo muda;
+  - diz o que mudou ("Intervalo entre horários: 15 min → 30 min") e oferece Descartar e Salvar;
+  - enquanto a área não foi decidida, oferece salvar assim ("Ainda não decidido: salve pra manter assim.", **texto novo, pede OK do dono**);
+  - o erro do salvar aparece dentro dela;
+  - no celular, fica acima da barra de navegação.
+- **Regras de agendamento:** as sete numa lista, com um Salvar só que grava as sete.
+- **Índice das Configurações:** a linha faltando perde o fundo âmbar. A frase da consequência fica no cinza de apoio e o "Configurar" vira um selo âmbar; o texto é o mesmo.
+- **Comodidades e formas de pagamento:** o marcado em tom suave com check.
+- **Convidar/editar membro:** o papel em segmentado, com a descrição só da escolhida.
+- **Mantidos como estão:**
+  - Notificações e Comunicação: já têm um Salvar só cada uma;
+  - "Pedir troca" dos Dados do negócio: é um pedido de troca do link, não um salvar.
+
+## PR 4b — Aparência e Membro da equipe em abas (depois do OK no molde da barra)
+- **Aparência:**
   - abas Tema, Cor, Letra, Serviços e Ajuste fino, ao lado da prévia;
   - descrição do tema no hover;
   - as nove cores fechadas atrás de "Editar".
-- Dados do negócio: um Salvar só para "Salvar dados" e "Pedir troca", e a aba Marca sem as áreas vazias.
-- Membro da equipe: abas Dados, Jornada e Serviços; jornada em grade semanal com Folga, Horário da barbearia e Próprio, sem os 7 selects nativos.
-- Configurações (índice):
-  - selo "Faltando" e resumo curto;
-  - o "X de N decididas" com o progresso fino.
-- Comodidades: tom suave com check.
-- Convidar: papel em segmentado.
-- **Muda comportamento (salvar): RED/GREEN.**
+- **Membro da equipe:** abas Dados, Jornada e Serviços; jornada em grade semanal com Folga, Horário da barbearia e Próprio, sem os 7 selects nativos.
+- **Dados do negócio:** a aba Marca sem as áreas vazias.
+- **BarraDeMudancas** nas telas com mais de um grupo salvável (Membro e Dados do negócio). Notificações e Comunicação só se o dono pedir.
 
 ## PR 5 — Clientes, Serviços, Equipe, Faturas, Caixa e Folgas
 - **Clientes:** filtros em segmentado com contagem e lista que vira cartão no celular.

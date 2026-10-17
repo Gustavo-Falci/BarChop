@@ -22,6 +22,7 @@ import { ROTULO_DO_PAPEL, SELO_DA_SITUACAO } from "./ListaDaEquipe";
 import { ServicosDoMembro } from "./ServicosDoMembro";
 import estilos from "./CadastroDeMembro.module.css";
 import { Carregando } from "../../componentes/Carregando";
+import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 
 // Os limites ESPELHAM o schema de apps/api/src/routers/equipe.ts — o
 // que passar daqui e a API recusar volta como 400 de ajv, numa frase
@@ -356,33 +357,17 @@ export function CadastroDeMembro() {
                 </p>
               ) : null}
 
-              <fieldset className={estilos.grupo}>
-                <legend className={estilos.rotulo}>Papel</legend>
-                {/* As três opções lado a lado: a coluna é larga, e em pilha
-                    elas empurravam a jornada pra baixo. */}
-                <div className={estilos.papeis}>
-                  {PAPEIS.map(({ valor, descricao }) => (
-                    <div className={estilos.opcao} key={valor}>
-                      {/* A descrição fica fora do <label>: dentro, ela entraria
-                          no nome acessível, e "Marca na agenda de todos" do
-                          rádio da recepção não deve soar como o nome dele. */}
-                      <input
-                        type="radio"
-                        id={`${idDoGrupo}-${valor}`}
-                        name="papel"
-                        value={valor}
-                        checked={papel === valor}
-                        onChange={() => escolherPapel(valor)}
-                        aria-describedby={`${idDoGrupo}-${valor}-descricao`}
-                      />
-                      <label htmlFor={`${idDoGrupo}-${valor}`}>{ROTULO_DO_PAPEL[valor]}</label>
-                      <span id={`${idDoGrupo}-${valor}-descricao`} className={estilos.descricao}>
-                        {descricao}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </fieldset>
+              {/* O papel num segmentado, com a descrição só da escolhida
+                  embaixo (análise de 17/10): as três descrições soltas,
+                  com o rádio nativo, eram texto demais pra uma escolha. */}
+              <SeletorEmPilulas
+                nome={`${idDoGrupo}-papel`}
+                legenda="Papel"
+                opcoes={PAPEIS.map(({ valor }) => ({ valor, rotulo: ROTULO_DO_PAPEL[valor] }))}
+                valor={papel}
+                aoTrocar={escolherPapel}
+                efeito={PAPEIS.find((opcao) => opcao.valor === papel)?.descricao}
+              />
 
               {/* Logo abaixo do papel, que decide o padrão dele. */}
               <div className={estilos.opcao}>

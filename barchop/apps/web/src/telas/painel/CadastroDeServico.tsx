@@ -395,7 +395,9 @@ export function CadastroDeServico() {
             formulário, é uma mudança de estado do serviço — fica na outra
             ponta da linha, longe do Cancelar, e diz o que faz. */}
         {atual ? (
-          <div className={estilos.acaoDoEstado}>
+          // Zona de perigo enquanto ativo (17/10): desativar tira o
+          // serviço da página, e não pode ter o mesmo peso do Salvar.
+          <div className={estilos.acaoDoEstado} data-perigo={atual.ativo || undefined}>
             <p className={estilos.apoio}>
               {atual.ativo
                 ? "Sai da sua página e do agendamento. Dá pra reativar depois."

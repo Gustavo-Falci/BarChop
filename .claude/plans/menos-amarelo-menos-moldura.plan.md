@@ -2,7 +2,7 @@
 
 **Fonte**: análise de UI/UX do dono no claude.ai/design (`Analise UI-UX BarChop.dc.html`, 17/10), feita a partir dos prints do painel e do código de `apps/web`.
 **Complexidade**: Large (6 PRs, sem migração)
-**Status**: PRs 1 a 5 abertos e empilhados: #162 → #163 → #164 → #165 → #166 → PR 5 (`listas-e-apoio`). Próximo: PR 5b.
+**Status**: PRs 1 a 5b abertos e empilhados: #162 → #163 → #164 → #165 → #166 → #167 → PR 5b (`faturas-caixa-folgas`). Próximo: PR 6 (página pública e a novidade do redesenho).
 
 ## Summary
 O painel fica mais calmo de olhar o dia inteiro:
@@ -153,7 +153,7 @@ Feito (empilhado sobre o 4b):
 - **Ajudas sob os campos:** de 12px para 14px.
 - **Compartilhar link:** Copiar em destaque, e as outras ações numa grade 2×2.
 
-## PR 5b — Faturas, Caixa, Folgas e detalhe do cliente
+## PR 5b — Faturas, Caixa, Folgas e detalhe do cliente (feito)
 - **Faturas:**
   - escolher o plano com 2 cartões lado a lado;
   - comparar planos e perguntas frequentes em acordeão.

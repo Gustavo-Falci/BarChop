@@ -17,3 +17,14 @@ const ROTULO_DO_STATUS: Record<string, string> = {
 export function rotuloDoStatus(status: string): string {
   return ROTULO_DO_STATUS[status] ?? status;
 }
+
+// A cor do status, a mesma em toda tela que mostra um agendamento (o
+// detalhe, o histórico do cliente): o cliente pintava "confirmado" de
+// verde e "concluído" de neutro, ao contrário do detalhe (17/10).
+export const TOM_DO_STATUS: Record<string, "acento" | "neutro" | "ok" | "atencao" | "erro"> = {
+  pendente: "atencao",
+  confirmado: "acento",
+  concluido: "ok",
+  cancelado: "erro",
+  no_show: "erro",
+};

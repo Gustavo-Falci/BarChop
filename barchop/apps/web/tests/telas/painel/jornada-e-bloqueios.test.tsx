@@ -56,6 +56,12 @@ beforeEach(() => {
   navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
 });
 
+// As Folgas abrem na lista (17/10); o formulário mora na mesma janela
+// "Bloquear horário" da Agenda, aberta pelo "+ Bloquear" do cabeçalho.
+async function abrirBloquear() {
+  await userEvent.click(await screen.findByRole("button", { name: "+ Bloquear" }));
+}
+
 describe("jornada do membro", () => {
   it("troca a segunda pra horário próprio e salva a semana inteira", async () => {
     const falso = comAna();
@@ -270,6 +276,7 @@ describe("folgas e bloqueios", () => {
       ],
     });
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     // Pelo período: "Férias" também é um atalho do motivo no formulário.
     const item = (await screen.findByText("5 a 9 de janeiro")).closest("li") as HTMLElement;
@@ -282,6 +289,7 @@ describe("folgas e bloqueios", () => {
     const falso = comAna();
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     // Espera a pílula da Ana: o grupo aparece antes de a equipe chegar.
     await userEvent.click(await screen.findByRole("radio", { name: "Ana" }));
@@ -312,6 +320,7 @@ describe("folgas e bloqueios", () => {
     const falso = comAna();
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     fireEvent.change(await screen.findByLabelText("De"), { target: { value: "2037-01-16" } });
     fireEvent.change(screen.getByLabelText("Até"), { target: { value: "2037-01-12" } });
@@ -337,6 +346,7 @@ describe("folgas e bloqueios", () => {
     });
     const apagar = vi.spyOn(falso.barbeiro, "apagarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     const item = (await screen.findByText("5 de janeiro")).closest("li") as HTMLElement;
     await userEvent.click(within(item).getByRole("button", { name: /remover/i }));
@@ -349,6 +359,7 @@ describe("folgas e bloqueios", () => {
     const falso = comAna({ papel: "profissional" });
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     fireEvent.change(await screen.findByLabelText("De"), { target: { value: "2037-01-05" } });
     fireEvent.change(screen.getByLabelText("Até"), { target: { value: "2037-01-05" } });

@@ -4,7 +4,7 @@
   justify-content: space-between;
   gap: var(--espaco-md);
   padding-block-end: var(--espaco-md);
-  border-block-end: var(--borda-padrao) solid var(--cor-ink);
+  border-block-end: var(--borda-padrao) solid var(--cor-line-strong);
 }
 
 .textos {

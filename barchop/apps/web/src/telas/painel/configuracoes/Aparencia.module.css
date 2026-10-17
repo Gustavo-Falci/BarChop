@@ -136,7 +136,7 @@
    escolhida em todo o painel. */
 .tema[aria-pressed="true"] {
   border-color: var(--cor-ink);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .amostra {
@@ -208,7 +208,7 @@
 
 .selo {
   padding: 0 6px;
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font-size: 10px;
   font-weight: 700;
@@ -274,7 +274,7 @@
   width: 44px;
   height: 40px;
   padding: 2px;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   cursor: pointer;
@@ -283,7 +283,7 @@
 .hex {
   width: 120px;
   padding: var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -319,10 +319,10 @@
   justify-content: space-between;
   gap: var(--espaco-md);
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-md);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .barraTexto {
@@ -343,7 +343,7 @@
 /* 4 · ajuste fino: recolhido; o Abrir/Fechar mora na ponta da régua. */
 .abrir {
   padding: 2px var(--espaco-md);
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: transparent;
   color: var(--cor-ink);
@@ -449,5 +449,5 @@
 
 .layout[aria-pressed="true"] {
   border-color: var(--cor-ink);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }

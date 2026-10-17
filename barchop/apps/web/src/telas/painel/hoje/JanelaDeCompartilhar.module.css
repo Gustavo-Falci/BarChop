@@ -2,11 +2,11 @@
   width: min(720px, calc(100vw - 2 * var(--espaco-md)));
   max-height: calc(100dvh - 2 * var(--espaco-md));
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
   color: var(--cor-ink);
-  box-shadow: 0 6px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .janela::backdrop {
@@ -70,7 +70,7 @@
   justify-content: center;
   min-height: 44px;
   padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font: inherit;
   font-size: var(--texto-sm);
@@ -93,7 +93,7 @@
 .principal:focus-visible,
 .secundaria:focus-visible,
 .fechar:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

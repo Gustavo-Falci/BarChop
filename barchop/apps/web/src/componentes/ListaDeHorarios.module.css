@@ -23,7 +23,7 @@
   /* 44px: o alvo de toque mínimo; o padding sozinho dava menos. */
   min-height: 44px;
   padding: var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -36,7 +36,7 @@
 }
 
 .horario:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

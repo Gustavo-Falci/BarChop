@@ -28,7 +28,7 @@
   align-items: center;
   gap: var(--espaco-sm);
   padding-inline: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-surface);
 }
@@ -36,7 +36,7 @@
 /* O anel de foco vai na caixa, e não no <input>: é a caixa que tem a
    borda e o raio que se vê. O input perde o dele para não desenhar dois. */
 .caixa:focus-within {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

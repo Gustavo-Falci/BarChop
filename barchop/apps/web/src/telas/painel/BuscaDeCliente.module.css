@@ -1,5 +1,5 @@
 .lista { display: grid; gap: var(--espaco-xs); list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
-.lista button { width: 100%; text-align: left; padding: var(--espaco-sm) var(--espaco-md); border: var(--borda-padrao) solid var(--cor-ink); border-radius: var(--raio-sm); background: var(--cor-paper-soft); font-size: var(--texto-sm); cursor: pointer; }
+.lista button { width: 100%; text-align: left; padding: var(--espaco-sm) var(--espaco-md); border: var(--borda-padrao) solid var(--cor-line-strong); border-radius: var(--raio-sm); background: var(--cor-paper-soft); font-size: var(--texto-sm); cursor: pointer; }
 .lista button[aria-current="true"] { background: var(--cor-ink); color: var(--cor-paper); }
 .cadastro { display: grid; gap: var(--espaco-sm); }
 

@@ -13,16 +13,16 @@
 <link href="https://api.fontshare.com/v2/css?f%5B%5D=clash-grotesk@600,700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper: #F3F0E7;
-    --paper-soft: #FAF8F3;
-    --surface: #FFFFFF;
-    --ink: #202020;
-    --ink-soft: #514c42;
-    --muted: #8a8375;
-    --line: #e6e0d3;
-    --accent: #FFD900;
+    --paper: #F7F4EE;
+    --paper-soft: #F7F3EB;
+    --surface: #FFFDF9;
+    --ink: #26221C;
+    --ink-soft: #5B544A;
+    --muted: #6F6759;
+    --line: #E9E2D5;
+    --accent: #F0C93A;
     --accent-border: #FFFB7B;
-    --pale-yellow: #FFF3B8;
+    --pale-yellow: #FAEFC8;
     --pale-blue: #EFF8FA;
     --dark: #1A1A1A;
     --shadow: #000000;
@@ -116,16 +116,17 @@
   /* ---- dark mode scope (app do barbeiro + painel web) ---- */
   .dark-scope{ padding:1.2rem; border-radius:20px; color:var(--ink); transition:background .25s ease, color .25s ease; }
   .dark-scope.dark{
-    background:#17160f;
-    --paper-soft:#252419;
-    --surface:#2c2a1f;
-    --ink:#F3F0E7;
-    --ink-soft:#cbc4b3;
-    --muted:#B0A890;
-    --line:#3d3b2e;
-    --pale-yellow:#3d3410;
+    background:#1C1A17;
+    --paper-soft:#28251F;
+    --surface:#211F1B;
+    --ink:#ECE6DA;
+    --ink-soft:#B8B0A2;
+    --muted:#968F82;
+    --line:#322F29;
+    --accent:#E8C547;
+    --pale-yellow:#3B3521;
     --pale-blue:#152329;
-    --shadow:#F3F0E7;
+    --shadow:#000000;
   }
   .dark-toggle-row{ display:flex; align-items:center; gap:0.8rem; margin-bottom:1.6rem; }
   .dark-toggle-row .hint{ font-size:0.82rem; color:var(--muted); }
@@ -140,6 +141,7 @@
     <p class="eyebrow">Design system · BarChop</p>
     <h1>Identidade visual do BarChop</h1>
     <p class="lede">Linguagem neobrutalista adaptada a partir da referência do barbeiro.app: bordas grossas, sombras duras sem desfoque, amarelo saturado como cor de ação única, sobre uma base editorial em tons de creme.</p>
+    <span class="note">Desde 17/10/2026 ("menos amarelo, menos moldura"): o contorno é um fio de 1px na cor da linha, a profundidade vem de sombra difusa (só o botão segue afundando, 2px), o amarelo virou ouro mais calmo e o escuro perdeu o verde-oliva. Os demos abaixo ainda mostram o desenho antigo das bordas; a fonte da verdade são os tokens em <code>packages/design-tokens</code>.</span>
     <span class="note">Fontes de produção: Clash Grotesk (via Fontshare, licença Indie gratuita) + Inter. Aqui uso Clash Grotesk como substituto próximo.</span>
   </header>
 
@@ -147,20 +149,20 @@
     <h2>Cores</h2>
     <p class="desc">Amarelo como cor de ação única — nunca usado em mais de um elemento por tela, pra manter o peso do CTA.</p>
     <div class="swatch-grid">
-      <div class="swatch"><div class="swatch-fill" style="background:#FFD900;"></div><div class="swatch-body"><div class="name">Amarelo BarChop</div><div class="code">#FFD900</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#F0C93A;"></div><div class="swatch-body"><div class="name">Amarelo BarChop</div><div class="code">#F0C93A</div></div></div>
       <div class="swatch"><div class="swatch-fill" style="background:#FFFB7B;"></div><div class="swatch-body"><div class="name">Borda do botão</div><div class="code">#FFFB7B</div></div></div>
-      <div class="swatch"><div class="swatch-fill" style="background:#202020;"></div><div class="swatch-body"><div class="name">Tinta</div><div class="code">#202020</div></div></div>
-      <div class="swatch"><div class="swatch-fill" style="background:#F3F0E7;"></div><div class="swatch-body"><div class="name">Creme (fundo)</div><div class="code">#F3F0E7</div></div></div>
-      <div class="swatch"><div class="swatch-fill" style="background:#FFF3B8;"></div><div class="swatch-body"><div class="name">Amarelo pálido</div><div class="code">#FFF3B8</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#26221C;"></div><div class="swatch-body"><div class="name">Tinta</div><div class="code">#26221C</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#F7F4EE;"></div><div class="swatch-body"><div class="name">Creme (fundo, desce a #EFEAE1)</div><div class="code">#F7F4EE</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#FAEFC8;"></div><div class="swatch-body"><div class="name">Amarelo pálido (selecionado)</div><div class="code">#FAEFC8</div></div></div>
       <div class="swatch"><div class="swatch-fill" style="background:#EFF8FA;"></div><div class="swatch-body"><div class="name">Azul pálido (painel)</div><div class="code">#EFF8FA</div></div></div>
       <div class="swatch"><div class="swatch-fill" style="background:#1A1A1A;"></div><div class="swatch-body"><div class="name">Escuro (splash)</div><div class="code">#1A1A1A</div></div></div>
     </div>
     <h3 class="eyebrow" style="margin:1.6rem 0 0.8rem; display:block;">Modo escuro — app + painel</h3>
     <div class="swatch-grid">
-      <div class="swatch"><div class="swatch-fill" style="background:#17160f;"></div><div class="swatch-body"><div class="name">Fundo</div><div class="code">#17160F</div></div></div>
-      <div class="swatch"><div class="swatch-fill" style="background:#2c2a1f;"></div><div class="swatch-body"><div class="name">Superfície (cartões)</div><div class="code">#2C2A1F</div></div></div>
-      <div class="swatch"><div class="swatch-fill" style="background:#F3F0E7;"></div><div class="swatch-body"><div class="name">Tinta (texto)</div><div class="code">#F3F0E7</div></div></div>
-      <div class="swatch"><div class="swatch-fill" style="background:#FFD900;"></div><div class="swatch-body"><div class="name">Amarelo (inalterado)</div><div class="code">#FFD900</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#1C1A17;"></div><div class="swatch-body"><div class="name">Fundo (desce a #151412)</div><div class="code">#1C1A17</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#211F1B;"></div><div class="swatch-body"><div class="name">Superfície (cartões)</div><div class="code">#211F1B</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#ECE6DA;"></div><div class="swatch-body"><div class="name">Tinta (texto)</div><div class="code">#ECE6DA</div></div></div>
+      <div class="swatch"><div class="swatch-fill" style="background:#E8C547;"></div><div class="swatch-body"><div class="name">Amarelo ouro</div><div class="code">#E8C547</div></div></div>
     </div>
     <h3 class="eyebrow" style="margin:1.6rem 0 0.8rem; display:block;">Estados do painel (selos, pílulas, Configurações)</h3>
     <p class="desc">Texto e borda na cor forte, fundo na clara do mesmo estado. Todos passam 4,5:1 contra o próprio fundo e contra a superfície, nos dois temas (medido no teste <code>tests/app/contraste-dos-tokens.test.ts</code>).</p>

@@ -80,7 +80,7 @@
 }
 
 .linha:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: -3px;
 }
 

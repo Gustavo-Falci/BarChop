@@ -16,11 +16,11 @@
   width: calc(100% - 2 * var(--espaco-lg));
   max-width: calc(var(--fluxo-largura) - 2 * var(--espaco-lg));
   margin: var(--espaco-lg) auto 0;
-  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
   border-radius: var(--raio-cartao, var(--raio-lg));
   overflow: hidden;
   background: var(--cor-surface);
-  box-shadow: var(--cartao-sombra, 0 6px 0 var(--cor-shadow));
+  box-shadow: var(--cartao-sombra, var(--sombra-1));
 }
 
 /* Proporção fixa, com ou sem capa: a foto que chega depois (ou não
@@ -32,7 +32,7 @@
   background: var(--cor-dark);
   /* A linha que separa a capa (ou o monograma) do nome: a mesma borda
      dos cartões. A fita listrada que fazia isso saiu (pedido do dono). */
-  border-block-end: var(--borda-padrao) solid var(--cor-ink);
+  border-block-end: var(--borda-padrao) solid var(--cor-line-strong);
 }
 
 /* 4:1 no desktop: a 3:1 a capa ocupava a primeira tela inteira, e o
@@ -183,7 +183,7 @@
 .logo[data-formato="quadrada"] {
   --lado: 96px;
   margin-top: calc(var(--lado) * -0.5 - var(--espaco-lg));
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 /* Sem moldura, inteira aqui embaixo: solta sobre a foto da capa, ela
@@ -213,7 +213,7 @@
   gap: var(--espaco-sm);
   margin: 0;
   padding: var(--espaco-xs) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font-size: var(--texto-sm);
   font-weight: 700;
@@ -264,7 +264,7 @@
   gap: var(--espaco-xs);
   min-height: 40px;
   padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -279,7 +279,7 @@
 }
 
 .atalho:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -342,7 +342,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
   border-radius: var(--raio-cartao, var(--raio-md));
   background: var(--cor-surface);
   overflow: hidden;
@@ -372,7 +372,7 @@
 }
 
 .servico:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: -5px;
 }
 
@@ -436,7 +436,7 @@
   align-items: center;
   min-height: 32px;
   padding: 0 var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-pale-yellow);
   font-size: var(--texto-sm);
@@ -451,7 +451,7 @@
 }
 
 .proximo:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -481,7 +481,7 @@
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-pale-blue);
   font-family: var(--fonte-display), system-ui, sans-serif;
   font-weight: 700;
@@ -650,7 +650,7 @@
 .aba {
   flex: none;
   padding: var(--espaco-xs) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-surface);
   color: var(--cor-ink);

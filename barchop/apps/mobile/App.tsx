@@ -1,7 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { ScrollView, StyleSheet, Text, View, useColorScheme } from "react-native";
 
-import { colors, radius, typography } from "@barchop/design-tokens";
+import { borderWidth, colors, radius, typography } from "@barchop/design-tokens";
 import { calcularHorariosDisponiveis } from "@barchop/scheduling";
 
 // Tela provisória — existe pra provar que o scaffold do Expo enxerga
@@ -33,7 +33,7 @@ export default function App() {
             key={hora}
             style={[
               styles.chip,
-              { backgroundColor: tema.accent, borderColor: tema.ink },
+              { backgroundColor: tema.accent, borderColor: tema.lineStrong },
             ]}
           >
             <Text style={[styles.chipTexto, { color: tema.dark }]}>{hora}</Text>
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    borderWidth: 2,
+    borderWidth: borderWidth.padrao,
     borderRadius: radius.pill,
     paddingVertical: 8,
     paddingHorizontal: 16,

@@ -27,7 +27,7 @@
   margin: 0;
   padding: var(--espaco-md);
   list-style: none;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-md);
   background: var(--cor-surface);
 }
@@ -65,7 +65,7 @@
 .aviso {
   margin: 0;
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-md);
   background: var(--cor-accent);
   color: var(--cor-dark);

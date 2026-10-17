@@ -4,10 +4,10 @@
   display: grid;
   gap: var(--espaco-sm);
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .topo {
@@ -66,7 +66,7 @@
 /* A barra de progresso: o "2 de 5" em forma de coisa que enche. */
 .barra {
   height: 8px;
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-paper-soft);
   overflow: hidden;
@@ -127,7 +127,7 @@
 .passo[data-atual="true"] {
   border: var(--borda-padrao) solid var(--cor-ink);
   background: var(--cor-surface);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
 }
 
 /* Feito sai do caminho: vira selo do tamanho do texto, sem fundo, no
@@ -167,7 +167,7 @@
   place-items: center;
   width: 1.5rem;
   height: 1.5rem;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font-size: var(--texto-xs);
   font-weight: 700;
@@ -262,11 +262,11 @@
 /* Passo atual: o botão amarelo da casa, borda cheia e sombra offset. */
 .acao {
   padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-accent);
   color: var(--cor-dark);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   transition-property: transform, box-shadow;
   transition-duration: 150ms;
   transition-timing-function: ease-out;
@@ -274,12 +274,12 @@
 
 .acao:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .acao:active {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--cor-shadow);
+  box-shadow: none;
 }
 
 /* Os outros passos pendentes: linha de link, sem moldura. Ainda dá pra
@@ -336,7 +336,7 @@
 .linkDoPasso:focus-visible,
 .pular:focus-visible,
 .recolher:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

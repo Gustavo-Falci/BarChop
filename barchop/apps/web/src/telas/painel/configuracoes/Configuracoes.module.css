@@ -26,7 +26,7 @@
 
 .area {
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -143,7 +143,7 @@
   width: 100%;
   height: 8px;
   overflow: hidden;
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-paper-soft);
 }
@@ -161,10 +161,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
   overflow: hidden;
 }
 
@@ -432,7 +432,7 @@
 .caixaEscondida:checked + .desenhoDoCartao {
   border-color: var(--cor-ink);
   background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   color: var(--cor-dark);
 }
 .caixaEscondida:checked + .desenhoDoCartao .iconeDoCartao {
@@ -443,7 +443,7 @@
 }
 
 .caixaEscondida:focus-visible + .desenhoDoCartao {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -548,12 +548,12 @@
 .marcaEscondida:checked + span {
   border-color: var(--cor-ink);
   background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   color: var(--cor-dark);
 }
 
 .marcaEscondida:focus-visible + span {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

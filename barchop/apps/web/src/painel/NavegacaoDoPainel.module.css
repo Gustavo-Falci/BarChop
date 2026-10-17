@@ -29,7 +29,7 @@
   flex-direction: column;
   gap: var(--espaco-lg);
   padding: var(--espaco-lg) var(--espaco-md);
-  border-inline-end: var(--borda-padrao) solid var(--cor-ink);
+  border-inline-end: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-paper-soft);
   /* Sem `sticky`: o shell não rola mais, então a lateral já fica parada
      por construção. Ela rola por dentro se a lista de seções crescer
@@ -41,10 +41,10 @@
   display: inline-flex;
   align-items: center;
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-md);
   background: var(--cor-accent);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
   color: var(--cor-dark);
   font-family: var(--fonte-display), system-ui, sans-serif;
   font-size: var(--texto-lg);
@@ -104,7 +104,7 @@
 .links a[aria-current="page"] {
   border-color: var(--cor-ink);
   background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   color: var(--cor-dark);
 }
 
@@ -319,7 +319,7 @@
     align-items: center;
     gap: var(--espaco-md);
     border-inline-end: none;
-    border-block-end: var(--borda-padrao) solid var(--cor-ink);
+    border-block-end: var(--borda-padrao) solid var(--cor-line-strong);
   }
 
   .links {

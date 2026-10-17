@@ -93,7 +93,7 @@
   gap: var(--espaco-md);
   padding: var(--espaco-md) var(--espaco-lg);
   padding-bottom: calc(var(--espaco-md) + env(safe-area-inset-bottom));
-  border-top: var(--borda-padrao) solid var(--cor-ink);
+  border-top: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-surface);
 }
 
@@ -147,9 +147,9 @@
     grid-template-columns: 1fr;
     gap: var(--espaco-md);
     padding: var(--espaco-lg);
-    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
     border-radius: var(--raio-cartao, var(--raio-md));
-    box-shadow: var(--cartao-sombra, 0 4px 0 var(--cor-shadow));
+    box-shadow: var(--cartao-sombra, var(--sombra-1));
   }
 
   .resumoTitulo {

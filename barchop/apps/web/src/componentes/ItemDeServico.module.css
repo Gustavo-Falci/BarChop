@@ -1,3 +1,3 @@
-.item { display: flex; align-items: center; gap: var(--espaco-sm); width: 100%; padding: var(--espaco-md); border: var(--borda-padrao) solid var(--cor-ink); border-radius: var(--raio-md); background: var(--cor-surface); font-size: var(--texto-md); text-align: left; }
+.item { display: flex; align-items: center; gap: var(--espaco-sm); width: 100%; padding: var(--espaco-md); border: var(--borda-padrao) solid var(--cor-line-strong); border-radius: var(--raio-md); background: var(--cor-surface); font-size: var(--texto-md); text-align: left; }
 .marcado { background: var(--cor-pale-yellow); }
 .preco { margin-left: auto; font-weight: 600; }

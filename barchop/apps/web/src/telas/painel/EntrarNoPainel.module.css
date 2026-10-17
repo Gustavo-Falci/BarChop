@@ -115,7 +115,7 @@
    depois de um clique de mouse, que é justamente quem não precisa
    dele. O par 3px/2px é o mesmo do campo de texto. */
 .link:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }

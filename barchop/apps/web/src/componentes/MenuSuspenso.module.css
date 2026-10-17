@@ -24,15 +24,16 @@
   background: var(--cor-surface);
 }
 
-/* O ponto de "tem novidade". Amarelo da casa com contorno de tinta: só
-   a cor sumiria no fundo claro, e o contorno o separa do ícone. */
+/* O ponto de "tem novidade". Amarelo da casa com um recorte da cor do
+   fundo em volta: é o recorte que o separa do ícone, nos dois temas (o
+   contorno de tinta virava anel claro no escuro). */
 .gatilho[data-aviso]::after {
   position: absolute;
-  inset-block-start: 6px;
-  inset-inline-end: 6px;
-  width: 9px;
-  height: 9px;
-  border: var(--borda-hairline) solid var(--cor-ink);
+  inset-block-start: 5px;
+  inset-inline-end: 5px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--cor-paper);
   border-radius: 50%;
   background: var(--cor-accent);
   content: "";
@@ -50,10 +51,21 @@
   min-width: 260px;
   max-width: min(340px, calc(100vw - 32px));
   padding: var(--espaco-xs);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line);
   border-radius: var(--raio-md);
-  background: var(--cor-paper);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  background: var(--cor-surface);
+  box-shadow: var(--sombra-2);
+  /* O painel só existe aberto, então a entrada é animação de montagem:
+     aparece e desce 4px até o lugar. */
+  animation: entrar var(--duracao-curta) var(--curva-entrada);
+  transform-origin: top right;
+}
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 
 .linha {
@@ -75,7 +87,7 @@
 }
 
 .linha:hover:not(:disabled) {
-  background: var(--cor-surface);
+  background: var(--cor-paper-soft);
 }
 
 .linha:disabled {

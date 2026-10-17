@@ -28,7 +28,7 @@
   width: 32px;
   height: 32px;
   overflow: hidden;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: 50%;
   background: var(--cor-accent);
   color: var(--cor-dark);

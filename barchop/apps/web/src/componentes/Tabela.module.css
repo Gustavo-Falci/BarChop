@@ -3,10 +3,10 @@
    body — que é o jeito mais rápido de quebrar um layout. */
 .moldura {
   overflow-x: auto;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .tabela {
@@ -40,7 +40,7 @@
 .tabela th {
   text-align: left;
   padding: var(--espaco-md);
-  border-bottom: var(--borda-padrao) solid var(--cor-ink);
+  border-bottom: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-paper-soft);
   color: var(--cor-ink-soft);
   font-size: var(--texto-xs);

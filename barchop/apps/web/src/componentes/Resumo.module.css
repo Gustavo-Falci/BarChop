@@ -1,2 +1,2 @@
-.resumo { display: flex; gap: var(--espaco-md); padding: var(--espaco-sm) var(--espaco-md); border: var(--borda-padrao) solid var(--cor-ink); border-radius: var(--raio-pill); background: var(--cor-paper-soft); font-size: var(--texto-sm); font-weight: 600; }
+.resumo { display: flex; gap: var(--espaco-md); padding: var(--espaco-sm) var(--espaco-md); border: var(--borda-padrao) solid var(--cor-line-strong); border-radius: var(--raio-pill); background: var(--cor-paper-soft); font-size: var(--texto-sm); font-weight: 600; }
 .valor { margin-left: auto; }

@@ -449,6 +449,34 @@
   }
 }
 
+/* No celular a ação do dia fica presa no pé, logo acima da barra de
+   navegação (--recuo-inferior vem do shell), ao alcance do polegar. O
+   "Cancelar agendamento" desce pro fim da lista, longe dela: dividir a
+   mesma linha com o principal era pedir o toque errado. */
+@media (max-width: 900px) {
+  .acoes:has(.principal) {
+    flex-direction: column;
+    align-items: stretch;
+    padding-block-end: 72px;
+  }
+
+  .acoes .principal {
+    position: fixed;
+    z-index: 20;
+    inset-inline: var(--espaco-md);
+    inset-block-end: calc(var(--recuo-inferior, 0px) + var(--espaco-sm));
+    justify-content: center;
+    min-height: 52px;
+    box-shadow: var(--sombra-2);
+  }
+
+  .acoes .discretaPerigo {
+    order: 1;
+    align-self: flex-start;
+    margin-block-start: var(--espaco-md);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .whatsapp,
   .principal,

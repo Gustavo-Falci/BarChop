@@ -13,10 +13,30 @@
   font-weight: 600;
 }
 
+.legendaOculta {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Controle segmentado: as opções num trilho só, a escolhida com o fundo
+   do cartão elevado. Sem amarelo — com várias regras na mesma tela, o
+   amarelo cheio em cada escolha acendia oito botões de uma vez e nada
+   se destacava. Quebra em linhas quando não cabe, em vez de rolar. */
 .opcoes {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: var(--espaco-sm);
+  gap: 2px;
+  justify-self: start;
+  max-width: 100%;
+  padding: 3px;
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
 }
 
 .opcao {
@@ -40,31 +60,34 @@
 .pilula {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 36px;
   padding: var(--espaco-xs) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-line);
-  border-radius: var(--raio-md);
-  background: var(--cor-surface);
+  border-radius: calc(var(--raio-md) - 3px);
+  color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
   font-weight: 600;
+  transition:
+    background-color var(--duracao-media) var(--curva-entrada),
+    box-shadow var(--duracao-media) var(--curva-entrada),
+    color var(--duracao-curta) ease;
 }
 
 .opcao:hover .pilula {
-  border-color: var(--cor-ink);
+  color: var(--cor-ink);
 }
 
-/* Marcada: mesmo desenho da pílula de filtro escolhida. */
+/* Marcada: o fundo do cartão sobe do trilho. Distingue-se sem cor, pelo
+   fundo e pela sombra. */
 .radio:checked + .pilula {
-  border-color: var(--cor-ink);
-  background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
-  color: var(--cor-on-accent);
+  background: var(--cor-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 0 0 var(--borda-hairline) var(--cor-line);
+  color: var(--cor-ink);
 }
 
 /* O anel de foco vai pra pílula: o rádio invisível não teria onde
    desenhá-lo. */
 .radio:focus-visible + .pilula {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -88,14 +111,14 @@
 }
 
 .opcao:hover .radio:disabled + .pilula {
-  border-color: var(--cor-line);
+  color: var(--cor-ink-soft);
 }
 
 .selo {
   margin-inline-start: var(--espaco-xs);
   padding: 0 var(--espaco-xs);
   border-radius: var(--raio-pill);
-  background: var(--cor-paper-soft);
+  background: var(--cor-pale-yellow);
   color: var(--cor-ink);
   font-size: var(--texto-xs);
   font-weight: 700;

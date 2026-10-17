@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
@@ -252,7 +252,7 @@ describe("dados do negócio · identidade", () => {
     const campo = await screen.findByLabelText(/nome da barbearia/i);
     await userEvent.clear(campo);
     await userEvent.type(campo, "GR Barber Centro");
-    await userEvent.click(screen.getByRole("button", { name: /salvar dados/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(salvar).toHaveBeenCalledWith({
@@ -283,7 +283,7 @@ describe("dados do negócio · identidade", () => {
 
     montarPainel(<DadosDoNegocio />, falso);
 
-    const botao = await screen.findByRole("button", { name: /salvar dados/i });
+    const botao = within(await screen.findByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" });
     await userEvent.click(botao);
     await userEvent.click(botao);
 
@@ -334,7 +334,7 @@ describe("dados do negócio · identidade", () => {
     const campo = screen.getByLabelText(/nome da barbearia/i) as HTMLInputElement;
     fireEvent.change(campo, { target: { value: "GR Barber Centro" } });
 
-    await userEvent.click(screen.getByRole("button", { name: /salvar dados/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(salvar).toHaveBeenCalledWith(expect.objectContaining({ nome: "GR Barber Centro" }))

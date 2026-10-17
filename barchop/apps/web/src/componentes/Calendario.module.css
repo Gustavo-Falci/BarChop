@@ -35,7 +35,7 @@
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -76,7 +76,7 @@
      grade não muda de proporção entre um mês de cinco e um de seis
      linhas. */
   aspect-ratio: 1;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -106,7 +106,7 @@
    distinguível em escala de cinza. */
 .dia[aria-current="date"] {
   background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   color: var(--cor-on-accent);
 }
 

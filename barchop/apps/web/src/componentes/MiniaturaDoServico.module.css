@@ -4,7 +4,7 @@
 .miniatura {
   flex: none;
   display: block;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   object-fit: cover;
   background: var(--cor-pale-yellow);
 }
@@ -12,10 +12,12 @@
 .pequena { width: 36px; height: 36px; border-radius: var(--raio-sm); }
 .grande { width: 72px; height: 72px; border-radius: var(--raio-md); }
 
+/* Sem foto: a inicial em tom suave, sem contorno, na letra em ouro. */
 .inicial {
   display: grid;
   place-items: center;
-  color: var(--cor-ink);
+  border-color: transparent;
+  color: var(--cor-accent-text);
   font-family: var(--fonte-display), system-ui, sans-serif;
   font-weight: 700;
   line-height: 1;

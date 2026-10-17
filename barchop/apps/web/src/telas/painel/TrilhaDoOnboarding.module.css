@@ -4,10 +4,10 @@
   display: grid;
   gap: var(--espaco-sm);
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .topo {
@@ -66,7 +66,7 @@
 /* A barra de progresso: o "2 de 5" em forma de coisa que enche. */
 .barra {
   height: 8px;
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-paper-soft);
   overflow: hidden;
@@ -122,36 +122,97 @@
   background: var(--cor-paper-soft);
 }
 
-/* O passo atual ganha a borda cheia e a sombra do idioma do painel: é
-   pra onde o olho vai primeiro. */
+/* O próximo passo ganha o espaço: sobe pro começo da lista, na largura
+   inteira, em fundo suave. Os outros (feitos e os que faltam) viram uma
+   linha de selos pequenos logo abaixo — os concluídos tinham o mesmo
+   peso do próximo, e a trilha ocupava 330px pra dizer "falta 1". */
 .passo[data-atual="true"] {
-  border: var(--borda-padrao) solid var(--cor-ink);
-  background: var(--cor-surface);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  order: -1;
+  flex: 1 1 100%;
+  border-color: transparent;
+  background: var(--cor-paper-soft);
 }
 
-/* Feito sai do caminho: vira selo do tamanho do texto, sem fundo, no
-   alto da linha. */
-.passo[data-feito="true"] {
+.passo:not([data-atual="true"]) {
   flex: 0 1 auto;
-  align-self: flex-start;
-  max-width: 220px;
-  background: transparent;
-  border-style: dashed;
+  align-self: center;
+  padding: 2px var(--espaco-xs);
+  border: 0;
+  background: none;
 }
 
-/* No celular, uma coluna só: selo e cartão misturados na mesma linha
-   embaralhavam a ordem dos passos. */
-@media (max-width: 640px) {
-  .passos {
-    flex-direction: column;
-  }
+.passo:not([data-atual="true"]) .linha {
+  align-items: center;
+  gap: 6px;
+}
 
-  .passo,
-  .passo[data-feito="true"] {
-    flex: none;
-    align-self: stretch;
-    max-width: none;
+.passo:not([data-atual="true"]) .nome {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.passo:not([data-atual="true"]) .marca {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* A dica e o "Feito" saem da vista, não do leitor de tela: o selo com o
+   check já diz que foi feito, e a dica é do passo que importa agora. */
+.passo:not([data-atual="true"]) .dica,
+.passo:not([data-atual="true"]) .feito {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Os que faltam (e não são o próximo) mantêm a ação, compacta ao lado
+   do nome: dá pra pular pra qualquer passo, e o "Trabalho sozinho" e o
+   "Esperando o primeiro cliente" continuam à vista. A ação grande, com
+   o amarelo, é só do próximo. */
+.passo:not([data-atual="true"]) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--espaco-sm);
+}
+
+.passo:not([data-atual="true"]) .acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.passo:not([data-atual="true"]) .linkDoPasso {
+  width: auto;
+  min-height: 32px;
+  font-size: var(--texto-xs);
+}
+
+/* No próximo passo, a ação e o "Trabalho sozinho" lado a lado, do
+   tamanho do texto: largos, viravam uma faixa amarela de ponta a ponta. */
+.passo[data-atual="true"] .acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm) var(--espaco-md);
+}
+
+.passo[data-atual="true"] .acao {
+  width: auto;
+}
+
+/* No celular, o próximo em cima e os selos quebrando em linhas. */
+@media (max-width: 640px) {
+  .passo[data-atual="true"] {
+    flex: 1 1 100%;
   }
 }
 
@@ -167,7 +228,7 @@
   place-items: center;
   width: 1.5rem;
   height: 1.5rem;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font-size: var(--texto-xs);
   font-weight: 700;
@@ -180,8 +241,9 @@
 }
 
 .passo[data-feito="true"] .marca {
-  background: var(--cor-accent);
-  color: var(--cor-dark);
+  border-color: transparent;
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
 }
 
 .corpo {
@@ -262,11 +324,11 @@
 /* Passo atual: o botão amarelo da casa, borda cheia e sombra offset. */
 .acao {
   padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-accent);
   color: var(--cor-dark);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   transition-property: transform, box-shadow;
   transition-duration: 150ms;
   transition-timing-function: ease-out;
@@ -274,12 +336,12 @@
 
 .acao:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .acao:active {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--cor-shadow);
+  box-shadow: none;
 }
 
 /* Os outros passos pendentes: linha de link, sem moldura. Ainda dá pra
@@ -336,7 +398,7 @@
 .linkDoPasso:focus-visible,
 .pular:focus-visible,
 .recolher:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

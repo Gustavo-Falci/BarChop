@@ -17,6 +17,7 @@ import { agruparPorCategoria, resumoDoGrupo } from "../../painel/listas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./ListaDeServicos.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 // "No agendamento" é o ativo: o que o cliente consegue marcar no link e
 // a recepção no painel. O inativo continua listado — é daqui que ele
@@ -131,7 +132,7 @@ export function ListaDeServicos() {
       {/* Só a tabela espera. O cabeçalho fica de pé porque o "+ Novo"
           piscando a cada carga é movimento que não informa nada. */}
       {carregando ? (
-        <p>Carregando…</p>
+        <Carregando />
       ) : (
         <>
           {filtrando ? (

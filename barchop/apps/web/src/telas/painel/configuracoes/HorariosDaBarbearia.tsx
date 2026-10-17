@@ -24,6 +24,7 @@ import {
   type Rotina,
 } from "./rotina";
 import estilos from "./Configuracoes.module.css";
+import { Carregando } from "../../../componentes/Carregando";
 
 const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
@@ -112,7 +113,7 @@ function Horarios() {
   // Sem esta trava, "Salvar horários" clicado antes da resposta chegar
   // mandaria `semana` vazio — e sete dias ausentes do corpo fecham a
   // semana inteira na API.
-  if (!barbearia.dados || !horariosSalvos.dados) return <p>Carregando…</p>;
+  if (!barbearia.dados || !horariosSalvos.dados) return <Carregando />;
 
   // A semana na ordem do dono: segunda primeiro.
   const semanaNaOrdem = ORDEM_DA_SEMANA.map((dia) => semana.find((h) => h.diaSemana === dia)).filter(

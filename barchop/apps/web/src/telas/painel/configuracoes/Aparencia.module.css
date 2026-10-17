@@ -45,26 +45,28 @@
 }
 
 /* 1 · logo e capa: duas linhas finas, sem caixa. */
+/* As duas imagens lado a lado, numa linha: a loja não pode empurrar as
+   abas pra baixo da dobra. Empilham quando não cabem. */
 .imagens {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--espaco-sm) var(--espaco-lg);
   margin: 0;
   padding: 0;
   list-style: none;
-  border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
 .imagem {
   display: grid;
-  grid-template-columns: 56px 1fr auto;
+  grid-template-columns: 40px 1fr auto;
   align-items: center;
-  gap: var(--espaco-md);
-  padding: var(--espaco-md) 0;
-  border-bottom: var(--borda-hairline) solid var(--cor-line);
+  gap: var(--espaco-sm);
+  padding: var(--espaco-xs) 0;
 }
 
 .miniatura {
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--raio-sm);
   object-fit: cover;
 }
@@ -136,7 +138,7 @@
    escolhida em todo o painel. */
 .tema[aria-pressed="true"] {
   border-color: var(--cor-ink);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .amostra {
@@ -208,7 +210,7 @@
 
 .selo {
   padding: 0 6px;
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font-size: 10px;
   font-weight: 700;
@@ -274,7 +276,7 @@
   width: 44px;
   height: 40px;
   padding: 2px;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   cursor: pointer;
@@ -283,7 +285,7 @@
 .hex {
   width: 120px;
   padding: var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -311,7 +313,8 @@
    pra o Publicar estar à mão de qualquer ponto da rolagem. */
 .barra {
   position: sticky;
-  bottom: var(--espaco-md);
+  /* No celular, acima da barra de navegação do pé (--recuo-inferior). */
+  bottom: calc(var(--espaco-md) + var(--recuo-inferior, 0px));
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
@@ -319,10 +322,10 @@
   justify-content: space-between;
   gap: var(--espaco-md);
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-md);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .barraTexto {
@@ -342,8 +345,9 @@
 
 /* 4 · ajuste fino: recolhido; o Abrir/Fechar mora na ponta da régua. */
 .abrir {
+  justify-self: start;
   padding: 2px var(--espaco-md);
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: transparent;
   color: var(--cor-ink);
@@ -449,5 +453,5 @@
 
 .layout[aria-pressed="true"] {
   border-color: var(--cor-ink);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }

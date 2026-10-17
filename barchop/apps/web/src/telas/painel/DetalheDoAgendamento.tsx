@@ -11,12 +11,13 @@ import { Chip } from "../../componentes/Chip";
 import { formatarPreco } from "../../componentes/ItemDeServico";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataComSemana } from "../../formato/datas";
-import { rotuloDoStatus } from "../../formato/status";
+import { TOM_DO_STATUS, rotuloDoStatus } from "../../formato/status";
 import { IconeCheck, IconeConversa } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./DetalheDoAgendamento.module.css";
 import { FormularioDoPagamento, ResumoDoPagamento } from "./PagamentoDoAtendimento";
+import { Carregando } from "../../componentes/Carregando";
 
 type Status = "pendente" | "confirmado" | "concluido" | "cancelado" | "no_show";
 
@@ -26,13 +27,6 @@ const CAMINHO: Status[] = ["pendente", "confirmado", "concluido"];
 
 // O tom de cada status no selo do cabeçalho: dá pra ler a situação pela
 // cor antes de ler a palavra.
-const TOM_DO_STATUS: Record<string, "acento" | "neutro" | "ok" | "atencao" | "erro"> = {
-  pendente: "atencao",
-  confirmado: "acento",
-  concluido: "ok",
-  cancelado: "erro",
-  no_show: "erro",
-};
 
 // A API aceita qualquer transição (o barbeiro é a autoridade sobre o
 // próprio dia), mas a tela oferece só o que faz sentido a partir de
@@ -164,7 +158,7 @@ export function DetalheDoAgendamento() {
       </Aviso>
     );
   }
-  if (!agendamento.dados) return <p>Carregando…</p>;
+  if (!agendamento.dados) return <Carregando />;
 
   const atual = agendamento.dados;
   const observacoesMudaram = observacoes !== (atual.observacoes ?? "");

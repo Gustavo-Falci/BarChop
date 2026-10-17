@@ -133,6 +133,20 @@ describe("tela do Caixa", () => {
     expect(await screen.findByRole("button", { name: /fechar o dia/i })).toBeInTheDocument();
   });
 
+  // A confirmação numa janela, com a lista do que fica de fora (17/10):
+  // a frase longa ao lado dos botões não dizia quais atendimentos eram.
+  it("com pendência, a confirmação abre numa janela que lista o que fica de fora", async () => {
+    montarPainel(<CaixaDoDia />, await semear());
+
+    await userEvent.click(await screen.findByRole("button", { name: /fechar o dia/i }));
+
+    const janela = screen.getByRole("dialog", { name: /fechar o dia/i });
+    expect(within(janela).getByText(/1 atendimento ainda sem pagamento/i)).toBeInTheDocument();
+    expect(within(janela).getByRole("listitem")).toHaveTextContent(/ainda confirmado/i);
+    await userEvent.click(within(janela).getByRole("button", { name: "Não" }));
+    expect(screen.queryByRole("dialog", { name: /fechar o dia/i })).not.toBeInTheDocument();
+  });
+
   it("sem pendência, fecha no primeiro clique", async () => {
     const falso = await semear();
     await falso.barbeiro.atualizarAgendamento("a3", { status: "cancelado" });

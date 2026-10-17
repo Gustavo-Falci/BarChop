@@ -30,7 +30,7 @@
   display: grid;
   gap: var(--espaco-xs);
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
   border-radius: var(--raio-cartao, var(--raio-md));
   background: var(--cor-surface);
 }
@@ -79,7 +79,7 @@
 }
 
 .link:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
@@ -95,7 +95,7 @@
 }
 
 .linkDeTexto:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
@@ -122,7 +122,7 @@
   .resumo {
     display: grid;
     padding: var(--espaco-sm) var(--espaco-lg);
-    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
     border-radius: var(--raio-cartao, var(--raio-md));
     background: var(--cor-surface);
   }

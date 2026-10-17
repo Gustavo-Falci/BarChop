@@ -86,10 +86,10 @@
   display: grid;
   gap: var(--espaco-md);
   padding: var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 8px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .exemploTitulo {
@@ -133,7 +133,7 @@
   justify-self: start;
   margin: 0;
   padding: var(--espaco-xs) var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-accent);
   color: var(--cor-dark);
@@ -205,7 +205,7 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-accent);
   color: var(--cor-dark);
@@ -246,7 +246,7 @@
   gap: var(--espaco-sm);
   align-content: start;
   padding: var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-md);
   background: var(--cor-surface);
 }
@@ -298,7 +298,7 @@
   justify-items: center;
   gap: var(--espaco-lg);
   padding: var(--espaco-xxl) var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
   text-align: center;

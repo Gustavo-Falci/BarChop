@@ -3,18 +3,30 @@
 // com esses valores; o Next.js pode consumi-los direto ou expor
 // como CSS custom properties num provider.
 
+// Paleta de 17/10 ("menos amarelo, menos moldura"): neutro quente nos
+// dois modos, o amarelo num ouro mais calmo e o contorno num fio de
+// 1px. Só hex: a página pública filtra o que não é #rrggbb e o mobile
+// lê estes mesmos objetos. As transparências da proposta viraram o hex
+// equivalente sobre a surface.
 export const colors = {
   light: {
-    paper: "#F3F0E7",
-    paperSoft: "#FAF8F3",
-    surface: "#FFFFFF",
-    ink: "#202020",
-    inkSoft: "#514c42",
-    muted: "#8a8375",
-    line: "#e6e0d3",
-    accent: "#FFD900",
+    paper: "#F7F4EE",
+    // O fim do degradê do fundo: o papel desce de paper a paperFim.
+    paperFim: "#EFEAE1",
+    paperSoft: "#F7F3EB",
+    // Branco levemente quente, nunca #FFF puro.
+    surface: "#FFFDF9",
+    ink: "#26221C",
+    inkSoft: "#5B544A",
+    // 5,50:1 sobre a surface, 5,05:1 sobre o paperSoft, 4,66:1 sobre o
+    // paperFim. O de antes (#8a8375) ficava abaixo de 4,5:1 em todos.
+    muted: "#6F6759",
+    line: "#E9E2D5",
+    // O contorno de campo e de cartão: um passo acima da divisória.
+    lineStrong: "#DAD1C1",
+    accent: "#F0C93A",
     accentBorder: "#FFFB7B",
-    paleYellow: "#FFF3B8",
+    paleYellow: "#FAEFC8",
     paleBlue: "#EFF8FA",
     dark: "#1A1A1A",
     // O texto sobre a cor da marca (o botão Agendar). Hoje é o --cor-dark
@@ -24,7 +36,14 @@ export const colors = {
     // A marca como texto sobre o --cor-dark (as iniciais da fachada sem
     // capa). O amarelo da casa já passa; com outra marca, a Aparência
     // clareia até passar de 4,5:1.
-    accentOnDark: "#FFD900",
+    accentOnDark: "#F0C93A",
+    // A marca como texto e ícone sobre fundo claro (o item ativo da
+    // barra, o selecionado): 5,20:1 sobre o paleYellow, 5,89:1 sobre a
+    // surface. O ouro puro some no creme.
+    accentText: "#7D5F00",
+    // O anel de foco: a tinta no claro, o ouro no escuro (o anel claro
+    // se confundia com a moldura que havia em tudo).
+    foco: "#26221C",
     shadow: "#000000",
     // O vermelho de erro era escrito à mão em Campo.module.css e
     // Aviso.module.css. Vira token porque precisa de valor POR TEMA:
@@ -50,34 +69,47 @@ export const colors = {
     erroFundo: "#fbe3e0",
   },
   dark: {
-    paper: "#17160F",
-    paperSoft: "#252419",
-    surface: "#2C2A1F",
-    ink: "#F3F0E7",
-    inkSoft: "#cbc4b3",
-    muted: "#B0A890",
-    line: "#3d3b2e",
-    accent: "#FFD900", // inalterado — continua pop igual
+    // Neutro quente, sem o verde-oliva de antes (#17160F / #2C2A1F).
+    paper: "#1C1A17",
+    paperFim: "#151412",
+    paperSoft: "#28251F",
+    surface: "#211F1B",
+    // Um pouco abaixo do branco: menos halo em volta das letras.
+    ink: "#ECE6DA",
+    inkSoft: "#B8B0A2",
+    // 5,13:1 sobre a surface, 4,76:1 sobre o paperSoft.
+    muted: "#968F82",
+    // rgba(240,228,205,.08) e .15 sobre a surface.
+    line: "#322F29",
+    lineStrong: "#403D36",
+    // Ouro mais calmo: o #FFD900 de croma máximo deixava pós-imagem nas
+    // áreas grandes (bloco da agenda, item ativo).
+    accent: "#E8C547",
     accentBorder: "#FFFB7B",
-    paleYellow: "#3d3410",
+    // rgba(232,197,71,.13) sobre a surface.
+    paleYellow: "#3B3521",
     paleBlue: "#152329",
     dark: "#1A1A1A",
     onAccent: "#1A1A1A",
-    accentOnDark: "#FFD900",
-    shadow: "#F3F0E7", // sombra clara no escuro, senão some contra o fundo
-    // O #b3261e do claro dava 2,77:1 sobre este paper e 2,20:1 sobre
-    // esta surface — o texto mais apagado da tela era justamente o que
-    // dizia o que consertar. Este sobe pra 6,49:1 e 5,16:1.
-    erro: "#FF6B5E",
-    placeholder: "#9e9681", // 4,89:1 sobre a surface, 6,16:1 sobre o paper
-    // No escuro inverte: texto claro e saturado sobre fundo escuro do
-    // mesmo estado. ok 7,13:1 sobre o okFundo e 8,14:1 sobre a surface;
-    // atencao 7,58:1 e 8,20:1; erro 5,09:1 sobre o erroFundo.
-    ok: "#6fd88a",
-    okFundo: "#173a22",
-    atencao: "#ffb547",
-    atencaoFundo: "#3f2c0b",
-    erroFundo: "#45201b",
+    accentOnDark: "#E8C547",
+    accentText: "#EBCB5E",
+    foco: "#E8C547",
+    // A sombra deixou de ser clara: o mesmo tom do texto contornando
+    // cada cartão era a moldura que brilhava. Agora a profundidade vem
+    // da sombra difusa (--sombra-* em app/tokens-css.ts).
+    shadow: "#000000",
+    // 6,93:1 sobre a surface e 5,60:1 sobre o erroFundo. O #FF6B5E de
+    // antes lia, mas era neon perto do resto.
+    erro: "#E8918A",
+    placeholder: "#9A9284", // 5,34:1 sobre a surface, 4,96:1 sobre o paperSoft
+    // No escuro inverte: texto claro sobre fundo escuro do mesmo estado
+    // (o fundo é a cor a 12% sobre a surface). ok 6,71:1 sobre o okFundo
+    // e 8,51:1 sobre a surface; atencao 6,28:1 e 7,87:1.
+    ok: "#86C99E",
+    okFundo: "#2D332B",
+    atencao: "#E3A862",
+    atencaoFundo: "#382F24",
+    erroFundo: "#392D28",
   },
 } as const;
 
@@ -128,11 +160,12 @@ export const spacing = {
   xxl: 48,
 } as const;
 
-// 2px é a borda da assinatura neobrutalista; 1px fica pras divisórias
-// internas de lista, que com 2px virariam grade.
+// Desde 17/10 o contorno é um fio de 1px (a moldura de 2px competia com
+// o conteúdo). As duas medidas ficam com nome próprio porque dizem
+// coisas diferentes: o contorno de um controle e a divisória de lista.
 export const borderWidth = {
   hairline: 1,
-  padrao: 2,
+  padrao: 1,
 } as const;
 
 export const fontSize = {

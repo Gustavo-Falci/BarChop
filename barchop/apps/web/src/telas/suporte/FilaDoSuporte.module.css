@@ -24,7 +24,7 @@
   display: grid;
   gap: var(--espaco-sm);
   padding: var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
 }
@@ -62,7 +62,7 @@
 
 .area {
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: var(--cor-ink);

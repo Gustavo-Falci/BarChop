@@ -18,8 +18,10 @@ import estilos from "./DashboardDoDia.module.css";
 import { BarraDeOcupacao } from "./hoje/BarraDeOcupacao";
 import { CartaoDoLink } from "./hoje/CartaoDoLink";
 import { JanelaDeCompartilhar } from "./hoje/JanelaDeCompartilhar";
+import { ProximoEmDestaque } from "./hoje/ProximoEmDestaque";
 import { ProximosAtendimentos } from "./hoje/ProximosAtendimentos";
 import { TrilhaDoOnboarding } from "./TrilhaDoOnboarding";
+import { Carregando } from "../../componentes/Carregando";
 
 // O Hoje (painel v2, marco 4). No desktop, os próximos atendimentos à
 // esquerda e o link e a ocupação à direita; no celular, uma coluna.
@@ -57,7 +59,7 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
   if (agendamentos.erro) {
     return <Aviso>{agendamentos.erro.mensagem || "Não foi possível carregar o dia agora."}</Aviso>;
   }
-  if (!agendamentos.dados) return <p>Carregando…</p>;
+  if (!agendamentos.dados) return <Carregando />;
 
   const doDia = agendamentos.dados;
   // O endereço inteiro, que abre fora do painel (WhatsApp, QR).
@@ -73,6 +75,12 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
             Novo agendamento
           </Botao>
         }
+      />
+
+      <ProximoEmDestaque
+        doDia={doDia}
+        agora={agora}
+        aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
       />
 
       {/* Só pro dono: a rota da trilha é dele, e os passos apontam pra

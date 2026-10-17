@@ -127,8 +127,11 @@
 
 /* Os dois planos pagos em cartões: o rádio fica escondido e o cartão
    inteiro é o alvo do toque. */
+/* Os dois planos lado a lado quando cabem (17/10): empilhados, o mesmo
+   preço aparecia em quatro lugares antes de dar pra comparar. */
 .planos {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--espaco-md);
   margin: 0;
   padding: 0;
@@ -164,7 +167,7 @@
 
 .cartaoDoPlano:has(.radioDoPlano:checked) {
   border-color: var(--cor-ink);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
 }
 
 .cartaoDoPlano:has(.radioDoPlano:disabled) {
@@ -173,7 +176,7 @@
 }
 
 .cartaoDoPlano:has(.radioDoPlano:focus-visible) {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -211,10 +214,10 @@
   display: grid;
   gap: var(--espaco-md);
   padding: var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
   min-width: 0;
 }
 
@@ -336,7 +339,7 @@
 }
 
 .passo:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

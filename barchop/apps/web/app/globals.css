@@ -9,9 +9,13 @@
   --fonte-corpo: var(--fonte-inter);
 }
 
+/* O fundo desce do paper ao paperFim: sem variação, a tela inteira
+   parecia chapada. `fixed` pra o degradê ser da janela, não da página —
+   numa tela longa ele se esticaria até sumir. Num fundo próprio da
+   Aparência os dois são a mesma cor. */
 body {
   margin: 0;
-  background: var(--cor-paper);
+  background: var(--cor-paper) linear-gradient(180deg, var(--cor-paper), var(--cor-paper-fim)) fixed;
   color: var(--cor-ink);
   font-family: var(--fonte-corpo), Inter, system-ui, -apple-system, sans-serif;
   font-size: var(--texto-md);
@@ -70,8 +74,23 @@ input[type="radio"] {
    quem tem outro — o chip em pílula e o cartão perderiam a forma
    enquanto focados. */
 :focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
+}
+
+/* Hover de linha, item e botão: a cor muda em 160ms em vez de saltar.
+   Só cor — quem mexe em transform declara a própria transição, e a
+   classe do componente vence este seletor de elemento. */
+a,
+button,
+summary,
+[role="button"],
+[role="tab"],
+[role="menuitem"] {
+  transition:
+    background-color var(--duracao-curta) ease,
+    border-color var(--duracao-curta) ease,
+    color var(--duracao-curta) ease;
 }
 
 /* A assinatura da casa é sombra deslocada e o botão afundando nela.
@@ -84,5 +103,29 @@ input[type="radio"] {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Toda janela (<dialog> aberta com showModal) entra com fade e uma
+   escala curta, e o véu atrás dela aparece junto. Antes ela surgia de
+   uma vez. 180ms: ferramenta de trabalho, não vitrine. */
+dialog[open] {
+  animation: janela-entra 180ms var(--curva-entrada);
+}
+
+dialog[open]::backdrop {
+  animation: veu-entra 180ms ease;
+}
+
+@keyframes janela-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes veu-entra {
+  from {
+    opacity: 0;
   }
 }

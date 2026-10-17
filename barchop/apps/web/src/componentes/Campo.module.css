@@ -12,7 +12,7 @@
 
 .entrada {
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-campo, var(--raio-sm));
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -75,15 +75,17 @@
    em nada. `:focus-visible` e não `:focus` pra o anel não aparecer
    depois de um clique de mouse. */
 .revelar:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: -3px;
   color: var(--cor-ink);
 }
 
 /* Texto de apoio que fica: a dica de formato no placeholder some na
    primeira tecla, que é justamente quando ela é necessária. */
+/* 14px: a ajuda sob o campo é texto de leitura (análise de 17/10); em
+   12px ficava abaixo do mínimo confortável. */
 .apoio {
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
 }
 

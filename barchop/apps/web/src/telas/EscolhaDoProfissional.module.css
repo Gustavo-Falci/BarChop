@@ -24,7 +24,7 @@
   width: 100%;
   min-height: 56px;
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
   border-radius: var(--raio-cartao, var(--raio-md, var(--raio-sm)));
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -38,7 +38,7 @@
 }
 
 .opcao:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

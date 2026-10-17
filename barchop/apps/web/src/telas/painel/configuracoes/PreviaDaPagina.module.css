@@ -101,7 +101,7 @@
 
 .radio:focus-visible + .rotuloDoSegmento,
 .radio:focus-visible + .rotuloDaPagina {
-  outline: 2px solid var(--cor-ink);
+  outline: 2px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -277,7 +277,7 @@
 }
 
 .interruptor:focus-visible .trilho {
-  outline: 2px solid var(--cor-ink);
+  outline: 2px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -310,7 +310,7 @@
   height: 94vh;
   max-height: none;
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
   color: var(--cor-ink);

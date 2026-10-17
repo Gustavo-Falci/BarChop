@@ -70,6 +70,55 @@ describe("Hoje", () => {
     expect(numeroDe(/previsto hoje/i)).toBe("R$ 80,00");
   });
 
+  // O que o barbeiro procura entre um corte e outro (17/10): no celular,
+  // o próximo atendimento vem primeiro, com o WhatsApp a um toque. O CSS
+  // o mostra só abaixo de 640px; aqui vale o que ele diz e faz.
+  describe("o próximo atendimento em destaque", () => {
+    async function destaque() {
+      return screen.findByRole("region", { name: /^próximo atendimento$/i });
+    }
+
+    it("diz quem é, quando e quanto falta", async () => {
+      montarPainel(<DashboardDoDia agora={AGORA} />, semear());
+
+      const regiao = await destaque();
+
+      expect(regiao).toHaveTextContent("11:00");
+      expect(regiao).toHaveTextContent("João Silva");
+      expect(regiao).toHaveTextContent("Corte");
+      expect(regiao).toHaveTextContent(/em 1h/i);
+    });
+
+    it("WhatsApp abre a conversa com o cliente", async () => {
+      montarPainel(<DashboardDoDia agora={AGORA} />, semear());
+
+      const zap = within(await destaque()).getByRole("link", { name: /WhatsApp/ });
+
+      expect(zap).toHaveAttribute("href", "https://wa.me/5511999990001");
+    });
+
+    it("Abrir leva ao detalhe", async () => {
+      montarPainel(<DashboardDoDia agora={AGORA} />, semear());
+
+      await userEvent.click(within(await destaque()).getByRole("button", { name: "Abrir" }));
+
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agendamentos/a1");
+    });
+
+    it("em curso, diz agora", async () => {
+      montarPainel(<DashboardDoDia agora={AGORA} />, semear([marcado("a1", "09:45", "10:30")]));
+
+      expect(await destaque()).toHaveTextContent(/agora/i);
+    });
+
+    it("sem nada mais hoje, não aparece", async () => {
+      montarPainel(<DashboardDoDia agora={AGORA} />, semear([marcado("a0", "08:00", "08:30")]));
+
+      await proximosAtendimentos();
+      expect(screen.queryByRole("region", { name: /^próximo atendimento$/i })).toBeNull();
+    });
+  });
+
   it("lista os próximos atendimentos e leva ao detalhe", async () => {
     montarPainel(<DashboardDoDia agora={AGORA} />, semear());
 

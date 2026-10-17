@@ -2,7 +2,7 @@
    script de tema trava data-theme="light" fora do /painel), e o
    rodapé fecha a página em contraste. */
 .rodape {
-  border-top: var(--borda-padrao) solid var(--cor-ink);
+  border-top: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-dark);
   color: var(--cor-paper);
 }

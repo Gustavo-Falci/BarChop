@@ -19,14 +19,16 @@
   color: var(--cor-ink-soft);
 }
 
+/* 14px: a ajuda sob o campo é texto de leitura (análise de 17/10); em
+   12px ficava abaixo do mínimo confortável. */
 .apoio {
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
 }
 
 .area {
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -143,7 +145,7 @@
   width: 100%;
   height: 8px;
   overflow: hidden;
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-paper-soft);
 }
@@ -161,10 +163,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
   overflow: hidden;
 }
 
@@ -202,25 +204,21 @@
   font-size: var(--texto-sm);
 }
 
-/* Ainda não decidida: a frase é a consequência, na cor de atenção, sobre
-   o fundo claro do mesmo estado. */
-.faltando {
-  background: var(--cor-atencao-fundo);
+/* Ainda não decidida: a frase da consequência no cinza de apoio e o
+   "Configurar" num selo âmbar. Antes a linha inteira era âmbar, e com
+   quatro de seis faltando o índice virava um bloco laranja de texto. */
+.faltando .valor {
+  color: var(--cor-ink-soft);
 }
 
-.faltando:hover {
-  background: var(--cor-atencao-fundo);
-}
-
-.faltando .valor,
 .configurar {
+  padding: 2px var(--espaco-sm);
+  border-radius: var(--raio-pill);
+  background: var(--cor-atencao-fundo);
   color: var(--cor-atencao);
-  font-weight: 600;
-}
-
-.configurar {
+  font-size: var(--texto-xs);
+  font-weight: 700;
   white-space: nowrap;
-  font-size: var(--texto-sm);
 }
 
 .seta {
@@ -427,23 +425,22 @@
   border-color: var(--cor-ink);
 }
 
-/* Marcado: o desenho da pílula escolhida (SeletorEmPilulas), mais o
-   check, pra que a diferença não seja só a cor. */
+/* Marcado: tom suave da marca com o check, pra que a diferença não seja
+   só a cor. O amarelo cheio acendia o cartão inteiro. */
 .caixaEscondida:checked + .desenhoDoCartao {
-  border-color: var(--cor-ink);
-  background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
-  color: var(--cor-dark);
+  border-color: color-mix(in srgb, var(--cor-accent) 45%, var(--cor-line));
+  background: var(--cor-pale-yellow);
+  color: var(--cor-ink);
 }
 .caixaEscondida:checked + .desenhoDoCartao .iconeDoCartao {
-  color: var(--cor-dark);
+  color: var(--cor-accent-text);
 }
 .caixaEscondida:checked + .desenhoDoCartao .checkDoCartao {
   visibility: visible;
 }
 
 .caixaEscondida:focus-visible + .desenhoDoCartao {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -548,12 +545,12 @@
 .marcaEscondida:checked + span {
   border-color: var(--cor-ink);
   background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   color: var(--cor-dark);
 }
 
 .marcaEscondida:focus-visible + span {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

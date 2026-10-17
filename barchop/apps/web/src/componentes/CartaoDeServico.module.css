@@ -4,26 +4,26 @@
    botão apertado, e é o que diz "escolhido" sem depender só da cor. */
 .cartao {
   list-style: none;
-  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
   border-radius: var(--raio-cartao, var(--raio-md));
   background: var(--cor-surface);
-  box-shadow: var(--cartao-sombra, 0 4px 0 var(--cor-shadow));
+  box-shadow: var(--cartao-sombra, var(--sombra-1));
   transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
 
-.cartao:hover { transform: translateY(-1px); box-shadow: var(--cartao-sombra-hover, 0 5px 0 var(--cor-shadow)); }
+.cartao:hover { transform: translateY(-1px); box-shadow: var(--cartao-sombra-hover, var(--sombra-2)); }
 
 .marcado,
 .marcado:hover {
   background: var(--cor-pale-yellow);
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--cor-shadow);
+  transform: translateY(1px);
+  box-shadow: none;
 }
 
 /* O anel de foco vai no cartão inteiro: o checkbox de verdade está
    escondido, e um anel num quadrado de 1px não se veria. */
 .cartao:has(.caixa:focus-visible) {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 3px;
 }
 
@@ -133,7 +133,7 @@
   place-items: center;
   width: 32px;
   height: 32px;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: transparent;
@@ -175,7 +175,7 @@
 
 .horario {
   padding: 4px 10px;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-paper-soft);
   color: var(--cor-ink);

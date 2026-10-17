@@ -71,6 +71,20 @@
   gap: var(--espaco-sm);
 }
 
+/* Desativar como zona de perigo: separado do formulário por um fio e
+   num quadro de contorno avermelhado, com o botão na cor do erro. */
+.acaoDoEstado[data-perigo] {
+  margin-block-start: var(--espaco-lg);
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-hairline) solid color-mix(in srgb, var(--cor-erro) 35%, var(--cor-line));
+  border-radius: var(--raio-md);
+}
+
+.acaoDoEstado[data-perigo] button {
+  border-color: color-mix(in srgb, var(--cor-erro) 45%, var(--cor-line));
+  color: var(--cor-erro);
+}
+
 .acaoDoEstado .apoio {
   max-width: 34ch;
   text-align: right;
@@ -120,7 +134,7 @@
 
 .area {
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: var(--cor-ink);

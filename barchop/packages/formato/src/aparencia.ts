@@ -299,9 +299,11 @@ export function temaPorId(id: IdDoTema): (typeof TEMAS)[number] {
   return TEMAS.find((item) => item.id === id) ?? TEMAS[0];
 }
 
-// As 16 bolinhas da cor da marca.
+// As 16 bolinhas da cor da marca. A primeira é o ouro da casa (desde
+// 17/10, no lugar do #FFD900; quem já tinha o amarelo antigo salvo
+// continua com ele, só que como cor própria).
 export const CORES_DA_MARCA = [
-  "#FFD900",
+  "#F0C93A",
   "#2563EB",
   "#475569",
   "#0369A1",
@@ -422,18 +424,24 @@ function derivar(sementes: Sementes): CoresDaPagina {
   return {
     ...base,
     paper: fundo,
+    // Fundo próprio é chapado: o degradê é do papel da casa.
+    paperFim: fundo,
     paperSoft,
     surface,
     ink: texto,
     inkSoft: garantirContraste(misturar(texto, fundo, 0.22), texto, fundos, 4.5),
     muted,
     line: misturar(fundo, texto, escuro ? 0.18 : 0.12),
+    lineStrong: misturar(fundo, texto, escuro ? 0.26 : 0.2),
     accent: marca,
     accentBorder: misturar(marca, BRANCO, 0.45),
     paleYellow: misturar(fundo, realce, escuro ? 0.22 : 0.16),
     onAccent: textoSobre(marca),
     accentOnDark: marcaSobreOEscuro(marca),
-    shadow: escuro ? texto : "#000000",
+    // A marca de cada tema não tem contraste garantido com o fundo; o
+    // texto tem (7:1).
+    foco: texto,
+    shadow: "#000000",
     placeholder: muted,
   };
 }
@@ -462,6 +470,8 @@ function paletaDoModo(aparencia: Aparencia, modo: Modo): CoresDaPagina {
     paleta.accentBorder = misturar(minhas.marca, BRANCO, 0.45);
     paleta.onAccent = textoSobre(minhas.marca);
     paleta.accentOnDark = marcaSobreOEscuro(minhas.marca);
+    // O ouro da casa no anel de foco destoaria de uma marca azul.
+    paleta.foco = paleta.ink;
   }
   for (const nome of NOVE_CORES) {
     const cor = minhas[nome];
@@ -477,6 +487,11 @@ function paletaDoModo(aparencia: Aparencia, modo: Modo): CoresDaPagina {
     paleta.accentBorder = misturar(visivel, BRANCO, 0.45);
     paleta.onAccent = textoSobre(visivel);
     paleta.accentOnDark = marcaSobreOEscuro(visivel);
+  }
+  // A marca como texto acompanha a marca de cada tema; no BarChop puro
+  // fica o tom do token, que já é o ouro escurecido.
+  if (paleta.accent !== (modo === "escuro" ? colors.dark.accent : colors.light.accent)) {
+    paleta.accentText = textoDaMarca(paleta);
   }
   return paleta;
 }

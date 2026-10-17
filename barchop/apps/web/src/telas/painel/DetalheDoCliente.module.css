@@ -80,7 +80,7 @@
 }
 
 .linha:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: -3px;
 }
 
@@ -180,4 +180,21 @@
   display: grid;
   flex-basis: 100%;
   gap: var(--espaco-sm);
+}
+
+/* Os dados em leitura: rótulo pequeno em cima, valor embaixo. */
+.leitura {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+}
+
+.leitura dt {
+  color: var(--cor-muted);
+  font-size: var(--texto-sm);
+}
+
+.leitura dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
 }

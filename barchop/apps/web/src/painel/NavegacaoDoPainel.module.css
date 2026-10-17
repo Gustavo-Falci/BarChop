@@ -1,3 +1,13 @@
+/* A largura da lateral é custom property registrada: só assim o
+   navegador sabe interpolá-la, e recolher a barra desliza em 200ms em
+   vez de saltar. Sem o @property, `grid-template-columns` com var() não
+   anima. */
+@property --largura-da-barra {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 260px;
+}
+
 /* O shell do painel ocupa a janela inteira e NÃO rola: quem rola é a
    área de conteúdo, ou — na agenda — o corpo da grade dentro dela. É o
    que põe a barra de rolagem junto do conteúdo em vez de na beira da
@@ -10,11 +20,6 @@
    pela vertical: sem ele a linha cresceria com o conteúdo e a rolagem
    interna nunca aconteceria. */
 .shell {
-  /* A largura da lateral é token e não número solto: o estado recolhido
-     troca só este valor, e a grade continua sendo a mesma regra. Sem
-     transição de propósito — `grid-template-columns` não interpola com
-     `var()` sem `@property`, e a casa é de sombra dura, não de
-     movimento. */
   --largura-da-barra: 260px;
 
   display: grid;
@@ -22,6 +27,7 @@
   grid-template-rows: minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
+  transition: --largura-da-barra var(--duracao-media) var(--curva-entrada);
 }
 
 .barra {
@@ -29,83 +35,106 @@
   flex-direction: column;
   gap: var(--espaco-lg);
   padding: var(--espaco-lg) var(--espaco-md);
-  border-inline-end: var(--borda-padrao) solid var(--cor-ink);
+  border-inline-end: var(--borda-hairline) solid var(--cor-line);
   background: var(--cor-paper-soft);
   /* Sem `sticky`: o shell não rola mais, então a lateral já fica parada
      por construção. Ela rola por dentro se a lista de seções crescer
      além da janela. */
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
+/* A marca é o monograma (ou a logo) e o nome lado a lado. O amarelo
+   ficou só no selo da inicial: a marca inteira em amarelo, o item ativo
+   em amarelo e o botão em amarelo eram três manchas disputando o topo. */
 .marca {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
-  padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
-  border-radius: var(--raio-md);
-  background: var(--cor-accent);
-  box-shadow: 0 4px 0 var(--cor-shadow);
-  color: var(--cor-dark);
+  gap: var(--espaco-sm);
+  min-width: 0;
+  padding: var(--espaco-xs) var(--espaco-xs);
+  color: var(--cor-ink);
   font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: var(--texto-lg);
-  /* O slug da barbearia pode ser longo (até 80 caracteres) e não pode
-     empurrar a largura da lateral nem quebrar em duas linhas. */
-  overflow: hidden;
+  font-size: var(--texto-md);
   white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
-/* O nome dentro da marca: é ele que corta com reticências, agora que a
-   marca pode ter a logo ao lado. */
+.monograma {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--raio-sm);
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+  font-size: var(--texto-md);
+  line-height: 1;
+}
+
+/* O nome dentro da marca: é ele que corta com reticências. O slug pode
+   ter até 80 caracteres e não pode empurrar a largura da lateral nem
+   quebrar em duas linhas. */
 .nomeDaMarca {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Com logo, a marca deixa de ser o selo amarelo: a logo já é a cor da
-   barbearia, e ela dentro de um selo amarelo virava adesivo em cima de
-   adesivo. Fica a logo e o nome, lado a lado. */
-.marca[data-com-logo] {
-  gap: var(--espaco-sm);
-  padding: var(--espaco-xs) 0;
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  color: var(--cor-ink);
-}
-
 .links {
   display: flex;
   flex-direction: column;
-  gap: var(--espaco-xs);
+  gap: 2px;
 }
 
-.links a {
+.links a,
+.mais {
   display: flex;
   align-items: center;
   gap: var(--espaco-sm);
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid transparent;
+  border: var(--borda-hairline) solid transparent;
   border-radius: var(--raio-md);
+  background: none;
   color: var(--cor-ink-soft);
+  font: inherit;
   font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.links a:hover {
-  border-color: var(--cor-line);
+.links a:hover,
+.mais:hover {
   background: var(--cor-surface);
   color: var(--cor-ink);
 }
 
-/* O estado atual não se anuncia só pela cor: ganha borda, fundo e a
-   sombra deslocada da casa, então continua legível em escala de cinza
-   e pra quem não distingue o amarelo do bege. */
-.links a[aria-current="page"] {
-  border-color: var(--cor-ink);
-  background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
-  color: var(--cor-dark);
+/* O atual em tom suave, com o ícone em ouro. Não se anuncia só pela
+   cor: o fundo e o fio o distinguem em escala de cinza também. */
+.links a[aria-current="page"],
+.mais[data-atual] {
+  border-color: var(--cor-line);
+  background: var(--cor-pale-yellow);
+  color: var(--cor-ink);
+}
+
+.links a[aria-current="page"] svg,
+.mais[data-atual] svg {
+  color: var(--cor-accent-text);
+}
+
+/* Só existem no celular: o "Novo" no centro da barra e o "Mais". No
+   desktop, `display: none` os tira da vista e do leitor de tela; o grupo
+   do Mais some pra layout (`contents`) e as seções seguem na lista. */
+.links .novo,
+.links .mais {
+  display: none;
+}
+
+.grupoDoMais,
+.secundarias {
+  display: contents;
 }
 
 /* A coluna da direita: barra de topo parada em cima, conteúdo rolando
@@ -113,16 +142,15 @@
    pra a rolagem acontecer dentro dele e não na janela. */
 .coluna {
   display: grid;
+  /* A coluna explícita com mínimo zero: sem ela, a coluna implícita
+     crescia até o conteúdo mais largo (a tabela de clientes, que não
+     quebra linha), e no celular a página passava da tela. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
 }
 
-/* A área de conteúdo. O container centra e limita a medida: o painel
-   abria com tudo colado na esquerda porque cada tela tinha `max-width`
-   sem `margin-inline: auto`, e numa tela de 1920 sobravam 1200px de
-   vazio. 1180px é largura de dashboard — cabe a agenda de sete
-   colunas sem virar linha de texto longa demais pra ler. */
 /* A rolagem que era da página. `min-height: 0` para o item de grid poder
    encolher abaixo do próprio conteúdo — sem ele a área cresce e a
    rolagem volta para a janela, que é o que se quer evitar. */
@@ -132,15 +160,14 @@
   padding: var(--espaco-xl) var(--espaco-lg);
 }
 
-/* Coluna de altura DEFINIDA, não apenas mínima. É a diferença que faz a
+/* O container centra e limita a medida: 1180px é largura de dashboard —
+   cabe a agenda de sete colunas sem virar linha de texto longa demais.
+
+   Coluna de altura DEFINIDA, não apenas mínima. É a diferença que faz a
    agenda rolar por dentro: `min-height` deixa a altura em `auto`, e
    `flex: 1` num pai de altura automática não distribui espaço nenhum —
    os filhos voltam a crescer com o conteúdo e a rolagem escapa para
-   fora. Com `height`, a altura desce definida até a grade.
-
-   Para as telas de altura natural nada quebra: o conteúdo mais alto que
-   a janela transborda daqui e quem rola é a área de conteúdo, que é
-   justamente o que ela existe para fazer. */
+   fora. Com `height`, a altura desce definida até a grade. */
 .container {
   display: flex;
   flex-direction: column;
@@ -150,28 +177,21 @@
 }
 
 /* Uma tela pede largura cheia marcando a própria raiz com
-   `data-largura="cheia"`. É a agenda: grade de sete colunas, que na
-   medida de 1180px fica espremida numa tela larga, enquanto lista e
-   formulário continuam precisando dela para não virar linha longa
-   demais de ler.
-
-   Lido daqui com `:has()` porque a decisão nasce na tela e o limite
-   mora no container, que é o pai — custom property desceria, mas não
-   sobe. */
+   `data-largura="cheia"` (a agenda). Lido daqui com `:has()` porque a
+   decisão nasce na tela e o limite mora no container, que é o pai. */
 .container:has([data-largura="cheia"]) {
   max-width: none;
 }
 
 /* O botão que recolhe. Fica no topo, logo abaixo da marca, porque é de
-   lá que a barra cresce e encolhe — no rodapé ele ficaria longe do que
-   controla. */
+   lá que a barra cresce e encolhe. */
 .alternador {
   display: flex;
   align-items: center;
   gap: var(--espaco-sm);
   align-self: flex-start;
   padding: var(--espaco-xs) var(--espaco-sm);
-  border: var(--borda-padrao) solid transparent;
+  border: var(--borda-hairline) solid transparent;
   border-radius: var(--raio-md);
   background: none;
   color: var(--cor-ink-soft);
@@ -181,13 +201,15 @@
 }
 
 .alternador:hover {
-  border-color: var(--cor-line);
   background: var(--cor-surface);
   color: var(--cor-ink);
 }
 
-/* Uma seta só no arquivo de ícones, girada aqui: desenhar as duas
-   direções seria o mesmo caminho espelhado duas vezes. */
+.seta {
+  transition: transform var(--duracao-media) var(--curva-entrada);
+}
+
+/* Uma seta só no arquivo de ícones, girada aqui. */
 :global(html[data-barra="recolhida"]) .seta {
   transform: rotate(180deg);
 }
@@ -197,9 +219,7 @@
 
    O seletor pende de `html[data-barra]` e não de uma classe do React de
    propósito: é o mesmo atributo que o script do <head> escreve antes da
-   primeira pintura. Com uma classe, o primeiro quadro viria largo e
-   saltaria para estreito assim que o React montasse. Uma fonte de
-   verdade só, e ela chega antes do React. */
+   primeira pintura. Uma fonte de verdade só, e ela chega antes do React. */
 
 :global(html[data-barra="recolhida"]) .shell {
   --largura-da-barra: 76px;
@@ -210,14 +230,11 @@
   padding-inline: var(--espaco-sm);
 }
 
-/* O rótulo sai da vista, não do DOM. É o que mantém o nome acessível de
-   cada link e de cada botão: com `display: none` a barra recolhida
-   viraria cinco links sem nome nenhum pra quem usa leitor de tela. */
-:global(html[data-barra="recolhida"]) .rotulo {
-  /* Sem `position: absolute` de propósito: nenhum destes botões é
-     ancestral posicionado, e o rótulo resolveria contra a .marca (a
-     única que é) ou contra o bloco inicial. 1px mais o clip já o tiram
-     da vista sem sair do fluxo. */
+/* O rótulo e o nome saem da vista, não do DOM: é o que mantém o nome
+   acessível de cada link e de cada botão. */
+:global(html[data-barra="recolhida"]) .rotulo,
+:global(html[data-barra="recolhida"]) .nomeDaMarca {
+  position: absolute;
   width: 1px;
   height: 1px;
   padding: 0;
@@ -230,8 +247,8 @@
 :global(html[data-barra="recolhida"]) .links a,
 :global(html[data-barra="recolhida"]) .alternador {
   justify-content: center;
-  /* Quadrado: sem o texto, o padding lateral da versão larga deixaria
-     alvos de clique de larguras diferentes lado a lado. */
+  /* Quadrado: sem o texto, o padding lateral deixaria alvos de clique de
+     larguras diferentes lado a lado. */
   gap: 0;
   padding-inline: 0;
   width: 44px;
@@ -242,114 +259,181 @@
   align-self: center;
 }
 
-/* A marca troca o slug pela inicial. O texto continua no elemento, só
-   escondido — o `::after` desenha a letra que o atributo carrega. */
 :global(html[data-barra="recolhida"]) .marca {
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  font-size: var(--texto-lg);
-  color: transparent;
+  padding-inline: 0;
 }
 
-/* Recolhida e com logo: só a logo, centrada. O nome sai da vista mas
-   fica pro leitor de tela; a inicial do ::after não aparece. */
-:global(html[data-barra="recolhida"]) .marca[data-com-logo] {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-}
-
-:global(html[data-barra="recolhida"]) .marca[data-com-logo] .nomeDaMarca {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-:global(html[data-barra="recolhida"]) .marca[data-com-logo]::after {
-  content: none;
-}
-
-:global(html[data-barra="recolhida"]) .marca::after {
-  position: absolute;
-  content: attr(data-inicial);
-  color: var(--cor-dark);
-}
-
-/* `relative` para o ::after acima se ancorar nela, e não na página. */
-.marca {
-  position: relative;
-}
-
-/* Abaixo de 900px a lateral vira uma faixa no topo e a navegação rola
-   na horizontal — é o mesmo conjunto de links, sem menu escondido. */
+/* ------------------------------------------------------------------ */
+/* Celular: abaixo de 900px a lateral vira uma faixa fina no topo, só com
+   a marca, e as seções descem pra uma barra fixa no pé da tela, onde o
+   polegar alcança. Cinco alvos de 44px ou mais: Hoje, Agenda, Novo,
+   Caixa e Mais. */
 @media (max-width: 900px) {
-  /* Empilhado, o shell volta a rolar como página: faixa no topo e
-     conteúdo abaixo não cabem numa janela de celular sem espremer os
-     dois. */
+  /* Empilhado, o shell volta a rolar como página. */
   .shell {
-    /* `minmax(0, 1fr)` e não `1fr`: item de grid não encolhe abaixo do
-       próprio conteúdo, e sem o zero a faixa de navegação esticava a
-       coluna e quem rolava na horizontal era a janela inteira, não a
-       lista de seções. É o mesmo motivo do `minmax` na versão larga. */
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto;
     height: auto;
     min-height: 100vh;
     overflow: visible;
-  }
-
-  .conteudo {
-    overflow-y: visible;
+    transition: none;
   }
 
   .coluna {
     grid-template-rows: auto auto;
   }
 
-  .barra {
-    height: auto;
-    overflow-y: visible;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--espaco-md);
-    border-inline-end: none;
-    border-block-end: var(--borda-padrao) solid var(--cor-ink);
-  }
-
-  .links {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    margin-inline-end: auto;
-    /* `min-width: 0` e não só `overflow-x`: item de flex não encolhe
-       abaixo do próprio conteúdo por padrão, então a faixa empurrava a
-       página inteira e quem rolava na horizontal era a janela, não a
-       lista. Com os ícones a diferença ficou grande demais pra
-       ignorar. */
-    min-width: 0;
-    overflow-x: auto;
-  }
-
-  .links a {
-    white-space: nowrap;
-  }
-
+  /* O espaço da barra inferior no pé do conteúdo: sem ele, a última linha
+     da tela ficaria atrás da barra. */
   .conteudo {
-    padding: var(--espaco-lg) var(--espaco-md);
+    overflow-y: visible;
+    padding: var(--espaco-lg) var(--espaco-md) calc(88px + env(safe-area-inset-bottom));
   }
 
-  /* Recolher não faz sentido numa faixa horizontal que já é compacta, e
-     o estado gravado no desktop não pode encolher os links aqui. O
-     botão sai de cena e tudo volta ao tamanho de sempre. */
+  /* A marca sobe pro lado esquerdo da barra de topo, que ali é vazio
+     (sino e conta ficam à direita): uma faixa só no alto, não duas.
+     Fora do fluxo, a altura dela é a da barra de topo. */
+  .shell {
+    position: relative;
+    /* A altura da barra inferior, pra quem prende algo no pé da tela (a
+       barra de publicar da Aparência) subir acima dela. */
+    --recuo-inferior: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .barra {
+    position: absolute;
+    z-index: 5;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    flex-direction: row;
+    align-items: center;
+    height: 52px;
+    padding: 0 var(--espaco-md);
+    border: 0;
+    background: none;
+    overflow: visible;
+  }
+
+  .marca {
+    /* Deixa livre o sino, o "…" e a conta, à direita. */
+    max-width: calc(100vw - 200px);
+  }
+
+  /* Recolher não faz sentido no celular, e o estado gravado no desktop
+     não pode encolher nada aqui. */
   .alternador {
     display: none;
   }
 
+  .links {
+    position: fixed;
+    z-index: 30;
+    inset-inline: 0;
+    inset-block-end: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+    padding: 6px var(--espaco-xs) calc(6px + env(safe-area-inset-bottom));
+    border-block-start: var(--borda-hairline) solid var(--cor-line);
+    background: var(--cor-surface);
+    box-shadow: 0 -8px 24px -16px rgba(0, 0, 0, 0.35);
+  }
+
+  .links a,
+  .mais {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 52px;
+    padding: var(--espaco-xs) 0;
+    border: 0;
+    font-size: var(--texto-xs);
+  }
+
+  .links a[aria-current="page"],
+  .mais[data-atual] {
+    border-color: transparent;
+    background: none;
+    color: var(--cor-ink);
+  }
+
+  /* Todo ícone na mesma caixa de pílula, pra a fileira alinhar: o atual
+     pinta a caixa de tom suave, o Novo de amarelo. */
+  .links a svg,
+  .mais svg {
+    padding: 4px 14px;
+    border-radius: var(--raio-pill);
+    box-sizing: content-box;
+  }
+
+  .links a[aria-current="page"] svg,
+  .mais[data-atual] svg {
+    background: var(--cor-pale-yellow);
+  }
+
+  .links .mais {
+    display: flex;
+    width: 100%;
+  }
+
+  /* O Novo no centro, em destaque: é a ação do dia. */
+  .links .novo {
+    display: flex;
+    color: var(--cor-ink);
+  }
+
+  .links .novo svg {
+    background: var(--cor-accent);
+    color: var(--cor-on-accent);
+  }
+
+  .grupoDoMais {
+    display: block;
+  }
+
+  /* A folha do Mais: sobe acima da barra, alinhada à direita. Fechada,
+     some da vista e do leitor (o botão já diz que ela existe). */
+  .secundarias {
+    position: fixed;
+    inset-inline-end: var(--espaco-sm);
+    inset-block-end: calc(72px + env(safe-area-inset-bottom));
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 220px;
+    padding: var(--espaco-xs);
+    border: var(--borda-hairline) solid var(--cor-line);
+    border-radius: var(--raio-md);
+    background: var(--cor-surface);
+    box-shadow: var(--sombra-2);
+  }
+
+  .secundarias[data-aberto] {
+    display: flex;
+    animation: subir var(--duracao-curta) var(--curva-entrada);
+  }
+
+  .secundarias a {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--espaco-sm);
+    min-height: 44px;
+    padding: var(--espaco-sm) var(--espaco-md);
+    font-size: var(--texto-sm);
+  }
+
+  .secundarias a[aria-current="page"] {
+    background: var(--cor-pale-yellow);
+  }
+
+  .secundarias a svg,
+  .secundarias a[aria-current="page"] svg {
+    padding: 0;
+    background: none;
+  }
+
+  /* Recolhida no desktop, a barra do celular continua igual. */
   :global(html[data-barra="recolhida"]) .shell {
     --largura-da-barra: 260px;
   }
@@ -359,7 +443,9 @@
     padding-inline: var(--espaco-md);
   }
 
-  :global(html[data-barra="recolhida"]) .rotulo {
+  :global(html[data-barra="recolhida"]) .rotulo,
+  :global(html[data-barra="recolhida"]) .nomeDaMarca {
+    position: static;
     width: auto;
     height: auto;
     overflow: visible;
@@ -367,20 +453,25 @@
   }
 
   :global(html[data-barra="recolhida"]) .links a {
-    gap: var(--espaco-sm);
+    gap: 2px;
     width: auto;
     height: auto;
+    padding: var(--espaco-xs) 0;
+  }
+
+  :global(html[data-barra="recolhida"]) .secundarias a {
+    gap: var(--espaco-sm);
     padding: var(--espaco-sm) var(--espaco-md);
   }
 
   :global(html[data-barra="recolhida"]) .marca {
-    width: auto;
-    height: auto;
-    padding: var(--espaco-sm) var(--espaco-md);
-    color: var(--cor-dark);
+    justify-content: flex-start;
   }
+}
 
-  :global(html[data-barra="recolhida"]) .marca::after {
-    content: none;
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
 }

@@ -24,10 +24,10 @@
      faixa, evento e régua juntos, porque todos se medem em linhas. */
   --altura-da-linha: 12px;
 
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 /* O único que rola, e só o corpo mora aqui — o cabeçalho fica acima,
@@ -74,7 +74,7 @@
   flex-shrink: 0;
   overflow: hidden;
   scrollbar-gutter: stable;
-  border-block-end: var(--borda-padrao) solid var(--cor-ink);
+  border-block-end: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-paper-soft);
 }
 
@@ -197,19 +197,29 @@ button.diaDoCabecalho:hover .numeroDoDia {
   padding: 2px var(--espaco-xs);
   border: none;
   background: transparent;
-  color: var(--cor-muted);
+  /* A hora do livre fica escondida: a semana escrevia ~250 horários
+     iguais e o agendamento sumia no meio. Ela continua no botão (é o
+     nome dele pro leitor de tela) e aparece onde o clique vai cair. */
+  color: transparent;
   font-size: var(--texto-xs);
   line-height: 1.2;
   text-align: start;
   cursor: pointer;
 }
 
-/* Ao passar o mouse ou pelo teclado, a faixa acende: é onde o clique
-   vai cair. */
+/* Ao passar o mouse, pelo teclado ou no toque, a faixa acende com "+" e
+   a hora: é onde o clique vai cair. */
 .livre:hover,
-.livre:focus-visible {
+.livre:focus-visible,
+.livre:active {
   background: var(--cor-pale-yellow);
   color: var(--cor-ink-soft);
+}
+
+.livre:hover::before,
+.livre:focus-visible::before,
+.livre:active::before {
+  content: "+ ";
 }
 
 .passada {
@@ -239,15 +249,46 @@ button.diaDoCabecalho:hover .numeroDoDia {
   overflow: hidden;
   width: calc(100% / var(--pistas));
   margin-inline-start: calc(100% / var(--pistas) * var(--pista));
-  padding: 2px var(--espaco-xs);
-  border: var(--borda-hairline) solid var(--cor-ink);
+  /* Fundo tingido com a cor do profissional e um fio dela à esquerda:
+     o bloco amarelo chapado era a área mais clara da tela. */
+  --tom: var(--cor-accent);
+  padding: 2px var(--espaco-xs) 2px calc(var(--espaco-xs) + 3px);
+  border: 0;
+  border-inline-start: 3px solid var(--tom);
   border-radius: var(--raio-sm);
-  background: var(--cor-accent);
-  color: var(--cor-on-accent);
+  background: color-mix(in srgb, var(--tom) 18%, var(--cor-surface));
+  color: var(--cor-ink);
   text-align: start;
   font-size: var(--texto-xs);
   line-height: 1.25;
   cursor: pointer;
+  transition: background-color var(--duracao-curta) ease;
+}
+
+.evento:hover {
+  background: color-mix(in srgb, var(--tom) 30%, var(--cor-surface));
+}
+
+/* Um matiz por profissional, com o mesmo croma: nenhum grita mais que o
+   outro. O 0 é a cor da casa. */
+.evento[data-tom="1"] {
+  --tom: #5b8def;
+}
+
+.evento[data-tom="2"] {
+  --tom: #3fa67a;
+}
+
+.evento[data-tom="3"] {
+  --tom: #d9734e;
+}
+
+.evento[data-tom="4"] {
+  --tom: #a26bd6;
+}
+
+.evento[data-tom="5"] {
+  --tom: #d4609a;
 }
 
 .horaDoEvento {
@@ -262,8 +303,9 @@ button.diaDoCabecalho:hover .numeroDoDia {
   opacity: 0.8;
 }
 
-/* A régua do agora. Não usa --cor-accent, que já significa
-   "selecionado" no painel, nem o vermelho de erro, que significa falha. */
+/* A régua do agora, em vermelho suave: a convenção de calendário. É o
+   tom do erro mais apagado, pra não ler como falha; o --cor-accent já
+   significa "selecionado" no painel. */
 .agora {
   grid-row: var(--linha);
   grid-column: 1;
@@ -274,7 +316,7 @@ button.diaDoCabecalho:hover .numeroDoDia {
      vai parar depois do fechamento. */
   margin-block-start: calc(var(--fracao, 0) * var(--altura-da-linha));
   height: 0;
-  border-block-start: var(--borda-padrao) solid var(--cor-ink);
+  border-block-start: 2px solid color-mix(in srgb, var(--cor-erro) 75%, transparent);
   pointer-events: none;
 }
 
@@ -286,7 +328,7 @@ button.diaDoCabecalho:hover .numeroDoDia {
   width: 7px;
   height: 7px;
   border-radius: var(--raio-pill);
-  background: var(--cor-ink);
+  background: var(--cor-erro);
 }
 
 .fechado {

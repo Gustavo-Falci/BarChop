@@ -2,10 +2,10 @@
   display: grid;
   gap: var(--espaco-sm);
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .titulo {
@@ -38,7 +38,7 @@
 .barra {
   height: 14px;
   overflow: hidden;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-paper-soft);
 }

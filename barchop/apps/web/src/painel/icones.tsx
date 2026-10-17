@@ -383,3 +383,33 @@ export function IconeSino(props: Props) {
     </Base>
   );
 }
+
+// O "x" que fecha um aviso (a faixa da assinatura).
+export function IconeFechar(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </Base>
+  );
+}
+
+// O "+" do Novo, no centro da barra inferior do celular.
+export function IconeMais(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </Base>
+  );
+}
+
+// As quatro seções que não cabem na barra inferior, atrás do "Mais".
+export function IconeGrade(props: Props) {
+  return (
+    <Base {...props}>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
+    </Base>
+  );
+}

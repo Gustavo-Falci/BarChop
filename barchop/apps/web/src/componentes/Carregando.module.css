@@ -1,0 +1,66 @@
+.esqueleto {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+}
+
+.bloco {
+  display: block;
+  border-radius: var(--raio-md);
+  background: linear-gradient(
+    90deg,
+    var(--cor-paper-soft) 0%,
+    var(--cor-line) 50%,
+    var(--cor-paper-soft) 100%
+  );
+  background-size: 200% 100%;
+  animation: brilho 1.4s ease-in-out infinite;
+}
+
+.titulo {
+  width: min(280px, 60%);
+  height: 32px;
+}
+
+.apoio {
+  width: min(180px, 40%);
+  height: 16px;
+  margin-block-end: var(--espaco-md);
+}
+
+.cartao {
+  height: 120px;
+  border-radius: var(--raio-lg);
+}
+
+.menor {
+  height: 72px;
+}
+
+.textoOculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* O brilho que corre pelo bloco diz "está vindo" sem girar nada. Quem
+   pediu menos movimento recebe o bloco parado (regra do globals.css). */
+@keyframes brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+.linha {
+  height: 44px;
+}
+
+.curta {
+  width: 60%;
+}

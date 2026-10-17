@@ -3,10 +3,10 @@
    body — que é o jeito mais rápido de quebrar um layout. */
 .moldura {
   overflow-x: auto;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .tabela {
@@ -40,7 +40,7 @@
 .tabela th {
   text-align: left;
   padding: var(--espaco-md);
-  border-bottom: var(--borda-padrao) solid var(--cor-ink);
+  border-bottom: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-paper-soft);
   color: var(--cor-ink-soft);
   font-size: var(--texto-xs);
@@ -157,4 +157,70 @@
 /* O título do grupo não é linha de dado: sem realce no hover. */
 .tabela tbody tr.linhaDoGrupo:hover th {
   background: var(--cor-paper-soft);
+}
+
+/* No celular, cada linha vira um cartão: o nome em cima, e cada outra
+   coluna numa linha com o rótulo antes do valor. A tabela de quatro
+   colunas, rolando de lado, não cabia em 375px (análise de 17/10). */
+@media (max-width: 640px) {
+  .moldura {
+    overflow: visible;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .tabela,
+  .tabela tbody,
+  .tabela tr,
+  .tabela td,
+  .tabela th[scope="rowgroup"] {
+    display: block;
+    width: auto;
+  }
+
+  .tabela colgroup,
+  .tabela thead {
+    display: none;
+  }
+
+  .tabela tr {
+    margin-block-end: var(--espaco-sm);
+    padding: var(--espaco-sm) var(--espaco-md);
+    border: var(--borda-hairline) solid var(--cor-line);
+    border-radius: var(--raio-md);
+    background: var(--cor-surface);
+  }
+
+  .tabela td {
+    padding: 2px 0;
+    border: 0;
+    text-align: start;
+  }
+
+  .tabela td[data-rotulo]:not(:first-child) {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--espaco-md);
+    color: var(--cor-ink-soft);
+    font-size: var(--texto-sm);
+  }
+
+  .tabela td[data-rotulo]:not(:first-child)::before {
+    content: attr(data-rotulo);
+    color: var(--cor-muted);
+  }
+
+  /* A célula sem rótulo só com a seta de abrir não ocupa linha no
+     cartão (o cartão inteiro já abre); a que tem ações (o WhatsApp e o
+     Agendar dos clientes) vai pro pé do cartão. */
+  .tabela td:not([data-rotulo]):not(:first-child):not(:has(a, button)) {
+    display: none;
+  }
+
+  .tabela td:not([data-rotulo]):not(:first-child):has(a, button) {
+    display: flex;
+    justify-content: flex-end;
+    padding-block-start: var(--espaco-xs);
+  }
 }

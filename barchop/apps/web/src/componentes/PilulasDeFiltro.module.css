@@ -27,43 +27,34 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Os tons pintam só a pílula NÃO escolhida: a escolhida é sempre
-   amarela, senão "estar filtrando" e "ter atrasados" teriam a mesma
-   cara. */
-.ok {
-  border-color: var(--cor-ok);
+/* O tom pinta só a contagem, num selo. Pintando a pílula inteira, a
+   não escolhida de tom verde parecia a escolhida. */
+.ok .contagem,
+.atencao .contagem,
+.erro .contagem {
+  padding: 0 6px;
+  border-radius: var(--raio-pill);
+}
+
+.ok .contagem {
   background: var(--cor-ok-fundo);
   color: var(--cor-ok);
 }
 
-.atencao {
-  border-color: var(--cor-atencao);
+.atencao .contagem {
   background: var(--cor-atencao-fundo);
   color: var(--cor-atencao);
 }
 
-.erro {
-  border-color: var(--cor-erro);
+.erro .contagem {
   background: var(--cor-erro-fundo);
   color: var(--cor-erro);
 }
 
-.ok .contagem,
-.atencao .contagem,
-.erro .contagem {
-  color: inherit;
-}
-
-/* A escolhida: amarelo com a sombra deslocada, igual à vista corrente
-   da agenda e ao item ativo da barra lateral — mesmo significado, mesmo
-   desenho. */
+/* A escolhida: o selecionado em tom suave com o contorno de tinta. Sem
+   o amarelo cheio, que fica pra ação principal. */
 .pilula[aria-pressed="true"] {
   border-color: var(--cor-ink);
-  background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
-  color: var(--cor-on-accent);
-}
-
-.pilula[aria-pressed="true"] .contagem {
-  color: var(--cor-on-accent);
+  background: var(--cor-pale-yellow);
+  color: var(--cor-ink);
 }

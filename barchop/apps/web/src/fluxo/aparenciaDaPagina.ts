@@ -72,7 +72,9 @@ const DO_BOTAO: Record<Botao, string[]> = {
 const DOS_CARDS: Record<Cards, string[]> = {
   elevado: [],
   plano: ["--cartao-borda: transparent;", "--cartao-sombra: none;", "--cartao-sombra-hover: none;"],
-  borda: ["--cartao-sombra: none;", "--cartao-sombra-hover: none;"],
+  // Com o contorno da casa virando fio claro, "Com borda" fixa a tinta:
+  // sem sombra, é a borda que tem de desenhar o cartão.
+  borda: ["--cartao-borda: var(--cor-ink);", "--cartao-sombra: none;", "--cartao-sombra-hover: none;"],
 };
 
 // A letra (marco F): a família de cada opção é uma variável que o

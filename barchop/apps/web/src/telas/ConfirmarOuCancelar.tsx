@@ -12,6 +12,7 @@ import { formatarDataLonga } from "../formato/datas";
 import { prazoAcabou } from "../formato/prazos";
 import { AvisoDoPrazo } from "./AvisoDoPrazo";
 import estilos from "./ConfirmarOuCancelar.module.css";
+import { Carregando } from "../componentes/Carregando";
 
 // O destino do link do e-mail de lembrete: confirmar presença ou
 // cancelar, sem login — quem autoriza é o token da URL.
@@ -56,7 +57,7 @@ export function ConfirmarOuCancelar({ agora = new Date() }: { agora?: Date } = {
       </div>
     );
   }
-  if (!lido.dados) return <p className={estilos.pagina}>Carregando…</p>;
+  if (!lido.dados) return <div className={estilos.pagina}><Carregando /></div>;
 
   const agendamento = atualizado ?? lido.dados;
 

@@ -2,15 +2,15 @@
   width: min(720px, calc(100vw - 2 * var(--espaco-md)));
   max-height: calc(100dvh - 2 * var(--espaco-md));
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
   color: var(--cor-ink);
-  box-shadow: 0 6px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .janela::backdrop {
-  background: rgb(0 0 0 / 0.55);
+  background: rgb(0 0 0 / 0.4);
 }
 
 .topo {
@@ -52,9 +52,19 @@
   height: 100%;
 }
 
+/* Copiar em destaque, na largura toda; as outras ações numa grade 2×2
+   de blocos suaves. Cinco botões empilhados com o mesmo contorno não
+   diziam qual era o principal (análise de 17/10). */
 .acoes {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--espaco-sm);
+}
+
+.link,
+.principal,
+.aviso {
+  grid-column: 1 / -1;
 }
 
 .link {
@@ -70,7 +80,7 @@
   justify-content: center;
   min-height: 44px;
   padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font: inherit;
   font-size: var(--texto-sm);
@@ -84,7 +94,18 @@
   color: var(--cor-dark);
 }
 
-.secundaria,
+.secundaria {
+  border-color: transparent;
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+  text-align: center;
+}
+
+.secundaria:hover {
+  background: var(--cor-line);
+}
+
 .fechar {
   background: transparent;
   color: var(--cor-ink);
@@ -93,7 +114,7 @@
 .principal:focus-visible,
 .secundaria:focus-visible,
 .fechar:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

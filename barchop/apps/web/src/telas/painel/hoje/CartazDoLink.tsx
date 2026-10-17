@@ -7,6 +7,7 @@ import { linkDaBarbearia } from "../../../painel/compartilhar";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
 import estilos from "./CartazDoLink.module.css";
+import { Carregando } from "../../../componentes/Carregando";
 
 // O cartaz pro balcão (painel v2, marco 4), aberto pela janela de
 // compartilhar numa aba própria, sem a barra do painel: o que sai na
@@ -17,7 +18,7 @@ export function CartazDoLink() {
   const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
 
   if (barbearia.erro) return <Aviso>Não foi possível montar o cartaz agora.</Aviso>;
-  if (!barbearia.dados) return <p>Carregando…</p>;
+  if (!barbearia.dados) return <Carregando />;
 
   const link = linkDaBarbearia(slug, process.env.NEXT_PUBLIC_URL_DO_SITE, window.location.origin);
 

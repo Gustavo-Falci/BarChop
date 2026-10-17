@@ -1,7 +1,7 @@
 .chip {
   display: inline-block;
   padding: var(--espaco-xs) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font-size: var(--texto-sm);
   font-weight: 600;

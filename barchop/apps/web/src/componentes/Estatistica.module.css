@@ -1,3 +1,3 @@
-.bloco { display: grid; gap: var(--espaco-xs); padding: var(--espaco-md); border: var(--borda-padrao) solid var(--cor-ink); border-radius: var(--raio-lg); background: var(--cor-surface); box-shadow: 0 4px 0 var(--cor-shadow); }
+.bloco { display: grid; gap: var(--espaco-xs); padding: var(--espaco-md); border: var(--borda-padrao) solid var(--cor-line-strong); border-radius: var(--raio-lg); background: var(--cor-surface); box-shadow: var(--sombra-1); }
 .numero { font-family: var(--fonte-display), system-ui, sans-serif; font-size: var(--texto-xl); font-weight: 700; letter-spacing: -0.02em; }
 .legenda { color: var(--cor-muted); font-size: var(--texto-sm); }

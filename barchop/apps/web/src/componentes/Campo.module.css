@@ -82,8 +82,10 @@
 
 /* Texto de apoio que fica: a dica de formato no placeholder some na
    primeira tecla, que é justamente quando ela é necessária. */
+/* 14px: a ajuda sob o campo é texto de leitura (análise de 17/10); em
+   12px ficava abaixo do mínimo confortável. */
 .apoio {
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
 }
 

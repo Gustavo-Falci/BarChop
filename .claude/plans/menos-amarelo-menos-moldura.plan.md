@@ -2,7 +2,7 @@
 
 **Fonte**: análise de UI/UX do dono no claude.ai/design (`Analise UI-UX BarChop.dc.html`, 17/10), feita a partir dos prints do painel e do código de `apps/web`.
 **Complexidade**: Large (6 PRs, sem migração)
-**Status**: PR 1 em andamento (branch `paleta-e-base`)
+**Status**: PR 1 aberto (#162, `paleta-e-base`); PR 2 aberto, empilhado sobre ele (`shell-e-hoje`)
 
 ## Summary
 O painel fica mais calmo de olhar o dia inteiro:
@@ -81,8 +81,8 @@ Medido: no escuro, `muted` dá 5,13:1 sobre a surface e 4,76:1 sobre o paperSoft
   - os três números num cartão só com divisórias;
   - estado vazio sem moldura tracejada.
 - Celular (<900px):
-  - barra inferior com Hoje, Agenda, "+ Novo", Caixa e Mais, com alvos de 44px ou mais;
-  - no Hoje, o próximo atendimento vem primeiro, com WhatsApp a um toque.
+  - barra inferior com Hoje, Agenda, "+ Novo", Caixa e Mais, com alvos de 44px ou mais.
+  - (O próximo atendimento primeiro no Hoje, com WhatsApp a um toque, foi pro PR 3, junto do detalhe do agendamento no celular.)
 - Menus (opções, conta, sino) e janelas (Bloquear, Novidades):
   - janela entra com fade de 180ms e escala de .98 para 1, com véu de 40% atrás;
   - Claro/Escuro/Sistema em segmentado.
@@ -103,6 +103,7 @@ Medido: no escuro, `muted` dá 5,13:1 sobre a surface e 4,76:1 sobre o paperSoft
   - data na `FaixaDeDias`, com o calendário só sob demanda;
   - "Agendar" desabilitado neutro, com o motivo embaixo.
 - **Detalhe do agendamento no celular:** "Concluir e registrar pagamento" fixo no rodapé e "Cancelar" afastado dele.
+- **Hoje no celular:** o próximo atendimento vem primeiro, com WhatsApp a um toque (veio do PR 2).
 - **Muda comportamento (ordem dos passos): RED/GREEN.**
 
 ## PR 4 — Configurações em lista com um Salvar só

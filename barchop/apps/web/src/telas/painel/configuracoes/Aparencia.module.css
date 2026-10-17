@@ -311,7 +311,8 @@
    pra o Publicar estar à mão de qualquer ponto da rolagem. */
 .barra {
   position: sticky;
-  bottom: var(--espaco-md);
+  /* No celular, acima da barra de navegação do pé (--recuo-inferior). */
+  bottom: calc(var(--espaco-md) + var(--recuo-inferior, 0px));
   z-index: 5;
   display: flex;
   flex-wrap: wrap;

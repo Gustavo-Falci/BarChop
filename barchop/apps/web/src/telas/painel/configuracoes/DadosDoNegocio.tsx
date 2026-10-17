@@ -39,6 +39,7 @@ import { enderecoDaBarbearia } from "../../../tenant/endereco";
 import { CampoDaLogo } from "./CampoDaLogo";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import estilos from "./Configuracoes.module.css";
+import { Carregando } from "../../../componentes/Carregando";
 
 const FORMATO_DO_SLUG = new RegExp(PADRAO_SLUG);
 
@@ -275,7 +276,7 @@ function Dados() {
   if (barbearia.erro) {
     return <Aviso>{barbearia.erro.mensagem || "Não foi possível carregar a barbearia agora."}</Aviso>;
   }
-  if (!barbearia.dados) return <p>Carregando…</p>;
+  if (!barbearia.dados) return <Carregando />;
 
   return (
     <MolduraDaArea area="dados_do_negocio" decididas={decididas} aviso={aviso}>

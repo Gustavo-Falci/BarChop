@@ -27,11 +27,37 @@
   min-width: 0;
 }
 
+.acoes {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
 .acao {
   color: var(--cor-ink);
   font-weight: 700;
   text-decoration: underline;
   white-space: nowrap;
+}
+
+/* O "x" discreto: a faixa fecha por um dia, então ele não compete com o
+   caminho pro plano. 32px de alvo dentro de uma faixa de 38. */
+.fechar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-block: -6px;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: none;
+  color: var(--cor-ink-soft);
+  cursor: pointer;
+}
+
+.fechar:hover {
+  background: var(--cor-surface);
+  color: var(--cor-ink);
 }
 
 /* O mesmo recuo da barra de topo no celular. */

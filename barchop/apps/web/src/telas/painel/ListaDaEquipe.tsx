@@ -13,6 +13,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { situacaoDoMembro, type SituacaoDoMembro } from "../../painel/listas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./ListaDaEquipe.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 export const ROTULO_DO_PAPEL: Record<PapelMembro, string> = {
   dono: "Dono",
@@ -101,7 +102,7 @@ export function ListaDaEquipe() {
       {/* Mesma guarda de ListaDeServicos: sem ela a tabela pintaria o
           estado vazio no primeiro paint. */}
       {!equipe.dados ? (
-        <p>Carregando…</p>
+        <Carregando />
       ) : (
         <>
           <PilulasDeFiltro

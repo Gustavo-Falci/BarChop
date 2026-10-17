@@ -12,6 +12,7 @@ import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import estilos from "./Configuracoes.module.css";
+import { Carregando } from "../../../componentes/Carregando";
 
 // As antecedências que a API aceita, da maior pra menor.
 const ANTECEDENCIAS: AntecedenciaDoLembrete[] = [24, 12, 2];
@@ -58,7 +59,7 @@ function Notificacoes() {
   if (barbearia.erro) {
     return <Aviso>{barbearia.erro.mensagem || "Não foi possível carregar a barbearia agora."}</Aviso>;
   }
-  if (!barbearia.dados) return <p>Carregando…</p>;
+  if (!barbearia.dados) return <Carregando />;
 
   return (
     <MolduraDaArea area="notificacoes" decididas={decididas} aviso={aviso}>

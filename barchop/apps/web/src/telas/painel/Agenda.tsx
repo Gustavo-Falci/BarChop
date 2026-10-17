@@ -16,6 +16,7 @@ import { useAgora } from "../../painel/useAgora";
 import { JanelaDeBloqueio } from "./agenda/JanelaDeBloqueio";
 import { ResumoDoPeriodo } from "./agenda/ResumoDoPeriodo";
 import estilos from "./Agenda.module.css";
+import { Carregando } from "../../componentes/Carregando";
 
 const VISTAS: Vista[] = ["dia", "semana", "mes"];
 
@@ -190,7 +191,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
       </Aviso>
     );
   }
-  if (!agendamentos.dados || !horarios.dados) return <p>Carregando…</p>;
+  if (!agendamentos.dados || !horarios.dados) return <Carregando />;
 
   // A semana de uma pessoa: só os agendamentos e o expediente dela. Com
   // um expediente só, a coluna da grade é dela — a pausa, as folgas e o

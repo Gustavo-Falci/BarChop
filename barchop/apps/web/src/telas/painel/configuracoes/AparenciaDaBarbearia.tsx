@@ -39,6 +39,7 @@ import { usePainel } from "../../../painel/SessaoDoPainel";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import { PreviaDaPagina } from "./PreviaDaPagina";
 import estilos from "./Aparencia.module.css";
+import { Carregando } from "../../../componentes/Carregando";
 
 // Logo e capa moram em Dados do negócio › Marca e entram no ar na hora;
 // aqui só se diz o que falta e se leva pra lá.
@@ -273,7 +274,7 @@ function TelaDaAparencia() {
   if (barbearia.erro) {
     return <Aviso>{barbearia.erro.mensagem || "Não foi possível carregar a barbearia agora."}</Aviso>;
   }
-  if (!barbearia.dados) return <p>Carregando…</p>;
+  if (!barbearia.dados) return <Carregando />;
 
   const dados = barbearia.dados;
   const pendente = !iguais(rascunho, noAr);

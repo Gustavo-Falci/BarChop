@@ -17,6 +17,7 @@ import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./DetalheDoAgendamento.module.css";
 import { FormularioDoPagamento, ResumoDoPagamento } from "./PagamentoDoAtendimento";
+import { Carregando } from "../../componentes/Carregando";
 
 type Status = "pendente" | "confirmado" | "concluido" | "cancelado" | "no_show";
 
@@ -164,7 +165,7 @@ export function DetalheDoAgendamento() {
       </Aviso>
     );
   }
-  if (!agendamento.dados) return <p>Carregando…</p>;
+  if (!agendamento.dados) return <Carregando />;
 
   const atual = agendamento.dados;
   const observacoesMudaram = observacoes !== (atual.observacoes ?? "");

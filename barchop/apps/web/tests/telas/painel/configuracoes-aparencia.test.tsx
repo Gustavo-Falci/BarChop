@@ -24,6 +24,12 @@ async function abrir(falso = criarApiClientFalso()) {
   return falso;
 }
 
+// Abas (17/10): Tema, Cor, Letra, Serviços e Ajuste fino, cada uma numa
+// altura de janela ao lado da prévia. A tela abre na Tema.
+async function aba(nome: "Tema" | "Cor" | "Letra" | "Serviços" | "Ajuste fino") {
+  await userEvent.click(screen.getByRole("tab", { name: nome }));
+}
+
 function grupo(nome: RegExp) {
   return within(screen.getByRole("group", { name: nome }));
 }
@@ -137,10 +143,13 @@ describe("aparência", () => {
 
   it("trocar a cor da marca deixa o tema personalizado; Voltar ao original desfaz", async () => {
     const falso = await abrir();
+    await aba("Cor");
 
     await userEvent.click(grupo(/cor da marca/i).getByRole("button", { name: "Azul" }));
 
     expect(grupo(/cor da marca/i).getByRole("button", { name: "Azul" })).toHaveAttribute("aria-pressed", "true");
+    // O "personalizado" e o Voltar ao original moram na aba Tema.
+    await aba("Tema");
     expect(screen.getByText("BarChop · personalizado")).toBeInTheDocument();
     await waitFor(async () => expect((await rascunho(falso))?.cores.claro.marca).toBe("#2563EB"));
 
@@ -152,6 +161,7 @@ describe("aparência", () => {
 
   it("outra cor, em hex", async () => {
     const falso = await abrir();
+    await aba("Cor");
     const campo = screen.getByRole("textbox", { name: /outra cor/i });
 
     await userEvent.clear(campo);
@@ -162,6 +172,7 @@ describe("aparência", () => {
 
   it("hex que não é cor não entra", async () => {
     const falso = await abrir();
+    await aba("Cor");
     const campo = screen.getByRole("textbox", { name: /outra cor/i });
 
     await userEvent.clear(campo);
@@ -173,6 +184,7 @@ describe("aparência", () => {
 
   it("a cor de fundo é de cada modo", async () => {
     const falso = await abrir();
+    await aba("Cor");
 
     await userEvent.click(grupo(/fundo de qual modo/i).getByRole("radio", { name: "Modo escuro" }));
     const campo = screen.getByRole("textbox", { name: /cor de fundo/i });
@@ -199,6 +211,7 @@ describe("aparência", () => {
 
   it("o ajuste fino vem recolhido; aberto, cantos, botão e cards entram no rascunho", async () => {
     const falso = await abrir();
+    await aba("Ajuste fino");
     const abrirAjuste = screen.getByRole("button", { name: /abrir o ajuste fino/i });
     expect(abrirAjuste).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("group", { name: /os cantos/i })).not.toBeInTheDocument();
@@ -216,6 +229,7 @@ describe("aparência", () => {
 
   it("as nove cores, uma a uma, em cada modo", async () => {
     const falso = await abrir();
+    await aba("Ajuste fino");
     await userEvent.click(screen.getByRole("button", { name: /abrir o ajuste fino/i }));
 
     await userEvent.click(grupo(/as nove cores de qual modo/i).getByRole("radio", { name: "Modo escuro" }));
@@ -229,6 +243,7 @@ describe("aparência", () => {
 
   it("a letra: a fonte do texto entra no rascunho", async () => {
     const falso = await abrir();
+    await aba("Letra");
 
     expect(grupo(/a fonte do texto/i).getByRole("button", { name: "Inter" })).toHaveAttribute("aria-pressed", "true");
     await userEvent.click(grupo(/a fonte do texto/i).getByRole("button", { name: "Poppins" }));
@@ -239,6 +254,7 @@ describe("aparência", () => {
 
   it("títulos na mesma fonte, ou numa própria; e o tamanho do texto", async () => {
     const falso = await abrir();
+    await aba("Ajuste fino");
     await userEvent.click(screen.getByRole("button", { name: /abrir o ajuste fino/i }));
 
     // O padrão: títulos em outra fonte, a Clash.
@@ -262,6 +278,7 @@ describe("aparência", () => {
 
   it("layout dos serviços salva na hora, sem passar pelo Publicar", async () => {
     const falso = await abrir();
+    await aba("Serviços");
     expect(screen.getByRole("button", { name: /lista agrupada/i })).toHaveAttribute("aria-pressed", "true");
 
     await userEvent.click(screen.getByRole("button", { name: /abas de categoria/i }));
@@ -277,6 +294,7 @@ describe("aparência", () => {
     const falso = await abrir();
     await userEvent.click(screen.getByRole("button", { name: "Oceano" }));
 
+    await aba("Serviços");
     await userEvent.click(screen.getByRole("button", { name: /abas de categoria/i }));
 
     await waitFor(async () =>
@@ -287,6 +305,18 @@ describe("aparência", () => {
       layoutDosServicos: "abas",
     });
     expect(screen.getByRole("button", { name: "Publicar" })).toBeInTheDocument();
+  });
+
+  it("abre na aba Tema; cada aba mostra a sua parte, e a publicação fica fora das abas", async () => {
+    await abrir();
+
+    expect(screen.getByRole("tab", { name: "Tema" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("group", { name: /cor da marca/i })).not.toBeInTheDocument();
+
+    await aba("Cor");
+    expect(screen.getByRole("group", { name: /cor da marca/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Oceano" })).not.toBeInTheDocument();
+    expect(screen.getByText(/no ar/i)).toBeInTheDocument();
   });
 
   it("quem não é dono não mexe", async () => {

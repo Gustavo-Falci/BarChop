@@ -105,6 +105,9 @@ describe("ajuste fino no CSS", () => {
     const borda = cssDaAparencia(com({ cards: "borda" }));
     expect(borda).toContain("--cartao-sombra: none;");
     expect(borda).not.toContain("--cartao-borda: transparent;");
+    // O contorno da casa é um fio claro; sem sombra, o cartão "Com borda"
+    // precisa da tinta pra ainda ter contorno.
+    expect(borda).toContain("--cartao-borda: var(--cor-ink);");
   });
 });
 

@@ -125,7 +125,7 @@
 /* O passo atual ganha a borda cheia e a sombra do idioma do painel: é
    pra onde o olho vai primeiro. */
 .passo[data-atual="true"] {
-  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border: var(--borda-padrao) solid var(--cor-ink);
   background: var(--cor-surface);
   box-shadow: var(--sombra-botao);
 }

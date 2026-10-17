@@ -147,7 +147,7 @@
     grid-template-columns: 1fr;
     gap: var(--espaco-md);
     padding: var(--espaco-lg);
-    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
     border-radius: var(--raio-cartao, var(--raio-md));
     box-shadow: var(--cartao-sombra, var(--sombra-1));
   }

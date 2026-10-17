@@ -55,7 +55,7 @@ Medido: no escuro, `muted` dá 5,13:1 sobre a surface e 4,76:1 sobre o paperSoft
 
 **Moldura e sombra** (`app/tokens-css.ts` e os `*.module.css`):
 - `borderWidth.padrao` passa de 2 para 1.
-- Borda de contorno (`solid var(--cor-ink)`, 142 ocorrências em 67 arquivos) vira `solid var(--cor-line-strong)`. Ficam com `--cor-ink` só os contornos que marcam estado (foco, item escolhido) e o botão secundário.
+- Borda de contorno (`solid var(--cor-ink)`, 142 ocorrências em 67 arquivos) vira `solid var(--cor-line-strong)`. Ficam com `--cor-ink` só os contornos que marcam estado: o passo atual dos Primeiros passos, o check da Aparência e as regras `border-color` de hover e de item escolhido, que o script não tocou. O botão secundário (Contorno) usa o fio, como na proposta.
 - A sombra deslocada (`0 Npx 0 var(--cor-shadow)`) vira sombra difusa por custom property, com valor por tema: `--sombra-1` (cartão), `--sombra-2` (menu e janela), `--sombra-3` (destaque).
 - O fundo do `body` ganha o degradê `paper → paperFim`.
 - O foco visível usa `--cor-accent` no escuro.

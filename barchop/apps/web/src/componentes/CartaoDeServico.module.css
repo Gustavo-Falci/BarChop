@@ -4,7 +4,7 @@
    botão apertado, e é o que diz "escolhido" sem depender só da cor. */
 .cartao {
   list-style: none;
-  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
   border-radius: var(--raio-cartao, var(--raio-md));
   background: var(--cor-surface);
   box-shadow: var(--cartao-sombra, var(--sombra-1));

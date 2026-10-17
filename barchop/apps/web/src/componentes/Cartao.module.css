@@ -1,6 +1,6 @@
 .cartao {
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
   border-radius: var(--raio-cartao, var(--raio-lg));
   background: var(--cor-surface);
   box-shadow: var(--cartao-sombra, var(--sombra-1));

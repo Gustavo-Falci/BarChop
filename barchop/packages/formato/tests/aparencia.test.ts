@@ -232,6 +232,11 @@ describe("a cor de fundo", () => {
     expect(contraste(cores.ink, cores.paper)).toBeGreaterThanOrEqual(7);
   });
 
+  it("com marca própria, o anel de foco deixa o ouro da casa e usa o texto", () => {
+    const escuro = paletaDaAparencia(com({ cores: { claro: { marca: "#2563EB" }, escuro: {} } })).escuro;
+    expect(escuro.foco).toBe(escuro.ink);
+  });
+
   // O fio forte (contorno de campo e cartão) e o fim do degradê do fundo
   // são da casa: num fundo próprio, saem do fundo novo. Senão o cinza
   // quente do BarChop contornaria um tema azul, e o degradê voltaria pro

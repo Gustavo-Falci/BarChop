@@ -37,7 +37,7 @@
     grid-column: 1;
     grid-row: 2 / span 3;
     padding: var(--espaco-lg);
-    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-ink));
+    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
     border-radius: var(--raio-cartao, var(--raio-lg));
     background: var(--cor-surface);
   }

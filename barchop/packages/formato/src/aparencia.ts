@@ -468,6 +468,8 @@ function paletaDoModo(aparencia: Aparencia, modo: Modo): CoresDaPagina {
     paleta.accentBorder = misturar(minhas.marca, BRANCO, 0.45);
     paleta.onAccent = textoSobre(minhas.marca);
     paleta.accentOnDark = marcaSobreOEscuro(minhas.marca);
+    // O ouro da casa no anel de foco destoaria de uma marca azul.
+    paleta.foco = paleta.ink;
   }
   for (const nome of NOVE_CORES) {
     const cor = minhas[nome];

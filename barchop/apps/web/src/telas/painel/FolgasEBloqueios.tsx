@@ -8,7 +8,6 @@ import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarPeriodo, hojeIso, somarDias } from "../../formato/datas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
-import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
 import { JanelaDeBloqueio } from "./agenda/JanelaDeBloqueio";
 import estilos from "./FolgasEBloqueios.module.css";
@@ -22,12 +21,10 @@ const DIAS_A_FRENTE = 90;
 // campo de membro nem aparece. Quem barra é a API.
 export function FolgasEBloqueios({ agora: agoraFixo }: { agora?: Date } = {}) {
   const api = useApiDoPainel();
-  const { perfil } = usePainel();
   const agora = useAgora(agoraFixo);
   const idDoForm = useId();
   const hoje = hojeIso(agora);
   const ate = somarDias(hoje, DIAS_A_FRENTE);
-  const soOProprio = perfil.papel === "profissional";
 
   const equipe = useRequisicao(() => api.barbeiro.equipe(), []);
   const bloqueios = useRequisicao(() => api.barbeiro.bloqueios(hoje, ate), [hoje, ate]);

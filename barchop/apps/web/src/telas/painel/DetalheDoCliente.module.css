@@ -181,3 +181,20 @@
   flex-basis: 100%;
   gap: var(--espaco-sm);
 }
+
+/* Os dados em leitura: rótulo pequeno em cima, valor embaixo. */
+.leitura {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+}
+
+.leitura dt {
+  color: var(--cor-muted);
+  font-size: var(--texto-sm);
+}
+
+.leitura dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}

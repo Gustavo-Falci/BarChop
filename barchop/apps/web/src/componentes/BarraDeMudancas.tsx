@@ -14,17 +14,21 @@ import estilos from "./BarraDeMudancas.module.css";
 export function BarraDeMudancas({
   mudancas,
   pendente = false,
+  aviso,
   salvando = false,
   aoSalvar,
   aoDescartar,
 }: {
   mudancas: string[];
   pendente?: boolean;
+  // O erro do salvar mora aqui, junto do botão: a barra fica presa no pé,
+  // e um aviso no topo da página ficaria fora da vista.
+  aviso?: string;
   salvando?: boolean;
   aoSalvar: () => void;
   aoDescartar: () => void;
 }) {
-  if (mudancas.length === 0 && !pendente) return null;
+  if (mudancas.length === 0 && !pendente && !aviso) return null;
 
   const resumo =
     mudancas.length === 0
@@ -36,6 +40,11 @@ export function BarraDeMudancas({
       <p className={estilos.resumo} aria-live="polite">
         {resumo}
       </p>
+      {aviso ? (
+        <p className={estilos.aviso} role="alert">
+          {aviso}
+        </p>
+      ) : null}
       <div className={estilos.botoes}>
         {mudancas.length > 0 ? (
           <Botao variante="fantasma" onClick={aoDescartar} disabled={salvando}>

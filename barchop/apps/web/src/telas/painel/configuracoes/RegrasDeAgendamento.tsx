@@ -204,7 +204,7 @@ function TelaDasRegras() {
   }
 
   return (
-    <MolduraDaArea area="regras_de_agendamento" decididas={decididas} aviso={aviso}>
+    <MolduraDaArea area="regras_de_agendamento" decididas={decididas}>
       {/* As duas seções lado a lado: a tela usa a largura em vez de virar
           uma coluna comprida (pedido do dono). No celular, empilham. */}
       <div className={estilos.ladoALado}>
@@ -226,6 +226,7 @@ function TelaDasRegras() {
       <BarraDeMudancas
         mudancas={oQueMudou(original, regras)}
         pendente={!decididas.includes("regras_de_agendamento")}
+        aviso={aviso}
         salvando={salvando}
         aoSalvar={() => void salvar()}
         aoDescartar={() => setRegras(original)}

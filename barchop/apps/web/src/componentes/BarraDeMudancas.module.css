@@ -27,6 +27,18 @@
   font-size: var(--texto-sm);
 }
 
+.aviso {
+  flex: 1 1 100%;
+  order: 3;
+  margin: 0;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border-radius: var(--raio-sm);
+  background: var(--cor-erro-fundo);
+  color: var(--cor-erro);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
 .botoes {
   display: flex;
   gap: var(--espaco-xs);

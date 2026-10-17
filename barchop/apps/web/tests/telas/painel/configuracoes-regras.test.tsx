@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
 import { HorariosDaBarbearia } from "../../../src/telas/painel/configuracoes/HorariosDaBarbearia";
 import { RegrasDeAgendamento } from "../../../src/telas/painel/configuracoes/RegrasDeAgendamento";
@@ -131,6 +131,20 @@ describe("regras de agendamento", () => {
     await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(screen.getByRole("banner")).toHaveTextContent("Configurado"));
+  });
+
+  it("erro ao salvar aparece na própria barra, junto do Salvar", async () => {
+    // A barra fica presa no pé; o aviso no topo da página ficaria fora da
+    // vista com a página rolada ou no celular.
+    const falso = criarApiClientFalso();
+    vi.spyOn(falso.barbeiro, "atualizarMinhaBarbearia").mockRejectedValue({ mensagem: "Sem conexão agora." });
+    montarPainel(<RegrasDeAgendamento />, falso);
+
+    await screen.findByRole("group", { name: /intervalo entre horários/i });
+    await userEvent.click(grupo(/intervalo entre horários/i).getByRole("radio", { name: "30 min" }));
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
+
+    expect(await within(barra()).findByText("Sem conexão agora.")).toBeInTheDocument();
   });
 
   it("abre no que a barbearia já decidiu", async () => {

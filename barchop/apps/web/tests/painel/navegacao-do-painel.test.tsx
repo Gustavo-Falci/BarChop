@@ -129,6 +129,65 @@ describe("navegação do painel", () => {
     expect(screen.queryByRole("button", { name: /Modo (escuro|claro)/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Sair" })).toBeNull();
   });
+  // Abaixo de 900px a navegação é uma barra no pé da tela: Hoje, Agenda,
+  // Novo, Caixa e Mais. O CSS decide o que aparece onde; aqui vale o que
+  // existe e o que cada controle anuncia.
+  describe("a barra inferior do celular", () => {
+    it("Novo leva direto ao novo agendamento", async () => {
+      navegacaoFalsa.redefinir({ pathname: "/painel" });
+
+      montar();
+
+      const novo = await screen.findByRole("link", { name: "Novo" });
+      expect(novo).toHaveAttribute("href", "/painel/agendamentos/novo");
+    });
+
+    it("Mais começa fechado e abre o resto das seções", async () => {
+      navegacaoFalsa.redefinir({ pathname: "/painel" });
+      montar();
+
+      const mais = await screen.findByRole("button", { name: "Mais" });
+      expect(mais).toHaveAttribute("aria-expanded", "false");
+      const controlado = document.getElementById(mais.getAttribute("aria-controls") ?? "");
+      expect(controlado).not.toBeNull();
+      expect(controlado).toHaveTextContent("Clientes");
+      expect(controlado).not.toHaveTextContent("Agenda");
+
+      await userEvent.click(mais);
+
+      expect(mais).toHaveAttribute("aria-expanded", "true");
+    });
+
+    it("Esc fecha o Mais", async () => {
+      navegacaoFalsa.redefinir({ pathname: "/painel" });
+      montar();
+      const mais = await screen.findByRole("button", { name: "Mais" });
+
+      await userEvent.click(mais);
+      await userEvent.keyboard("{Escape}");
+
+      expect(mais).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("numa seção que mora no Mais, o Mais se marca como onde a pessoa está", async () => {
+      navegacaoFalsa.redefinir({ pathname: "/painel/clientes" });
+
+      montar();
+
+      const mais = await screen.findByRole("button", { name: "Mais" });
+      expect(mais).toHaveAttribute("data-atual", "true");
+    });
+
+    it("numa seção da barra, o Mais não se marca", async () => {
+      navegacaoFalsa.redefinir({ pathname: "/painel/agenda" });
+
+      montar();
+
+      const mais = await screen.findByRole("button", { name: "Mais" });
+      expect(mais).not.toHaveAttribute("data-atual");
+    });
+  });
+
   describe("recolher a barra", () => {
     it("começa expandida e o botão anuncia o que faz", async () => {
       navegacaoFalsa.redefinir({ pathname: "/painel" });

@@ -232,6 +232,17 @@ describe("a cor de fundo", () => {
     expect(contraste(cores.ink, cores.paper)).toBeGreaterThanOrEqual(7);
   });
 
+  // O fio forte (contorno de campo e cartão) e o fim do degradê do fundo
+  // são da casa: num fundo próprio, saem do fundo novo. Senão o cinza
+  // quente do BarChop contornaria um tema azul, e o degradê voltaria pro
+  // papel da casa no pé da página.
+  it("o fio forte e o fim do fundo acompanham o fundo novo", () => {
+    const cores = paletaDaAparencia(com({ cores: { claro: { fundo: "#FDF6E3" }, escuro: {} } })).claro;
+    expect(cores.paperFim).toBe("#FDF6E3");
+    expect(cores.lineStrong).not.toBe(colors.light.lineStrong);
+    expect(contraste(cores.lineStrong, cores.paper)).toBeGreaterThan(contraste(cores.line, cores.paper));
+  });
+
   it("o fundo do claro não vaza pro escuro", () => {
     const paleta = paletaDaAparencia(com({ cores: { claro: { fundo: "#FDF6E3" }, escuro: {} } }));
     expect(paleta.escuro.paper).toBe(colors.dark.paper);

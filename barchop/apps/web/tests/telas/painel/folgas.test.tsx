@@ -28,6 +28,12 @@ function comAna(semente: Parameters<typeof criarApiClientFalso>[0] = {}) {
   return falso;
 }
 
+// As Folgas abrem na lista (17/10); o formulário mora na mesma janela
+// "Bloquear horário" da Agenda, aberta pelo "+ Bloquear" do cabeçalho.
+async function abrirBloquear() {
+  await userEvent.click(await screen.findByRole("button", { name: "+ Bloquear" }));
+}
+
 describe("folgas: o formulário", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -36,6 +42,7 @@ describe("folgas: o formulário", () => {
 
   it("quem fica fora se escolhe à vista, sem abrir lista", async () => {
     montarPainel(<FolgasEBloqueios agora={AGORA} />, comAna());
+    await abrirBloquear();
 
     const membro = await screen.findByRole("group", { name: "Membro" });
     expect(await within(membro).findByRole("radio", { name: "Ana" })).toBeInTheDocument();
@@ -44,6 +51,7 @@ describe("folgas: o formulário", () => {
 
   it("o dia todo ou só umas horas é uma escolha de duas opções", async () => {
     montarPainel(<FolgasEBloqueios agora={AGORA} />, comAna());
+    await abrirBloquear();
 
     expect(await screen.findByRole("radio", { name: "Dia inteiro" })).toBeChecked();
     expect(screen.queryByLabelText("Das")).toBeNull();
@@ -55,6 +63,7 @@ describe("folgas: o formulário", () => {
 
   it("o Até acompanha o De: folga de um dia é o caso comum", async () => {
     montarPainel(<FolgasEBloqueios agora={AGORA} />, comAna());
+    await abrirBloquear();
 
     fireEvent.change(await screen.findByLabelText("De"), { target: { value: "2037-01-12" } });
     expect(screen.getByLabelText("Até")).toHaveValue("2037-01-12");
@@ -62,6 +71,7 @@ describe("folgas: o formulário", () => {
 
   it("os motivos comuns preenchem o campo num toque", async () => {
     montarPainel(<FolgasEBloqueios agora={AGORA} />, comAna());
+    await abrirBloquear();
 
     await userEvent.click(await screen.findByRole("button", { name: "Férias" }));
     expect(screen.getByLabelText(/motivo/i)).toHaveValue("Férias");
@@ -71,6 +81,7 @@ describe("folgas: o formulário", () => {
     const falso = comAna();
     const criar = vi.spyOn(falso.barbeiro, "criarBloqueio");
     montarPainel(<FolgasEBloqueios agora={AGORA} />, falso);
+    await abrirBloquear();
 
     await userEvent.click(await screen.findByRole("radio", { name: "Ana" }));
     fireEvent.change(screen.getByLabelText("De"), { target: { value: "2037-01-12" } });

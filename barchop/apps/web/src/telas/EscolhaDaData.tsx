@@ -22,6 +22,8 @@ import {
 } from "../formato/datas";
 import estilos from "./EscolhaDaData.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
+import { Carregando } from "../componentes/Carregando";
+import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
 
 const DIAS_NA_FAIXA = 14;
 
@@ -174,7 +176,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     );
   }
 
-  if (!agenda.dados) return <main className={estilos.pagina}>Carregando…</main>;
+  if (!agenda.dados) return <main className={estilos.pagina}><Carregando /></main>;
 
   function escolherDia(dia: string) {
     // replace, e não push: o "voltar" do celular deve sair do passo, não
@@ -205,6 +207,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
 
   return (
     <main className={`${estilos.pagina} ${estilos.duasColunas}`}>
+      <IndicadorDePasso atual={3} />
       <h1 className={estilos.titulo}>Escolha o dia e o horário</h1>
 
       {/* Dois blocos que só existem como caixa a partir de 900px: o dia à

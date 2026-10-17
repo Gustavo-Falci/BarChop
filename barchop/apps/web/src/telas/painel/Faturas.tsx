@@ -598,8 +598,11 @@ function limiteNoComparativo(id: IdNoComparativo): string {
 
 function Comparativo({ plano }: { plano: PlanoPago }) {
   const destaque = (id: IdNoComparativo) => (id === plano ? estilos.colunaEscolhida : undefined);
+  // Fechado num acordeão, como as perguntas (17/10): a tabela repetia o
+  // que os dois cartões já dizem, e quem quer comparar abre.
   return (
-    <section className={estilos.comparativo}>
+    <details className={`${estilos.comparativo} ${estilos.perguntas}`}>
+      <summary className={estilos.resumoDasPerguntas}>Comparar planos</summary>
       <div className={estilos.rolagemDaTabela}>
         <table className={estilos.tabela}>
           <caption className={estilos.legendaDaTabela}>Comparar planos</caption>
@@ -648,7 +651,7 @@ function Comparativo({ plano }: { plano: PlanoPago }) {
           <li key={garantia}>{garantia}</li>
         ))}
       </ul>
-    </section>
+    </details>
   );
 }
 

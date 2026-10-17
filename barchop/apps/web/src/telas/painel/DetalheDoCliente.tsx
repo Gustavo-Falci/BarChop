@@ -24,7 +24,7 @@ import {
   validarNomeDeCliente,
 } from "../../formato/cliente";
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
-import { rotuloDoStatus } from "../../formato/status";
+import { TOM_DO_STATUS, rotuloDoStatus } from "../../formato/status";
 import { IconeSeta } from "../../painel/icones";
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
@@ -140,13 +140,6 @@ function ProfissionalDoCliente({
   );
 }
 
-const TOM_DO_STATUS: Record<string, "ok" | "atencao" | "neutro" | "erro"> = {
-  confirmado: "ok",
-  pendente: "atencao",
-  concluido: "neutro",
-  cancelado: "erro",
-  no_show: "erro",
-};
 
 // Soma em centavos: somar os preços como número passaria por float.
 function totalDe(agendamento: AgendamentoSerializado): string {
@@ -231,6 +224,7 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
   // cadastro que já existe, não numa frase mandando procurar.
   const [telefoneEmConflito, setTelefoneEmConflito] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
+  const [editando, setEditando] = useState(false);
 
   // Sincronizado durante a renderização, e não num `useEffect`: um
   // efeito só roda depois do commit, e entre o commit e o efeito o
@@ -307,6 +301,7 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
         email: comEmail.valor,
       });
       cliente.recarregar();
+      setEditando(false);
     } catch (causa) {
       const erro = causa as ErroDaApi;
       if (erro.codigo === "conflito") setTelefoneEmConflito(comNumero.valor);
@@ -328,6 +323,7 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
     setErroEmail(undefined);
     setTelefoneEmConflito(undefined);
     setAviso(undefined);
+    setEditando(false);
   }
 
   const hoje = hojeIso(agora);
@@ -387,70 +383,95 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
             profissional={dados.profissional}
             aoTrocar={() => cliente.recarregar()}
           />
-          <Campo
-            rotulo="Nome"
-            maxLength={NOME_MAX}
-            valor={nome}
-            onChange={(proximo) => {
-              setNome(proximo);
-              setErroNome(undefined);
-            }}
-            erro={erroNome}
-          />
-          <Campo
-            rotulo="Telefone"
-            apoio="Com DDD, do jeito que for — a gente formata."
-            formato="telefone"
-            inputMode="tel"
-            valor={telefone}
-            onChange={(proximo) => {
-              setTelefone(proximo);
-              setErroTelefone(undefined);
-              setTelefoneEmConflito(undefined);
-            }}
-            erro={erroTelefone}
-          />
-          <Campo
-            rotulo="E-mail (opcional)"
-            type="email"
-            inputMode="email"
-            maxLength={EMAIL_MAX}
-            valor={email}
-            onChange={(proximo) => {
-              setEmail(proximo);
-              setErroEmail(undefined);
-            }}
-            erro={erroEmail}
-          />
+          {/* Em leitura (17/10): sempre em modo de edição, a tela parecia
+              um formulário. "Editar" abre os campos; Salvar e Descartar
+              voltam pra leitura. */}
+          {editando ? (
+            <>
+              <Campo
+                rotulo="Nome"
+                maxLength={NOME_MAX}
+                valor={nome}
+                onChange={(proximo) => {
+                  setNome(proximo);
+                  setErroNome(undefined);
+                }}
+                erro={erroNome}
+              />
+              <Campo
+                rotulo="Telefone"
+                apoio="Com DDD, do jeito que for — a gente formata."
+                formato="telefone"
+                inputMode="tel"
+                valor={telefone}
+                onChange={(proximo) => {
+                  setTelefone(proximo);
+                  setErroTelefone(undefined);
+                  setTelefoneEmConflito(undefined);
+                }}
+                erro={erroTelefone}
+              />
+              <Campo
+                rotulo="E-mail (opcional)"
+                type="email"
+                inputMode="email"
+                maxLength={EMAIL_MAX}
+                valor={email}
+                onChange={(proximo) => {
+                  setEmail(proximo);
+                  setErroEmail(undefined);
+                }}
+                erro={erroEmail}
+              />
 
-          {telefoneEmConflito ? (
-            <Aviso>
-              Esse telefone já é de outro cliente.{" "}
-              <Link
-                href={`/painel/clientes?busca=${encodeURIComponent(
-                  apenasDigitos(telefoneEmConflito)
-                )}`}
-              >
-                Abrir o cadastro existente
-              </Link>
-            </Aviso>
-          ) : null}
+              {telefoneEmConflito ? (
+                <Aviso>
+                  Esse telefone já é de outro cliente.{" "}
+                  <Link
+                    href={`/painel/clientes?busca=${encodeURIComponent(
+                      apenasDigitos(telefoneEmConflito)
+                    )}`}
+                  >
+                    Abrir o cadastro existente
+                  </Link>
+                </Aviso>
+              ) : null}
 
-          {aviso ? <Aviso>{aviso}</Aviso> : null}
+              {aviso ? <Aviso>{aviso}</Aviso> : null}
 
-          {/* Mesmo jeito das observações no detalhe do agendamento: os
-              botões só aparecem quando há o que salvar — um Salvar sempre
-              aceso não diz se algo mudou. */}
-          {mudou ? (
-            <div className={estilos.botoesDosDados}>
-              <Botao variante="fantasma" onClick={descartar} disabled={salvando}>
-                Descartar
-              </Botao>
-              <Botao carregando={salvando} onClick={salvar}>
-                Salvar
-              </Botao>
-            </div>
-          ) : null}
+              {/* Mesmo jeito das observações no detalhe do agendamento: os
+                  botões só aparecem quando há o que salvar — um Salvar sempre
+                  aceso não diz se algo mudou. */}
+              {mudou ? (
+                <div className={estilos.botoesDosDados}>
+                  <Botao variante="fantasma" onClick={descartar} disabled={salvando}>
+                    Descartar
+                  </Botao>
+                  <Botao carregando={salvando} onClick={salvar}>
+                    Salvar
+                  </Botao>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <dl className={estilos.leitura}>
+                <div>
+                  <dt>Telefone</dt>
+                  <dd>{dados.telefone}</dd>
+                </div>
+                <div>
+                  <dt>E-mail</dt>
+                  <dd>{dados.email ?? "—"}</dd>
+                </div>
+              </dl>
+              <div className={estilos.botoesDosDados}>
+                <Botao variante="contorno" onClick={() => setEditando(true)}>
+                  Editar
+                </Botao>
+              </div>
+            </>
+          )}
         </section>
       </div>
     </div>

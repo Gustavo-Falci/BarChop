@@ -21,6 +21,11 @@ Depois da base, cada grupo de telas segue o "depois" da análise:
 - **A paleta vale para tudo:** painel, site de marketing e app mobile. Os valores mudam em `@barchop/design-tokens`, que os três leem.
 - **Entrega em 6 PRs em sequência.** O dono confere cada um no navegador antes do próximo.
 - **Os textos não mudam nos PRs de visual.** As sugestões de texto da seção 6 da análise só entram com OK do dono, num PR próprio.
+- **Decisões de 17/10, depois do PR 1:**
+  - a bolinha "Amarelo BarChop" da Aparência passa para o ouro novo (`#F0C93A`);
+  - a descrição do tema BarChop ("O amarelo da casa sobre papel, com sombra marcada") **fica como está**;
+  - o ícone do app ganha imagens novas: o "B" escuro sobre o ouro, como o selo da barra lateral. Antes eram os PNGs de exemplo do Expo;
+  - **entra uma novidade em `novidades.ts`** para o redesenho, no último PR da série (PR 6).
 
 ## Regras que valem para todos os PRs
 - Cor nova é hex `#rrggbb`. A página pública só aceita hex (`aparenciaDaPagina.ts`) e o mobile lê os mesmos objetos. As transparências da análise viram o hex equivalente sobre a surface.

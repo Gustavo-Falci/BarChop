@@ -51,7 +51,7 @@ type Filtro = "todos" | "claros" | "escuros";
 // O nome de cada bolinha, pro leitor de tela e pro title. Diferentes dos
 // nomes dos temas: "Oceano" já é um tema.
 const NOME_DA_COR: Record<(typeof CORES_DA_MARCA)[number], string> = {
-  "#FFD900": "Amarelo BarChop",
+  "#F0C93A": "Amarelo BarChop",
   "#2563EB": "Azul",
   "#475569": "Cinza-azulado",
   "#0369A1": "Azul-petróleo",

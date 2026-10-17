@@ -299,9 +299,11 @@ export function temaPorId(id: IdDoTema): (typeof TEMAS)[number] {
   return TEMAS.find((item) => item.id === id) ?? TEMAS[0];
 }
 
-// As 16 bolinhas da cor da marca.
+// As 16 bolinhas da cor da marca. A primeira é o ouro da casa (desde
+// 17/10, no lugar do #FFD900; quem já tinha o amarelo antigo salvo
+// continua com ele, só que como cor própria).
 export const CORES_DA_MARCA = [
-  "#FFD900",
+  "#F0C93A",
   "#2563EB",
   "#475569",
   "#0369A1",

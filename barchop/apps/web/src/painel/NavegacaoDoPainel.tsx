@@ -48,10 +48,15 @@ const SECUNDARIAS = [
 const ID_DAS_SECOES = "secoes-do-painel";
 const ID_DO_MAIS = "secoes-do-mais";
 
+const NOVO = "/painel/agendamentos/novo";
+
 // O "Hoje" é /painel exato: com startsWith, ele ficaria ativo em todas
-// as rotas do painel ao mesmo tempo.
+// as rotas do painel ao mesmo tempo. O novo agendamento é do "Novo", não
+// da Agenda ("/painel/agenda" é prefixo de "/painel/agendamentos").
 function ehAtual(href: string, caminho: string): boolean {
-  return href === "/painel" ? caminho === href : caminho.startsWith(href);
+  if (href === "/painel") return caminho === href;
+  if (href === "/painel/agenda" && caminho.startsWith(NOVO)) return false;
+  return caminho.startsWith(href);
 }
 
 export function NavegacaoDoPainel() {
@@ -167,7 +172,7 @@ export function NavegacaoDoPainel() {
         {/* Só no celular, no centro da barra: a ação do dia a um toque.
             No desktop o "Novo agendamento" mora no cabeçalho de cada
             tela e este some (display: none tira também do leitor). */}
-        <Link href="/painel/agendamentos/novo" className={estilos.novo}>
+        <Link href={NOVO} className={estilos.novo} aria-current={caminho.startsWith(NOVO) ? "page" : undefined}>
           <IconeMais />
           <span className={estilos.rotulo}>Novo</span>
         </Link>

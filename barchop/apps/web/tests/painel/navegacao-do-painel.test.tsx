@@ -178,6 +178,15 @@ describe("navegação do painel", () => {
       expect(mais).toHaveAttribute("data-atual", "true");
     });
 
+    it("no novo agendamento, quem se marca é o Novo, não a Agenda", async () => {
+      navegacaoFalsa.redefinir({ pathname: "/painel/agendamentos/novo" });
+
+      montar();
+
+      expect(await screen.findByRole("link", { name: "Novo" })).toHaveAttribute("aria-current", "page");
+      expect(screen.getByRole("link", { name: "Agenda" })).not.toHaveAttribute("aria-current");
+    });
+
     it("numa seção da barra, o Mais não se marca", async () => {
       navegacaoFalsa.redefinir({ pathname: "/painel/agenda" });
 

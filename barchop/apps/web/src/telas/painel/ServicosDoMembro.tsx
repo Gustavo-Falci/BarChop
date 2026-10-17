@@ -99,7 +99,7 @@ export function ServicosDoMembro({ membroId }: { membroId: string }) {
       }
     >
       {carregando ? (
-        <Carregando />
+        <Carregando compacto />
       ) : catalogo.dados!.length === 0 ? (
         <p className={estilos.vazio}>Nenhum serviço cadastrado ainda.</p>
       ) : (

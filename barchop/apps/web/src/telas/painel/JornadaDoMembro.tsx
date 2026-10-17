@@ -189,7 +189,7 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
         ) : undefined
       }
     >
-      {!salva.dados ? <Carregando /> : null}
+      {!salva.dados ? <Carregando compacto /> : null}
       {/* Um atalho pra pausa de todo dia, como a rotina em Horários: a
           pausa de cada dia continua editável aqui embaixo. */}
       <div className={estilos.pausaDeSempre}>

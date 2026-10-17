@@ -169,10 +169,31 @@
   white-space: nowrap;
 }
 
-/* Os que faltam (e não são o próximo) não mostram a ação: ela é do
-   próximo passo. */
-.passo:not([data-atual="true"]):not([data-feito="true"]) .acoes {
-  display: none;
+/* Os que faltam (e não são o próximo) mantêm a ação, compacta ao lado
+   do nome: dá pra pular pra qualquer passo, e o "Trabalho sozinho" e o
+   "Esperando o primeiro cliente" continuam à vista. A ação grande, com
+   o amarelo, é só do próximo. */
+.passo:not([data-atual="true"]) {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--espaco-sm);
+}
+
+.passo:not([data-atual="true"]) .acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.passo:not([data-atual="true"]) .linkDoPasso {
+  width: auto;
+  min-height: 32px;
+  font-size: var(--texto-xs);
 }
 
 /* No próximo passo, a ação e o "Trabalho sozinho" lado a lado, do

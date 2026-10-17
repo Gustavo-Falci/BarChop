@@ -296,6 +296,9 @@
      Fora do fluxo, a altura dela é a da barra de topo. */
   .shell {
     position: relative;
+    /* A altura da barra inferior, pra quem prende algo no pé da tela (a
+       barra de publicar da Aparência) subir acima dela. */
+    --recuo-inferior: calc(72px + env(safe-area-inset-bottom));
   }
 
   .barra {

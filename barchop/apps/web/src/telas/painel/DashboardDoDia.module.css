@@ -39,3 +39,19 @@
   gap: var(--espaco-lg);
   align-content: start;
 }
+
+/* No celular, os três seguem numa linha (com o número menor) em vez de
+   cair em 2+1, que deixava o terceiro sem divisória. */
+@media (max-width: 640px) {
+  .numeros {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .numeros > * {
+    padding: var(--espaco-sm);
+  }
+
+  .numeros > * > :first-child {
+    font-size: var(--texto-lg);
+  }
+}

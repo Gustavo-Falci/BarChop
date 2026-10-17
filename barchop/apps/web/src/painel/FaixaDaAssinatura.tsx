@@ -16,6 +16,9 @@ interface Recado {
   // Só o recado neutro com folga de prazo fecha: nos últimos 3 dias, e
   // no de atenção, a faixa é o aviso que não pode sumir.
   fechavel: boolean;
+  // O que identifica o recado ao fechar. Não o texto: "faltam 10 dias"
+  // vira "faltam 9" no meio das 24h e é o mesmo recado.
+  chave: string;
 }
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -34,6 +37,7 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       texto: "Pagamento pendente: atualize o cartão para não perder o plano.",
       acao: "Resolver",
       fechavel: false,
+      chave: "atraso",
     };
   }
   // Só enquanto o plano pago vale: acabado, o que importa é o Grátis.
@@ -43,6 +47,7 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       texto: `Assinatura cancelada: o ${nomeDoPlano(resumo)} vale até ${diaEMes(resumo.cancelaEm)}.`,
       acao: "Ver plano",
       fechavel: diasAte(resumo.cancelaEm) > ULTIMOS_DIAS,
+      chave: `cancelada:${resumo.cancelaEm}`,
     };
   }
   if (resumo.situacao === "teste" && resumo.diasDeTesteRestantes) {
@@ -51,6 +56,7 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       texto: `Teste grátis: ${diasQueFaltam(resumo.diasDeTesteRestantes)}.`,
       acao: "Escolher plano",
       fechavel: resumo.diasDeTesteRestantes > ULTIMOS_DIAS,
+      chave: `teste:${resumo.testeTerminaEm ?? ""}`,
     };
   }
   if (resumo.excedente && resumo.limiteDeProfissionais !== null) {
@@ -62,6 +68,7 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
         (fora.length > 0 ? ` Fora do link: ${emLista(fora)}.` : ""),
       acao: "Escolher plano",
       fechavel: false,
+      chave: "excedente",
     };
   }
   if (resumo.situacao === "teste") {
@@ -70,6 +77,7 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       texto: "Seu teste acabou: a barbearia está no Grátis.",
       acao: "Escolher plano",
       fechavel: false,
+      chave: "teste-acabou",
     };
   }
   return null;
@@ -87,12 +95,12 @@ export function FaixaDaAssinatura() {
   useEffect(() => setLida(true), []);
 
   if (!recado || !lida) return null;
-  if (recado.fechavel && (fechadaAgora === recado.texto || faixaFechada(recado.texto))) return null;
+  if (recado.fechavel && (fechadaAgora === recado.chave || faixaFechada(recado.chave))) return null;
 
   function fechar() {
     if (!recado) return;
-    fecharFaixa(recado.texto);
-    setFechadaAgora(recado.texto);
+    fecharFaixa(recado.chave);
+    setFechadaAgora(recado.chave);
   }
 
   return (

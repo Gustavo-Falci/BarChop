@@ -34,7 +34,7 @@ export function PausasDaEquipe() {
       descricao="Cada pessoa tem a sua pausa, na jornada dela. Durante a pausa, ninguém marca horário com quem está pausando."
     >
       {pausas.erro ? <Aviso>{pausas.erro.mensagem || "Não foi possível carregar as pausas agora."}</Aviso> : null}
-      {!pausas.dados && !pausas.erro ? <Carregando /> : null}
+      {!pausas.dados && !pausas.erro ? <Carregando compacto /> : null}
       {pausas.dados ? (
         <ul className={estilos.lista}>
           {pausas.dados.map(({ membro, resumo }) => (

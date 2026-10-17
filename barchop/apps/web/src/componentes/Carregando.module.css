@@ -56,3 +56,11 @@
     background-position: -100% 0;
   }
 }
+
+.linha {
+  height: 44px;
+}
+
+.curta {
+  width: 60%;
+}

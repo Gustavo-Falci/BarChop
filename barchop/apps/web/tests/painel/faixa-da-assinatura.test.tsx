@@ -215,6 +215,20 @@ describe("faixa da assinatura", () => {
       relogio.mockRestore();
     });
 
+    it("a contagem de dias virar no meio das 24h não traz a faixa de volta", async () => {
+      // "faltam 10 dias" vira "faltam 9 dias" à meia-noite (ou na hora
+      // em que o teste começou); o recado é o mesmo, e fechado continua.
+      montar({ assinatura: resumo({ diasDeTesteRestantes: 10 }) });
+      await userEvent.click(within(await faixa()).getByRole("button", { name: "Fechar aviso" }));
+      cleanup();
+
+      const { leitura } = montar({ assinatura: resumo({ diasDeTesteRestantes: 9 }) });
+
+      await waitFor(() => expect(leitura).toHaveBeenCalled());
+      await screen.findByText("conteúdo da tela");
+      expect(screen.queryByRole("region", { name: "Assinatura" })).not.toBeInTheDocument();
+    });
+
     it("nos últimos 3 dias do teste, não fecha", async () => {
       montar({ assinatura: resumo({ diasDeTesteRestantes: 3 }) });
 

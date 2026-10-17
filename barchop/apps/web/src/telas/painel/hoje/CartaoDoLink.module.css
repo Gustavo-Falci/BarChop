@@ -7,10 +7,10 @@
   gap: var(--espaco-md);
   align-items: center;
   padding: var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 @media (max-width: 420px) {
@@ -65,7 +65,7 @@
   min-height: 44px;
   margin-top: var(--espaco-xs);
   padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-accent);
   color: var(--cor-dark);
@@ -76,6 +76,6 @@
 }
 
 .acao:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }

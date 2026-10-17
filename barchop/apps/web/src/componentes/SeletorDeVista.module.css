@@ -43,7 +43,7 @@
 .hoje {
   min-height: 40px;
   padding: var(--espaco-xs) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-md);
   background: var(--cor-surface);
   font-family: var(--fonte-display), system-ui, sans-serif;
@@ -51,12 +51,37 @@
   cursor: pointer;
 }
 
-/* A vista corrente usa o amarelo com a sombra deslocada, igual ao item
-   ativo da barra lateral — mesmo significado, mesmo desenho. */
+/* Dia, Semana e Mês são uma escolha só, então parecem uma: um trilho
+   segmentado em que a vista corrente sobe com o fundo do cartão. Sem
+   amarelo — o amarelo fica pra ação. */
+.vistas {
+  gap: 2px;
+  padding: 3px;
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+}
+
+.vista {
+  min-height: 34px;
+  border-color: transparent;
+  border-radius: calc(var(--raio-md) - 3px);
+  background: transparent;
+  color: var(--cor-ink-soft);
+  transition:
+    background-color var(--duracao-media) var(--curva-entrada),
+    box-shadow var(--duracao-media) var(--curva-entrada),
+    color var(--duracao-curta) ease;
+}
+
+.vista:hover {
+  color: var(--cor-ink);
+}
+
 .vista[aria-pressed="true"] {
-  background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
-  color: var(--cor-on-accent);
+  background: var(--cor-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 0 0 var(--borda-hairline) var(--cor-line);
+  color: var(--cor-ink);
 }
 
 .hoje {

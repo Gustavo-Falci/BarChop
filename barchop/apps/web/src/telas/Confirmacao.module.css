@@ -79,7 +79,7 @@
 }
 
 .link:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }
@@ -95,7 +95,7 @@
 }
 
 .linkDeTexto:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }

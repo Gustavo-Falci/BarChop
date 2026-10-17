@@ -67,7 +67,7 @@
 
 /* O foco está no <input> escondido; o anel aparece no botão que se vê. */
 .arquivo:focus-visible + .escolher {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 3px;
 }
 

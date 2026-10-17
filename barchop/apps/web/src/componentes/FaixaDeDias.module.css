@@ -20,7 +20,7 @@
   gap: 2px;
   min-height: 64px;
   padding: var(--espaco-sm) 0;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -34,7 +34,7 @@
 }
 
 .dia:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -47,7 +47,7 @@
 
 .dia[aria-current="date"] {
   background: var(--cor-accent);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   color: var(--cor-on-accent);
 }
 

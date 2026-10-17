@@ -4,7 +4,7 @@
   justify-content: center;
   gap: var(--espaco-sm);
   padding: var(--espaco-sm) var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   /* As variáveis com reserva são o ajuste fino da Aparência na página
      pública (fluxo/aparenciaDaPagina.ts); no painel nunca existem. */
   border-radius: var(--raio-botao, var(--raio-md));
@@ -12,15 +12,18 @@
   font-size: var(--texto-md);
   font-weight: 700;
   cursor: pointer;
-  /* Sombra offset, sem desfoque: a assinatura neobrutalista do design
-     system. O translate no :active faz o botão "afundar" nela. */
-  box-shadow: 0 4px 0 var(--cor-shadow);
-  transition: transform 80ms ease, box-shadow 80ms ease;
+  /* O botão continua afundando, que é a assinatura da casa, mas numa
+     sombra de 2px escura nos dois temas (a clara do escuro brilhava). */
+  box-shadow: var(--sombra-botao);
+  transition:
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out,
+    background-color var(--duracao-curta) ease;
 }
 
 .botao:active:not(:disabled) {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 var(--cor-shadow);
+  transform: translateY(2px);
+  box-shadow: none;
 }
 
 .botao:disabled {
@@ -28,10 +31,22 @@
   cursor: not-allowed;
 }
 
+/* Sem contorno em volta do amarelo: a cor já separa o botão do fundo, e
+   a moldura escura era um dos três pesos que disputavam o topo. */
 .primario {
-  border-color: var(--botao-borda, var(--cor-ink));
+  border-color: var(--botao-borda, transparent);
   background: var(--botao-fundo, var(--cor-accent));
   color: var(--botao-texto, var(--cor-on-accent));
+}
+
+/* Desabilitado neutro, da cor da superfície: o amarelo apagado de antes
+   parecia um botão com defeito. */
+.primario:disabled {
+  border-color: var(--cor-line-strong);
+  background: var(--cor-paper-soft);
+  box-shadow: none;
+  color: var(--cor-muted);
+  opacity: 1;
 }
 
 .fantasma {

@@ -17,13 +17,13 @@
   grid-auto-rows: minmax(var(--altura-minima-da-celula), 1fr);
   min-height: 0;
   gap: var(--borda-hairline);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   /* O fundo é a cor da linha, e o gap de 1px entre células o deixa
      aparecer — é assim que a grade ganha divisórias sem cada célula
      precisar de borda própria, que dobraria a espessura no encontro. */
   background: var(--cor-line);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
   overflow: auto;
 }
 

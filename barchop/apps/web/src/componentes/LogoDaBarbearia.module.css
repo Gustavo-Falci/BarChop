@@ -28,7 +28,7 @@
 .redonda,
 .quadrada {
   width: var(--lado);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-surface);
 }
 

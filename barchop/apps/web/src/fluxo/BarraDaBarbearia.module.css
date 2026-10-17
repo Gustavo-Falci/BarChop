@@ -2,7 +2,7 @@
    conteúdo sem virar mais um retângulo numa tela que já é feita deles.
    A --borda-padrao é a mesma espessura dos campos e dos botões. */
 .barra {
-  border-bottom: var(--borda-padrao) solid var(--cor-ink);
+  border-bottom: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-surface);
 }
 
@@ -48,7 +48,7 @@
 /* `:focus-visible` e não `:focus`, pra o anel não aparecer depois de um
    clique de mouse. O par 3px/2px é o mesmo dos campos. */
 .marca:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }

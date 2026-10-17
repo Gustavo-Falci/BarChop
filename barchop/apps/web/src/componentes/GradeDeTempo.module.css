@@ -24,10 +24,10 @@
      faixa, evento e régua juntos, porque todos se medem em linhas. */
   --altura-da-linha: 12px;
 
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 /* O único que rola, e só o corpo mora aqui — o cabeçalho fica acima,
@@ -74,7 +74,7 @@
   flex-shrink: 0;
   overflow: hidden;
   scrollbar-gutter: stable;
-  border-block-end: var(--borda-padrao) solid var(--cor-ink);
+  border-block-end: var(--borda-padrao) solid var(--cor-line-strong);
   background: var(--cor-paper-soft);
 }
 
@@ -240,7 +240,7 @@ button.diaDoCabecalho:hover .numeroDoDia {
   width: calc(100% / var(--pistas));
   margin-inline-start: calc(100% / var(--pistas) * var(--pista));
   padding: 2px var(--espaco-xs);
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-accent);
   color: var(--cor-on-accent);
@@ -274,7 +274,7 @@ button.diaDoCabecalho:hover .numeroDoDia {
      vai parar depois do fechamento. */
   margin-block-start: calc(var(--fracao, 0) * var(--altura-da-linha));
   height: 0;
-  border-block-start: var(--borda-padrao) solid var(--cor-ink);
+  border-block-start: var(--borda-padrao) solid var(--cor-line-strong);
   pointer-events: none;
 }
 

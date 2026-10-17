@@ -40,6 +40,37 @@ const varsDeEspaco = varsEmPixels("espaco", spacing);
 const varsDeBorda = varsEmPixels("borda", borderWidth);
 const varsDeTexto = varsEmPixels("texto", fontSize);
 
+// A profundidade vem de sombra difusa, não mais do deslocamento sólido.
+// Três degraus: o cartão (1), o que flutua sobre a tela — menu, janela —
+// (2), e o botão, que continua afundando nos 2px da sua sombra. No
+// escuro a sombra é mais densa (preto sobre quase preto) e o cartão
+// ganha um fio claro de 2,5% no topo, que é o que o separa do fundo.
+const SOMBRAS = {
+  claro: {
+    "sombra-1": "0 1px 2px rgba(38, 34, 28, 0.05), 0 8px 24px -16px rgba(38, 34, 28, 0.22)",
+    "sombra-2": "0 2px 6px rgba(38, 34, 28, 0.06), 0 18px 40px -12px rgba(38, 34, 28, 0.28)",
+    "sombra-botao": "0 2px 0 rgba(38, 34, 28, 0.22)",
+  },
+  escuro: {
+    "sombra-1": "inset 0 1px 0 rgba(255, 255, 255, 0.025), 0 14px 32px -20px rgba(0, 0, 0, 0.75)",
+    "sombra-2": "inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 44px -12px rgba(0, 0, 0, 0.8)",
+    "sombra-botao": "0 2px 0 rgba(0, 0, 0, 0.35)",
+  },
+} as const;
+
+function varsDeSombra(modo: keyof typeof SOMBRAS): string {
+  return Object.entries(SOMBRAS[modo])
+    .map(([nome, valor]) => `  --${nome}: ${valor};`)
+    .join("\n");
+}
+
+// O movimento do painel: entrada que desacelera ao chegar, saída 30%
+// mais curta. Nada acima de 250ms — é ferramenta de trabalho.
+const varsDeMovimento = `  --curva-entrada: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --curva-saida: cubic-bezier(0.4, 0, 1, 1);
+  --duracao-curta: 160ms;
+  --duracao-media: 200ms;`;
+
 // Três blocos, não dois. Sem a guarda :not([data-theme="light"]), quem
 // escolheu claro continua escurecendo num sistema escuro, porque o
 // @media venceria. Sem [data-theme="dark"], escolher escuro não faz
@@ -59,16 +90,20 @@ ${varsDeRaio}
 ${varsDeEspaco}
 ${varsDeBorda}
 ${varsDeTexto}
+${varsDeSombra("claro")}
+${varsDeMovimento}
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
 ${varsDeCores(colors.dark)}
+${varsDeSombra("escuro")}
   }
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
 ${varsDeCores(colors.dark)}
+${varsDeSombra("escuro")}
 }`;

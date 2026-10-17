@@ -21,7 +21,7 @@
   flex-direction: column;
   gap: var(--espaco-md);
   padding: var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
 }

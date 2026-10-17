@@ -74,7 +74,7 @@
   width: 1.1em;
   height: 1.1em;
   margin-top: 0.15em;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-accent);
 }
@@ -92,10 +92,10 @@
     margin-top: var(--espaco-md);
     padding: var(--espaco-md);
     max-width: 440px;
-    border: var(--borda-padrao) solid var(--cor-ink);
+    border: var(--borda-padrao) solid var(--cor-line-strong);
     border-radius: var(--raio-lg);
     background: var(--cor-surface);
-    box-shadow: 0 4px 0 var(--cor-shadow);
+    box-shadow: var(--sombra-1);
   }
 }
 
@@ -132,7 +132,7 @@
 
 .selo {
   padding: 2px var(--espaco-sm);
-  border: var(--borda-hairline) solid var(--cor-ink);
+  border: var(--borda-hairline) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-accent);
   color: var(--cor-dark);
@@ -175,7 +175,7 @@
 }
 
 .link:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
   border-radius: var(--raio-sm);
 }

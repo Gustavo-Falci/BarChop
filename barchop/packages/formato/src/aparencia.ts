@@ -422,18 +422,24 @@ function derivar(sementes: Sementes): CoresDaPagina {
   return {
     ...base,
     paper: fundo,
+    // Fundo próprio é chapado: o degradê é do papel da casa.
+    paperFim: fundo,
     paperSoft,
     surface,
     ink: texto,
     inkSoft: garantirContraste(misturar(texto, fundo, 0.22), texto, fundos, 4.5),
     muted,
     line: misturar(fundo, texto, escuro ? 0.18 : 0.12),
+    lineStrong: misturar(fundo, texto, escuro ? 0.26 : 0.2),
     accent: marca,
     accentBorder: misturar(marca, BRANCO, 0.45),
     paleYellow: misturar(fundo, realce, escuro ? 0.22 : 0.16),
     onAccent: textoSobre(marca),
     accentOnDark: marcaSobreOEscuro(marca),
-    shadow: escuro ? texto : "#000000",
+    // A marca de cada tema não tem contraste garantido com o fundo; o
+    // texto tem (7:1).
+    foco: texto,
+    shadow: "#000000",
     placeholder: muted,
   };
 }

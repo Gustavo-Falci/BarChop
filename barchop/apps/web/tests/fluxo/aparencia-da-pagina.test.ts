@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { colors } from "@barchop/design-tokens";
 import { APARENCIA_PADRAO, paletaDaAparencia, type Aparencia } from "@barchop/formato";
 import { chaveDoModo, cssDaAparencia, scriptDoModo } from "../../src/fluxo/aparenciaDaPagina";
 
@@ -45,7 +46,7 @@ describe("cssDaAparencia", () => {
     for (const nome of ["pale-yellow", "ink-soft", "muted", "line", "placeholder"]) {
       expect(escuro).toMatch(new RegExp(`--cor-${nome}: #[0-9A-F]{6};`));
     }
-    expect(escuro).toContain("--cor-pale-yellow: #3D3410;");
+    expect(escuro).toContain(`--cor-pale-yellow: ${colors.dark.paleYellow.toUpperCase()};`);
   });
 
   it("só sai hex: o que vier forjado não vira CSS", () => {

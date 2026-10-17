@@ -12,14 +12,14 @@
   gap: var(--espaco-sm);
   min-height: 44px;
   padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-surface);
   color: var(--cor-ink);
   font-size: var(--texto-sm);
   font-weight: 700;
   white-space: nowrap;
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
   transition-property: transform, box-shadow;
   transition-duration: 150ms;
   transition-timing-function: ease-out;
@@ -27,12 +27,12 @@
 
 .whatsapp:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .whatsapp:active {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--cor-shadow);
+  box-shadow: none;
 }
 
 /* ---------- A faixa do próximo passo ---------- */
@@ -46,12 +46,12 @@
   align-items: center;
   gap: var(--espaco-md) var(--espaco-lg);
   padding: var(--espaco-md) var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-left-width: 8px;
   border-left-color: var(--tom);
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .faixa[data-tom="atencao"] {
@@ -161,7 +161,7 @@
   justify-content: center;
   min-height: 44px;
   padding: 0 var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   font: inherit;
   font-size: var(--texto-sm);
@@ -177,17 +177,17 @@
 .principal {
   background: var(--cor-accent);
   color: var(--cor-dark);
-  box-shadow: 0 3px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-botao);
 }
 
 .principal:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 0 var(--cor-shadow);
+  box-shadow: var(--sombra-1);
 }
 
 .principal:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: 0 1px 0 var(--cor-shadow);
+  box-shadow: none;
 }
 
 .secundaria {
@@ -238,7 +238,7 @@
 .perigo:focus-visible,
 .discreta:focus-visible,
 .discretaPerigo:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -347,7 +347,7 @@
   place-items: center;
   width: 2.75rem;
   height: 2.75rem;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
   background: var(--cor-pale-yellow);
   color: var(--cor-ink);
@@ -386,7 +386,7 @@
 .area {
   min-height: 7.5rem;
   padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: var(--cor-ink);
@@ -400,7 +400,7 @@
 }
 
 .area:focus-visible {
-  outline: 3px solid var(--cor-ink);
+  outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
 

@@ -4,7 +4,7 @@
 .miniatura {
   flex: none;
   display: block;
-  border: var(--borda-padrao) solid var(--cor-ink);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   object-fit: cover;
   background: var(--cor-pale-yellow);
 }

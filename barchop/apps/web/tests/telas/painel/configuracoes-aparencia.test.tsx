@@ -156,6 +156,14 @@ describe("aparência", () => {
     expect(screen.getByRole("button", { name: /mostrar mais temas/i })).toBeInTheDocument();
   });
 
+  // A descrição só aparece ao passar o mouse (19/10): o leitor de tela a
+  // lê como descrição do botão.
+  it("cada tema traz a descrição como descrição do botão", async () => {
+    await abrir();
+
+    expect(screen.getByRole("button", { name: "Oceano" })).toHaveAccessibleDescription("Azul fundo com ciano calmo");
+  });
+
   it("o tema escolhido aparece mesmo fora da primeira página", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.salvarRascunhoDaAparencia({ ...APARENCIA_PADRAO, tema: "gentleman" });

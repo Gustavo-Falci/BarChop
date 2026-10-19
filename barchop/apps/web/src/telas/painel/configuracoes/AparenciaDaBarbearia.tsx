@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import type { ErroDaApi } from "@barchop/api-client";
 import {
@@ -770,12 +770,21 @@ function LinhaDaImagem({
 }
 
 // Um tema como o cliente o veria: a metade clara e a escura lado a lado,
-// com um cartão e o botão da marca.
+// com um cartão e o botão da marca. A descrição aparece sobre a amostra
+// ao passar o mouse (19/10); no celular, só a do escolhido.
 function CartaoDoTema({ id, ativo, aoEscolher }: { id: IdDoTema; ativo: boolean; aoEscolher: () => void }) {
   const tema = temaPorId(id);
   const { claro, escuro } = PALETAS_DOS_TEMAS[id];
+  const idDaDescricao = useId();
   return (
-    <button type="button" className={estilos.tema} aria-pressed={ativo} aria-label={tema.nome} onClick={aoEscolher}>
+    <button
+      type="button"
+      className={estilos.tema}
+      aria-pressed={ativo}
+      aria-label={tema.nome}
+      aria-describedby={idDaDescricao}
+      onClick={aoEscolher}
+    >
       <span className={estilos.amostra} aria-hidden="true">
         {[claro, escuro].map((cores, indice) => (
           <span key={indice} className={estilos.metade} style={{ background: cores.paper }}>
@@ -793,7 +802,9 @@ function CartaoDoTema({ id, ativo, aoEscolher }: { id: IdDoTema; ativo: boolean;
         {tema.nome}
         {tema.abreNoEscuro ? <span className={estilos.selo}>Escuro</span> : null}
       </span>
-      <span className={estilos.temaDescricao}>{tema.descricao}</span>
+      <span id={idDaDescricao} className={estilos.temaDescricao}>
+        {tema.descricao}
+      </span>
       {ativo ? (
         <span className={estilos.marcado} aria-hidden="true">
           ✓

@@ -115,6 +115,28 @@
   gap: var(--espaco-md);
 }
 
+/* Discreto: um link de texto, sem moldura, logo abaixo da grade. */
+.mostrarMais {
+  justify-self: center;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: 0;
+  background: transparent;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+}
+
+.mostrarMais:hover {
+  color: var(--cor-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.quantosFaltam {
+  font-variant-numeric: tabular-nums;
+}
+
 .tema {
   position: relative;
   display: grid;

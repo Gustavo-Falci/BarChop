@@ -49,6 +49,10 @@ const MARCA = "/painel/configuracoes/dados-do-negocio?aba=marca";
 type Modo = "claro" | "escuro";
 type Filtro = "todos" | "claros" | "escuros";
 
+// Os temas vêm seis de cada vez (19/10, pedido do dono): os 17 juntos
+// empurravam o modo padrão pra baixo da dobra.
+const TEMAS_POR_PAGINA = 6;
+
 // O nome de cada bolinha, pro leitor de tela e pro title. Diferentes dos
 // nomes dos temas: "Oceano" já é um tema.
 const NOME_DA_COR: Record<(typeof CORES_DA_MARCA)[number], string> = {
@@ -186,6 +190,7 @@ function TelaDaAparencia() {
   // servidor não tem, e publicar levaria pro ar a versão velha.
   const [naoGuardado, setNaoGuardado] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [paginasDeTemas, setPaginasDeTemas] = useState(1);
   const [modoDoFundo, setModoDoFundo] = useState<Modo>("claro");
   const [ajusteAberto, setAjusteAberto] = useState(false);
   const [modoDasNove, setModoDasNove] = useState<Modo>("claro");
@@ -295,9 +300,16 @@ function TelaDaAparencia() {
   // O tema sem as cores trocadas: é com ele que se sabe se uma cor
   // escolhida é a do tema (e não personaliza nada).
   const puro = PALETAS_DOS_TEMAS[rascunho.tema];
-  const temasVisiveis = TEMAS.filter((item) =>
+  const temasDoFiltro = TEMAS.filter((item) =>
     filtro === "todos" ? true : filtro === "escuros" ? item.abreNoEscuro : !item.abreNoEscuro
   );
+  const temasVisiveis = temasDoFiltro.slice(0, paginasDeTemas * TEMAS_POR_PAGINA);
+  // O tema escolhido não some por estar numa página fechada: vai no fim.
+  const escolhidoEscondido = temasDoFiltro.find(
+    (item) => item.id === rascunho.tema && !temasVisiveis.includes(item)
+  );
+  if (escolhidoEscondido) temasVisiveis.push(escolhidoEscondido);
+  const temasQueFaltam = temasDoFiltro.length - temasVisiveis.length;
 
   function escolherMarca(cor: string) {
     // A marca é uma só: definida no claro, o escuro acompanha.
@@ -369,7 +381,10 @@ function TelaDaAparencia() {
                     { valor: "escuros", rotulo: "Escuros" },
                   ]}
                   valor={filtro}
-                  aoTrocar={setFiltro}
+                  aoTrocar={(novo) => {
+                    setFiltro(novo);
+                    setPaginasDeTemas(1);
+                  }}
                 />
 
                 {personalizada(rascunho) ? (
@@ -394,6 +409,15 @@ function TelaDaAparencia() {
                     />
                   ))}
                 </div>
+                {temasQueFaltam > 0 ? (
+                  <button
+                    type="button"
+                    className={estilos.mostrarMais}
+                    onClick={() => setPaginasDeTemas(paginasDeTemas + 1)}
+                  >
+                    Mostrar mais temas <span className={estilos.quantosFaltam}>({temasQueFaltam})</span>
+                  </button>
+                ) : null}
 
                 <div className={estilos.duasColunas}>
                   <SeletorEmPilulas<ModoDeCor>

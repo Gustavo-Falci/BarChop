@@ -4,7 +4,33 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-19 — temas da Aparência paginados e descrição no hover: #172) — vale mais que as seções abaixo
+## RETOMAR AQUI (tarde de 2026-10-19 — próximo: motion e arrastar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = `7996cae`** (#173, só docs). Depois disso, só este PR de docs, que traz os dois planos novos.
+- **Produção:** ainda com o redesenho de 17/10 (`cd57bdb`); o deploy do `web` com o #172 (temas paginados) segue pendente com o dono.
+- Nenhum branch pela metade, nenhum código novo.
+
+**Próximo trabalho (decidido pelo dono em 19/10):** dois planos, escritos e ainda **sem aprovação formal**:
+- **`.claude/plans/motion-sutil.plan.md`**: animações com a lib `motion` (versão fixa `13.5.1`; a 14 é nova demais), carregada com `LazyMotion`. Vale pro painel, pro agendamento público e pro site, no modo sutil e rápido (até 280ms, nada trava clique, "reduzir movimento" respeitado). 6 PRs: base e troca de tela; janelas e menus com saída; micro-interações (indicador deslizante); listas; passos do agendamento; site.
+- **`.claude/plans/arrastar-e-reordenar.plan.md`**: dnd-kit (`core 6.3.1`, `sortable 10.0.0`, `utilities 3.2.2`, `modifiers 9.0.0`). 7 PRs:
+  - migração com `ordem` em serviço e profissional e `ordem_categorias` na barbearia;
+  - API de ordem;
+  - lista reordenável (mouse, toque e teclado);
+  - aplicar em Serviços, Categorias e Equipe;
+  - remarcar pelo painel (API nova);
+  - "Mudar horário" no detalhe;
+  - arrastar na agenda, sempre com confirmação.
+  O limite do Grátis e o "qualquer um" continuam pela ordem de entrada na equipe (`criadoEm`).
+- Ordem sugerida: motion PR 1 → arrastar PR 1–4 → motion PR 2–6 → arrastar PR 5–7. O ADR 0011 cobre as duas libs.
+
+**Ao retomar:**
+1. Confirmar com o dono a aprovação dos dois planos.
+2. Antes do arrastar PR 5: decidir se o cliente recebe aviso por e-mail quando o painel remarca. A recomendação é sim (e-mail "seu horário mudou", lembrete reagendado e notificação interna "remarcado").
+
+**O que falta além disso:** a mesma lista da seção de 19/10 abaixo (deploy do #172, caixa em produção, marcos 3 e 4, G3, `barbearia-teste`).
+
+## RETOMAR AQUI (2026-10-19 — temas da Aparência paginados e descrição no hover: #172) — histórico
 
 **Estado:**
 - **`main` = `32303ea`** (merge do #172). Depois disso, só este PR de docs.

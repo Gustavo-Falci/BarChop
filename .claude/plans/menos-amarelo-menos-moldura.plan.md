@@ -139,7 +139,7 @@ Feito:
 - **Dados do negócio › Marca:** a capa vazia fica em 4 por 1.
 
 Ficou pendente:
-- a descrição do tema no hover;
+- ~~a descrição do tema no hover~~ feito em 19/10 (branch `temas-paginados`): sobre a amostra ao passar o mouse; no celular, só a do escolhido;
 - compactar "A cara da sua loja" numa linha: muda texto e é pergunta pro dono;
 - a barra de mudanças nos Dados do negócio (Identidade): foi pro PR 5.
 

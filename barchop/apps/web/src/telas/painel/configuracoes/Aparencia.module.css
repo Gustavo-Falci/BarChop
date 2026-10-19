@@ -115,6 +115,34 @@
   gap: var(--espaco-md);
 }
 
+/* Discretos: links de texto, sem moldura, logo abaixo da grade. */
+.paginacaoDosTemas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--espaco-md);
+}
+
+.mostrarMais {
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: 0;
+  background: transparent;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+}
+
+.mostrarMais:hover {
+  color: var(--cor-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.quantosFaltam {
+  font-variant-numeric: tabular-nums;
+}
+
 .tema {
   position: relative;
   display: grid;
@@ -192,10 +220,48 @@
   font-weight: 700;
 }
 
+/* A descrição não ocupa a carta: no celular (sem mouse) só a do tema
+   escolhido aparece, embaixo do nome; com mouse, ela cobre o pé da
+   amostra ao passar por cima — a grade não muda de altura. */
 .temaDescricao {
+  display: none;
   padding: 0 var(--espaco-md);
   font-size: var(--texto-xs);
   color: var(--cor-ink-soft);
+}
+
+@media (hover: none) {
+  .tema[aria-pressed="true"] .temaDescricao {
+    display: block;
+  }
+}
+
+@media (hover: hover) {
+  .temaDescricao {
+    display: block;
+    position: absolute;
+    top: 92px; /* a altura da .amostra */
+    right: 0;
+    left: 0;
+    padding: var(--espaco-xs) var(--espaco-md);
+    border-top: var(--borda-hairline) solid var(--cor-line);
+    background: var(--cor-surface);
+    opacity: 0;
+    transform: translateY(-100%);
+    transition: opacity 120ms ease;
+    pointer-events: none;
+  }
+
+  .tema:hover .temaDescricao,
+  .tema:focus-visible .temaDescricao {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .temaDescricao {
+    transition: none;
+  }
 }
 
 @media (min-width: 700px) {

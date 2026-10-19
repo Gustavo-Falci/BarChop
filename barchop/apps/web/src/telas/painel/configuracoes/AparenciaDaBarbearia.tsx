@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import Link from "next/link";
 import type { ErroDaApi } from "@barchop/api-client";
 import {
@@ -48,6 +48,10 @@ const MARCA = "/painel/configuracoes/dados-do-negocio?aba=marca";
 
 type Modo = "claro" | "escuro";
 type Filtro = "todos" | "claros" | "escuros";
+
+// Os temas vêm seis de cada vez (19/10, pedido do dono): os 17 juntos
+// empurravam o modo padrão pra baixo da dobra.
+const TEMAS_POR_PAGINA = 6;
 
 // O nome de cada bolinha, pro leitor de tela e pro title. Diferentes dos
 // nomes dos temas: "Oceano" já é um tema.
@@ -186,6 +190,7 @@ function TelaDaAparencia() {
   // servidor não tem, e publicar levaria pro ar a versão velha.
   const [naoGuardado, setNaoGuardado] = useState(false);
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [paginasDeTemas, setPaginasDeTemas] = useState(1);
   const [modoDoFundo, setModoDoFundo] = useState<Modo>("claro");
   const [ajusteAberto, setAjusteAberto] = useState(false);
   const [modoDasNove, setModoDasNove] = useState<Modo>("claro");
@@ -295,9 +300,16 @@ function TelaDaAparencia() {
   // O tema sem as cores trocadas: é com ele que se sabe se uma cor
   // escolhida é a do tema (e não personaliza nada).
   const puro = PALETAS_DOS_TEMAS[rascunho.tema];
-  const temasVisiveis = TEMAS.filter((item) =>
+  const temasDoFiltro = TEMAS.filter((item) =>
     filtro === "todos" ? true : filtro === "escuros" ? item.abreNoEscuro : !item.abreNoEscuro
   );
+  const temasVisiveis = temasDoFiltro.slice(0, paginasDeTemas * TEMAS_POR_PAGINA);
+  // O tema escolhido não some por estar numa página fechada: vai no fim.
+  const escolhidoEscondido = temasDoFiltro.find(
+    (item) => item.id === rascunho.tema && !temasVisiveis.includes(item)
+  );
+  if (escolhidoEscondido) temasVisiveis.push(escolhidoEscondido);
+  const temasQueFaltam = temasDoFiltro.length - temasVisiveis.length;
 
   function escolherMarca(cor: string) {
     // A marca é uma só: definida no claro, o escuro acompanha.
@@ -369,7 +381,10 @@ function TelaDaAparencia() {
                     { valor: "escuros", rotulo: "Escuros" },
                   ]}
                   valor={filtro}
-                  aoTrocar={setFiltro}
+                  aoTrocar={(novo) => {
+                    setFiltro(novo);
+                    setPaginasDeTemas(1);
+                  }}
                 />
 
                 {personalizada(rascunho) ? (
@@ -394,6 +409,24 @@ function TelaDaAparencia() {
                     />
                   ))}
                 </div>
+                {temasQueFaltam > 0 || paginasDeTemas > 1 ? (
+                  <div className={estilos.paginacaoDosTemas}>
+                    {temasQueFaltam > 0 ? (
+                      <button
+                        type="button"
+                        className={estilos.mostrarMais}
+                        onClick={() => setPaginasDeTemas(paginasDeTemas + 1)}
+                      >
+                        Mostrar mais temas <span className={estilos.quantosFaltam}>({temasQueFaltam})</span>
+                      </button>
+                    ) : null}
+                    {paginasDeTemas > 1 ? (
+                      <button type="button" className={estilos.mostrarMais} onClick={() => setPaginasDeTemas(1)}>
+                        Mostrar menos temas
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
 
                 <div className={estilos.duasColunas}>
                   <SeletorEmPilulas<ModoDeCor>
@@ -737,12 +770,21 @@ function LinhaDaImagem({
 }
 
 // Um tema como o cliente o veria: a metade clara e a escura lado a lado,
-// com um cartão e o botão da marca.
+// com um cartão e o botão da marca. A descrição aparece sobre a amostra
+// ao passar o mouse (19/10); no celular, só a do escolhido.
 function CartaoDoTema({ id, ativo, aoEscolher }: { id: IdDoTema; ativo: boolean; aoEscolher: () => void }) {
   const tema = temaPorId(id);
   const { claro, escuro } = PALETAS_DOS_TEMAS[id];
+  const idDaDescricao = useId();
   return (
-    <button type="button" className={estilos.tema} aria-pressed={ativo} aria-label={tema.nome} onClick={aoEscolher}>
+    <button
+      type="button"
+      className={estilos.tema}
+      aria-pressed={ativo}
+      aria-label={tema.nome}
+      aria-describedby={idDaDescricao}
+      onClick={aoEscolher}
+    >
       <span className={estilos.amostra} aria-hidden="true">
         {[claro, escuro].map((cores, indice) => (
           <span key={indice} className={estilos.metade} style={{ background: cores.paper }}>
@@ -760,7 +802,9 @@ function CartaoDoTema({ id, ativo, aoEscolher }: { id: IdDoTema; ativo: boolean;
         {tema.nome}
         {tema.abreNoEscuro ? <span className={estilos.selo}>Escuro</span> : null}
       </span>
-      <span className={estilos.temaDescricao}>{tema.descricao}</span>
+      <span id={idDaDescricao} className={estilos.temaDescricao}>
+        {tema.descricao}
+      </span>
       {ativo ? (
         <span className={estilos.marcado} aria-hidden="true">
           ✓

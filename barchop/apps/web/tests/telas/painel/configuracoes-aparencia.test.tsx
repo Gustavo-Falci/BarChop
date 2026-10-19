@@ -124,8 +124,69 @@ describe("aparência", () => {
     expect(screen.queryByRole("button", { name: "Oceano" })).not.toBeInTheDocument();
   });
 
+  // Paginados (19/10, pedido do dono): seis de cada vez, e um "Mostrar
+  // mais" discreto traz os próximos seis.
+  it("mostra seis temas; Mostrar mais traz os próximos até acabar", async () => {
+    await abrir();
+
+    expect(screen.getByRole("button", { name: "Floresta" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cítrico" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Minimalista" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /mostrar mais temas/i }));
+    expect(screen.getByRole("button", { name: "Cítrico" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Minimalista" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /mostrar mais temas/i }));
+    expect(screen.getByRole("button", { name: "Minimalista" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /mostrar mais temas/i })).not.toBeInTheDocument();
+  });
+
+  it("Mostrar menos só aparece depois de abrir mais, e volta pros seis primeiros", async () => {
+    await abrir();
+    expect(screen.queryByRole("button", { name: /mostrar menos temas/i })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /mostrar mais temas/i }));
+    await userEvent.click(screen.getByRole("button", { name: /mostrar mais temas/i }));
+    await userEvent.click(screen.getByRole("button", { name: /mostrar menos temas/i }));
+
+    expect(screen.getByRole("button", { name: "Floresta" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cítrico" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /mostrar menos temas/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mostrar mais temas/i })).toBeInTheDocument();
+  });
+
+  // A descrição só aparece ao passar o mouse (19/10): o leitor de tela a
+  // lê como descrição do botão.
+  it("cada tema traz a descrição como descrição do botão", async () => {
+    await abrir();
+
+    expect(screen.getByRole("button", { name: "Oceano" })).toHaveAccessibleDescription("Azul fundo com ciano calmo");
+  });
+
+  it("o tema escolhido aparece mesmo fora da primeira página", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.salvarRascunhoDaAparencia({ ...APARENCIA_PADRAO, tema: "gentleman" });
+
+    await abrir(falso);
+
+    expect(screen.getByRole("button", { name: "Gentleman" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("button", { name: "Minimalista" })).not.toBeInTheDocument();
+  });
+
+  it("trocar o filtro volta pra primeira página", async () => {
+    await abrir();
+    await userEvent.click(screen.getByRole("button", { name: /mostrar mais temas/i }));
+
+    await userEvent.click(grupo(/mostrar temas/i).getByRole("radio", { name: "Claros" }));
+    await userEvent.click(grupo(/mostrar temas/i).getByRole("radio", { name: "Todos" }));
+
+    expect(screen.queryByRole("button", { name: "Cítrico" })).not.toBeInTheDocument();
+  });
+
   it("tema que abre no escuro põe o modo padrão no Escuro", async () => {
     const falso = await abrir();
+    await userEvent.click(grupo(/mostrar temas/i).getByRole("radio", { name: "Escuros" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Ousado" }));
 

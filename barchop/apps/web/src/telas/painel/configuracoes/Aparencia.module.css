@@ -115,9 +115,15 @@
   gap: var(--espaco-md);
 }
 
-/* Discreto: um link de texto, sem moldura, logo abaixo da grade. */
+/* Discretos: links de texto, sem moldura, logo abaixo da grade. */
+.paginacaoDosTemas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--espaco-md);
+}
+
 .mostrarMais {
-  justify-self: center;
   padding: var(--espaco-xs) var(--espaco-sm);
   border: 0;
   background: transparent;

@@ -409,14 +409,23 @@ function TelaDaAparencia() {
                     />
                   ))}
                 </div>
-                {temasQueFaltam > 0 ? (
-                  <button
-                    type="button"
-                    className={estilos.mostrarMais}
-                    onClick={() => setPaginasDeTemas(paginasDeTemas + 1)}
-                  >
-                    Mostrar mais temas <span className={estilos.quantosFaltam}>({temasQueFaltam})</span>
-                  </button>
+                {temasQueFaltam > 0 || paginasDeTemas > 1 ? (
+                  <div className={estilos.paginacaoDosTemas}>
+                    {temasQueFaltam > 0 ? (
+                      <button
+                        type="button"
+                        className={estilos.mostrarMais}
+                        onClick={() => setPaginasDeTemas(paginasDeTemas + 1)}
+                      >
+                        Mostrar mais temas <span className={estilos.quantosFaltam}>({temasQueFaltam})</span>
+                      </button>
+                    ) : null}
+                    {paginasDeTemas > 1 ? (
+                      <button type="button" className={estilos.mostrarMais} onClick={() => setPaginasDeTemas(1)}>
+                        Mostrar menos temas
+                      </button>
+                    ) : null}
+                  </div>
                 ) : null}
 
                 <div className={estilos.duasColunas}>

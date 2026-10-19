@@ -142,6 +142,20 @@ describe("aparência", () => {
     expect(screen.queryByRole("button", { name: /mostrar mais temas/i })).not.toBeInTheDocument();
   });
 
+  it("Mostrar menos só aparece depois de abrir mais, e volta pros seis primeiros", async () => {
+    await abrir();
+    expect(screen.queryByRole("button", { name: /mostrar menos temas/i })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /mostrar mais temas/i }));
+    await userEvent.click(screen.getByRole("button", { name: /mostrar mais temas/i }));
+    await userEvent.click(screen.getByRole("button", { name: /mostrar menos temas/i }));
+
+    expect(screen.getByRole("button", { name: "Floresta" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cítrico" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /mostrar menos temas/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /mostrar mais temas/i })).toBeInTheDocument();
+  });
+
   it("o tema escolhido aparece mesmo fora da primeira página", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.salvarRascunhoDaAparencia({ ...APARENCIA_PADRAO, tema: "gentleman" });

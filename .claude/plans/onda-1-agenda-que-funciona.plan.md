@@ -4,7 +4,31 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-17 — redesenho "menos amarelo, menos moldura" no ar: #162 a #169) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-19 — temas da Aparência paginados e descrição no hover: #172) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = `32303ea`** (merge do #172). Depois disso, só este PR de docs.
+- **Produção:** ainda com o redesenho de 17/10 (`cd57bdb`). O #172 pede deploy só do `web` (sem migração, sem mudança na API) — o dono faz.
+- **O que entrou no #172** (Aparência › Tema):
+  - os 17 temas em páginas de seis; "Mostrar mais temas (N)" traz os próximos seis e diz quantos faltam; "Mostrar menos temas" aparece depois de abrir mais e volta pros seis primeiros. Botões de texto discretos, sem moldura, embaixo da grade;
+  - o tema escolhido aparece no fim da grade mesmo fora da página aberta; trocar o filtro (Todos/Claros/Escuros) volta pra primeira página;
+  - a descrição do tema sai da carta: com mouse, cobre o pé da amostra no hover ou no foco do teclado, sem mudar a altura da grade; no celular, só a do escolhido. O leitor de tela a recebe como descrição do botão (`aria-describedby`).
+- **Testado:** 28/28 na tela da Aparência, `tsc` e lint limpos. Não conferido no navegador (a extensão do Chrome não abriu o localhost); a rota responde 200 no dev.
+
+**Para lembrar:**
+- Pendentes do redesenho: o resumo fixo no rodapé do fluxo público desde o passo 3; o app mobile não foi aberto num emulador. (A descrição do tema no hover saiu no #172.)
+- Rota do painel presa em "Rendering"/"Compiling …" no dev, com as outras abrindo: é o cache do Turbopack. Parar o `next dev` (e o node que sobrar na porta 3000), apagar `apps/web/.next/dev` e subir de novo. Aconteceu com a Aparência em 19/10; não era o código.
+- Os demais lembretes de 17/10 (abaixo) seguem valendo.
+
+**O que falta (o dono escolhe):**
+1. Deploy do `web` com o #172 e conferir a Aparência no ar.
+2. Testar o caixa por dentro em produção (registrar um pagamento, fechar e reabrir o dia).
+3. Onda 2, marco 3 — planos da barbearia para o cliente (antes do `/plan`, a pergunta aberta do PRD: de quem é a mensalidade no acerto, e o provedor pra barbearia receber).
+4. Onda 2, marco 4 — relatórios.
+5. Onda 1, G3 — o piloto da GR Barber.
+6. `barbearia-teste` em produção: apagar ou manter.
+
+## RETOMAR AQUI (noite de 2026-10-17 — redesenho "menos amarelo, menos moldura" no ar: #162 a #169) — histórico
 
 **Estado:**
 - **Código do redesenho = `cd57bdb`** (merge do #162; os 8 PRs foram mesclados de cima pra baixo e a `main` ficou idêntica ao topo da pilha). Depois disso, só PRs de docs (#170 e este).

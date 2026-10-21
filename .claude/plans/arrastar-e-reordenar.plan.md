@@ -65,6 +65,7 @@ Hoje nada se reordena: serviços saem por nome (`apps/api/src/routers/servicos.t
 - Depois: `notificarAgendamento(tx, "remarcado", novo.id)`, `agendarLembrete` do novo, e-mail ao cliente (se a pergunta aberta for "sim").
 - Agendamento com pagamento registrado ou dia fechado no caixa → 409 com mensagem clara.
 - **Testes**: remarca ok; horário ocupado → 409; dia passado → 400; profissional mexendo no de outro → 403; clique duplo gera um só; sobreposição consigo mesmo (10:00→10:15) ok; com pagamento → 409.
+- **Feito (21/10), desvios:** códigos seguem a casa — ocupado é `422 horario_indisponivel` e passado `422 horario_passado` (não 409/400); o agendamento do colega é `404` pro profissional (como o GET), e passar o próprio pra outro é `403`. Sem notificação no sino: ele é só do que o cliente faz (`lib/notificacoes.ts`), e o texto diria "Fulano remarcou". E-mail "Seu horário mudou" (antes/agora) sai depois do commit, sem aguardar, se `avisarCliente` (padrão `true`) e houver e-mail. Com pagamento: `409 com_pagamento`; dia fechado (origem ou destino): `409 dia_fechado`.
 
 ### PR 6 — Web: "Mudar horário" no detalhe
 - `DetalheDoAgendamento`: troca a nota "cancele e crie outro" por **Mudar horário** → janela com dia + horários livres (reusa `Calendario`/`ListaDeHorarios` e a disponibilidade do `NovoAgendamento`) + profissional (quem pode trocar).

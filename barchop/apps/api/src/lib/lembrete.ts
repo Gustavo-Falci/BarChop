@@ -189,6 +189,24 @@ export function textoDoLembrete(agendamento: AgendamentoDoLembrete, url: string 
   );
 }
 
+// O e-mail de quando o painel remarca (arrastar e reordenar, PR 5): o
+// horário de antes e o de agora, pra o cliente não chegar no antigo. Sem
+// link: o do lembrete chega no horário dele, como sempre.
+export function textoDoRemarcado(
+  agendamento: AgendamentoDoLembrete,
+  de: { data: Date; horaInicio: Date }
+): string {
+  const servicos = agendamento.servicos.map((s) => s.servico.nome).join(" + ");
+  const primeiroNome = agendamento.cliente.nome.split(" ")[0];
+  return (
+    `Olá, ${primeiroNome}! A ${agendamento.barbearia.nome} mudou o seu horário.\n\n` +
+    `Era: ${DIA_DA_SEMANA.format(de.data)}, às ${dateParaHora(de.horaInicio)}.\n` +
+    `Agora: ${DIA_DA_SEMANA.format(agendamento.data)}, às ${dateParaHora(agendamento.horaInicio)}, ` +
+    `com ${agendamento.barbeiro.nome} (${servicos}).\n\n` +
+    "Se o novo horário não der, fale com a barbearia."
+  );
+}
+
 // O tratador. Cada saída antecipada é um "não há o que mandar" e
 // termina sem erro; só a falha no envio lança — é o único caso em que
 // o pg-boss repetir ajuda.

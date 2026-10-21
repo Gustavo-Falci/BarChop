@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./Home.module.css";
 import { TabelaDePrecos } from "./TabelaDePrecos";
+import { Revelar } from "./Revelar";
 
 // A home do SaaS (marco 1s). O texto só promete o que o produto já faz:
 // lembrete por e-mail (o WhatsApp oficial espera a Meta, ADR-0009),
@@ -104,16 +105,16 @@ export function Home() {
         <AgendaDeExemplo />
       </section>
 
-      <section aria-labelledby="dor" className={estilos.secao}>
+      <Revelar como="section" aria-labelledby="dor" className={estilos.secao}>
         <h2 id="dor" className={estilos.tituloDaSecao}>Soa familiar?</h2>
         <ul className={estilos.dores}>
           {DORES.map((dor) => (
             <li key={dor}>{dor}</li>
           ))}
         </ul>
-      </section>
+      </Revelar>
 
-      <section aria-labelledby="como-funciona" className={estilos.secao}>
+      <Revelar como="section" aria-labelledby="como-funciona" className={estilos.secao}>
         <h2 id="como-funciona" className={estilos.tituloDaSecao}>Como funciona</h2>
         <ol className={estilos.passos}>
           {PASSOS.map((passo) => (
@@ -123,9 +124,9 @@ export function Home() {
             </li>
           ))}
         </ol>
-      </section>
+      </Revelar>
 
-      <section aria-labelledby="recursos" className={estilos.secao}>
+      <Revelar como="section" aria-labelledby="recursos" className={estilos.secao}>
         <h2 id="recursos" className={estilos.tituloDaSecao}>O que vem junto</h2>
         <ul className={estilos.recursos}>
           {RECURSOS.map((recurso) => (
@@ -135,9 +136,9 @@ export function Home() {
             </li>
           ))}
         </ul>
-      </section>
+      </Revelar>
 
-      <section aria-labelledby="planos" className={estilos.secao}>
+      <Revelar como="section" aria-labelledby="planos" className={estilos.secao}>
         <div className={estilos.cabecaDosPlanos}>
           <h2 id="planos" className={estilos.tituloDaSecao}>Planos</h2>
           <p className={estilos.apoioDosPlanos}>
@@ -149,9 +150,9 @@ export function Home() {
         <Link href="/precos" className={estilos.detalhes}>
           Ver todos os detalhes dos preços
         </Link>
-      </section>
+      </Revelar>
 
-      <section aria-labelledby="perguntas" className={estilos.secao}>
+      <Revelar como="section" aria-labelledby="perguntas" className={estilos.secao}>
         <h2 id="perguntas" className={estilos.tituloDaSecao}>Perguntas frequentes</h2>
         <div className={estilos.perguntas}>
           {PERGUNTAS.map((item) => (
@@ -161,16 +162,16 @@ export function Home() {
             </details>
           ))}
         </div>
-      </section>
+      </Revelar>
 
-      <section aria-labelledby="comecar" className={estilos.final}>
+      <Revelar como="section" aria-labelledby="comecar" className={estilos.final}>
         <h2 id="comecar" className={estilos.tituloDaSecao}>
           Comece hoje, sem falar com ninguém.
         </h2>
         <LinkDeAcao href="/painel/cadastro" grande>
           Criar minha barbearia grátis
         </LinkDeAcao>
-      </section>
+      </Revelar>
     </main>
   );
 }

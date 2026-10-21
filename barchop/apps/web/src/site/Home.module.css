@@ -30,6 +30,32 @@
   gap: var(--espaco-md);
 }
 
+/* Chapéu, título, apoio e o convite entram um depois do outro na carga,
+   60ms de passo (motion PR 6). Só CSS: o HTML do servidor já traz tudo,
+   e quem pediu menos movimento cai na regra global que zera a animação. */
+.promessa > * {
+  animation: promessa-entra var(--duracao-longa) var(--curva-entrada) both;
+}
+
+.promessa > :nth-child(2) {
+  animation-delay: 60ms;
+}
+
+.promessa > :nth-child(3) {
+  animation-delay: 120ms;
+}
+
+.promessa > :nth-child(4) {
+  animation-delay: 180ms;
+}
+
+@keyframes promessa-entra {
+  from {
+    opacity: 0;
+    translate: 0 var(--deslize-normal);
+  }
+}
+
 .chapeu {
   margin: 0;
   font-family: var(--fonte-display), system-ui, sans-serif;

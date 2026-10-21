@@ -2,6 +2,7 @@ import { DIAS_DE_TESTE, formatarReais, limiteDeProfissionais, precosDoCiclo } fr
 import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./PaginaDePreco.module.css";
 import { TabelaDePrecos } from "./TabelaDePrecos";
+import { Revelar } from "./Revelar";
 
 // /precos (Onda 2, PR 6 da cobrança): a tabela dos planos e as regras
 // da cobrança, as mesmas que a Stripe e a API aplicam — teste sem
@@ -68,7 +69,7 @@ export function Precos() {
       <TabelaDePrecos />
 
       <div className={estilos.ladoALado}>
-        <section aria-labelledby="como-funciona" className={estilos.secao}>
+        <Revelar como="section" aria-labelledby="como-funciona" className={estilos.secao}>
           <h2 id="como-funciona" className={estilos.tituloDaSecao}>
             Como a cobrança funciona
           </h2>
@@ -77,9 +78,9 @@ export function Precos() {
               <li key={regra}>{regra}</li>
             ))}
           </ul>
-        </section>
+        </Revelar>
 
-        <section aria-labelledby="perguntas" className={estilos.secao}>
+        <Revelar como="section" aria-labelledby="perguntas" className={estilos.secao}>
           <h2 id="perguntas" className={estilos.tituloDaSecao}>
             Perguntas frequentes
           </h2>
@@ -91,17 +92,17 @@ export function Precos() {
               </details>
             ))}
           </div>
-        </section>
+        </Revelar>
       </div>
 
-      <section aria-labelledby="comecar" className={estilos.final}>
+      <Revelar como="section" aria-labelledby="comecar" className={estilos.final}>
         <h2 id="comecar" className={estilos.tituloDaSecao}>
           Teste {DIAS_DE_TESTE} dias com tudo liberado.
         </h2>
         <LinkDeAcao href="/painel/cadastro" grande>
           Criar minha barbearia grátis
         </LinkDeAcao>
-      </section>
+      </Revelar>
     </main>
   );
 }

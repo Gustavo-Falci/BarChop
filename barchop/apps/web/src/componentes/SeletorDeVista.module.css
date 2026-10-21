@@ -62,16 +62,23 @@
   background: var(--cor-paper-soft);
 }
 
+/* `isolation`: o indicador (z-index -1) fica sob o texto e sobre o
+   fundo do botão, sem escapar pro trilho. */
 .vista {
+  position: relative;
+  isolation: isolate;
   min-height: 34px;
   border-color: transparent;
   border-radius: calc(var(--raio-md) - 3px);
   background: transparent;
   color: var(--cor-ink-soft);
   transition:
-    background-color var(--duracao-media) var(--curva-entrada),
-    box-shadow var(--duracao-media) var(--curva-entrada),
-    color var(--duracao-curta) ease;
+    color var(--duracao-curta) ease,
+    scale var(--duracao-instante) ease;
+}
+
+.vista:active {
+  scale: var(--escala-aperto);
 }
 
 .vista:hover {
@@ -79,9 +86,18 @@
 }
 
 .vista[aria-pressed="true"] {
+  color: var(--cor-ink);
+}
+
+/* O fundo do cartão que sobe do trilho é um só e desliza até a vista
+   escolhida (Indicador, motion PR 3). */
+.indicador {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
   background: var(--cor-surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 0 0 var(--borda-hairline) var(--cor-line);
-  color: var(--cor-ink);
 }
 
 .hoje {

@@ -68,6 +68,11 @@ Hoje o web tem 2 durações, 2 curvas e 6 keyframes soltos; telas trocam de uma 
 - Cartões clicáveis (`CartaoDeServico`, `ItemDeServico`, linhas da agenda): hover com sombra + 1px (CSS); só os que levam a algum lugar.
 - Anel de foco com transição (CSS). `Botao`: troca `120ms` pelo token.
 - **Testes**: indicador renderiza no item ativo e muda junto (`aria-selected`/`aria-current`).
+- **Feito (21/10), desvios:**
+  1. `layoutId` pede o `domMax` (o `domAnimation` não tem layout). Medido: chunk das features 14KB → 33KB gz. Pra não cobrar isso do site e do agendamento público, a raiz segue com `domAnimation` e o `MovimentoDoPainel` (no `LayoutDoPainel`) carrega o `domMax` à parte (`featuresDoPainel.ts`, +19KB gz assíncrono, só no painel). O PR 4 (`layout` nas listas) já conta com isso; se algo público precisar de layout, mover pra lá.
+  2. Aperto por CSS (`:active { scale: var(--escala-aperto) }`), não `whileTap`: não precisa virar `m.button`. Nas pílulas, nas vistas e nas opções do SeletorEmPilulas. O `Chip` não é clicável (é `<span>`), ficou de fora.
+  3. Hover de cartão: `CartaoDeServico` já tinha; ganharam as linhas do Hoje (`ProximosAtendimentos`) e os blocos da agenda (`GradeDeTempo`). `ItemDeServico` é seleção, não leva a lugar nenhum: ficou sem.
+  4. Anel de foco sem transição: o `outline-offset` é fixo, não tem do que transicionar. Os 120ms soltos do Botão, cartões, linhas do Hoje e LinkDeAcao viraram `--duracao-instante`.
 
 ### PR 4 — Listas e conteúdo carregando
 - **Carregando → conteúdo**: `AnimatePresence mode="popLayout"` entre esqueleto e dado (fade 160ms).

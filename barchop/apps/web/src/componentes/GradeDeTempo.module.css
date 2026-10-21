@@ -262,11 +262,19 @@ button.diaDoCabecalho:hover .numeroDoDia {
   font-size: var(--texto-xs);
   line-height: 1.25;
   cursor: pointer;
-  transition: background-color var(--duracao-curta) ease;
+  transition:
+    background-color var(--duracao-curta) ease,
+    box-shadow var(--duracao-instante) ease-out,
+    translate var(--duracao-instante) ease-out;
 }
 
+/* O bloco abre o agendamento: sobe 1px com sombra, por cima dos
+   vizinhos (motion PR 3). */
 .evento:hover {
+  z-index: 2;
   background: color-mix(in srgb, var(--tom) 30%, var(--cor-surface));
+  box-shadow: var(--sombra-1);
+  translate: 0 -1px;
 }
 
 /* Um matiz por profissional, com o mesmo croma: nenhum grita mais que o

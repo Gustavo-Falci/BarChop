@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { Indicador } from "../movimento/Indicador";
 import estilos from "./SeletorEmPilulas.module.css";
 
 // Uma escolha de formulário entre poucas opções curtas (15 / 30 / 45 /
@@ -33,6 +34,7 @@ export function SeletorEmPilulas<V extends string>({
   // da semana na jornada, ao lado do controle).
   legendaOculta?: boolean;
 }) {
+  const grupo = useId();
   return (
     <fieldset className={estilos.seletor}>
       <legend className={legendaOculta ? estilos.legendaOculta : estilos.legenda}>{legenda}</legend>
@@ -48,6 +50,7 @@ export function SeletorEmPilulas<V extends string>({
               onChange={() => aoTrocar(opcao.valor)}
               className={estilos.radio}
             />
+            {opcao.valor === valor ? <Indicador grupo={grupo} className={estilos.indicador} /> : null}
             <span className={estilos.pilula}>
               {opcao.rotulo}
               {opcao.selo ? <span className={estilos.selo}>{opcao.selo}</span> : null}

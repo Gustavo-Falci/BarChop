@@ -6,7 +6,11 @@
   gap: var(--espaco-sm);
 }
 
+/* `isolation`: o indicador (z-index -1) pinta sobre o fundo da pílula e
+   sob o texto. */
 .pilula {
+  position: relative;
+  isolation: isolate;
   min-height: 40px;
   padding: var(--espaco-xs) var(--espaco-md);
   border: var(--borda-padrao) solid var(--cor-line);
@@ -16,6 +20,13 @@
   font-size: var(--texto-sm);
   font-weight: 600;
   cursor: pointer;
+  transition:
+    border-color var(--duracao-curta) ease,
+    scale var(--duracao-instante) ease;
+}
+
+.pilula:active {
+  scale: var(--escala-aperto);
 }
 
 .pilula:hover {
@@ -52,9 +63,13 @@
 }
 
 /* A escolhida: o selecionado em tom suave com o contorno de tinta. Sem
-   o amarelo cheio, que fica pra ação principal. */
-.pilula[aria-pressed="true"] {
-  border-color: var(--cor-ink);
+   o amarelo cheio, que fica pra ação principal. Um só, que desliza até
+   o filtro escolhido (Indicador, motion PR 3); cobre a borda da pílula. */
+.indicador {
+  position: absolute;
+  z-index: -1;
+  inset: calc(-1 * var(--borda-padrao));
+  border: var(--borda-padrao) solid var(--cor-ink);
+  border-radius: inherit;
   background: var(--cor-pale-yellow);
-  color: var(--cor-ink);
 }

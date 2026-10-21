@@ -36,10 +36,11 @@ describe("css de tokens", () => {
     expect(cssDeTokens).toContain(`--curva-entrada: cubic-bezier(${CURVA.entrada.join(", ")});`);
   });
 
-  it("e a escala da janela e os deslizes também (motion PR 2)", () => {
+  it("e as escalas (janela, aperto) e os deslizes também (motion PR 2 e 3)", () => {
     expect(cssDeTokens).toContain(`--escala-janela: ${ESCALA.janela};`);
     expect(cssDeTokens).toContain(`--deslize-curto: ${DESLIZE.curto}px;`);
     expect(cssDeTokens).toContain(`--deslize-normal: ${DESLIZE.normal}px;`);
+    expect(cssDeTokens).toContain(`--escala-aperto: ${ESCALA.aperto};`);
   });
 
   it("a media query cede para quem escolheu claro", () => {

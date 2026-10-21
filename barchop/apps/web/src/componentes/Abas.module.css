@@ -6,6 +6,7 @@
 }
 
 .aba {
+  position: relative;
   min-height: 44px;
   margin-block-end: -1px;
   padding: var(--espaco-sm) 0;
@@ -23,8 +24,17 @@
 }
 
 .aba[aria-selected="true"] {
-  border-block-end-color: var(--cor-accent);
   color: var(--cor-ink);
+}
+
+/* O traço da aba escolhida, um só, desliza de uma aba pra outra
+   (Indicador, motion PR 3). Ocupa o lugar da borda transparente. */
+.traco {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -3px;
+  height: 3px;
+  background: var(--cor-accent);
 }
 
 /* O fade a cada troca: o painel que volta a aparecer (hidden sai) parte

@@ -4,7 +4,26 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (tarde de 2026-10-19 — próximo: motion e arrastar) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-21 — motion e arrastar completos e no ar: #175 a #187) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = produção = `c6a3b33`** (#187). Deploy feito pelo dono em 21/10 (API + web + `migrate deploy` da ordem). Conferido por fora: `POST /agendamentos/:id/remarcar` responde 401 sem token, a página pública tem `ordemCategorias`, o CSS novo está no ar.
+- Nenhum branch pela metade, nenhum PR aberto (só este de docs).
+
+**O que entrou (os dois planos de 19/10, aprovados em 21/10, completos):**
+- **`motion-sutil.plan.md`** — 6 PRs (#175, #180–#184): lib `motion` 13.5.1 com `LazyMotion` (raiz `domAnimation`; painel `domMax` à parte, +19KB gz assíncrono, por causa do `layoutId`). Troca de tela com fade; janelas, menus e barra de mudanças com saída (`depoisDaSaida` segura o `onClose` das `<dialog>`); indicador deslizante nos seletores; listas escalonadas e números do Hoje; passos do agendamento com direção e ✓ desenhado na confirmação; seções do site com `Revelar` (HTML do servidor visível).
+- **`arrastar-e-reordenar.plan.md`** — 7 PRs (#176–#179, #185–#187): `ordem` em serviço/profissional e `ordem_categorias` (migração); API de ordem; `ListaReordenavel` (dnd-kit); "Mudar ordem" em Serviços e Equipe; **remarcar pelo painel** (`POST /agendamentos/:id/remarcar`, e-mail "Seu horário mudou" ao cliente — decisão do dono: sim); "Mudar horário" no detalhe; **arrastar na agenda** com fantasma encaixado de 15 em 15 e confirmação antes de mudar.
+- Cada plano tem as seções "Feito (21/10), desvios" por PR. Os que pesam: sem notificação no sino ao remarcar pelo painel (o sino é só do que o cliente faz); "Mudar horário" não oferece horários que sobrepõem o próprio agendamento (mover 15 min é pelo arrasto).
+
+**Ao retomar:**
+1. Perguntar ao dono o que ele viu no navegador (nada disso foi conferido no navegador nesta rodada): arrastar na agenda com mouse e no celular (segurar 250ms); "Mudar horário" e o e-mail chegando; "Mudar ordem" refletindo na página pública; passos do agendamento até o ✓; seções do site entrando ao rolar; janelas e menus saindo animados.
+2. Consertar o que ele apontar antes de abrir frente nova.
+
+**O que falta além disso:** testar o caixa em produção; Onda 2 marco 3 (decidir assinante do parceiro + provedor) e marco 4; G3; decidir a `barbearia-teste`; pendentes do redesenho.
+
+**Lição de processo (21/10):** em PR empilhado, trocar a base do filho pra `main` **antes** de apagar o branch de base — apagar com `--delete-branch` fecha o PR filho em vez de redirecionar (aconteceu com o #186; recriei o branch, reabri, troquei a base e mesclei).
+
+## RETOMAR AQUI (tarde de 2026-10-19 — próximo: motion e arrastar) — histórico
 
 **Estado:**
 - **`main` = `7996cae`** (#173, só docs). Depois disso, só este PR de docs, que traz os dois planos novos.

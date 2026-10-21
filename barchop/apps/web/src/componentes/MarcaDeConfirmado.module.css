@@ -1,0 +1,10 @@
+/* O círculo amarelo do ✓, acima do título da confirmação. */
+.marca {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+}

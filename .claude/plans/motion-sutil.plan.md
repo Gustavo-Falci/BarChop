@@ -93,6 +93,11 @@ Hoje o web tem 2 durações, 2 curvas e 6 keyframes soltos; telas trocam de uma 
 - `IndicadorDePasso`: progresso com `scaleX` animado.
 - **Confirmação**: ✓ em SVG desenhado (`pathLength` 0→1, 400ms) e o texto entrando 80ms depois. Único momento "comemoração".
 - **Testes**: `direcaoDoPasso` (avança, volta, mesmo passo, fora da ordem).
+- **Feito (21/10), desvios:**
+  1. Direção não passa pelo `EntradaDaTela` (o container tem barra fixa dentro): `useDeslizeDoPasso(passo)` (`src/movimento/passo.ts`) lembra o passo anterior no módulo e cada tela desliza o próprio bloco — `<main>` em profissional, data e confirmar; cabeçalho e lista em serviços, onde a barra da escolha é fixa no celular. O fade segue no layout.
+  2. Só o ✓ do cartão de serviço cresce (.8→1, CSS): profissional e horário avançam de tela ao tocar, não têm ✓.
+  3. Progresso: o segmento do passo atual cresce da esquerda por CSS (`@starting-style`), não `scaleX` pela lib.
+  4. Confirmação: `MarcaDeConfirmado` (círculo com mola `firme`, traço `pathLength` em `DURACAO.longa`), título entra 100ms depois.
 
 ### PR 6 — Site de marketing
 - Seções da Home/Preços: `whileInView` + `viewport={{ once: true, margin: "-80px" }}`, sobe 8px + fade. **Conteúdo visível no HTML do servidor**: o componente `Revelar` só aplica o estado escondido depois de montar e só no que está abaixo da dobra → crawler, sem-JS e print do OG veem tudo.

@@ -27,6 +27,18 @@ const CAMINHO_DO_PASSO: Record<Passo, string> = {
   confirmar: "/agendar/confirmar",
 };
 
+// A ordem do fluxo, pra saber se a troca de tela foi avanço ou volta.
+const ORDEM_DOS_PASSOS: readonly Passo[] = ["servicos", "profissional", "data", "confirmar"];
+
+// 1 avançou, -1 voltou, 0 ficou (ou não há de onde comparar). É o lado de
+// onde a tela nova entra deslizando (motion PR 5).
+export function direcaoDoPasso(anterior: Passo | null, atual: Passo): -1 | 0 | 1 {
+  const de = anterior ? ORDEM_DOS_PASSOS.indexOf(anterior) : -1;
+  const para = ORDEM_DOS_PASSOS.indexOf(atual);
+  if (de < 0 || para < 0 || de === para) return 0;
+  return para > de ? 1 : -1;
+}
+
 export function lerEscolhas(query: URLSearchParams): Escolhas {
   return {
     // O filter tira id vazio de uma vírgula solta: vazio viraria

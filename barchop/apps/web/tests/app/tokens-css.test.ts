@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cssDeTokens } from "../../app/tokens-css";
+import { CURVA, DURACAO } from "../../src/movimento/tokens";
 
 describe("css de tokens", () => {
   it("tem o bloco da escolha manual por escuro", () => {
@@ -23,6 +24,16 @@ describe("css de tokens", () => {
     // a condição da regra e não uma declaração.
     expect(cssDeTokens.match(/^\s*color-scheme: light;$/gm)).toHaveLength(1);
     expect(cssDeTokens.match(/^\s*color-scheme: dark;$/gm)).toHaveLength(2);
+  });
+
+  it("tira as durações e curvas do mesmo lugar que a lib motion", () => {
+    // CSS e JS não podem discordar do tempo: um menu que entra pela
+    // lib e some pelo CSS teria dois ritmos na mesma tela.
+    expect(cssDeTokens).toContain(`--duracao-instante: ${DURACAO.instante * 1000}ms;`);
+    expect(cssDeTokens).toContain(`--duracao-curta: ${DURACAO.curta * 1000}ms;`);
+    expect(cssDeTokens).toContain(`--duracao-media: ${DURACAO.media * 1000}ms;`);
+    expect(cssDeTokens).toContain(`--duracao-longa: ${DURACAO.longa * 1000}ms;`);
+    expect(cssDeTokens).toContain(`--curva-entrada: cubic-bezier(${CURVA.entrada.join(", ")});`);
   });
 
   it("a media query cede para quem escolheu claro", () => {

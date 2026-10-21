@@ -1,4 +1,5 @@
 import { cleanup } from "@testing-library/react";
+import { MotionGlobalConfig } from "motion/react";
 import { afterEach } from "vitest";
 import { vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
@@ -9,6 +10,12 @@ import { navegacaoFalsa } from "./ajudantes/navegacao";
 // nos outros pacotes. Sem esta linha o DOM de um teste sobrevive no
 // seguinte, e a segunda busca por role acha dois botões.
 afterEach(cleanup);
+
+// Toda animação da lib `motion` termina na hora (ADR-0011). Sem isto, o
+// que sai com `exit` continua no DOM até a animação acabar — e o jsdom
+// não anda o relógio de animação —, então todo teste que espera um menu
+// ou aviso sumir passaria a falhar.
+MotionGlobalConfig.skipAnimations = true;
 
 // next/navigation só funciona dentro do roteador do Next. O mock vive
 // aqui, e não em cada arquivo de teste, porque o vi.mock é içado pro

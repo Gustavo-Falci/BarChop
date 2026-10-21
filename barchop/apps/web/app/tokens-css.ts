@@ -6,6 +6,8 @@ import {
   spacing,
 } from "@barchop/design-tokens";
 
+import { CURVA, DURACAO, curvaCss, emMs } from "../src/movimento/tokens";
+
 // Os tokens são objetos JS puros (ver packages/design-tokens). No web
 // a gente traduz pra CSS custom properties uma vez, no layout raiz,
 // e daí em diante o CSS usa var(--cor-*) normalmente.
@@ -64,12 +66,15 @@ function varsDeSombra(modo: keyof typeof SOMBRAS): string {
     .join("\n");
 }
 
-// O movimento do painel: entrada que desacelera ao chegar, saída 30%
-// mais curta. Nada acima de 250ms — é ferramenta de trabalho.
-const varsDeMovimento = `  --curva-entrada: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --curva-saida: cubic-bezier(0.4, 0, 1, 1);
-  --duracao-curta: 160ms;
-  --duracao-media: 200ms;`;
+// O movimento do painel: entrada que desacelera ao chegar, saída que
+// acelera ao ir. Os números vêm de src/movimento/tokens.ts, os mesmos
+// que a lib `motion` usa — CSS e JS não podem discordar do tempo.
+const varsDeMovimento = `  --curva-entrada: ${curvaCss(CURVA.entrada)};
+  --curva-saida: ${curvaCss(CURVA.saida)};
+  --duracao-instante: ${emMs(DURACAO.instante)};
+  --duracao-curta: ${emMs(DURACAO.curta)};
+  --duracao-media: ${emMs(DURACAO.media)};
+  --duracao-longa: ${emMs(DURACAO.longa)};`;
 
 // Três blocos, não dois. Sem a guarda :not([data-theme="light"]), quem
 // escolheu claro continua escurecendo num sistema escuro, porque o

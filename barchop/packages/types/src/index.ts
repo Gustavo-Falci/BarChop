@@ -92,6 +92,10 @@ export interface BarbeariaSerializada extends RegrasDeAgendamento {
   // O visual da página (Aparência), sempre inteiro: sem nada salvo, o
   // padrão (o tema BarChop).
   aparencia: AparenciaDaPagina;
+  // As categorias de serviço na ordem que o dono escolheu, sempre a
+  // lista inteira (`ordenarCategorias`, @barchop/formato). É a ordem das
+  // seções na página e no painel.
+  ordemCategorias: string[];
 }
 
 // A Aparência da página pública. Mesmos campos e opções de

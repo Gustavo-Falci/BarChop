@@ -36,6 +36,8 @@ describe("GET /barbearias/me", () => {
       // A Aparência: o padrão no ar e nenhum rascunho.
       aparencia: APARENCIA_PADRAO,
       aparenciaRascunho: null,
+      // As categorias na ordem padrão: nada arrastado ainda.
+      ordemCategorias: ["cabelo", "barba", "combo", "sobrancelha", "quimica", "infantil"],
       // As regras de agendamento, nos padrões (painel v2, marco 3).
       ...REGRAS_PADRAO,
     });

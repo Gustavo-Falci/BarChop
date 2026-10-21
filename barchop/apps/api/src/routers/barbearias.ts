@@ -4,6 +4,7 @@ import {
   BOTOES,
   CANTOS,
   CARDS,
+  CATEGORIAS_DE_SERVICO,
   COMODIDADES,
   FONTES_DO_TEXTO,
   FONTES_DOS_TITULOS,
@@ -199,6 +200,39 @@ export function registrarRotasBarbeariasProtegidas(app: App): void {
     }
   );
 
+  // A ordem das seções de serviço (arrastar e reordenar, PR 2). Pode vir
+  // parcial: a que faltar vai pro fim, na ordem padrão — a resposta já
+  // traz a lista inteira (`ordenarCategorias`). Repetida ou fora da lista
+  // é 400 pelo schema; o CHECK do banco é a última barreira.
+  app.put(
+    "/barbearias/me/categorias/ordem",
+    {
+      schema: {
+        body: {
+          type: "object",
+          additionalProperties: false,
+          required: ["categorias"],
+          properties: {
+            categorias: {
+              type: "array",
+              uniqueItems: true,
+              maxItems: CATEGORIAS_DE_SERVICO.length,
+              items: { type: "string", enum: [...CATEGORIAS_DE_SERVICO] },
+            },
+          },
+        },
+      },
+      onRequest: exigirPapel("dono"),
+    },
+    async (request) => {
+      const barbearia = await prisma.barbearia.update({
+        where: { id: request.user.barbeariaId },
+        data: { ordemCategorias: request.body.categorias },
+      });
+      return serializarBarbeariaDoPainel(barbearia, app.armazenamento.urlPublica);
+    }
+  );
+
   // A Aparência (plano aparencia.plan.md, marco B). O rascunho fica no
   // servidor até o dono publicar ou descartar (decisão do dono,
   // 2026-10-11); a página pública só lê o que está no ar.
@@ -336,14 +370,15 @@ export function registrarRotasBarbeariasPublicas(app: App): void {
           // explícito é o que impede o senhaHash de sair numa rota
           // pública — o filtro por ele não o devolve.
           //
-          // Ordem de entrada na equipe, não de nome: até o bloco C o
-          // fluxo público agenda com o primeiro da lista, e um membro
-          // novo com nome em "A" tomaria os agendamentos do dono.
+          // A ordem que o dono arrastou (PUT /equipe/ordem). Só
+          // exibição: quem recebe o "qualquer um" e quem fica fora do
+          // link no Grátis seguem por `criadoEm` (lib/disponibilidade.ts,
+          // lib/assinatura.ts).
           barbeiros: {
             // O mesmo critério do "qualquer um" (lib/disponibilidade.ts).
             where: PODE_ATENDER,
             select: { id: true, nome: true, fotoChave: true, servicos: { select: { servicoId: true } } },
-            orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
+            orderBy: [{ ordem: "asc" }, { id: "asc" }],
           },
         },
       });

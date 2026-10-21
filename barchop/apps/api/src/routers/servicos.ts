@@ -1,5 +1,6 @@
 import { prisma } from "@barchop/database";
 import { CATEGORIAS_DE_SERVICO } from "@barchop/formato";
+import { corpoDaOrdem, garantirMesmoConjunto, ordemNaPosicao } from "../lib/ordem";
 import { PADRAO_PRECO, PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
 import { serializarServico } from "../lib/serializar";
 import { exigirPapel } from "../plugins/auth";
@@ -79,16 +80,38 @@ const paramsSlug = {
 } as const;
 
 export function registrarRotasServicos(app: App): void {
-  app.get("/servicos", async (request) => {
-    // A lista do barbeiro inclui os inativos: é dela que sai a tela de
-    // Serviços, onde ele reativa o que desativou. A pública não.
+  // A lista do barbeiro inclui os inativos: é dela que sai a tela de
+  // Serviços, onde ele reativa o que desativou. A pública não. Os
+  // inativos vêm depois dos ativos; dentro de cada parte, a ordem que o
+  // dono arrastou.
+  async function listaDoPainel(barbeariaId: string) {
     const servicos = await prisma.servico.findMany({
-      where: { barbeariaId: request.user.barbeariaId },
-      orderBy: [{ ativo: "desc" }, { nome: "asc" }],
+      where: { barbeariaId },
+      orderBy: [{ ativo: "desc" }, { ordem: "asc" }, { id: "asc" }],
     });
-
     return { servicos: servicos.map((servico) => serializarServico(servico, app.armazenamento.urlPublica)) };
-  });
+  }
+
+  app.get("/servicos", async (request) => listaDoPainel(request.user.barbeariaId));
+
+  // A lista inteira, de uma vez (lib/ordem.ts). Devolve a lista do
+  // painel já na ordem nova.
+  app.put(
+    "/servicos/ordem",
+    { schema: { body: corpoDaOrdem }, onRequest: exigirPapel("dono") },
+    async (request) => {
+      const { barbeariaId } = request.user;
+      const { ids } = request.body;
+      await prisma.$transaction(async (tx) => {
+        const daBarbearia = await tx.servico.findMany({ where: { barbeariaId }, select: { id: true } });
+        garantirMesmoConjunto(ids, daBarbearia.map((servico) => servico.id), "todos os serviços");
+        for (const [indice, id] of ids.entries()) {
+          await tx.servico.update({ where: { id, barbeariaId }, data: { ordem: ordemNaPosicao(indice) } });
+        }
+      });
+      return listaDoPainel(barbeariaId);
+    }
+  );
 
   app.post(
     "/servicos",
@@ -161,7 +184,7 @@ export function registrarRotasServicosPublicas(app: App): void {
 
       const servicos = await prisma.servico.findMany({
         where: { barbeariaId: barbearia.id, ativo: true },
-        orderBy: { nome: "asc" },
+        orderBy: [{ ordem: "asc" }, { id: "asc" }],
       });
 
       return { servicos: servicos.map((servico) => serializarServico(servico, app.armazenamento.urlPublica)) };

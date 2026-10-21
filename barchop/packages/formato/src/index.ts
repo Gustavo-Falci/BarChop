@@ -14,6 +14,7 @@ export {
   FORMAS_DE_PAGAMENTO,
   FORMATOS_DA_LOGO,
   PADRAO_INSTAGRAM,
+  ordenarCategorias,
   type CategoriaDeServico,
   type Comodidade,
   type FormaDePagamento,

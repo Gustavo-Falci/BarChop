@@ -6,6 +6,7 @@ import { emitirCodigo } from "../lib/codigos";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { dateParaHora, horaParaDate } from "../lib/horas";
+import { corpoDaOrdem, garantirMesmoConjunto, ordemNaPosicao } from "../lib/ordem";
 import { PADRAO_EMAIL, PADRAO_HORA, PADRAO_TELEFONE, PADRAO_UUID } from "../lib/padroes";
 import { normalizarTelefone } from "../lib/telefone";
 import { exigirPapel } from "../plugins/auth";
@@ -265,14 +266,38 @@ function contaNoPlano(membro: { ativo?: boolean; papel?: string }): boolean {
 export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
   // Todos os papéis leem: a recepção marca pra qualquer profissional e
   // precisa da lista; o profissional vê os colegas na agenda.
-  app.get("/equipe", async (request) => {
+  //
+  // Os inativos depois dos ativos; dentro de cada parte, a ordem que o
+  // dono arrastou. Só exibição: o limite do Grátis e o "qualquer um"
+  // seguem por `criadoEm` (lib/assinatura.ts, lib/disponibilidade.ts).
+  async function listaDaEquipe(barbeariaId: string) {
     const membros = await prisma.barbeiro.findMany({
-      where: { barbeariaId: request.user.barbeariaId },
-      orderBy: [{ ativo: "desc" }, { criadoEm: "asc" }, { id: "asc" }],
+      where: { barbeariaId },
+      orderBy: [{ ativo: "desc" }, { ordem: "asc" }, { id: "asc" }],
     });
-
     return { membros: membros.map((membro) => serializarMembro(membro, app.armazenamento.urlPublica)) };
-  });
+  }
+
+  app.get("/equipe", async (request) => listaDaEquipe(request.user.barbeariaId));
+
+  // A lista inteira, de uma vez (lib/ordem.ts), com os inativos e os
+  // convites pendentes junto: todo membro tem lugar na ordem.
+  app.put(
+    "/equipe/ordem",
+    { schema: { body: corpoDaOrdem }, onRequest: exigirPapel("dono") },
+    async (request) => {
+      const { barbeariaId } = request.user;
+      const { ids } = request.body;
+      await prisma.$transaction(async (tx) => {
+        const daBarbearia = await tx.barbeiro.findMany({ where: { barbeariaId }, select: { id: true } });
+        garantirMesmoConjunto(ids, daBarbearia.map((membro) => membro.id), "todos os membros");
+        for (const [indice, id] of ids.entries()) {
+          await tx.barbeiro.update({ where: { id, barbeariaId }, data: { ordem: ordemNaPosicao(indice) } });
+        }
+      });
+      return listaDaEquipe(barbeariaId);
+    }
+  );
 
   app.post(
     "/equipe",

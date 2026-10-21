@@ -168,6 +168,7 @@ describe("serializarBarbearia", () => {
         formasDePagamento: ["pix"],
         capaChave: "barbearias/b1/capa/c1.png",
         aparencia: null,
+        ordemCategorias: ["barba"],
         ...REGRAS_PADRAO,
       }, (chave) => `https://img.exemplo/${chave}`)
     ).toEqual({
@@ -187,6 +188,8 @@ describe("serializarBarbearia", () => {
       capaUrl: "https://img.exemplo/barbearias/b1/capa/c1.png",
       // Nada publicado: o padrão (o tema BarChop).
       aparencia: APARENCIA_PADRAO,
+      // Sempre inteira: a salva primeiro, o resto na ordem padrão.
+      ordemCategorias: ["barba", "cabelo", "combo", "sobrancelha", "quimica", "infantil"],
       ...REGRAS_PADRAO,
     });
   });

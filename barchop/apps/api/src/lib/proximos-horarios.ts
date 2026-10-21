@@ -35,7 +35,7 @@ export async function proximosHorarios(
     // A mesma lista e a mesma ordem da escolha de serviços pública.
     db.servico.findMany({
       where: { barbeariaId, ativo: true },
-      orderBy: { nome: "asc" },
+      orderBy: [{ ordem: "asc" }, { id: "asc" }],
       select: { id: true, duracaoMinutos: true },
     }),
     db.barbeiro.findMany({

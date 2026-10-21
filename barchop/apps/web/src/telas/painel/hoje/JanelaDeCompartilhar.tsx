@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { CodigoQr, carregarQrcode, OPCOES_DO_QR } from "../../../componentes/CodigoQr";
 import { urlDoWhatsApp } from "../../../painel/compartilhar";
 import estilos from "./JanelaDeCompartilhar.module.css";
+import { depoisDaSaida } from "../../../movimento/depoisDaSaida";
 
 // A janela de compartilhar do Hoje (painel v2, marco 4). <dialog>
 // nativo: o navegador prende o foco, fecha no Esc e escurece o fundo.
@@ -68,7 +69,7 @@ export function JanelaDeCompartilhar({
   }
 
   return (
-    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={aoFechar}>
+    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={(evento) => depoisDaSaida(evento.currentTarget, aoFechar)}>
       <div className={estilos.topo}>
         <h2 id={titulo} className={estilos.titulo}>
           Compartilhar seu link

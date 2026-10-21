@@ -27,17 +27,17 @@
   color: var(--cor-ink);
 }
 
-/* O fade a cada troca: o painel que volta a aparecer (hidden sai)
-   reinicia a animação, sem remontar nada. */
+/* O fade a cada troca: o painel que volta a aparecer (hidden sai) parte
+   do @starting-style de novo, sem remontar nada. */
 .painel:not([hidden]) {
   display: grid;
   gap: var(--espaco-lg);
   margin-block-start: var(--espaco-lg);
-  animation: aparecer 150ms ease;
+  transition: opacity var(--duracao-curta) var(--curva-entrada);
 }
 
-@keyframes aparecer {
-  from {
+@starting-style {
+  .painel:not([hidden]) {
     opacity: 0;
   }
 }

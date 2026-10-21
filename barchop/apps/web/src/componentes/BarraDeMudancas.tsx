@@ -1,7 +1,14 @@
 "use client";
 
+import { AnimatePresence, m } from "motion/react";
+import { CURVA, DESLIZE, DURACAO } from "../movimento/tokens";
 import { Botao } from "./Botao";
 import estilos from "./BarraDeMudancas.module.css";
+
+// Sobe 8px do pé quando aparece e desce ao sumir (salvou ou descartou).
+const FORA = { opacity: 0, y: DESLIZE.normal };
+const ENTRAR = { opacity: 1, y: 0, transition: { duration: DURACAO.media, ease: CURVA.entrada } };
+const SAIR = { ...FORA, transition: { duration: DURACAO.curta, ease: CURVA.saida } };
 
 // Um Salvar só por tela (análise de 17/10): a barra sobe do pé da tela
 // quando algo muda e diz o que mudou ("Intervalo entre horários: 15 min →
@@ -28,33 +35,45 @@ export function BarraDeMudancas({
   aoSalvar: () => void;
   aoDescartar: () => void;
 }) {
-  if (mudancas.length === 0 && !pendente && !aviso) return null;
-
+  const visivel = mudancas.length > 0 || pendente || Boolean(aviso);
   const resumo =
     mudancas.length === 0
       ? "Ainda não decidido: salve pra manter assim."
       : `${mudancas.length} ${mudancas.length === 1 ? "mudança" : "mudanças"} · ${mudancas.join(" · ")}`;
 
+  // `initial={false}`: a barra que já nasce na tela (área pendente) não
+  // anima no carregamento, e o HTML do servidor sai no lugar final.
   return (
-    <section className={estilos.barra} aria-label="Mudanças">
-      <p className={estilos.resumo} aria-live="polite">
-        {resumo}
-      </p>
-      {aviso ? (
-        <p className={estilos.aviso} role="alert">
-          {aviso}
-        </p>
+    <AnimatePresence initial={false}>
+      {visivel ? (
+        <m.section
+          key="barra"
+          className={estilos.barra}
+          aria-label="Mudanças"
+          initial={FORA}
+          animate={ENTRAR}
+          exit={SAIR}
+        >
+          <p className={estilos.resumo} aria-live="polite">
+            {resumo}
+          </p>
+          {aviso ? (
+            <p className={estilos.aviso} role="alert">
+              {aviso}
+            </p>
+          ) : null}
+          <div className={estilos.botoes}>
+            {mudancas.length > 0 ? (
+              <Botao variante="fantasma" onClick={aoDescartar} disabled={salvando}>
+                Descartar
+              </Botao>
+            ) : null}
+            <Botao onClick={aoSalvar} carregando={salvando}>
+              Salvar
+            </Botao>
+          </div>
+        </m.section>
       ) : null}
-      <div className={estilos.botoes}>
-        {mudancas.length > 0 ? (
-          <Botao variante="fantasma" onClick={aoDescartar} disabled={salvando}>
-            Descartar
-          </Botao>
-        ) : null}
-        <Botao onClick={aoSalvar} carregando={salvando}>
-          Salvar
-        </Botao>
-      </div>
-    </section>
+    </AnimatePresence>
   );
 }

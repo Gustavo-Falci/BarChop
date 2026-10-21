@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { Aparencia } from "@barchop/formato";
 import { Chip } from "../../../componentes/Chip";
 import { MENSAGEM_DA_APARENCIA, MENSAGEM_DE_PRONTA, type ModoDaPrevia } from "../../../fluxo/previa";
+import { depoisDaSaida } from "../../../movimento/depoisDaSaida";
 import { linkDaBarbearia } from "../../../painel/compartilhar";
 import { enderecoDaBarbearia } from "../../../tenant/endereco";
 import estilos from "./PreviaDaPagina.module.css";
@@ -73,10 +74,17 @@ function JanelaAmpliada({
       ref={janela}
       className={estilos.janela}
       aria-label="Prévia da sua página"
-      // O Esc do navegador fecha o <dialog>; o estado acompanha.
-      onCancel={aoFechar}
+      // O Esc do navegador fecha o <dialog> e o botão chama close(): os
+      // dois passam pelo `close`, e o estado acompanha depois da saída.
+      onClose={(evento) => depoisDaSaida(evento.currentTarget, aoFechar)}
     >
-      <Quadro slug={slug} aparencia={aparencia} titulo="Prévia ampliada da sua página" ampliada aoFechar={aoFechar} />
+      <Quadro
+        slug={slug}
+        aparencia={aparencia}
+        titulo="Prévia ampliada da sua página"
+        ampliada
+        aoFechar={() => janela.current?.close()}
+      />
     </dialog>
   );
 }

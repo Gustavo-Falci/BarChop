@@ -1,8 +1,22 @@
+/* Entra subindo 8px (motion PR 2). Só a entrada: o aviso some quando a
+   tela o tira do JSX, e a saída pediria um AnimatePresence em cada uma
+   das telas que o usam. @starting-style, e não a lib: o aviso que já
+   vem no HTML do servidor não fica invisível esperando o JS. */
 .aviso {
   padding: var(--espaco-md);
   border: var(--borda-padrao) solid;
   border-radius: var(--raio-md);
   font-size: var(--texto-sm);
+  transition:
+    opacity var(--duracao-media) var(--curva-entrada),
+    translate var(--duracao-media) var(--curva-entrada);
+}
+
+@starting-style {
+  .aviso {
+    opacity: 0;
+    translate: 0 var(--deslize-normal);
+  }
 }
 
 /* A cor vinha escrita à mão como #b3261e. Sobre a --cor-surface do tema

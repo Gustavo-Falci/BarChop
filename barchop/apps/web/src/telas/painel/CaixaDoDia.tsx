@@ -15,6 +15,7 @@ import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
 import estilos from "./CaixaDoDia.module.css";
 import { Carregando } from "../../componentes/Carregando";
+import { depoisDaSaida } from "../../movimento/depoisDaSaida";
 
 // O Caixa (Onda 2, marco 2, PR 7 do plano caixa-do-dia): o dia do
 // caixa é o do agendamento, escolhido na URL (`?data=`), como na
@@ -321,7 +322,7 @@ function JanelaDeFechamento({
   }, []);
 
   return (
-    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={aoDesistir}>
+    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={(evento) => depoisDaSaida(evento.currentTarget, aoDesistir)}>
       <h2 id={titulo} className={estilos.tituloDaJanela}>
         Fechar o dia?
       </h2>

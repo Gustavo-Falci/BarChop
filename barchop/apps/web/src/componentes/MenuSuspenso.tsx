@@ -1,7 +1,16 @@
 "use client";
 
+import { AnimatePresence, m } from "motion/react";
 import { useEffect, useId, useRef, type MouseEvent, type ReactNode } from "react";
+import { CURVA, DESLIZE, DURACAO } from "../movimento/tokens";
 import estilos from "./MenuSuspenso.module.css";
+
+// O painel desce 4px até o lugar ao abrir e volta subindo ao fechar
+// (motion PR 2). A saída é mais curta e com a curva de saída: quem
+// fechou já está olhando pra outra coisa.
+const FORA = { opacity: 0, y: -DESLIZE.curto };
+const ENTRAR = { opacity: 1, y: 0, transition: { duration: DURACAO.curta, ease: CURVA.entrada } };
+const SAIR = { ...FORA, transition: { duration: DURACAO.instante, ease: CURVA.saida } };
 
 // Um botão que abre um painel logo abaixo dele (menu do usuário, menu
 // "…" e o sino da barra de topo). Padrão de "disclosure" e não de
@@ -81,17 +90,25 @@ export function MenuSuspenso({
       >
         {gatilho}
       </button>
-      {aberto ? (
-        <div
-          id={idDoPainel}
-          role="group"
-          aria-label={rotulo}
-          className={`${estilos.painel} ${classeDoPainel ?? ""}`}
-          onClick={aoClicarNoPainel}
-        >
-          {children}
-        </div>
-      ) : null}
+      {/* Saindo, o painel ainda está no DOM por um instante, mas o
+          gatilho já diz fechado e o aria-controls já saiu. */}
+      <AnimatePresence>
+        {aberto ? (
+          <m.div
+            key="painel"
+            id={idDoPainel}
+            role="group"
+            aria-label={rotulo}
+            className={`${estilos.painel} ${classeDoPainel ?? ""}`}
+            onClick={aoClicarNoPainel}
+            initial={FORA}
+            animate={ENTRAR}
+            exit={SAIR}
+          >
+            {children}
+          </m.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

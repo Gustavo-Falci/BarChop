@@ -55,6 +55,12 @@ Hoje o web tem 2 durações, 2 curvas e 6 keyframes soltos; telas trocam de uma 
 - `Aviso`, `BarraDeMudancas`: entram e saem deslizando 8px (`AnimatePresence`).
 - Remove os `@keyframes` substituídos (`entrar`, `subir` x2, `aparecer`).
 - **Testes**: os existentes seguem verdes (skipAnimations); acrescentar "fecha e some" no MenuSuspenso.
+- **Feito (21/10), desvios:**
+  1. Janelas: quem abre desmonta a `<dialog>` no `close`, o que matava a saída. Novo `src/movimento/depoisDaSaida.ts`: o `onClose` das 5 janelas (Novidades, Caixa, Bloqueio, Compartilhar, Prévia ampliada) só avisa depois de `getAnimations()` acabar. A prévia ampliada passou a fechar por `close()`, não por desmontar. Escala por `scale` (não `transform`), pra não brigar com janela que tem transform próprio.
+  2. Menu do celular e Abas por CSS (`@starting-style` + `display` allow-discrete), não `AnimatePresence`: o menu é `display` por atributo, sem desmontar; as abas usam `hidden`.
+  3. `Aviso` só entra (CSS, 8px); a saída pediria `AnimatePresence` em cada tela que o usa. CSS e não a lib pra o aviso que vem no HTML do servidor não ficar invisível esperando o JS.
+  4. `BarraDeMudancas` com `AnimatePresence initial={false}`: a barra que já nasce na tela (área pendente) não anima no carregamento.
+  5. Novas vars CSS dos tokens: `--escala-janela`, `--deslize-curto`, `--deslize-normal`.
 
 ### PR 3 — Micro-interações
 - **Indicador deslizante** (`layoutId`) em `SeletorDeVista`, `Abas`, `SeletorEmPilulas`, `PilulasDeFiltro`: um fundo/traço único que desliza até o item ativo. Hoje o ativo só troca de cor.

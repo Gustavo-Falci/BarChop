@@ -1,6 +1,6 @@
 /* Presa no pé da área de conteúdo enquanto houver o que salvar; no
    celular, acima da barra de navegação (--recuo-inferior vem do shell).
-   Sobe em 200ms quando aparece. */
+   Sobe e desce pelo BarraDeMudancas.tsx (AnimatePresence). */
 .barra {
   position: sticky;
   z-index: 10;
@@ -16,7 +16,6 @@
   border-radius: var(--raio-md);
   background: var(--cor-surface);
   box-shadow: var(--sombra-2);
-  animation: subir var(--duracao-media) var(--curva-entrada);
 }
 
 .resumo {
@@ -44,9 +43,3 @@
   gap: var(--espaco-xs);
 }
 
-@keyframes subir {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}

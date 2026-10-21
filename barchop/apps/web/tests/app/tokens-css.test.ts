@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cssDeTokens } from "../../app/tokens-css";
-import { CURVA, DURACAO } from "../../src/movimento/tokens";
+import { CURVA, DESLIZE, DURACAO, ESCALA } from "../../src/movimento/tokens";
 
 describe("css de tokens", () => {
   it("tem o bloco da escolha manual por escuro", () => {
@@ -34,6 +34,12 @@ describe("css de tokens", () => {
     expect(cssDeTokens).toContain(`--duracao-media: ${DURACAO.media * 1000}ms;`);
     expect(cssDeTokens).toContain(`--duracao-longa: ${DURACAO.longa * 1000}ms;`);
     expect(cssDeTokens).toContain(`--curva-entrada: cubic-bezier(${CURVA.entrada.join(", ")});`);
+  });
+
+  it("e a escala da janela e os deslizes também (motion PR 2)", () => {
+    expect(cssDeTokens).toContain(`--escala-janela: ${ESCALA.janela};`);
+    expect(cssDeTokens).toContain(`--deslize-curto: ${DESLIZE.curto}px;`);
+    expect(cssDeTokens).toContain(`--deslize-normal: ${DESLIZE.normal}px;`);
   });
 
   it("a media query cede para quem escolheu claro", () => {

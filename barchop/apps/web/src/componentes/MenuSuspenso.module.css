@@ -55,17 +55,8 @@
   border-radius: var(--raio-md);
   background: var(--cor-surface);
   box-shadow: var(--sombra-2);
-  /* O painel só existe aberto, então a entrada é animação de montagem:
-     aparece e desce 4px até o lugar. */
-  animation: entrar var(--duracao-curta) var(--curva-entrada);
+  /* Entrada e saída no MenuSuspenso.tsx (AnimatePresence). */
   transform-origin: top right;
-}
-
-@keyframes entrar {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
 }
 
 .linha {

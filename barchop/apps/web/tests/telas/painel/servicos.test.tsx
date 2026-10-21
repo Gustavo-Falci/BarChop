@@ -1,10 +1,11 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 
 import { CadastroDeServico } from "../../../src/telas/painel/CadastroDeServico";
 import { ListaDeServicos } from "../../../src/telas/painel/ListaDeServicos";
+import { descerUm, medirLinhas } from "../../ajudantes/arrastar";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
 import { montarPainelComSonda } from "../../ajudantes/sondaDeCorrida";
@@ -649,5 +650,79 @@ describe("serviços no painel", () => {
     expect(await screen.findByText(/escreva o nome do serviço/i)).toBeInTheDocument();
     expect(screen.getByText(/múltiplos de 5/i)).toBeInTheDocument();
     expect(screen.getByText(/use um valor como 40,00/i)).toBeInTheDocument();
+  });
+});
+
+// Arrastar e reordenar, PR 4. "Mudar ordem" troca a tabela pelas listas
+// de arrastar: a ordem é a da página, e o filtro e a busca da tabela não
+// fazem sentido nela.
+describe("mudar a ordem dos serviços", () => {
+  let desfazer: () => void;
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos" });
+    desfazer = medirLinhas();
+  });
+  afterEach(() => desfazer());
+
+  function comCategorias(papel: "dono" | "recepcao" = "dono") {
+    const base = { duracaoMinutos: 30, preco: "40.00", descricao: null, fotoUrl: null };
+    return criarApiClientFalso({
+      papel,
+      servicos: [
+        { ...base, id: "s1", nome: "Corte", ativo: true, categoria: "cabelo" },
+        { ...base, id: "s2", nome: "Degradê", ativo: true, categoria: "cabelo" },
+        { ...base, id: "s3", nome: "Navalhado", ativo: true, categoria: "barba" },
+        { ...base, id: "s4", nome: "Platinado", ativo: false, categoria: "cabelo" },
+      ],
+    });
+  }
+
+  it("só o dono vê o botão de mudar a ordem", async () => {
+    montarPainel(<ListaDeServicos />, comCategorias("recepcao"));
+
+    expect(await screen.findByText("Corte")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mudar ordem" })).not.toBeInTheDocument();
+  });
+
+  it("arrastar um serviço salva a lista inteira: os do agendamento grupo a grupo, os inativos no fim", async () => {
+    const falso = comCategorias();
+    const salvar = vi.spyOn(falso.barbeiro, "salvarOrdemDosServicos");
+    montarPainel(<ListaDeServicos />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Mudar ordem" }));
+    expect(screen.getByText("É a ordem da sua página.")).toBeInTheDocument();
+    const cabelo = screen.getByRole("list", { name: "Serviços de Cabelo" });
+    // Só os que aparecem na página: o inativo não entra na lista.
+    expect(within(cabelo).queryByText("Platinado")).not.toBeInTheDocument();
+    await descerUm(within(cabelo).getByRole("button", { name: "Arrastar Corte" }));
+
+    await waitFor(() => expect(salvar).toHaveBeenCalledWith(["s2", "s1", "s3", "s4"]));
+  });
+
+  it("arrastar as categorias salva a ordem delas, e a tabela passa a segui-la", async () => {
+    const falso = comCategorias();
+    const salvar = vi.spyOn(falso.barbeiro, "salvarOrdemDasCategorias");
+    montarPainel(<ListaDeServicos />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Mudar ordem" }));
+    const categorias = screen.getByRole("list", { name: "Categorias" });
+    await descerUm(within(categorias).getByRole("button", { name: "Arrastar Cabelo" }));
+
+    await waitFor(() => expect(salvar).toHaveBeenCalled());
+    expect(salvar.mock.calls[0][0].slice(0, 2)).toEqual(["barba", "cabelo"]);
+
+    await userEvent.click(screen.getByRole("button", { name: "Pronto" }));
+    const navalhado = await screen.findByText("Navalhado");
+    expect(navalhado.compareDocumentPosition(screen.getByText("Corte")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("com uma categoria só, não há lista de categorias pra arrastar", async () => {
+    montarPainel(<ListaDeServicos />, semear());
+
+    await userEvent.click(await screen.findByRole("button", { name: "Mudar ordem" }));
+
+    expect(screen.queryByRole("list", { name: "Categorias" })).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Serviços sem categoria" })).toBeInTheDocument();
   });
 });

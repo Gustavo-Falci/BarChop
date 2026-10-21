@@ -85,6 +85,16 @@ describe("perfil da barbearia", () => {
       expect(screen.queryByRole("link", { name: /corte/i })).not.toBeInTheDocument();
     });
 
+    it("as categorias seguem a ordem que o dono arrastou no painel", async () => {
+      const falso = criarApiClientFalso({ servicos: COM_CATEGORIAS });
+      await falso.barbeiro.salvarLayoutDosServicos("abas");
+      await falso.barbeiro.salvarOrdemDasCategorias(["barba", "cabelo"]);
+      montar(falso);
+
+      const abas = await screen.findByRole("tablist", { name: /categorias/i });
+      expect(within(abas).getAllByRole("tab").map((aba) => aba.textContent)).toEqual(["Barba", "Cabelo"]);
+    });
+
     it("abas com uma categoria só não têm o que trocar: vira a lista", async () => {
       const falso = criarApiClientFalso({ servicos: [COM_CATEGORIAS[0]!] });
       await falso.barbeiro.salvarLayoutDosServicos("abas");

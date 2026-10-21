@@ -3,6 +3,8 @@ import type { CategoriaDeServico, MembroDaEquipe, ServicoSerializado } from "@ba
 import {
   agruparPorCategoria,
   faixaDePreco,
+  ordemDosServicos,
+  primeirosEResto,
   resumoDoGrupo,
   SEM_CATEGORIA,
   situacaoDoMembro,
@@ -144,5 +146,45 @@ describe("situação do membro", () => {
   it("inativo pesa mais que o convite pendente", () => {
     // Convite de quem foi desativado não é pendência: ele não entra.
     expect(situacaoDoMembro(membro(false, true))).toBe("inativo");
+  });
+});
+
+// Arrastar e reordenar, PR 4: a ordem que o dono escolhe.
+describe("ordem das categorias e dos serviços", () => {
+  it("agrupa na ordem das categorias salva; sem categoria continua no fim", () => {
+    const grupos = agruparPorCategoria(
+      [servico("1", "cabelo"), servico("2", null), servico("3", "barba")],
+      ["barba", "cabelo"]
+    );
+
+    expect(grupos.map((grupo) => grupo.id)).toEqual(["categoria:barba", "categoria:cabelo", "sem-categoria"]);
+  });
+
+  it("ordem salva incompleta ou com lixo: as que faltam vêm na ordem padrão", () => {
+    const grupos = agruparPorCategoria([servico("1", "cabelo"), servico("2", "quimica")], ["quimica", "xis"]);
+
+    expect(grupos.map((grupo) => grupo.id)).toEqual(["categoria:quimica", "categoria:cabelo"]);
+  });
+
+  it("a lista inteira pra API: os ativos grupo a grupo, o grupo mexido na ordem nova, os inativos no fim", () => {
+    const servicos = [
+      servico("c1", "cabelo"),
+      servico("c2", "cabelo"),
+      servico("x", "cabelo", "40.00", false),
+      servico("b1", "barba"),
+      servico("s1", null),
+    ];
+
+    expect(ordemDosServicos(servicos, ["barba", "cabelo"], "categoria:cabelo", ["c2", "c1"])).toEqual([
+      "b1",
+      "c2",
+      "c1",
+      "s1",
+      "x",
+    ]);
+  });
+
+  it("primeiros na ordem dada, o resto na ordem que já tinha", () => {
+    expect(primeirosEResto(["c", "a"], ["a", "b", "c", "d"])).toEqual(["c", "a", "b", "d"]);
   });
 });

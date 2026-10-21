@@ -133,6 +133,21 @@ describe("escolha dos serviços — o cartão e a página", () => {
     expect(within(barba).getByText("1 serviço")).toBeInTheDocument();
   });
 
+  it("as seções seguem a ordem de categorias que o dono arrastou no painel", async () => {
+    const falso = criarApiClientFalso({
+      servicos: [
+        servico({ id: "s1", nome: "Corte", categoria: "cabelo" }),
+        servico({ id: "s3", nome: "Barba", categoria: "barba" }),
+      ],
+    });
+    await falso.barbeiro.salvarOrdemDasCategorias(["barba", "cabelo"]);
+    montar(falso);
+
+    const barba = await screen.findByRole("region", { name: "Barba" });
+    const cabelo = screen.getByRole("region", { name: "Cabelo" });
+    expect(barba.compareDocumentPosition(cabelo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("o cartão mostra descrição, duração e a foto quando há", async () => {
     montar(
       criarApiClientFalso({

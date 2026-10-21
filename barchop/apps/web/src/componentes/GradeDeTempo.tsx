@@ -1,6 +1,17 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  useDraggable,
+  useSensor,
+  useSensors,
+  type DragMoveEvent,
+} from "@dnd-kit/core";
+import { useRef, useState, type CSSProperties } from "react";
+import type { AgendamentoComCliente } from "@barchop/types";
+import { destinoDoArrasto, type DestinoDoArrasto } from "../painel/arrasto";
 // O tipo e o componente têm o mesmo nome de propósito — um descreve o
 // que o outro desenha. O alias existe só para os dois conviverem aqui.
 import type { GradeDeTempo as Grade } from "../painel/grade";
@@ -95,8 +106,18 @@ export function GradeDeTempo({
   aoCriar,
   aoAbrirDia,
   tons,
+  agora,
+  podeMover,
+  aoSoltar,
 }: {
   grade: Grade;
+  // Arrastar pra remarcar (arrastar e reordenar, PR 7). Sem `aoSoltar`,
+  // nada arrasta. `podeMover` diz quais blocos pegam (futuros e ainda
+  // alteráveis); `agora` é o da agenda, pra o destino no passado sair
+  // inválido.
+  agora?: Date;
+  podeMover?: (agendamento: AgendamentoComCliente) => boolean;
+  aoSoltar?: (agendamento: AgendamentoComCliente, destino: DestinoDoArrasto) => void;
   // O tom de cada profissional (0 a 5), pela ordem da equipe. Sem ele (ou
   // com uma pessoa só) todo agendamento sai na cor da casa.
   tons?: Record<string, number>;
@@ -109,6 +130,50 @@ export function GradeDeTempo({
   // Só a vista de semana passa: é o cabeçalho clicável de cada coluna.
   aoAbrirDia?: (data: string) => void;
 }) {
+  // O arrasto: o mouse anda 4px antes de pegar (o clique continua
+  // abrindo o agendamento) e o toque segura 250ms (rolar a agenda
+  // continua rolando). Sem teclado: o caminho dele é o "Mudar horário"
+  // do detalhe, que mostra os horários livres.
+  const sensores = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+  );
+  const corpo = useRef<HTMLDivElement>(null);
+  const medidas = useRef({ linha: 1, coluna: 1 });
+  const [arrastando, setArrastando] = useState<{ id: string; destino: DestinoDoArrasto | null } | null>(null);
+
+  function comecar(id: string) {
+    const coluna = corpo.current?.querySelector<HTMLElement>("[data-coluna]")?.getBoundingClientRect();
+    medidas.current = {
+      linha: coluna && grade.totalLinhas > 0 ? coluna.height / grade.totalLinhas || 1 : 1,
+      coluna: coluna?.width || 1,
+    };
+    setArrastando({ id, destino: null });
+  }
+
+  function mover({ active, delta }: DragMoveEvent) {
+    const destino = destinoDoArrasto(
+      grade,
+      String(active.id),
+      { linhas: delta.y / medidas.current.linha, colunas: Math.round(delta.x / medidas.current.coluna) },
+      agora ?? new Date()
+    );
+    setArrastando({ id: String(active.id), destino });
+  }
+
+  // O clique que o navegador manda depois de soltar não abre o
+  // agendamento: o próprio dnd-kit o engole (escuta o documento por
+  // 50ms depois de um arrasto de verdade).
+  function soltar() {
+    const atual = arrastando;
+    setArrastando(null);
+    if (!atual?.destino?.valido || !aoSoltar) return;
+    const agendamento = grade.colunas
+      .flatMap((coluna) => coluna.eventos)
+      .find((evento) => evento.agendamento.id === atual.id)?.agendamento;
+    if (agendamento) aoSoltar(agendamento, atual.destino);
+  }
+
   if (grade.totalLinhas === 0) {
     return <p className={estilos.vazio}>Fechado neste dia.</p>;
   }
@@ -175,181 +240,240 @@ export function GradeDeTempo({
       </div>
 
       <div className={estilos.rolagem} data-testid="rolagem-da-grade">
-        <div className={estilos.corpo} data-testid="corpo-da-grade">
-          <div className={estilos.eixo}>
-            {rotulosDoEixo(grade).map((hora) => (
-              <span
-                key={hora.minuto}
-                className={estilos.hora}
-                // O rótulo da primeira linha fica embaixo do cabeçalho
-                // grudado e não pode subir meia linha como os outros.
-                // Continua sendo `linha === 1`, e não "o primeiro da
-                // lista": a abertura sempre abre a lista, mas a marca é
-                // sobre encostar no topo, não sobre ser o primeiro.
-                data-no-topo={hora.linha === 1 ? "true" : undefined}
-                // O fechamento é o único que se mede pela base da linha
-                // em vez do topo — é o fim da janela, não o começo de
-                // mais uma faixa.
-                data-no-fim={
-                  hora.minuto === grade.minutoFinal ? "true" : undefined
-                }
-                style={{ "--linha": hora.linha } as CSSProperties}
-              >
-                {hora.rotulo}
-              </span>
-            ))}
-          </div>
-
-          {grade.colunas.map((coluna) => (
-            <div key={coluna.chave} className={estilos.coluna}>
-              {/* A divisão por hora, atrás de tudo. Decorativa: quem
-                  diz a hora é o eixo. */}
-              {linhasDasHoras(grade).map((linha) => (
+        <DndContext
+          sensors={sensores}
+          onDragStart={({ active }) => comecar(String(active.id))}
+          onDragMove={mover}
+          onDragEnd={soltar}
+          onDragCancel={() => setArrastando(null)}
+        >
+          <div ref={corpo} className={estilos.corpo} data-testid="corpo-da-grade">
+            <div className={estilos.eixo}>
+              {rotulosDoEixo(grade).map((hora) => (
                 <span
-                  key={`hora-${linha}`}
-                  className={estilos.linhaDaHora}
-                  data-testid="linha-da-hora"
-                  aria-hidden="true"
-                  style={{ "--linha": linha } as CSSProperties}
-                />
+                  key={hora.minuto}
+                  className={estilos.hora}
+                  // O rótulo da primeira linha fica embaixo do cabeçalho
+                  // grudado e não pode subir meia linha como os outros.
+                  // Continua sendo `linha === 1`, e não "o primeiro da
+                  // lista": a abertura sempre abre a lista, mas a marca é
+                  // sobre encostar no topo, não sobre ser o primeiro.
+                  data-no-topo={hora.linha === 1 ? "true" : undefined}
+                  // O fechamento é o único que se mede pela base da linha
+                  // em vez do topo — é o fim da janela, não o começo de
+                  // mais uma faixa.
+                  data-no-fim={
+                    hora.minuto === grade.minutoFinal ? "true" : undefined
+                  }
+                  style={{ "--linha": hora.linha } as CSSProperties}
+                >
+                  {hora.rotulo}
+                </span>
               ))}
-              {coluna.fechado ? (
-                <p className={estilos.fechado}>Fechado neste dia.</p>
-              ) : null}
+            </div>
 
-              {coluna.livres.map((faixa) =>
-                // Faixa passada não vira botão: oferecer 09:00 às 10h é
-                // ruído. A linha continua ocupada pra grade não ganhar
-                // buraco.
-                faixa.passada ? (
+            {grade.colunas.map((coluna, indiceDaColuna) => (
+              <div key={coluna.chave} className={estilos.coluna} data-coluna={indiceDaColuna}>
+                {/* A divisão por hora, atrás de tudo. Decorativa: quem
+                    diz a hora é o eixo. */}
+                {linhasDasHoras(grade).map((linha) => (
                   <span
-                    key={faixa.hora}
-                    className={estilos.passada}
+                    key={`hora-${linha}`}
+                    className={estilos.linhaDaHora}
+                    data-testid="linha-da-hora"
+                    aria-hidden="true"
+                    style={{ "--linha": linha } as CSSProperties}
+                  />
+                ))}
+                {coluna.fechado ? (
+                  <p className={estilos.fechado}>Fechado neste dia.</p>
+                ) : null}
+
+                {coluna.livres.map((faixa) =>
+                  // Faixa passada não vira botão: oferecer 09:00 às 10h é
+                  // ruído. A linha continua ocupada pra grade não ganhar
+                  // buraco.
+                  faixa.passada ? (
+                    <span
+                      key={faixa.hora}
+                      className={estilos.passada}
+                      style={
+                        {
+                          "--linha": faixa.linha,
+                          "--linhas": faixa.linhas,
+                        } as CSSProperties
+                      }
+                    />
+                  ) : (
+                    <button
+                      key={faixa.hora}
+                      type="button"
+                      className={estilos.livre}
+                      style={
+                        {
+                          "--linha": faixa.linha,
+                          "--linhas": faixa.linhas,
+                        } as CSSProperties
+                      }
+                      onClick={() =>
+                        coluna.barbeiroId
+                          ? aoCriar(coluna.data, faixa.hora, coluna.barbeiroId)
+                          : faixa.profissionais
+                            ? aoCriar(coluna.data, faixa.hora, undefined, faixa.profissionais)
+                            : aoCriar(coluna.data, faixa.hora)
+                      }
+                    >
+                      {faixa.hora}
+                    </button>
+                  ),
+                )}
+
+                {/* Antes dos eventos no DOM: um agendamento que já existia
+                    quando o bloqueio foi criado continua clicável por cima. */}
+                {/* O que está fechado no expediente (antes de abrir, depois
+                    de fechar, a pausa): hachura atrás de tudo, e só um
+                    rótulo curto. Agendamento que caia ali continua por
+                    cima — esconder um atendimento é a pior falha desta
+                    tela. */}
+                {coluna.fechadas.map((faixa, indice) => (
+                  <div
+                    key={`fechada-${indice}`}
+                    className={estilos.fechada}
                     style={
                       {
                         "--linha": faixa.linha,
                         "--linhas": faixa.linhas,
+                      } as CSSProperties
+                    }
+                  >
+                    {faixa.rotulo}
+                  </div>
+                ))}
+                {coluna.bloqueios.map((bloqueio, indice) => (
+                  <span
+                    key={`bloqueio-${indice}`}
+                    className={estilos.bloqueio}
+                    style={
+                      {
+                        "--linha": bloqueio.linha,
+                        "--linhas": bloqueio.linhas,
+                      } as CSSProperties
+                    }
+                  >
+                    {bloqueio.rotulo}
+                  </span>
+                ))}
+
+                {coluna.eventos.map((evento) => (
+                  <BlocoDoEvento
+                    key={evento.agendamento.id}
+                    evento={evento}
+                    tom={tons?.[evento.agendamento.barbeiro.id]}
+                    movivel={Boolean(aoSoltar && podeMover?.(evento.agendamento))}
+                    arrastando={arrastando?.id === evento.agendamento.id}
+                    aoAbrir={aoAbrir}
+                  />
+                ))}
+
+                {/* Onde o bloco vai cair, com o horário novo escrito. Riscado
+                    quando o destino não aceita: a tela não deixa soltar ali. */}
+                {arrastando?.destino?.coluna === indiceDaColuna ? (
+                  <div
+                    className={estilos.fantasma}
+                    data-invalido={arrastando.destino.valido ? undefined : "true"}
+                    aria-hidden="true"
+                    style={
+                      {
+                        "--linha": arrastando.destino.linha,
+                        "--linhas": arrastando.destino.linhas,
+                      } as CSSProperties
+                    }
+                  >
+                    {arrastando.destino.horaInicio} – {arrastando.destino.horaFim}
+                  </div>
+                ) : null}
+
+                {grade.agora?.data === coluna.data ? (
+                  <span
+                    data-testid="regua-do-agora"
+                    className={estilos.agora}
+                    style={
+                      {
+                        "--linha": grade.agora.linha,
+                        "--fracao": grade.agora.fracao,
                       } as CSSProperties
                     }
                   />
-                ) : (
-                  <button
-                    key={faixa.hora}
-                    type="button"
-                    className={estilos.livre}
-                    style={
-                      {
-                        "--linha": faixa.linha,
-                        "--linhas": faixa.linhas,
-                      } as CSSProperties
-                    }
-                    onClick={() =>
-                      coluna.barbeiroId
-                        ? aoCriar(coluna.data, faixa.hora, coluna.barbeiroId)
-                        : faixa.profissionais
-                          ? aoCriar(coluna.data, faixa.hora, undefined, faixa.profissionais)
-                          : aoCriar(coluna.data, faixa.hora)
-                    }
-                  >
-                    {faixa.hora}
-                  </button>
-                ),
-              )}
-
-              {/* Antes dos eventos no DOM: um agendamento que já existia
-                  quando o bloqueio foi criado continua clicável por cima. */}
-              {/* O que está fechado no expediente (antes de abrir, depois
-                  de fechar, a pausa): hachura atrás de tudo, e só um
-                  rótulo curto. Agendamento que caia ali continua por
-                  cima — esconder um atendimento é a pior falha desta
-                  tela. */}
-              {coluna.fechadas.map((faixa, indice) => (
-                <div
-                  key={`fechada-${indice}`}
-                  className={estilos.fechada}
-                  style={
-                    {
-                      "--linha": faixa.linha,
-                      "--linhas": faixa.linhas,
-                    } as CSSProperties
-                  }
-                >
-                  {faixa.rotulo}
-                </div>
-              ))}
-              {coluna.bloqueios.map((bloqueio, indice) => (
-                <span
-                  key={`bloqueio-${indice}`}
-                  className={estilos.bloqueio}
-                  style={
-                    {
-                      "--linha": bloqueio.linha,
-                      "--linhas": bloqueio.linhas,
-                    } as CSSProperties
-                  }
-                >
-                  {bloqueio.rotulo}
-                </span>
-              ))}
-
-              {coluna.eventos.map((evento) => (
-                <button
-                  key={evento.agendamento.id}
-                  type="button"
-                  className={estilos.evento}
-                  data-tom={tons?.[evento.agendamento.barbeiro.id]}
-                  style={
-                    {
-                      "--linha": evento.linha,
-                      "--linhas": evento.linhas,
-                      "--pista": evento.pista,
-                      "--pistas": evento.pistas,
-                    } as CSSProperties
-                  }
-                  onClick={() => aoAbrir(evento.agendamento.id)}
-                >
-                  {/* O nome completo entra no texto, e quem encurta é o CSS:
-                  na coluna larga da vista de dia ele cabe inteiro, na
-                  coluna estreita da semana trunca com reticências.
-                  Cortar no JavaScript esconderia o sobrenome também na
-                  vista de dia, onde há espaço de sobra. */}
-                  <strong className={estilos.horaDoEvento}>
-                    {evento.agendamento.horaInicio}
-                  </strong>{" "}
-                  {evento.agendamento.cliente.nome}
-                  {/* O cliente confirmou pelo link do lembrete. O ✓ é
-                      pro olho; quem ouve recebe a frase, que entra no
-                      nome do botão. */}
-                  {evento.agendamento.presencaConfirmadaEm ? (
-                    <>
-                      <span className={estilos.selo} aria-hidden="true">
-                        {" "}✓
-                      </span>
-                      <span className={estilos.somenteLeitor}>, confirmou presença</span>
-                    </>
-                  ) : null}
-                  <span className={estilos.servicos}>
-                    {evento.agendamento.servicos.map((s) => s.nome).join(" + ")}
-                  </span>
-                </button>
-              ))}
-
-              {grade.agora?.data === coluna.data ? (
-                <span
-                  data-testid="regua-do-agora"
-                  className={estilos.agora}
-                  style={
-                    {
-                      "--linha": grade.agora.linha,
-                      "--fracao": grade.agora.fracao,
-                    } as CSSProperties
-                  }
-                />
-              ) : null}
-            </div>
-          ))}
-        </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </DndContext>
       </div>
     </div>
+  );
+}
+
+// Um agendamento na grade. Arrastável quando `movivel`: só os listeners
+// do dnd-kit, e não os atributos — eles chamariam o botão de
+// "arrastável" e ensinariam um teclado que esta grade não tem (o dele é
+// o "Mudar horário" do detalhe). O bloco fica onde está durante o
+// arrasto, apagado; quem anda é o fantasma, já encaixado.
+function BlocoDoEvento({
+  evento,
+  tom,
+  movivel,
+  arrastando,
+  aoAbrir,
+}: {
+  evento: Grade["colunas"][number]["eventos"][number];
+  tom?: number;
+  movivel: boolean;
+  arrastando: boolean;
+  aoAbrir: (id: string) => void;
+}) {
+  const { listeners, setNodeRef } = useDraggable({ id: evento.agendamento.id, disabled: !movivel });
+  return (
+    <button
+      type="button"
+      className={estilos.evento}
+      data-tom={tom}
+      data-arrastando={arrastando ? "true" : undefined}
+      ref={setNodeRef}
+      {...(movivel ? listeners : {})}
+      style={
+        {
+          "--linha": evento.linha,
+          "--linhas": evento.linhas,
+          "--pista": evento.pista,
+          "--pistas": evento.pistas,
+        } as CSSProperties
+      }
+      onClick={() => aoAbrir(evento.agendamento.id)}
+    >
+      {/* O nome completo entra no texto, e quem encurta é o CSS:
+      na coluna larga da vista de dia ele cabe inteiro, na
+      coluna estreita da semana trunca com reticências.
+      Cortar no JavaScript esconderia o sobrenome também na
+      vista de dia, onde há espaço de sobra. */}
+      <strong className={estilos.horaDoEvento}>
+        {evento.agendamento.horaInicio}
+      </strong>{" "}
+      {evento.agendamento.cliente.nome}
+      {/* O cliente confirmou pelo link do lembrete. O ✓ é
+          pro olho; quem ouve recebe a frase, que entra no
+          nome do botão. */}
+      {evento.agendamento.presencaConfirmadaEm ? (
+        <>
+          <span className={estilos.selo} aria-hidden="true">
+            {" "}✓
+          </span>
+          <span className={estilos.somenteLeitor}>, confirmou presença</span>
+        </>
+      ) : null}
+      <span className={estilos.servicos}>
+        {evento.agendamento.servicos.map((s) => s.nome).join(" + ")}
+      </span>
+    </button>
   );
 }

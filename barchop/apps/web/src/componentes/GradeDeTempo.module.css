@@ -314,6 +314,41 @@ button.diaDoCabecalho:hover .numeroDoDia {
 /* A régua do agora, em vermelho suave: a convenção de calendário. É o
    tom do erro mais apagado, pra não ler como falha; o --cor-accent já
    significa "selecionado" no painel. */
+/* O bloco que está sendo arrastado fica no lugar, apagado: quem mostra
+   onde ele vai cair é o fantasma (arrastar e reordenar, PR 7). O toque
+   continua rolando a agenda; o arrasto só pega depois de segurar. */
+.evento {
+  touch-action: manipulation;
+}
+
+.evento[data-arrastando] {
+  opacity: 0.45;
+}
+
+.fantasma {
+  grid-row: var(--linha) / span var(--linhas);
+  grid-column: 1;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  padding: 2px var(--espaco-xs);
+  border: 2px dashed var(--cor-ink);
+  border-radius: var(--raio-sm);
+  background: color-mix(in srgb, var(--cor-accent) 35%, var(--cor-surface));
+  color: var(--cor-ink);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  pointer-events: none;
+}
+
+/* Destino que não aceita (ocupado, fechado, passado): riscado. */
+.fantasma[data-invalido] {
+  border-color: var(--cor-erro);
+  background: var(--cor-erro-fundo);
+  color: var(--cor-erro);
+  text-decoration: line-through;
+}
+
 .agora {
   grid-row: var(--linha);
   grid-column: 1;

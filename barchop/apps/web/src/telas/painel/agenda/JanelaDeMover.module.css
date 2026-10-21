@@ -1,0 +1,47 @@
+/* Mesma moldura da janela de bloqueio. */
+.janela {
+  width: min(480px, calc(100vw - 2 * var(--espaco-md)));
+  max-height: calc(100dvh - 2 * var(--espaco-md));
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  box-shadow: var(--sombra-1);
+}
+
+.janela::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.titulo {
+  margin: 0 0 var(--espaco-sm);
+  font-size: var(--texto-lg);
+}
+
+.frase {
+  margin: 0 0 var(--espaco-md);
+  font-size: var(--texto-md);
+  line-height: 1.5;
+}
+
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  font-size: var(--texto-sm);
+}
+
+/* Cancelar e Mover no pé, à direita: o lugar do "confirmar". */
+.rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaco-sm);
+  margin-top: var(--espaco-md);
+}

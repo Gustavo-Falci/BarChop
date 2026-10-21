@@ -79,6 +79,7 @@ Hoje nada se reordena: serviços saem por nome (`apps/api/src/routers/servicos.t
 - Soltar → janela de confirmação curta ("Mover o corte do João de 10:00 para 11:15?" + "avisar cliente por e-mail" se aplicável) → chama o remarcar do PR 5. Nada muda sem confirmar (evita arrasto acidental no dia corrido).
 - Celular: segurar 250ms pra pegar; rolar a agenda continua livre. Teclado: o caminho é o "Mudar horário" (PR 6).
 - **Testes**: função pura `destinoDoArrasto(grade, bloco, delta)` (encaixe em 15min, limites da jornada, troca de coluna); soltar abre a confirmação; confirmar chama a API; cancelar não chama.
+- **Feito (21/10), desvios:** sem `useDroppable` por célula: o destino sai da distância andada (`destinoDoArrasto(grade, id, { linhas, colunas }, agora)`, `src/painel/arrasto.ts`) e a tela só mede a altura da linha e a largura da coluna ao começar. O bloco fica no lugar (apagado) e o fantasma mostra o destino encaixado ("11:15 – 11:45"), riscado quando inválido (outro agendamento do mesmo profissional, fechado, bloqueio, fora da janela, passado). Sem os atributos do dnd-kit no botão (ensinariam um teclado que a grade não tem). O clique depois de soltar o próprio dnd-kit engole (50ms). Confirmação: `JanelaDeMover` com "avisar o cliente por e-mail" marcado; confirmou, recarrega a agenda. A rota da agenda passa a carregar o `@dnd-kit/core`.
 
 ## Validation (por PR, só os afetados)
 ```bash

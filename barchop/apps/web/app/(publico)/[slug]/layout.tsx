@@ -7,6 +7,7 @@ import { BarraDaBarbearia } from "../../../src/fluxo/BarraDaBarbearia";
 import { metadataDaBarbearia } from "../../../src/fluxo/metadataDaBarbearia";
 import { cssDaAparencia, scriptDoModo } from "../../../src/fluxo/aparenciaDaPagina";
 import { OuvinteDaPrevia } from "../../../src/fluxo/OuvinteDaPrevia";
+import { EntradaDaTela } from "../../../src/movimento/EntradaDaTela";
 import { ID_DA_PUBLICADA } from "../../../src/fluxo/previa";
 import { barbeariaDoLayout } from "../../../src/fluxo/slugAtual";
 import { destinoDoSlugAntigo } from "../../../src/tenant/endereco";
@@ -84,7 +85,7 @@ export default async function LayoutDaBarbearia({
               largura e nenhuma a margem, então o fluxo inteiro encostava
               na esquerda no desktop. Aqui ela também fica na mesma vertical
               da barra acima, em vez de os dois combinarem por acaso. */}
-          <div className={estilos.conteudo}>{children}</div>
+          <EntradaDaTela className={estilos.conteudo}>{children}</EntradaDaTela>
         </div>
       </ProvedorDaApi>
     </ProvedorDoHost>

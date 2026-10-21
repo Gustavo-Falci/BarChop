@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { FONTES_DA_APARENCIA, clashGrotesk, inter } from "./fontes";
 import { cssDeTokens } from "./tokens-css";
+import { ProvedorDeMovimento } from "../src/movimento/ProvedorDeMovimento";
 import { SCRIPT_DA_BARRA } from "../src/painel/barra";
 import { SCRIPT_DE_TEMA } from "../src/painel/tema";
 import "./globals.css";
@@ -46,7 +47,9 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_DA_BARRA }} />
         <style dangerouslySetInnerHTML={{ __html: cssDeTokens }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <ProvedorDeMovimento>{children}</ProvedorDeMovimento>
+      </body>
     </html>
   );
 }

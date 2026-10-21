@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { EntradaDaTela } from "../movimento/EntradaDaTela";
 import { BarraDoTopo } from "./BarraDoTopo";
 import { FaixaDaAssinatura } from "./FaixaDaAssinatura";
 import { NavegacaoDoPainel } from "./NavegacaoDoPainel";
@@ -31,7 +32,7 @@ export function LayoutDoPainel({ children }: { children: ReactNode }) {
             <FaixaDaAssinatura />
           </div>
           <main className={estilos.conteudo}>
-            <div className={estilos.container}>{children}</div>
+            <EntradaDaTela className={estilos.container}>{children}</EntradaDaTela>
           </main>
         </div>
       </div>

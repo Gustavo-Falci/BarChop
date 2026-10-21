@@ -44,6 +44,10 @@ Hoje o web tem 2 durações, 2 curvas e 6 keyframes soltos; telas trocam de uma 
 - `tests/setup.ts`: `MotionGlobalConfig.skipAnimations = true` → saídas terminam na hora e os testes que esperam elemento sumir seguem valendo.
 - ADR `barchop/docs/adr/0011-motion-e-dnd-kit.md` (cobre as duas libs) + linha no README dos ADRs.
 - **Testes**: `EntradaDaTela` anima na troca de rota, não anima na montagem; provedor renderiza filhos.
+- **Feito (21/10), com 3 desvios:**
+  1. Troca de tela **só fade, sem os 4px**: `EscolhaDeServicos` e `DetalheDoAgendamento` têm barra `position: fixed`; transform no container vira referência dela e a barra pularia. Deslize fica pros elementos de dentro (PR 4/5). No PR 5, a direção dos passos precisa animar um wrapper que não contenha a barra fixa.
+  2. `EntradaDaTela` usa `el.animate` nativo (WAAPI), não `useAnimate`: o `useAnimate` puxava ~30KB gz síncronos pra toda tela do painel.
+  3. `LazyMotion` com features por `import()` (`src/movimento/features.ts`), não `domAnimation` direto: home caiu de +28KB pra +15KB gz no JS inicial; as features (16KB gz) chegam depois. Custo final medido: ~15KB gz no JS inicial de toda página.
 
 ### PR 2 — Janelas, menus e avisos com saída
 - `<dialog>` nativo continua (focus trap, Esc, `aria-modal` grátis): CSS `@starting-style` + `overlay`/`display allow-discrete` → entra **e sai** (fade + escala .98). Firefox sem `overlay` só corta a saída.

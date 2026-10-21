@@ -9,20 +9,22 @@ import { ListaReordenavel } from "../../src/componentes/ListaReordenavel";
 //
 // O jsdom não mede layout: todo elemento tem 0×0, e o teclado do dnd-kit
 // procura o vizinho pela posição. O dublê dá a cada linha 50px de altura,
-// na ordem em que ela está na lista.
+// na ordem em que ela está na lista, e à lista a soma delas — o
+// `restrictToParentElement` não deixa a linha sair da lista, e uma lista
+// de 50px prenderia tudo no lugar.
 const ALTURA = 50;
 const medirOriginal = HTMLElement.prototype.getBoundingClientRect;
 
-function retangulo(topo: number): DOMRect {
+function retangulo(topo: number, altura = ALTURA): DOMRect {
   return {
     x: 0,
     y: topo,
     top: topo,
     left: 0,
     width: 300,
-    height: ALTURA,
+    height: altura,
     right: 300,
-    bottom: topo + ALTURA,
+    bottom: topo + altura,
     toJSON: () => ({}),
   } as DOMRect;
 }
@@ -57,24 +59,30 @@ function montar(aoReordenar = vi.fn(async (_ids: string[]) => {}), itens: Servic
 
 function nomesNaTela(): string[] {
   const lista = screen.getByRole("list", { name: "Serviços" });
+  // Sem o ⋮⋮ da alça: ele é aria-hidden, mas entra no textContent.
   return within(lista)
     .getAllByRole("listitem")
-    .map((item) => item.textContent ?? "");
+    .map((item) => (item.textContent ?? "").replace("⋮⋮", ""));
 }
 
 function alcaDe(nome: string): HTMLElement {
   return screen.getByRole("button", { name: `Arrastar ${nome}` });
 }
 
+// O sensor de teclado só passa a ouvir as teclas seguintes num
+// setTimeout(0) depois de pegar: sem esperar um tick, a seta chegaria
+// antes de ele escutar.
 async function tecla(elemento: HTMLElement, codigo: string) {
   await act(async () => {
     fireEvent.keyDown(elemento, { code: codigo, key: codigo === "Space" ? " " : codigo });
+    await new Promise((pronto) => setTimeout(pronto, 0));
   });
 }
 
 describe("ListaReordenavel", () => {
   beforeEach(() => {
     HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      if (this.tagName === "UL") return retangulo(0, this.children.length * ALTURA);
       const linha = this.closest("li");
       if (!linha?.parentElement) return retangulo(0);
       return retangulo([...linha.parentElement.children].indexOf(linha) * ALTURA);

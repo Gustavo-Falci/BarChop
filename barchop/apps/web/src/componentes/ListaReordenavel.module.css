@@ -1,0 +1,47 @@
+.lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linha {
+  position: relative;
+  background: var(--cor-surface);
+}
+
+/* A linha pega fica por cima das outras e ganha sombra: é ela que está
+   "na mão". Sem escala — o transform da linha é do dnd-kit, e o pedido é
+   sutil. */
+.pega {
+  z-index: 1;
+  box-shadow: var(--sombra-2);
+}
+
+/* A alça. `touch-action: none` só nela: no celular, o toque na alça é do
+   arrasto, e no resto da linha a página continua rolando. */
+.alca {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--cor-muted);
+  font-size: var(--texto-md);
+  letter-spacing: -0.2em;
+  cursor: grab;
+  touch-action: none;
+}
+
+.alca:hover {
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink);
+}
+
+.alca:active,
+.pega .alca {
+  cursor: grabbing;
+}

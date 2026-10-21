@@ -104,6 +104,10 @@ Hoje o web tem 2 durações, 2 curvas e 6 keyframes soltos; telas trocam de uma 
 - Hero: título, subtítulo e CTA escalonados (60ms) na carga.
 - `TabelaDePrecos`: troca de período (se houver) com fade nos valores; plano destacado com hover mais marcado.
 - **Testes**: `Revelar` renderiza o conteúdo visível no 1º render (sem `opacity:0` no HTML).
+- **Feito (21/10), desvios:**
+  1. `Revelar` sem a lib: IntersectionObserver + transição CSS direto no elemento (o site não baixa o motor do motion). Esconde só depois de montar e só abaixo da dobra; reduzir movimento ou sem observer, fica parado. Nas seções da Home (6) e de Preços (3), não no topo.
+  2. Hero da Home por CSS (`@keyframes promessa-entra`, 60ms de passo), não pela lib.
+  3. `TabelaDePrecos` sem mudança: não há troca de período nem plano destacado, e os cartões não levam a lugar nenhum (o convite dentro é que leva).
 
 ## Validation (por PR, só os afetados)
 ```bash

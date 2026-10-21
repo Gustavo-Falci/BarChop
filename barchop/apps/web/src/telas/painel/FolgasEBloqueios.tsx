@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, m } from "motion/react";
 import { useId, useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
@@ -8,6 +9,7 @@ import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarPeriodo, hojeIso, somarDias } from "../../formato/datas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { entradaDoItem, usePrimeiraCarga } from "../../movimento/lista";
 import { useAgora } from "../../painel/useAgora";
 import { JanelaDeBloqueio } from "./agenda/JanelaDeBloqueio";
 import estilos from "./FolgasEBloqueios.module.css";
@@ -48,6 +50,7 @@ export function FolgasEBloqueios({ agora: agoraFixo }: { agora?: Date } = {}) {
 
   const carregando = !bloqueios.dados || !equipe.dados;
   const falha = bloqueios.erro ?? equipe.erro;
+  const primeiraCarga = usePrimeiraCarga(!carregando);
 
   return (
     <div className={estilos.pagina}>
@@ -81,36 +84,45 @@ export function FolgasEBloqueios({ agora: agoraFixo }: { agora?: Date } = {}) {
               Ninguém fora da agenda nos próximos {DIAS_A_FRENTE} dias.
             </p>
           ) : (
+            // Removeu, a linha sai e as de baixo sobem pro buraco
+            // (`layout`); bloqueou, a nova entra (motion PR 4).
             <ul className={estilos.lista}>
-              {bloqueios.dados!.map((bloqueio) => {
-                const periodo = formatarPeriodo(bloqueio.dataInicio, bloqueio.dataFim);
-                const horas =
-                  bloqueio.horaInicio && bloqueio.horaFim
-                    ? `${bloqueio.horaInicio} às ${bloqueio.horaFim}`
-                    : "dia inteiro";
-                return (
-                  <li key={bloqueio.id} className={estilos.item}>
-                    <span className={estilos.quando}>
-                      <strong>{periodo}</strong>
-                      <span className={estilos.secundario}>{horas}</span>
-                    </span>
-                    <span className={estilos.quem}>
-                      {nomeDe(bloqueio.barbeiroId)}
-                      {bloqueio.motivo ? (
-                        <span className={estilos.secundario}>{bloqueio.motivo}</span>
-                      ) : null}
-                    </span>
-                    <Botao
-                      type="button"
-                      variante="fantasma"
-                      onClick={() => void remover(bloqueio.id)}
-                      aria-label={`Remover bloqueio de ${nomeDe(bloqueio.barbeiroId)} em ${periodo}`}
+              <AnimatePresence>
+                {bloqueios.dados!.map((bloqueio, indice) => {
+                  const periodo = formatarPeriodo(bloqueio.dataInicio, bloqueio.dataFim);
+                  const horas =
+                    bloqueio.horaInicio && bloqueio.horaFim
+                      ? `${bloqueio.horaInicio} às ${bloqueio.horaFim}`
+                      : "dia inteiro";
+                  return (
+                    <m.li
+                      key={bloqueio.id}
+                      layout
+                      className={estilos.item}
+                      {...entradaDoItem(indice, { primeiraCarga, novosEntram: true })}
                     >
-                      Remover
-                    </Botao>
-                  </li>
-                );
-              })}
+                      <span className={estilos.quando}>
+                        <strong>{periodo}</strong>
+                        <span className={estilos.secundario}>{horas}</span>
+                      </span>
+                      <span className={estilos.quem}>
+                        {nomeDe(bloqueio.barbeiroId)}
+                        {bloqueio.motivo ? (
+                          <span className={estilos.secundario}>{bloqueio.motivo}</span>
+                        ) : null}
+                      </span>
+                      <Botao
+                        type="button"
+                        variante="fantasma"
+                        onClick={() => void remover(bloqueio.id)}
+                        aria-label={`Remover bloqueio de ${nomeDe(bloqueio.barbeiroId)} em ${periodo}`}
+                      >
+                        Remover
+                      </Botao>
+                    </m.li>
+                  );
+                })}
+              </AnimatePresence>
             </ul>
           )}
         </section>

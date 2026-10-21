@@ -50,6 +50,19 @@ describe("usePrimeiraCarga", () => {
     expect(result.current).toBe(true);
     await waitFor(() => expect(result.current).toBe(false));
   });
+
+  it("com `pronto`, só conta a partir de quando a lista chegou", async () => {
+    const { result, rerender } = renderHook(({ pronto }) => usePrimeiraCarga(pronto), {
+      initialProps: { pronto: false },
+    });
+    await new Promise((feito) => setTimeout(feito, 30));
+    expect(result.current).toBe(true);
+
+    rerender({ pronto: true });
+
+    expect(result.current).toBe(true);
+    await waitFor(() => expect(result.current).toBe(false));
+  });
 });
 
 describe("Estatistica", () => {

@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import type { EdicaoDoAgendamento, ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
@@ -10,12 +10,13 @@ import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Chip } from "../../componentes/Chip";
 import { formatarPreco } from "../../componentes/ItemDeServico";
 import { useRequisicao } from "../../api/useRequisicao";
-import { formatarDataComSemana } from "../../formato/datas";
+import { ehPassado, formatarDataComSemana } from "../../formato/datas";
 import { TOM_DO_STATUS, rotuloDoStatus } from "../../formato/status";
 import { IconeCheck, IconeConversa } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./DetalheDoAgendamento.module.css";
+import { JanelaDeRemarcar } from "./JanelaDeRemarcar";
 import { FormularioDoPagamento, ResumoDoPagamento } from "./PagamentoDoAtendimento";
 import { Carregando } from "../../componentes/Carregando";
 
@@ -116,6 +117,9 @@ export function DetalheDoAgendamento() {
   const caixa = useRequisicao(() => api.barbeiro.pagamentoDoAgendamento(id), [id]);
   const equipe = useRequisicao(() => api.barbeiro.equipe(), []);
   const { perfil } = usePainel();
+  const router = useRouter();
+  // "Mudar horário" (arrastar e reordenar, PR 6).
+  const [mudandoHorario, setMudandoHorario] = useState(false);
   // O formulário do pagamento aberto: registrando (null) ou editando.
   const [pagando, setPagando] = useState(false);
   // Reabrir um atendimento pago apaga o pagamento: pede um segundo clique.
@@ -357,12 +361,20 @@ export function DetalheDoAgendamento() {
             ) : null}
           </p>
         ) : null}
-        {/* A API não tem remarcar no escopo do barbeiro, e aceitar data e
-            hora no PATCH pularia a checagem de disponibilidade inteira.
-            Dizer isso — perto do Cancelar, que é o caminho — é melhor do
-            que um botão que voltaria erro. */}
-        {lembravel ? (
-          <p className={estilos.nota}>Para mudar o horário, cancele e crie outro agendamento.</p>
+        {/* Remarcar cria outro agendamento (com outro id): deu certo, a
+            tela vai pra ele. Só o que ainda não passou muda de horário —
+            a API recusa o resto. */}
+        {lembravel && !ehPassado(atual.data) ? (
+          <Botao variante="contorno" onClick={() => setMudandoHorario(true)}>
+            Mudar horário
+          </Botao>
+        ) : null}
+        {mudandoHorario ? (
+          <JanelaDeRemarcar
+            agendamento={atual}
+            aoRemarcar={(novo) => router.replace(`/painel/agendamentos/${novo.id}`)}
+            aoFechar={() => setMudandoHorario(false)}
+          />
         ) : null}
       </section>
 

@@ -49,6 +49,7 @@ Hoje nada se reordena: serviços saem por nome (`apps/api/src/routers/servicos.t
 - `src/componentes/ListaReordenavel.tsx` (`"use client"`): `DndContext` + `SortableContext` (vertical), alça de arrastar visível (⋮⋮ com `aria-label`), sensores e anúncios em português, `restrictToVerticalAxis` + `restrictToParentElement`.
 - Salva ao soltar (otimista: a lista já fica na ordem nova; erro → volta e mostra aviso).
 - **Testes**: reordenar pelo teclado (espaço, seta, espaço) chama `onReordenar` com os ids na ordem nova; Esc cancela; erro volta a ordem.
+- **Feito (21/10), desvios:** `MouseSensor` + `TouchSensor` em vez do `PointerSensor` (o de ponteiro pegaria o toque sem a espera de 250ms); linha pega só com sombra, sem `scale(1.02)` nem mola `solta` (o transform da linha é do dnd-kit; vizinhos com curva/duração dos tokens). API do componente: `itens`, `nomeDaLista`, `rotulo`, `aoReordenar(ids)` (promise; rejeitou → volta e avisa), `renderizar(item, alca)`. Teste do teclado precisa de dublê de `getBoundingClientRect` (linhas e a `<ul>`) e um tick entre teclas.
 
 ### PR 4 — Web: aplicar em Serviços, Categorias e Equipe
 - `ListaDeServicos`: serviços arrastam **dentro** da categoria; categorias arrastam como blocos (lista de categorias com o mesmo componente).

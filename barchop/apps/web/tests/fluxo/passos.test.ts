@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   caminhoDoLogin,
   caminhoDoPasso,
+  direcaoDoPasso,
   ehPasso,
   lerEscolhas,
   passoDoVoltar,
@@ -124,5 +125,21 @@ describe("volta pro fluxo depois de entrar", () => {
     // Não pode casar com o que vem do Object.prototype.
     expect(ehPasso("toString")).toBe(false);
     expect(ehPasso("constructor")).toBe(false);
+  });
+});
+
+// Motion PR 5: a direção da troca de passo — avançar entra pela direita,
+// voltar pela esquerda.
+describe("direcaoDoPasso", () => {
+  it("avançar é 1 e voltar é -1, pela ordem do fluxo", () => {
+    expect(direcaoDoPasso("servicos", "profissional")).toBe(1);
+    expect(direcaoDoPasso("profissional", "confirmar")).toBe(1);
+    expect(direcaoDoPasso("data", "servicos")).toBe(-1);
+  });
+
+  it("mesmo passo, sem passo anterior ou fora da ordem: parado", () => {
+    expect(direcaoDoPasso("data", "data")).toBe(0);
+    expect(direcaoDoPasso(null, "servicos")).toBe(0);
+    expect(direcaoDoPasso("dados" as never, "data")).toBe(0);
   });
 });

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from "react";
 import { formatarDataLonga } from "../formato/datas";
 import { NOVIDADES } from "./novidades";
 import estilos from "./JanelaDeNovidades.module.css";
+import { depoisDaSaida } from "../movimento/depoisDaSaida";
 
 // A lista do que mudou no BarChop, aberta pelo menu "…". <dialog>
 // nativo, como a janela de compartilhar do Hoje: foco preso e Esc vêm
@@ -17,7 +18,7 @@ export function JanelaDeNovidades({ aoFechar }: { aoFechar: () => void }) {
   }, []);
 
   return (
-    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={aoFechar}>
+    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={(evento) => depoisDaSaida(evento.currentTarget, aoFechar)}>
       <div className={estilos.topo}>
         <h2 id={titulo} className={estilos.titulo}>
           Novidades

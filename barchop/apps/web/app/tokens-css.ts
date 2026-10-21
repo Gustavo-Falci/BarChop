@@ -6,7 +6,7 @@ import {
   spacing,
 } from "@barchop/design-tokens";
 
-import { CURVA, DURACAO, curvaCss, emMs } from "../src/movimento/tokens";
+import { CURVA, DESLIZE, DURACAO, ESCALA, curvaCss, emMs } from "../src/movimento/tokens";
 
 // Os tokens são objetos JS puros (ver packages/design-tokens). No web
 // a gente traduz pra CSS custom properties uma vez, no layout raiz,
@@ -74,7 +74,10 @@ const varsDeMovimento = `  --curva-entrada: ${curvaCss(CURVA.entrada)};
   --duracao-instante: ${emMs(DURACAO.instante)};
   --duracao-curta: ${emMs(DURACAO.curta)};
   --duracao-media: ${emMs(DURACAO.media)};
-  --duracao-longa: ${emMs(DURACAO.longa)};`;
+  --duracao-longa: ${emMs(DURACAO.longa)};
+  --escala-janela: ${ESCALA.janela};
+  --deslize-curto: ${DESLIZE.curto}px;
+  --deslize-normal: ${DESLIZE.normal}px;`;
 
 // Três blocos, não dois. Sem a guarda :not([data-theme="light"]), quem
 // escolheu claro continua escurecendo num sistema escuro, porque o

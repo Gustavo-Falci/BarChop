@@ -407,11 +407,29 @@
     border-radius: var(--raio-md);
     background: var(--cor-surface);
     box-shadow: var(--sombra-2);
+    opacity: 0;
+    translate: 0 var(--deslize-curto);
+    transition:
+      opacity var(--duracao-instante) var(--curva-saida),
+      translate var(--duracao-instante) var(--curva-saida),
+      display var(--duracao-instante) allow-discrete;
   }
 
+  /* Abre subindo 4px e fecha descendo (motion PR 2): `display`
+     allow-discrete segura o painel na tela até o fade de saída acabar. */
   .secundarias[data-aberto] {
     display: flex;
-    animation: subir var(--duracao-curta) var(--curva-entrada);
+    opacity: 1;
+    translate: 0 0;
+    transition-duration: var(--duracao-curta);
+    transition-timing-function: var(--curva-entrada);
+  }
+
+  @starting-style {
+    .secundarias[data-aberto] {
+      opacity: 0;
+      translate: 0 var(--deslize-curto);
+    }
   }
 
   .secundarias a {
@@ -469,9 +487,3 @@
   }
 }
 
-@keyframes subir {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}

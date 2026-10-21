@@ -106,26 +106,53 @@ summary,
   }
 }
 
-/* Toda janela (<dialog> aberta com showModal) entra com fade e uma
-   escala curta, e o véu atrás dela aparece junto. Antes ela surgia de
-   uma vez. 180ms: ferramenta de trabalho, não vitrine. */
+/* Toda janela (<dialog> aberta com showModal) entra e sai com fade e
+   uma escala curta, e o véu atrás dela junto (motion PR 2). Entrar:
+   @starting-style dá o ponto de partida; sair: `overlay` e `display`
+   allow-discrete a mantêm na camada de cima até o fade acabar, e o
+   depoisDaSaida segura a desmontagem até lá. Firefox sem `overlay`
+   só perde a saída. `scale`, e não `transform`: janela com transform
+   próprio (folha de baixo no celular) continua com o dela. Saída mais
+   curta que a entrada: quem fechou já está olhando pra outra coisa. */
+dialog {
+  opacity: 0;
+  scale: var(--escala-janela);
+  transition:
+    opacity var(--duracao-curta) var(--curva-saida),
+    scale var(--duracao-curta) var(--curva-saida),
+    overlay var(--duracao-curta) allow-discrete,
+    display var(--duracao-curta) allow-discrete;
+}
+
 dialog[open] {
-  animation: janela-entra 180ms var(--curva-entrada);
+  opacity: 1;
+  scale: 1;
+  transition-duration: var(--duracao-media);
+  transition-timing-function: var(--curva-entrada);
 }
 
-dialog[open]::backdrop {
-  animation: veu-entra 180ms ease;
-}
-
-@keyframes janela-entra {
-  from {
+@starting-style {
+  dialog[open] {
     opacity: 0;
-    transform: scale(0.98);
+    scale: var(--escala-janela);
   }
 }
 
-@keyframes veu-entra {
-  from {
+dialog::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--duracao-curta) var(--curva-saida),
+    overlay var(--duracao-curta) allow-discrete,
+    display var(--duracao-curta) allow-discrete;
+}
+
+dialog[open]::backdrop {
+  opacity: 1;
+  transition-duration: var(--duracao-media);
+}
+
+@starting-style {
+  dialog[open]::backdrop {
     opacity: 0;
   }
 }

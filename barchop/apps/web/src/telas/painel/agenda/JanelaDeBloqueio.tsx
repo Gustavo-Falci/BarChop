@@ -7,6 +7,7 @@ import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
 import { FormularioDeBloqueio, useFormularioDeBloqueio } from "../FormularioDeBloqueio";
 import estilos from "./JanelaDeBloqueio.module.css";
+import { depoisDaSaida } from "../../../movimento/depoisDaSaida";
 
 // "Bloquear" sem sair da agenda (painel v2, marco 6): o formulário de
 // Folgas numa <dialog>, já com a data à vista. Bloqueou, avisa a agenda
@@ -46,7 +47,7 @@ export function JanelaDeBloqueio({
   }, []);
 
   return (
-    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={aoFechar}>
+    <dialog ref={janela} className={estilos.janela} aria-labelledby={titulo} onClose={(evento) => depoisDaSaida(evento.currentTarget, aoFechar)}>
       <h2 id={titulo} className={estilos.titulo}>
         Bloquear horário
       </h2>

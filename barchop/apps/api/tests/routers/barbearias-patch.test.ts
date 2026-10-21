@@ -45,6 +45,7 @@ describe("PATCH /barbearias/me", () => {
       areasDecididas: ["dados_do_negocio", "comunicacao"],
       aparencia: APARENCIA_PADRAO,
       aparenciaRascunho: null,
+      ordemCategorias: ["cabelo", "barba", "combo", "sobrancelha", "quimica", "infantil"],
       // As regras de agendamento, nos padrões (painel v2, marco 3).
       ...REGRAS_PADRAO,
     });

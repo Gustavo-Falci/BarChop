@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
-import { APARENCIA_PADRAO, REGRAS_PADRAO } from "@barchop/formato";
+import { APARENCIA_PADRAO, CATEGORIAS_DE_SERVICO, REGRAS_PADRAO } from "@barchop/formato";
 import type { ServicoSerializado } from "@barchop/types";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { PerfilDaBarbearia } from "../../src/telas/PerfilDaBarbearia";
@@ -175,6 +175,7 @@ describe("perfil da barbearia", () => {
       formasDePagamento: [],
       capaUrl: null,
       aparencia: APARENCIA_PADRAO,
+      ordemCategorias: [...CATEGORIAS_DE_SERVICO],
       ...REGRAS_PADRAO,
       horarios: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
         diaSemana,

@@ -12,7 +12,7 @@ import type {
   HorarioSerializado,
   ServicoSerializado,
 } from "@barchop/types";
-import { juntarAreas, normalizarAparencia } from "@barchop/formato";
+import { juntarAreas, normalizarAparencia, ordenarCategorias } from "@barchop/formato";
 import { dateParaData, dateParaHora } from "./horas";
 import { regrasDe } from "./regras";
 
@@ -53,6 +53,7 @@ export function serializarBarbearia(barbearia: {
   capaChave: string | null;
   // JSON da coluna; quem lê normaliza (pode vir de um formato antigo).
   aparencia: unknown;
+  ordemCategorias: string[];
 } & Parameters<typeof regrasDe>[0],
 // A URL pública de uma chave do armazenamento (app.armazenamento.urlPublica).
 urlDaImagem: (chave: string) => string
@@ -77,6 +78,8 @@ urlDaImagem: (chave: string) => string
     capaUrl: barbearia.capaChave ? urlDaImagem(barbearia.capaChave) : null,
     // Sempre inteira: sem nada publicado, o padrão (o tema BarChop).
     aparencia: normalizarAparencia(barbearia.aparencia),
+    // Inteira: vazia no banco = a ordem padrão.
+    ordemCategorias: ordenarCategorias(barbearia.ordemCategorias),
     // As regras de agendamento (painel v2, marco 3): a página pública
     // também lê — a tela do cliente mostra os prazos.
     ...regrasDe(barbearia),

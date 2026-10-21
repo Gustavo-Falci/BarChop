@@ -254,6 +254,7 @@ const PERFIL_PADRAO: PerfilPublicoBarbearia = {
   formasDePagamento: [],
   capaUrl: null,
   aparencia: APARENCIA_PADRAO,
+  ordemCategorias: [...CATEGORIAS_DE_SERVICO],
   // As regras de agendamento nos padrões; salvar grava no perfil, como
   // a API (o dublê não aplica as regras: calcular a agenda é da API).
   ...REGRAS_PADRAO,

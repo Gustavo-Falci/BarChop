@@ -50,3 +50,14 @@ export const CATEGORIAS_DE_SERVICO = [
 ] as const;
 
 export type CategoriaDeServico = (typeof CATEGORIAS_DE_SERVICO)[number];
+
+// As categorias na ordem que o dono arrastou (`barbearia.ordem_categorias`),
+// sempre a lista inteira: as salvas primeiro, as que faltam no fim, na
+// ordem padrão. Vazio = a ordem padrão. Valor fora da lista ou repetido
+// some — o banco e a rota já barram, mas a lista vai direto pra tela.
+export function ordenarCategorias(salvas: readonly string[]): CategoriaDeServico[] {
+  const conhecidas = salvas.filter((valor): valor is CategoriaDeServico =>
+    (CATEGORIAS_DE_SERVICO as readonly string[]).includes(valor)
+  );
+  return [...new Set([...conhecidas, ...CATEGORIAS_DE_SERVICO])];
+}

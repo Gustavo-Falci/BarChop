@@ -65,6 +65,7 @@ import type {
   NovoBloqueio,
   NovoMembro,
   EdicaoDoAgendamento,
+  RemarcacaoDoPainel,
   EdicaoDoCliente,
   EdicaoDoPerfil,
   EdicaoDoServico,
@@ -1644,6 +1645,45 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           `Olá, ${cliente.nome.split(" ")[0]}! Passando pra lembrar do seu horário na ` +
           `${estado.perfil.nome}, às ${achado.horaInicio}, com ${achado.barbeiro.nome}.`;
         return `https://wa.me/55${cliente.telefone.replace(/\D/g, "")}?text=${encodeURIComponent(texto)}`;
+      },
+      // As recusas do remarcar da API (routers/agendamentos.ts): o do
+      // colega some pro profissional (404), e ele não passa o próprio pra
+      // outro (403); pago, 409; só pendente e confirmado mudam. O antigo
+      // cancela antes de criar o novo, e volta se o novo não couber.
+      async remarcarAgendamento(id: string, remarcacao: RemarcacaoDoPainel) {
+        const eu = perfilDoLogado().id;
+        const antigo = estado.agendamentos.find((a) => a.id === id);
+        if (!antigo || (estado.papel === "profissional" && antigo.barbeiro.id !== eu)) {
+          throw new ErroDaApi(404, "nao_encontrado", "agendamento não encontrado");
+        }
+        const destino = remarcacao.barbeiroId ?? antigo.barbeiro.id;
+        if (estado.papel === "profissional" && destino !== eu) {
+          throw new ErroDaApi(403, "sem_permissao", "você só remarca na sua própria agenda");
+        }
+        if (estado.pagamentos!.some((p) => p.agendamentoId === id)) {
+          throw new ErroDaApi(409, "com_pagamento", "esse atendimento já tem pagamento no caixa");
+        }
+        if (antigo.status !== "pendente" && antigo.status !== "confirmado") {
+          throw new ErroDaApi(422, "status_nao_permite", `agendamento ${antigo.status} não pode ser alterado`);
+        }
+        const statusAntigo = antigo.status;
+        antigo.status = "cancelado";
+        try {
+          return comCliente(
+            novoAgendamento({
+              data: remarcacao.data,
+              horaInicio: remarcacao.horaInicio,
+              servicoIds: antigo.servicos.map((s) => s.servicoId),
+              origem: "barbeiro",
+              observacoes: antigo.observacoes ?? undefined,
+              clienteId: (antigo as { clienteId?: string }).clienteId,
+              barbeiroId: destino,
+            })
+          );
+        } catch (erro) {
+          antigo.status = statusAntigo;
+          throw erro;
+        }
       },
       async atualizarAgendamento(id: string, edicao: EdicaoDoAgendamento) {
         const indice = estado.agendamentos.findIndex((a) => a.id === id);

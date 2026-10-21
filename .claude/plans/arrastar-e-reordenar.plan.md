@@ -71,6 +71,7 @@ Hoje nada se reordena: serviços saem por nome (`apps/api/src/routers/servicos.t
 - `DetalheDoAgendamento`: troca a nota "cancele e crie outro" por **Mudar horário** → janela com dia + horários livres (reusa `Calendario`/`ListaDeHorarios` e a disponibilidade do `NovoAgendamento`) + profissional (quem pode trocar).
 - É o caminho acessível e o do celular pro PR 7.
 - **Testes**: escolhe dia e horário e chama remarcar; erro 409 mostra a mensagem; profissional não vê troca de profissional.
+- **Feito (21/10), desvios:** `JanelaDeRemarcar` (dialog nativo, `depoisDaSaida`) com `Calendario` + `ListaDeHorarios` e a disponibilidade com token (grade livre do painel). Profissional só aparece pra dono/recepção com 2+ que atendem. "Avisar o cliente por e-mail" marcado, só quando o cliente tem e-mail (sem, a janela diz pra avisar pelo telefone). Deu certo, `router.replace` pro agendamento novo (outro id). Agendamento que já passou não mostra o botão. Limite: a disponibilidade não sabe que o próprio sai, então o horário dele e os que o sobrepõem não aparecem — mover 15 min fica pro arrasto (PR 7).
 
 ### PR 7 — Web: arrastar na agenda
 - `GradeDeTempo`: cada agendamento futuro e alterável é arrastável (`useDraggable`); cada célula de 15min é alvo (`useDroppable`). Vertical = horário (encaixa de 15 em 15); horizontal = dia (semana) ou profissional (dia, só quem pode trocar).

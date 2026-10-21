@@ -130,6 +130,17 @@ export interface EdicaoDoAgendamento {
   observacoes?: string | null;
 }
 
+// O remarcar do painel (POST /agendamentos/:id/remarcar). Serviços e
+// cliente vêm do agendamento. `barbeiroId` troca de profissional (o
+// profissional só no próprio); `avisarCliente` manda o e-mail "seu
+// horário mudou" — a API assume `true` sem ele.
+export interface RemarcacaoDoPainel {
+  data: string;
+  horaInicio: string;
+  barbeiroId?: string;
+  avisarCliente?: boolean;
+}
+
 export interface ClienteComHistorico extends ClienteSerializado {
   agendamentos: AgendamentoSerializado[];
   // De quem o cliente é no caixa; null = de ninguém ainda.
@@ -703,6 +714,16 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao("/agendamentos", {
         metodo: "POST",
         corpo: novo,
+        comToken: true,
+      });
+    },
+
+    // Devolve o agendamento NOVO: remarcar cancela o antigo e cria outro,
+    // com outro id.
+    remarcarAgendamento(id: string, remarcacao: RemarcacaoDoPainel): Promise<AgendamentoComCliente> {
+      return requisicao(`/agendamentos/${id}/remarcar`, {
+        metodo: "POST",
+        corpo: remarcacao,
         comToken: true,
       });
     },

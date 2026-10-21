@@ -30,6 +30,7 @@ export type {
   CredenciaisDoBarbeiro,
   EdicaoDaBarbearia,
   EdicaoDoAgendamento,
+  RemarcacaoDoPainel,
   EdicaoDoCliente,
   EdicaoDoPerfil,
   EdicaoDoServico,

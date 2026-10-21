@@ -1,0 +1,78 @@
+/* Mesma moldura das outras janelas do painel, mais larga: calendário e
+   horários lado a lado no desktop. */
+.janela {
+  width: min(760px, calc(100vw - 2 * var(--espaco-md)));
+  max-height: calc(100dvh - 2 * var(--espaco-md));
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  box-shadow: var(--sombra-1);
+}
+
+.janela::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.apoio {
+  margin: var(--espaco-xs) 0 var(--espaco-md);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.campo {
+  display: grid;
+  gap: var(--espaco-xs);
+  max-width: 280px;
+  margin-bottom: var(--espaco-md);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.campo select {
+  min-height: 40px;
+  padding: var(--espaco-xs) var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 400;
+}
+
+.escolha {
+  display: grid;
+  gap: var(--espaco-lg);
+}
+
+@media (min-width: 720px) {
+  .escolha {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.horarios {
+  min-width: 0;
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin-top: var(--espaco-md);
+  font-size: var(--texto-sm);
+}
+
+.rodape {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaco-sm);
+  margin-top: var(--espaco-md);
+}

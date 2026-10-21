@@ -167,13 +167,14 @@ describe("detalhe do agendamento", () => {
     );
   });
 
-  it("diz que remarcar é cancelar e criar, sem oferecer botão que a API recusaria", async () => {
-    // PATCH /agendamentos/:id aceita só status e observacoes; remarcar
-    // existe apenas no escopo do cliente.
+  it("não manda mais cancelar e criar outro: o painel remarca (mudar-horario.test.tsx)", async () => {
+    // Arrastar e reordenar, PR 6: com o POST /agendamentos/:id/remarcar,
+    // a nota de "cancele e crie outro" deu lugar ao "Mudar horário". Este
+    // agendamento já passou, então nem o botão aparece.
     montarPainel(<DetalheDoAgendamento />, semear());
 
-    expect(await screen.findByText(/para mudar o horário, cancele e crie outro/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /remarcar/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: /João Silva/ })).toBeInTheDocument();
+    expect(screen.queryByText(/cancele e crie outro/i)).not.toBeInTheDocument();
   });
 
   it("agendamento inexistente vira aviso, não tela em branco", async () => {

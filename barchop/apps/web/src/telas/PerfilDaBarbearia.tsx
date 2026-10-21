@@ -225,7 +225,8 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                   categoria por vez — com uma categoria só, não há o que
                   trocar, e fica a lista. */}
               {(() => {
-                const grupos = agruparPorCategoria(servicos.dados);
+                // Na ordem de categorias que o dono arrastou no painel.
+                const grupos = agruparPorCategoria(servicos.dados, dados?.ordemCategorias);
                 const emAbas =
                   normalizarAparencia(dados?.aparencia).layoutDosServicos === "abas" &&
                   grupos.length > 1 &&

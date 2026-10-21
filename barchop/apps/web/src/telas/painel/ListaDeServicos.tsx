@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { CATEGORIAS_DE_SERVICO, type CategoriaDeServico } from "@barchop/formato";
 import type { ServicoSerializado } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
@@ -17,6 +18,7 @@ import { agruparPorCategoria, resumoDoGrupo } from "../../painel/listas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./ListaDeServicos.module.css";
+import { OrdemDosServicos } from "./MudarOrdem";
 import { Carregando } from "../../componentes/Carregando";
 
 // "No agendamento" é o ativo: o que o cliente consegue marcar no link e
@@ -71,9 +73,17 @@ export function ListaDeServicos() {
   const ehDono = usePainel().perfil.papel === "dono";
   // Inclui os inativos: é desta tela que o barbeiro reativa o que
   // desativou, e um inativo que sumisse seria irrecuperável. A API já
-  // devolve ordenado por `[ativo desc, nome asc]`, então os desativados
+  // devolve ordenado por `[ativo desc, ordem]`, então os desativados
   // afundam sozinhos dentro de cada categoria — a tela não reordena.
   const servicos = useRequisicao(() => api.barbeiro.servicos(), []);
+  // Pela ordem das categorias que o dono arrastou: os grupos da tabela
+  // seguem a página.
+  const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
+  // "Mudar ordem" (arrastar e reordenar, PR 4). O que os PUTs devolvem
+  // passa a valer sem reler: a lista nova e a ordem das categorias.
+  const [ordenando, setOrdenando] = useState(false);
+  const [servicosSalvos, setServicosSalvos] = useState<ServicoSerializado[] | null>(null);
+  const [categoriasSalvas, setCategoriasSalvas] = useState<string[] | null>(null);
   // Filtro e busca são locais: a lista inteira já está na tela, e uma
   // ida à API por tecla seria custo sem dado novo.
   const [filtro, setFiltro] = useState<Filtro>("todos");
@@ -88,8 +98,11 @@ export function ListaDeServicos() {
   // serviços lia "Nenhum serviço cadastrado ainda" e um botão de
   // cadastrar o primeiro, toda vez que abria a tela. Mesma guarda de
   // ListaDeClientes.
-  const carregando = !servicos.dados;
-  const todos = servicos.dados ?? [];
+  // Espera também a barbearia (ou o erro dela, que deixa a ordem
+  // padrão): sem isso os grupos trocariam de lugar logo depois de pintar.
+  const carregando = !servicos.dados || (!barbearia.dados && !barbearia.erro);
+  const todos = servicosSalvos ?? servicos.dados ?? [];
+  const ordemCategorias = categoriasSalvas ?? barbearia.dados?.ordemCategorias ?? CATEGORIAS_DE_SERVICO;
   const ativos = todos.filter(NO_FILTRO.ativos).length;
 
   const procurado = semAcento(busca.trim());
@@ -103,6 +116,14 @@ export function ListaDeServicos() {
   function verTodos() {
     setFiltro("todos");
     setBusca("");
+  }
+
+  async function salvarServicos(ids: string[]) {
+    setServicosSalvos(await api.barbeiro.salvarOrdemDosServicos(ids));
+  }
+
+  async function salvarCategorias(categorias: CategoriaDeServico[]) {
+    setCategoriasSalvas((await api.barbeiro.salvarOrdemDasCategorias(categorias)).ordemCategorias);
   }
 
   return (
@@ -121,10 +142,19 @@ export function ListaDeServicos() {
           // recolhida — só ícones, sem rótulo — o título da página era
           // a única pista, e ela fica do outro lado da tela. Mesmo
           // conserto que ListaDeClientes já tinha.
+          // "Mudar ordem" só com serviço no agendamento: é a ordem da
+          // página, e sem nenhum ativo não há o que ordenar.
           ehDono ? (
-            <Botao onClick={() => router.push("/painel/servicos/novo")}>
-              + Novo serviço
-            </Botao>
+            <div className={estilos.acoes}>
+              {!ordenando && todos.some((servico) => servico.ativo) ? (
+                <Botao variante="contorno" onClick={() => setOrdenando(true)}>
+                  Mudar ordem
+                </Botao>
+              ) : null}
+              <Botao onClick={() => router.push("/painel/servicos/novo")}>
+                + Novo serviço
+              </Botao>
+            </div>
           ) : undefined
         }
       />
@@ -133,6 +163,14 @@ export function ListaDeServicos() {
           piscando a cada carga é movimento que não informa nada. */}
       {carregando ? (
         <Carregando />
+      ) : ordenando ? (
+        <OrdemDosServicos
+          servicos={todos}
+          ordemCategorias={ordemCategorias}
+          aoSalvarServicos={salvarServicos}
+          aoSalvarCategorias={salvarCategorias}
+          aoTerminar={() => setOrdenando(false)}
+        />
       ) : (
         <>
           {filtrando ? (
@@ -193,7 +231,7 @@ export function ListaDeServicos() {
             aoAbrir={ehDono ? (id) => router.push(`/painel/servicos/${id}`) : undefined}
             // Agrupado do mesmo jeito que o cliente vê na página
             // pública. O resumo fala do que está à vista no grupo.
-            grupos={agruparPorCategoria(listados).map((grupo) => ({
+            grupos={agruparPorCategoria(listados, ordemCategorias).map((grupo) => ({
               id: grupo.id,
               titulo: grupo.titulo,
               resumo: resumoDoGrupo(grupo.servicos),

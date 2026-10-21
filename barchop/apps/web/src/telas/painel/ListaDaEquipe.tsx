@@ -13,6 +13,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { situacaoDoMembro, type SituacaoDoMembro } from "../../painel/listas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./ListaDaEquipe.module.css";
+import { OrdemDaEquipe } from "./MudarOrdem";
 import { Carregando } from "../../componentes/Carregando";
 
 export const ROTULO_DO_PAPEL: Record<PapelMembro, string> = {
@@ -69,22 +70,31 @@ function IconeAbrir() {
 export function ListaDaEquipe() {
   const router = useRouter();
   const api = useApiDoPainel();
-  // A API já devolve ativos antes, na ordem de entrada na equipe — a
-  // tela não reordena.
+  // A API já devolve ativos antes, na ordem da página (a que o dono
+  // arrasta em "Mudar ordem") — a tela não reordena.
   const equipe = useRequisicao(() => api.barbeiro.equipe(), []);
   // Filtro local: a equipe inteira já vem numa resposta só.
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  // "Mudar ordem" (arrastar e reordenar, PR 4). A tela inteira é só do
+  // dono (SoDoDono na página), então o botão não pergunta o papel. O que
+  // o PUT devolve passa a valer sem reler.
+  const [ordenando, setOrdenando] = useState(false);
+  const [equipeSalva, setEquipeSalva] = useState<MembroDaEquipe[] | null>(null);
 
   if (equipe.erro) {
     return <Aviso>{equipe.erro.mensagem || "Não foi possível carregar a equipe agora."}</Aviso>;
   }
 
   const convidar = () => router.push("/painel/equipe/novo");
-  const todos = equipe.dados ?? [];
+  const todos = equipeSalva ?? equipe.dados ?? [];
   const contar = (qual: Filtro) => todos.filter(NO_FILTRO[qual]).length;
   const atendem = contar("atendem");
   const listados = todos.filter(NO_FILTRO[filtro]);
-  const comTelefone = (equipe.dados ?? []).some((membro) => membro.telefone);
+  const comTelefone = todos.some((membro) => membro.telefone);
+
+  async function salvarOrdem(ids: string[]) {
+    setEquipeSalva(await api.barbeiro.salvarOrdemDaEquipe(ids));
+  }
 
   return (
     <div className={estilos.pagina}>
@@ -97,13 +107,30 @@ export function ListaDaEquipe() {
             ? `${todos.length} ${todos.length === 1 ? "pessoa" : "pessoas"} · ${atendem} ${atendem === 1 ? "atende" : "atendem"}`
             : "Quem trabalha na barbearia e o que cada um pode fazer no painel."
         }
-        acao={<Botao onClick={convidar}>+ Convidar membro</Botao>}
+        acao={
+          <div className={estilos.acoes}>
+            {/* Só com alguém na página: é a ordem dela que muda. */}
+            {!ordenando && todos.some((membro) => membro.ativo && membro.atende) ? (
+              <Botao variante="contorno" onClick={() => setOrdenando(true)}>
+                Mudar ordem
+              </Botao>
+            ) : null}
+            <Botao onClick={convidar}>+ Convidar membro</Botao>
+          </div>
+        }
       />
 
       {/* Mesma guarda de ListaDeServicos: sem ela a tabela pintaria o
           estado vazio no primeiro paint. */}
       {!equipe.dados ? (
         <Carregando />
+      ) : ordenando ? (
+        <OrdemDaEquipe
+          equipe={todos}
+          rotuloDoPapel={(membro) => ROTULO_DO_PAPEL[membro.papel]}
+          aoSalvar={salvarOrdem}
+          aoTerminar={() => setOrdenando(false)}
+        />
       ) : (
         <>
           <PilulasDeFiltro

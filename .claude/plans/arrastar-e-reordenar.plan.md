@@ -57,6 +57,7 @@ Hoje nada se reordena: serviços saem por nome (`apps/api/src/routers/servicos.t
 - Só dono vê a alça (`SoDoDono`).
 - Prévia da página (`PreviaDaPagina`) reflete a ordem nova.
 - **Testes**: telas mostram alça só pro dono; reordenar chama a API certa.
+- **Feito (21/10), desvios:** a alça não entra na `Tabela`: botão **Mudar ordem** (só dono) troca a tabela pelas listas de arrastar (`MudarOrdem.tsx`) e **Pronto** volta. Motivo: a tabela tem filtro e busca, e a API pede a lista inteira. Só entra quem aparece na página (serviço ativo; membro ativo e que atende); o resto vai pro fim da ordem. Categorias arrastam numa coluna à parte (só com 2+ categorias com serviço); "Sem categoria" fica sempre no fim. `PreviaDaPagina` é um iframe da página real, então segue sozinha. A página pública e o passo de serviços agrupam por `ordemCategorias` (o passo busca o perfil em paralelo). `ListaReordenavel` passou a comparar os itens pelos ids, não pelo array.
 
 ### PR 5 — API: remarcar pelo painel
 - `POST /agendamentos/:id/remarcar` (escopo do barbeiro) `{ data, horaInicio, barbeiroId? }`. Mesmo esqueleto do `clientes-me.ts:180`: `garantirFuturo`, transação, `garantirAlteravel`, `updateMany` com status no WHERE, `criarAgendamento` (checa disponibilidade e conflito; `origem: "barbeiro"`), herda serviços, cliente e e-mail do lembrete.

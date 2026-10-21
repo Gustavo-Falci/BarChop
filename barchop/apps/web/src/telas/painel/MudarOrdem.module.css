@@ -1,0 +1,95 @@
+.ordem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-lg);
+}
+
+/* A explicação e a saída numa franja só, no lugar dos filtros. */
+.faixa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+}
+
+.dica {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.dica strong {
+  color: var(--cor-ink);
+}
+
+/* No desktop, lado a lado: as categorias numa coluna estreita e os
+   grupos de serviço repartindo o resto, quantos couberem por linha. No
+   celular, tudo numa coluna. */
+.servicos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-xl);
+  align-items: start;
+}
+
+.grupos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--espaco-xl) var(--espaco-lg);
+  align-items: start;
+}
+
+@media (min-width: 1000px) {
+  .servicos {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+  }
+}
+
+.coluna {
+  display: grid;
+  gap: var(--espaco-sm);
+  min-width: 0;
+}
+
+/* A equipe é uma lista só: larga demais, o nome fica longe da alça. */
+.equipe {
+  max-width: 480px;
+}
+
+.titulo {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Linhas separadas por um fio, sem caixa em volta. */
+.linha {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+  padding: var(--espaco-xs) 0;
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--cor-ink);
+  font-size: var(--texto-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.apoio {
+  flex-shrink: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-variant-numeric: tabular-nums;
+}

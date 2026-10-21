@@ -34,6 +34,10 @@ export function EscolhaDeServicos({ agora = new Date() }: { agora?: Date }) {
   // Os próximos horários de cada serviço, em paralelo com a lista. Se
   // falhar, os cartões ficam sem eles: são atalho, não conteúdo.
   const proximos = useRequisicao(() => api.publico.proximosHorarios(slug), [slug]);
+  // Só pela ordem das categorias que o dono arrastou no painel: as seções
+  // seguem a da página. Em paralelo com as outras; se falhar, fica a
+  // ordem padrão.
+  const perfil = useRequisicao(() => api.publico.perfilDaBarbearia(slug), [slug]);
 
   // Começa do que veio na URL: voltar do passo seguinte não pode perder
   // a escolha.
@@ -73,7 +77,9 @@ export function EscolhaDeServicos({ agora = new Date() }: { agora?: Date }) {
     }));
   }
 
-  if (carregando) {
+  // Espera o perfil também (ou o erro dele): sem isso as seções trocariam
+  // de lugar logo depois de pintar.
+  if (carregando || perfil.carregando) {
     return (
       <main className={estilos.pagina} aria-busy="true">
         <h1 className={estilos.titulo}>Escolha os serviços</h1>
@@ -125,7 +131,7 @@ export function EscolhaDeServicos({ agora = new Date() }: { agora?: Date }) {
       </header>
 
       <div className={estilos.grupos}>
-        {agruparPorCategoria(servicos).map((grupo) => {
+        {agruparPorCategoria(servicos, perfil.dados?.ordemCategorias).map((grupo) => {
           const lista = (
             <ul className={estilos.lista}>
               {grupo.servicos.map((servico) => (

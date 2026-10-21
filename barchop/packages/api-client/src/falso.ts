@@ -10,6 +10,7 @@ import {
   dividirPagamento,
   juntarAreas,
   normalizarAparencia,
+  ordenarCategorias,
   slugReservado,
   temRecurso,
   type AreaDeConfiguracao,
@@ -428,6 +429,16 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     if (estado.papel !== "dono") {
       throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite isto");
     }
+  }
+
+  // A recusa do PUT das ordens (apps/api/src/lib/ordem.ts): a lista tem
+  // de ser exatamente a da barbearia, nem um a mais nem um a menos.
+  function naOrdem<T extends { id: string }>(itens: T[], ids: string[], oQue: string): T[] {
+    const porId = new Map(itens.map((item) => [item.id, item]));
+    if (ids.length !== itens.length || new Set(ids).size !== ids.length || ids.some((id) => !porId.has(id))) {
+      throw new ErroDaApi(400, "requisicao_invalida", `a lista precisa ter todos os ${oQue} da barbearia`);
+    }
+    return ids.map((id) => porId.get(id)!);
   }
 
   // A pausa do dia com as recusas do PUT da API (routers/equipe.ts).
@@ -1087,6 +1098,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       async equipe() {
         return equipe().map((m) => ({ ...m }));
       },
+      async salvarOrdemDaEquipe(ids: string[]) {
+        exigirDono();
+        estado.equipe = naOrdem(equipe(), ids, "membros");
+        return equipe().map((m) => ({ ...m }));
+      },
       async jornada(id: string) {
         membroOu404(id);
         return jornadaDe(id).map((dia) => ({ ...dia }));
@@ -1329,6 +1345,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       async servicos() {
         return estado.servicos;
       },
+      async salvarOrdemDosServicos(ids: string[]) {
+        exigirDono();
+        estado.servicos = naOrdem(estado.servicos, ids, "serviços");
+        return estado.servicos;
+      },
       async criarServico(novo: NovoServico) {
         const servico = {
           id: `s${estado.servicos.length + 1}`,
@@ -1551,6 +1572,14 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         estado.perfil = { ...estado.perfil, aparencia: estado.aparenciaRascunho };
         estado.aparenciaRascunho = null;
         decidir(["aparencia"]);
+        return barbeariaDoPainel();
+      },
+      async salvarOrdemDasCategorias(categorias: CategoriaDeServico[]) {
+        exigirDono();
+        if (categorias.some((categoria) => !(CATEGORIAS_DE_SERVICO as readonly string[]).includes(categoria))) {
+          throw new ErroDaApi(400, "requisicao_invalida", "categoria fora da lista");
+        }
+        estado.perfil = { ...estado.perfil, ordemCategorias: ordenarCategorias(categorias) };
         return barbeariaDoPainel();
       },
       async salvarLayoutDosServicos(layoutDosServicos: AparenciaDaPagina["layoutDosServicos"]) {

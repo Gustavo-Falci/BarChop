@@ -13,7 +13,12 @@ export function IndicadorDePasso({ atual }: { atual: 1 | 2 | 3 | 4 }) {
       </span>
       <span className={estilos.segmentos} aria-hidden="true">
         {Array.from({ length: TOTAL }, (_, indice) => (
-          <span key={indice} className={estilos.segmento} data-feito={indice < atual || undefined} />
+          <span
+            key={indice}
+            className={estilos.segmento}
+            data-feito={indice < atual || undefined}
+            data-atual={indice === atual - 1 || undefined}
+          />
         ))}
       </span>
     </div>

@@ -15,6 +15,8 @@ import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
 import estilos from "./EscolhaDeServicos.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
+import { m } from "motion/react";
+import { useDeslizeDoPasso } from "../movimento/passo";
 
 function contagem(quantos: number): string {
   return `${quantos} ${quantos === 1 ? "serviço" : "serviços"}`;
@@ -24,6 +26,7 @@ function contagem(quantos: number): string {
 // teste fixar "hoje" e "amanhã" dos próximos horários.
 export function EscolhaDeServicos({ agora = new Date() }: { agora?: Date }) {
   const { slug, servicoIds, remarcar, profissional } = usePassoDoFluxo("servicos");
+  const deslize = useDeslizeDoPasso("servicos");
   const router = useRouter();
   const noHost = useNoHost();
   const api = useApi();
@@ -123,14 +126,17 @@ export function EscolhaDeServicos({ agora = new Date() }: { agora?: Date }) {
       }`}
     >
       <IndicadorDePasso atual={1} />
-      <header className={estilos.cabecalho}>
+      {/* Desliza o cabeçalho e a lista, e não o <main>: a barra da
+          escolha fica `position: fixed` no celular, e um transform no
+          <main> a tiraria do rodapé durante a entrada. */}
+      <m.header className={estilos.cabecalho} {...deslize}>
         <h1 className={estilos.titulo}>Escolha os serviços</h1>
         <p className={estilos.apoio}>
           Marque um ou mais. O profissional e o horário vêm depois.
         </p>
-      </header>
+      </m.header>
 
-      <div className={estilos.grupos}>
+      <m.div className={estilos.grupos} {...deslize}>
         {agruparPorCategoria(servicos, perfil.dados?.ordemCategorias).map((grupo) => {
           const lista = (
             <ul className={estilos.lista}>
@@ -159,7 +165,7 @@ export function EscolhaDeServicos({ agora = new Date() }: { agora?: Date }) {
             </section>
           );
         })}
-      </div>
+      </m.div>
 
       {/* Um elemento só pras duas telas: no desktop é a coluna da direita,
           acompanhando a rolagem; no celular vira a barra presa no rodapé,

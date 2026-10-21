@@ -31,6 +31,10 @@ import estilos from "./Confirmacao.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { Carregando } from "../componentes/Carregando";
 import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
+import { m } from "motion/react";
+import { useDeslizeDoPasso } from "../movimento/passo";
+import { MarcaDeConfirmado } from "../componentes/MarcaDeConfirmado";
+import { DESLIZE, DURACAO } from "../movimento/tokens";
 
 // O último passo, e também onde a pessoa diz quem é. Eram duas telas —
 // "Quem é você?" com dois botões, depois o resumo — e a pergunta
@@ -56,6 +60,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     "confirmar",
     agora ?? new Date()
   );
+  const deslize = useDeslizeDoPasso("confirmar");
   const router = useRouter();
   const noHost = useNoHost();
   const api = useApi();
@@ -256,7 +261,14 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     // ir.
     return (
       <main className={estilos.pagina}>
-        <h1>Agendamento confirmado</h1>
+        <MarcaDeConfirmado />
+        {/* O texto entra logo depois do ✓ começar (motion PR 5). */}
+        <m.h1
+          initial={{ opacity: 0, y: DESLIZE.curto }}
+          animate={{ opacity: 1, y: 0, transition: { duration: DURACAO.curta, delay: DURACAO.instante } }}
+        >
+          Agendamento confirmado
+        </m.h1>
         <div className={estilos.linha}>
           <span>Quando</span>
           <b>
@@ -302,7 +314,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
   }
 
   return (
-    <main className={`${estilos.pagina} ${estilos.duasColunas}`}>
+    <m.main className={`${estilos.pagina} ${estilos.duasColunas}`} {...deslize}>
       <IndicadorDePasso atual={4} />
       <h1 className={estilos.titulo}>Confirmar</h1>
 
@@ -447,6 +459,6 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
           </p>
         ) : null}
       </form>
-    </main>
+    </m.main>
   );
 }

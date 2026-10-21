@@ -145,6 +145,17 @@
   color: var(--cor-on-accent);
 }
 
+/* O check cresce de .8 ao marcar (motion PR 5): o quadrado acende e o
+   ✓ chega nele, em vez de só trocar de cor. */
+.marca svg {
+  scale: 0.8;
+  transition: scale var(--duracao-curta) var(--curva-entrada);
+}
+
+.marcado .marca svg {
+  scale: 1;
+}
+
 /* Os atalhos de horário, no rodapé do cartão. */
 .proximos {
   display: flex;

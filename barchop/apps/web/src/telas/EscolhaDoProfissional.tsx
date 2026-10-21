@@ -12,12 +12,15 @@ import estilos from "./EscolhaDoProfissional.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { Carregando } from "../componentes/Carregando";
 import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
+import { m } from "motion/react";
+import { useDeslizeDoPasso } from "../movimento/passo";
 
 // O passo entre os serviços e o dia: com quem, ou "qualquer um". Só
 // aparece quem faz todos os serviços escolhidos. Com uma pessoa só não
 // há o que escolher, e o passo some — segue direto pro dia.
 export function EscolhaDoProfissional() {
   const { slug, servicoIds, remarcar, pronto } = usePassoDoFluxo("profissional");
+  const deslize = useDeslizeDoPasso("profissional");
   const router = useRouter();
   const noHost = useNoHost();
   const api = useApi();
@@ -67,7 +70,7 @@ export function EscolhaDoProfissional() {
   }
 
   return (
-    <main className={estilos.pagina}>
+    <m.main className={estilos.pagina} {...deslize}>
       <IndicadorDePasso atual={2} />
       <h1>Com quem?</h1>
       <ul className={estilos.lista}>
@@ -87,6 +90,6 @@ export function EscolhaDoProfissional() {
           </li>
         ))}
       </ul>
-    </main>
+    </m.main>
   );
 }

@@ -24,6 +24,8 @@ import estilos from "./EscolhaDaData.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { Carregando } from "../componentes/Carregando";
 import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
+import { m } from "motion/react";
+import { useDeslizeDoPasso } from "../movimento/passo";
 
 const DIAS_NA_FAIXA = 14;
 
@@ -44,6 +46,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     "data",
     agora
   );
+  const deslize = useDeslizeDoPasso("data");
   const router = useRouter();
   const noHost = useNoHost();
   const api = useApi();
@@ -206,7 +209,7 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     : undefined;
 
   return (
-    <main className={`${estilos.pagina} ${estilos.duasColunas}`}>
+    <m.main className={`${estilos.pagina} ${estilos.duasColunas}`} {...deslize}>
       <IndicadorDePasso atual={3} />
       <h1 className={estilos.titulo}>Escolha o dia e o horário</h1>
 
@@ -317,6 +320,6 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
           </div>
         )}
       </div>
-    </main>
+    </m.main>
   );
 }

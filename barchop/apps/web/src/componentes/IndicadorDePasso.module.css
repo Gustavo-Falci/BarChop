@@ -21,11 +21,26 @@
 }
 
 .segmento {
+  position: relative;
+  overflow: hidden;
   height: 4px;
   border-radius: var(--raio-pill);
   background: var(--cor-line);
 }
 
-.segmento[data-feito] {
+/* O preenchimento é uma camada à parte, pra o do passo atual poder
+   crescer da esquerda quando a tela chega (motion PR 5). */
+.segmento[data-feito]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: var(--cor-accent);
+  transform-origin: left;
+  transition: scale var(--duracao-longa) var(--curva-entrada);
+}
+
+@starting-style {
+  .segmento[data-atual]::after {
+    scale: 0 1;
+  }
 }

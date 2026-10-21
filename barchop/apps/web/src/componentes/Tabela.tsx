@@ -1,4 +1,8 @@
+"use client";
+
+import { m } from "motion/react";
 import type { ReactNode } from "react";
+import { entradaDoItem, usePrimeiraCarga } from "../movimento/lista";
 import { Vazio } from "./Vazio";
 import estilos from "./Tabela.module.css";
 
@@ -66,6 +70,10 @@ export function Tabela({
     alinhamentos?.[indice] === "fim" ? estilos.fim : undefined;
 
   // Sem grupos, a lista inteira é um bloco só, sem título.
+  // A primeira carga entra escalonada (os seis primeiros, motion PR 4).
+  // Depois, a linha que aparece num filtro não anima, e nenhuma usa
+  // `layout`: com cem clientes, medir cada linha a cada mudança pesaria.
+  const primeiraCarga = usePrimeiraCarga();
   const blocos: (Partial<Grupo> & { linhas: Linha[] })[] = grupos
     ? grupos.filter((grupo) => grupo.linhas.length > 0)
     : [{ linhas: linhas ?? [] }];
@@ -74,13 +82,18 @@ export function Tabela({
     return <Vazio mensagem={vazio} dica={dicaVazio} acao={acaoVazio} />;
   }
 
+  // O índice corre pela tabela inteira, atravessando os grupos: o
+  // escalonamento é de cima pra baixo, não recomeça a cada categoria.
+  let indiceDaLinha = 0;
   function desenharLinha(linha: Linha) {
+    const indice = indiceDaLinha++;
     return (
       // A linha inteira abre, porque é a linha inteira que o CSS
       // acende no hover — realçar sete colunas e aceitar clique em
       // uma só é prometer um alvo que não existe.
-      <tr
+      <m.tr
         key={linha.id}
+        {...entradaDoItem(indice, { primeiraCarga })}
         className={
           [aoAbrir ? estilos.clicavel : "", linha.atenuada ? estilos.atenuada : ""]
             .filter(Boolean)
@@ -112,7 +125,7 @@ export function Tabela({
             )}
           </td>
         ))}
-      </tr>
+      </m.tr>
     );
   }
 

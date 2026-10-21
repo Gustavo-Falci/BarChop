@@ -81,6 +81,11 @@ Hoje o web tem 2 durações, 2 curvas e 6 keyframes soltos; telas trocam de uma 
 - **Acordeões** (`<details>`, 15 no código): conteúdo com `AnimatePresence` + fade/4px (altura sem animar; regra "nunca layout property").
 - **Números** (`Estatistica` no Hoje e no Caixa): valor novo troca com fade + 4px (`AnimatePresence mode="popLayout"` com `key={valor}`). Sem contador rolando.
 - **Testes**: limite de 6 no escalonamento (função pura `atrasoDoItem(i)`); Estatistica mostra o valor novo.
+- **Feito (21/10), desvios:**
+  1. Carregando → conteúdo: sem `AnimatePresence` em cada uma das 27 telas. A entrada escalonada das linhas da `Tabela` (clientes, serviços, equipe e as outras) e das listas do Hoje e de Folgas já faz o conteúdo chegar com fade.
+  2. Escalonamento: `src/movimento/lista.ts` (`atrasoDoItem`, `entradaDoItem`, `usePrimeiraCarga(pronto)`), token `ESCALONAMENTO` (40ms, 6). Tabela: só a primeira carga, sem `layout`. Hoje (próximos) e Folgas: `AnimatePresence` + `layout`, item novo entra e o que sai fecha o buraco.
+  3. Acordeões (5 `<details>`, não 15) por CSS: o conteúdo entra com fade e 4px (`@keyframes secao-abre`). Fechar é do navegador, na hora.
+  4. `Estatistica` só existe no Hoje; o Caixa tem os números dele, ficou de fora.
 
 ### PR 5 — Agendamento público
 - **Direção dos passos**: avançar entra da direita (8px), voltar da esquerda. Função pura `direcaoDoPasso(anterior, atual)` sobre a ordem de `passos.ts`; o `EntradaDaTela` recebe a direção.

@@ -156,3 +156,19 @@ dialog[open]::backdrop {
     opacity: 0;
   }
 }
+
+/* Seção que abre (<details>: perguntas do site, Central de ajuda,
+   Faturas): o conteúdo entra com fade e desce 4px (motion PR 4). Só a
+   abertura — fechar é do navegador, na hora — e só no que vem depois do
+   <summary>. A altura não anima: seria propriedade de layout. Animação,
+   e não transição: o conteúdo fechado não tem estilo de onde partir. */
+details[open] > :not(summary) {
+  animation: secao-abre var(--duracao-curta) var(--curva-entrada);
+}
+
+@keyframes secao-abre {
+  from {
+    opacity: 0;
+    translate: 0 calc(-1 * var(--deslize-curto));
+  }
+}

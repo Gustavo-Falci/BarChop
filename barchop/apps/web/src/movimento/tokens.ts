@@ -38,6 +38,14 @@ export const ESCALA = {
   janela: 0.98,
 } as const;
 
+// A lista que entra um item depois do outro na primeira carga: 40ms de
+// passo, e só os seis primeiros esperam a vez — o resto entra junto com
+// o sexto, senão uma lista de cem levaria quatro segundos pra aparecer.
+export const ESCALONAMENTO = {
+  passo: 0.04,
+  limite: 6,
+} as const;
+
 // Molas por duração visual e `bounce: 0`, e não por rigidez/amortecimento:
 // a duração fica legível ao lado das outras, e nenhuma mola quica — o
 // pedido é sutil. `firme` pra UI (pílula, indicador, ✓), `suave` pra

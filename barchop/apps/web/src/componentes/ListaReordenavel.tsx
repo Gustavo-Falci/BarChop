@@ -65,13 +65,16 @@ export function ListaReordenavel<T extends { id: string }>({
 }) {
   // A ordem da tela enquanto a nova não volta de quem usa a lista. Nula =
   // a de `itens`. Itens novos (salvou, recarregou) descartam a otimista:
-  // eles são a verdade.
+  // eles são a verdade. "Novos" pelos ids, e não pelo array: quem usa a
+  // lista recalcula os grupos a cada render, e um array novo na mesma
+  // ordem antiga faria a tela piscar de volta antes de o salvamento voltar.
   const [ordemOtimista, setOrdemOtimista] = useState<string[] | null>(null);
-  const [itensVistos, setItensVistos] = useState(itens);
+  const chave = itens.map((item) => item.id).join(" ");
+  const [chaveVista, setChaveVista] = useState(chave);
   const [falhou, setFalhou] = useState(false);
   const saiuDoLugar = useRef(false);
-  if (itens !== itensVistos) {
-    setItensVistos(itens);
+  if (chave !== chaveVista) {
+    setChaveVista(chave);
     setOrdemOtimista(null);
   }
 

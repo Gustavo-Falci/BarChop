@@ -223,6 +223,16 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao(`/equipe/${id}`, { metodo: "PATCH", corpo: edicao, comToken: true });
     },
 
+    // A equipe inteira, na ordem da página: faltou ou sobrou alguém, 400.
+    async salvarOrdemDaEquipe(ids: string[]): Promise<MembroDaEquipe[]> {
+      const resposta = await requisicao<{ membros: MembroDaEquipe[] }>("/equipe/ordem", {
+        metodo: "PUT",
+        corpo: { ids },
+        comToken: true,
+      });
+      return resposta.membros;
+    },
+
     // Sem corpo, e é o que mantém a requisição sem Content-Type: com
     // ele e corpo vazio o Fastify responde 400 antes da rota.
     async reenviarConvite(id: string): Promise<void> {
@@ -411,6 +421,17 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return resposta.servicos;
     },
 
+    // Todos os serviços, inativos inclusive, na ordem nova. Mesma regra
+    // da equipe: a lista tem de ser exatamente a da barbearia.
+    async salvarOrdemDosServicos(ids: string[]): Promise<ServicoSerializado[]> {
+      const resposta = await requisicao<{ servicos: ServicoSerializado[] }>("/servicos/ordem", {
+        metodo: "PUT",
+        corpo: { ids },
+        comToken: true,
+      });
+      return resposta.servicos;
+    },
+
     criarServico(novo: NovoServico): Promise<ServicoSerializado> {
       return requisicao("/servicos", {
         metodo: "POST",
@@ -580,6 +601,16 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao("/barbearias/me/aparencia/layout-dos-servicos", {
         metodo: "PUT",
         corpo: { layoutDosServicos },
+        comToken: true,
+      });
+    },
+
+    // A ordem das seções de serviço na página. As que não vierem a API
+    // completa no fim, na ordem padrão.
+    salvarOrdemDasCategorias(categorias: CategoriaDeServico[]): Promise<BarbeariaDoPainel> {
+      return requisicao("/barbearias/me/categorias/ordem", {
+        metodo: "PUT",
+        corpo: { categorias },
         comToken: true,
       });
     },

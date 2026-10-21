@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CODIGO_DO_CONVITE_FALSO, criarApiClientFalso } from "@barchop/api-client";
 
 import PaginaDaEquipe from "../../../app/(painel)/painel/(guardado)/equipe/page";
@@ -14,6 +14,7 @@ import { IndiceDeConfiguracoes } from "../../../src/telas/painel/configuracoes/I
 import { EntrarNoPainel } from "../../../src/telas/painel/EntrarNoPainel";
 import { ListaDaEquipe } from "../../../src/telas/painel/ListaDaEquipe";
 import { ListaDeServicos } from "../../../src/telas/painel/ListaDeServicos";
+import { descerUm, medirLinhas } from "../../ajudantes/arrastar";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
 
@@ -447,5 +448,38 @@ describe("aceitar convite", () => {
 
     expect(screen.getByLabelText(/^senha$/i)).toHaveAccessibleDescription(/8 caracteres/i);
     expect(aceitar).not.toHaveBeenCalled();
+  });
+});
+
+// Arrastar e reordenar, PR 4: a ordem em que a equipe aparece na página.
+describe("mudar a ordem da equipe", () => {
+  let desfazer: () => void;
+  beforeEach(() => {
+    desfazer = medirLinhas();
+  });
+  afterEach(() => desfazer());
+
+  it("lista só quem aparece na página e salva a equipe inteira, o resto no fim", async () => {
+    const falso = comEquipe();
+    const salvar = vi.spyOn(falso.barbeiro, "salvarOrdemDaEquipe");
+    montarPainel(<ListaDaEquipe />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Mudar ordem" }));
+    expect(screen.getByText("É a ordem da sua página.")).toBeInTheDocument();
+    const lista = screen.getByRole("list", { name: "Equipe na sua página" });
+    // Bia saiu da equipe: não aparece na página, não entra na lista.
+    expect(within(lista).queryByText("Bia")).not.toBeInTheDocument();
+    await descerUm(within(lista).getByRole("button", { name: "Arrastar Rafael" }));
+
+    await waitFor(() => expect(salvar).toHaveBeenCalledWith(["m2", "bb1", "m3"]));
+  });
+
+  it("Pronto volta pra tabela", async () => {
+    montarPainel(<ListaDaEquipe />, comEquipe());
+
+    await userEvent.click(await screen.findByRole("button", { name: "Mudar ordem" }));
+    await userEvent.click(screen.getByRole("button", { name: "Pronto" }));
+
+    expect(screen.getByRole("table")).toBeInTheDocument();
   });
 });

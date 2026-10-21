@@ -1,33 +1,15 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ListaReordenavel } from "../../src/componentes/ListaReordenavel";
+import { descerUm, medirLinhas, tecla } from "../ajudantes/arrastar";
 
 // A lista que o dono reordena arrastando (arrastar e reordenar, PR 3).
 // Aqui o caminho do teclado — espaço pega, setas movem, espaço solta,
 // Esc cancela —, que é o mesmo motor do mouse e do toque.
 //
-// O jsdom não mede layout: todo elemento tem 0×0, e o teclado do dnd-kit
-// procura o vizinho pela posição. O dublê dá a cada linha 50px de altura,
-// na ordem em que ela está na lista, e à lista a soma delas — o
-// `restrictToParentElement` não deixa a linha sair da lista, e uma lista
-// de 50px prenderia tudo no lugar.
-const ALTURA = 50;
-const medirOriginal = HTMLElement.prototype.getBoundingClientRect;
-
-function retangulo(topo: number, altura = ALTURA): DOMRect {
-  return {
-    x: 0,
-    y: topo,
-    top: topo,
-    left: 0,
-    width: 300,
-    height: altura,
-    right: 300,
-    bottom: topo + altura,
-    toJSON: () => ({}),
-  } as DOMRect;
-}
+// O jsdom não mede layout: o dublê de tests/ajudantes/arrastar.ts dá
+// altura às linhas.
 
 interface Servico {
   id: string;
@@ -69,28 +51,14 @@ function alcaDe(nome: string): HTMLElement {
   return screen.getByRole("button", { name: `Arrastar ${nome}` });
 }
 
-// O sensor de teclado só passa a ouvir as teclas seguintes num
-// setTimeout(0) depois de pegar: sem esperar um tick, a seta chegaria
-// antes de ele escutar.
-async function tecla(elemento: HTMLElement, codigo: string) {
-  await act(async () => {
-    fireEvent.keyDown(elemento, { code: codigo, key: codigo === "Space" ? " " : codigo });
-    await new Promise((pronto) => setTimeout(pronto, 0));
-  });
-}
-
 describe("ListaReordenavel", () => {
+  let desfazer: () => void;
   beforeEach(() => {
-    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
-      if (this.tagName === "UL") return retangulo(0, this.children.length * ALTURA);
-      const linha = this.closest("li");
-      if (!linha?.parentElement) return retangulo(0);
-      return retangulo([...linha.parentElement.children].indexOf(linha) * ALTURA);
-    };
+    desfazer = medirLinhas();
   });
 
   afterEach(() => {
-    HTMLElement.prototype.getBoundingClientRect = medirOriginal;
+    desfazer();
   });
 
   it("mostra os itens na ordem recebida, cada um com a alça que diz o que move", () => {
@@ -160,5 +128,16 @@ describe("ListaReordenavel", () => {
     trocarItens([SOBRANCELHA, CORTE]);
 
     expect(nomesNaTela()).toEqual(["Sobrancelha", "Corte"]);
+  });
+
+  it("os mesmos itens de novo (outro array, mesma ordem) não desfazem a ordem otimista", async () => {
+    // Quem usa a lista recalcula os grupos a cada render; enquanto o
+    // salvamento não volta, a tela não pode piscar de volta pra antiga.
+    const { trocarItens } = montar(vi.fn(() => new Promise<void>(() => {})));
+
+    await descerUm(alcaDe("Corte"));
+    trocarItens([CORTE, BARBA, SOBRANCELHA]);
+
+    expect(nomesNaTela()).toEqual(["Barba", "Corte", "Sobrancelha"]);
   });
 });

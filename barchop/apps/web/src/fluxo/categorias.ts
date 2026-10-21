@@ -1,4 +1,4 @@
-import { CATEGORIAS_DE_SERVICO, type CategoriaDeServico } from "@barchop/formato";
+import { CATEGORIAS_DE_SERVICO, ordenarCategorias, type CategoriaDeServico } from "@barchop/formato";
 import type { ServicoSerializado } from "@barchop/types";
 import { categoriaConhecida, ROTULO_DA_CATEGORIA } from "../formato/pagina";
 
@@ -11,16 +11,20 @@ export interface GrupoDeServicos {
   servicos: ServicoSerializado[];
 }
 
-// Agrupa na ordem de CATEGORIAS_DE_SERVICO, que é a ordem das seções na
-// página; dentro de cada seção, a ordem da API fica. Os sem categoria
-// vão por último, em "Outros serviços" — com eles, os de categoria fora
-// da lista (ver categoriaConhecida).
-export function agruparPorCategoria(servicos: ServicoSerializado[]): GrupoDeServicos[] {
+// Agrupa na ordem de categorias que o dono arrastou no painel
+// (`ordemCategorias` da barbearia; sem ela, a de CATEGORIAS_DE_SERVICO),
+// que é a ordem das seções na página; dentro de cada seção, a ordem da
+// API fica. Os sem categoria vão por último, em "Outros serviços" — com
+// eles, os de categoria fora da lista (ver categoriaConhecida).
+export function agruparPorCategoria(
+  servicos: ServicoSerializado[],
+  ordemCategorias: readonly string[] = CATEGORIAS_DE_SERVICO
+): GrupoDeServicos[] {
   if (servicos.every((servico) => !categoriaConhecida(servico.categoria))) {
     return servicos.length > 0 ? [{ titulo: null, categoria: null, servicos }] : [];
   }
 
-  const grupos: GrupoDeServicos[] = CATEGORIAS_DE_SERVICO.map((categoria) => ({
+  const grupos: GrupoDeServicos[] = ordenarCategorias(ordemCategorias).map((categoria) => ({
     titulo: ROTULO_DA_CATEGORIA[categoria],
     categoria,
     servicos: servicos.filter((servico) => servico.categoria === categoria),

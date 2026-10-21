@@ -2,18 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { AgendamentoComCliente } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { GradeDeTempo } from "../../componentes/GradeDeTempo";
 import { GradeDoMes } from "../../componentes/GradeDoMes";
 import { PilulasDeFiltro } from "../../componentes/PilulasDeFiltro";
 import { SeletorDeVista, type Vista } from "../../componentes/SeletorDeVista";
 import { useRequisicao } from "../../api/useRequisicao";
-import { formatarDataLonga, hojeIso } from "../../formato/datas";
+import { ehPassado, formatarDataLonga, hojeIso, horaJaPassou } from "../../formato/datas";
+import type { DestinoDoArrasto } from "../../painel/arrasto";
 import { diasDaSemana, gradeDeTempo, gradeDoMes } from "../../painel/grade";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
 import { JanelaDeBloqueio } from "./agenda/JanelaDeBloqueio";
+import { JanelaDeMover } from "./agenda/JanelaDeMover";
 import { ResumoDoPeriodo } from "./agenda/ResumoDoPeriodo";
 import estilos from "./Agenda.module.css";
 import { Carregando } from "../../componentes/Carregando";
@@ -157,6 +160,11 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   const hoje = hojeIso(agora);
   const [rolarQuandoCarregar, setRolarQuandoCarregar] = useState(false);
   const [bloqueando, setBloqueando] = useState(false);
+  // O agendamento solto na grade, esperando a confirmação (arrastar e
+  // reordenar, PR 7).
+  const [movendo, setMovendo] = useState<{ agendamento: AgendamentoComCliente; destino: DestinoDoArrasto } | null>(
+    null
+  );
   function rolarAteAgora(): boolean {
     const regua = document.querySelector('[data-testid="regua-do-agora"]');
     regua?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -286,6 +294,23 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
         )}
       </div>
 
+      {movendo ? (
+        <JanelaDeMover
+          agendamento={movendo.agendamento}
+          destino={movendo.destino}
+          nomeDoProfissional={
+            movendo.destino.barbeiroId
+              ? atendentes.find((pessoa) => pessoa.id === movendo.destino.barbeiroId)?.nome
+              : undefined
+          }
+          aoMover={() => {
+            agendamentos.recarregar();
+            ocupacao.recarregar();
+          }}
+          aoFechar={() => setMovendo(null)}
+        />
+      ) : null}
+
       {bloqueando ? (
         <JanelaDeBloqueio
           data={data}
@@ -324,6 +349,15 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
                 : expedienteDaSemana,
           })}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
+          // Arrastar pra remarcar: só o que ainda vai acontecer e ainda
+          // muda (a API recusa o resto). Soltar abre a confirmação.
+          agora={agora}
+          podeMover={(agendamento) =>
+            (agendamento.status === "pendente" || agendamento.status === "confirmado") &&
+            !ehPassado(agendamento.data, agora) &&
+            !horaJaPassou(agendamento.data, agendamento.horaInicio, agora)
+          }
+          aoSoltar={(agendamento, destino) => setMovendo({ agendamento, destino })}
           // Com mais de uma pessoa, cada uma ganha um matiz (mesmo croma),
           // na ordem da equipe; sozinho, a cor da casa.
           tons={

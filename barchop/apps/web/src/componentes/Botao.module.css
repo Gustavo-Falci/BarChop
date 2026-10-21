@@ -16,8 +16,8 @@
      sombra de 2px escura nos dois temas (a clara do escuro brilhava). */
   box-shadow: var(--sombra-botao);
   transition:
-    transform 120ms ease-out,
-    box-shadow 120ms ease-out,
+    transform var(--duracao-instante) ease-out,
+    box-shadow var(--duracao-instante) ease-out,
     background-color var(--duracao-curta) ease;
 }
 

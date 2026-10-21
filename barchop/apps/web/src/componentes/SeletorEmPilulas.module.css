@@ -39,9 +39,17 @@
   background: var(--cor-paper-soft);
 }
 
+/* `isolation`: o indicador (z-index -1) fica sob a pílula sem escapar
+   pro trilho. */
 .opcao {
   position: relative;
+  isolation: isolate;
   cursor: pointer;
+  transition: scale var(--duracao-instante) ease;
+}
+
+.opcao:active:has(.radio:enabled) {
+  scale: var(--escala-aperto);
 }
 
 /* O rádio sai da vista mas continua no fluxo do teclado e do leitor de
@@ -66,10 +74,7 @@
   color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
   font-weight: 600;
-  transition:
-    background-color var(--duracao-media) var(--curva-entrada),
-    box-shadow var(--duracao-media) var(--curva-entrada),
-    color var(--duracao-curta) ease;
+  transition: color var(--duracao-curta) ease;
 }
 
 .opcao:hover .pilula {
@@ -77,16 +82,24 @@
 }
 
 /* Marcada: o fundo do cartão sobe do trilho. Distingue-se sem cor, pelo
-   fundo e pela sombra. */
-.radio:checked + .pilula {
+   fundo e pela sombra — um só, que desliza até a opção marcada
+   (Indicador, motion PR 3). */
+.radio:checked ~ .pilula {
+  color: var(--cor-ink);
+}
+
+.indicador {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: calc(var(--raio-md) - 3px);
   background: var(--cor-surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 0 0 var(--borda-hairline) var(--cor-line);
-  color: var(--cor-ink);
 }
 
 /* O anel de foco vai pra pílula: o rádio invisível não teria onde
    desenhá-lo. */
-.radio:focus-visible + .pilula {
+.radio:focus-visible ~ .pilula {
   outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
 }
@@ -102,15 +115,15 @@
 
 /* Desligada: à vista pra quem procura, apagada e sem reagir. */
 .radio:disabled,
-.radio:disabled + .pilula {
+.radio:disabled ~ .pilula {
   cursor: not-allowed;
 }
 
-.radio:disabled + .pilula {
+.radio:disabled ~ .pilula {
   opacity: 0.45;
 }
 
-.opcao:hover .radio:disabled + .pilula {
+.opcao:hover .radio:disabled ~ .pilula {
   color: var(--cor-ink-soft);
 }
 

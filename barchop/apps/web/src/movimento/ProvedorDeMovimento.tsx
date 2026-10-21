@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 // Fora do componente: uma função nova a cada render faria o LazyMotion
 // buscar as features de novo.
 const carregarFeatures = () => import("./features").then((modulo) => modulo.default);
+const carregarFeaturesDoPainel = () => import("./featuresDoPainel").then((modulo) => modulo.default);
 
 // A raiz do movimento (ADR-0011), no layout raiz.
 //
@@ -23,6 +24,17 @@ export function ProvedorDeMovimento({ children }: { children: ReactNode }) {
   return (
     <LazyMotion features={carregarFeatures} strict>
       <MotionConfig reducedMotion="user">{children}</MotionConfig>
+    </LazyMotion>
+  );
+}
+
+// O painel por cima da raiz: troca as features pelas com layout, e só
+// quem entra no painel baixa esse chunk (ver featuresDoPainel.ts). Até
+// ele chegar, o indicador só aparece no item novo, sem deslizar.
+export function MovimentoDoPainel({ children }: { children: ReactNode }) {
+  return (
+    <LazyMotion features={carregarFeaturesDoPainel} strict>
+      {children}
     </LazyMotion>
   );
 }

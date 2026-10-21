@@ -8,7 +8,7 @@
   border-radius: var(--raio-cartao, var(--raio-md));
   background: var(--cor-surface);
   box-shadow: var(--cartao-sombra, var(--sombra-1));
-  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+  transition: transform var(--duracao-instante) ease, box-shadow var(--duracao-instante) ease, background-color var(--duracao-instante) ease;
 }
 
 .cartao:hover { transform: translateY(-1px); box-shadow: var(--cartao-sombra-hover, var(--sombra-2)); }
@@ -137,7 +137,7 @@
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
   color: transparent;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: background-color var(--duracao-instante) ease, color var(--duracao-instante) ease;
 }
 
 .marcado .marca {

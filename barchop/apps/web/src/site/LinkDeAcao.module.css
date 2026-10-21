@@ -17,7 +17,7 @@
   text-decoration: none;
   white-space: nowrap;
   box-shadow: var(--sombra-botao);
-  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+  transition: transform var(--duracao-instante) ease-out, box-shadow var(--duracao-instante) ease-out;
 }
 
 .link:active {

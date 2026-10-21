@@ -76,6 +76,7 @@ const varsDeMovimento = `  --curva-entrada: ${curvaCss(CURVA.entrada)};
   --duracao-media: ${emMs(DURACAO.media)};
   --duracao-longa: ${emMs(DURACAO.longa)};
   --escala-janela: ${ESCALA.janela};
+  --escala-aperto: ${ESCALA.aperto};
   --deslize-curto: ${DESLIZE.curto}px;
   --deslize-normal: ${DESLIZE.normal}px;`;
 

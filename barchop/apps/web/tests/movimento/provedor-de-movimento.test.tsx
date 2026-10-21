@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { m } from "motion/react";
 import { describe, expect, it } from "vitest";
 
-import { ProvedorDeMovimento } from "../../src/movimento/ProvedorDeMovimento";
+import { MovimentoDoPainel, ProvedorDeMovimento } from "../../src/movimento/ProvedorDeMovimento";
 
 describe("ProvedorDeMovimento", () => {
   it("renderiza os filhos", () => {
@@ -23,5 +23,16 @@ describe("ProvedorDeMovimento", () => {
       </ProvedorDeMovimento>
     );
     expect(screen.getByText("animável")).toBeInTheDocument();
+  });
+
+  it("o painel por cima da raiz renderiza os filhos e aceita o `m`", () => {
+    render(
+      <ProvedorDeMovimento>
+        <MovimentoDoPainel>
+          <m.div>painel</m.div>
+        </MovimentoDoPainel>
+      </ProvedorDeMovimento>
+    );
+    expect(screen.getByText("painel")).toBeInTheDocument();
   });
 });

@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+import { Indicador } from "../movimento/Indicador";
 import estilos from "./PilulasDeFiltro.module.css";
 
 export interface OpcaoDeFiltro<V extends string> {
@@ -29,6 +31,7 @@ export function PilulasDeFiltro<V extends string>({
   valor: V;
   aoTrocar: (valor: V) => void;
 }) {
+  const grupo = useId();
   return (
     <div className={estilos.pilulas} role="group" aria-label={rotulo}>
       {opcoes.map((opcao) => {
@@ -41,6 +44,7 @@ export function PilulasDeFiltro<V extends string>({
             aria-pressed={opcao.valor === valor}
             onClick={() => aoTrocar(opcao.valor)}
           >
+            {opcao.valor === valor ? <Indicador grupo={grupo} className={estilos.indicador} /> : null}
             {opcao.rotulo}
             {/* O espaço fica FORA do <span>: dentro, o nome acessível
                 saía "Atrasados3" — o espaço inicial do filho é

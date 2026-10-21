@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, type ReactNode } from "react";
+import { Indicador } from "../movimento/Indicador";
 import estilos from "./Abas.module.css";
 
 // Abas de uma tela comprida (análise de 17/10): cada grupo cabe numa
@@ -38,6 +39,7 @@ export function Abas<Id extends string>({
             className={estilos.aba}
             onClick={() => aoTrocar(aba.id)}
           >
+            {atual === aba.id ? <Indicador grupo={id} className={estilos.traco} /> : null}
             {aba.rotulo}
           </button>
         ))}

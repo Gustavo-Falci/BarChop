@@ -35,12 +35,17 @@
   font-size: var(--texto-sm);
   text-align: left;
   cursor: pointer;
-  transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+  transition:
+    transform var(--duracao-instante) ease-out,
+    box-shadow var(--duracao-instante) ease-out,
+    background-color var(--duracao-curta) ease;
 }
 
+/* A linha abre o agendamento: sobe 1px com a sombra (motion PR 3). */
 .item:hover {
   background: var(--cor-paper-soft);
   box-shadow: var(--sombra-botao);
+  transform: translateY(-1px);
 }
 
 .item:active {

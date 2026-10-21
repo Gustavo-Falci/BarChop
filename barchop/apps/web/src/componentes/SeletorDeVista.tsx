@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { Indicador } from "../movimento/Indicador";
 import estilos from "./SeletorDeVista.module.css";
 
 export type Vista = "dia" | "semana" | "mes";
@@ -35,6 +36,7 @@ export function SeletorDeVista({
   // Uma ação da tela ao lado das vistas ("Bloquear").
   acao?: ReactNode;
 }) {
+  const grupo = useId();
   return (
     <div className={estilos.barra}>
       <div className={estilos.navegacao}>
@@ -78,6 +80,7 @@ export function SeletorDeVista({
               aria-pressed={opcao.valor === vista}
               onClick={() => aoTrocarVista(opcao.valor)}
             >
+              {opcao.valor === vista ? <Indicador grupo={grupo} className={estilos.indicador} /> : null}
               {opcao.rotulo}
             </button>
           ))}

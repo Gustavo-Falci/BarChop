@@ -46,7 +46,7 @@ describe("POST /agendamentos/:id/remarcar", () => {
     const novo = resposta.json();
     expect(novo).toMatchObject({ data: QUINTA, horaInicio: "14:00", status: "confirmado" });
     expect(novo.cliente.id).toBe(c.agenda.cliente.id);
-    expect(novo.servicos.map((s: { id: string }) => s.id)).toEqual([c.agenda.servico.id]);
+    expect(novo.servicos.map((s: { servicoId: string }) => s.servicoId)).toEqual([c.agenda.servico.id]);
     const antigo = await prisma.agendamento.findUniqueOrThrow({ where: { id: c.agendamento.id } });
     expect(antigo.status).toBe("cancelado");
   });
@@ -80,13 +80,14 @@ describe("POST /agendamentos/:id/remarcar", () => {
     expect(resposta.statusCode).toBe(201);
   });
 
-  it("horário ocupado por outro: 409, e o antigo fica de pé", async () => {
+  it("horário ocupado por outro: 422 horario_indisponivel, e o antigo fica de pé", async () => {
     const c = await cenario();
     await marcarPeloPainel(c.app, c.agenda, { data: QUINTA, horaInicio: "14:00" });
 
     const resposta = await remarcar(c, { data: QUINTA, horaInicio: "14:00" });
 
-    expect(resposta.statusCode).toBe(409);
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("horario_indisponivel");
     const antigo = await prisma.agendamento.findUniqueOrThrow({ where: { id: c.agendamento.id } });
     expect(antigo.status).toBe("confirmado");
   });

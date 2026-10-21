@@ -6,7 +6,7 @@ import {
   INCLUDE_AGENDAMENTO,
 } from "../lib/agendamento";
 import { garantirAlteravel, garantirFuturo } from "../lib/agendamento-alteravel";
-import { soltarPagamento } from "../lib/caixa";
+import { diaEstaFechado, soltarPagamento } from "../lib/caixa";
 import { travarQualquerUm } from "../lib/disponibilidade";
 import { enderecoDasBarbearias } from "../lib/endereco";
 import { ErroDeNegocio } from "../lib/erro-negocio";
@@ -19,6 +19,7 @@ import {
   instanteNaBarbearia,
   telefoneParaWhatsApp,
   textoDoLembrete,
+  textoDoRemarcado,
 } from "../lib/lembrete";
 import {
   PADRAO_DATA,
@@ -82,6 +83,21 @@ const corpoPatchAgendamento = {
       enum: ["pendente", "confirmado", "concluido", "cancelado", "no_show"],
     },
     observacoes: { type: ["string", "null"], maxLength: 500 },
+  },
+} as const;
+
+// O remarcar do painel (arrastar e reordenar, PR 5). Os serviços e o
+// cliente vêm do agendamento; mudam só o quando e, pra quem pode, com
+// quem. `avisarCliente` é a caixa da tela, marcada por padrão.
+const corpoRemarcar = {
+  type: "object",
+  additionalProperties: false,
+  required: ["data", "horaInicio"],
+  properties: {
+    data: { type: "string", pattern: PADRAO_DATA },
+    horaInicio: { type: "string", pattern: PADRAO_HORA },
+    barbeiroId: { type: "string", pattern: PADRAO_UUID },
+    avisarCliente: { type: "boolean", default: true },
   },
 } as const;
 
@@ -316,6 +332,94 @@ export function registrarRotasAgendamentos(app: App): void {
     }
   );
 
+  // Remarcar pelo painel: o detalhe ("Mudar horário") e o arrasto na
+  // agenda. Mesmo esqueleto do remarcar do cliente (clientes-me.ts) —
+  // cancela o antigo e cria o novo na mesma transação, o antigo saindo
+  // ANTES pra poder ir de 10:00 pra 10:15 —, com as regras do painel
+  // (origem "barbeiro": grade livre, sem antecedência).
+  //
+  // Sem notificação no sino: ele é do que o cliente faz sozinho (ver
+  // lib/notificacoes.ts), e quem remarcou está no painel.
+  app.post(
+    "/agendamentos/:id/remarcar",
+    { schema: { params: paramsComId, body: corpoRemarcar } },
+    async (request, reply) => {
+      const { data, horaInicio, barbeiroId, avisarCliente } = request.body;
+      const barbeariaId = request.user.barbeariaId;
+      const membro = membroDoToken(request);
+
+      // O destino, antes de tocar no banco. A origem é conferida lá
+      // dentro, pelo garantirAlteravel.
+      garantirFuturo(data, horaInicio);
+
+      const { antigo, novo } = await comRetryDeDeadlock(() =>
+        prisma.$transaction(async (tx) => {
+          // O do colega não existe pro profissional: 404, como no GET.
+          const antigo = await tx.agendamento.findFirstOrThrow({
+            where: { id: request.params.id, barbeariaId, ...agendaVisivel(request) },
+            include: { servicos: { select: { servicoId: true } }, pagamento: { select: { id: true } } },
+          });
+
+          // Antes do garantirAlteravel: o pagamento conclui o atendimento,
+          // e "concluido não pode ser alterado" não diria o que fazer.
+          if (antigo.pagamento) {
+            throw new ErroHttp(
+              409,
+              "com_pagamento",
+              "esse atendimento já tem pagamento no caixa: tire o pagamento antes de mudar o horário"
+            );
+          }
+          garantirAlteravel(antigo);
+
+          // O profissional move o próprio, mas não o passa pra outro: o
+          // mesmo limite do POST /agendamentos e do caixa.
+          const destino = barbeiroId ?? antigo.barbeiroId;
+          if (membro.papel === "profissional" && destino !== membro.id) {
+            throw new ErroHttp(403, "sem_permissao", "você só remarca na sua própria agenda");
+          }
+
+          // Dia fechado no caixa, de onde sai ou pra onde vai: o acerto
+          // daquele dia já foi feito.
+          for (const dia of [antigo.data, dataParaDate(data)]) {
+            if (await diaEstaFechado(tx, barbeariaId, dia)) {
+              throw new ErroHttp(409, "dia_fechado", "o caixa deste dia está fechado: o dono precisa reabrir");
+            }
+          }
+
+          // `updateMany` com o status no WHERE: o clique duplo não gera
+          // dois novos (ver clientes-me.ts).
+          const { count } = await tx.agendamento.updateMany({
+            where: { id: antigo.id, status: { in: ["pendente", "confirmado"] } },
+            data: { status: "cancelado" },
+          });
+          if (count === 0) {
+            throw new ErroDeNegocio("esse agendamento já foi alterado", "status_nao_permite");
+          }
+
+          const novo = await criarAgendamento(tx, {
+            barbeariaId,
+            barbeiroId: destino,
+            clienteId: antigo.clienteId,
+            servicoIds: antigo.servicos.map((servico) => servico.servicoId),
+            data,
+            horaInicio,
+            origem: "barbeiro",
+            observacoes: antigo.observacoes ?? undefined,
+            // O e-mail que recebia o lembrete do antigo recebe o do novo.
+            emailLembrete: antigo.emailLembrete,
+          });
+          return { antigo, novo };
+        })
+      );
+
+      // Depois do commit, como na criação.
+      await agendarLembrete({ fila: app.fila, log: request.log }, novo);
+      if (avisarCliente) await avisarRemarcado(app, request.log, novo.id, antigo);
+
+      return reply.code(201).send(serializarAgendamentoComCliente(novo));
+    }
+  );
+
   // O botão "lembrar pelo WhatsApp": o wa.me do cliente com o mesmo texto
   // do e-mail, link de confirmar incluso. Montado aqui porque o link é
   // assinado pela API — o painel não tem o segredo.
@@ -443,4 +547,28 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
       return reply.code(201).send(serializarAgendamento(agendamento));
     }
   );
+}
+
+// "Seu horário mudou" pro cliente, com o de antes e o de agora. Pro
+// e-mail do lembrete do agendamento, ou o do cadastro. Sem e-mail, ou
+// com um canal que não entrega e-mail, não há o que mandar. O envio não
+// é aguardado (como o convite da equipe): o horário já mudou, e uma
+// falha do provedor fica no log.
+async function avisarRemarcado(
+  app: App,
+  log: { error: (dados: object, mensagem: string) => void },
+  novoId: string,
+  de: { data: Date; horaInicio: Date }
+): Promise<void> {
+  if (!app.canal.destinos.includes("email")) return;
+  const novo = await prisma.agendamento.findUniqueOrThrow({ where: { id: novoId }, include: INCLUDE_DO_LEMBRETE });
+  const email = novo.emailLembrete ?? novo.cliente.email;
+  if (!email) return;
+  void app.canal
+    .enviar({
+      para: email,
+      assunto: `Seu horário mudou na ${novo.barbearia.nome}`,
+      texto: textoDoRemarcado(novo, de),
+    })
+    .catch((erro: unknown) => log.error({ erro, agendamentoId: novoId }, "falha ao avisar o remarcado"));
 }

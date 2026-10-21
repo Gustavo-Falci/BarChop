@@ -14,8 +14,8 @@ Hoje nada se reordena: serviços saem por nome (`apps/api/src/routers/servicos.t
 - Ordem salva **inteira** (lista completa de ids numa chamada), não "mover X pra posição N": idempotente, sem corrida entre dois cliques.
 - **O limite do plano Grátis e o "qualquer um" seguem por entrada na equipe (`criadoEm`)**, não pela ordem nova: reordenar não pode esconder do link alguém que estava visível nem mudar quem recebe o agendamento (`lib/assinatura.ts:128`, `lib/disponibilidade.ts`). A ordem nova é só de exibição.
 
-## Pergunta aberta (decidir antes do PR 5)
-- **Avisar o cliente quando o painel remarca?** Recomendo **sim**: e-mail "seu horário mudou" pra quem tem `emailLembrete` (canal de e-mail que já existe, `lib/canal-email.ts`), lembrete reagendado pro horário novo, notificação interna "remarcado" (`lib/notificacoes.ts:9` já tem o evento). Sem e-mail, o cliente chega no horário antigo.
+## Decidido (21/10): avisar o cliente quando o painel remarca
+- **Sim** (dono, 21/10). Na confirmação do arrasto e no "Mudar horário", "avisar cliente por e-mail" vem marcado: e-mail "seu horário mudou" pra quem tem `emailLembrete` (canal de e-mail que já existe, `lib/canal-email.ts`), lembrete reagendado pro horário novo, notificação interna "remarcado" (`lib/notificacoes.ts:9` já tem o evento). Sem e-mail, o cliente chega no horário antigo.
 
 ## Patterns to Mirror
 | Category | Source | Pattern |
@@ -37,6 +37,7 @@ Hoje nada se reordena: serviços saem por nome (`apps/api/src/routers/servicos.t
 - `barbeiro.ordem SMALLINT NOT NULL` — backfill por `criado_em, id` por barbearia.
 - `barbearia.ordem_categorias TEXT[] NOT NULL DEFAULT '{}'` — vazio = ordem padrão de `CATEGORIAS_DE_SERVICO`; CHECK `ordem_categorias <@ ARRAY[...]` (mesmos valores do CHECK da `20261011120000_categoria_fechada`).
 - Serviço/membro novo nasce no fim (`max(ordem)+10`, na rota de criação).
+  - **Feito (21/10) por trigger `BEFORE INSERT`**, não na rota: como os triggers de jornada/serviços da `20261004120000`, cobre signup, convite, seed e Prisma cru dos testes. Prisma: `ordem Int @default(dbgenerated())`. Migração `20261021120000_ordem`, aplicada no dev e no teste; testes em `apps/api/tests/banco-ordem.test.ts`.
 - **Testes**: migração aplica no dev e no teste; backfill preserva a ordem atual.
 
 ### PR 2 — API: salvar e devolver a ordem

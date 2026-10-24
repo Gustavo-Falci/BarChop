@@ -77,12 +77,18 @@ export function CadastroDeMembro() {
   // recepção nasce sem atender, como na API. Depois do primeiro toque,
   // a escolha é dele.
   const [atendeTocado, setAtendeTocado] = useState(false);
+  // Só o profissional precisa da liberação: o dono vende sem ela, e a
+  // recepção não vende (Onda 2, marco 3).
+  const [podeVender, setPodeVender] = useState(false);
   const [erro, setErro] = useState<Record<string, string | undefined>>({});
   const [aviso, setAviso] = useState<string | undefined>();
   // O que sai do Reenviar e do Desativar mora na Situação, junto dos
   // botões; o aviso dos dados é só do Salvar.
   const [avisoDaSituacao, setAvisoDaSituacao] = useState<string | undefined>();
   const [confirmacao, setConfirmacao] = useState<string | undefined>();
+  // Desativar quem tem assinante nos planos próprios volta 422
+  // `assinaturas_ativas`: a frase do efeito, e o segundo botão confirma.
+  const [cancelarAssinaturas, setCancelarAssinaturas] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
 
   // Sincronizado durante a renderização, como em CadastroDeServico (o
@@ -95,6 +101,7 @@ export function CadastroDeMembro() {
     setPapel(atual.papel);
     setAtende(atual.atende);
     setAtendeTocado(true);
+    setPodeVender(atual.podeVenderPlanos);
   }
 
   if (equipe.erro) {
@@ -111,7 +118,8 @@ export function CadastroDeMembro() {
     nome !== atual.nome ||
     telefone !== (atual.telefone ?? "") ||
     papel !== atual.papel ||
-    atende !== atual.atende;
+    atende !== atual.atende ||
+    podeVender !== atual.podeVenderPlanos;
 
   function descartar() {
     if (!atual) return;
@@ -119,6 +127,7 @@ export function CadastroDeMembro() {
     setTelefone(atual.telefone ?? "");
     setPapel(atual.papel);
     setAtende(atual.atende);
+    setPodeVender(atual.podeVenderPlanos);
     setErro({});
     setAviso(undefined);
   }
@@ -180,6 +189,7 @@ export function CadastroDeMembro() {
         telefone: validado.telefone,
         papel,
         atende,
+        podeVenderPlanos: podeVender,
       });
 
       // O próprio dono mudou de papel: a barra e as guardas leem o perfil
@@ -209,19 +219,34 @@ export function CadastroDeMembro() {
     }
   }
 
-  async function alternarAtivo() {
+  async function alternarAtivo(comCancelamento = false) {
     if (!id || !atual) return;
     setAvisoDaSituacao(undefined);
     setConfirmacao(undefined);
+    setCancelarAssinaturas(undefined);
     setSalvando(true);
     try {
-      await api.barbeiro.atualizarMembro(id, { ativo: !atual.ativo });
+      await api.barbeiro.atualizarMembro(
+        id,
+        comCancelamento ? { ativo: false, cancelarAssinaturas: true } : { ativo: !atual.ativo }
+      );
       // Desativar a si mesmo (com outro dono ativo) encerra a própria
       // sessão — o recarregar descobre isso e sai.
       if (id === perfil.id) await recarregarPerfil();
       equipe.recarregar();
     } catch (causa) {
       const falha = causa as ErroDaApi;
+      if (falha.codigo === "assinaturas_ativas") {
+        // A contagem vem na frase da API ("tem 3 assinantes nos planos
+        // dele"); sem ela, a frase fica sem o número.
+        const quantas = /(\d+) assinantes?/.exec(falha.mensagem)?.[1];
+        setCancelarAssinaturas(
+          quantas === "1"
+            ? `${atual.nome} tem 1 assinante nos planos próprios. Desativar cancela a assinatura: o cliente deixa de usar o plano.`
+            : `${atual.nome} tem ${quantas ?? "clientes"} assinantes nos planos próprios. Desativar cancela as assinaturas: os clientes deixam de usar os planos.`
+        );
+        return;
+      }
       setAvisoDaSituacao(
         falha.codigo === "ultimo_dono"
           ? "A barbearia precisa de pelo menos um dono ativo. Promova outra pessoa antes de desativar este."
@@ -370,6 +395,23 @@ export function CadastroDeMembro() {
           </span>
         </div>
 
+        {/* A liberação dos planos, só na edição do profissional. */}
+        {atual && papel === "profissional" ? (
+          <div className={estilos.opcao}>
+            <input
+              type="checkbox"
+              id={`${idDoGrupo}-vende`}
+              checked={podeVender}
+              onChange={(evento) => setPodeVender(evento.target.checked)}
+              aria-describedby={`${idDoGrupo}-vende-descricao`}
+            />
+            <label htmlFor={`${idDoGrupo}-vende`}>Pode vender planos</label>
+            <span id={`${idDoGrupo}-vende-descricao`} className={estilos.descricao}>
+              Cria planos próprios: valem só com quem vende, e a mensalidade fica com quem vende.
+            </span>
+          </div>
+        ) : null}
+
         {aviso ? <Aviso>{aviso}</Aviso> : null}
       </Grupo>
     </form>
@@ -437,6 +479,24 @@ export function CadastroDeMembro() {
                       : "Não recebe agendamentos nem entra no painel. Reativar devolve os dois."}
                   </p>
                   {avisoDaSituacao ? <Aviso>{avisoDaSituacao}</Aviso> : null}
+                  {cancelarAssinaturas ? (
+                    <Aviso tom="atencao">
+                      <p className={estilos.efeito}>{cancelarAssinaturas}</p>
+                      <div className={estilos.acaoDoEstado}>
+                        <Botao
+                          type="button"
+                          variante="contorno"
+                          carregando={salvando}
+                          onClick={() => alternarAtivo(true)}
+                        >
+                          Desativar e cancelar as assinaturas
+                        </Botao>
+                        <Botao type="button" variante="contorno" onClick={() => setCancelarAssinaturas(undefined)}>
+                          Manter ativo
+                        </Botao>
+                      </div>
+                    </Aviso>
+                  ) : null}
                   {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
                   <div className={estilos.acaoDoEstado}>
                     {atual.convitePendente && atual.ativo ? (
@@ -444,7 +504,7 @@ export function CadastroDeMembro() {
                         Reenviar convite
                       </Botao>
                     ) : null}
-                    <Botao type="button" variante="contorno" carregando={salvando} onClick={alternarAtivo}>
+                    <Botao type="button" variante="contorno" carregando={salvando} onClick={() => alternarAtivo()}>
                       {atual.ativo ? "Desativar" : "Reativar"}
                     </Botao>
                   </div>

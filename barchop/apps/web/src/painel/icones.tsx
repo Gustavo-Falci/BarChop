@@ -402,7 +402,19 @@ export function IconeMais(props: Props) {
   );
 }
 
-// As quatro seções que não cabem na barra inferior, atrás do "Mais".
+// Planos de assinatura (Onda 2, marco 3): o ciclo que se repete.
+export function IconeCiclo(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M20 12a8 8 0 0 1-14.3 4.9" />
+      <path d="M4 12a8 8 0 0 1 14.3-4.9" />
+      <path d="M18.5 3.5v4h-4" />
+      <path d="M5.5 20.5v-4h4" />
+    </Base>
+  );
+}
+
+// As seções que não cabem na barra inferior, atrás do "Mais".
 export function IconeGrade(props: Props) {
   return (
     <Base {...props}>

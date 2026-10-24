@@ -10,6 +10,7 @@ import {
   IconeCalendario,
   IconeCasa,
   IconeCedula,
+  IconeCiclo,
   IconeCliente,
   IconeEngrenagem,
   IconeEquipe,
@@ -36,6 +37,9 @@ const PRINCIPAIS = [
 ];
 
 const SECUNDARIAS = [
+  // Pra todos: a recepção vende no balcão, o profissional vê os dele; no
+  // Essencial, o convite.
+  { href: "/painel/planos", rotulo: "Planos", Icone: IconeCiclo },
   // Pra todos: o profissional bloqueia a própria agenda.
   { href: "/painel/bloqueios", rotulo: "Folgas", Icone: IconeBloqueio },
   { href: "/painel/clientes", rotulo: "Clientes", Icone: IconeCliente },

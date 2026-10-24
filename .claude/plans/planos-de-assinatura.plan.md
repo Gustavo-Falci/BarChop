@@ -72,6 +72,20 @@ Diferenças do plano, combinadas no caminho:
   - **as mensalidades entram nos totais por forma**, em quantidade e valor. Sem isso, o total do dia não bate com o dinheiro que cada um segura;
   - **`CaixaDoDia.mensalidades`** traz `registradoEm`, pra tela mostrar "recebido em" quando o dia do caixa é outro. O profissional vê as que recebeu ou dos planos dele;
   - **teste ponta a ponta**: o "dia da tela Caixa" do PR 1b, montado pelas rotas, dá os mesmos repasses: Gustavo → casa 14700, casa → Lucas 1900.
+- **PR 7 dividido em três**, cada um com só os métodos do api-client e o comportamento do dublê que usa:
+  - **7a**: a lista de planos com a vitrine, o cadastro do plano, "Planos" na barra, o convite fora do Completo, e no membro o "Pode vender planos" e a confirmação do desativar;
+  - **7b**: a aba Assinantes, e no detalhe do cliente "Assinar plano" e "Recebi";
+  - **7c**: "Pelo plano" na tela de pagamento e as mensalidades no Caixa.
+- **PR 7a (planos no painel):**
+  - **o "Online, na página" fica desligado** no cadastro, com a frase "chega com os pagamentos online", e "No balcão" já vem marcado. Liga no PR 9. A tela manda as duas formas sempre, porque o padrão da API é `aceitaOnline: true`;
+  - **sem o resumo do mês** ("Outubro, mensalidades recebidas R$ 1.710,00"): não há rota que o devolva. Ele volta quando houver relatório de mensalidades;
+  - **os serviços do plano em "2× Corte, Barba sem limite"**, e não "2 cortes e 1 barba": o nome do serviço é texto livre do dono, e pluralizar erraria;
+  - **ilimitado esconde o número de usos**: a caixa vazia e apagada parecia campo esquecido;
+  - **plano de barbeiro sem número da casa na frase do efeito**: a parte da casa de cada um só o dono vê (`/divisao`). A frase diz que a casa fica com a parte da casa, como no avulso;
+  - **o plano de barbeiro só oferece os serviços que o vendedor faz** (`GET /equipe/:id/servicos`, aberto a todos os papéis);
+  - **"Planos" na barra pra todos os papéis**, depois do Caixa. No celular fica atrás do "Mais";
+  - **o texto não supõe gênero**: "De Gustavo", "vale só com quem vende", "planos próprios". A frase do 422 `assinaturas_ativas` da API ainda diz "dele"; a tela não repete;
+  - **desativar membro com assinante** pede confirmação na Situação, e o "Desativar e cancelar as assinaturas" reenvia com `cancelarAssinaturas: true`.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

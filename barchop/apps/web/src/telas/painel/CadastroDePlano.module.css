@@ -1,0 +1,132 @@
+/* O mesmo esqueleto do cadastro de serviço: formulário à esquerda, a
+   coluna do efeito à direita, o rodapé com Salvar e o Desativar. */
+.pagina {
+  composes: pagina from "./CadastroDeServico.module.css";
+}
+
+.corpo {
+  composes: corpo from "./CadastroDeServico.module.css";
+}
+
+.formulario {
+  composes: formulario from "./CadastroDeServico.module.css";
+}
+
+.lateral {
+  composes: lateral from "./CadastroDeServico.module.css";
+}
+
+.rodape {
+  composes: rodape from "./CadastroDeServico.module.css";
+}
+
+.acoes {
+  composes: acoes from "./CadastroDeServico.module.css";
+}
+
+.acaoDoEstado {
+  composes: acaoDoEstado from "./CadastroDeServico.module.css";
+}
+
+.acaoDoEstado p {
+  margin: 0;
+}
+
+.campoLongo {
+  composes: campoLongo from "./CadastroDeServico.module.css";
+}
+
+.rotulo {
+  composes: rotulo from "./CadastroDeServico.module.css";
+}
+
+.apoio {
+  composes: apoio from "./CadastroDeServico.module.css";
+}
+
+.area {
+  composes: area from "./CadastroDeServico.module.css";
+}
+
+/* Os grupos de marcar sem a moldura do <fieldset>: o combinado das
+   telas sem caixas. */
+.grupo {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.grupo legend {
+  padding: 0;
+  margin-bottom: var(--espaco-xs);
+}
+
+.servicos {
+  display: grid;
+  margin: var(--espaco-xs) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* O serviço numa ponta e os usos na outra, separados por um fio. No
+   celular, os usos descem pra baixo do nome. */
+.servico {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-xs) var(--espaco-md);
+  min-height: 48px;
+  padding-block: var(--espaco-xs);
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+}
+
+.marca input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--cor-ink);
+}
+
+.usos {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-md);
+}
+
+.numero {
+  width: 5.5rem;
+  min-height: 44px;
+  padding: 0 var(--espaco-sm);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-sm);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.erro {
+  color: var(--cor-erro);
+  font-size: var(--texto-sm);
+}
+
+/* O efeito no tom do destaque, como a frase do acerto no pagamento. */
+.efeito {
+  margin: 0;
+  padding: var(--espaco-md);
+  border-radius: var(--raio-md);
+  background: color-mix(in srgb, var(--cor-accent) 14%, var(--cor-surface));
+  line-height: 1.55;
+  text-wrap: pretty;
+}

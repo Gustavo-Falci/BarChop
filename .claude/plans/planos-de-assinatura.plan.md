@@ -16,6 +16,15 @@ Diferenças do plano, combinadas no caminho:
   - o `acertoDoDia` aceita `recebidoPor: null` (a casa paga) e `Repasse.de` nulo, e `RepasseDoCaixa.de` em `@barchop/types` ficou anulável;
   - a API, o dublê e a tela do Caixa escrevem "A casa repassa…";
   - achado ao desenhar a tela do Caixa no Claude Design (https://claude.ai/artifact/4hgca1aVpddptUxnUssWTG).
+- **PR 2 (migração):**
+  - **tabela nova `uso_do_plano`**: um registro por serviço coberto num atendimento pelo plano, com `pagamento_id` (sai junto com o pagamento, então desfazer devolve o uso), `assinatura_id`, `servico_id` e `data`. Sem ela, o `assinatura_id` do pagamento não dizia qual serviço foi pelo plano e qual foi cobrado à parte, e o "Corte 1 de 2" não tinha de onde sair;
+  - **sem `pagamento.avulso_centavos`**: a `forma` segue sendo a do dinheiro, e `servicos_centavos` é o que foi cobrado à parte, como o PR 1 já deixou. `plano` só vale para o atendimento todo pelo plano, sem dinheiro (CHECK: assinatura preenchida, serviços e gorjeta zero). Com `forma = plano` e dinheiro dentro, o total por forma do caixa perderia esse dinheiro. "Pelo plano" na tela = `assinatura_id` preenchido;
+  - chaves para membro, cliente, plano e assinatura são `NO ACTION`, não `RESTRICT`, como no caixa: com RESTRICT, apagar a barbearia (que leva os membros na mesma cascata) falharia;
+  - o UNIQUE `(barbeiro_id, provedor)` é parcial (`WHERE NOT da_casa`), para o dono ter a conta da casa e a dele;
+  - o UNIQUE da cobrança no provedor é `(assinatura_id, id_externo)`;
+  - novos: `assinatura_do_cliente` com uma viva (não cancelada) por cliente e plano; `ciclo_comeca_em`/`ciclo_termina_em` nulos enquanto pendente; `recebimento_do_plano.forma` com CHECK de `FORMAS_DE_PAGAMENTO`; `evento_do_provedor.tipo`;
+  - listas novas em `@barchop/formato`: `PROVEDORES_DE_PAGAMENTO` (`asaas`) e `MODOS_DA_CONEXAO` (`teste`, `real`);
+  - o teste é `apps/api/tests/banco-planos.test.ts`, ao lado do `banco-caixa.test.ts`.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
@@ -64,7 +73,7 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
    - **Diferença da prévia que o dono viu:** a mensagem "Seu plano vale só com Gustavo" não aparece ao agendar. Ela aparece no painel, na hora de registrar. Mostrar a mensagem ao agendar, para o cliente logado, fica para depois.
 3. **Atendimento pelo plano, no caixa:**
    - registra `forma = "plano"`, com o valor dos serviços cobertos zerado;
-   - serviço fora do plano, ou uso que passou do limite, é cobrado à parte no mesmo pagamento: ele ganha um campo de **valor avulso**, que é dividido pelas regras de hoje;
+   - serviço fora do plano, ou uso que passou do limite, é cobrado à parte no mesmo pagamento: a `forma` é a do dinheiro, o `servicos_centavos` é o que foi cobrado à parte e se divide pelas regras de hoje; `forma = "plano"` só no atendimento todo pelo plano, sem dinheiro. Os serviços cobertos viram linhas de `uso_do_plano` (corrigido no PR 2: a primeira versão tinha um campo de valor avulso);
    - **no plano de barbeiro**, a parte "pelo plano" não gera nada: o barbeiro já recebeu a mensalidade;
    - **no plano da casa**, gera a parte `plano` para quem atendeu, no valor fixo, paga **pela casa** (`recebidoPor: null` no acerto). O fixo sai do dinheiro da casa, não do bolso de quem segura a mensalidade. O `acertoDoDia` mostra "A casa repassa R$ 25 para o Parceiro", já compensado com o que o Parceiro deve à casa. (Corrigido no PR 1b: a primeira versão punha o membro da conta da casa como `recebidoPor`, e ele pagava o fixo do bolso);
    - gorjeta segue a regra de hoje: 100% para quem atendeu, sobre a forma do pagamento avulso. Atendimento só pelo plano não aceita gorjeta no MVP.
@@ -107,9 +116,9 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
   - `provedor` (CHECK `asaas`) e `modo` (`teste` | `real`);
   - `chave_cifrada` (`BYTEA`), `chave_final` (4 caracteres) e `webhook_token_hash`;
   - `id_externo_webhook`, `criado_em`;
-  - UNIQUE `(barbeiro_id, provedor)` para as contas de barbeiro.
+  - UNIQUE parcial `(barbeiro_id, provedor) WHERE NOT da_casa` para as contas de barbeiro (o dono pode ter a da casa e a dele).
 - `plano_de_assinatura`:
-  - `id`, `barbearia_id` e `vendedor_id` (anulável: nulo = da casa; `ON DELETE RESTRICT`);
+  - `id`, `barbearia_id` e `vendedor_id` (anulável: nulo = da casa; `ON DELETE NO ACTION`, como as chaves de membro do caixa);
   - `nome`, `descricao`, `ciclo` (CHECK), `preco_centavos`, `dias_de_teste` (0 a 30);
   - `fixo_por_atendimento_centavos` (só no da casa; CHECK nulo quando é de barbeiro);
   - `aceita_online`, `aceita_no_balcao`, `ativo`, `ordem`, `criado_em`.
@@ -124,11 +133,12 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
   - `id`, `barbearia_id`, `assinatura_id`, `data` (dia do caixa; índice `(barbearia_id, data)`);
   - `recebido_por_id` (o membro dono da conta, ou quem marcou "recebi");
   - `valor_centavos`, `casa_centavos` (congelado; CHECK ≤ valor) e `forma`;
-  - `id_externo` (UNIQUE, anulável: a cobrança no provedor) e `registrado_em`.
+  - `id_externo` (anulável: a cobrança no provedor; UNIQUE `(assinatura_id, id_externo)`) e `registrado_em`.
+- `uso_do_plano`: `id`, `pagamento_id` (`ON DELETE CASCADE`: desfazer o pagamento devolve o uso), `assinatura_id`, `servico_id` e `data` (a do pagamento; índice `(assinatura_id, data)`). Um por serviço coberto; os usos do ciclo são as linhas com `data` dentro do ciclo da assinatura.
 - `evento_do_provedor`: `(provedor, id)` como chave primária e `recebido_em`. É a mesma deduplicação do `evento_stripe`.
 - `pagamento`:
   - CHECK de `forma` passa a usar a lista nova `FORMAS_DO_CAIXA` = `FORMAS_DE_PAGAMENTO` + `plano`. O `barbearia.formas_pagamento` da página pública **não muda**;
-  - ganha `assinatura_id` (anulável) e `avulso_centavos` (o que foi cobrado à parte num atendimento pelo plano, padrão 0).
+  - ganha `assinatura_id` (anulável). `forma = plano` exige a assinatura e serviços e gorjeta zero (CHECK). Com serviço cobrado à parte, a forma é a do dinheiro.
 - `pagamento_parte.motivo` ganha `plano` (o fixo do plano da casa).
 
 ## Patterns to Mirror
@@ -180,7 +190,7 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
 ### PR 1: A conta dos planos em `@barchop/formato`
 - **Action**:
   - `planos-do-cliente.ts`: listas, `FORMAS_DO_CAIXA`, `parteDaCasaNaMensalidade(preco, parteDaCasa, daCasa)`, `usosNoCiclo(...)` e `fimDoCiclo(inicio, ciclo)`;
-  - em `caixa.ts`: motivo `plano`, e `dividirPagamento` com `peloPlano?: { daCasa, fixoCentavos, recebidoPorDaCasa }` e `avulsoCentavos`.
+  - em `caixa.ts`: motivo `plano` (feito no PR 1 como `MOTIVOS_DO_PLANO` + `parteDoPlano`; o `dividirPagamento` não mudou).
 - **Mirror**: `caixa.ts` e o teste dele.
 - **Validate**: `pnpm --filter @barchop/formato test`. Casos:
   - plano de barbeiro com 20% de parte da casa;
@@ -222,7 +232,7 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
 
 ### PR 6: "Pelo plano" e mensalidades no caixa (API)
 - **Action**:
-  - `PUT /agendamentos/:id/pagamento` aceita `forma: "plano"` + `assinaturaId` + `avulsoCentavos`, com as conferências da decisão 2. Erros: 422 `plano_de_outro_barbeiro`, `usos_esgotados`, `assinatura_inativa`;
+  - `PUT /agendamentos/:id/pagamento` aceita `assinaturaId` + os serviços cobertos (viram `uso_do_plano`), com `forma: "plano"` quando não há dinheiro, e as conferências da decisão 2. Erros: 422 `plano_de_outro_barbeiro`, `usos_esgotados`, `assinatura_inativa`;
   - `GET /barbearias/me/caixa` soma os recebimentos do dia ao acerto e à lista;
   - `GET /agendamentos/:id/pagamento` devolve as assinaturas usáveis do cliente.
 - **Validate**: `tests/routers/pagamento.test.ts`, `caixa.test.ts` (os 3 cenários da GR com plano: barbeiro com 20%, plano da casa atendido pelo parceiro, assinante do Gustavo atendido pelo parceiro → avulso).

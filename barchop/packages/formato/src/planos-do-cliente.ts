@@ -8,7 +8,7 @@
 // - plano de barbeiro: a mensalidade cai na conta dele, e a casa leva o
 //   % da "parte da casa" dele sobre ela; vale só com ele;
 // - plano da casa: a mensalidade é da casa, e quem atende ganha um
-//   valor fixo por atendimento, pago por quem segura o dinheiro da casa.
+//   valor fixo por atendimento, pago do dinheiro da casa.
 // Tudo em centavos inteiros; a conta é sobre o preço do plano, não sobre
 // o líquido da taxa do provedor.
 
@@ -26,6 +26,15 @@ export type SituacaoDoAssinante = (typeof SITUACOES_DO_ASSINANTE)[number];
 // Paga pelo provedor (online) ou combinado no balcão, marcado à mão.
 export const FORMAS_DA_ASSINATURA = ["online", "no_balcao"] as const;
 export type FormaDaAssinatura = (typeof FORMAS_DA_ASSINATURA)[number];
+
+// Onde a conta de quem vende está. Um conector por provedor; o Asaas é o
+// primeiro (Mercado Pago, Stripe e InfinitePay depois).
+export const PROVEDORES_DE_PAGAMENTO = ["asaas"] as const;
+export type ProvedorDePagamento = (typeof PROVEDORES_DE_PAGAMENTO)[number];
+
+// A chave conectada é de sandbox (`teste`) ou de produção (`real`).
+export const MODOS_DA_CONEXAO = ["teste", "real"] as const;
+export type ModoDaConexao = (typeof MODOS_DA_CONEXAO)[number];
 
 // O CHECK de `pagamento.forma`. Lista à parte para o `plano` não vazar
 // pras formas aceitas da página pública (`barbearia.formas_pagamento`).

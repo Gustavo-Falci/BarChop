@@ -5,6 +5,8 @@ import {
   FORMAS_DA_ASSINATURA,
   FORMAS_DO_CAIXA,
   MAX_DIAS_DE_TESTE_DO_CLIENTE,
+  MODOS_DA_CONEXAO,
+  PROVEDORES_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
   assinanteUsaOPlano,
   dividirMensalidade,
@@ -33,6 +35,11 @@ describe("listas fechadas", () => {
     expect(CICLOS_DO_CLIENTE).toEqual(["mensal", "trimestral", "anual"]);
     expect(SITUACOES_DO_ASSINANTE).toEqual(["pendente", "teste", "ativa", "em_atraso", "cancelada"]);
     expect(FORMAS_DA_ASSINATURA).toEqual(["online", "no_balcao"]);
+  });
+
+  it("provedores e modos da conta conectada (viram CHECK no banco)", () => {
+    expect(PROVEDORES_DE_PAGAMENTO).toEqual(["asaas"]);
+    expect(MODOS_DA_CONEXAO).toEqual(["teste", "real"]);
   });
 
   it("os motivos das partes que só o plano gera", () => {

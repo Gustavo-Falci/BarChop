@@ -108,6 +108,9 @@ model Barbearia {
   // CATEGORIAS_DE_SERVICO; a que faltar vai pro fim (`ordenarCategorias`,
   // @barchop/formato). CHECK na migration 20261021120000_ordem.
   ordemCategorias           String[]  @default([]) @map("ordem_categorias")
+  // Os planos do cliente aparecem na página pública (marco 3 da Onda 2,
+  // migration 20261026120000_planos_de_assinatura).
+  vitrineDePlanos           Boolean   @default(false) @map("vitrine_de_planos")
   criadoEm                  DateTime  @default(now()) @map("criado_em") @db.Timestamptz
 
   barbeiros             Barbeiro[]
@@ -124,6 +127,11 @@ model Barbearia {
   regrasDeDivisao       RegraDeDivisao[]
   pagamentos            Pagamento[]
   fechamentos           FechamentoDoDia[]
+  // Os planos do cliente (migration 20261026120000_planos_de_assinatura).
+  conexoesDePagamento   ConexaoDePagamento[]
+  planosDeAssinatura    PlanoDeAssinatura[]
+  assinaturasDeClientes AssinaturaDoCliente[]
+  recebimentosDePlanos  RecebimentoDoPlano[]
 
   @@map("barbearia")
 }
@@ -256,48 +264,55 @@ model ExcecaoHorario {
 }
 
 model Barbeiro {
-  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  barbeariaId     String      @map("barbearia_id") @db.Uuid
-  nome            String      @db.VarChar(120)
-  email           String?     @unique @db.VarChar(160)
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId      String      @map("barbearia_id") @db.Uuid
+  nome             String      @db.VarChar(120)
+  email            String?     @unique @db.VarChar(160)
   // Nulo enquanto o membro convidado não define a senha; o login recusa.
-  senhaHash       String?     @map("senha_hash")
-  telefone        String?     @db.VarChar(20)
-  ativo           Boolean     @default(true)
-  papel           PapelMembro @default(profissional)
+  senhaHash        String?     @map("senha_hash")
+  telefone         String?     @db.VarChar(20)
+  ativo            Boolean     @default(true)
+  papel            PapelMembro @default(profissional)
   // Aparece na agenda e no fluxo público. A recepção nasce com false.
-  atende          Boolean     @default(true)
+  atende           Boolean     @default(true)
   // Chave da foto no armazenamento (bloco E2); a URL sai da config.
-  fotoChave       String?     @map("foto_chave") @db.VarChar(200)
-  criadoEm        DateTime    @default(now()) @map("criado_em") @db.Timestamptz
+  fotoChave        String?     @map("foto_chave") @db.VarChar(200)
+  criadoEm         DateTime    @default(now()) @map("criado_em") @db.Timestamptz
   // Token com `iat` anterior a isto é recusado (plugins/auth.ts).
-  senhaAlteradaEm DateTime?   @map("senha_alterada_em") @db.Timestamptz
+  senhaAlteradaEm  DateTime?   @map("senha_alterada_em") @db.Timestamptz
   // % que fica com a casa de tudo o que o membro atende (caixa, marco 2
   // da Onda 2; CHECK 0..100 na migration 20261017120000_caixa).
-  parteDaCasa     Int         @default(0) @map("parte_da_casa") @db.SmallInt
+  parteDaCasa      Int         @default(0) @map("parte_da_casa") @db.SmallInt
   // A ordem na equipe e no link público, como a do serviço. O limite do
   // Grátis e o "qualquer um" seguem por `criadoEm`, não por ela
   // (migration 20261021120000_ordem).
-  ordem           Int         @default(dbgenerated()) @db.SmallInt
+  ordem            Int         @default(dbgenerated()) @db.SmallInt
+  // O dono libera o membro pra vender planos ao cliente; o dono vende
+  // sem ela (migration 20261026120000_planos_de_assinatura).
+  podeVenderPlanos Boolean     @default(false) @map("pode_vender_planos")
 
-  barbearia    Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
-  agendamentos Agendamento[]
+  barbearia             Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  agendamentos          Agendamento[]
   // Sete linhas sempre, e todos os serviços ao nascer: quem garante é o
   // trigger do insert (migration 20261004120000), não as rotas.
-  jornada      JornadaProfissional[]
-  servicos     ProfissionalServico[]
-  bloqueios    Bloqueio[]
-  notificacoes Notificacao[]
+  jornada               JornadaProfissional[]
+  servicos              ProfissionalServico[]
+  bloqueios             Bloqueio[]
+  notificacoes          Notificacao[]
   // O caixa (migration 20261017120000_caixa).
-  clientes              Cliente[]          @relation("DonoDoCliente")
-  regrasComoDono        RegraDeDivisao[]   @relation("RegraDonoDoCliente")
-  regrasComoAtendente   RegraDeDivisao[]   @relation("RegraAtendente")
-  pagamentosAtendidos   Pagamento[]        @relation("PagamentoAtendente")
-  pagamentosDosClientes Pagamento[]        @relation("PagamentoDonoDoCliente")
-  pagamentosRecebidos   Pagamento[]        @relation("PagamentoRecebidoPor")
-  pagamentosRegistrados Pagamento[]        @relation("PagamentoRegistradoPor")
+  clientes              Cliente[]             @relation("DonoDoCliente")
+  regrasComoDono        RegraDeDivisao[]      @relation("RegraDonoDoCliente")
+  regrasComoAtendente   RegraDeDivisao[]      @relation("RegraAtendente")
+  pagamentosAtendidos   Pagamento[]           @relation("PagamentoAtendente")
+  pagamentosDosClientes Pagamento[]           @relation("PagamentoDonoDoCliente")
+  pagamentosRecebidos   Pagamento[]           @relation("PagamentoRecebidoPor")
+  pagamentosRegistrados Pagamento[]           @relation("PagamentoRegistradoPor")
   partesRecebidas       PagamentoParte[]
   fechamentos           FechamentoDoDia[]
+  // Os planos do cliente (migration 20261026120000_planos_de_assinatura).
+  conexoesDePagamento   ConexaoDePagamento[]
+  planosVendidos        PlanoDeAssinatura[]
+  recebimentosDePlanos  RecebimentoDoPlano[]
 
   @@index([barbeariaId])
   @@map("barbeiro")
@@ -369,9 +384,10 @@ model Cliente {
   // troca à mão. Nulo = de ninguém ainda (migration 20261017120000_caixa).
   profissionalId  String?   @map("profissional_id") @db.Uuid
 
-  barbearia    Barbearia     @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  barbearia    Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
-  profissional Barbeiro?     @relation("DonoDoCliente", fields: [profissionalId], references: [id], onDelete: SetNull)
+  profissional Barbeiro?             @relation("DonoDoCliente", fields: [profissionalId], references: [id], onDelete: SetNull)
+  assinaturas  AssinaturaDoCliente[]
 
   // Telefone é único dentro da barbearia, não na plataforma: o mesmo
   // cliente pode ser cliente de duas barbearias, com um cadastro em
@@ -407,6 +423,8 @@ model Servico {
   barbearia           Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentoServicos AgendamentoServico[]
   profissionais       ProfissionalServico[]
+  planos              PlanoServico[]
+  usosDePlanos        UsoDoPlano[]
 
   @@index([barbeariaId])
   @@map("servico")
@@ -480,7 +498,9 @@ model RegraDeDivisao {
 
 // Um por agendamento. `data` é a do agendamento (o dia do caixa). Quem
 // atendeu, de quem era o cliente e quem recebeu ficam congelados no
-// registro. `forma` com CHECK de FORMAS_DE_PAGAMENTO.
+// registro. `forma` com CHECK de FORMAS_DO_CAIXA: `plano` só no
+// atendimento todo pelo plano (sem dinheiro); com serviço cobrado à
+// parte, a forma é a do dinheiro. "Pelo plano" = `assinaturaId`.
 model Pagamento {
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   barbeariaId      String   @map("barbearia_id") @db.Uuid
@@ -495,21 +515,26 @@ model Pagamento {
   gorjetaCentavos  Int      @default(0) @map("gorjeta_centavos")
   registradoPorId  String   @map("registrado_por_id") @db.Uuid
   registradoEm     DateTime @default(now()) @map("registrado_em") @db.Timestamptz
+  assinaturaId     String?  @map("assinatura_id") @db.Uuid
 
-  barbearia     Barbearia        @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
-  agendamento   Agendamento      @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
-  atendente     Barbeiro         @relation("PagamentoAtendente", fields: [atendenteId], references: [id], onDelete: NoAction)
-  donoDoCliente Barbeiro?        @relation("PagamentoDonoDoCliente", fields: [donoDoClienteId], references: [id], onDelete: NoAction)
-  recebidoPor   Barbeiro         @relation("PagamentoRecebidoPor", fields: [recebidoPorId], references: [id], onDelete: NoAction)
-  registradoPor Barbeiro         @relation("PagamentoRegistradoPor", fields: [registradoPorId], references: [id], onDelete: NoAction)
+  barbearia     Barbearia            @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  agendamento   Agendamento          @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  atendente     Barbeiro             @relation("PagamentoAtendente", fields: [atendenteId], references: [id], onDelete: NoAction)
+  donoDoCliente Barbeiro?            @relation("PagamentoDonoDoCliente", fields: [donoDoClienteId], references: [id], onDelete: NoAction)
+  recebidoPor   Barbeiro             @relation("PagamentoRecebidoPor", fields: [recebidoPorId], references: [id], onDelete: NoAction)
+  registradoPor Barbeiro             @relation("PagamentoRegistradoPor", fields: [registradoPorId], references: [id], onDelete: NoAction)
   partes        PagamentoParte[]
+  assinatura    AssinaturaDoCliente? @relation(fields: [assinaturaId], references: [id], onDelete: NoAction)
+  usosDoPlano   UsoDoPlano[]
 
   @@index([barbeariaId, data])
+  @@index([assinaturaId])
   @@map("pagamento")
 }
 
 // A divisão congelada de um pagamento. Beneficiário nulo = a casa.
-// `motivo` com CHECK de MOTIVOS_DA_PARTE.
+// `motivo` com CHECK de MOTIVOS_DA_PARTE + `plano` (o fixo do plano da
+// casa).
 model PagamentoParte {
   id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   pagamentoId    String  @map("pagamento_id") @db.Uuid
@@ -539,6 +564,161 @@ model FechamentoDoDia {
 
   @@unique([barbeariaId, data])
   @@map("fechamento_do_dia")
+}
+
+// Os planos que a barbearia e os barbeiros vendem ao cliente (Onda 2,
+// marco 3; migration 20261026120000_planos_de_assinatura). A conta mora
+// em packages/formato/src/planos-do-cliente.ts. Dinheiro em centavos.
+
+// A conta de quem vende num provedor. `daCasa` = a que recebe os planos
+// da casa (uma por barbearia, índice parcial); fora ela, uma por membro e
+// provedor. A chave vai cifrada e nunca volta pra tela.
+model ConexaoDePagamento {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId      String   @map("barbearia_id") @db.Uuid
+  barbeiroId       String   @map("barbeiro_id") @db.Uuid
+  daCasa           Boolean  @default(false) @map("da_casa")
+  provedor         String   @db.VarChar(20)
+  modo             String   @db.VarChar(10)
+  chaveCifrada     Bytes    @map("chave_cifrada")
+  chaveFinal       String   @map("chave_final") @db.VarChar(4)
+  webhookTokenHash String   @map("webhook_token_hash") @db.VarChar(128)
+  idExternoWebhook String?  @map("id_externo_webhook") @db.VarChar(100)
+  criadoEm         DateTime @default(now()) @map("criado_em") @db.Timestamptz
+
+  barbearia   Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  barbeiro    Barbeiro              @relation(fields: [barbeiroId], references: [id], onDelete: NoAction)
+  assinaturas AssinaturaDoCliente[]
+
+  @@map("conexao_de_pagamento")
+}
+
+// Vendedor nulo = plano da casa, que tem o fixo por atendimento; o de
+// barbeiro não tem (CHECK). Plano não é apagado: sai com `ativo = false`.
+model PlanoDeAssinatura {
+  id                         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId                String   @map("barbearia_id") @db.Uuid
+  vendedorId                 String?  @map("vendedor_id") @db.Uuid
+  nome                       String   @db.VarChar(80)
+  descricao                  String?  @db.VarChar(300)
+  ciclo                      String   @db.VarChar(20)
+  precoCentavos              Int      @map("preco_centavos")
+  diasDeTeste                Int      @default(0) @map("dias_de_teste") @db.SmallInt
+  fixoPorAtendimentoCentavos Int?     @map("fixo_por_atendimento_centavos")
+  aceitaOnline               Boolean  @default(true) @map("aceita_online")
+  aceitaNoBalcao             Boolean  @default(false) @map("aceita_no_balcao")
+  ativo                      Boolean  @default(true)
+  ordem                      Int      @default(0) @db.SmallInt
+  criadoEm                   DateTime @default(now()) @map("criado_em") @db.Timestamptz
+
+  barbearia   Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  vendedor    Barbeiro?             @relation(fields: [vendedorId], references: [id], onDelete: NoAction)
+  servicos    PlanoServico[]
+  assinaturas AssinaturaDoCliente[]
+
+  @@index([barbeariaId])
+  @@index([vendedorId])
+  @@map("plano_de_assinatura")
+}
+
+// O que o plano cobre. Usos nulo = ilimitado.
+model PlanoServico {
+  planoId      String @map("plano_id") @db.Uuid
+  servicoId    String @map("servico_id") @db.Uuid
+  usosPorCiclo Int?   @map("usos_por_ciclo") @db.SmallInt
+
+  plano   PlanoDeAssinatura @relation(fields: [planoId], references: [id], onDelete: Cascade)
+  servico Servico           @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+
+  @@id([planoId, servicoId])
+  @@index([servicoId])
+  @@map("plano_servico")
+}
+
+// Preço e ciclo congelados. Online tem conexão e o id no provedor; no
+// balcão, não. Uma viva (não cancelada) por cliente e plano (índice
+// parcial na migration).
+model AssinaturaDoCliente {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId    String    @map("barbearia_id") @db.Uuid
+  planoId        String    @map("plano_id") @db.Uuid
+  clienteId      String    @map("cliente_id") @db.Uuid
+  situacao       String    @default("pendente") @db.VarChar(20)
+  forma          String    @db.VarChar(20)
+  precoCentavos  Int       @map("preco_centavos")
+  ciclo          String    @db.VarChar(20)
+  conexaoId      String?   @map("conexao_id") @db.Uuid
+  idExterno      String?   @map("id_externo") @db.VarChar(100)
+  // O ciclo atual; nulos enquanto pendente.
+  cicloComecaEm  DateTime? @map("ciclo_comeca_em") @db.Date
+  cicloTerminaEm DateTime? @map("ciclo_termina_em") @db.Date
+  canceladaEm    DateTime? @map("cancelada_em") @db.Timestamptz
+  criadoEm       DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+
+  barbearia    Barbearia            @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  plano        PlanoDeAssinatura    @relation(fields: [planoId], references: [id], onDelete: NoAction)
+  cliente      Cliente              @relation(fields: [clienteId], references: [id], onDelete: NoAction)
+  conexao      ConexaoDePagamento?  @relation(fields: [conexaoId], references: [id], onDelete: NoAction)
+  recebimentos RecebimentoDoPlano[]
+  pagamentos   Pagamento[]
+  usos         UsoDoPlano[]
+
+  @@unique([conexaoId, idExterno])
+  @@index([barbeariaId])
+  @@index([clienteId])
+  @@map("assinatura_do_cliente")
+}
+
+// Cada mensalidade que entrou, no dia do caixa (o da confirmação, ou o
+// próximo aberto), com a parte da casa congelada.
+model RecebimentoDoPlano {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId   String   @map("barbearia_id") @db.Uuid
+  assinaturaId  String   @map("assinatura_id") @db.Uuid
+  data          DateTime @db.Date
+  recebidoPorId String   @map("recebido_por_id") @db.Uuid
+  valorCentavos Int      @map("valor_centavos")
+  casaCentavos  Int      @map("casa_centavos")
+  forma         String   @db.VarChar(20)
+  idExterno     String?  @map("id_externo") @db.VarChar(100)
+  registradoEm  DateTime @default(now()) @map("registrado_em") @db.Timestamptz
+
+  barbearia   Barbearia           @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  assinatura  AssinaturaDoCliente @relation(fields: [assinaturaId], references: [id], onDelete: NoAction)
+  recebidoPor Barbeiro            @relation(fields: [recebidoPorId], references: [id], onDelete: NoAction)
+
+  @@unique([assinaturaId, idExterno])
+  @@index([barbeariaId, data])
+  @@map("recebimento_do_plano")
+}
+
+// Um por serviço coberto num atendimento pelo plano. Sai junto com o
+// pagamento: desfazer o pagamento devolve o uso.
+model UsoDoPlano {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  pagamentoId  String   @map("pagamento_id") @db.Uuid
+  assinaturaId String   @map("assinatura_id") @db.Uuid
+  servicoId    String   @map("servico_id") @db.Uuid
+  data         DateTime @db.Date
+
+  pagamento  Pagamento           @relation(fields: [pagamentoId], references: [id], onDelete: Cascade)
+  assinatura AssinaturaDoCliente @relation(fields: [assinaturaId], references: [id], onDelete: NoAction)
+  servico    Servico             @relation(fields: [servicoId], references: [id], onDelete: NoAction)
+
+  @@index([assinaturaId, data])
+  @@index([pagamentoId])
+  @@map("uso_do_plano")
+}
+
+// A deduplicação do webhook dos provedores, como `evento_stripe`.
+model EventoDoProvedor {
+  provedor   String   @db.VarChar(20)
+  id         String   @db.VarChar(255)
+  tipo       String   @db.VarChar(100)
+  recebidoEm DateTime @default(now()) @map("recebido_em") @db.Timestamptz
+
+  @@id([provedor, id])
+  @@map("evento_do_provedor")
 }
 
 // O código de verificação do primeiro acesso e da recuperação de senha.

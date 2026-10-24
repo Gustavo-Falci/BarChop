@@ -427,29 +427,108 @@ button.diaDoCabecalho:hover .numeroDoDia {
   color: var(--cor-muted);
 }
 
-/* Abaixo de 900px sete colunas não cabem sem espremer o evento até o
-   ilegível. O quadro rola na horizontal dentro da própria caixa, em vez
-   de empurrar a página — rolagem horizontal no body quebra o layout
-   inteiro. O cliente móvel do barbeiro é o app do Expo, não esta tela. */
+/* Abaixo de 900px (agenda no celular, PR 5), no jeito do Google Agenda:
+   semana e 3 dias CABEM na largura da tela, sem rolar de lado. O eixo
+   estreita ("09" em vez de "09:00") e o bloco que fica estreito demais
+   mostra só o nome do cliente (ver o @container abaixo). Antes as
+   colunas tinham 120px e o quadro rolava de lado — a semana inteira não
+   se via de uma vez, que é justo o que se quer de uma semana.
+
+   A exceção é o dia de uma equipe grande (`data-largas`, 4+ colunas de
+   profissional): espremidas, nenhuma se lê. Essas ficam com 110px, o
+   quadro rola na horizontal dentro da própria caixa (rolagem no body
+   quebraria o layout) e o eixo fica preso à esquerda. */
 @media (max-width: 900px) {
-  .quadro {
+  .cabecalho,
+  .corpo {
+    grid-template-columns: 2.25rem repeat(var(--colunas), minmax(0, 1fr));
+  }
+
+  /* "09:00" vira "09": o texto continua inteiro no DOM (leitor de tela e
+     testes leem a hora toda), e a caixa de 2 algarismos tabulares corta
+     o ":00" à vista. */
+  .hora[data-cheia] {
+    justify-self: end;
+    width: 2ch;
+    overflow: hidden;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hora {
+    padding-inline-end: 2px;
+  }
+
+  .diaDoCabecalho {
+    padding-inline: 0;
+  }
+
+  .numeroDoDia {
+    min-width: 1.75em;
+    min-height: 1.75em;
+    font-size: var(--texto-md);
+  }
+
+  .quadro[data-largas] {
     overflow-x: auto;
   }
 
-  /* Os 120px vão nas TRILHAS, e não nos itens: com `min-width` só na
-     coluna, a trilha seguia `minmax(0, 1fr)`, ficava com ~40px numa tela
-     de 375 e cada coluna transbordava em cima da vizinha. */
-  .cabecalho,
-  .corpo {
-    grid-template-columns: 3.5rem repeat(var(--colunas), minmax(120px, 1fr));
+  /* Os 110px vão nas TRILHAS, e não nos itens: com `min-width` só na
+     coluna, a trilha seguia `minmax(0, 1fr)` e cada coluna transbordava
+     em cima da vizinha. */
+  .quadro[data-largas] .cabecalho,
+  .quadro[data-largas] .corpo {
+    grid-template-columns: 2.25rem repeat(var(--colunas), minmax(110px, 1fr));
   }
 
   /* Cabeçalho e invólucro do corpo com a largura das trilhas: quem rola
-     na horizontal é o quadro, e os dois andam juntos. Sem isso o corpo
-     rolaria sozinho por baixo de um cabeçalho parado. */
-  .cabecalho,
-  .rolagem {
-    min-width: calc(3.5rem + var(--colunas) * 120px);
+     na horizontal é o quadro, e os dois andam juntos. */
+  .quadro[data-largas] .cabecalho,
+  .quadro[data-largas] .rolagem {
+    min-width: calc(2.25rem + var(--colunas) * 110px);
+  }
+
+  .quadro[data-largas] .eixo,
+  .quadro[data-largas] .canto {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--cor-paper-soft);
+  }
+}
+
+/* Hoje no cabeçalho: o número no círculo da cor da marca. */
+.diaDoCabecalho[aria-current="date"] .numeroDoDia {
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+}
+
+/* Cada coluna mede a si mesma: o bloco compacto depende da largura que a
+   coluna tem, e não da tela — 3 dias num celular ainda cabem o serviço,
+   7 não. */
+.coluna {
+  container-type: inline-size;
+}
+
+/* Abaixo de ~60px, só o nome do cliente. Hora e serviço saem do olho,
+   mas não do leitor de tela: escondidos à moda do `.somenteLeitor`, e
+   não com `display: none`, continuam no nome do botão. */
+@container (max-width: 60px) {
+  .evento .horaDoEvento,
+  .evento .servicos {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .evento {
+    padding-inline: 2px;
+    font-size: var(--texto-xs);
+    overflow-wrap: anywhere;
   }
 }
 

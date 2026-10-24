@@ -449,3 +449,38 @@ describe("status no bloco (agenda no celular, PR 1)", () => {
     expect(screen.queryByRole("button", { name: /João Silva/ })).not.toBeInTheDocument();
   });
 });
+
+describe("grade no celular (agenda no celular, PR 5)", () => {
+  it("o cabeçalho marca hoje", () => {
+    const grade = gradeDeTempo({ dias: [TERCA, "2026-09-09"], horarios: HORARIOS, agendamentos: [], agora: AGORA });
+    render(<GradeDeTempo grade={grade} agora={AGORA} aoAbrir={() => {}} aoCriar={() => {}} aoAbrirDia={() => {}} />);
+
+    expect(screen.getByRole("button", { name: "8 de setembro" })).toHaveAttribute("aria-current", "date");
+    expect(screen.getByRole("button", { name: "9 de setembro" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("o dia com 4 profissionais pede colunas largas; a semana não", () => {
+    const equipe = ["Rafael", "Ana", "Bia", "Caio"].map((nome, i) => ({ id: `p${i}`, nome }));
+    const doDia = gradeDeTempo({ dias: [TERCA], horarios: HORARIOS, agendamentos: [], agora: AGORA, profissionais: equipe });
+    const { unmount } = render(<GradeDeTempo grade={doDia} agora={AGORA} aoAbrir={() => {}} aoCriar={() => {}} />);
+    expect(screen.getByTestId("quadro-da-grade")).toHaveAttribute("data-largas", "true");
+    unmount();
+
+    const daSemana = gradeDeTempo({
+      dias: ["2026-09-06", "2026-09-07", TERCA, "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12"],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+    });
+    render(<GradeDeTempo grade={daSemana} agora={AGORA} aoAbrir={() => {}} aoCriar={() => {}} />);
+    expect(screen.getByTestId("quadro-da-grade")).not.toHaveAttribute("data-largas");
+  });
+
+  it("o dia com 3 profissionais ainda cabe", () => {
+    const equipe = ["Rafael", "Ana", "Bia"].map((nome, i) => ({ id: `p${i}`, nome }));
+    const grade = gradeDeTempo({ dias: [TERCA], horarios: HORARIOS, agendamentos: [], agora: AGORA, profissionais: equipe });
+    render(<GradeDeTempo grade={grade} agora={AGORA} aoAbrir={() => {}} aoCriar={() => {}} />);
+
+    expect(screen.getByTestId("quadro-da-grade")).not.toHaveAttribute("data-largas");
+  });
+});

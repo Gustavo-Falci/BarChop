@@ -4,10 +4,14 @@ import { useId, type ReactNode } from "react";
 import { Indicador } from "../movimento/Indicador";
 import estilos from "./SeletorDeVista.module.css";
 
-export type Vista = "dia" | "semana" | "mes";
+// "lista" e "3dias" vieram com a agenda no celular (PR 2), no jeito do
+// Google Agenda; valem no desktop também.
+export type Vista = "lista" | "dia" | "3dias" | "semana" | "mes";
 
-const VISTAS: { valor: Vista; rotulo: string }[] = [
+export const VISTAS: { valor: Vista; rotulo: string }[] = [
+  { valor: "lista", rotulo: "Lista" },
   { valor: "dia", rotulo: "Dia" },
+  { valor: "3dias", rotulo: "3 dias" },
   { valor: "semana", rotulo: "Semana" },
   { valor: "mes", rotulo: "Mês" },
 ];

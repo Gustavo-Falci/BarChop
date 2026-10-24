@@ -3,6 +3,8 @@ import { formatarPreco } from "../../../componentes/ItemDeServico";
 import { CONTAM, percentual, previstoDoDia, proximos } from "../../../painel/metricas";
 import estilos from "./ResumoDoPeriodo.module.css";
 
+const RESUMO_DE = { dia: "Resumo do dia", "3dias": "Resumo dos 3 dias", semana: "Resumo da semana" } as const;
+
 // A faixa de resumo da agenda (painel v2, marco 6): o que o dono quer
 // saber antes de ler a grade. As contas são as do Hoje (metricas.ts) —
 // mesma regra, mesmos números nas duas telas.
@@ -14,7 +16,7 @@ export function ResumoDoPeriodo({
   ocupacao,
   soDoProfissional,
 }: {
-  periodo: "dia" | "semana";
+  periodo: "dia" | "3dias" | "semana";
   // Só os do período à vista.
   agendamentos: AgendamentoComCliente[];
   agora: Date;
@@ -31,7 +33,7 @@ export function ResumoDoPeriodo({
   const ocupado = ocupacao ? percentual(ocupacao.casa) : undefined;
 
   return (
-    <ul className={estilos.faixa} aria-label={periodo === "dia" ? "Resumo do dia" : "Resumo da semana"}>
+    <ul className={estilos.faixa} aria-label={RESUMO_DE[periodo]}>
       <li>
         {quantos === 0 ? "Nenhum agendamento" : `${quantos} ${quantos === 1 ? "agendamento" : "agendamentos"}`}
       </li>

@@ -1,12 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { SeletorDeVista } from "../../src/componentes/SeletorDeVista";
+import { SeletorDeVista, type Vista } from "../../src/componentes/SeletorDeVista";
 
 function montar(entrada: {
-  vista?: "dia" | "semana" | "mes";
+  vista?: Vista;
   titulo?: string;
-  aoTrocarVista?: (vista: "dia" | "semana" | "mes") => void;
+  aoTrocarVista?: (vista: Vista) => void;
   aoAndar?: (passos: number) => void;
   aoVoltarAHoje?: () => void;
 }) {
@@ -36,7 +36,7 @@ describe("SeletorDeVista", () => {
   });
 
   it("troca de vista ao clicar", async () => {
-    const aoTrocarVista = vi.fn((_vista: "dia" | "semana" | "mes") => {});
+    const aoTrocarVista = vi.fn((_vista: Vista) => {});
     montar({ vista: "semana", aoTrocarVista });
 
     await userEvent.click(screen.getByRole("button", { name: "Dia" }));

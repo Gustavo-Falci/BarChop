@@ -51,7 +51,9 @@ export function FormularioDoPagamento({
   const [desconto, setDesconto] = useState(centavosNoCampo(atual?.descontoCentavos ?? 0));
   const [gorjeta, setGorjeta] = useState(centavosNoCampo(atual?.gorjetaCentavos ?? 0));
   // Sem forma escolhida de início: a forma errada estraga o caixa do dia.
-  const [forma, setForma] = useState<FormaDoPagamento | "">(atual?.forma ?? "");
+  // "Pelo plano" ainda não tem tela (PR 7 do plano planos-de-assinatura):
+  // refazer aqui começa sem forma.
+  const [forma, setForma] = useState<FormaDoPagamento | "">(atual && atual.forma !== "plano" ? atual.forma : "");
   // Quem recebeu começa em quem atendeu ("paguei na maquininha do
   // Gustavo" é a troca).
   const [recebidoPor, setRecebidoPor] = useState(

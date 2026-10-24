@@ -1716,6 +1716,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         return {
           pagamento: pagamento ? copiaDoPagamento(pagamento) : null,
           diaFechado: estado.diasFechados!.includes(achado.data),
+          assinaturas: [],
         };
       },
       // A mesma conta da API (dividirPagamento); o resto, como em
@@ -1764,6 +1765,9 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             motivo: parte.motivo,
             valorCentavos: parte.valorCentavos,
           })),
+          // O falso não tem planos de assinatura (PR 7).
+          assinatura: null,
+          servicosPeloPlano: [],
         };
         apagarPagamento(id);
         estado.pagamentos!.push(pagamento);

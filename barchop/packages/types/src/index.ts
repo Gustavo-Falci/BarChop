@@ -581,7 +581,11 @@ export interface FaturaDaAssinatura {
 // O caixa do dia (Onda 2, marco 2). Dinheiro em centavos inteiros; as
 // listas são FORMAS_DE_PAGAMENTO e MOTIVOS_DA_PARTE do @barchop/formato.
 export type FormaDoPagamento = "pix" | "dinheiro" | "debito" | "credito";
-export type MotivoDaParteDoPagamento = "atendimento" | "cliente" | "casa" | "gorjeta";
+// `plano`: só no pagamento, quando nada foi cobrado e o atendimento foi
+// todo pelo plano de assinatura do cliente (marco 3).
+export type FormaDoCaixa = FormaDoPagamento | "plano";
+// `plano` = o fixo do plano da casa pra quem atendeu, pago pela casa.
+export type MotivoDaParteDoPagamento = "atendimento" | "cliente" | "casa" | "gorjeta" | "plano";
 
 export interface MembroDoCaixa {
   id: string;
@@ -601,7 +605,7 @@ export interface PagamentoDoAgendamento {
   agendamentoId: string;
   // O dia do caixa: a data do agendamento.
   data: string;
-  forma: FormaDoPagamento;
+  forma: FormaDoCaixa;
   servicosCentavos: number;
   descontoCentavos: number;
   gorjetaCentavos: number;
@@ -614,12 +618,19 @@ export interface PagamentoDoAgendamento {
   registradoPor: MembroDoCaixa;
   registradoEm: string;
   partes: ParteDoPagamento[];
+  // O plano de assinatura usado, e os serviços que ele cobriu (fora da
+  // soma de `servicosCentavos`).
+  assinatura: { id: string; plano: { id: string; nome: string } } | null;
+  servicosPeloPlano: { id: string; nome: string }[];
 }
 
 // Body de PUT /agendamentos/:id/pagamento. Sem `servicosCentavos`, vale
 // a soma dos serviços do agendamento; sem `recebidoPorId`, quem atendeu.
+// Com `assinaturaId`, a API decide o que o plano cobre; o resto é
+// cobrado, e sem nada cobrado a forma é `plano`.
 export interface RegistrarPagamento {
-  forma: FormaDoPagamento;
+  forma: FormaDoCaixa;
+  assinaturaId?: string;
   servicosCentavos?: number;
   descontoCentavos?: number;
   gorjetaCentavos?: number;
@@ -631,6 +642,25 @@ export interface RegistrarPagamento {
 export interface PagamentoDoAtendimento {
   pagamento: PagamentoDoAgendamento | null;
   diaFechado: boolean;
+  // As assinaturas vivas do cliente. O profissional recebe só as dos
+  // planos da casa e as dos planos dele.
+  assinaturas: AssinaturaNoPagamento[];
+}
+
+export interface AssinaturaNoPagamento {
+  id: string;
+  situacao: SituacaoDoAssinante;
+  cicloComecaEm: string | null;
+  cicloTerminaEm: string | null;
+  // O dia do atendimento cai no ciclo pago (o dia da renovação já é do
+  // próximo).
+  noCiclo: boolean;
+  // Plano de barbeiro só vale com quem vende.
+  valeComOAtendente: boolean;
+  plano: { id: string; nome: string; daCasa: boolean; vendedor: MembroDoCaixa | null };
+  // `null` = ilimitado. Os usos que sobram no ciclo, sem contar os deste
+  // atendimento.
+  servicos: { servicoId: string; nome: string; usosPorCiclo: number | null; usosRestantes: number | null }[];
 }
 
 // GET /barbearias/me/caixa?data= — o caixa de um dia. O profissional

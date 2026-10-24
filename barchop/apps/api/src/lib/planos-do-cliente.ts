@@ -1,8 +1,12 @@
 import type { Prisma } from "@barchop/database";
+import { assinanteUsaOPlano, usosRestantes, type SituacaoDoAssinante } from "@barchop/formato";
+import type { AssinaturaNoPagamento } from "@barchop/types";
 import type { Membro } from "../plugins/auth";
 import { diaEstaFechado } from "./caixa";
 import { PODE_ATENDER } from "./disponibilidade";
-import { dataParaDate, somarDias } from "./horas";
+import { naoEncontrado } from "./erro-http";
+import { ErroDeNegocio } from "./erro-negocio";
+import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "./horas";
 
 // Os planos que a barbearia e os barbeiros vendem ao cliente (Onda 2,
 // marco 3). A conta mora em @barchop/formato (planos-do-cliente.ts);
@@ -77,4 +81,170 @@ export async function proximoDiaAberto(
     dia = somarDias(dia, 1);
   }
   throw new Error(`nenhum dia aberto no caixa da barbearia ${barbeariaId} a partir de ${desde}`);
+}
+
+type Ciclo = { cicloComecaEm: Date | null; cicloTerminaEm: Date | null };
+
+// O ciclo vai do começo até a véspera da renovação: no dia da renovação,
+// o atendimento já é do ciclo seguinte, que só abre com o "recebi" (ou
+// com o webhook, no online).
+function diaNoCiclo(ciclo: Ciclo, dia: Date): boolean {
+  if (!ciclo.cicloComecaEm || !ciclo.cicloTerminaEm) return false;
+  const data = dateParaData(dia);
+  return dateParaData(ciclo.cicloComecaEm) <= data && data < dateParaData(ciclo.cicloTerminaEm);
+}
+
+// Os usos do ciclo de uma assinatura, por serviço. `menos` = o pagamento
+// que está sendo refeito, que não conta contra ele mesmo.
+async function usosNoCiclo(
+  db: Prisma.TransactionClient,
+  assinatura: Ciclo & { id: string },
+  menos: string | null
+): Promise<Map<string, number>> {
+  if (!assinatura.cicloComecaEm || !assinatura.cicloTerminaEm) return new Map();
+  const grupos = await db.usoDoPlano.groupBy({
+    by: ["servicoId"],
+    where: {
+      assinaturaId: assinatura.id,
+      data: { gte: assinatura.cicloComecaEm, lt: assinatura.cicloTerminaEm },
+      ...(menos ? { pagamentoId: { not: menos } } : {}),
+    },
+    _count: { _all: true },
+  });
+  return new Map(grupos.map((g) => [g.servicoId, g._count._all]));
+}
+
+export interface PeloPlano {
+  // Um por linha do atendimento coberta: o mesmo serviço duas vezes
+  // gasta dois usos.
+  cobertos: string[];
+  // `null` = plano de barbeiro, que não paga fixo.
+  fixoCentavos: number | null;
+}
+
+// Confere a assinatura que a tela mandou e decide o que o plano cobre no
+// atendimento (decisão 2 do plano): vale no dia, é do cliente, e o plano
+// de barbeiro só com quem vende. Cada serviço do plano vai até os usos
+// do ciclo; o que passa, ou que o plano não tem, é avulso. Quem chama já
+// travou a linha da barbearia (garantirDiaAberto): dois pagamentos ao
+// mesmo tempo não gastam o mesmo último uso.
+export async function conferirOPlano(
+  tx: Prisma.TransactionClient,
+  params: {
+    barbeariaId: string;
+    assinaturaId: string;
+    agendamento: { clienteId: string; atendenteId: string; data: Date; servicoIds: readonly string[] };
+    pagamentoId: string | null;
+  }
+): Promise<PeloPlano> {
+  const { barbeariaId, assinaturaId, agendamento, pagamentoId } = params;
+  await marcarAtrasadas(tx, barbeariaId, agoraNaBarbearia().data, { id: assinaturaId });
+  const assinatura = await tx.assinaturaDoCliente.findFirst({
+    where: { id: assinaturaId, barbeariaId },
+    include: {
+      plano: {
+        select: {
+          vendedorId: true,
+          fixoPorAtendimentoCentavos: true,
+          servicos: { select: { servicoId: true, usosPorCiclo: true } },
+        },
+      },
+    },
+  });
+  if (!assinatura) throw naoEncontrado();
+  if (assinatura.clienteId !== agendamento.clienteId) {
+    throw new ErroDeNegocio("esta assinatura é de outro cliente", "assinatura_de_outro_cliente");
+  }
+  if (!assinanteUsaOPlano(assinatura.situacao as SituacaoDoAssinante)) {
+    throw new ErroDeNegocio("esta assinatura não está valendo: pendente, em atraso ou cancelada", "assinatura_inativa");
+  }
+  if (!diaNoCiclo(assinatura, agendamento.data)) {
+    throw new ErroDeNegocio("o dia do atendimento está fora do ciclo pago da assinatura", "fora_do_ciclo");
+  }
+  const { plano } = assinatura;
+  if (plano.vendedorId !== null && plano.vendedorId !== agendamento.atendenteId) {
+    throw new ErroDeNegocio("o plano de barbeiro só vale com quem vende", "plano_de_outro_barbeiro");
+  }
+
+  const usados = await usosNoCiclo(tx, assinatura, pagamentoId);
+  const cobertos: string[] = [];
+  let esgotou = false;
+  for (const servicoId of agendamento.servicoIds) {
+    const regra = plano.servicos.find((s) => s.servicoId === servicoId);
+    if (!regra) continue;
+    const ja = usados.get(servicoId) ?? 0;
+    if (usosRestantes(regra.usosPorCiclo, ja) === 0) {
+      esgotou = true;
+      continue;
+    }
+    cobertos.push(servicoId);
+    usados.set(servicoId, ja + 1);
+  }
+  if (cobertos.length === 0) {
+    throw esgotou
+      ? new ErroDeNegocio("os usos do plano neste ciclo acabaram", "usos_esgotados")
+      : new ErroDeNegocio("o plano não cobre nenhum serviço deste atendimento", "servico_fora_do_plano");
+  }
+  return { cobertos, fixoCentavos: plano.fixoPorAtendimentoCentavos };
+}
+
+// As assinaturas vivas do cliente, pra tela do pagamento: os usos que
+// sobram no ciclo (sem os deste pagamento) e se valem no dia e com quem
+// atende. `somente` = o profissional logado: os planos da casa e os dele.
+export async function assinaturasNoPagamento(
+  db: Prisma.TransactionClient,
+  params: {
+    barbeariaId: string;
+    agendamento: { clienteId: string; atendenteId: string; data: Date };
+    pagamentoId: string | null;
+    somente?: string;
+  }
+): Promise<AssinaturaNoPagamento[]> {
+  const { barbeariaId, agendamento, pagamentoId, somente } = params;
+  await marcarAtrasadas(db, barbeariaId, agoraNaBarbearia().data, { clienteId: agendamento.clienteId });
+  const assinaturas = await db.assinaturaDoCliente.findMany({
+    where: {
+      barbeariaId,
+      clienteId: agendamento.clienteId,
+      situacao: { not: "cancelada" },
+      ...(somente ? { plano: { OR: [{ vendedorId: null }, { vendedorId: somente }] } } : {}),
+    },
+    include: {
+      plano: {
+        select: {
+          id: true,
+          nome: true,
+          vendedorId: true,
+          vendedor: { select: { id: true, nome: true } },
+          servicos: {
+            select: { servicoId: true, usosPorCiclo: true, servico: { select: { nome: true } } },
+            orderBy: { servico: { nome: "asc" } },
+          },
+        },
+      },
+    },
+    orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
+  });
+
+  return Promise.all(
+    assinaturas.map(async (assinatura) => {
+      const usados = await usosNoCiclo(db, assinatura, pagamentoId);
+      const { plano } = assinatura;
+      return {
+        id: assinatura.id,
+        situacao: assinatura.situacao as SituacaoDoAssinante,
+        cicloComecaEm: assinatura.cicloComecaEm ? dateParaData(assinatura.cicloComecaEm) : null,
+        cicloTerminaEm: assinatura.cicloTerminaEm ? dateParaData(assinatura.cicloTerminaEm) : null,
+        noCiclo: diaNoCiclo(assinatura, agendamento.data),
+        valeComOAtendente: plano.vendedorId === null || plano.vendedorId === agendamento.atendenteId,
+        plano: { id: plano.id, nome: plano.nome, daCasa: plano.vendedorId === null, vendedor: plano.vendedor },
+        servicos: plano.servicos.map((s) => ({
+          servicoId: s.servicoId,
+          nome: s.servico.nome,
+          usosPorCiclo: s.usosPorCiclo,
+          usosRestantes: usosRestantes(s.usosPorCiclo, usados.get(s.servicoId) ?? 0),
+        })),
+      };
+    })
+  );
 }

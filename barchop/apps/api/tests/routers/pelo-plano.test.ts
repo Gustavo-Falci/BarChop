@@ -263,7 +263,9 @@ describe("a assinatura precisa valer no dia", () => {
     const vencida = await assinatura(c, c.daCasa.id, { comeca: somarDias(HOJE, -31), termina: somarDias(HOJE, -1) });
     const ag = await atendimento(c, [corteDe45(c)]);
     expect((await registrar(c, ag.id, { forma: "plano", assinaturaId: vencida.id })).json().erro).toBe("assinatura_inativa");
-    expect((await prisma.assinaturaDoCliente.findUniqueOrThrow({ where: { id: vencida.id } })).situacao).toBe("em_atraso");
+    // O 422 desfaz a transação, e a marca junto: a próxima leitura refaz.
+    const { assinaturas } = (await ler(c, ag.id)).json();
+    expect(assinaturas[0].situacao).toBe("em_atraso");
     await c.app.close();
   });
 

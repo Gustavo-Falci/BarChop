@@ -333,7 +333,7 @@ describe("GET /agendamentos/:id/pagamento", () => {
 
     const antes = await ler(c, c.agendamento.id);
     expect(antes.statusCode).toBe(200);
-    expect(antes.json()).toEqual({ pagamento: null, diaFechado: false });
+    expect(antes.json()).toEqual({ pagamento: null, diaFechado: false, assinaturas: [] });
 
     const registrado = (await registrar(c, c.agendamento.id, { forma: "pix" })).json();
     await fecharODia(c);

@@ -88,7 +88,7 @@ describe("dublê — pagamento do atendimento", () => {
       ["bb1", "gorjeta", 300],
     ]);
     expect((await falso.barbeiro.agendamento("a1")).status).toBe("concluido");
-    expect(await falso.barbeiro.pagamentoDoAgendamento("a1")).toEqual({ pagamento, diaFechado: false });
+    expect(await falso.barbeiro.pagamentoDoAgendamento("a1")).toEqual({ pagamento, diaFechado: false, assinaturas: [] });
   });
 
   it("sair do concluído apaga o pagamento; remover também", async () => {

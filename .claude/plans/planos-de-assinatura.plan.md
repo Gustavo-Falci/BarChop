@@ -50,6 +50,22 @@ Diferenças do plano, combinadas no caminho:
   - assinar com dias grátis nasce `teste`, de hoje até hoje + dias; sem dias grátis, `pendente` e sem ciclo, até o 1º "recebi";
   - a parte da casa usa a "parte da casa" de hoje do vendedor; o dia do caixa é o próximo aberto, e o ciclo segue o dia do pagamento;
   - só assinar exige o Completo; a lista, o "recebi" e o cancelar seguem no Grátis (decisão 6).
+- **PR 6 dividido em dois:**
+  - **6a: "pelo plano" no pagamento.** Pagamento e `GET` do pagamento.
+  - **6b: mensalidades no caixa.** Os recebimentos no acerto, nos totais e na foto do fechamento.
+- **PR 6a (pelo plano no pagamento):**
+  - **a tela manda só `assinaturaId`**: a API decide o que o plano cobre. Cada linha do atendimento que o plano tem gasta um uso, até os usos do ciclo. O que passa disso, ou que o plano não tem, é avulso e entra em `servicosCentavos`;
+  - **422 quando nada é coberto**: `usos_esgotados`, ou `servico_fora_do_plano`;
+  - **outras recusas**: `assinatura_de_outro_cliente`, `assinatura_inativa`, `fora_do_ciclo`, `plano_de_outro_barbeiro`. A assinatura de outra barbearia é 404;
+  - **o ciclo vale de `ciclo_comeca_em` até a véspera de `ciclo_termina_em`**: no dia da renovação, o atendimento já é do ciclo seguinte, que só abre com o "recebi";
+  - **a forma é recusada (`forma_invalida`), nunca trocada sozinha**:
+    - `plano` só sem nada cobrado (serviços e gorjeta zerados) e com assinatura;
+    - com assinatura e nada cobrado, só `plano`;
+  - **refazer com a mesma assinatura não confere de novo**: ficam os mesmos usos e vale o fixo de agora. Assim o ciclo renovado ou o cancelar não travam a correção de um pagamento antigo. Trocar ou tirar a assinatura refaz os usos;
+  - **no acerto, a parte `plano` é a casa pagando quem atendeu** (`recebidoPor: null`), separada do dinheiro;
+  - **o `GET /agendamentos/:id/pagamento` traz `assinaturas`**, com os usos que sobram no ciclo sem os deste pagamento, `noCiclo` e `valeComOAtendente`. O profissional recebe os planos da casa e os dele;
+  - **o 422 desfaz a transação, e com ela a marca de em atraso**. A próxima leitura marca de novo;
+  - **web**: só o mínimo pra compilar ("Pelo plano" nos rótulos da forma). A tela é o PR 7.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

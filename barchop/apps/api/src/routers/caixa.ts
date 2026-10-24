@@ -1,5 +1,5 @@
 import { prisma } from "@barchop/database";
-import { FORMAS_DE_PAGAMENTO } from "@barchop/formato";
+import { FORMAS_DO_CAIXA } from "@barchop/formato";
 import type { CaixaDoDia, DivisaoDoDinheiro, PagamentoDoAtendimento } from "@barchop/types";
 import { garantirRecurso } from "../lib/assinatura";
 import {
@@ -15,6 +15,7 @@ import {
   serializarPagamento,
 } from "../lib/caixa";
 import { PADRAO_DATA, PADRAO_UUID } from "../lib/padroes";
+import { assinaturasNoPagamento } from "../lib/planos-do-cliente";
 import { agendaVisivel, exigirPapel, membroDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -79,14 +80,16 @@ const paramsComId = {
 // INTEGER.
 const CENTAVOS = { type: "integer", minimum: 0, maximum: 10_000_000 } as const;
 
-// Sem `servicosCentavos`, vale a soma dos serviços do agendamento; sem
-// `recebidoPorId`, quem atendeu.
+// Sem `servicosCentavos`, vale a soma dos serviços do agendamento (sem
+// os que o plano cobriu, com `assinaturaId`); sem `recebidoPorId`, quem
+// atendeu.
 const corpoPagamento = {
   type: "object",
   additionalProperties: false,
   required: ["forma"],
   properties: {
-    forma: { type: "string", enum: [...FORMAS_DE_PAGAMENTO] },
+    forma: { type: "string", enum: [...FORMAS_DO_CAIXA] },
+    assinaturaId: { type: "string", pattern: PADRAO_UUID },
     servicosCentavos: CENTAVOS,
     descontoCentavos: CENTAVOS,
     gorjetaCentavos: CENTAVOS,
@@ -103,11 +106,20 @@ export function registrarRotasCaixa(app: App): void {
       await garantirRecurso(prisma, barbeariaId, "caixa", new Date());
       const agendamento = await prisma.agendamento.findFirstOrThrow({
         where: { id: request.params.id, barbeariaId, ...agendaVisivel(request) },
-        select: { data: true, pagamento: { include: INCLUDE_PAGAMENTO } },
+        select: { data: true, barbeiroId: true, clienteId: true, pagamento: { include: INCLUDE_PAGAMENTO } },
+      });
+      // As assinaturas seguem fora do Completo (decisão 6 do plano):
+      // quem assina continua usando.
+      const assinaturas = await assinaturasNoPagamento(prisma, {
+        barbeariaId,
+        agendamento: { clienteId: agendamento.clienteId, atendenteId: agendamento.barbeiroId, data: agendamento.data },
+        pagamentoId: agendamento.pagamento?.id ?? null,
+        somente: agendaVisivel(request).barbeiroId,
       });
       return {
         pagamento: agendamento.pagamento ? serializarPagamento(agendamento.pagamento) : null,
         diaFechado: await diaEstaFechado(prisma, barbeariaId, agendamento.data),
+        assinaturas,
       };
     }
   );

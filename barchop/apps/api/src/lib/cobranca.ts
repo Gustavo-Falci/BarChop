@@ -469,6 +469,33 @@ function cobrancaDesligada(): Cobranca {
 // O script criar-precos cria e atualiza; mudou a padrão, rodar de novo.
 const MARCA_SEM_DESCIDA = { barchop: "sem_descida" };
 
+type ProdutoNaTroca = Stripe.BillingPortal.ConfigurationCreateParams.Features.SubscriptionUpdate.Product;
+
+// Quantidade ajustável no produto sem "quantity" na troca: o painel da
+// Stripe aceita, a API recusa. Sem a troca, não teria efeito mesmo.
+function temQuantidadeNaTroca(configuracao: Stripe.BillingPortal.Configuration): boolean {
+  return configuracao.features.subscription_update.default_allowed_updates.includes("quantity");
+}
+
+function produtoNaTroca(
+  p: Stripe.BillingPortal.Configuration.Features.SubscriptionUpdate.Product,
+  precos: string[],
+  quantidadeNaTroca: boolean
+): ProdutoNaTroca {
+  return {
+    product: p.product,
+    prices: precos,
+    adjustable_quantity:
+      quantidadeNaTroca && p.adjustable_quantity.enabled
+        ? {
+            enabled: true,
+            minimum: p.adjustable_quantity.minimum,
+            ...(p.adjustable_quantity.maximum !== null ? { maximum: p.adjustable_quantity.maximum } : {}),
+          }
+        : { enabled: false },
+  };
+}
+
 export function configuracaoSemDescida(
   padrao: Stripe.BillingPortal.Configuration
 ): Stripe.BillingPortal.ConfigurationCreateParams {
@@ -476,9 +503,7 @@ export function configuracaoSemDescida(
   const cancelar = f.subscription_cancel;
   const trocar = f.subscription_update;
   const doCompleto = idDoProduto("completo");
-  // Quantidade ajustável no produto sem "quantity" na troca: o painel da
-  // Stripe aceita, a API recusa. Sem a troca, não teria efeito mesmo.
-  const quantidadeNaTroca = trocar.default_allowed_updates.includes("quantity");
+  const quantidadeNaTroca = temQuantidadeNaTroca(padrao);
   return {
     name: "BarChop — sem descida (mais de 3 profissionais)",
     metadata: MARCA_SEM_DESCIDA,
@@ -513,24 +538,31 @@ export function configuracaoSemDescida(
         enabled: trocar.enabled,
         products: (trocar.products ?? [])
           .filter((p) => p.product === doCompleto)
-          .map((p) => ({
-            product: p.product,
-            prices: p.prices,
-            adjustable_quantity:
-              quantidadeNaTroca && p.adjustable_quantity.enabled
-                ? {
-                    enabled: true,
-                    minimum: p.adjustable_quantity.minimum,
-                    ...(p.adjustable_quantity.maximum !== null ? { maximum: p.adjustable_quantity.maximum } : {}),
-                  }
-                : { enabled: false },
-          })),
+          .map((p) => produtoNaTroca(p, p.prices, quantidadeNaTroca)),
         proration_behavior: trocar.proration_behavior,
         schedule_at_period_end: { conditions: trocar.schedule_at_period_end.conditions },
         trial_update_behavior: trocar.trial_update_behavior,
       },
     },
   };
+}
+
+// O Portal guarda ids de preço, não a lookup_key, e a Stripe recusa
+// salvar configuração com preço arquivado. Quando o script troca um preço
+// (planos.ts mudou), `trocas` leva cada id arquivado ao preço novo do
+// mesmo produto e ciclo. Devolve os produtos da troca de plano já com os
+// ids novos, ou null se nenhum preço do Portal foi trocado.
+export function produtosComPrecosNovos(
+  configuracao: Stripe.BillingPortal.Configuration,
+  trocas: ReadonlyMap<string, string>
+): ProdutoNaTroca[] | null {
+  const produtos = configuracao.features.subscription_update.products ?? [];
+  if (!produtos.some((p) => p.prices.some((id) => trocas.has(id)))) return null;
+  const quantidadeNaTroca = temQuantidadeNaTroca(configuracao);
+  // Se o novo já estava marcado junto do antigo, fica uma vez só.
+  return produtos.map((p) =>
+    produtoNaTroca(p, [...new Set(p.prices.map((id) => trocas.get(id) ?? id))], quantidadeNaTroca)
+  );
 }
 
 // Acha a "sem descida" pelo metadata, ativa ou não (o script reativa).

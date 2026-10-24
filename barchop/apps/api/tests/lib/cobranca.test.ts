@@ -11,6 +11,7 @@ import {
   modoDaChave,
   planoDaChave,
   precosParaStripe,
+  produtosComPrecosNovos,
   situacaoComReembolso,
   situacaoDaFatura,
   situacaoDaStripe,
@@ -203,6 +204,30 @@ describe("configuracaoSemDescida", () => {
     const params = configuracaoSemDescida(padrao);
     expect(params.metadata).toEqual({ barchop: "sem_descida" });
     expect(params.name).toMatch(/sem descida/i);
+  });
+
+  describe("produtosComPrecosNovos", () => {
+    it("troca os ids arquivados pelos novos e mantém o resto", () => {
+      const trocas = new Map([
+        ["price_ess_m", "price_ess_m2"],
+        ["price_com_a", "price_com_a2"],
+      ]);
+      expect(produtosComPrecosNovos(padrao, trocas)).toEqual([
+        { product: "barchop_essencial", prices: ["price_ess_m2", "price_ess_a"], adjustable_quantity: { enabled: false } },
+        { product: "barchop_completo", prices: ["price_com_m", "price_com_a2"], adjustable_quantity: { enabled: false } },
+      ]);
+    });
+
+    it("nenhum preço do Portal foi trocado: null, a padrão fica como está", () => {
+      expect(produtosComPrecosNovos(padrao, new Map())).toBeNull();
+      expect(produtosComPrecosNovos(padrao, new Map([["price_outro", "price_outro2"]]))).toBeNull();
+    });
+
+    it("o novo já marcado junto do antigo fica uma vez só", () => {
+      expect(produtosComPrecosNovos(padrao, new Map([["price_ess_m", "price_ess_a"]]))?.[0]?.prices).toEqual([
+        "price_ess_a",
+      ]);
+    });
   });
 });
 

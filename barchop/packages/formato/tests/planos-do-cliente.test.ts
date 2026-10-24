@@ -9,10 +9,12 @@ import {
   PROVEDORES_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
   assinanteUsaOPlano,
+  cicloEmAtraso,
   dividirMensalidade,
   fimDoCiclo,
   parteDoPlano,
   problemaDoPlano,
+  problemaDoRecebimento,
   usosRestantes,
   type PlanoParaConferir,
 } from "../src/planos-do-cliente";
@@ -276,5 +278,27 @@ describe("problemaDoPlano", () => {
   it("aceita online, no balcão ou os dois — nenhum, não", () => {
     expect(problemaDoPlano({ ...daCasa, aceitaOnline: false, aceitaNoBalcao: true })).toBeNull();
     expect(problemaDoPlano({ ...daCasa, aceitaOnline: false, aceitaNoBalcao: false })).toBe("formas");
+  });
+});
+
+// No balcão, o fim do ciclo é o dia da renovação: até ele a assinatura
+// está em dia; no dia seguinte, sem "recebi", fica em atraso.
+describe("o ciclo no balcão", () => {
+  it("em atraso só depois do dia da renovação", () => {
+    expect(cicloEmAtraso("2026-11-24", "2026-11-23")).toBe(false);
+    expect(cicloEmAtraso("2026-11-24", "2026-11-24")).toBe(false);
+    expect(cicloEmAtraso("2026-11-24", "2026-11-25")).toBe(true);
+  });
+
+  it("o \"recebi\" vale a partir do dia da renovação; antes, o ciclo está em dia", () => {
+    const hoje = "2026-11-24";
+    expect(problemaDoRecebimento({ situacao: "pendente", cicloTerminaEm: null }, hoje)).toBeNull();
+    expect(problemaDoRecebimento({ situacao: "em_atraso", cicloTerminaEm: "2026-11-10" }, hoje)).toBeNull();
+    for (const situacao of ["ativa", "teste"] as const) {
+      expect(problemaDoRecebimento({ situacao, cicloTerminaEm: "2026-11-24" }, hoje)).toBeNull();
+      expect(problemaDoRecebimento({ situacao, cicloTerminaEm: "2026-11-20" }, hoje)).toBeNull();
+      expect(problemaDoRecebimento({ situacao, cicloTerminaEm: "2026-11-25" }, hoje)).toBe("ciclo_em_dia");
+    }
+    expect(problemaDoRecebimento({ situacao: "cancelada", cicloTerminaEm: null }, hoje)).toBe("cancelada");
   });
 });

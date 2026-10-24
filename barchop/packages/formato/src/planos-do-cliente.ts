@@ -104,6 +104,28 @@ export function fimDoCiclo(inicio: string, ciclo: CicloDoCliente, diaDeVenciment
   return `${anoFinal}-${doisDigitos(mesFinal)}-${doisDigitos(diaFinal)}`;
 }
 
+// No balcão, o fim do ciclo é o dia da renovação: até ele a assinatura
+// está em dia; no dia seguinte, sem "recebi", fica em atraso. Datas
+// "AAAA-MM-DD", que ordenam como texto.
+export function cicloEmAtraso(terminaEm: string, hoje: string): boolean {
+  return terminaEm < hoje;
+}
+
+export type ProblemaDoRecebimento = "cancelada" | "ciclo_em_dia";
+
+// O "recebi" do balcão abre um ciclo novo a partir de hoje. Antes do dia
+// da renovação o ciclo pago ainda vale, e um segundo "recebi" é recusado:
+// guardar um ciclo que começa no futuro tiraria os usos de hoje da conta.
+export function problemaDoRecebimento(
+  assinatura: { situacao: SituacaoDoAssinante; cicloTerminaEm: string | null },
+  hoje: string
+): ProblemaDoRecebimento | null {
+  if (assinatura.situacao === "cancelada") return "cancelada";
+  const emCiclo = assinatura.situacao === "ativa" || assinatura.situacao === "teste";
+  if (emCiclo && assinatura.cicloTerminaEm !== null && hoje < assinatura.cicloTerminaEm) return "ciclo_em_dia";
+  return null;
+}
+
 // `null` = ilimitado.
 export function usosRestantes(usosPorCiclo: number | null, usados: number): number | null {
   if (usosPorCiclo === null) return null;

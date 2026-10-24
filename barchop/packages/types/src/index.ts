@@ -790,3 +790,34 @@ export interface PlanoDaVitrine {
 export interface VitrineDePlanos {
   planos: PlanoDaVitrine[];
 }
+
+export type SituacaoDoAssinante = "pendente" | "teste" | "ativa" | "em_atraso" | "cancelada";
+
+// GET /barbearias/me/assinantes e as rotas de /assinaturas (painel). O
+// profissional recebe só as dos planos dele. Preço e ciclo congelados
+// na assinatura; o ciclo vai de `cicloComecaEm` até o dia da renovação,
+// `cicloTerminaEm` (nulos enquanto pendente).
+export interface AssinaturaDoPainel {
+  id: string;
+  situacao: SituacaoDoAssinante;
+  forma: "online" | "no_balcao";
+  precoCentavos: number;
+  ciclo: CicloDoCliente;
+  cicloComecaEm: string | null;
+  cicloTerminaEm: string | null;
+  canceladaEm: string | null;
+  criadoEm: string;
+  cliente: { id: string; nome: string; telefone: string };
+  plano: { id: string; nome: string; daCasa: boolean; vendedor: { id: string; nome: string } | null };
+}
+
+export interface AssinantesDoPainel {
+  assinantes: AssinaturaDoPainel[];
+}
+
+// POST /assinaturas/:id/recebimentos ("recebi" no balcão). `data` é o
+// dia do caixa: o de hoje, ou o próximo aberto se hoje já fechou.
+export interface RecebimentoDoBalcao {
+  assinatura: AssinaturaDoPainel;
+  recebimento: { id: string; data: string; valorCentavos: number; casaCentavos: number; forma: FormaDoPagamento };
+}

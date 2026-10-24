@@ -39,6 +39,17 @@ Diferenças do plano, combinadas no caminho:
   - a conta que recebe: a da casa pro plano da casa, a pessoal do vendedor pro dele (`temContaQueRecebe`, em `lib/planos-do-cliente.ts`; o PR 10 usa a mesma regra);
   - serviço desativado sai da lista do plano, e plano sem serviço ativo sai da vitrine;
   - sem o fixo da casa, quantos assinam e o `ativo`.
+- **PR 5 (assinante no balcão):**
+  - as rotas ficaram em `routers/assinantes.ts`. `GET /barbearias/me/assinantes` aceita também `?clienteId=`, pro detalhe do cliente;
+  - **sem tarefa diária na fila**: a fila não tem trabalho recorrente, e o `em_atraso` é marcado na leitura (`marcarAtrasadas`), no dia seguinte ao da renovação (`cicloEmAtraso`, no `formato`). Consequência: o atraso do balcão não avisa ninguém (ver PR 10);
+  - o ciclo vai de `ciclo_comeca_em` até o dia da renovação, `ciclo_termina_em` (mensal de 24/10 renova em 24/11);
+  - **o "recebi" abre um ciclo novo a partir de hoje** (`problemaDoRecebimento`, no `formato`):
+    - pendente, em atraso, ou no dia da renovação em diante: vale;
+    - antes do dia da renovação (ativa ou em teste): 422 `ciclo_em_dia`. Guardar um ciclo que começa no futuro tiraria os usos de hoje da conta. Pagar adiantado pediria uma coluna nova (`pago_ate`), numa migração;
+    - pagar atrasado recomeça o ciclo no dia do pagamento: o dia da renovação anda;
+  - assinar com dias grátis nasce `teste`, de hoje até hoje + dias; sem dias grátis, `pendente` e sem ciclo, até o 1º "recebi";
+  - a parte da casa usa a "parte da casa" de hoje do vendedor; o dia do caixa é o próximo aberto, e o ciclo segue o dia do pagamento;
+  - só assinar exige o Completo; a lista, o "recebi" e o cancelar seguem no Grátis (decisão 6).
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
@@ -248,7 +259,8 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
 - **Action**:
   - `PUT /agendamentos/:id/pagamento` aceita `assinaturaId` + os serviços cobertos (viram `uso_do_plano`), com `forma: "plano"` quando não há dinheiro, e as conferências da decisão 2. Erros: 422 `plano_de_outro_barbeiro`, `usos_esgotados`, `assinatura_inativa`;
   - `GET /barbearias/me/caixa` soma os recebimentos do dia ao acerto e à lista;
-  - `GET /agendamentos/:id/pagamento` devolve as assinaturas usáveis do cliente.
+  - `GET /agendamentos/:id/pagamento` devolve as assinaturas usáveis do cliente;
+  - quem lê a situação da assinatura chama antes o `marcarAtrasadas` (`lib/planos-do-cliente.ts`): o registro "pelo plano" e o `GET` do pagamento. Os usos do ciclo contam em `[ciclo_comeca_em, ciclo_termina_em)`.
 - **Validate**: `tests/routers/pagamento.test.ts`, `caixa.test.ts` (os 3 cenários da GR com plano: barbeiro com 20%, plano da casa atendido pelo parceiro, assinante do Gustavo atendido pelo parceiro → avulso).
 
 ### PR 7: Telas do painel sem provedor (web)
@@ -289,7 +301,9 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
   - `GET /clientes/me/assinaturas` e `DELETE /clientes/me/assinaturas/:id`;
   - `POST /webhooks/asaas/:conexaoId`: token conferido, estado relido no Asaas, evento deduplicado. O pagamento confirmado grava o recebimento e avança o ciclo;
   - notificação no sino de quem vende: "Nova assinatura", "Pagamento em atraso";
-  - desativar membro com `cancelarAssinaturas: true` (PR 3 só marca `cancelada` no banco) passa a cancelar também no provedor as assinaturas online.
+  - desativar membro com `cancelarAssinaturas: true` (PR 3 só marca `cancelada` no banco) passa a cancelar também no provedor as assinaturas online, e o `DELETE /assinaturas/:id` do painel (PR 5) também;
+  - "minhas assinaturas" chama o `marcarAtrasadas` antes de ler;
+  - sem tarefa agendada (PR 5), o "Pagamento em atraso" no sino só sai pras online, pelo webhook. Assinatura do balcão que atrasa aparece em atraso na lista, sem avisar ninguém.
 - **Validate**: `tests/routers/assinar-online.test.ts`, `webhook-asaas.test.ts` (evento repetido vale uma vez, token errado = 401, conexão de outra barbearia, cobrança desconhecida → 200 + log).
 
 ### PR 11: Online nas telas (web)

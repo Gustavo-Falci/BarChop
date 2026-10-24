@@ -29,6 +29,7 @@ import { registrarRotasSolicitacaoDeLink } from "./routers/solicitacao-de-link";
 import { registrarRotasLoginDoSuporte, registrarRotasSuporte } from "./routers/suporte";
 import { registrarRotasEquipe } from "./routers/equipe";
 import { registrarRotasPlanos, registrarRotasPlanosPublicos } from "./routers/planos";
+import { registrarRotasAssinantes } from "./routers/assinantes";
 import {
   registrarRotasBarbeariasProtegidas,
   registrarRotasBarbeariasPublicas,
@@ -208,6 +209,7 @@ export function buildApp(
     registrarRotasCaixa(protegidas);
     registrarRotasEquipe(protegidas, limitesDeEquipe);
     registrarRotasPlanos(protegidas);
+    registrarRotasAssinantes(protegidas);
     registrarRotasBloqueios(protegidas);
     registrarRotasOnboarding(protegidas);
     registrarRotasSolicitacaoDeLink(protegidas);

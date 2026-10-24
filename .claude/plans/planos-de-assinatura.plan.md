@@ -3,7 +3,7 @@
 **Source PRD**: `.claude/prds/onda-2-dinheiro.prd.md`
 **Selected Milestone**: 3 — Planos de assinatura para o cliente
 **Complexity**: Large (12 PRs, 1 migração no PR 2)
-**Status**: aguardando a aprovação do dono (plano escrito em 2026-10-24)
+**Status**: aprovado pelo dono em 2026-10-24, com as decisões propostas como estão; próximo: PR 1
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
@@ -27,6 +27,18 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
   - no acerto, a casa deve esse valor a quem atendeu.
 - **Quem vende.** O dono sempre vende. Cada profissional só vende se o dono ligar "pode vender planos" para ele. Quem vende conecta a própria conta no provedor.
 - **Provedores.** Cada provedor tem um conector. O primeiro é o **Asaas**: o vendedor cola a chave de API, e o BarChop cria o webhook pela API com um `authToken` próprio. O Pix Automático fica como extra.
+- **Provedores futuros (fora deste plano).** Entram depois, cada um como um conector:
+  - **Mercado Pago:** conferir se o app OAuth sai com CPF.
+  - **Stripe Connect:** só cartão recorrente.
+  - **InfinitePay** (pedido do dono em 24/10), no modo **"link por ciclo"**:
+    - a API pública não cria assinatura, só link de checkout (Pix ou cartão) e a consulta `payment_check`;
+    - a cada ciclo, o BarChop gera o link e manda ao assinante;
+    - o webhook `payment_approved` não é assinado, então todo pagamento é confirmado no `payment_check` antes de valer;
+    - o cartão não é cobrado sozinho.
+
+    Até esse conector existir, quem usa os Planos do app da InfinitePay registra o assinante como "no balcão" e marca "Recebi" a cada ciclo.
+
+    Fontes: [checkout](https://www.infinitepay.io/checkout-documentacao), [planos e assinaturas](https://www.infinitepay.io/recorrencia-assinatura).
 - **O BarChop não cobra taxa** sobre essas vendas (PRD).
 
 ## Decisões propostas (confirmar ao aprovar o plano)

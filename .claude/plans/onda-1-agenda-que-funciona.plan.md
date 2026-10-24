@@ -11,8 +11,10 @@
 - **Conferido pelo dono em 24/10:** a agenda no celular (#189 a #196) e tudo de 21/10 (arrastar na agenda, "Mudar horário" e o e-mail, "Mudar ordem" na página pública, passos até o ✓, seções ao rolar, janelas saindo animadas). Os "Ao retomar" das duas seções abaixo estão feitos.
 - **Onda 2, marco 3 — decisões do dono** (gravadas em `.claude/prds/onda-2-dinheiro.prd.md`): planos **da casa** e **de barbeiro**; o dinheiro cai na conta de quem vende; plano de barbeiro vale só com ele e a casa fica com o % da "parte da casa" dele sobre a mensalidade; plano da casa vale com qualquer um e paga valor fixo por atendimento; o dono libera "pode vender planos" por membro; vários provedores por conector, começando pelo **Asaas** (chave de API do vendedor, webhook criado pela API com `authToken`).
 
+- **Plano do marco 3 aprovado** em 24/10: `.claude/plans/planos-de-assinatura.plan.md`, com 12 PRs. A Parte A (PRs 1 a 7) não usa provedor; a Parte B (PRs 8 a 12) é o online pelo Asaas. A InfinitePay ficou anotada como provedor futuro ("link por ciclo").
+
 **Ao retomar:**
-1. `/plan` do marco 3 a partir do PRD. Em aberto para o plano: se planos de barbeiro ficam no recurso `planosDaBarbearia` (só Completo); a chave do Asaas cifrada no banco e nunca devolvida à tela; `forma`/`motivo` novos no caixa para atendimento pelo plano e para a parte da casa sobre a mensalidade.
+1. PR 1 do plano `planos-de-assinatura` (a conta em `@barchop/formato`), TDD.
 2. O resto da lista de 21/10: testar o caixa em produção; marco 4; G3; decidir a `barbearia-teste`; pendentes do redesenho.
 
 ## RETOMAR AQUI (tarde de 2026-10-24 — preços novos no ar: #199 e #200) — histórico

@@ -108,8 +108,10 @@ describe("parteDoPlano", () => {
 });
 
 describe("o acerto do dia com planos — cenários da GR Barber", () => {
-  // O plano da casa está na conta conectada pelo Gustavo (o dono): é ele
-  // quem segura o dinheiro da casa, então é ele quem paga o fixo.
+  // A mensalidade do plano da casa cai na conta conectada pelo Gustavo:
+  // ele segura o dinheiro da casa e repassa. O fixo sai do dinheiro da
+  // casa, não do bolso de quem segura: no acerto, quem paga é a casa
+  // (`recebidoPor: null`).
   it("mensalidade do plano do Gustavo (20% da casa): ele repassa a parte da casa", () => {
     const acerto = acertoDoDia([
       { recebidoPor: GUSTAVO, partes: dividirMensalidade({ precoCentavos: 9000, vendedor: GUSTAVO, parteDaCasa: 20 }) },
@@ -117,15 +119,55 @@ describe("o acerto do dia com planos — cenários da GR Barber", () => {
     expect(acerto.repasses).toEqual([{ de: GUSTAVO, para: null, valorCentavos: 1800 }]);
   });
 
-  it("plano da casa atendido pelo parceiro: o Gustavo repassa o fixo ao parceiro", () => {
+  it("plano da casa atendido pelo parceiro: o Gustavo repassa a mensalidade, a casa paga o fixo", () => {
     const acerto = acertoDoDia([
       { recebidoPor: GUSTAVO, partes: dividirMensalidade({ precoCentavos: 12000, vendedor: null, parteDaCasa: 0 }) },
-      { recebidoPor: GUSTAVO, partes: parteDoPlano({ atendente: PARCEIRO, fixoCentavos: 2500 }) },
+      { recebidoPor: null, partes: parteDoPlano({ atendente: PARCEIRO, fixoCentavos: 2500 }) },
     ]);
-    // A casa sempre por último (acertoDoDia).
     expect(acerto.repasses).toEqual([
-      { de: GUSTAVO, para: PARCEIRO, valorCentavos: 2500 },
       { de: GUSTAVO, para: null, valorCentavos: 12000 },
+      { de: null, para: PARCEIRO, valorCentavos: 2500 },
+    ]);
+    // O Gustavo não perde nada; a casa fica com a mensalidade menos o fixo.
+    expect(acerto.pessoas).toContainEqual({ pessoa: GUSTAVO, recebeuCentavos: 12000, cabeCentavos: 0, saldoCentavos: -12000 });
+    expect(acerto.pessoas).toContainEqual({ pessoa: null, recebeuCentavos: 2500, cabeCentavos: 12000, saldoCentavos: 9500 });
+  });
+
+  it("o fixo só pela casa, num dia sem mensalidade: a casa deve ao parceiro", () => {
+    const acerto = acertoDoDia([{ recebidoPor: null, partes: parteDoPlano({ atendente: PARCEIRO, fixoCentavos: 2500 }) }]);
+    expect(acerto.repasses).toEqual([{ de: null, para: PARCEIRO, valorCentavos: 2500 }]);
+  });
+
+  // O dia do desenho da tela Caixa (24/10): parte da casa de 20% para os
+  // dois; o Lucas atende uma assinante do plano da casa e cobra a barba à
+  // parte. A casa deve o fixo ao Lucas e o Lucas deve à casa a parte da
+  // barba: compensado, a casa repassa só a diferença.
+  it("o dia da tela Caixa: os repasses compensam casa e Lucas", () => {
+    const LUCAS = PARCEIRO;
+    const regras = { ativos: [GUSTAVO, LUCAS], parteDaCasa: { [GUSTAVO]: 20, [LUCAS]: 20 }, matriz: [] };
+    const corte = dividirPagamento(
+      { atendente: GUSTAVO, donoDoCliente: GUSTAVO, servicosCentavos: 4500, descontoCentavos: 0, gorjetaCentavos: 0 },
+      regras
+    );
+    const barba = dividirPagamento(
+      { atendente: LUCAS, donoDoCliente: LUCAS, servicosCentavos: 3000, descontoCentavos: 0, gorjetaCentavos: 0 },
+      regras
+    );
+    const acerto = acertoDoDia([
+      { recebidoPor: GUSTAVO, partes: corte },
+      { recebidoPor: LUCAS, partes: barba },
+      { recebidoPor: null, partes: parteDoPlano({ atendente: LUCAS, fixoCentavos: 2500 }) },
+      { recebidoPor: GUSTAVO, partes: dividirMensalidade({ precoCentavos: 9000, vendedor: GUSTAVO, parteDaCasa: 20 }) },
+      { recebidoPor: GUSTAVO, partes: dividirMensalidade({ precoCentavos: 12000, vendedor: null, parteDaCasa: 20 }) },
+    ]);
+    expect(acerto.repasses).toEqual([
+      { de: GUSTAVO, para: null, valorCentavos: 14700 },
+      { de: null, para: LUCAS, valorCentavos: 1900 },
+    ]);
+    expect(acerto.pessoas).toEqual([
+      { pessoa: GUSTAVO, recebeuCentavos: 25500, cabeCentavos: 10800, saldoCentavos: -14700 },
+      { pessoa: LUCAS, recebeuCentavos: 3000, cabeCentavos: 4900, saldoCentavos: 1900 },
+      { pessoa: null, recebeuCentavos: 2500, cabeCentavos: 15300, saldoCentavos: 12800 },
     ]);
   });
 
@@ -136,9 +178,9 @@ describe("o acerto do dia com planos — cenários da GR Barber", () => {
     );
     const acerto = acertoDoDia([
       { recebidoPor: PARCEIRO, partes: avulso },
-      { recebidoPor: GUSTAVO, partes: parteDoPlano({ atendente: PARCEIRO, fixoCentavos: 2500 }) },
+      { recebidoPor: null, partes: parteDoPlano({ atendente: PARCEIRO, fixoCentavos: 2500 }) },
     ]);
-    expect(acerto.repasses).toEqual([{ de: GUSTAVO, para: PARCEIRO, valorCentavos: 2500 }]);
+    expect(acerto.repasses).toEqual([{ de: null, para: PARCEIRO, valorCentavos: 2500 }]);
   });
 });
 

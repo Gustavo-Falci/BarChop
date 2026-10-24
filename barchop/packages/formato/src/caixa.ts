@@ -76,8 +76,9 @@ export function dividirPagamento(atendimento: AtendimentoPago, regras: RegrasDeD
 }
 
 export interface PagamentoDoAcerto {
-  // Quem ficou com o dinheiro na mão (ou na maquininha).
-  recebidoPor: string;
+  // Quem ficou com o dinheiro na mão (ou na maquininha). `null` = a casa
+  // paga do dinheiro dela (o fixo do plano da casa): ela não recebeu, deve.
+  recebidoPor: string | null;
   partes: readonly Parte<MotivoDaParte | MotivoDoPlano>[];
 }
 
@@ -91,7 +92,8 @@ export interface LinhaDoAcerto {
 }
 
 export interface Repasse {
-  de: string;
+  // `null` = a casa (paga o fixo do plano da casa).
+  de: string | null;
   // `null` = a casa.
   para: string | null;
   valorCentavos: number;
@@ -115,7 +117,7 @@ export function acertoDoDia(pagamentos: readonly PagamentoDoAcerto[]): AcertoDoD
     return atual;
   };
   // deve.get(de).get(para) = quanto `de` segura do que é de `para`.
-  const deve = new Map<string, Map<string | null, number>>();
+  const deve = new Map<string | null, Map<string | null, number>>();
 
   for (const { recebidoPor, partes } of pagamentos) {
     const quemRecebeu = linha(recebidoPor);
@@ -137,11 +139,10 @@ export function acertoDoDia(pagamentos: readonly PagamentoDoAcerto[]): AcertoDoD
   const ordem = pessoas.map((atual) => atual.pessoa);
   const repasses: Repasse[] = [];
   for (const de of ordem) {
-    if (de === null) continue;
     for (const para of ordem) {
       if (para === de) continue;
       const vai = deve.get(de)?.get(para) ?? 0;
-      const volta = para === null ? 0 : (deve.get(para)?.get(de) ?? 0);
+      const volta = deve.get(para)?.get(de) ?? 0;
       if (vai > volta) repasses.push({ de, para, valorCentavos: vai - volta });
     }
   }

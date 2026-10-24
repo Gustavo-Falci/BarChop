@@ -654,7 +654,8 @@ export interface LinhaDoAcertoDoCaixa {
 }
 
 export interface RepasseDoCaixa {
-  de: MembroDoCaixa;
+  // `null` = a casa (paga o fixo do plano da casa).
+  de: MembroDoCaixa | null;
   // `null` = a casa.
   para: MembroDoCaixa | null;
   valorCentavos: number;

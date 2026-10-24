@@ -445,14 +445,19 @@ button.diaDoCabecalho:hover .numeroDoDia {
   }
 
   /* "09:00" vira "09": o texto continua inteiro no DOM (leitor de tela e
-     testes leem a hora toda), e a caixa de 2 algarismos tabulares corta
-     o ":00" à vista. */
-  .hora[data-cheia] {
-    justify-self: end;
-    width: 2ch;
-    overflow: hidden;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+     testes leem a hora toda), transparente, e o `::before` desenha os
+     dois algarismos encostados à direita. Cortar a caixa em `2ch` não
+     servia: a fonte não tem algarismos de largura fixa, e sobrava o ":". */
+  .hora[data-curta] {
+    position: relative;
+    color: transparent;
+  }
+
+  .hora[data-curta]::before {
+    content: attr(data-curta);
+    position: absolute;
+    inset-inline-end: 2px;
+    color: var(--cor-muted);
   }
 
   .hora {
@@ -525,10 +530,18 @@ button.diaDoCabecalho:hover .numeroDoDia {
     white-space: nowrap;
   }
 
+  /* Sem `overflow-wrap: anywhere`: quebrava o nome no meio ("Thiag/o").
+     A palavra que não cabe é cortada na borda do bloco. */
   .evento {
     padding-inline: 2px;
     font-size: var(--texto-xs);
-    overflow-wrap: anywhere;
+  }
+
+  /* "Fechado neste dia." numa coluna de 45px vazava pra vizinha. O
+     listrado (o fundo do próprio `.fechado`) já diz fechado pro olho; o
+     texto some só da vista e continua pro leitor de tela. */
+  .fechado {
+    font-size: 0;
   }
 }
 

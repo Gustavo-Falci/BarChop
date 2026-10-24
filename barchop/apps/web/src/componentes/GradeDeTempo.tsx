@@ -276,9 +276,9 @@ export function GradeDeTempo({
                   data-no-fim={
                     hora.minuto === grade.minutoFinal ? "true" : undefined
                   }
-                  // Hora cheia: no celular o CSS mostra só o "09" (a ponta
+                  // Hora cheia: no celular o CSS desenha só o "09" (a ponta
                   // quebrada, "09:30", fica inteira).
-                  data-cheia={hora.rotulo.endsWith(":00") ? "true" : undefined}
+                  data-curta={hora.rotulo.endsWith(":00") ? hora.rotulo.slice(0, 2) : undefined}
                   style={{ "--linha": hora.linha } as CSSProperties}
                 >
                   {hora.rotulo}

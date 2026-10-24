@@ -108,32 +108,36 @@ export function MenuDaAgenda({
         </section>
 
         {comEquipe ? (
-          <fieldset className={estilos.secao}>
-            <legend className={estilos.rotulo}>Profissionais</legend>
-            <ul className={estilos.itens}>
-              {profissionais.map((pessoa) => {
-                const marcado = estaMarcado(pessoa.id);
-                const quantos = quantosHoje(pessoa.id);
-                return (
-                  <li key={pessoa.id}>
-                    <label className={estilos.pessoa} data-tom={pessoa.tom}>
-                      <input
-                        type="checkbox"
-                        className={estilos.caixa}
-                        checked={marcado}
-                        // A última marcada não sai: agenda de ninguém é
-                        // uma tela vazia, não um filtro.
-                        disabled={marcado && quantosMarcados === 1}
-                        onChange={() => aoAlternar(pessoa.id)}
-                      />
-                      <span className={estilos.nome}>{pessoa.nome}</span>
-                      {deHoje.dados ? <span className={estilos.contagem}>{quantos} hoje</span> : null}
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
-          </fieldset>
+          // A linha de cima mora no bloco, e não no <fieldset>: com
+          // borda, o <legend> senta em cima dela e é cortado por ela.
+          <div className={estilos.secao}>
+            <fieldset className={estilos.grupo}>
+              <legend className={estilos.rotulo}>Profissionais</legend>
+              <ul className={estilos.itens}>
+                {profissionais.map((pessoa) => {
+                  const marcado = estaMarcado(pessoa.id);
+                  const quantos = quantosHoje(pessoa.id);
+                  return (
+                    <li key={pessoa.id}>
+                      <label className={estilos.pessoa} data-tom={pessoa.tom}>
+                        <input
+                          type="checkbox"
+                          className={estilos.caixa}
+                          checked={marcado}
+                          // A última marcada não sai: agenda de ninguém é
+                          // uma tela vazia, não um filtro.
+                          disabled={marcado && quantosMarcados === 1}
+                          onChange={() => aoAlternar(pessoa.id)}
+                        />
+                        <span className={estilos.nome}>{pessoa.nome}</span>
+                        {deHoje.dados ? <span className={estilos.contagem}>{quantos} hoje</span> : null}
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            </fieldset>
+          </div>
         ) : null}
 
         <div className={estilos.atalhos}>

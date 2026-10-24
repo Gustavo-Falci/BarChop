@@ -94,6 +94,14 @@ export function ListaDaAgenda({
   const horaDeAgora = `${String(agora.getHours()).padStart(2, "0")}:${String(agora.getMinutes()).padStart(2, "0")}`;
   const comEtiqueta = (profissionais?.length ?? 0) > 1;
   const daPessoa = (id: string) => profissionais?.find((p) => p.id === id);
+  // A etiqueta com o primeiro nome ("Rafael", não "Rafael Dono"): no
+  // celular o nome inteiro empurrava o horário pra duas linhas. Se dois
+  // da equipe têm o mesmo primeiro nome, vai o nome inteiro.
+  const curto = (pessoa: ProfissionalDaLista) => {
+    const primeiro = pessoa.nome.split(" ")[0];
+    const repete = (profissionais ?? []).some((p) => p.id !== pessoa.id && p.nome.split(" ")[0] === primeiro);
+    return repete ? pessoa.nome : primeiro;
+  };
 
   function cartao(item: Item, dia: string) {
     if (item.tipo === "bloqueio") {
@@ -105,7 +113,7 @@ export function ListaDaAgenda({
         <li key={`b-${bloqueio.id}`} className={estilos.bloqueio} data-tom={quem?.tom}>
           {/* "Almoço · Ana", e não "do/da Ana": o nome não diz o gênero. */}
           {quando} · {motivo}
-          {comEtiqueta && quem ? ` · ${quem.nome}` : ""}
+          {comEtiqueta && quem ? ` · ${curto(quem)}` : ""}
         </li>
       );
     }
@@ -124,20 +132,23 @@ export function ListaDaAgenda({
         >
           <span className={estilos.texto}>
             <span className={estilos.quem}>
-              {agendamento.cliente.nome} · {agendamento.servicos.map((s) => s.nome).join(" + ")}
+              {agendamento.cliente.nome}
+              {/* O ✓ logo depois do nome, e não no fim: o serviço longo
+                  corta a linha com reticências e o levaria junto. */}
               {agendamento.presencaConfirmadaEm ? (
                 <>
                   <span aria-hidden="true"> ✓</span>
                   <span className={estilos.somenteLeitor}>, confirmou presença</span>
                 </>
-              ) : null}
+              ) : null}{" "}
+              · {agendamento.servicos.map((s) => s.nome).join(" + ")}
             </span>
             <span className={estilos.quando}>
               {agendamento.horaInicio} – {agendamento.horaFim}
               {situacao ? ` · ${situacao}` : ""}
             </span>
           </span>
-          {comEtiqueta && quem ? <span className={estilos.etiqueta}>{quem.nome}</span> : null}
+          {comEtiqueta && quem ? <span className={estilos.etiqueta}>{curto(quem)}</span> : null}
         </button>
       </li>
     );

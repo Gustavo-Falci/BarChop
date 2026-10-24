@@ -234,9 +234,10 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     validos.length > 0 && !(equipe.dados && validos.length >= atendentes.length)
       ? new Set(validos)
       : undefined;
-  // As pílulas no desktop: em toda vista menos o dia, que já tem uma
-  // coluna por pessoa (lá o filtro vem do menu do celular).
-  const comPilulas = daEquipe && vista !== "dia" && atendentes.length > 1;
+  // As pílulas no desktop, em toda vista. No dia também: lá elas tiram e
+  // põem colunas, e o filtro que vem da semana ou do mês (tocando num
+  // dia) precisa de onde ser desfeito.
+  const comPilulas = daEquipe && atendentes.length > 1;
 
   // Com uma pessoa só, a coluna de dia de sempre: dividir por profissional
   // só ocuparia o cabeçalho com um nome que ninguém precisa ler. Com o
@@ -317,6 +318,12 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
       : (ocupacaoDaSemana.dados ?? undefined);
   // Quem o filtro deixou, sendo um só: o horário livre já o leva.
   const soUm = filtro?.size === 1 ? [...filtro][0] : undefined;
+  // Um tom por profissional, igual na grade e no mês. Com um só, a cor
+  // da casa.
+  const tons =
+    atendentes.length > 1
+      ? Object.fromEntries(atendentes.map((pessoa, indice) => [pessoa.id, indice % 6]))
+      : undefined;
   // Liga ou desliga uma pessoa no filtro; todos ligados volta a nenhum.
   function alternar(quem: string) {
     if (quem === TODOS) return irPara(vista, data, []);
@@ -482,6 +489,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             agendamentos: visiveis,
           })}
           hoje={hojeIso(agora)}
+          tons={tons}
           aoAbrirDia={(dia) => irPara("dia", dia)}
         />
       ) : vista === "lista" ? (
@@ -526,11 +534,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           aoSoltar={(agendamento, destino) => setMovendo({ agendamento, destino })}
           // Com mais de uma pessoa, cada uma ganha um matiz (mesmo croma),
           // na ordem da equipe; sozinho, a cor da casa.
-          tons={
-            atendentes.length > 1
-              ? Object.fromEntries(atendentes.map((pessoa, indice) => [pessoa.id, indice % 6]))
-              : undefined
-          }
+          tons={tons}
           aoCriar={(dia, hora, barbeiroId, profissionais) => {
             // Na coluna que junta a equipe, só quem pode atender naquela
             // hora; sendo um só, ele já vem escolhido.

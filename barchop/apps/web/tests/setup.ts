@@ -11,6 +11,14 @@ import { navegacaoFalsa } from "./ajudantes/navegacao";
 // seguinte, e a segunda busca por role acha dois botões.
 afterEach(cleanup);
 
+// A agenda guarda a última vista no aparelho (agenda no celular, PR 2):
+// sem limpar, a vista escolhida num teste viraria o padrão do seguinte, e
+// o resultado dependeria da ordem. Os testes em ambiente node (proxy,
+// imagem do site) não têm `localStorage`.
+afterEach(() => {
+  if (typeof localStorage !== "undefined") localStorage.clear();
+});
+
 // Toda animação da lib `motion` termina na hora (ADR-0011). Sem isto, o
 // que sai com `exit` continua no DOM até a animação acabar — e o jsdom
 // não anda o relógio de animação —, então todo teste que espera um menu

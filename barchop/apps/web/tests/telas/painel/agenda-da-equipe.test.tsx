@@ -380,13 +380,17 @@ describe("semana por profissional", () => {
     expect(screen.queryByRole("group", { name: "Filtrar por profissional" })).not.toBeInTheDocument();
   });
 
-  it("na vista de dia as pílulas não aparecem: lá já tem uma coluna por pessoa", async () => {
-    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { vista: "dia", data: "2026-09-08" } });
+  it("na vista de dia as pílulas aparecem, e o filtro vindo da semana se desfaz nelas", async () => {
+    // Filtrou a Ana na semana e tocou num dia: o dia abre só com ela, e
+    // Todos volta a mostrar as duas colunas.
+    navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { vista: "dia", data: "2026-09-08", profissionais: "m2" } });
     montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm());
 
-    const cabecalho = await screen.findByTestId("cabecalho-da-grade");
-    await waitFor(() => expect(within(cabecalho).getByText("Ana")).toBeInTheDocument());
-    expect(screen.queryByRole("group", { name: "Filtrar por profissional" })).not.toBeInTheDocument();
+    const grupo = await screen.findByRole("group", { name: "Filtrar por profissional" });
+    await waitFor(() => expect(within(grupo).getByRole("button", { name: "Ana" })).toHaveAttribute("aria-pressed", "true"));
+    await userEvent.click(within(grupo).getByRole("button", { name: "Todos" }));
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=dia&data=2026-09-08");
   });
 
   describe("vários de uma vez (agenda no celular, PR 7)", () => {
@@ -476,7 +480,7 @@ describe("semana por profissional", () => {
 
       expect(await screen.findByRole("group", { name: "Filtrar por profissional" })).toBeInTheDocument();
       // O agendamento do Rafael (dia 9) sai; o da Ana (dia 10) fica.
-      expect(await screen.findByRole("button", { name: "10 de setembro" })).toHaveTextContent("15:00 João Silva");
+      expect(await screen.findByRole("button", { name: "10 de setembro, 1 agendamento" })).toHaveTextContent("15:00 João Silva");
       expect(screen.getByRole("button", { name: "9 de setembro" })).not.toHaveTextContent("João Silva");
     });
 

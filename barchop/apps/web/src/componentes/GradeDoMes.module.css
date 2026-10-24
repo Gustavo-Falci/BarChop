@@ -47,10 +47,10 @@
   display: grid;
   align-content: start;
   gap: 2px;
-  /* A linha tem mínimo fixo e não cresce mais com o conteúdo: os quatro
-     chips cabem nos 104px sem folga nenhuma, e sem o corte um chip a
-     mais vazaria por cima da divisória em vez de sumir. O rótulo "+N"
-     já é quem limita o conteúdo de propósito. */
+  /* A linha tem mínimo fixo e não cresce mais com o conteúdo: as três
+     pílulas e o "+N" cabem nos 104px sem folga nenhuma, e sem o corte
+     uma linha a mais vazaria por cima da divisória em vez de sumir. O
+     rótulo "+N" já é quem limita o conteúdo de propósito. */
   overflow: hidden;
   padding: var(--espaco-xs);
   border: none;
@@ -70,9 +70,11 @@
   color: var(--cor-muted);
 }
 
+/* Fechado: o número apagado e riscado. */
 .celula[data-fechado="true"] .numero {
   text-decoration: line-through;
   color: var(--cor-muted);
+  opacity: 0.6;
 }
 
 .celula[aria-current="date"] .numero {
@@ -92,17 +94,51 @@
 
 /* Chip discreto: o fio da cor à esquerda e o fundo tingido, como o
    agendamento da semana. Os chips amarelos cheios gritavam mais que os
-   números dos dias. */
+   números dos dias. A cor é a do profissional (agenda no celular, PR 6). */
 .chip {
+  --tom: var(--cor-accent);
   overflow: hidden;
   padding: 1px var(--espaco-xs);
-  border-inline-start: 2px solid var(--cor-accent);
+  border-inline-start: 2px solid var(--tom);
   border-radius: var(--raio-sm);
-  background: color-mix(in srgb, var(--cor-accent) 16%, var(--cor-surface));
+  background: color-mix(in srgb, var(--tom) 16%, var(--cor-surface));
   color: var(--cor-ink);
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: var(--texto-xs);
+}
+
+/* Os mesmos tons da grade (GradeDeTempo.module.css). */
+.chip[data-tom="1"] {
+  --tom: #5b8def;
+}
+
+.chip[data-tom="2"] {
+  --tom: #3fa67a;
+}
+
+.chip[data-tom="3"] {
+  --tom: #d9734e;
+}
+
+.chip[data-tom="4"] {
+  --tom: #a26bd6;
+}
+
+.chip[data-tom="5"] {
+  --tom: #d4609a;
+}
+
+/* Aguardando confirmação: tracejado, como o bloco da grade (PR 1). */
+.chip[data-status="pendente"] {
+  border: 1px dashed var(--tom);
+  border-inline-start-width: 2px;
+  background: color-mix(in srgb, var(--tom) 6%, var(--cor-surface));
+}
+
+.chip[data-status="concluido"],
+.chip[data-status="no_show"] {
+  opacity: 0.55;
 }
 
 .excedente {
@@ -112,8 +148,26 @@
   font-weight: 600;
 }
 
+/* No celular (agenda no celular, PR 6): só o nome na pílula, e a célula
+   com altura pro número, três pílulas e o "+N". */
+@media (max-width: 900px) {
+  .horaDoChip,
+  .sobrenome {
+    display: none;
+  }
+
+  .celula {
+    padding: 2px;
+  }
+
+  .chip {
+    padding-inline: 2px;
+    font-size: 10px;
+  }
+}
+
 @media (max-width: 720px) {
   .quadro {
-    --altura-minima-da-celula: 72px;
+    --altura-minima-da-celula: 92px;
   }
 }

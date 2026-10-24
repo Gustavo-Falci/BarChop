@@ -54,16 +54,16 @@ export const PLANOS: Record<IdDoPlano, Plano> = {
   essencial: {
     id: "essencial",
     nome: "Essencial",
-    baseMensalCentavos: 3490,
-    extraMensalCentavos: 1000,
+    baseMensalCentavos: 4490,
+    extraMensalCentavos: 1500,
     limiteDeProfissionais: 3,
     recursos: ["caixa", "relatorios"],
   },
   completo: {
     id: "completo",
     nome: "Completo",
-    baseMensalCentavos: 4490,
-    extraMensalCentavos: 1500,
+    baseMensalCentavos: 5490,
+    extraMensalCentavos: 2000,
     limiteDeProfissionais: null,
     recursos: ["caixa", "relatorios", "relatoriosCompletos", "whatsapp", "planosDaBarbearia"],
   },
@@ -124,7 +124,7 @@ export function planoEfetivo(assinatura: SituacaoParaOPlano, agora: Date): IdDoP
 
 const REAIS = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-// Centavos em reais, como o brasileiro lê ("R$ 34,90"). O site e o
+// Centavos em reais, como o brasileiro lê ("R$ 44,90"). O site e o
 // painel mostram os preços por aqui.
 export function formatarReais(centavos: number): string {
   return REAIS.format(centavos / 100);

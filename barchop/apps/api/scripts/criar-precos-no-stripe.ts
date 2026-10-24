@@ -14,15 +14,18 @@
 // antigo: quem assinar dali em diante paga o novo; as assinaturas que já
 // existem continuam no preço antigo até alguém trocá-las.
 //
-// Depois dos preços, a configuração "sem descida" do Portal (quem tem mais
-// de 3 profissionais só troca entre os preços do Completo): uma cópia da
-// configuração padrão. Mudou o Portal no painel da Stripe? Rodar de novo.
+// Depois dos preços, o Portal. Ele guarda ids de preço, então na
+// configuração padrão cada preço arquivado vira o novo do mesmo produto e
+// ciclo. Em seguida, a configuração "sem descida" (quem tem mais de 3
+// profissionais só troca entre os preços do Completo): uma cópia da
+// padrão. Mudou o Portal no painel da Stripe? Rodar de novo.
 import Stripe from "stripe";
 import {
   acharConfiguracaoSemDescida,
   configuracaoSemDescida,
   modoDaChave,
   precosParaStripe,
+  produtosComPrecosNovos,
   type PrecoNaStripe,
 } from "../src/lib/cobranca";
 
@@ -45,15 +48,42 @@ async function garantirProduto(stripe: Stripe, produto: PrecoNaStripe["produto"]
   }
 }
 
-async function garantirPortalSemDescida(stripe: Stripe): Promise<void> {
+// `ativos`: produto e intervalo → id do preço ativo, do laço dos preços.
+async function trocarPrecosArquivadosNoPadrao(
+  stripe: Stripe,
+  ativos: ReadonlyMap<string, string>
+): Promise<Stripe.BillingPortal.Configuration> {
   // Os produtos da troca de plano só vêm quando pedidos.
+  const expand = ["features.subscription_update.products"];
   const { data } = await stripe.billingPortal.configurations.list({
     is_default: true,
     limit: 1,
-    expand: ["data.features.subscription_update.products"],
+    expand: expand.map((campo) => `data.${campo}`),
   });
-  if (!data[0]) throw new Error("o Portal não tem configuração padrão: salve-o uma vez no painel da Stripe");
-  const parametros = configuracaoSemDescida(data[0]);
+  const padrao = data[0];
+  if (!padrao) throw new Error("o Portal não tem configuração padrão: salve-o uma vez no painel da Stripe");
+
+  const trocas = new Map<string, string>();
+  const ids = new Set((padrao.features.subscription_update.products ?? []).flatMap((p) => p.prices));
+  for (const id of ids) {
+    const preco = await stripe.prices.retrieve(id);
+    const produto = typeof preco.product === "string" ? preco.product : preco.product.id;
+    const novo = ativos.get(`${produto}:${preco.recurring?.interval}`);
+    if (!preco.active && novo) trocas.set(id, novo);
+  }
+  const produtos = produtosComPrecosNovos(padrao, trocas);
+  if (!produtos) return padrao;
+
+  const atualizada = await stripe.billingPortal.configurations.update(padrao.id, {
+    features: { subscription_update: { products: produtos } },
+    expand,
+  });
+  console.log(`portal padrão: ${trocas.size} preço(s) arquivado(s) trocado(s) pelos novos (${padrao.id})`);
+  return atualizada;
+}
+
+async function garantirPortalSemDescida(stripe: Stripe, padrao: Stripe.BillingPortal.Configuration): Promise<void> {
+  const parametros = configuracaoSemDescida(padrao);
   const produtos = parametros.features.subscription_update?.products;
   if (!Array.isArray(produtos) || produtos.length === 0) {
     throw new Error("o Portal padrão não oferece o Completo na troca de plano: nada pra copiar");
@@ -74,6 +104,7 @@ async function main() {
   const stripe = new Stripe(chave);
   console.log(`modo: ${modoDaChave(chave) === "real" ? "REAL" : "teste"}`);
 
+  const ativos = new Map<string, string>();
   for (const esperado of precosParaStripe()) {
     await garantirProduto(stripe, esperado.produto);
 
@@ -84,7 +115,9 @@ async function main() {
       limit: 1,
     });
     const atual = data[0];
+    const onde = `${esperado.produto.id}:${esperado.intervalo}`;
     if (atual && mesmosDegraus(atual, esperado)) {
+      ativos.set(onde, atual.id);
       console.log(`${esperado.chave}: já está certo (${atual.id})`);
       continue;
     }
@@ -99,11 +132,12 @@ async function main() {
       lookup_key: esperado.chave,
       transfer_lookup_key: true,
     });
+    ativos.set(onde, novo.id);
     if (atual) await stripe.prices.update(atual.id, { active: false });
     console.log(`${esperado.chave}: ${atual ? `trocado (${atual.id} arquivado)` : "criado"} → ${novo.id}`);
   }
 
-  await garantirPortalSemDescida(stripe);
+  await garantirPortalSemDescida(stripe, await trocarPrecosArquivadosNoPadrao(stripe, ativos));
 }
 
 main().catch((erro: unknown) => {

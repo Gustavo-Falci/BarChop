@@ -54,6 +54,12 @@ const SO_DO_DONO = [
   // A divisão do dinheiro.
   { method: "GET", url: "/barbearias/me/divisao" },
   { method: "PUT", url: "/barbearias/me/divisao" },
+  // Os planos do cliente (Onda 2, marco 3). Criar e mudar plano também
+  // passam o profissional com "pode vender" (tests/routers/planos.test.ts);
+  // o desta matriz nasce sem.
+  { method: "PUT", url: "/barbearias/me/vitrine-de-planos" },
+  { method: "POST", url: "/barbearias/me/planos" },
+  { method: "PATCH", url: `/barbearias/me/planos/${ID_QUALQUER}` },
 ] as const;
 
 async function prepararEquipe(app: App) {

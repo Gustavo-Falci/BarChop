@@ -25,6 +25,14 @@ Diferenças do plano, combinadas no caminho:
   - novos: `assinatura_do_cliente` com uma viva (não cancelada) por cliente e plano; `ciclo_comeca_em`/`ciclo_termina_em` nulos enquanto pendente; `recebimento_do_plano.forma` com CHECK de `FORMAS_DE_PAGAMENTO`; `evento_do_provedor.tipo`;
   - listas novas em `@barchop/formato`: `PROVEDORES_DE_PAGAMENTO` (`asaas`) e `MODOS_DA_CONEXAO` (`teste`, `real`);
   - o teste é `apps/api/tests/banco-planos.test.ts`, ao lado do `banco-caixa.test.ts`.
+- **PR 3 (API dos planos):**
+  - as rotas ficaram em `routers/planos.ts`; o `lib/planos-do-cliente.ts` nasce quando o balcão e o caixa (PRs 5 e 6) precisarem ler plano e assinatura;
+  - a recepção vê todos os planos (o balcão e o caixa usam), sem criar nem mudar;
+  - o `GET` diz também `podeCriarDaCasa` e `podeCriarProprio`, pra tela não refazer a regra;
+  - plano de barbeiro só cobre serviço que o vendedor faz (`servico_fora_do_vendedor`), e quem não atende não vende plano próprio (`vendedor_nao_atende`);
+  - cada problema do `problemaDoPlano` tem o seu código (`plano_preco`, `plano_fixo`…);
+  - desativar com assinantes vale em qualquer plano do BarChop, porque no Grátis as assinaturas do cliente seguem valendo;
+  - mudar os serviços ou os usos de um plano vale na hora, também para quem já assina (preço e ciclo ficam congelados na assinatura). Pergunta ao dono no PR #207: recusar tirar serviço de plano com assinantes vivos?
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
@@ -274,7 +282,8 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
   - `POST /clientes/me/assinaturas`: logado; plano que aceita online e vendedor com conta conectada. Cria o cliente e a assinatura no Asaas e devolve o link da fatura; a assinatura nasce `pendente`;
   - `GET /clientes/me/assinaturas` e `DELETE /clientes/me/assinaturas/:id`;
   - `POST /webhooks/asaas/:conexaoId`: token conferido, estado relido no Asaas, evento deduplicado. O pagamento confirmado grava o recebimento e avança o ciclo;
-  - notificação no sino de quem vende: "Nova assinatura", "Pagamento em atraso".
+  - notificação no sino de quem vende: "Nova assinatura", "Pagamento em atraso";
+  - desativar membro com `cancelarAssinaturas: true` (PR 3 só marca `cancelada` no banco) passa a cancelar também no provedor as assinaturas online.
 - **Validate**: `tests/routers/assinar-online.test.ts`, `webhook-asaas.test.ts` (evento repetido vale uma vez, token errado = 401, conexão de outra barbearia, cobrança desconhecida → 200 + log).
 
 ### PR 11: Online nas telas (web)

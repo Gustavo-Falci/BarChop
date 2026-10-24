@@ -68,11 +68,11 @@ function planoProprio(c: Cenario, extra: Record<string, unknown> = {}) {
   };
 }
 
-function criar(app: App, token: string, payload: unknown) {
+function criar(app: App, token: string, payload: object) {
   return app.inject({ method: "POST", url: "/barbearias/me/planos", headers: auth(token), payload });
 }
 
-function mudar(app: App, token: string, id: string, payload: unknown) {
+function mudar(app: App, token: string, id: string, payload: object) {
   return app.inject({ method: "PATCH", url: `/barbearias/me/planos/${id}`, headers: auth(token), payload });
 }
 
@@ -431,7 +431,7 @@ describe("o 'pode vender' na equipe", () => {
   it("o membro nasce sem; o dono liga e a equipe mostra", async () => {
     const c = await cenario();
     const antes = (await c.app.inject({ method: "GET", url: "/equipe", headers: auth(c.dono.token) })).json();
-    expect(antes.find((m: { id: string }) => m.id === c.lucas.barbeiroId).podeVenderPlanos).toBe(false);
+    expect(antes.membros.find((m: { id: string }) => m.id === c.lucas.barbeiroId).podeVenderPlanos).toBe(false);
     await liberarLucas(c);
     await c.app.close();
   });

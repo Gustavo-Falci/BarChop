@@ -21,6 +21,7 @@ const RAFAEL: MembroDaEquipe = {
   ativo: true,
   fotoUrl: null,
   convitePendente: false,
+  podeVenderPlanos: false,
 };
 const GUSTAVO: MembroDaEquipe = { ...RAFAEL, id: "bb0", nome: "Gustavo", email: "gustavo@gr.com", papel: "profissional" };
 

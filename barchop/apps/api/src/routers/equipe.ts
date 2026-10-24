@@ -46,6 +46,12 @@ const corpoPatchMembro = {
     papel: { type: "string", enum: PAPEIS },
     atende: { type: "boolean" },
     ativo: { type: "boolean" },
+    // Os planos do cliente (Onda 2, marco 3): o dono libera o membro pra
+    // vender. Tirar não mexe nas assinaturas que já existem.
+    podeVenderPlanos: { type: "boolean" },
+    // Desativar quem tem assinantes vivos nos planos dele exige a
+    // confirmação: as assinaturas são canceladas no mesmo passo.
+    cancelarAssinaturas: { type: "boolean" },
   },
 } as const;
 
@@ -184,6 +190,7 @@ function serializarMembro(membro: {
   ativo: boolean;
   fotoChave: string | null;
   senhaHash: string | null;
+  podeVenderPlanos: boolean;
 },
 urlDaImagem: (chave: string) => string
 ) {
@@ -197,6 +204,7 @@ urlDaImagem: (chave: string) => string
     ativo: membro.ativo,
     fotoUrl: membro.fotoChave ? urlDaImagem(membro.fotoChave) : null,
     convitePendente: membro.senhaHash === null,
+    podeVenderPlanos: membro.podeVenderPlanos,
   };
 }
 
@@ -354,7 +362,8 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
     async (request) => {
       const { id } = request.params;
       const { barbeariaId } = request.user;
-      const { telefone, ...resto } = request.body;
+      // `cancelarAssinaturas` é confirmação, não coluna: fica fora do update.
+      const { telefone, cancelarAssinaturas, ...resto } = request.body;
       const data = {
         ...resto,
         ...(telefone !== undefined ? { telefone: normalizarTelefone(telefone) } : {}),
@@ -403,6 +412,30 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
           const depois = { ativo: request.body.ativo ?? atual?.ativo, papel: request.body.papel ?? atual?.papel };
           if (atual && !contaNoPlano(atual) && contaNoPlano(depois)) {
             await garantirVagaNoPlano(tx, barbeariaId, new Date());
+          }
+        }
+
+        // Desativar quem vende com assinantes vivos (decisão 6 do plano
+        // planos-de-assinatura): recusa, ou cancela junto se a tela
+        // confirmou. Vale em qualquer plano do BarChop, porque no Grátis
+        // as assinaturas do cliente seguem valendo. Online só existe a
+        // partir do PR 10, que cancela também no provedor.
+        if (request.body.ativo === false) {
+          const vivas = { barbeariaId, situacao: { not: "cancelada" }, plano: { vendedorId: id } };
+          const quantas = await tx.assinaturaDoCliente.count({ where: vivas });
+          if (quantas > 0 && cancelarAssinaturas !== true) {
+            throw new ErroDeNegocio(
+              quantas === 1
+                ? "este membro tem 1 assinante nos planos dele: cancele a assinatura para desativar"
+                : `este membro tem ${quantas} assinantes nos planos dele: cancele as assinaturas para desativar`,
+              "assinaturas_ativas"
+            );
+          }
+          if (quantas > 0) {
+            await tx.assinaturaDoCliente.updateMany({
+              where: vivas,
+              data: { situacao: "cancelada", canceladaEm: new Date() },
+            });
           }
         }
 

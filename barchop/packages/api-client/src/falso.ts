@@ -116,6 +116,7 @@ function membroLogado(papel: PapelMembro): MembroDaEquipe {
     ativo: true,
     fotoUrl: null,
     convitePendente: false,
+    podeVenderPlanos: false,
   };
 }
 
@@ -132,6 +133,7 @@ function equipePadrao(papel: PapelMembro): MembroDaEquipe[] {
       ativo: true,
       fotoUrl: null,
       convitePendente: false,
+      podeVenderPlanos: false,
     },
     membroLogado(papel),
   ];
@@ -1195,6 +1197,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           ativo: true,
           fotoUrl: null,
           convitePendente: true,
+          podeVenderPlanos: false,
         };
         equipe().push(membro);
         return { ...membro };

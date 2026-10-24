@@ -4,7 +4,32 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-21 — motion e arrastar completos e no ar: #175 a #187) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-24 — agenda no celular mesclada na `main`: #189 a #196) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = `0cae664`** (#196); **produção = `c6a3b33`** (#187). A agenda no celular está na `main` e **ainda não foi pro ar**.
+- Mesclados em 24/10, com o "pode mergear" do dono, na ordem:
+  1. **#189**: o plano `.claude/plans/agenda-no-celular.plan.md` (canvas aprovado: https://claude.ai/artifact/Vus5qcnD2mRpy5orskvtGy).
+  2. **#190**: status no bloco (pendente tracejado, atendido e faltou apagados, anel no "em atendimento").
+  3. **#191**: vistas Lista e 3 dias; o celular abre na Lista; última vista lembrada no aparelho.
+  4. **#192**: filtro de vários profissionais (`?profissionais=a,b`, o `?profissional=` antigo ainda vale).
+  5. **#193**: barra do celular (☰ · título ▾ · ‹ › · Hoje · Bloquear), menu lateral, calendário numa folha.
+  6. **#194**: a Lista no desenho aprovado ("Mais cedo", régua do agora, bloqueios, "Mostrar mais 14 dias").
+  7. **#195**: semana e 3 dias cabendo na tela do celular (container query por coluna; dia de 4+ profissionais rola com o eixo preso).
+  8. **#196**: mês com 3 nomes no tom de cada um e "+N", mais dois commits de ajuste: o da revisão e o do que se viu no navegador a 390px (etiqueta com o primeiro nome, ✓ logo depois do nome, caixinhas do menu na cor de cada um, eixo "09" por `::before`, "Fechado" só pro leitor na semana, pílula do mês com o primeiro nome).
+- Conferido no navegador (DevTools, 390px, conta layout-dev): Lista, menu, calendário, 3 dias, semana, dia com 2 profissionais, mês. Suíte do web 1443/1443, `tsc` e lint limpos.
+- Os branches `plano-agenda-celular` e `agenda-celular-*` continuam no GitHub (apagar quando quiser).
+- No banco **dev** `gr_barber` há dados de teste na barbearia layout-dev: 10 clientes, 14 agendamentos com a observação "teste-agenda-celular" e um bloqueio "Almoço" da Ana em 24/10. Senha da conta layout-dev@exemplo.com no dev: `layoutdev123`.
+
+**Ao retomar:**
+1. Deploy só do `web` (sem migração, sem mudança na API), quando o dono quiser.
+2. Depois do deploy, o dono olhar no celular de verdade: barra presa ao rolar, semana com 7 colunas sem rolar de lado, ☰ entrando pela esquerda, "Mais cedo" e régua na Lista, mês com 3 nomes e "+N".
+
+**Para lembrar:** depois de "Mostrar mais", os 14 dias novos dizem "Nenhum horário. Toque para marcar." por um instante, até a busca voltar. Tocar num dia da semana guarda "dia" como a vista lembrada.
+
+**O que falta além disso:** a mesma lista da seção de 21/10 abaixo.
+
+## RETOMAR AQUI (noite de 2026-10-21 — motion e arrastar completos e no ar: #175 a #187) — histórico
 
 **Estado:**
 - **`main` = produção = `c6a3b33`** (#187). Deploy feito pelo dono em 21/10 (API + web + `migrate deploy` da ordem). Conferido por fora: `POST /agendamentos/:id/remarcar` responde 401 sem token, a página pública tem `ordemCategorias`, o CSS novo está no ar.

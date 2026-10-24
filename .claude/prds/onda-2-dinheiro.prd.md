@@ -41,7 +41,7 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
    - **Plano de barbeiro** vale só com aquele barbeiro: com outro, o atendimento é avulso e entra no caixa como hoje. A casa fica com o mesmo % da "parte da casa" do barbeiro sobre a mensalidade recebida — no acerto, o barbeiro deve isso à casa.
    - **Plano da casa** vale com qualquer profissional; quem atende ganha um **valor fixo por atendimento** definido pela barbearia — no acerto, a casa deve esse valor a ele.
    - **Quem vende**: o dono sempre; cada profissional só se o dono ligar "pode vender planos" para ele na Equipe. Quem vende conecta a própria conta no provedor.
-   - **Provedores**: um conector por provedor, cada vendedor escolhe o seu. O marco 3 sai com o **Asaas** (o vendedor cola a chave de API; o BarChop registra o webhook pela API com um `authToken` próprio — sem CNPJ nem app registrado do BarChop). Mercado Pago e Stripe entram depois, pelo mesmo conector. Pix Automático é extra: exige CNPJ ativo há mais de 6 meses de quem recebe.
+   - **Provedores**: um conector por provedor, cada vendedor escolhe o seu. O marco 3 sai com o **Asaas** (o vendedor cola a chave de API; o BarChop registra o webhook pela API com um `authToken` próprio — sem CNPJ nem app registrado do BarChop). Mercado Pago, Stripe e InfinitePay (esta em "link por ciclo": a API dela não cria assinatura) entram depois, pelo mesmo conector. Pix Automático é extra: exige CNPJ ativo há mais de 6 meses de quem recebe.
 4. **Relatórios**: o dono vê quanto entrou por período, por profissional e por forma de pagamento, e o histórico dos fechamentos e acertos. Recorte exato: TBD — needs validation via uso do caixa no piloto.
 
 **Out of scope**
@@ -62,7 +62,7 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 |---|---|---|---|---|
 | 1 | BarChop cobra a assinatura | Barbearia nova testa 14 dias, escolhe grátis ou plano pago por profissional e paga online; site mostra a tabela de preços e `/gratis` | complete — no ar desde 2026-10-15, testado com cobrança real em 16/10 (PRs #141 a #150) | `.claude/plans/cobranca-do-barchop.plan.md` |
 | 2 | Caixa do dia e comissões | Dono fecha o dia no BarChop e vê o acerto por profissional segundo as regras da barbearia (de quem é o cliente × quem atendeu), sem conta de cabeça | complete — código pronto em 16/10 (PRs #153 a #160); entra no ar com o deploy do dono | `.claude/plans/caixa-do-dia.plan.md` |
-| 3 | Planos de assinatura para o cliente | Cliente assina um plano da casa ou de um barbeiro na página pública e paga online (Pix/cartão, dinheiro na conta de quem vende) ou no local; dono acompanha os assinantes; o acerto inclui a parte da casa nos planos de barbeiro e o valor fixo nos planos da casa | pending — modelo decidido em 24/10, falta o `/plan` | — |
+| 3 | Planos de assinatura para o cliente | Cliente assina um plano da casa ou de um barbeiro na página pública e paga online (Pix/cartão, dinheiro na conta de quem vende) ou no local; dono acompanha os assinantes; o acerto inclui a parte da casa nos planos de barbeiro e o valor fixo nos planos da casa | in-progress — plano aprovado em 24/10 | `.claude/plans/planos-de-assinatura.plan.md` |
 | 4 | Relatórios | Dono vê o que entrou por período, profissional e forma de pagamento, e o histórico dos fechamentos | pending | — |
 
 ## Open Questions

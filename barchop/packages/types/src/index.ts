@@ -704,12 +704,33 @@ export interface PendenciaDoCaixa {
   barbeiro: MembroDoCaixa;
 }
 
+// Uma mensalidade no caixa do dia, com a parte da casa congelada no
+// "recebi"; o resto é de quem vende (no plano da casa, tudo é da casa).
+export interface MensalidadeDoCaixa {
+  id: string;
+  assinaturaId: string;
+  // O dia do caixa: o do "recebi", ou o próximo aberto se aquele já
+  // tinha fechado — aí difere de `registradoEm`.
+  data: string;
+  registradoEm: string;
+  forma: FormaDoPagamento;
+  valorCentavos: number;
+  casaCentavos: number;
+  recebidoPor: MembroDoCaixa;
+  cliente: { id: string; nome: string };
+  plano: { id: string; nome: string; daCasa: boolean; vendedor: MembroDoCaixa | null };
+}
+
 export interface CaixaDoDia {
   data: string;
   // Com o dia fechado, o acerto é a foto gravada ao fechar.
   fechamento: { fechadoEm: string; fechadoPor: MembroDoCaixa } | null;
   pagamentos: PagamentoDoCaixa[];
-  // As quatro formas, sempre na ordem de FORMAS_DE_PAGAMENTO.
+  // As mensalidades recebidas no dia ("recebi"), na ordem em que
+  // entraram. O profissional recebe as que recebeu ou dos planos dele.
+  mensalidades: MensalidadeDoCaixa[];
+  // As quatro formas, sempre na ordem de FORMAS_DE_PAGAMENTO, somando
+  // pagamentos e mensalidades.
   totais: { totalCentavos: number; porForma: TotalDaForma[] };
   acerto: { pessoas: LinhaDoAcertoDoCaixa[]; repasses: RepasseDoCaixa[] };
   pendencias: PendenciaDoCaixa[];

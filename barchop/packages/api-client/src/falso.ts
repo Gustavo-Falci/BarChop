@@ -888,6 +888,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         const cliente = agendamento ? comCliente(agendamento).cliente : estado.cliente;
         return { ...copiaDoPagamento(p), horaInicio: hora(p.agendamentoId), cliente: { id: cliente.id, nome: cliente.nome } };
       }),
+      // O falso não tem planos de assinatura (PR 7).
+      mensalidades: [],
       totais: { totalCentavos: porForma.reduce((s, f) => s + f.valorCentavos, 0), porForma },
       acerto: {
         pessoas: acerto.pessoas

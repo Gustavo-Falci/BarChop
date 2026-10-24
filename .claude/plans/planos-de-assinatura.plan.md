@@ -66,6 +66,12 @@ Diferenças do plano, combinadas no caminho:
   - **o `GET /agendamentos/:id/pagamento` traz `assinaturas`**, com os usos que sobram no ciclo sem os deste pagamento, `noCiclo` e `valeComOAtendente`. O profissional recebe os planos da casa e os dele;
   - **o 422 desfaz a transação, e com ela a marca de em atraso**. A próxima leitura marca de novo;
   - **web**: só o mínimo pra compilar ("Pelo plano" nos rótulos da forma). A tela é o PR 7.
+- **PR 6b (mensalidades no caixa):**
+  - **o acerto divide a mensalidade pelo que foi congelado no "recebi"**: `casa_centavos` pra casa, o resto pra quem vende. Não chama `dividirMensalidade` de novo, porque a parte da casa pode ter mudado;
+  - **uma função só conta o acerto**: o caixa aberto e a foto do fechamento usam a mesma. Os pagamentos vêm na ordem do dia e as mensalidades depois, por `registrado_em` e id;
+  - **as mensalidades entram nos totais por forma**, em quantidade e valor. Sem isso, o total do dia não bate com o dinheiro que cada um segura;
+  - **`CaixaDoDia.mensalidades`** traz `registradoEm`, pra tela mostrar "recebido em" quando o dia do caixa é outro. O profissional vê as que recebeu ou dos planos dele;
+  - **teste ponta a ponta**: o "dia da tela Caixa" do PR 1b, montado pelas rotas, dá os mesmos repasses: Gustavo → casa 14700, casa → Lucas 1900.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
@@ -319,7 +325,8 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
   - notificação no sino de quem vende: "Nova assinatura", "Pagamento em atraso";
   - desativar membro com `cancelarAssinaturas: true` (PR 3 só marca `cancelada` no banco) passa a cancelar também no provedor as assinaturas online, e o `DELETE /assinaturas/:id` do painel (PR 5) também;
   - "minhas assinaturas" chama o `marcarAtrasadas` antes de ler;
-  - sem tarefa agendada (PR 5), o "Pagamento em atraso" no sino só sai pras online, pelo webhook. Assinatura do balcão que atrasa aparece em atraso na lista, sem avisar ninguém.
+  - sem tarefa agendada (PR 5), o "Pagamento em atraso" no sino só sai pras online, pelo webhook. Assinatura do balcão que atrasa aparece em atraso na lista, sem avisar ninguém;
+  - o recebimento online entra no caixa (PR 6b) com `recebido_por_id` obrigatório. Ninguém segurou esse dinheiro: ele caiu na conta da casa ou na do vendedor. No acerto, `recebidoPor` tem de ser o dono da conta: `null` (a casa) no plano da casa, o vendedor no plano dele. Isso pede `recebido_por_id` anulável, numa migração.
 - **Validate**: `tests/routers/assinar-online.test.ts`, `webhook-asaas.test.ts` (evento repetido vale uma vez, token errado = 401, conexão de outra barbearia, cobrança desconhecida → 200 + log).
 
 ### PR 11: Online nas telas (web)

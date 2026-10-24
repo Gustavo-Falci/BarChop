@@ -4,7 +4,38 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-21 — motion e arrastar completos e no ar: #175 a #187) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-24 — agenda no celular: 7 PRs empilhados abertos, #189 a #196) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = `80891ca`** (#188, só docs); **produção = `c6a3b33`** (#187). Em 24/10 o dono conferiu no localhost os 6 pontos de motion e arrastar: tudo funcionando.
+- **Aberto, empilhado, nada mesclado** (merge só com "pode mergear"). Ordem de merge, cada um sobre o anterior:
+  1. **#189**: o plano `.claude/plans/agenda-no-celular.plan.md` (canvas aprovado: https://claude.ai/artifact/Vus5qcnD2mRpy5orskvtGy).
+  2. **#190**: status no bloco (pendente tracejado, atendido e faltou apagados, anel no "em atendimento").
+  3. **#191**: vistas Lista e 3 dias; o celular abre na Lista; última vista lembrada no aparelho.
+  4. **#192**: filtro de vários profissionais (`?profissionais=a,b`, o `?profissional=` antigo ainda vale).
+  5. **#193**: barra do celular (☰ · título ▾ · ‹ › · Hoje · Bloquear), menu lateral, calendário numa folha.
+  6. **#194**: a Lista no desenho aprovado ("Mais cedo", régua do agora, bloqueios, "Mostrar mais 14 dias").
+  7. **#195**: semana e 3 dias cabendo na tela do celular (container query por coluna; dia de 4+ profissionais rola com o eixo preso).
+  8. **#196**: mês com 3 nomes no tom de cada um e "+N". Na ponta tem também um commit de ajustes da revisão (pílulas no Dia do desktop, sticky da barra, eixo "09", limpeza do localStorage nos testes).
+- Suíte do web 1441/1441, `tsc` e lint limpos na ponta (`agenda-celular-mes`).
+
+**Ao retomar:**
+1. Perguntar ao dono o que ele viu no celular (ou no DevTools a 375px). **Nada disso foi conferido no navegador**: o jsdom não faz layout. Pontos:
+   - a barra fica presa ao rolar;
+   - a semana mostra 7 colunas sem rolar de lado, e os blocos estreitos só com o nome;
+   - no dia com 4+ profissionais, rola de lado com o eixo preso;
+   - o ☰ entra pela esquerda;
+   - o título abre o calendário;
+   - na Lista: "Mais cedo", a régua do agora e "Mostrar mais";
+   - o mês mostra 3 nomes e "+N".
+2. Consertar o que ele apontar e só então mesclar, na ordem acima. **Antes de apagar cada branch de base, trocar a base do PR filho pra `main`** (a lição de 21/10).
+3. Deploy só do `web` (sem migração, sem mudança na API).
+
+**Para lembrar:** depois de "Mostrar mais", os 14 dias novos dizem "Nenhum horário. Toque para marcar." por um instante, até a busca voltar. Tocar num dia da semana guarda "dia" como a vista lembrada.
+
+**O que falta além disso:** a mesma lista da seção de 21/10 abaixo.
+
+## RETOMAR AQUI (noite de 2026-10-21 — motion e arrastar completos e no ar: #175 a #187) — histórico
 
 **Estado:**
 - **`main` = produção = `c6a3b33`** (#187). Deploy feito pelo dono em 21/10 (API + web + `migrate deploy` da ordem). Conferido por fora: `POST /agendamentos/:id/remarcar` responde 401 sem token, a página pública tem `ordemCategorias`, o CSS novo está no ar.

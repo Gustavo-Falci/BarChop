@@ -1,27 +1,29 @@
 import { formatarReais } from "@barchop/formato";
-import type { FormaDoPagamento, ParteDoPagamento } from "@barchop/types";
+import type { FormaDoCaixa, ParteDoPagamento } from "@barchop/types";
 import { emLista } from "./assinatura";
 
 // O caixa do dia no painel (Onda 2, marco 2): dinheiro digitado e
 // mostrado, e a frase de como um pagamento se dividiu. A conta da
 // divisão é da API (dividirPagamento); aqui só se lê o que ela gravou.
 
-export const ROTULO_DA_FORMA: Record<FormaDoPagamento, string> = {
+export const ROTULO_DA_FORMA: Record<FormaDoCaixa, string> = {
   pix: "Pix",
   dinheiro: "Dinheiro",
   debito: "Débito",
   credito: "Crédito",
+  plano: "Pelo plano",
 };
 
 // "R$ 45,00 no pix", "R$ 45,00 em dinheiro".
-const NA_FORMA: Record<FormaDoPagamento, string> = {
+const NA_FORMA: Record<FormaDoCaixa, string> = {
   pix: "no pix",
   dinheiro: "em dinheiro",
   debito: "no débito",
   credito: "no crédito",
+  plano: "pelo plano",
 };
 
-export function naForma(forma: FormaDoPagamento): string {
+export function naForma(forma: FormaDoCaixa): string {
   return NA_FORMA[forma];
 }
 

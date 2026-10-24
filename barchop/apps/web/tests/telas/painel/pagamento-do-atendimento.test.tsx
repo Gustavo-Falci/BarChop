@@ -71,6 +71,8 @@ function pagamentoFeito(): PagamentoDoAgendamento {
       { beneficiario: rafael, motivo: "atendimento", valorCentavos: 1600 },
       { beneficiario: gustavo, motivo: "cliente", valorCentavos: 2400 },
     ],
+    assinatura: null,
+    servicosPeloPlano: [],
   };
 }
 

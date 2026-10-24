@@ -2,15 +2,16 @@ import type { Prisma } from "@barchop/database";
 import {
   FORMAS_DE_PAGAMENTO,
   MOTIVOS_DA_PARTE,
+  MOTIVOS_DO_PLANO,
   acertoDoDia,
   dividirPagamento,
+  parteDoPlano,
   type AcertoDoDia,
-  type FormaDePagamento,
+  type FormaDoCaixa,
 } from "@barchop/formato";
 import type {
   CaixaDoDia,
   DivisaoDoDinheiro,
-  FormaDoPagamento,
   MembroDoCaixa,
   MotivoDaParteDoPagamento,
   PagamentoDoAgendamento,
@@ -20,6 +21,7 @@ import type {
 import { ErroHttp } from "./erro-http";
 import { ErroDeNegocio } from "./erro-negocio";
 import { dataParaDate, dateParaData, dateParaHora } from "./horas";
+import { conferirOPlano, type PeloPlano } from "./planos-do-cliente";
 
 // O caixa do dia (Onda 2, marco 2, plano caixa-do-dia): gravar o
 // pagamento de um atendimento com a divisão congelada e garantir que o
@@ -34,14 +36,17 @@ export const INCLUDE_PAGAMENTO = {
   recebidoPor: MEMBRO,
   registradoPor: MEMBRO,
   partes: { include: { beneficiario: MEMBRO } },
+  assinatura: { select: { id: true, plano: { select: { id: true, nome: true } } } },
+  usosDoPlano: { select: { servico: MEMBRO }, orderBy: { id: "asc" } },
 } as const;
 
 type PagamentoComTudo = Prisma.PagamentoGetPayload<{ include: typeof INCLUDE_PAGAMENTO }>;
 
-// As partes na ordem da conta (atendimento, cliente, casa, gorjeta), e
-// não na do banco, que não garante nenhuma.
+// As partes na ordem da conta (atendimento, cliente, casa, gorjeta, e o
+// fixo do plano por último), e não na do banco, que não garante nenhuma.
+const ORDEM_DAS_PARTES: readonly string[] = [...MOTIVOS_DA_PARTE, ...MOTIVOS_DO_PLANO];
 function naOrdemDaConta<T extends { motivo: string }>(partes: readonly T[]): T[] {
-  const ordem = (motivo: string) => MOTIVOS_DA_PARTE.indexOf(motivo as MotivoDaParteDoPagamento);
+  const ordem = (motivo: string) => ORDEM_DAS_PARTES.indexOf(motivo);
   return [...partes].sort((a, b) => ordem(a.motivo) - ordem(b.motivo));
 }
 
@@ -51,7 +56,7 @@ export function serializarPagamento(pagamento: PagamentoComTudo): PagamentoDoAge
     id: pagamento.id,
     agendamentoId: pagamento.agendamentoId,
     data: dateParaData(pagamento.data),
-    forma: pagamento.forma as FormaDoPagamento,
+    forma: pagamento.forma as FormaDoCaixa,
     servicosCentavos: pagamento.servicosCentavos,
     descontoCentavos: pagamento.descontoCentavos,
     gorjetaCentavos: pagamento.gorjetaCentavos,
@@ -66,6 +71,8 @@ export function serializarPagamento(pagamento: PagamentoComTudo): PagamentoDoAge
       motivo: parte.motivo as MotivoDaParteDoPagamento,
       valorCentavos: parte.valorCentavos,
     })),
+    assinatura: pagamento.assinatura,
+    servicosPeloPlano: pagamento.usosDoPlano.map((uso) => uso.servico),
   };
 }
 
@@ -93,7 +100,8 @@ export async function garantirDiaAberto(
 }
 
 export interface DadosDoPagamento {
-  forma: FormaDePagamento;
+  forma: FormaDoCaixa;
+  assinaturaId?: string;
   servicosCentavos?: number;
   descontoCentavos?: number;
   gorjetaCentavos?: number;
@@ -104,6 +112,12 @@ export interface DadosDoPagamento {
 // enxerga. Conclui o atendimento e, se o cliente ainda não é de
 // ninguém, passa ele para quem atendeu. Editar refaz as partes com as
 // regras de agora (decisão 2 do plano).
+//
+// Pelo plano (marco 3): com `assinaturaId`, o plano cobre o que der
+// (`conferirOPlano`) e só o resto entra em `servicosCentavos`. Refazer
+// com a mesma assinatura não confere de novo — o ciclo pode ter
+// renovado, ou a assinatura sido cancelada, e o atendimento continua
+// tendo sido pelo plano: ficam os mesmos usos, e o fixo é o de agora.
 export async function registrarPagamento(
   tx: Prisma.TransactionClient,
   params: { barbeariaId: string; agendamentoId: string; registradoPorId: string; dados: DadosDoPagamento }
@@ -116,19 +130,68 @@ export async function registrarPagamento(
       status: true,
       barbeiroId: true,
       cliente: { select: { id: true, profissionalId: true } },
-      servicos: { select: { precoNoMomento: true } },
+      servicos: { select: { servicoId: true, precoNoMomento: true }, orderBy: { id: "asc" } },
     },
   });
   await garantirDiaAberto(tx, barbeariaId, agendamento.data);
 
   const atendente = agendamento.barbeiroId;
+  if (dados.forma === "plano" && dados.assinaturaId === undefined) {
+    throw new ErroDeNegocio("pelo plano, só com a assinatura do cliente", "forma_invalida");
+  }
+  let peloPlano: PeloPlano | null = null;
+  if (dados.assinaturaId !== undefined) {
+    const anterior = await tx.pagamento.findUnique({
+      where: { agendamentoId },
+      select: {
+        id: true,
+        assinaturaId: true,
+        usosDoPlano: { select: { servicoId: true } },
+        assinatura: { select: { plano: { select: { fixoPorAtendimentoCentavos: true } } } },
+      },
+    });
+    peloPlano =
+      anterior?.assinatura && anterior.assinaturaId === dados.assinaturaId
+        ? {
+            cobertos: anterior.usosDoPlano.map((uso) => uso.servicoId),
+            fixoCentavos: anterior.assinatura.plano.fixoPorAtendimentoCentavos,
+          }
+        : await conferirOPlano(tx, {
+            barbeariaId,
+            assinaturaId: dados.assinaturaId,
+            agendamento: {
+              clienteId: agendamento.cliente.id,
+              atendenteId: atendente,
+              data: agendamento.data,
+              servicoIds: agendamento.servicos.map((s) => s.servicoId),
+            },
+            pagamentoId: anterior?.id ?? null,
+          });
+  }
+
+  // O que o plano cobriu sai da soma, uma linha por uso.
+  const aCobrar = [...agendamento.servicos];
+  for (const servicoId of peloPlano?.cobertos ?? []) {
+    const linha = aCobrar.findIndex((s) => s.servicoId === servicoId);
+    if (linha >= 0) aCobrar.splice(linha, 1);
+  }
   // `precoNoMomento` é Decimal(10,2): em centavos, a conta é exata.
-  const somaDosServicos = agendamento.servicos.reduce((soma, s) => soma + s.precoNoMomento.mul(100).toNumber(), 0);
+  const somaDosServicos = aCobrar.reduce((soma, s) => soma + s.precoNoMomento.mul(100).toNumber(), 0);
   const servicosCentavos = dados.servicosCentavos ?? somaDosServicos;
   const descontoCentavos = dados.descontoCentavos ?? 0;
   const gorjetaCentavos = dados.gorjetaCentavos ?? 0;
   if (descontoCentavos > servicosCentavos) {
     throw new ErroDeNegocio("o desconto passa do valor dos serviços", "valor_invalido");
+  }
+  // `plano` só quando nada foi cobrado (o CHECK `pagamento_pelo_plano`);
+  // com dinheiro, a forma é a do dinheiro. Recusar, e não trocar sozinho:
+  // a tela mostra a forma que vai gravar.
+  const nadaCobrado = servicosCentavos === 0 && gorjetaCentavos === 0;
+  if (dados.forma === "plano" && !nadaCobrado) {
+    throw new ErroDeNegocio("com valor a cobrar, a forma é a do dinheiro", "forma_invalida");
+  }
+  if (dados.forma !== "plano" && peloPlano && nadaCobrado) {
+    throw new ErroDeNegocio("nada a cobrar: a forma é pelo plano", "forma_invalida");
   }
 
   const recebidoPorId = dados.recebidoPorId ?? atendente;
@@ -160,14 +223,23 @@ export async function registrarPagamento(
     where: { barbeariaId, atendenteId: atendente },
     select: { donoDoClienteId: true, atendenteId: true, percentual: true },
   });
-  const partes = dividirPagamento(
-    { atendente, donoDoCliente: donoDoClienteId, servicosCentavos, descontoCentavos, gorjetaCentavos },
-    {
-      ativos: membros.filter((m) => m.ativo).map((m) => m.id),
-      parteDaCasa: Object.fromEntries(membros.map((m) => [m.id, m.parteDaCasa])),
-      matriz: matriz.map((r) => ({ donoDoCliente: r.donoDoClienteId, atendente: r.atendenteId, percentual: r.percentual })),
-    }
-  ).map((parte) => ({ beneficiarioId: parte.beneficiario, motivo: parte.motivo, valorCentavos: parte.valorCentavos }));
+  const partes = [
+    ...dividirPagamento(
+      { atendente, donoDoCliente: donoDoClienteId, servicosCentavos, descontoCentavos, gorjetaCentavos },
+      {
+        ativos: membros.filter((m) => m.ativo).map((m) => m.id),
+        parteDaCasa: Object.fromEntries(membros.map((m) => [m.id, m.parteDaCasa])),
+        matriz: matriz.map((r) => ({ donoDoCliente: r.donoDoClienteId, atendente: r.atendenteId, percentual: r.percentual })),
+      }
+    ),
+    // O fixo do plano da casa, sobre o atendimento, não sobre o avulso.
+    ...(peloPlano ? parteDoPlano({ atendente, fixoCentavos: peloPlano.fixoCentavos }) : []),
+  ].map((parte) => ({ beneficiarioId: parte.beneficiario, motivo: parte.motivo, valorCentavos: parte.valorCentavos }));
+  const usos = (peloPlano?.cobertos ?? []).map((servicoId) => ({
+    assinaturaId: dados.assinaturaId as string,
+    servicoId,
+    data: agendamento.data,
+  }));
 
   const campos = {
     data: agendamento.data,
@@ -180,11 +252,16 @@ export async function registrarPagamento(
     gorjetaCentavos,
     registradoPorId,
     registradoEm: new Date(),
+    assinaturaId: peloPlano ? (dados.assinaturaId as string) : null,
   };
   const pagamento = await tx.pagamento.upsert({
     where: { agendamentoId },
-    create: { barbeariaId, agendamentoId, ...campos, partes: { create: partes } },
-    update: { ...campos, partes: { deleteMany: {}, create: partes } },
+    create: { barbeariaId, agendamentoId, ...campos, partes: { create: partes }, usosDoPlano: { create: usos } },
+    update: {
+      ...campos,
+      partes: { deleteMany: {}, create: partes },
+      usosDoPlano: { deleteMany: {}, create: usos },
+    },
     include: INCLUDE_PAGAMENTO,
   });
 
@@ -239,16 +316,23 @@ function pagamentosDoDia(db: Prisma.TransactionClient, barbeariaId: string, data
   });
 }
 
+// O fixo do plano da casa (parte `plano`) não passou pela mão de quem
+// recebeu: é a casa pagando quem atendeu, do dinheiro dela. No acerto,
+// vira um pagamento à parte, recebido por ninguém (`null` = a casa).
 function contarOAcerto(pagamentos: readonly PagamentoDoDia[]): AcertoDoDia {
   return acertoDoDia(
-    pagamentos.map((pagamento) => ({
-      recebidoPor: pagamento.recebidoPorId,
-      partes: naOrdemDaConta(pagamento.partes).map((parte) => ({
+    pagamentos.flatMap((pagamento) => {
+      const partes = naOrdemDaConta(pagamento.partes).map((parte) => ({
         beneficiario: parte.beneficiarioId,
         motivo: parte.motivo as MotivoDaParteDoPagamento,
         valorCentavos: parte.valorCentavos,
-      })),
-    }))
+      }));
+      const doPlano = partes.filter((parte) => parte.motivo === "plano");
+      return [
+        { recebidoPor: pagamento.recebidoPorId, partes: partes.filter((parte) => parte.motivo !== "plano") },
+        ...(doPlano.length > 0 ? [{ recebidoPor: null, partes: doPlano }] : []),
+      ];
+    })
   );
 }
 

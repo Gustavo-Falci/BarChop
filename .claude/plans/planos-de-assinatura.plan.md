@@ -5,6 +5,14 @@
 **Complexity**: Large (12 PRs, 1 migração no PR 2)
 **Status**: aprovado pelo dono em 2026-10-24, com as decisões propostas como estão; próximo: PR 1
 
+Diferenças do plano, combinadas no caminho:
+- **PR 1:**
+  - o `dividirPagamento` não mudou. O avulso de um atendimento pelo plano é o `servicosCentavos` de sempre e se divide como hoje;
+  - o que o plano gera sai de funções à parte: `parteDoPlano` (o fixo) e `dividirMensalidade`, que devolve as partes da mensalidade em vez de só o valor da casa;
+  - a API junta as partes no `acertoDoDia`, cada uma com o seu `recebidoPor`;
+  - os motivos novos ficam em `MOTIVOS_DO_PLANO`, fora do `MOTIVOS_DA_PARTE`. Se fossem para a lista do caixa agora, o `banco-caixa.test.ts` gravaria motivos que o CHECK ainda recusa. O PR 2 põe o `plano` no CHECK de `pagamento_parte`;
+  - `Parte` ganhou o motivo como parâmetro de tipo, para o `dividirPagamento` seguir devolvendo só os motivos do caixa.
+
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
 

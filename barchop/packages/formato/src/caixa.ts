@@ -15,7 +15,12 @@
 
 // Por que cada parte existe. Vira CHECK em `pagamento_parte.motivo`.
 export const MOTIVOS_DA_PARTE = ["atendimento", "cliente", "casa", "gorjeta"] as const;
+// As partes que só os planos de assinatura geram (marco 3, conta em
+// planos-do-cliente.ts): `plano` é o fixo do plano da casa pra quem
+// atendeu; `mensalidade`, o que fica com o barbeiro do plano dele.
+export const MOTIVOS_DO_PLANO = ["plano", "mensalidade"] as const;
 export type MotivoDaParte = (typeof MOTIVOS_DA_PARTE)[number];
+export type MotivoDoPlano = (typeof MOTIVOS_DO_PLANO)[number];
 
 export interface RegrasDeDivisao {
   // Os membros ativos. O dono do cliente que saiu não leva parte.
@@ -35,10 +40,12 @@ export interface AtendimentoPago {
   gorjetaCentavos: number;
 }
 
-export interface Parte {
+// `M` deixa o tipo dizer quem gera o quê: o dividirPagamento só os
+// motivos do caixa, a conta dos planos só os dela; o acerto aceita todos.
+export interface Parte<M extends MotivoDaParte | MotivoDoPlano = MotivoDaParte> {
   // `null` = a casa.
   beneficiario: string | null;
-  motivo: MotivoDaParte;
+  motivo: M;
   valorCentavos: number;
 }
 
@@ -71,7 +78,7 @@ export function dividirPagamento(atendimento: AtendimentoPago, regras: RegrasDeD
 export interface PagamentoDoAcerto {
   // Quem ficou com o dinheiro na mão (ou na maquininha).
   recebidoPor: string;
-  partes: readonly Parte[];
+  partes: readonly Parte<MotivoDaParte | MotivoDoPlano>[];
 }
 
 export interface LinhaDoAcerto {
@@ -146,17 +153,19 @@ function percentualDaMatriz(regras: RegrasDeDivisao, donoDoCliente: string, aten
   return regra?.percentual ?? 0;
 }
 
-function porcentagem(centavos: number, percentual: number): number {
+// As três de baixo são usadas também por planos-do-cliente.ts; ficam
+// fora do index.
+export function porcentagem(centavos: number, percentual: number): number {
   return Math.floor((centavos * percentual) / 100);
 }
 
-function garantirCentavos(valor: number, nome: string): void {
+export function garantirCentavos(valor: number, nome: string): void {
   if (!Number.isInteger(valor) || valor < 0) {
     throw new RangeError(`${nome} precisa ser um número inteiro de centavos, sem sinal`);
   }
 }
 
-function garantirPercentual(percentual: number): void {
+export function garantirPercentual(percentual: number): void {
   if (!Number.isInteger(percentual) || percentual < 0 || percentual > 100) {
     throw new RangeError("o percentual vai de 0 a 100");
   }

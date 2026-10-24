@@ -299,6 +299,35 @@ button.diaDoCabecalho:hover .numeroDoDia {
   --tom: #d4609a;
 }
 
+/* O status no bloco (agenda no celular, PR 1). Aguardando confirmação:
+   contorno tracejado no tom, quase sem fundo — ainda não é certo. */
+.evento[data-status="pendente"] {
+  padding: 1px var(--espaco-xs) 1px calc(var(--espaco-xs) + 2px);
+  border: 1.5px dashed var(--tom);
+  background: color-mix(in srgb, var(--tom) 6%, var(--cor-surface));
+}
+
+/* Atendido e faltou já foram: apagados, mas clicáveis — o detalhe
+   continua sendo onde se registra o pagamento. Faltou ainda vai riscado. */
+.evento[data-status="concluido"],
+.evento[data-status="no_show"] {
+  opacity: 0.55;
+}
+
+.evento[data-status="no_show"] {
+  text-decoration: line-through;
+}
+
+/* Em atendimento agora: um anel na cor da marca, que é o "agora" do
+   painel. Repetido no hover, que troca a sombra. */
+.evento[data-agora] {
+  box-shadow: 0 0 0 2px var(--cor-accent);
+}
+
+.evento[data-agora]:hover {
+  box-shadow: 0 0 0 2px var(--cor-accent), var(--sombra-1);
+}
+
 .horaDoEvento {
   font-family: var(--fonte-display), system-ui, sans-serif;
 }

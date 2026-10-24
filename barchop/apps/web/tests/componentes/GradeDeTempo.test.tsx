@@ -378,3 +378,74 @@ describe("selo de presença confirmada", () => {
     );
   });
 });
+
+describe("status no bloco (agenda no celular, PR 1)", () => {
+  function montarComAgora(agendamentos: AgendamentoComCliente[], agora: Date) {
+    const grade = gradeDeTempo({ dias: [TERCA], horarios: HORARIOS, agendamentos, agora });
+    render(<GradeDeTempo grade={grade} aoAbrir={() => {}} aoCriar={() => {}} agora={agora} />);
+    return screen.getByRole("button", { name: /João Silva/ });
+  }
+
+  it("aguardando confirmação: data-status e a frase no nome do botão", () => {
+    const bloco = montarComAgora([{ ...agendamento(), status: "pendente" }], AGORA);
+
+    expect(bloco).toHaveAttribute("data-status", "pendente");
+    expect(bloco).toHaveAccessibleName(/aguardando confirmação/);
+  });
+
+  it("confirmado e fora do horário não diz nada além do nome", () => {
+    const bloco = montarComAgora([agendamento()], AGORA);
+
+    expect(bloco).toHaveAttribute("data-status", "confirmado");
+    expect(bloco).not.toHaveAttribute("data-agora");
+    expect(bloco).toHaveAccessibleName(/^11:00 João Silva\s*Corte$/);
+  });
+
+  it("atendido e faltou dizem o que foi", () => {
+    montarComAgora([{ ...agendamento(), status: "concluido" }], AGORA);
+    expect(screen.getByRole("button", { name: /João Silva/ })).toHaveAccessibleName(/atendido/);
+  });
+
+  it("faltou leva o status no bloco", () => {
+    const bloco = montarComAgora([{ ...agendamento(), status: "no_show" }], AGORA);
+
+    expect(bloco).toHaveAttribute("data-status", "no_show");
+    expect(bloco).toHaveAccessibleName(/faltou/);
+  });
+
+  it("em atendimento só com o relógio dentro do horário", () => {
+    // 11:00 – 12:00; às 11:20 está acontecendo.
+    const bloco = montarComAgora([agendamento()], new Date("2026-09-08T11:20:00-03:00"));
+
+    expect(bloco).toHaveAttribute("data-agora", "true");
+    expect(bloco).toHaveAccessibleName(/em atendimento/);
+  });
+
+  it("no minuto do fim já não está em atendimento", () => {
+    const bloco = montarComAgora([agendamento()], new Date("2026-09-08T12:00:00-03:00"));
+
+    expect(bloco).not.toHaveAttribute("data-agora");
+  });
+
+  it("pendente dentro do horário vale como em atendimento", () => {
+    const bloco = montarComAgora(
+      [{ ...agendamento(), status: "pendente" }],
+      new Date("2026-09-08T11:20:00-03:00")
+    );
+
+    expect(bloco).toHaveAttribute("data-agora", "true");
+    expect(bloco).toHaveAccessibleName(/em atendimento/);
+  });
+
+  it("cancelado não aparece", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [{ ...agendamento(), status: "cancelado" }],
+      agora: AGORA,
+    });
+    render(<GradeDeTempo grade={grade} aoAbrir={() => {}} aoCriar={() => {}} agora={AGORA} />);
+
+    expect(screen.queryByRole("button", { name: /João Silva/ })).not.toBeInTheDocument();
+  });
+});

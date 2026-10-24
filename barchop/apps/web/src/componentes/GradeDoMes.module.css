@@ -151,7 +151,8 @@
 /* No celular (agenda no celular, PR 6): só o nome na pílula, e a célula
    com altura pro número, três pílulas e o "+N". */
 @media (max-width: 900px) {
-  .horaDoChip {
+  .horaDoChip,
+  .sobrenome {
     display: none;
   }
 

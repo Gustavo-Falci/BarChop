@@ -219,12 +219,14 @@
   cursor: pointer;
 }
 
+/* A seta é desenho: o texto alternativo vazio ("/ """) a tira do nome do
+   botão, que sem isso saía "▸ Mais cedo". */
 .maisCedo::before {
-  content: "▸ ";
+  content: "▸ " / "";
 }
 
 .maisCedo[aria-expanded="true"]::before {
-  content: "▾ ";
+  content: "▾ " / "";
 }
 
 /* A régua do agora: a linha da cor da marca, com a bolinha na ponta. */

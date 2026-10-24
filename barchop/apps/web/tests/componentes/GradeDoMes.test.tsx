@@ -36,6 +36,14 @@ function agendamento(id: string, hora: string): AgendamentoComCliente {
   };
 }
 
+// A pílula parte o nome em dois nós (o sobrenome some no celular), então
+// a busca é pelo texto inteiro da pílula.
+function pilula(texto: string): HTMLElement | null {
+  return (
+    screen.queryAllByText((_, el) => el?.hasAttribute("data-status") === true && (el.textContent ?? "").includes(texto))[0] ?? null
+  );
+}
+
 function montar(entrada: {
   agendamentos?: AgendamentoComCliente[];
   aoAbrirDia?: (data: string) => void;
@@ -58,7 +66,7 @@ describe("GradeDoMes", () => {
     const aoAbrirDia = vi.fn((_data: string) => {});
     montar({ agendamentos: [agendamento("a1", "10:00")], aoAbrirDia });
 
-    expect(screen.getByText(/Cliente a1/)).toBeInTheDocument();
+    expect(pilula("Cliente a1")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "8 de setembro, 1 agendamento" }));
 
@@ -76,8 +84,8 @@ describe("GradeDoMes", () => {
       ],
     });
 
-    expect(screen.getByText(/Cliente a3/)).toBeInTheDocument();
-    expect(screen.queryByText(/Cliente a4/)).not.toBeInTheDocument();
+    expect(pilula("Cliente a3")).toBeInTheDocument();
+    expect(pilula("Cliente a4")).not.toBeInTheDocument();
     expect(screen.getByText("+2")).toBeInTheDocument();
   });
 
@@ -88,7 +96,7 @@ describe("GradeDoMes", () => {
       agendamentos: [agendamento("a1", "09:00"), agendamento("a2", "10:00"), agendamento("a3", "11:00")],
     });
 
-    expect(screen.getByText(/Cliente a3/)).toBeInTheDocument();
+    expect(pilula("Cliente a3")).toBeInTheDocument();
     expect(screen.queryByText(/^\+/)).not.toBeInTheDocument();
   });
 
@@ -123,9 +131,9 @@ describe("GradeDoMes", () => {
       />
     );
 
-    const pilula = screen.getByText(/Cliente a1/);
-    expect(pilula).toHaveAttribute("data-tom", "1");
-    expect(pilula).toHaveAttribute("data-status", "pendente");
+    const daAna = pilula("Cliente a1");
+    expect(daAna).toHaveAttribute("data-tom", "1");
+    expect(daAna).toHaveAttribute("data-status", "pendente");
   });
 
   it("distingue a célula de fora do mês e a de hoje", () => {

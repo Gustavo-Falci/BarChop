@@ -168,6 +168,32 @@ describe("ListaDaAgenda", () => {
     expect(screen.getByRole("button", { name: /João Silva/ })).toHaveTextContent("Ana");
   });
 
+  it("a etiqueta leva só o primeiro nome, e o inteiro quando dois o dividem", () => {
+    montar({
+      dias: ["2026-09-09"],
+      profissionais: [
+        { id: "bb1", nome: "Rafael Dono", tom: 0 },
+        { id: "m2", nome: "Ana Souza", tom: 1 },
+        { id: "m3", nome: "Ana Lima", tom: 2 },
+      ],
+      agendamentos: [
+        agendamento({ id: "q", data: "2026-09-09" }),
+        agendamento({ id: "r", data: "2026-09-09", horaInicio: "12:00", horaFim: "12:30", barbeiro: { id: "m2", nome: "Ana Souza" }, cliente: { id: "c5", nome: "Caio", telefone: "", email: null, temConta: false } }),
+      ],
+    });
+
+    const joao = screen.getByRole("button", { name: /João Silva/ });
+    expect(joao).toHaveTextContent(/Rafael$/);
+    expect(joao).not.toHaveTextContent("Rafael Dono");
+    expect(screen.getByRole("button", { name: /Caio/ })).toHaveTextContent("Ana Souza");
+  });
+
+  it("o ✓ de presença vem logo depois do nome", () => {
+    montar({ dias: ["2026-09-09"], agendamentos: [agendamento({ id: "q", data: "2026-09-09", presencaConfirmadaEm: "2026-09-08T10:00:00Z" })] });
+
+    expect(screen.getByRole("button", { name: /João Silva, confirmou presença · Corte/ })).toBeInTheDocument();
+  });
+
   it("com um só, o nome não se repete no cartão", () => {
     montar({
       dias: ["2026-09-09"],

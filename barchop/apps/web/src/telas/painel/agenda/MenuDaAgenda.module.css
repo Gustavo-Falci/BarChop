@@ -77,6 +77,15 @@
   border-top: 1px solid var(--cor-line);
 }
 
+.grupo {
+  display: grid;
+  gap: var(--espaco-xs);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .rotulo {
   margin: 0 0 var(--espaco-xs);
   padding: 0;
@@ -160,7 +169,9 @@
   --tom: #d4609a;
 }
 
-.caixa {
+/* `.pessoa .caixa`, e não só `.caixa`: o `input[type="checkbox"]` do
+   globals.css pesa mais que uma classe e pintava todas com a cor da casa. */
+.pessoa .caixa {
   width: 20px;
   height: 20px;
   margin: 0;

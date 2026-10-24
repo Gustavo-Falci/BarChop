@@ -64,9 +64,11 @@ export function GradeDoMes({
                 data-tom={tons?.[agendamento.barbeiro.id]}
                 data-status={agendamento.status}
               >
-                {/* No celular a hora sai (só o nome cabe); continua no DOM. */}
+                {/* No celular saem a hora e o sobrenome: numa coluna de
+                    50px, "Diego Lima" virava "Diego …". Continuam no DOM. */}
                 <span className={estilos.horaDoChip}>{agendamento.horaInicio} </span>
-                {agendamento.cliente.nome}
+                {primeiroNome(agendamento.cliente.nome)}
+                <span className={estilos.sobrenome}>{restoDoNome(agendamento.cliente.nome)}</span>
               </span>
             ))}
 
@@ -78,4 +80,14 @@ export function GradeDoMes({
       })}
     </div>
   );
+}
+
+function primeiroNome(nome: string): string {
+  return nome.split(" ")[0];
+}
+
+// Com o espaço na frente: junto do primeiro nome, o texto volta inteiro.
+function restoDoNome(nome: string): string {
+  const resto = nome.split(" ").slice(1).join(" ");
+  return resto ? ` ${resto}` : "";
 }

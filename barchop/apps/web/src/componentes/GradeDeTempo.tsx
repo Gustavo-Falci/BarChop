@@ -16,7 +16,7 @@ import { destinoDoArrasto, type DestinoDoArrasto } from "../painel/arrasto";
 // que o outro desenha. O alias existe só para os dois conviverem aqui.
 import type { GradeDeTempo as Grade } from "../painel/grade";
 import { MINUTOS_POR_LINHA } from "../painel/grade";
-import { formatarDataLonga, horaJaPassou } from "../formato/datas";
+import { formatarDataLonga, hojeIso, horaJaPassou } from "../formato/datas";
 import estilos from "./GradeDeTempo.module.css";
 
 const NOMES_CURTOS = ["dom.", "seg.", "ter.", "qua.", "qui.", "sex.", "sáb."];
@@ -186,12 +186,18 @@ export function GradeDeTempo({
     "--total-linhas": grade.totalLinhas,
     "--colunas": grade.colunas.length,
   } as CSSProperties;
+  // No celular, o dia de uma equipe grande não cabe espremido: com 4 ou
+  // mais profissionais as colunas ficam com 110px e o quadro rola de lado
+  // (agenda no celular, PR 5). Semana e 3 dias cabem na largura.
+  const largas = grade.colunas.length >= 4 && grade.colunas.every((coluna) => coluna.rotulo);
+  const hoje = agora ? hojeIso(agora) : undefined;
 
   return (
     <div
       className={estilos.quadro}
       style={estiloDaGrade}
       data-testid="quadro-da-grade"
+      data-largas={largas ? "true" : undefined}
     >
       {/* Fora do invólucro que rola, e não dentro: assim a barra de
           rolagem começa abaixo do cabeçalho em vez de correr ao lado dos
@@ -215,6 +221,7 @@ export function GradeDeTempo({
               // A data por extenso é o nome acessível: "8" sozinho não
               // distingue uma coluna da outra numa lista de sete.
               aria-label={formatarDataLonga(coluna.data)}
+              aria-current={coluna.data === hoje ? "date" : undefined}
               onClick={() => aoAbrirDia(coluna.data)}
             >
               <span className={estilos.nomeDoDia}>
@@ -227,7 +234,11 @@ export function GradeDeTempo({
           ) : (
             // Sem navegação a vista de dia ainda precisa dizer que dia
             // está na tela — o que some é o clique, não o rótulo.
-            <span key={coluna.chave} className={estilos.diaDoCabecalho}>
+            <span
+              key={coluna.chave}
+              className={estilos.diaDoCabecalho}
+              aria-current={coluna.data === hoje ? "date" : undefined}
+            >
               <span className={estilos.nomeDoDia}>
                 {nomeDoDia(coluna.data)}
               </span>
@@ -265,6 +276,9 @@ export function GradeDeTempo({
                   data-no-fim={
                     hora.minuto === grade.minutoFinal ? "true" : undefined
                   }
+                  // Hora cheia: no celular o CSS mostra só o "09" (a ponta
+                  // quebrada, "09:30", fica inteira).
+                  data-cheia={hora.rotulo.endsWith(":00") ? "true" : undefined}
                   style={{ "--linha": hora.linha } as CSSProperties}
                 >
                   {hora.rotulo}

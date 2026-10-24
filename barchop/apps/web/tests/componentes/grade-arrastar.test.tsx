@@ -94,6 +94,68 @@ describe("arrastar um agendamento na grade", () => {
     await act(() => new Promise((pronto) => setTimeout(pronto, 60)));
   });
 
+  it("com colunas estreitas (semana no celular), andar duas colunas cai dois dias depois", async () => {
+    // A semana de 7 num celular de 375: ~46px por coluna.
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      if (this.dataset.coluna === undefined) return medirOriginal.call(this);
+      const altura = LINHAS_DO_DIA * ALTURA_DA_LINHA;
+      return { x: 0, y: 0, top: 0, left: 0, width: 46, height: altura, right: 46, bottom: altura, toJSON: () => ({}) } as DOMRect;
+    };
+    const aoSoltar = vi.fn();
+    const dias = ["2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27", "2026-10-28"];
+    const grade = gradeDeTempo({ dias, horarios: HORARIOS, agendamentos: [CORTE], agora: AGORA });
+    render(<GradeDeTempo grade={grade} agora={AGORA} aoAbrir={() => {}} aoCriar={() => {}} podeMover={() => true} aoSoltar={aoSoltar} />);
+    const bloco = screen.getByRole("button", { name: /10:00 João/ });
+
+    await act(async () => {
+      fireEvent.mouseDown(bloco, { button: 0, clientX: 10, clientY: 10 });
+      fireEvent.mouseMove(document, { clientX: 20, clientY: 10 });
+      fireEvent.mouseMove(document, { clientX: 10 + 2 * 46, clientY: 10 + 6 * ALTURA_DA_LINHA });
+    });
+    await act(async () => {
+      fireEvent.mouseUp(document, { clientX: 10 + 2 * 46, clientY: 10 + 6 * ALTURA_DA_LINHA });
+    });
+
+    expect(aoSoltar).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "a1" }),
+      expect.objectContaining({ data: "2026-10-24", horaInicio: "10:30", valido: true })
+    );
+    await act(() => new Promise((pronto) => setTimeout(pronto, 60)));
+  });
+
+  it("com 3 colunas, andar uma cai no dia seguinte", async () => {
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      if (this.dataset.coluna === undefined) return medirOriginal.call(this);
+      const altura = LINHAS_DO_DIA * ALTURA_DA_LINHA;
+      return { x: 0, y: 0, top: 0, left: 0, width: 105, height: altura, right: 105, bottom: altura, toJSON: () => ({}) } as DOMRect;
+    };
+    const aoSoltar = vi.fn();
+    const grade = gradeDeTempo({ dias: ["2026-10-22", "2026-10-23", "2026-10-24"], horarios: HORARIOS, agendamentos: [CORTE], agora: AGORA });
+    render(<GradeDeTempo grade={grade} agora={AGORA} aoAbrir={() => {}} aoCriar={() => {}} podeMover={() => true} aoSoltar={aoSoltar} />);
+    const bloco = screen.getByRole("button", { name: /10:00 João/ });
+
+    await act(async () => {
+      fireEvent.mouseDown(bloco, { button: 0, clientX: 10, clientY: 10 });
+      fireEvent.mouseMove(document, { clientX: 20, clientY: 10 });
+      fireEvent.mouseMove(document, { clientX: 10 + 105, clientY: 10 });
+    });
+    await act(async () => {
+      fireEvent.mouseUp(document, { clientX: 10 + 105, clientY: 10 });
+    });
+
+    expect(aoSoltar).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "a1" }),
+      expect.objectContaining({ data: "2026-10-23", horaInicio: "10:00", valido: true })
+    );
+    await act(() => new Promise((pronto) => setTimeout(pronto, 60)));
+  });
+
+  it("o bloco compacto continua dizendo horário e serviço no nome", () => {
+    montar();
+
+    expect(screen.getByRole("button", { name: /^10:00 João.*Corte$/ })).toBeInTheDocument();
+  });
+
   it("um clique sem arrastar continua abrindo o agendamento", () => {
     const { aoAbrir, aoSoltar } = montar();
 

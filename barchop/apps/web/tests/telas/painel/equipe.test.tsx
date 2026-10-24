@@ -36,6 +36,7 @@ function comEquipe() {
       ativo: true,
       fotoUrl: null,
       convitePendente: true,
+      podeVenderPlanos: false,
     },
     {
       id: "m3",
@@ -47,6 +48,7 @@ function comEquipe() {
       ativo: false,
       fotoUrl: null,
       convitePendente: false,
+      podeVenderPlanos: false,
     }
   );
   return falso;
@@ -362,6 +364,7 @@ describe("editar um membro", () => {
       ativo: true,
       fotoUrl: null,
       convitePendente: false,
+      podeVenderPlanos: false,
     });
     const meuPerfil = vi.spyOn(falso.barbeiro, "meuPerfil");
     montarPainel(<CadastroDeMembro />, falso);

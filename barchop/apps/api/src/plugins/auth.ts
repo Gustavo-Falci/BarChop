@@ -49,6 +49,8 @@ export interface Membro {
   id: string;
   barbeariaId: string;
   papel: PapelMembro;
+  // O dono liberou pra vender planos ao cliente (Onda 2, marco 3).
+  podeVenderPlanos: boolean;
 }
 
 declare module "fastify" {
@@ -125,7 +127,7 @@ export async function autenticar(request: FastifyRequest): Promise<void> {
   // protegida é o preço de a desativação ser real.
   const barbeiro = await prisma.barbeiro.findUnique({
     where: { id: payload.barbeiroId },
-    select: { ativo: true, senhaAlteradaEm: true, papel: true },
+    select: { ativo: true, senhaAlteradaEm: true, papel: true, podeVenderPlanos: true },
   });
 
   if (!barbeiro?.ativo) {
@@ -147,6 +149,7 @@ export async function autenticar(request: FastifyRequest): Promise<void> {
     id: payload.barbeiroId,
     barbeariaId: payload.barbeariaId,
     papel: barbeiro.papel,
+    podeVenderPlanos: barbeiro.podeVenderPlanos,
   };
 }
 

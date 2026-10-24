@@ -40,6 +40,7 @@ function semear(papel?: "dono" | "profissional" | "recepcao") {
     ativo: true,
     fotoUrl: null,
     convitePendente: false,
+    podeVenderPlanos: false,
   });
   return falso;
 }

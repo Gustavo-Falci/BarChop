@@ -133,6 +133,7 @@ describe("situação do membro", () => {
     ativo,
     fotoUrl: null,
     convitePendente,
+    podeVenderPlanos: false,
   });
 
   it("ativo que já entrou", () => {

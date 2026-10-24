@@ -172,6 +172,7 @@ describe("a confirmação com o profissional", () => {
       ativo: true,
       fotoUrl: null,
       convitePendente: false,
+      podeVenderPlanos: false,
     });
     const agendar = vi.spyOn(falso.publico, "agendar");
     montar(<Confirmacao agora={MANHA} />, falso);

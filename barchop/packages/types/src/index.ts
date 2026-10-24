@@ -474,6 +474,9 @@ export interface MembroDaEquipe {
   fotoUrl: string | null;
   // Convidado que ainda não definiu a senha — não consegue entrar.
   convitePendente: boolean;
+  // O dono liberou o membro pra vender planos ao cliente (Onda 2,
+  // marco 3). O dono vende sem ela.
+  podeVenderPlanos: boolean;
 }
 
 // GET /barbearias/me/ocupacao?data= (painel v2, marco 4). Minutos de
@@ -707,3 +710,62 @@ export interface SalvarDivisao {
   parteDaCasa: { membroId: string; percentual: number }[];
   matriz: RegraDaMatriz[];
 }
+
+// Os planos que a barbearia e os barbeiros vendem ao cliente (Onda 2,
+// marco 3). Não confundir com o plano do BarChop (`Assinatura`).
+export type CicloDoCliente = "mensal" | "trimestral" | "anual";
+
+export interface ServicoDoPlano {
+  servicoId: string;
+  nome: string;
+  // Nulo = ilimitado.
+  usosPorCiclo: number | null;
+}
+
+export interface PlanoDoPainel {
+  id: string;
+  // Da casa: vale com qualquer um, e quem atende ganha o fixo. De
+  // barbeiro: vale só com o vendedor.
+  daCasa: boolean;
+  vendedor: { id: string; nome: string } | null;
+  nome: string;
+  descricao: string | null;
+  ciclo: CicloDoCliente;
+  precoCentavos: number;
+  diasDeTeste: number;
+  // Só no da casa; no de barbeiro, nulo.
+  fixoPorAtendimentoCentavos: number | null;
+  aceitaOnline: boolean;
+  aceitaNoBalcao: boolean;
+  ativo: boolean;
+  servicos: ServicoDoPlano[];
+  // Assinaturas vivas (não canceladas).
+  assinantes: number;
+}
+
+// GET /barbearias/me/planos. O dono e a recepção recebem todos; o
+// profissional, só os dele.
+export interface PlanosDoPainel {
+  vitrine: boolean;
+  podeCriarDaCasa: boolean;
+  podeCriarProprio: boolean;
+  planos: PlanoDoPainel[];
+}
+
+// POST /barbearias/me/planos. O vendedor é sempre quem cria.
+export interface NovoPlano {
+  daCasa: boolean;
+  nome: string;
+  descricao?: string | null;
+  ciclo: CicloDoCliente;
+  precoCentavos: number;
+  diasDeTeste?: number;
+  fixoPorAtendimentoCentavos?: number | null;
+  aceitaOnline?: boolean;
+  aceitaNoBalcao?: boolean;
+  servicos: { servicoId: string; usosPorCiclo: number | null }[];
+}
+
+// PATCH /barbearias/me/planos/:id. Tipo e vendedor não mudam; a lista de
+// serviços, quando vem, substitui a inteira.
+export type MudancaDoPlano = Partial<Omit<NovoPlano, "daCasa">> & { ativo?: boolean };

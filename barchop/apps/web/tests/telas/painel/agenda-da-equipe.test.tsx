@@ -476,7 +476,7 @@ describe("semana por profissional", () => {
 
       expect(await screen.findByRole("group", { name: "Filtrar por profissional" })).toBeInTheDocument();
       // O agendamento do Rafael (dia 9) sai; o da Ana (dia 10) fica.
-      expect(await screen.findByRole("button", { name: "10 de setembro" })).toHaveTextContent("15:00 João Silva");
+      expect(await screen.findByRole("button", { name: "10 de setembro, 1 agendamento" })).toHaveTextContent("15:00 João Silva");
       expect(screen.getByRole("button", { name: "9 de setembro" })).not.toHaveTextContent("João Silva");
     });
 

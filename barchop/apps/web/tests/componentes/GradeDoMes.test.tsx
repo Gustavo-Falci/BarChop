@@ -60,12 +60,12 @@ describe("GradeDoMes", () => {
 
     expect(screen.getByText(/Cliente a1/)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "8 de setembro" }));
+    await userEvent.click(screen.getByRole("button", { name: "8 de setembro, 1 agendamento" }));
 
     expect(aoAbrirDia).toHaveBeenCalledWith("2026-09-08");
   });
 
-  it("passando de quatro no dia, mostra três e um +N", () => {
+  it("passando de três no dia, mostra três e um +N com o resto", () => {
     montar({
       agendamentos: [
         agendamento("a1", "09:00"),
@@ -81,9 +81,18 @@ describe("GradeDoMes", () => {
     expect(screen.getByText("+2")).toBeInTheDocument();
   });
 
-  it("com exatamente quatro no dia, mostra os quatro e nenhum +N", () => {
-    // O caso que separa "corta acima de 3" de "corta acima de 4": com um
+  it("com exatamente três no dia, mostra os três e nenhum +N", () => {
+    // O caso que separa "corta acima de 2" de "corta acima de 3": com um
     // limite errado por um, este teste fica vermelho e o de cima não.
+    montar({
+      agendamentos: [agendamento("a1", "09:00"), agendamento("a2", "10:00"), agendamento("a3", "11:00")],
+    });
+
+    expect(screen.getByText(/Cliente a3/)).toBeInTheDocument();
+    expect(screen.queryByText(/^\+/)).not.toBeInTheDocument();
+  });
+
+  it("o nome do dia diz quantos agendamentos tem; o dia vazio, só a data", () => {
     montar({
       agendamentos: [
         agendamento("a1", "09:00"),
@@ -93,8 +102,30 @@ describe("GradeDoMes", () => {
       ],
     });
 
-    expect(screen.getByText(/Cliente a4/)).toBeInTheDocument();
-    expect(screen.queryByText(/^\+/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "8 de setembro, 4 agendamentos" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "9 de setembro" })).toBeInTheDocument();
+  });
+
+  it("dia sem agendamento não tem pílula", () => {
+    montar({ agendamentos: [agendamento("a1", "09:00")] });
+
+    expect(screen.getByRole("button", { name: "9 de setembro" })).toHaveTextContent(/^9$/);
+  });
+
+  it("a pílula leva o tom do profissional e o status", () => {
+    const pendente = { ...agendamento("a1", "09:00"), status: "pendente" as const, barbeiro: { id: "m2", nome: "Ana" } };
+    render(
+      <GradeDoMes
+        celulas={gradeDoMes({ mes: "2026-09", horarios: HORARIOS, agendamentos: [pendente] })}
+        hoje="2026-09-08"
+        tons={{ bb1: 0, m2: 1 }}
+        aoAbrirDia={() => {}}
+      />
+    );
+
+    const pilula = screen.getByText(/Cliente a1/);
+    expect(pilula).toHaveAttribute("data-tom", "1");
+    expect(pilula).toHaveAttribute("data-status", "pendente");
   });
 
   it("distingue a célula de fora do mês e a de hoje", () => {

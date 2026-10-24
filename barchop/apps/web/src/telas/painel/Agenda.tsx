@@ -317,6 +317,12 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
       : (ocupacaoDaSemana.dados ?? undefined);
   // Quem o filtro deixou, sendo um só: o horário livre já o leva.
   const soUm = filtro?.size === 1 ? [...filtro][0] : undefined;
+  // Um tom por profissional, igual na grade e no mês. Com um só, a cor
+  // da casa.
+  const tons =
+    atendentes.length > 1
+      ? Object.fromEntries(atendentes.map((pessoa, indice) => [pessoa.id, indice % 6]))
+      : undefined;
   // Liga ou desliga uma pessoa no filtro; todos ligados volta a nenhum.
   function alternar(quem: string) {
     if (quem === TODOS) return irPara(vista, data, []);
@@ -482,6 +488,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             agendamentos: visiveis,
           })}
           hoje={hojeIso(agora)}
+          tons={tons}
           aoAbrirDia={(dia) => irPara("dia", dia)}
         />
       ) : vista === "lista" ? (
@@ -526,11 +533,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           aoSoltar={(agendamento, destino) => setMovendo({ agendamento, destino })}
           // Com mais de uma pessoa, cada uma ganha um matiz (mesmo croma),
           // na ordem da equipe; sozinho, a cor da casa.
-          tons={
-            atendentes.length > 1
-              ? Object.fromEntries(atendentes.map((pessoa, indice) => [pessoa.id, indice % 6]))
-              : undefined
-          }
+          tons={tons}
           aoCriar={(dia, hora, barbeiroId, profissionais) => {
             // Na coluna que junta a equipe, só quem pode atender naquela
             // hora; sendo um só, ele já vem escolhido.

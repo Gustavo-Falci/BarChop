@@ -7,7 +7,7 @@
 ## RETOMAR AQUI (2026-10-24 — agenda no celular mesclada na `main`: #189 a #196) — vale mais que as seções abaixo
 
 **Estado:**
-- **`main` = `0cae664`** (#196); **produção = `c6a3b33`** (#187). A agenda no celular está na `main` e **ainda não foi pro ar**.
+- **`main` = `0e2193c`** (#197, este RETOMAR AQUI; o código é o #196); **produção = `c6a3b33`** (#187). A agenda no celular está na `main` e **ainda não foi pro ar**.
 - Mesclados em 24/10, com o "pode mergear" do dono, na ordem:
   1. **#189**: o plano `.claude/plans/agenda-no-celular.plan.md` (canvas aprovado: https://claude.ai/artifact/Vus5qcnD2mRpy5orskvtGy).
   2. **#190**: status no bloco (pendente tracejado, atendido e faltou apagados, anel no "em atendimento").
@@ -18,7 +18,7 @@
   7. **#195**: semana e 3 dias cabendo na tela do celular (container query por coluna; dia de 4+ profissionais rola com o eixo preso).
   8. **#196**: mês com 3 nomes no tom de cada um e "+N", mais dois commits de ajuste: o da revisão e o do que se viu no navegador a 390px (etiqueta com o primeiro nome, ✓ logo depois do nome, caixinhas do menu na cor de cada um, eixo "09" por `::before`, "Fechado" só pro leitor na semana, pílula do mês com o primeiro nome).
 - Conferido no navegador (DevTools, 390px, conta layout-dev): Lista, menu, calendário, 3 dias, semana, dia com 2 profissionais, mês. Suíte do web 1443/1443, `tsc` e lint limpos.
-- Os branches `plano-agenda-celular` e `agenda-celular-*` continuam no GitHub (apagar quando quiser).
+- Branches da pilha (`plano-agenda-celular`, `agenda-celular-*`, `docs-retomar-24-10`) apagados pelo dono, no GitHub e no clone local. Nenhum PR aberto.
 - No banco **dev** `gr_barber` há dados de teste na barbearia layout-dev: 10 clientes, 14 agendamentos com a observação "teste-agenda-celular" e um bloqueio "Almoço" da Ana em 24/10. Senha da conta layout-dev@exemplo.com no dev: `layoutdev123`.
 
 **Ao retomar:**

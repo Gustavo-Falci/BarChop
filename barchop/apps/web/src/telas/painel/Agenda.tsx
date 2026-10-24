@@ -139,7 +139,11 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
 
   const semana = diasDaSemana(data);
   const tresDias = diasSeguidos(data, 3);
-  const diasDaLista = diasSeguidos(data, DIAS_DA_LISTA);
+  // "Mostrar mais 14 dias" estica a lista; preso à data de onde ela
+  // começa, andar com as setas volta aos 14 sem efeito nem busca a mais.
+  const [maisDias, setMaisDias] = useState({ de: data, dias: 0 });
+  const extras = maisDias.de === data ? maisDias.dias : 0;
+  const diasDaLista = diasSeguidos(data, DIAS_DA_LISTA + extras);
   // Os dias da grade de tempo (a lista e o mês têm a sua).
   const diasDaGrade = vista === "dia" ? [data] : vista === "3dias" ? tresDias : semana;
   // Semana e 3 dias: vários dias lado a lado, com o mesmo filtro e o
@@ -164,7 +168,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
         : vista === "semana"
           ? [semana[0], semana[6]]
           : vista === "lista"
-            ? [diasDaLista[0], diasDaLista[DIAS_DA_LISTA - 1]]
+            ? [diasDaLista[0], diasDaLista[diasDaLista.length - 1]]
             : [bordasDoMes[0].data, bordasDoMes[bordasDoMes.length - 1].data];
 
   const agendamentos = useRequisicao(
@@ -484,7 +488,15 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
         <ListaDaAgenda
           dias={diasDaLista}
           agendamentos={visiveis}
+          bloqueios={(bloqueios.dados ?? []).filter((b) => !filtro || filtro.has(b.barbeiroId))}
+          horarios={horarios.dados}
+          agora={agora}
+          profissionais={atendentes.map((pessoa, indice) => ({ ...pessoa, tom: indice % 6 }))}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
+          aoMarcar={(dia) =>
+            router.push(`/painel/agendamentos/novo?data=${dia}` + (soUm ? `&profissional=${soUm}` : ""))
+          }
+          aoMostrarMais={() => setMaisDias({ de: data, dias: extras + DIAS_DA_LISTA })}
         />
       ) : (
         <GradeDeTempo

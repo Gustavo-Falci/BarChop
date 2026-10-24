@@ -378,23 +378,6 @@ export function CadastroDeMembro() {
         />
 
         {/* Logo abaixo do papel, que decide o padrão dele. */}
-        {/* A liberação dos planos, só na edição do profissional. */}
-        {atual && papel === "profissional" ? (
-          <div className={estilos.opcao}>
-            <input
-              type="checkbox"
-              id={`${idDoGrupo}-vende`}
-              checked={podeVender}
-              onChange={(evento) => setPodeVender(evento.target.checked)}
-              aria-describedby={`${idDoGrupo}-vende-descricao`}
-            />
-            <label htmlFor={`${idDoGrupo}-vende`}>Pode vender planos</label>
-            <span id={`${idDoGrupo}-vende-descricao`} className={estilos.descricao}>
-              Cria os planos dele, que valem só com ele, e a mensalidade é dele.
-            </span>
-          </div>
-        ) : null}
-
         <div className={estilos.opcao}>
           <input
             type="checkbox"
@@ -411,6 +394,23 @@ export function CadastroDeMembro() {
             Aparece na agenda e pode receber agendamentos.
           </span>
         </div>
+
+        {/* A liberação dos planos, só na edição do profissional. */}
+        {atual && papel === "profissional" ? (
+          <div className={estilos.opcao}>
+            <input
+              type="checkbox"
+              id={`${idDoGrupo}-vende`}
+              checked={podeVender}
+              onChange={(evento) => setPodeVender(evento.target.checked)}
+              aria-describedby={`${idDoGrupo}-vende-descricao`}
+            />
+            <label htmlFor={`${idDoGrupo}-vende`}>Pode vender planos</label>
+            <span id={`${idDoGrupo}-vende-descricao`} className={estilos.descricao}>
+              Cria os planos dele, que valem só com ele, e a mensalidade é dele.
+            </span>
+          </div>
+        ) : null}
 
         {aviso ? <Aviso>{aviso}</Aviso> : null}
       </Grupo>

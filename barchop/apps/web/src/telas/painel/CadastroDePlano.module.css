@@ -116,10 +116,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.numero:disabled {
-  opacity: 0.5;
-}
-
 .erro {
   color: var(--cor-erro);
   font-size: var(--texto-sm);

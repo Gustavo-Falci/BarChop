@@ -380,16 +380,19 @@ export function CadastroDePlano() {
                     </span>
                     {escolha ? (
                       <span className={estilos.usos}>
-                        <input
-                          type="number"
-                          min={1}
-                          max={USOS_MAX}
-                          className={estilos.numero}
-                          aria-label={`Usos de ${servico.nome} por ciclo`}
-                          value={escolha.ilimitado ? "" : escolha.usos}
-                          disabled={escolha.ilimitado}
-                          onChange={(evento) => mudarEscolha(servico.id, { usos: evento.target.value })}
-                        />
+                        {/* Ilimitado, o número some: uma caixa vazia e
+                            apagada parecia campo esquecido. */}
+                        {escolha.ilimitado ? null : (
+                          <input
+                            type="number"
+                            min={1}
+                            max={USOS_MAX}
+                            className={estilos.numero}
+                            aria-label={`Usos de ${servico.nome} por ciclo`}
+                            value={escolha.usos}
+                            onChange={(evento) => mudarEscolha(servico.id, { usos: evento.target.value })}
+                          />
+                        )}
                         <span className={estilos.marca}>
                           <input
                             type="checkbox"

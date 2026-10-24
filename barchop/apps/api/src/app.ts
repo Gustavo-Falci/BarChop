@@ -28,7 +28,7 @@ import { registrarRotasOnboarding } from "./routers/onboarding";
 import { registrarRotasSolicitacaoDeLink } from "./routers/solicitacao-de-link";
 import { registrarRotasLoginDoSuporte, registrarRotasSuporte } from "./routers/suporte";
 import { registrarRotasEquipe } from "./routers/equipe";
-import { registrarRotasPlanos } from "./routers/planos";
+import { registrarRotasPlanos, registrarRotasPlanosPublicos } from "./routers/planos";
 import {
   registrarRotasBarbeariasProtegidas,
   registrarRotasBarbeariasPublicas,
@@ -169,6 +169,7 @@ export function buildApp(
 
   registrarRotasBarbeariasPublicas(app);
   registrarRotasServicosPublicas(app);
+  registrarRotasPlanosPublicos(app);
   // As abertas que mandam e-mail ou custam caro (G2), num escopo com o
   // plugin de limite pelo mesmo motivo do de auth: o `await`.
   app.register(async (abertas: App) => {

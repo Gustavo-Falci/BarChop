@@ -7,11 +7,13 @@ import {
   type PlanoParaConferir,
   type ProblemaDoPlano,
 } from "@barchop/formato";
-import type { CicloDoCliente, PlanoDoPainel, PlanosDoPainel } from "@barchop/types";
-import { garantirRecurso } from "../lib/assinatura";
+import type { CicloDoCliente, PlanoDoPainel, PlanosDoPainel, VitrineDePlanos } from "@barchop/types";
+import { garantirRecurso, temORecurso } from "../lib/assinatura";
+import { PODE_ATENDER } from "../lib/disponibilidade";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
-import { PADRAO_UUID } from "../lib/padroes";
+import { PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
+import { temContaQueRecebe } from "../lib/planos-do-cliente";
 import { exigirPapel, membroDoToken, type Membro } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -299,6 +301,99 @@ export function registrarRotasPlanos(app: App): void {
         select: { vitrineDePlanos: true },
       });
       return { ligada: vitrineDePlanos };
+    }
+  );
+}
+
+const paramsSlug = {
+  type: "object",
+  required: ["slug"],
+  additionalProperties: false,
+  properties: { slug: { type: "string", pattern: PADRAO_SLUG } },
+} as const;
+
+// A vitrine da página pública (PR 4), sem login. Fora do Completo ou com
+// a vitrine desligada, a lista vem vazia e não 403: a página não pode
+// quebrar nem contar qual plano do BarChop a barbearia paga. O fixo da
+// casa e quantos assinam nunca saem daqui.
+export function registrarRotasPlanosPublicos(app: App): void {
+  app.get(
+    "/barbearias/:slug/planos",
+    { schema: { params: paramsSlug } },
+    async (request): Promise<VitrineDePlanos> => {
+      const barbearia = await prisma.barbearia.findUniqueOrThrow({
+        where: { slug: request.params.slug },
+        select: { id: true, vitrineDePlanos: true },
+      });
+      if (!barbearia.vitrineDePlanos) return { planos: [] };
+      if (!(await temORecurso(prisma, barbearia.id, "planosDaBarbearia", new Date()))) return { planos: [] };
+
+      const [planos, contas] = await Promise.all([
+        prisma.planoDeAssinatura.findMany({
+          // O de barbeiro só com vendedor que atende e pode vender (o dono
+          // vende sem a liberação). Tirar o "pode vender" tira da vitrine.
+          where: {
+            barbeariaId: barbearia.id,
+            ativo: true,
+            OR: [
+              { vendedorId: null },
+              { vendedor: { ...PODE_ATENDER, OR: [{ papel: "dono" }, { podeVenderPlanos: true }] } },
+            ],
+          },
+          // Campos um a um: o vendedor é um barbeiro, e um include traria
+          // o senhaHash.
+          select: {
+            id: true,
+            vendedorId: true,
+            nome: true,
+            descricao: true,
+            ciclo: true,
+            precoCentavos: true,
+            diasDeTeste: true,
+            aceitaOnline: true,
+            aceitaNoBalcao: true,
+            vendedor: { select: { id: true, nome: true, fotoChave: true } },
+            servicos: {
+              where: { servico: { ativo: true } },
+              select: { servicoId: true, usosPorCiclo: true, servico: { select: { nome: true } } },
+              orderBy: [{ servico: { ordem: "asc" } }, { servicoId: "asc" }],
+            },
+          },
+          orderBy: [{ ordem: "asc" }, { criadoEm: "asc" }, { id: "asc" }],
+        }),
+        prisma.conexaoDePagamento.findMany({
+          where: { barbeariaId: barbearia.id },
+          select: { barbeiroId: true, daCasa: true },
+        }),
+      ]);
+
+      return {
+        planos: planos.flatMap((plano) => {
+          // Online só com a conta de quem vende conectada. Plano que ninguém
+          // consegue assinar, ou que não cobre nada, não entra.
+          const aceitaOnline = plano.aceitaOnline && temContaQueRecebe(contas, plano.vendedorId);
+          if (plano.servicos.length === 0 || (!aceitaOnline && !plano.aceitaNoBalcao)) return [];
+          return [
+            {
+              id: plano.id,
+              daCasa: plano.vendedorId === null,
+              vendedor: plano.vendedor && {
+                id: plano.vendedor.id,
+                nome: plano.vendedor.nome,
+                fotoUrl: plano.vendedor.fotoChave ? app.armazenamento.urlPublica(plano.vendedor.fotoChave) : null,
+              },
+              nome: plano.nome,
+              descricao: plano.descricao,
+              ciclo: plano.ciclo as CicloDoCliente,
+              precoCentavos: plano.precoCentavos,
+              diasDeTeste: plano.diasDeTeste,
+              aceitaOnline,
+              aceitaNoBalcao: plano.aceitaNoBalcao,
+              servicos: plano.servicos.map((s) => ({ servicoId: s.servicoId, nome: s.servico.nome, usosPorCiclo: s.usosPorCiclo })),
+            },
+          ];
+        }),
+      };
     }
   );
 }

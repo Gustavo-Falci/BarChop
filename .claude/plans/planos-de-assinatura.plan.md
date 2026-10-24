@@ -32,7 +32,13 @@ Diferenças do plano, combinadas no caminho:
   - plano de barbeiro só cobre serviço que o vendedor faz (`servico_fora_do_vendedor`), e quem não atende não vende plano próprio (`vendedor_nao_atende`);
   - cada problema do `problemaDoPlano` tem o seu código (`plano_preco`, `plano_fixo`…);
   - desativar com assinantes vale em qualquer plano do BarChop, porque no Grátis as assinaturas do cliente seguem valendo;
-  - mudar os serviços ou os usos de um plano vale na hora, também para quem já assina (preço e ciclo ficam congelados na assinatura). Pergunta ao dono no PR #207: recusar tirar serviço de plano com assinantes vivos?
+  - mudar os serviços ou os usos de um plano vale na hora, também para quem já assina (preço e ciclo ficam congelados na assinatura). O dono decidiu (24/10, no #207) **não** recusar tirar serviço de plano com assinantes vivos.
+- **PR 4 (vitrine pública):**
+  - fora do Completo ou com a vitrine desligada, `GET /barbearias/:slug/planos` devolve lista vazia, nunca 403: a página não quebra nem conta qual plano do BarChop a barbearia paga. `temORecurso` em `lib/assinatura.ts` é o `garantirRecurso` sem o 403;
+  - **plano só online sem a conta de quem vende conectada fica fora da vitrine**; online e no balcão, sem a conta, entra só no balcão (`aceitaOnline: false`). Até o PR 9 (conectar a conta) só aparecem planos que aceitam o balcão;
+  - a conta que recebe: a da casa pro plano da casa, a pessoal do vendedor pro dele (`temContaQueRecebe`, em `lib/planos-do-cliente.ts`; o PR 10 usa a mesma regra);
+  - serviço desativado sai da lista do plano, e plano sem serviço ativo sai da vitrine;
+  - sem o fixo da casa, quantos assinam e o `ativo`.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

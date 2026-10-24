@@ -16,7 +16,7 @@ import { destinoDoArrasto, type DestinoDoArrasto } from "../painel/arrasto";
 // que o outro desenha. O alias existe só para os dois conviverem aqui.
 import type { GradeDeTempo as Grade } from "../painel/grade";
 import { MINUTOS_POR_LINHA } from "../painel/grade";
-import { formatarDataLonga } from "../formato/datas";
+import { formatarDataLonga, horaJaPassou } from "../formato/datas";
 import estilos from "./GradeDeTempo.module.css";
 
 const NOMES_CURTOS = ["dom.", "seg.", "ter.", "qua.", "qui.", "sex.", "sáb."];
@@ -369,6 +369,7 @@ export function GradeDeTempo({
                     key={evento.agendamento.id}
                     evento={evento}
                     tom={tons?.[evento.agendamento.barbeiro.id]}
+                    agora={agora}
                     movivel={Boolean(aoSoltar && podeMover?.(evento.agendamento))}
                     arrastando={arrastando?.id === evento.agendamento.id}
                     aoAbrir={aoAbrir}
@@ -414,6 +415,28 @@ export function GradeDeTempo({
   );
 }
 
+// O que o bloco diz além do horário e do nome (agenda no celular, PR 1).
+// "Em atendimento" não é status: é o relógio dentro do horário de um
+// agendamento que ainda vale. Confirmado sem atendimento em curso não
+// diz nada — é o caso comum, e o bloco cheio já é ele.
+export function situacaoDoAgendamento(
+  agendamento: AgendamentoComCliente,
+  agora?: Date
+): "aguardando confirmação" | "atendido" | "faltou" | "em atendimento" | null {
+  if (agendamento.status === "concluido") return "atendido";
+  if (agendamento.status === "no_show") return "faltou";
+  if (
+    agora &&
+    (agendamento.status === "pendente" || agendamento.status === "confirmado") &&
+    horaJaPassou(agendamento.data, agendamento.horaInicio, agora) &&
+    !horaJaPassou(agendamento.data, agendamento.horaFim, agora)
+  ) {
+    return "em atendimento";
+  }
+  if (agendamento.status === "pendente") return "aguardando confirmação";
+  return null;
+}
+
 // Um agendamento na grade. Arrastável quando `movivel`: só os listeners
 // do dnd-kit, e não os atributos — eles chamariam o botão de
 // "arrastável" e ensinariam um teclado que esta grade não tem (o dele é
@@ -422,22 +445,28 @@ export function GradeDeTempo({
 function BlocoDoEvento({
   evento,
   tom,
+  agora,
   movivel,
   arrastando,
   aoAbrir,
 }: {
   evento: Grade["colunas"][number]["eventos"][number];
   tom?: number;
+  agora?: Date;
   movivel: boolean;
   arrastando: boolean;
   aoAbrir: (id: string) => void;
 }) {
   const { listeners, setNodeRef } = useDraggable({ id: evento.agendamento.id, disabled: !movivel });
+  const { agendamento } = evento;
+  const situacao = situacaoDoAgendamento(agendamento, agora);
   return (
     <button
       type="button"
       className={estilos.evento}
       data-tom={tom}
+      data-status={agendamento.status}
+      data-agora={situacao === "em atendimento" ? "true" : undefined}
       data-arrastando={arrastando ? "true" : undefined}
       ref={setNodeRef}
       {...(movivel ? listeners : {})}
@@ -471,6 +500,9 @@ function BlocoDoEvento({
           <span className={estilos.somenteLeitor}>, confirmou presença</span>
         </>
       ) : null}
+      {/* O tracejado, o apagado e o anel são pro olho; quem ouve recebe
+          a situação no nome do botão. */}
+      {situacao ? <span className={estilos.somenteLeitor}>, {situacao}</span> : null}
       <span className={estilos.servicos}>
         {evento.agendamento.servicos.map((s) => s.nome).join(" + ")}
       </span>

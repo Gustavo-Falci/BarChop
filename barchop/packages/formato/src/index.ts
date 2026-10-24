@@ -73,6 +73,8 @@ export {
   FORMAS_DA_ASSINATURA,
   FORMAS_DO_CAIXA,
   MAX_DIAS_DE_TESTE_DO_CLIENTE,
+  MODOS_DA_CONEXAO,
+  PROVEDORES_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
   assinanteUsaOPlano,
   dividirMensalidade,
@@ -83,8 +85,10 @@ export {
   type CicloDoCliente,
   type FormaDaAssinatura,
   type FormaDoCaixa,
+  type ModoDaConexao,
   type PlanoParaConferir,
   type ProblemaDoPlano,
+  type ProvedorDePagamento,
   type SituacaoDoAssinante,
 } from "./planos-do-cliente";
 export {

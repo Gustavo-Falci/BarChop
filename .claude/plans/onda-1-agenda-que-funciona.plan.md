@@ -4,7 +4,18 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (tarde de 2026-10-24 — preços novos no ar: #199 e #200) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-24 — Onda 2, marco 3: modelo decidido) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = este RETOMAR AQUI** (o código segue o `cec7e32`, #200; produção igual à seção abaixo). Nenhum PR de código aberto.
+- **Conferido pelo dono em 24/10:** a agenda no celular (#189 a #196) e tudo de 21/10 (arrastar na agenda, "Mudar horário" e o e-mail, "Mudar ordem" na página pública, passos até o ✓, seções ao rolar, janelas saindo animadas). Os "Ao retomar" das duas seções abaixo estão feitos.
+- **Onda 2, marco 3 — decisões do dono** (gravadas em `.claude/prds/onda-2-dinheiro.prd.md`): planos **da casa** e **de barbeiro**; o dinheiro cai na conta de quem vende; plano de barbeiro vale só com ele e a casa fica com o % da "parte da casa" dele sobre a mensalidade; plano da casa vale com qualquer um e paga valor fixo por atendimento; o dono libera "pode vender planos" por membro; vários provedores por conector, começando pelo **Asaas** (chave de API do vendedor, webhook criado pela API com `authToken`).
+
+**Ao retomar:**
+1. `/plan` do marco 3 a partir do PRD. Em aberto para o plano: se planos de barbeiro ficam no recurso `planosDaBarbearia` (só Completo); a chave do Asaas cifrada no banco e nunca devolvida à tela; `forma`/`motivo` novos no caixa para atendimento pelo plano e para a parte da casa sobre a mensalidade.
+2. O resto da lista de 21/10: testar o caixa em produção; marco 4; G3; decidir a `barbearia-teste`; pendentes do redesenho.
+
+## RETOMAR AQUI (tarde de 2026-10-24 — preços novos no ar: #199 e #200) — histórico
 
 **Estado:**
 - **`main` = este RETOMAR AQUI** (o código é o `cec7e32`, #200). **Produção:** API com o #200 (o `criar-precos` da VM já rodou o código novo); web com pelo menos o #199 (`/precos` no ar com os valores novos), então a agenda no celular (#189 a #196) também foi pro ar.

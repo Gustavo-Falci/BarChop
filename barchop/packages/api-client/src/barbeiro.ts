@@ -21,6 +21,10 @@ import type {
   DivisaoDoDinheiro,
   MembroDoCaixa,
   SalvarDivisao,
+  AssinantesDoPainel,
+  AssinaturaDoPainel,
+  FormaDoPagamento,
+  RecebimentoDoBalcao,
   MudancaDoPlano,
   NovoPlano,
   PlanoDoPainel,
@@ -810,6 +814,29 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // Só o dono: os planos ativos na página pública.
     ligarVitrine(ligada: boolean): Promise<{ ligada: boolean }> {
       return requisicao("/barbearias/me/vitrine-de-planos", { metodo: "PUT", corpo: { ligada }, comToken: true });
+    },
+
+    // O assinante no balcão. A lista, o "recebi" e o cancelar valem em
+    // qualquer plano do BarChop; só assinar pede o Completo. O
+    // profissional vê e mexe só nas dos planos dele.
+    assinantes(clienteId?: string): Promise<AssinantesDoPainel> {
+      const filtro = clienteId ? `?clienteId=${encodeURIComponent(clienteId)}` : "";
+      return requisicao(`/barbearias/me/assinantes${filtro}`, { comToken: true });
+    },
+
+    // Com dias grátis nasce em teste; sem, pendente até o 1º "recebi".
+    assinarPlano(clienteId: string, planoId: string): Promise<AssinaturaDoPainel> {
+      return requisicao(`/clientes/${clienteId}/assinaturas`, { metodo: "POST", corpo: { planoId }, comToken: true });
+    },
+
+    // Abre um ciclo a partir de hoje. Antes do dia da renovação: 422
+    // `ciclo_em_dia`.
+    receberMensalidade(assinaturaId: string, forma: FormaDoPagamento): Promise<RecebimentoDoBalcao> {
+      return requisicao(`/assinaturas/${assinaturaId}/recebimentos`, { metodo: "POST", corpo: { forma }, comToken: true });
+    },
+
+    async cancelarAssinaturaDoPlano(assinaturaId: string): Promise<void> {
+      await requisicao(`/assinaturas/${assinaturaId}`, { metodo: "DELETE", comToken: true });
     },
   };
 }

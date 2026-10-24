@@ -20,13 +20,13 @@ import estilos from "./ListaDePlanos.module.css";
 // Os planos que o cliente assina (Onda 2, marco 3): os da casa primeiro,
 // depois os de cada barbeiro, porque é o vendedor que decide com quem o
 // plano vale e pra quem vai a mensalidade. O profissional recebe só os
-// dele; a recepção vê todos pra vender no balcão, mas não mexe.
+// próprios; a recepção vê todos pra vender no balcão, mas não mexe.
 function agruparPorVendedor(planos: PlanoDoPainel[]): { id: string; titulo: string; planos: PlanoDoPainel[] }[] {
   const grupos = new Map<string, { id: string; titulo: string; planos: PlanoDoPainel[] }>();
   grupos.set("casa", { id: "casa", titulo: "Da casa", planos: [] });
   for (const plano of planos) {
     const id = plano.vendedor?.id ?? "casa";
-    if (!grupos.has(id)) grupos.set(id, { id, titulo: `Do ${plano.vendedor!.nome}`, planos: [] });
+    if (!grupos.has(id)) grupos.set(id, { id, titulo: `De ${plano.vendedor!.nome}`, planos: [] });
     grupos.get(id)!.planos.push(plano);
   }
   return [...grupos.values()];

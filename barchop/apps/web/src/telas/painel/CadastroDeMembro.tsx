@@ -86,7 +86,7 @@ export function CadastroDeMembro() {
   // botões; o aviso dos dados é só do Salvar.
   const [avisoDaSituacao, setAvisoDaSituacao] = useState<string | undefined>();
   const [confirmacao, setConfirmacao] = useState<string | undefined>();
-  // Desativar quem tem assinante nos planos dele volta 422
+  // Desativar quem tem assinante nos planos próprios volta 422
   // `assinaturas_ativas`: a frase do efeito, e o segundo botão confirma.
   const [cancelarAssinaturas, setCancelarAssinaturas] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
@@ -242,8 +242,8 @@ export function CadastroDeMembro() {
         const quantas = /(\d+) assinantes?/.exec(falha.mensagem)?.[1];
         setCancelarAssinaturas(
           quantas === "1"
-            ? `${atual.nome} tem 1 assinante nos planos dele. Desativar cancela a assinatura: o cliente deixa de usar o plano.`
-            : `${atual.nome} tem ${quantas ?? "clientes"} assinantes nos planos dele. Desativar cancela as assinaturas: os clientes deixam de usar os planos.`
+            ? `${atual.nome} tem 1 assinante nos planos próprios. Desativar cancela a assinatura: o cliente deixa de usar o plano.`
+            : `${atual.nome} tem ${quantas ?? "clientes"} assinantes nos planos próprios. Desativar cancela as assinaturas: os clientes deixam de usar os planos.`
         );
         return;
       }
@@ -407,7 +407,7 @@ export function CadastroDeMembro() {
             />
             <label htmlFor={`${idDoGrupo}-vende`}>Pode vender planos</label>
             <span id={`${idDoGrupo}-vende-descricao`} className={estilos.descricao}>
-              Cria os planos dele, que valem só com ele, e a mensalidade é dele.
+              Cria planos próprios: valem só com quem vende, e a mensalidade fica com quem vende.
             </span>
           </div>
         ) : null}

@@ -60,7 +60,7 @@ function erroDaApi(codigo: string, doVendedor: string): Erros | null {
     case "servico_repetido":
       return { servicos: "O mesmo serviço apareceu duas vezes. Recarregue a página." };
     case "servico_invalido":
-      return { servicos: "Um dos serviços foi desativado. Tire ele do plano ou reative em Serviços." };
+      return { servicos: "Um dos serviços foi desativado. Tire-o do plano ou reative em Serviços." };
     case "servico_fora_do_vendedor":
       return { servicos: `No plano de barbeiro, só serviços que ${doVendedor} faz.` };
     default:
@@ -123,7 +123,7 @@ export function CadastroDePlano() {
     setNoBalcao(atual.aceitaNoBalcao);
   }
   // Quem só cria o próprio (o profissional, ou o dono que não pode o da
-  // casa) não escolhe: o plano é dele.
+  // casa) não escolhe: o plano é próprio.
   const [tipoAcertado, setTipoAcertado] = useState(false);
   if (!id && planos.dados && !tipoAcertado) {
     setTipoAcertado(true);
@@ -147,7 +147,7 @@ export function CadastroDePlano() {
 
   const { podeCriarDaCasa, podeCriarProprio } = planos.dados;
   if (!podeCriarDaCasa && !podeCriarProprio) {
-    return <Aviso>Só o dono e quem ele libera pra vender planos mexem aqui.</Aviso>;
+    return <Aviso>Só o dono e quem tem a liberação pra vender planos mexem aqui.</Aviso>;
   }
 
   const euVendo = vendedor?.id === perfil.id;
@@ -276,11 +276,11 @@ export function CadastroDePlano() {
           (fixoDigitado !== null
             ? ` Quem atender um assinante ganha ${formatarReais(fixoDigitado)} por atendimento.`
             : "")
-        : `Cada mensalidade de ${formatarReais(precoDigitado)} é ${euVendo ? "sua" : `do ${nomeDoVendedor}`}, ` +
-          `e a casa fica com a parte da casa, como no avulso. O plano vale só com ${euVendo ? "você" : "ele"}.`;
+        : `Cada mensalidade de ${formatarReais(precoDigitado)} é ${euVendo ? "sua" : `de ${nomeDoVendedor}`}, ` +
+          `e a casa fica com a parte da casa, como no avulso. O plano vale só com ${euVendo ? "você" : "quem vende"}.`;
 
   const titulo = atual ? atual.nome : "Novo plano";
-  const deQuem = atual ? (atual.daCasa ? "Plano da casa" : `Plano do ${atual.vendedor?.nome}`) : undefined;
+  const deQuem = atual ? (atual.daCasa ? "Plano da casa" : `Plano de ${atual.vendedor?.nome}`) : undefined;
   const mostraTipo = !id && podeCriarDaCasa && podeCriarProprio;
 
   return (

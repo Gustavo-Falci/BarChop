@@ -96,7 +96,7 @@ describe("a lista de planos", () => {
     expect(within(casa).getByText(/R\$\s?120,00 por mês/)).toBeInTheDocument();
     expect(within(casa).getByText("8 assinantes")).toBeInTheDocument();
 
-    const dele = grupo(screen.getByText("Do Gustavo"));
+    const dele = grupo(screen.getByText("De Gustavo"));
     expect(within(dele).getByText(/R\$\s?270,00 por trimestre/)).toBeInTheDocument();
     expect(within(dele).getByText("2× Corte, 1× Barba")).toBeInTheDocument();
     expect(within(dele).getByText("Desativado")).toBeInTheDocument();
@@ -199,7 +199,7 @@ describe("o cadastro do plano", () => {
     expect(criar).not.toHaveBeenCalled();
   });
 
-  it("o profissional liberado cria o dele, sem escolher de quem é nem o fixo", async () => {
+  it("o profissional liberado cria o próprio, sem escolher de quem é nem o fixo", async () => {
     const falso = comPlanos({ papel: "profissional" });
     falso.estado.equipe!.find((m) => m.id === "bb1")!.podeVenderPlanos = true;
     const criar = vi.spyOn(falso.barbeiro, "criarPlano");
@@ -287,7 +287,7 @@ describe("o membro e os planos", () => {
 
     const situacao = await screen.findByRole("region", { name: "Situação" });
     await userEvent.click(within(situacao).getByRole("button", { name: "Desativar" }));
-    expect(await within(situacao).findByText(/3 assinantes nos planos dele/i)).toBeInTheDocument();
+    expect(await within(situacao).findByText(/3 assinantes nos planos próprios/i)).toBeInTheDocument();
 
     await userEvent.click(within(situacao).getByRole("button", { name: /desativar e cancelar as assinaturas/i }));
     await waitFor(() =>

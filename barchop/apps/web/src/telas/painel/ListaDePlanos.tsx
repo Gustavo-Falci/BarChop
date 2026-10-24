@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { PlanoDoPainel } from "@barchop/types";
+import { Abas } from "../../componentes/Abas";
 import { Aviso } from "../../componentes/Aviso";
 import { BotaoLink } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
@@ -12,9 +13,11 @@ import { Carregando } from "../../componentes/Carregando";
 import { Chip } from "../../componentes/Chip";
 import { Tabela, type Grupo } from "../../componentes/Tabela";
 import { useRequisicao } from "../../api/useRequisicao";
+import { hojeIso } from "../../formato/datas";
 import { precoDoCiclo, quantosAssinam, resumoDosServicos } from "../../painel/planos";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
+import { ListaDeAssinantes } from "./ListaDeAssinantes";
 import estilos from "./ListaDePlanos.module.css";
 
 // Os planos que o cliente assina (Onda 2, marco 3): os da casa primeiro,
@@ -32,31 +35,68 @@ function agruparPorVendedor(planos: PlanoDoPainel[]): { id: string; titulo: stri
   return [...grupos.values()];
 }
 
-export function ListaDePlanos() {
+type Aba = "planos" | "assinantes";
+
+// `agora` por parâmetro, como no detalhe do cliente: o "Recebi" depende
+// de hoje, e o teste fixa o dia.
+export function ListaDePlanos({ agora }: { agora?: Date } = {}) {
   const router = useRouter();
   const api = useApiDoPainel();
   const ehDono = usePainel().perfil.papel === "dono";
   const planos = useRequisicao(() => api.barbeiro.planos(), []);
+  // Os assinantes valem em qualquer plano do BarChop: quem saiu do
+  // Completo segue recebendo as mensalidades de quem já assinou.
+  const assinantes = useRequisicao(() => api.barbeiro.assinantes(), []);
+  const [aba, setAba] = useState<Aba>("planos");
   // O que o PUT devolveu passa a valer sem reler a lista.
   const [vitrineSalva, setVitrineSalva] = useState<boolean | null>(null);
   const [ligando, setLigando] = useState(false);
   const [aviso, setAviso] = useState<string | undefined>();
 
+  const hoje = hojeIso(agora);
+  const vivas = (assinantes.dados?.assinantes ?? []).filter((a) => a.situacao !== "cancelada").length;
+  const painelDosAssinantes = assinantes.erro ? (
+    <Aviso>{assinantes.erro.mensagem || "Não foi possível carregar os assinantes agora."}</Aviso>
+  ) : assinantes.dados ? (
+    <ListaDeAssinantes assinantes={assinantes.dados.assinantes} hoje={hoje} aoMudar={assinantes.recarregar} />
+  ) : (
+    <Carregando />
+  );
+  const abas = [
+    { id: "planos" as const, rotulo: "Planos" },
+    { id: "assinantes" as const, rotulo: vivas > 0 ? `Assinantes ${vivas}` : "Assinantes" },
+  ];
+
+  // Fora do Completo, o convite toma o lugar dos planos; a aba dos
+  // assinantes só aparece quando há assinatura pra cuidar.
   if (planos.erro?.codigo === "recurso_do_plano") {
+    const convite = (
+      <div className={estilos.convite}>
+        <p>
+          Planos de assinatura são do plano Completo: o cliente paga todo mês, volta mais vezes, e o dinheiro cai
+          na conta de quem vende.
+        </p>
+        {ehDono ? (
+          <Link className={estilos.principal} href="/painel/faturas">
+            Ver os planos do BarChop
+          </Link>
+        ) : null}
+      </div>
+    );
     return (
       <div className={estilos.pagina}>
         <CabecalhoDaPagina titulo="Planos" />
-        <div className={estilos.convite}>
-          <p>
-            Planos de assinatura são do plano Completo: o cliente paga todo mês, volta mais vezes, e o dinheiro cai
-            na conta de quem vende.
-          </p>
-          {ehDono ? (
-            <Link className={estilos.principal} href="/painel/faturas">
-              Ver os planos do BarChop
-            </Link>
-          ) : null}
-        </div>
+        {vivas > 0 ? (
+          <Abas
+            rotulo="Planos de assinatura"
+            abas={abas}
+            atual={aba}
+            aoTrocar={setAba}
+            paineis={{ planos: convite, assinantes: painelDosAssinantes }}
+          />
+        ) : (
+          convite
+        )}
       </div>
     );
   }
@@ -106,14 +146,8 @@ export function ListaDePlanos() {
     })),
   }));
 
-  return (
+  const painelDosPlanos = (
     <div className={estilos.pagina}>
-      <CabecalhoDaPagina
-        titulo="Planos"
-        apoio="Assinaturas que seus clientes pagam todo ciclo, com os serviços incluídos."
-        acao={podeMexer ? <BotaoLink href="/painel/planos/novo">+ Novo plano</BotaoLink> : undefined}
-      />
-
       {/* A vitrine é da página da barbearia: só o dono liga. */}
       {ehDono ? (
         <div className={estilos.vitrine}>
@@ -148,6 +182,24 @@ export function ListaDePlanos() {
         dicaVazio="Um plano é um preço fixo por ciclo com serviços incluídos: o cliente paga antes e volta mais."
         acaoVazio={podeMexer ? <BotaoLink href="/painel/planos/novo">Criar o primeiro plano</BotaoLink> : undefined}
         aoAbrir={podeMexer ? (id) => router.push(`/painel/planos/${id}`) : undefined}
+      />
+    </div>
+  );
+
+  return (
+    <div className={estilos.pagina}>
+      <CabecalhoDaPagina
+        titulo="Planos"
+        apoio="Assinaturas que seus clientes pagam todo ciclo, com os serviços incluídos."
+        acao={podeMexer ? <BotaoLink href="/painel/planos/novo">+ Novo plano</BotaoLink> : undefined}
+      />
+
+      <Abas
+        rotulo="Planos de assinatura"
+        abas={abas}
+        atual={aba}
+        aoTrocar={setAba}
+        paineis={{ planos: painelDosPlanos, assinantes: painelDosAssinantes }}
       />
     </div>
   );

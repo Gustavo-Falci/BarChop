@@ -86,6 +86,16 @@ Diferenças do plano, combinadas no caminho:
   - **"Planos" na barra pra todos os papéis**, depois do Caixa. No celular fica atrás do "Mais";
   - **o texto não supõe gênero**: "De Gustavo", "vale só com quem vende", "planos próprios". A frase do 422 `assinaturas_ativas` da API ainda diz "dele"; a tela não repete;
   - **desativar membro com assinante** pede confirmação na Situação, e o "Desativar e cancelar as assinaturas" reenvia com `cancelarAssinaturas: true`.
+- **PR 7b (assinantes no painel):**
+  - **Planos e Assinantes são abas da mesma tela** (`/painel/planos`), sem rota nova. A lista vem inteira de uma vez e filtra na tela: as contagens das pílulas ("Em atraso 2") precisam dela. "Todas" são as que não foram canceladas; as canceladas têm o filtro delas;
+  - **fora do Completo, a aba Assinantes continua**: o convite fica só no lugar dos planos, e a aba aparece quando há assinatura viva. Sem assinatura, só o convite, como no 7a. No detalhe do cliente, some o "Assinar plano" e o "Recebi" e o cancelar seguem (decisão 6);
+  - **sem a coluna "Usos neste ciclo"** do canvas: `AssinaturaDoPainel` não traz usos, e só o `GET` do pagamento os conta. Volta quando a lista tiver os usos;
+  - **sem o "Assinar no balcão" no topo da aba**: pediria escolher o cliente ali. Assinar fica no detalhe do cliente, e a aba vazia leva pra Clientes;
+  - **sem "Reenviar cobrança"**: é do online, que não existe antes do PR 10;
+  - **o "Recebi" só aparece quando a API o aceitaria** (`problemaDoRecebimento` do `formato`): no balcão, pendente, em atraso, ou do dia da renovação em diante. Numa janela, pergunta a forma (sem "Pelo plano") e diz em que caixa entrou: "no caixa de 25/10" quando hoje já fechou;
+  - **o assinar só oferece o que a API aceitaria**: plano ativo, no balcão, e que o cliente ainda não tem. A frase diz o que vem: "Começa com 7 dias grátis, até 31/10" ou "Fica pendente até o primeiro Recebi";
+  - **cancelar pede confirmação** ("o plano deixa de valer nos atendimentos a partir de agora") e a assinatura sai da lista do cliente;
+  - **o dublê não lança a mensalidade no caixa dele**: o Caixa com mensalidades é o 7c.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

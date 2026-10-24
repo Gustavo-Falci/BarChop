@@ -1,0 +1,67 @@
+/* Na coluna dos dados, embaixo deles, com o mesmo título pequeno. */
+.planos {
+  display: grid;
+  gap: var(--espaco-md);
+  min-width: 0;
+}
+
+.rotulo {
+  composes: rotuloDoGrupo from "./DetalheDoCliente.module.css";
+}
+
+.lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Uma assinatura por bloco, separadas por um fio, como o histórico. */
+.assinatura {
+  display: grid;
+  gap: var(--espaco-xs);
+  padding-block: var(--espaco-sm);
+}
+
+.assinatura + .assinatura {
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-xs);
+}
+
+.nome {
+  font-weight: 700;
+}
+
+/* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.confirmacao {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.confirmacao p {
+  margin: 0;
+}
+
+.botoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--espaco-sm);
+}
+
+.escolha {
+  display: grid;
+  gap: var(--espaco-sm);
+}

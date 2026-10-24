@@ -7,7 +7,11 @@ import {
   REGRAS_PADRAO,
   acertoDoDia,
   areasTocadas,
+  cicloEmAtraso,
+  dividirMensalidade,
+  fimDoCiclo,
   problemaDoPlano,
+  problemaDoRecebimento,
   dividirPagamento,
   juntarAreas,
   normalizarAparencia,
@@ -42,6 +46,8 @@ import type {
   DivisaoDoDinheiro,
   MembroDoCaixa,
   SalvarDivisao,
+  AssinaturaDoPainel,
+  FormaDoPagamento,
   MudancaDoPlano,
   NovoPlano,
   PlanoDoPainel,
@@ -229,6 +235,9 @@ export interface EstadoFalso {
   // vitrine da página está ligada. Sem semente, nenhum e desligada.
   planos?: PlanoDoPainel[];
   vitrineDePlanos?: boolean;
+  // As assinaturas dos clientes nesses planos, de qualquer jeito: a
+  // lista ordena como a API. Sem semente, nenhuma.
+  assinaturas?: AssinaturaDoPainel[];
 }
 
 const FIM_DO_TESTE_PADRAO = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -347,6 +356,16 @@ function copiaDoPlano(plano: PlanoDoPainel): PlanoDoPainel {
   return { ...plano, servicos: plano.servicos.map((s) => ({ ...s })) };
 }
 
+function copiaDaAssinatura(assinatura: AssinaturaDoPainel): AssinaturaDoPainel {
+  return { ...assinatura, cliente: { ...assinatura.cliente }, plano: { ...assinatura.plano } };
+}
+
+// "26/11", como a mensagem da API.
+function diaEMes(data: string): string {
+  const [, mes, dia] = data.split("-");
+  return `${dia}/${mes}`;
+}
+
 export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // Cópia de toda lista, tanto do padrão quanto da semente: o dublê faz
   // `push` em `agendamentos` e em `servicos`, e sem a cópia dois testes
@@ -398,6 +417,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     donosDosClientes: { ...(semente.donosDosClientes ?? {}) },
     planos: (semente.planos ?? []).map(copiaDoPlano),
     vitrineDePlanos: semente.vitrineDePlanos ?? false,
+    assinaturas: (semente.assinaturas ?? []).map(copiaDaAssinatura),
   };
 
   // O pedido como o dono o vê: sem a barbearia, que é a dele.
@@ -829,6 +849,44 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       return { servicoId: s.servicoId, nome: servico.nome, usosPorCiclo: s.usosPorCiclo };
     });
   }
+
+  // As assinaturas seguem a regra dos planos: o profissional, só as dos
+  // dele (a de outro é 404).
+  function assinaturasVisiveis(): AssinaturaDoPainel[] {
+    return estado.papel === "profissional"
+      ? estado.assinaturas!.filter((a) => a.plano.vendedor?.id === "bb1")
+      : estado.assinaturas!;
+  }
+
+  function assinaturaOu404(id: string): AssinaturaDoPainel {
+    const achada = assinaturasVisiveis().find((a) => a.id === id);
+    if (!achada) throw new ErroDaApi(404, "nao_encontrado", "recurso não encontrado");
+    return achada;
+  }
+
+  // O marcarAtrasadas da API, na leitura: no balcão, passou do dia da
+  // renovação sem "recebi".
+  function marcarAtrasadas(): void {
+    for (const a of estado.assinaturas!) {
+      const emCiclo = a.situacao === "ativa" || a.situacao === "teste";
+      if (a.forma === "no_balcao" && emCiclo && a.cicloTerminaEm !== null && cicloEmAtraso(a.cicloTerminaEm, estado.hoje)) {
+        a.situacao = "em_atraso";
+      }
+    }
+  }
+
+  // O "assinantes" do plano, que a lista de planos mostra.
+  function contarAssinante(planoId: string, quanto: 1 | -1): void {
+    const plano = estado.planos!.find((p) => p.id === planoId);
+    if (plano) plano.assinantes = Math.max(0, plano.assinantes + quanto);
+  }
+
+  function proximoDiaAberto(desde: string): string {
+    let dia = desde;
+    while (estado.diasFechados!.includes(dia)) dia = somarDias(dia, 1);
+    return dia;
+  }
+  let recebimentos = 0;
 
   // A mesma conta da API (problemaDoPlano), com o mesmo código.
   function exigirPlanoCerto(plano: PlanoDoPainel): void {
@@ -1271,6 +1329,12 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             throw new ErroDaApi(422, "assinaturas_ativas", `este membro tem ${quantas} assinantes nos planos dele`);
           }
           for (const plano of dele) plano.assinantes = 0;
+          for (const assinatura of estado.assinaturas!) {
+            if (assinatura.plano.vendedor?.id === id && assinatura.situacao !== "cancelada") {
+              assinatura.situacao = "cancelada";
+              assinatura.canceladaEm = new Date().toISOString();
+            }
+          }
         }
         Object.assign(alvo, edicao);
         return { ...alvo };
@@ -1955,6 +2019,99 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         exigirPlanosDaBarbearia();
         estado.vitrineDePlanos = ligada;
         return { ligada };
+      },
+
+      // O assinante no balcão (apps/api/src/routers/assinantes.ts). Só
+      // assinar pede o Completo. O dublê não confere se quem vende segue
+      // liberado: isso é da API.
+      async assinantes(clienteId?: string) {
+        marcarAtrasadas();
+        const lista = assinaturasVisiveis()
+          .filter((a) => clienteId === undefined || a.cliente.id === clienteId)
+          .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm) || a.id.localeCompare(b.id));
+        return { assinantes: lista.map(copiaDaAssinatura) };
+      },
+      async assinarPlano(clienteId: string, planoId: string) {
+        exigirPlanosDaBarbearia();
+        const cliente = estado.clientes.find((c) => c.id === clienteId);
+        const plano = planosVisiveis().find((p) => p.id === planoId);
+        if (!cliente || !plano) throw new ErroDaApi(404, "nao_encontrado", "recurso não encontrado");
+        if (!plano.ativo) throw new ErroDaApi(422, "plano_inativo", "este plano está desativado");
+        if (!plano.aceitaNoBalcao) {
+          throw new ErroDaApi(422, "plano_sem_balcao", "este plano não aceita pagamento no balcão");
+        }
+        const viva = estado.assinaturas!.some(
+          (a) => a.plano.id === plano.id && a.cliente.id === cliente.id && a.situacao !== "cancelada"
+        );
+        if (viva) throw new ErroDaApi(422, "ja_assina", "este cliente já assina este plano");
+
+        const emTeste = plano.diasDeTeste > 0;
+        const nova: AssinaturaDoPainel = {
+          id: `as${estado.assinaturas!.length + 1}`,
+          situacao: emTeste ? "teste" : "pendente",
+          forma: "no_balcao",
+          precoCentavos: plano.precoCentavos,
+          ciclo: plano.ciclo,
+          cicloComecaEm: emTeste ? estado.hoje : null,
+          cicloTerminaEm: emTeste ? somarDias(estado.hoje, plano.diasDeTeste) : null,
+          canceladaEm: null,
+          criadoEm: new Date().toISOString(),
+          cliente: { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone },
+          plano: { id: plano.id, nome: plano.nome, daCasa: plano.daCasa, vendedor: plano.vendedor },
+        };
+        estado.assinaturas!.push(nova);
+        contarAssinante(plano.id, 1);
+        return copiaDaAssinatura(nova);
+      },
+      async receberMensalidade(assinaturaId: string, forma: FormaDoPagamento) {
+        if (!(FORMAS_DE_PAGAMENTO as readonly string[]).includes(forma)) {
+          throw new ErroDaApi(400, "requisicao_invalida", "forma fora da lista");
+        }
+        marcarAtrasadas();
+        const atual = assinaturaOu404(assinaturaId);
+        if (atual.forma === "online") {
+          throw new ErroDaApi(422, "assinatura_online", "assinatura online: o pagamento entra pelo provedor");
+        }
+        const problema = problemaDoRecebimento(atual, estado.hoje);
+        if (problema === "cancelada") {
+          throw new ErroDaApi(422, "assinatura_cancelada", "esta assinatura foi cancelada");
+        }
+        if (problema === "ciclo_em_dia") {
+          const oQue = atual.situacao === "teste" ? "o teste grátis" : "o ciclo pago";
+          throw new ErroDaApi(
+            422,
+            "ciclo_em_dia",
+            `${oQue} vai até ${diaEMes(atual.cicloTerminaEm!)}: marque o próximo pagamento a partir desse dia`
+          );
+        }
+        const vendedor = atual.plano.vendedor?.id ?? null;
+        const partes = dividirMensalidade({
+          precoCentavos: atual.precoCentavos,
+          vendedor,
+          parteDaCasa: vendedor === null ? 0 : (estado.divisao!.parteDaCasa[vendedor] ?? 0),
+        });
+        Object.assign(atual, {
+          situacao: "ativa",
+          cicloComecaEm: estado.hoje,
+          cicloTerminaEm: fimDoCiclo(estado.hoje, atual.ciclo),
+        });
+        return {
+          assinatura: copiaDaAssinatura(atual),
+          recebimento: {
+            id: `rc${++recebimentos}`,
+            data: proximoDiaAberto(estado.hoje),
+            valorCentavos: atual.precoCentavos,
+            casaCentavos: partes.find((parte) => parte.beneficiario === null)?.valorCentavos ?? 0,
+            forma,
+          },
+        };
+      },
+      async cancelarAssinaturaDoPlano(assinaturaId: string) {
+        const atual = assinaturaOu404(assinaturaId);
+        if (atual.situacao === "cancelada") return;
+        atual.situacao = "cancelada";
+        atual.canceladaEm = new Date().toISOString();
+        contarAssinante(atual.plano.id, -1);
       },
     },
 

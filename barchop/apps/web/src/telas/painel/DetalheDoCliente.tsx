@@ -30,6 +30,7 @@ import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { linkDoZap } from "../../painel/whatsapp";
+import { PlanosDoCliente } from "./PlanosDoCliente";
 import estilos from "./DetalheDoCliente.module.css";
 import { Carregando } from "../../componentes/Carregando";
 
@@ -374,105 +375,109 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
           )}
         </div>
 
-        <section className={estilos.dados} aria-labelledby="dados-do-cliente">
-          <h2 id="dados-do-cliente" className={estilos.rotuloDoGrupo}>
-            Dados
-          </h2>
-          <ProfissionalDoCliente
-            clienteId={dados.id}
-            profissional={dados.profissional}
-            aoTrocar={() => cliente.recarregar()}
-          />
-          {/* Em leitura (17/10): sempre em modo de edição, a tela parecia
-              um formulário. "Editar" abre os campos; Salvar e Descartar
-              voltam pra leitura. */}
-          {editando ? (
-            <>
-              <Campo
-                rotulo="Nome"
-                maxLength={NOME_MAX}
-                valor={nome}
-                onChange={(proximo) => {
-                  setNome(proximo);
-                  setErroNome(undefined);
-                }}
-                erro={erroNome}
-              />
-              <Campo
-                rotulo="Telefone"
-                apoio="Com DDD, do jeito que for — a gente formata."
-                formato="telefone"
-                inputMode="tel"
-                valor={telefone}
-                onChange={(proximo) => {
-                  setTelefone(proximo);
-                  setErroTelefone(undefined);
-                  setTelefoneEmConflito(undefined);
-                }}
-                erro={erroTelefone}
-              />
-              <Campo
-                rotulo="E-mail (opcional)"
-                type="email"
-                inputMode="email"
-                maxLength={EMAIL_MAX}
-                valor={email}
-                onChange={(proximo) => {
-                  setEmail(proximo);
-                  setErroEmail(undefined);
-                }}
-                erro={erroEmail}
-              />
+        {/* Os dados e, embaixo, os planos que o cliente assina. */}
+        <div className={estilos.lateral}>
+          <section className={estilos.dados} aria-labelledby="dados-do-cliente">
+            <h2 id="dados-do-cliente" className={estilos.rotuloDoGrupo}>
+              Dados
+            </h2>
+            <ProfissionalDoCliente
+              clienteId={dados.id}
+              profissional={dados.profissional}
+              aoTrocar={() => cliente.recarregar()}
+            />
+            {/* Em leitura (17/10): sempre em modo de edição, a tela parecia
+                um formulário. "Editar" abre os campos; Salvar e Descartar
+                voltam pra leitura. */}
+            {editando ? (
+              <>
+                <Campo
+                  rotulo="Nome"
+                  maxLength={NOME_MAX}
+                  valor={nome}
+                  onChange={(proximo) => {
+                    setNome(proximo);
+                    setErroNome(undefined);
+                  }}
+                  erro={erroNome}
+                />
+                <Campo
+                  rotulo="Telefone"
+                  apoio="Com DDD, do jeito que for — a gente formata."
+                  formato="telefone"
+                  inputMode="tel"
+                  valor={telefone}
+                  onChange={(proximo) => {
+                    setTelefone(proximo);
+                    setErroTelefone(undefined);
+                    setTelefoneEmConflito(undefined);
+                  }}
+                  erro={erroTelefone}
+                />
+                <Campo
+                  rotulo="E-mail (opcional)"
+                  type="email"
+                  inputMode="email"
+                  maxLength={EMAIL_MAX}
+                  valor={email}
+                  onChange={(proximo) => {
+                    setEmail(proximo);
+                    setErroEmail(undefined);
+                  }}
+                  erro={erroEmail}
+                />
 
-              {telefoneEmConflito ? (
-                <Aviso>
-                  Esse telefone já é de outro cliente.{" "}
-                  <Link
-                    href={`/painel/clientes?busca=${encodeURIComponent(
-                      apenasDigitos(telefoneEmConflito)
-                    )}`}
-                  >
-                    Abrir o cadastro existente
-                  </Link>
-                </Aviso>
-              ) : null}
+                {telefoneEmConflito ? (
+                  <Aviso>
+                    Esse telefone já é de outro cliente.{" "}
+                    <Link
+                      href={`/painel/clientes?busca=${encodeURIComponent(
+                        apenasDigitos(telefoneEmConflito)
+                      )}`}
+                    >
+                      Abrir o cadastro existente
+                    </Link>
+                  </Aviso>
+                ) : null}
 
-              {aviso ? <Aviso>{aviso}</Aviso> : null}
+                {aviso ? <Aviso>{aviso}</Aviso> : null}
 
-              {/* Mesmo jeito das observações no detalhe do agendamento: os
-                  botões só aparecem quando há o que salvar — um Salvar sempre
-                  aceso não diz se algo mudou. */}
-              {mudou ? (
+                {/* Mesmo jeito das observações no detalhe do agendamento: os
+                    botões só aparecem quando há o que salvar — um Salvar sempre
+                    aceso não diz se algo mudou. */}
+                {mudou ? (
+                  <div className={estilos.botoesDosDados}>
+                    <Botao variante="fantasma" onClick={descartar} disabled={salvando}>
+                      Descartar
+                    </Botao>
+                    <Botao carregando={salvando} onClick={salvar}>
+                      Salvar
+                    </Botao>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <dl className={estilos.leitura}>
+                  <div>
+                    <dt>Telefone</dt>
+                    <dd>{dados.telefone}</dd>
+                  </div>
+                  <div>
+                    <dt>E-mail</dt>
+                    <dd>{dados.email ?? "—"}</dd>
+                  </div>
+                </dl>
                 <div className={estilos.botoesDosDados}>
-                  <Botao variante="fantasma" onClick={descartar} disabled={salvando}>
-                    Descartar
-                  </Botao>
-                  <Botao carregando={salvando} onClick={salvar}>
-                    Salvar
+                  <Botao variante="contorno" onClick={() => setEditando(true)}>
+                    Editar
                   </Botao>
                 </div>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <dl className={estilos.leitura}>
-                <div>
-                  <dt>Telefone</dt>
-                  <dd>{dados.telefone}</dd>
-                </div>
-                <div>
-                  <dt>E-mail</dt>
-                  <dd>{dados.email ?? "—"}</dd>
-                </div>
-              </dl>
-              <div className={estilos.botoesDosDados}>
-                <Botao variante="contorno" onClick={() => setEditando(true)}>
-                  Editar
-                </Botao>
-              </div>
-            </>
-          )}
-        </section>
+              </>
+            )}
+          </section>
+          <PlanosDoCliente clienteId={dados.id} hoje={hoje} />
+        </div>
       </div>
     </div>
   );

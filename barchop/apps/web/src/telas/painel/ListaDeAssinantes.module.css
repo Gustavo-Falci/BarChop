@@ -1,0 +1,36 @@
+.lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-md);
+  align-content: start;
+}
+
+/* O nome em cima e o detalhe embaixo, como o plano e os serviços na aba
+   Planos. */
+.duasLinhas {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+
+.nome {
+  font-weight: 600;
+}
+
+/* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
+.apoio {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 400;
+}
+
+.acao {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.nota {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}

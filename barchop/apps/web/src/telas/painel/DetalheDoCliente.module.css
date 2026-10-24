@@ -147,6 +147,13 @@
   color: var(--cor-ink-soft);
 }
 
+/* A coluna da direita: os dados e os planos do cliente. */
+.lateral {
+  display: grid;
+  gap: var(--espaco-xl);
+  min-width: 0;
+}
+
 .dados {
   display: grid;
   gap: var(--espaco-md);

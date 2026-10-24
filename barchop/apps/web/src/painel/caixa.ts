@@ -51,13 +51,13 @@ export function fraseDoSaldo(saldoCentavos: number): string {
 }
 
 // "Gustavo repassa R$ 60,00 para Rafael." Repasse pra casa = pro caixa
-// da barbearia.
+// da barbearia; da casa = o fixo do plano da casa.
 export function fraseDoRepasse(repasse: {
-  de: { nome: string };
+  de: { nome: string } | null;
   para: { nome: string } | null;
   valorCentavos: number;
 }): string {
-  return `${repasse.de.nome} repassa ${reais(repasse.valorCentavos)} para ${repasse.para?.nome ?? "a casa"}.`;
+  return `${repasse.de?.nome ?? "A casa"} repassa ${reais(repasse.valorCentavos)} para ${repasse.para?.nome ?? "a casa"}.`;
 }
 
 // "Rafael fica com R$ 16,00 e Gustavo com R$ 24,00." Atendimento e

@@ -894,7 +894,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         repasses: acerto.repasses
           .filter((r) => !somente || r.de === somente || r.para === somente)
           .map((r) => ({
-            de: membroDoCaixa(r.de),
+            de: r.de === null ? null : membroDoCaixa(r.de),
             para: r.para === null ? null : membroDoCaixa(r.para),
             valorCentavos: r.valorCentavos,
           })),

@@ -12,6 +12,10 @@ Diferenças do plano, combinadas no caminho:
   - a API junta as partes no `acertoDoDia`, cada uma com o seu `recebidoPor`;
   - os motivos novos ficam em `MOTIVOS_DO_PLANO`, fora do `MOTIVOS_DA_PARTE`. Se fossem para a lista do caixa agora, o `banco-caixa.test.ts` gravaria motivos que o CHECK ainda recusa. O PR 2 põe o `plano` no CHECK de `pagamento_parte`;
   - `Parte` ganhou o motivo como parâmetro de tipo, para o `dividirPagamento` seguir devolvendo só os motivos do caixa.
+- **PR 1b (correção, 24/10):**
+  - o `acertoDoDia` aceita `recebidoPor: null` (a casa paga) e `Repasse.de` nulo, e `RepasseDoCaixa.de` em `@barchop/types` ficou anulável;
+  - a API, o dublê e a tela do Caixa escrevem "A casa repassa…";
+  - achado ao desenhar a tela do Caixa no Claude Design (https://claude.ai/artifact/4hgca1aVpddptUxnUssWTG).
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
@@ -62,7 +66,7 @@ O caminho sem provedor (planos, vitrine, assinante "no balcão", "pelo plano" no
    - registra `forma = "plano"`, com o valor dos serviços cobertos zerado;
    - serviço fora do plano, ou uso que passou do limite, é cobrado à parte no mesmo pagamento: ele ganha um campo de **valor avulso**, que é dividido pelas regras de hoje;
    - **no plano de barbeiro**, a parte "pelo plano" não gera nada: o barbeiro já recebeu a mensalidade;
-   - **no plano da casa**, gera a parte `plano` para quem atendeu, no valor fixo. O `recebidoPor` é o membro que conectou a conta da casa, porque é ele quem está com o dinheiro. Assim o `acertoDoDia` mostra "Gustavo repassa R$ 25 para o Parceiro" sem mudar a conta dele;
+   - **no plano da casa**, gera a parte `plano` para quem atendeu, no valor fixo, paga **pela casa** (`recebidoPor: null` no acerto). O fixo sai do dinheiro da casa, não do bolso de quem segura a mensalidade. O `acertoDoDia` mostra "A casa repassa R$ 25 para o Parceiro", já compensado com o que o Parceiro deve à casa. (Corrigido no PR 1b: a primeira versão punha o membro da conta da casa como `recebidoPor`, e ele pagava o fixo do bolso);
    - gorjeta segue a regra de hoje: 100% para quem atendeu, sobre a forma do pagamento avulso. Atendimento só pelo plano não aceita gorjeta no MVP.
 4. **Mensalidade no caixa:**
    - cada mensalidade recebida (webhook do Asaas, ou "recebi no balcão" marcado no painel) vira uma linha de `recebimento_do_plano`;

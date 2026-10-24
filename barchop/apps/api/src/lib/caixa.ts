@@ -320,7 +320,7 @@ export async function caixaDoDia(
     acerto: {
       pessoas: pessoas.map((l) => ({ ...l, pessoa: l.pessoa === null ? null : membro(l.pessoa) })),
       repasses: repasses.map((r) => ({
-        de: membro(r.de),
+        de: r.de === null ? null : membro(r.de),
         para: r.para === null ? null : membro(r.para),
         valorCentavos: r.valorCentavos,
       })),

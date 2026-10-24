@@ -193,11 +193,11 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
               {atual.acerto.repasses.length > 0 ? (
                 <ul className={estilos.repasses}>
                   {atual.acerto.repasses.map((repasse) => (
-                    <li key={`${repasse.de.id}-${repasse.para?.id ?? "casa"}`} className={estilos.repasse}>
+                    <li key={`${repasse.de?.id ?? "casa"}-${repasse.para?.id ?? "casa"}`} className={estilos.repasse}>
                       {/* À vista, uma seta de quem pra quem; o leitor de tela
                           ouve a frase inteira. */}
                       <span aria-hidden="true">
-                        {repasse.de.nome} <span className={estilos.seta}>→</span> {repasse.para?.nome ?? "a casa"}
+                        {repasse.de?.nome ?? "A casa"} <span className={estilos.seta}>→</span> {repasse.para?.nome ?? "a casa"}
                       </span>
                       <strong aria-hidden="true">{reais(repasse.valorCentavos)}</strong>
                       <span className={estilos.somenteLeitor}>{fraseDoRepasse(repasse)}</span>

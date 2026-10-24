@@ -119,6 +119,12 @@ function aberto(
   );
 }
 
+// Se a casa abre no dia, pelo horário da semana: a mesma regra do
+// `fechado` do mês, pra lista da agenda (agenda no celular, PR 4).
+export function diaAberto(data: string, horarios: HorarioSerializado[]): boolean {
+  return aberto(horarioDe(data, horarios));
+}
+
 // Agrupa os eventos que se cruzam e distribui cada grupo em pistas.
 // Recebe a lista já ordenada por início, e escreve `pista` e `pistas`
 // nela.

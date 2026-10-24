@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
@@ -80,6 +80,28 @@ describe("vistas novas da agenda", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Próximo período" }));
 
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=lista&data=2026-09-22");
+  });
+
+  it("Mostrar mais 14 dias estica o intervalo da lista", async () => {
+    irPara({ vista: "lista", data: "2026-09-08" });
+    const falso = semear();
+    const busca = vi.spyOn(falso.barbeiro, "agendamentosDoIntervalo");
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Mostrar mais 14 dias" }));
+
+    await waitFor(() => expect(busca).toHaveBeenLastCalledWith("2026-09-08", "2026-10-05"));
+    expect(await screen.findByRole("region", { name: "5 de outubro" })).toBeInTheDocument();
+  });
+
+  it("na lista, dia vazio leva pro novo agendamento com a data", async () => {
+    irPara({ vista: "lista", data: "2026-09-08" });
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    const quarta = await screen.findByRole("region", { name: "9 de setembro" });
+    await userEvent.click(within(quarta).getByRole("button", { name: "Nenhum horário. Toque para marcar." }));
+
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agendamentos/novo?data=2026-09-09");
   });
 
   it("vista desconhecida na URL cai no padrão, sem erro", async () => {

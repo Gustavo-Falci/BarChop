@@ -1,57 +1,272 @@
-/* A vista "Lista" da agenda (agenda no celular, PR 2). */
+/* A vista "Lista" da agenda (agenda no celular, PR 4), no jeito do
+   Google Agenda: o dia à esquerda, os cartões à direita. */
 .lista {
   display: grid;
-  gap: var(--espaco-lg);
+  gap: var(--espaco-md);
   align-content: start;
   min-height: 0;
   overflow-y: auto;
+  padding-bottom: var(--espaco-lg);
+}
+
+.bloco {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+/* "13 – 19 set": a virada da semana. */
+.semana {
+  margin: 0;
+  padding-top: var(--espaco-sm);
+  border-top: 1px solid var(--cor-line);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
 }
 
 .dia {
   display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
   gap: var(--espaco-sm);
 }
 
 .data {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
   margin: 0;
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: var(--texto-md);
+  font-weight: 400;
 }
 
-.vazio {
+.diaDaSemana {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.numero {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 600;
+}
+
+/* Hoje: o número no círculo da cor da marca. */
+.dia[data-hoje] .numero {
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+}
+
+.dia[data-hoje] .diaDaSemana {
+  color: var(--cor-accent-text);
+  font-weight: 600;
+}
+
+.itens {
+  display: grid;
+  gap: var(--espaco-xs);
+  min-width: 0;
+}
+
+.vazio,
+.marcar {
   margin: 0;
+  min-height: 44px;
+  padding: var(--espaco-sm) 0;
   color: var(--cor-muted);
   font-size: var(--texto-sm);
 }
 
+.marcar {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: var(--texto-sm);
+  text-align: start;
+  cursor: pointer;
+}
+
 .cartoes {
   display: grid;
-  gap: var(--espaco-sm);
+  gap: var(--espaco-xs);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* O cartão no tom do profissional, como o bloco da grade. */
 .cartao {
-  display: grid;
-  gap: 2px;
+  --tom: var(--cor-accent);
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
   width: 100%;
   min-height: 56px;
   padding: var(--espaco-sm) var(--espaco-md);
   border: 0;
   border-radius: var(--raio-md);
-  background: var(--cor-paper-soft);
+  background: color-mix(in srgb, var(--tom) 18%, var(--cor-surface));
   color: var(--cor-ink);
   text-align: start;
   font: inherit;
   cursor: pointer;
 }
 
+.cartao:hover {
+  background: color-mix(in srgb, var(--tom) 26%, var(--cor-surface));
+}
+
+/* Os mesmos tons da grade (GradeDeTempo.module.css). */
+.cartao[data-tom="1"],
+.bloqueio[data-tom="1"] {
+  --tom: #5b8def;
+}
+
+.cartao[data-tom="2"],
+.bloqueio[data-tom="2"] {
+  --tom: #3fa67a;
+}
+
+.cartao[data-tom="3"],
+.bloqueio[data-tom="3"] {
+  --tom: #d9734e;
+}
+
+.cartao[data-tom="4"],
+.bloqueio[data-tom="4"] {
+  --tom: #a26bd6;
+}
+
+.cartao[data-tom="5"],
+.bloqueio[data-tom="5"] {
+  --tom: #d4609a;
+}
+
+/* O status, o mesmo do PR 1 na grade. */
+.cartao[data-status="pendente"] {
+  border: 1.5px dashed var(--tom);
+  background: color-mix(in srgb, var(--tom) 6%, var(--cor-surface));
+}
+
+.cartao[data-status="concluido"],
+.cartao[data-status="no_show"] {
+  opacity: 0.55;
+}
+
+.cartao[data-status="no_show"] .quem {
+  text-decoration: line-through;
+}
+
+.cartao[data-agora] {
+  box-shadow: 0 0 0 2px var(--cor-accent);
+}
+
+.texto {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
 .quem {
+  overflow: hidden;
   font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .quando {
   color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
+}
+
+.etiqueta {
+  flex: none;
+  padding: 2px var(--espaco-sm);
+  border-radius: var(--raio-pill);
+  background: color-mix(in srgb, var(--tom) 30%, var(--cor-surface));
+  font-size: var(--texto-sm);
+}
+
+/* O bloqueio listrado, como a faixa na grade. */
+.bloqueio {
+  --tom: var(--cor-ink-soft);
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-md);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--cor-paper-soft) 0 8px,
+    color-mix(in srgb, var(--tom) 14%, var(--cor-paper-soft)) 8px 16px
+  );
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.maisCedo {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 var(--espaco-sm);
+  border: 0;
+  border-radius: var(--raio-pill);
+  background: transparent;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+}
+
+.maisCedo::before {
+  content: "▸ ";
+}
+
+.maisCedo[aria-expanded="true"]::before {
+  content: "▾ ";
+}
+
+/* A régua do agora: a linha da cor da marca, com a bolinha na ponta. */
+.regua {
+  position: relative;
+  height: 2px;
+  margin-block: var(--espaco-xs);
+  background: var(--cor-accent);
+}
+
+.regua::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cor-accent);
+}
+
+.mostrarMais {
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-pill);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-sm);
+  cursor: pointer;
+}
+
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

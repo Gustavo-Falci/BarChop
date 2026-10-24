@@ -17,19 +17,67 @@ import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
 import { JanelaDeBloqueio } from "./agenda/JanelaDeBloqueio";
 import { JanelaDeMover } from "./agenda/JanelaDeMover";
+import { ListaDaAgenda } from "./agenda/ListaDaAgenda";
 import { ResumoDoPeriodo } from "./agenda/ResumoDoPeriodo";
 import estilos from "./Agenda.module.css";
 import { Carregando } from "../../componentes/Carregando";
 
-const VISTAS: Vista[] = ["dia", "semana", "mes"];
+const VISTAS: Vista[] = ["lista", "dia", "3dias", "semana", "mes"];
 
 // O valor da pílula "Todos": não é id de ninguém, e some da URL.
 const TODOS = "todos";
 
-function lerVista(bruta: string | null): Vista {
+// Quantos dias a lista mostra de cada vez (agenda no celular, PR 2).
+export const DIAS_DA_LISTA = 14;
+
+// A última vista escolhida, neste aparelho: vale quando a URL não diz.
+const CHAVE_DA_VISTA = "barchop.agenda.vista";
+
+// O mesmo corte da barra inferior (NavegacaoDoPainel.module.css).
+const CONSULTA_DO_CELULAR = "(max-width: 900px)";
+
+function ehVista(bruta: string | null): bruta is Vista {
+  return VISTAS.includes(bruta as Vista);
+}
+
+// Sem `vista` na URL: a última escolhida aqui; senão, a lista no celular
+// e a semana no desktop. O `?.` do matchMedia deixa o jsdom no desktop.
+// O armazenamento pode faltar ou recusar (aba anônima): cai no padrão.
+function vistaPadrao(): Vista {
+  if (typeof window === "undefined") return "semana";
+  try {
+    const guardada = window.localStorage.getItem(CHAVE_DA_VISTA);
+    if (ehVista(guardada)) return guardada;
+  } catch {
+    // sem armazenamento: segue pro padrão da tela
+  }
+  return window.matchMedia?.(CONSULTA_DO_CELULAR).matches ? "lista" : "semana";
+}
+
+function guardarVista(vista: Vista) {
+  try {
+    window.localStorage.setItem(CHAVE_DA_VISTA, vista);
+  } catch {
+    // sem armazenamento: a escolha vale só nesta visita
+  }
+}
+
+function lerVista(bruta: string | null, padrao: Vista): Vista {
   // Vista desconhecida cai no padrão em silêncio, como a leitura do tema
   // faz: a URL é digitável, e um valor estranho não pode quebrar a tela.
-  return VISTAS.includes(bruta as Vista) ? (bruta as Vista) : "semana";
+  return ehVista(bruta) ? bruta : padrao;
+}
+
+// Quanto as setas andam em cada vista (o mês anda por mês).
+const PASSO_EM_DIAS: Record<Exclude<Vista, "mes">, number> = {
+  lista: DIAS_DA_LISTA,
+  dia: 1,
+  "3dias": 3,
+  semana: 7,
+};
+
+function diasSeguidos(data: string, quantos: number): string[] {
+  return Array.from({ length: quantos }, (_, i) => somarDias(data, i));
 }
 
 function somarDias(data: string, dias: number): string {
@@ -62,10 +110,21 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   const query = useSearchParams();
   const api = useApiDoPainel();
 
-  const vista = lerVista(query.get("vista"));
+  // Presa na montagem: o padrão não troca no meio da visita, e a vista
+  // se resolve antes da primeira busca (nada de buscar a semana e depois
+  // a lista).
+  const [padrao] = useState(vistaPadrao);
+  const vista = lerVista(query.get("vista"), padrao);
   const data = query.get("data") ?? hojeIso(agora);
 
   const semana = diasDaSemana(data);
+  const tresDias = diasSeguidos(data, 3);
+  const diasDaLista = diasSeguidos(data, DIAS_DA_LISTA);
+  // Os dias da grade de tempo (a lista e o mês têm a sua).
+  const diasDaGrade = vista === "dia" ? [data] : vista === "3dias" ? tresDias : semana;
+  // Semana e 3 dias: vários dias lado a lado, com o mesmo filtro e o
+  // expediente buscado dia a dia.
+  const variosDias = vista === "semana" || vista === "3dias";
   const mes = data.slice(0, 7);
 
   // Um caminho de dados só, com os limites variando por vista. O mês pede
@@ -80,9 +139,13 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   const [de, ate] =
     vista === "dia"
       ? [data, data]
-      : vista === "semana"
-        ? [semana[0], semana[6]]
-        : [bordasDoMes[0].data, bordasDoMes[bordasDoMes.length - 1].data];
+      : vista === "3dias"
+        ? [tresDias[0], tresDias[2]]
+        : vista === "semana"
+          ? [semana[0], semana[6]]
+          : vista === "lista"
+            ? [diasDaLista[0], diasDaLista[DIAS_DA_LISTA - 1]]
+            : [bordasDoMes[0].data, bordasDoMes[bordasDoMes.length - 1].data];
 
   const agendamentos = useRequisicao(
     () => api.barbeiro.agendamentosDoIntervalo(de, ate),
@@ -101,15 +164,11 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     () => (comEquipe ? api.barbeiro.equipe() : Promise.resolve([])),
     [comEquipe]
   );
-  // Na semana também: a folga de cada um o tira de quem pode atender.
+  // Na semana também: a folga de cada um o tira de quem pode atender. Na
+  // lista, os bloqueios entram entre os cartões. Só o mês fica sem.
   const bloqueios = useRequisicao(
-    () =>
-      vista === "dia"
-        ? api.barbeiro.bloqueios(data, data)
-        : vista === "semana"
-          ? api.barbeiro.bloqueios(semana[0], semana[6])
-          : Promise.resolve([]),
-    [vista, vista === "semana" ? semana[0] : data]
+    () => (vista === "mes" ? Promise.resolve([]) : api.barbeiro.bloqueios(de, ate)),
+    [vista, de, ate]
   );
   // O expediente de cada um (janela e pausa), pra sombrear o fechado e
   // não oferecer horário livre no almoço. Vem da ocupação, que já faz a
@@ -119,17 +178,18 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     () => (vista === "dia" ? api.barbeiro.ocupacaoDoDia(data) : Promise.resolve(null)),
     [vista, data]
   );
-  // Na semana, o mesmo expediente, dia a dia: sete consultas da rota do
-  // dia, em vez de uma rota de período só pra isto. Presa ao domingo, e
-  // não à data: andar dentro da mesma semana não refaz as sete.
+  // Na semana e nos 3 dias, o mesmo expediente, dia a dia: uma consulta
+  // da rota do dia por coluna, em vez de uma rota de período só pra isto.
+  // Presa ao primeiro dia, e não à data: andar dentro da mesma semana não
+  // refaz as sete.
   const ocupacaoDaSemana = useRequisicao(
     () =>
-      vista === "semana"
-        ? Promise.all(semana.map((dia) => api.barbeiro.ocupacaoDoDia(dia))).then((dias) =>
+      variosDias
+        ? Promise.all(diasDaGrade.map((dia) => api.barbeiro.ocupacaoDoDia(dia))).then((dias) =>
             Object.fromEntries(dias.map((dia) => [dia.data, dia.profissionais]))
           )
         : Promise.resolve(null),
-    [vista, semana[0]]
+    [vista, diasDaGrade[0]]
   );
   const atendentes = (equipe.dados ?? [])
     .filter((membro) => membro.ativo && membro.atende && !membro.convitePendente)
@@ -143,13 +203,14 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   // dia já há uma coluna por pessoa. Enquanto a equipe não chega, vale o
   // que veio na URL; um id que não atende cai em Todos.
   const pedido = query.get("profissional") ?? undefined;
-  const comPilulas = daEquipe && vista === "semana" && atendentes.length > 1;
+  const comPilulas = daEquipe && variosDias && atendentes.length > 1;
   const filtro =
-    daEquipe && vista === "semana" && pedido && (!equipe.dados || atendentes.some((a) => a.id === pedido))
+    daEquipe && variosDias && pedido && (!equipe.dados || atendentes.some((a) => a.id === pedido))
       ? pedido
       : undefined;
 
   function irPara(proxima: Vista, proximaData: string, quem: string | undefined = pedido) {
+    guardarVista(proxima);
     router.push(
       `/painel/agenda?vista=${proxima}&data=${proximaData}` + (quem ? `&profissional=${quem}` : "")
     );
@@ -243,15 +304,11 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           aoAndar={(passos) =>
             irPara(
               vista,
-              vista === "dia"
-                ? somarDias(data, passos)
-                : vista === "semana"
-                  ? somarDias(data, passos * 7)
-                  : somarMeses(data, passos)
+              vista === "mes" ? somarMeses(data, passos) : somarDias(data, passos * PASSO_EM_DIAS[vista])
             )
           }
           aoVoltarAHoje={() => irPara(vista, hojeIso(agora))}
-          aoIrParaAgora={vista === "mes" ? undefined : irParaAgora}
+          aoIrParaAgora={vista === "mes" || vista === "lista" ? undefined : irParaAgora}
           acao={
             vista === "mes" ? undefined : (
               // "Bloquear" na tela, "Bloquear horário" pro leitor: o
@@ -280,12 +337,10 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           />
         ) : null}
 
-        {vista === "mes" ? null : (
+        {vista === "mes" || vista === "lista" ? null : (
           <ResumoDoPeriodo
-            periodo={vista === "dia" ? "dia" : "semana"}
-            agendamentos={visiveis.filter((a) =>
-              vista === "dia" ? a.data === data : semana.includes(a.data)
-            )}
+            periodo={vista === "dia" ? "dia" : vista === "3dias" ? "3dias" : "semana"}
+            agendamentos={visiveis.filter((a) => diasDaGrade.includes(a.data))}
             agora={agora}
             ehHoje={vista === "dia" && data === hoje}
             ocupacao={vista === "dia" ? ocupacao.dados : undefined}
@@ -332,10 +387,16 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           hoje={hojeIso(agora)}
           aoAbrirDia={(dia) => irPara("dia", dia)}
         />
+      ) : vista === "lista" ? (
+        <ListaDaAgenda
+          dias={diasDaLista}
+          agendamentos={visiveis}
+          aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
+        />
       ) : (
         <GradeDeTempo
           grade={gradeDeTempo({
-            dias: vista === "dia" ? [data] : semana,
+            dias: diasDaGrade,
             horarios: horarios.dados,
             agendamentos: visiveis,
             agora,
@@ -376,11 +437,9 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
                 (profissionais ? `&profissionais=${profissionais.join(",")}` : "")
             );
           }}
-          // Só na semana: na vista de dia, um botão para abrir o dia que
-          // já está aberto seria ruído.
-          aoAbrirDia={
-            vista === "semana" ? (dia) => irPara("dia", dia) : undefined
-          }
+          // Só com vários dias: na vista de dia, um botão para abrir o dia
+          // que já está aberto seria ruído.
+          aoAbrirDia={variosDias ? (dia) => irPara("dia", dia) : undefined}
         />
       )}
     </div>

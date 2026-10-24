@@ -1,0 +1,177 @@
+/* O menu da agenda no celular (agenda no celular, PR 3): uma gaveta
+   presa à esquerda, da altura da tela. Entra deslizando em vez da escala
+   das outras janelas (globals.css); "reduzir movimento" já zera a
+   transição lá. */
+.menu {
+  inset: 0 auto 0 0;
+  width: min(320px, 85vw);
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0 var(--raio-lg) var(--raio-lg) 0;
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  box-shadow: var(--sombra-1);
+  scale: 1;
+  translate: -100% 0;
+  transition:
+    opacity var(--duracao-curta) var(--curva-saida),
+    translate var(--duracao-curta) var(--curva-saida),
+    overlay var(--duracao-curta) allow-discrete,
+    display var(--duracao-curta) allow-discrete;
+}
+
+.menu[open] {
+  translate: 0 0;
+  scale: 1;
+  transition-duration: var(--duracao-media);
+  transition-timing-function: var(--curva-entrada);
+}
+
+@starting-style {
+  .menu[open] {
+    translate: -100% 0;
+    scale: 1;
+  }
+}
+
+.menu::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.conteudo {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--espaco-md);
+}
+
+.cabecalho {
+  display: grid;
+  gap: 2px;
+}
+
+.casa {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+}
+
+.secao {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: var(--espaco-sm) 0 0;
+  border: 0;
+  border-top: 1px solid var(--cor-line);
+}
+
+.rotulo {
+  margin: 0 0 var(--espaco-xs);
+  padding: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.itens {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--espaco-sm);
+  border: 0;
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: var(--cor-ink);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--cor-paper-soft);
+}
+
+/* A vista atual, na cor da marca: o que o Google Agenda faz com a pílula. */
+.item[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--cor-accent) 14%, var(--cor-surface));
+  color: var(--cor-accent-text);
+  font-weight: 600;
+}
+
+.atalhos {
+  display: grid;
+  gap: 2px;
+  padding-top: var(--espaco-sm);
+  border-top: 1px solid var(--cor-line);
+}
+
+/* Cada pessoa com o tom dela na caixinha: o mesmo dos blocos da grade. */
+.pessoa {
+  --tom: var(--cor-accent);
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+  padding: 0 var(--espaco-sm);
+  border-radius: var(--raio-md);
+  cursor: pointer;
+}
+
+.pessoa[data-tom="1"] {
+  --tom: #5b8def;
+}
+
+.pessoa[data-tom="2"] {
+  --tom: #3fa67a;
+}
+
+.pessoa[data-tom="3"] {
+  --tom: #d9734e;
+}
+
+.pessoa[data-tom="4"] {
+  --tom: #a26bd6;
+}
+
+.pessoa[data-tom="5"] {
+  --tom: #d4609a;
+}
+
+.caixa {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--tom);
+}
+
+.nome {
+  flex: 1;
+}
+
+.contagem {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}

@@ -13,6 +13,7 @@ export function Calendario({
   dias,
   agora,
   selecionada,
+  livre = false,
   aoEscolher,
   aoTrocarMes,
 }: {
@@ -23,6 +24,9 @@ export function Calendario({
   // dia está valendo. O fluxo público navega ao escolher, então não tem
   // o que marcar.
   selecionada?: string;
+  // Todo dia escolhível, passado incluído: a agenda do painel usa o
+  // calendário pra pular de data, não pra achar vaga.
+  livre?: boolean;
   aoEscolher: (data: string) => void;
   aoTrocarMes: (mes: string) => void;
 }) {
@@ -70,7 +74,7 @@ export function Calendario({
               // mês e não diz de qual mês é esta grade.
               aria-label={formatarDataLonga(data)}
               aria-current={data === selecionada ? "date" : undefined}
-              disabled={ehPassado(data, agora) || !dias[data]}
+              disabled={!livre && (ehPassado(data, agora) || !dias[data])}
               onClick={() => aoEscolher(data)}
             >
               {Number(data.slice(-2))}

@@ -1,0 +1,75 @@
+"use client";
+
+import { IconeBloqueio, IconeDescer } from "../../../painel/icones";
+import estilos from "./BarraDaAgendaNoCelular.module.css";
+
+// A barra da agenda no celular (agenda no celular, PR 3), no jeito do
+// Google Agenda: ☰ · título ▾ · ‹ › · Hoje · Bloquear. As vistas moram
+// no menu (☰), e o título abre o calendário pra pular de data. Os nomes
+// das setas são os da barra do desktop: quem usa leitor de tela acha o
+// mesmo botão nas duas.
+export function BarraDaAgendaNoCelular({
+  titulo,
+  diaDeHoje,
+  aoAbrirMenu,
+  aoAbrirCalendario,
+  aoAndar,
+  aoVoltarAHoje,
+  aoBloquear,
+}: {
+  titulo: string;
+  // O número de hoje, desenhado no botão "Hoje" como no Google Agenda.
+  diaDeHoje: number;
+  aoAbrirMenu: () => void;
+  aoAbrirCalendario: () => void;
+  aoAndar: (passos: number) => void;
+  aoVoltarAHoje: () => void;
+  // Ausente (no mês), o cadeado não aparece.
+  aoBloquear?: () => void;
+}) {
+  return (
+    <div className={estilos.barra}>
+      <button
+        type="button"
+        className={estilos.icone}
+        aria-label="Menu da agenda"
+        aria-haspopup="dialog"
+        onClick={aoAbrirMenu}
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      <button
+        type="button"
+        className={estilos.titulo}
+        aria-label={`${titulo}, escolher data`}
+        aria-haspopup="dialog"
+        onClick={aoAbrirCalendario}
+      >
+        <span className={estilos.textoDoTitulo}>{titulo}</span>
+        <IconeDescer width="16" height="16" />
+      </button>
+
+      <div className={estilos.acoes}>
+        <button type="button" className={estilos.icone} aria-label="Período anterior" onClick={() => aoAndar(-1)}>
+          ‹
+        </button>
+        <button type="button" className={estilos.icone} aria-label="Próximo período" onClick={() => aoAndar(1)}>
+          ›
+        </button>
+        <button type="button" className={estilos.icone} aria-label="Hoje" onClick={aoVoltarAHoje}>
+          <span className={estilos.hoje} aria-hidden="true">
+            {diaDeHoje}
+          </span>
+        </button>
+        {aoBloquear ? (
+          <button type="button" className={estilos.icone} aria-label="Bloquear horário" onClick={aoBloquear}>
+            <IconeBloqueio />
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}

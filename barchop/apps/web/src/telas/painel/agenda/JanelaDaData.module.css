@@ -1,0 +1,23 @@
+/* A folha do calendário (agenda no celular, PR 3): presa embaixo, na
+   largura da tela, com a moldura das outras janelas. */
+.folha {
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: var(--espaco-md) var(--espaco-md) calc(var(--espaco-md) + env(safe-area-inset-bottom));
+  border: 0;
+  border-radius: var(--raio-lg) var(--raio-lg) 0 0;
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  box-shadow: var(--sombra-1);
+}
+
+.folha::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.titulo {
+  margin: 0 0 var(--espaco-sm);
+  font-size: var(--texto-lg);
+}

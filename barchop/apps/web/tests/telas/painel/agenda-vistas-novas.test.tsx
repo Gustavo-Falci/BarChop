@@ -132,7 +132,9 @@ describe("vistas novas da agenda", () => {
       irPara({ vista: "semana", data: "2026-09-08" });
       montarPainel(<Agenda agora={AGORA} />, semear());
 
-      expect(await screen.findByRole("button", { name: "Semana" })).toHaveAttribute("aria-pressed", "true");
+      // No celular o seletor mora no menu (PR 3): a prova é a grade.
+      expect(await screen.findByTestId("quadro-da-grade")).toHaveStyle({ "--colunas": "7" });
+      expect(screen.queryByTestId("lista-da-agenda")).not.toBeInTheDocument();
     });
   });
 });

@@ -15,9 +15,13 @@ import { diasDaSemana, gradeDeTempo, gradeDoMes } from "../../painel/grade";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
+import { CONSULTA_DO_CELULAR, useTelaDeCelular } from "../../painel/useTelaDeCelular";
+import { BarraDaAgendaNoCelular } from "./agenda/BarraDaAgendaNoCelular";
+import { JanelaDaData } from "./agenda/JanelaDaData";
 import { JanelaDeBloqueio } from "./agenda/JanelaDeBloqueio";
 import { JanelaDeMover } from "./agenda/JanelaDeMover";
 import { ListaDaAgenda } from "./agenda/ListaDaAgenda";
+import { MenuDaAgenda } from "./agenda/MenuDaAgenda";
 import { ResumoDoPeriodo } from "./agenda/ResumoDoPeriodo";
 import estilos from "./Agenda.module.css";
 import { Carregando } from "../../componentes/Carregando";
@@ -32,9 +36,6 @@ export const DIAS_DA_LISTA = 14;
 
 // A última vista escolhida, neste aparelho: vale quando a URL não diz.
 const CHAVE_DA_VISTA = "barchop.agenda.vista";
-
-// O mesmo corte da barra inferior (NavegacaoDoPainel.module.css).
-const CONSULTA_DO_CELULAR = "(max-width: 900px)";
 
 function ehVista(bruta: string | null): bruta is Vista {
   return VISTAS.includes(bruta as Vista);
@@ -76,6 +77,20 @@ const PASSO_EM_DIAS: Record<Exclude<Vista, "mes">, number> = {
   semana: 7,
 };
 
+function nomeDoMes(data: string): string {
+  const nome = new Intl.DateTimeFormat("pt-BR", { month: "long", timeZone: "UTC" }).format(
+    new Date(`${data}T12:00:00Z`)
+  );
+  return nome.charAt(0).toUpperCase() + nome.slice(1);
+}
+
+function diaCurto(data: string): string {
+  const mes = new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" })
+    .format(new Date(`${data}T12:00:00Z`))
+    .replace(".", "");
+  return `${Number(data.slice(8))} ${mes}`;
+}
+
 function diasSeguidos(data: string, quantos: number): string[] {
   return Array.from({ length: quantos }, (_, i) => somarDias(data, i));
 }
@@ -114,6 +129,11 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   // se resolve antes da primeira busca (nada de buscar a semana e depois
   // a lista).
   const [padrao] = useState(vistaPadrao);
+  // No celular, a barra do Google Agenda (☰ · título ▾ · ‹ › · Hoje)
+  // no lugar do seletor do desktop (agenda no celular, PR 3).
+  const celular = useTelaDeCelular();
+  const [comMenu, setComMenu] = useState(false);
+  const [escolhendoData, setEscolhendoData] = useState(false);
   const vista = lerVista(query.get("vista"), padrao);
   const data = query.get("data") ?? hojeIso(agora);
 
@@ -156,7 +176,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   // A equipe, pra vista de dia: uma coluna por quem atende. O
   // profissional recebe da API só a própria agenda — pra ele não há o que
   // dividir. Os bloqueios entram como faixas na coluna de cada um.
-  const { perfil } = usePainel();
+  const { perfil, nomeDaBarbearia } = usePainel();
   const daEquipe = perfil.papel !== "profissional";
   // A equipe dá também o filtro por profissional, que vale em toda vista.
   const comEquipe = daEquipe;
@@ -300,11 +320,26 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     const proximo = atual.includes(quem) ? atual.filter((id) => id !== quem) : [...atual, quem];
     irPara(vista, data, proximo.length >= atendentes.length ? [] : proximo);
   }
+  // As caixinhas do menu: desmarcar tira a pessoa, e todos marcados é
+  // sem filtro. Partem de todo mundo, ao contrário das pílulas, que
+  // partem de Todos.
+  function alternarCaixa(quem: string) {
+    const atual = filtro ? [...filtro] : atendentes.map((a) => a.id);
+    const proximo = atual.includes(quem) ? atual.filter((id) => id !== quem) : [...atual, quem];
+    if (proximo.length === 0) return;
+    irPara(vista, data, proximo.length >= atendentes.length ? [] : proximo);
+  }
+  function andar(passos: number) {
+    irPara(vista, vista === "mes" ? somarMeses(data, passos) : somarDias(data, passos * PASSO_EM_DIAS[vista]));
+  }
 
   const titulo =
     vista === "mes"
       ? formatarDataLonga(`${mes}-01`).replace(/^\d+ de /, "")
       : formatarDataLonga(data);
+  // No celular, curto como no Google Agenda: o mês ("Outubro"), ou o dia
+  // ("24 out") na vista de dia.
+  const tituloNoCelular = vista === "dia" ? diaCurto(data) : nomeDoMes(data);
 
   return (
     // `data-largura` é o que o container do painel lê para abrir mão da
@@ -320,35 +355,43 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           linhas (topo e agenda), e a agenda tem que ficar com a linha que
           sobra — um terceiro filho roubaria dela. */}
       <div className={estilos.topo}>
-        <SeletorDeVista
-          vista={vista}
-          titulo={titulo}
-          aoTrocarVista={(proxima) => irPara(proxima, data)}
-          aoAndar={(passos) =>
-            irPara(
-              vista,
-              vista === "mes" ? somarMeses(data, passos) : somarDias(data, passos * PASSO_EM_DIAS[vista])
-            )
-          }
-          aoVoltarAHoje={() => irPara(vista, hojeIso(agora))}
-          aoIrParaAgora={vista === "mes" || vista === "lista" ? undefined : irParaAgora}
-          acao={
-            vista === "mes" ? undefined : (
-              // "Bloquear" na tela, "Bloquear horário" pro leitor: o
-              // nome diz o quê sem ocupar a barra no celular.
-              <button
-                type="button"
-                className={estilos.acao}
-                aria-label="Bloquear horário"
-                onClick={() => setBloqueando(true)}
-              >
-                Bloquear
-              </button>
-            )
-          }
-        />
+        {celular ? (
+          <BarraDaAgendaNoCelular
+            titulo={tituloNoCelular}
+            diaDeHoje={Number(hoje.slice(8))}
+            aoAbrirMenu={() => setComMenu(true)}
+            aoAbrirCalendario={() => setEscolhendoData(true)}
+            aoAndar={andar}
+            aoVoltarAHoje={() => irPara(vista, hoje)}
+            aoBloquear={vista === "mes" ? undefined : () => setBloqueando(true)}
+          />
+        ) : (
+          <SeletorDeVista
+            vista={vista}
+            titulo={titulo}
+            aoTrocarVista={(proxima) => irPara(proxima, data)}
+            aoAndar={andar}
+            aoVoltarAHoje={() => irPara(vista, hojeIso(agora))}
+            aoIrParaAgora={vista === "mes" || vista === "lista" ? undefined : irParaAgora}
+            acao={
+              vista === "mes" ? undefined : (
+                // "Bloquear" na tela, "Bloquear horário" pro leitor: o
+                // nome diz o quê sem ocupar a barra no celular.
+                <button
+                  type="button"
+                  className={estilos.acao}
+                  aria-label="Bloquear horário"
+                  onClick={() => setBloqueando(true)}
+                >
+                  Bloquear
+                </button>
+              )
+            }
+          />
+        )}
 
-        {comPilulas ? (
+        {/* No celular, quem aparece se escolhe no menu (☰). */}
+        {comPilulas && !celular ? (
           <PilulasDeFiltro
             rotulo="Filtrar por profissional"
             marcados={filtro ? [...filtro] : [TODOS]}
@@ -360,7 +403,9 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           />
         ) : null}
 
-        {vista === "mes" || vista === "lista" ? null : (
+        {/* No celular, a faixa de resumo empurraria a agenda pra baixo
+            da dobra: sai, como no Google Agenda. */}
+        {vista === "mes" || vista === "lista" || celular ? null : (
           <ResumoDoPeriodo
             periodo={vista === "dia" ? "dia" : vista === "3dias" ? "3dias" : "semana"}
             agendamentos={visiveis.filter((a) => diasDaGrade.includes(a.data))}
@@ -386,6 +431,31 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             ocupacao.recarregar();
           }}
           aoFechar={() => setMovendo(null)}
+        />
+      ) : null}
+
+      {comMenu ? (
+        <MenuDaAgenda
+          nomeDaBarbearia={nomeDaBarbearia}
+          vista={vista}
+          hoje={hoje}
+          profissionais={
+            daEquipe ? atendentes.map((pessoa, indice) => ({ ...pessoa, tom: indice % 6 })) : undefined
+          }
+          marcados={filtro}
+          aoTrocarVista={(proxima) => irPara(proxima, data)}
+          aoAlternar={alternarCaixa}
+          aoBloquear={vista === "mes" ? undefined : () => setBloqueando(true)}
+          aoFechar={() => setComMenu(false)}
+        />
+      ) : null}
+
+      {escolhendoData ? (
+        <JanelaDaData
+          data={data}
+          agora={agora}
+          aoEscolher={(escolhida) => irPara(vista, escolhida)}
+          aoFechar={() => setEscolhendoData(false)}
         />
       ) : null}
 

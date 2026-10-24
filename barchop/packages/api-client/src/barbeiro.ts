@@ -21,6 +21,10 @@ import type {
   DivisaoDoDinheiro,
   MembroDoCaixa,
   SalvarDivisao,
+  MudancaDoPlano,
+  NovoPlano,
+  PlanoDoPainel,
+  PlanosDoPainel,
   PagamentoDoAgendamento,
   PagamentoDoAtendimento,
   RegistrarPagamento,
@@ -166,6 +170,11 @@ export interface EdicaoDoMembro {
   papel?: PapelMembro;
   atende?: boolean;
   ativo?: boolean;
+  // Só o dono libera; o dono vende sem ela (Onda 2, marco 3).
+  podeVenderPlanos?: boolean;
+  // Desativar quem tem assinante nos planos dele é 422
+  // `assinaturas_ativas`; com isto, as assinaturas são canceladas junto.
+  cancelarAssinaturas?: boolean;
 }
 
 export interface AceiteDoConvite {
@@ -779,6 +788,28 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     salvarDivisao(divisao: SalvarDivisao): Promise<DivisaoDoDinheiro> {
       return requisicao("/barbearias/me/divisao", { metodo: "PUT", corpo: divisao, comToken: true });
+    },
+
+    // Os planos que a barbearia e os barbeiros vendem ao cliente (Onda 2,
+    // marco 3). Fora do Completo: 403 `recurso_do_plano`. O profissional
+    // recebe só os dele; os `podeCriar…` dizem o que a tela oferece.
+    planos(): Promise<PlanosDoPainel> {
+      return requisicao("/barbearias/me/planos", { comToken: true });
+    },
+
+    // O vendedor é sempre quem cria; da casa, só o dono.
+    criarPlano(novo: NovoPlano): Promise<PlanoDoPainel> {
+      return requisicao("/barbearias/me/planos", { metodo: "POST", corpo: novo, comToken: true });
+    },
+
+    // A lista de serviços, quando vem, substitui a inteira.
+    editarPlano(id: string, mudanca: MudancaDoPlano): Promise<PlanoDoPainel> {
+      return requisicao(`/barbearias/me/planos/${id}`, { metodo: "PATCH", corpo: mudanca, comToken: true });
+    },
+
+    // Só o dono: os planos ativos na página pública.
+    ligarVitrine(ligada: boolean): Promise<{ ligada: boolean }> {
+      return requisicao("/barbearias/me/vitrine-de-planos", { metodo: "PUT", corpo: { ligada }, comToken: true });
     },
   };
 }

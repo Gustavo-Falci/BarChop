@@ -7,6 +7,7 @@ import {
   REGRAS_PADRAO,
   acertoDoDia,
   areasTocadas,
+  problemaDoPlano,
   dividirPagamento,
   juntarAreas,
   normalizarAparencia,
@@ -41,6 +42,9 @@ import type {
   DivisaoDoDinheiro,
   MembroDoCaixa,
   SalvarDivisao,
+  MudancaDoPlano,
+  NovoPlano,
+  PlanoDoPainel,
   PagamentoDoAgendamento,
   PapelMembro,
   PendenciaDoCaixa,
@@ -221,6 +225,10 @@ export interface EstadoFalso {
   // De quem cada cliente é, por id do cliente. Quem não aparece é de
   // ninguém, e passa a ser de quem o atender, como na API.
   donosDosClientes?: Record<string, string>;
+  // Os planos que a barbearia vende ao cliente (Onda 2, marco 3) e se a
+  // vitrine da página está ligada. Sem semente, nenhum e desligada.
+  planos?: PlanoDoPainel[];
+  vitrineDePlanos?: boolean;
 }
 
 const FIM_DO_TESTE_PADRAO = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -335,6 +343,10 @@ function categoriaValida(categoria: CategoriaDeServico | null | undefined): Cate
   return categoria;
 }
 
+function copiaDoPlano(plano: PlanoDoPainel): PlanoDoPainel {
+  return { ...plano, servicos: plano.servicos.map((s) => ({ ...s })) };
+}
+
 export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // Cópia de toda lista, tanto do padrão quanto da semente: o dublê faz
   // `push` em `agendamentos` e em `servicos`, e sem a cópia dois testes
@@ -384,6 +396,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       matriz: [...(semente.divisao?.matriz ?? [])],
     },
     donosDosClientes: { ...(semente.donosDosClientes ?? {}) },
+    planos: (semente.planos ?? []).map(copiaDoPlano),
+    vitrineDePlanos: semente.vitrineDePlanos ?? false,
   };
 
   // O pedido como o dono o vê: sem a barbearia, que é a dele.
@@ -785,6 +799,41 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     if (!temRecurso(estado.assinatura!.planoEfetivo, "caixa")) {
       throw new ErroDaApi(403, "recurso_do_plano", "o plano não tem este recurso: escolha um plano");
     }
+  }
+
+  function exigirPlanosDaBarbearia(): void {
+    if (!temRecurso(estado.assinatura!.planoEfetivo, "planosDaBarbearia")) {
+      throw new ErroDaApi(403, "recurso_do_plano", "o plano não tem este recurso: escolha um plano");
+    }
+  }
+
+  function vendePlanos(membro: MembroDaEquipe): boolean {
+    return membro.papel === "dono" || (membro.papel === "profissional" && membro.podeVenderPlanos);
+  }
+
+  // O profissional só enxerga os dele; dono e recepção, todos.
+  function planosVisiveis(): PlanoDoPainel[] {
+    return estado.papel === "profissional"
+      ? estado.planos!.filter((p) => p.vendedor?.id === "bb1")
+      : estado.planos!;
+  }
+
+  function servicosDoPlano(servicos: NovoPlano["servicos"]): PlanoDoPainel["servicos"] {
+    const ids = servicos.map((s) => s.servicoId);
+    if (new Set(ids).size !== ids.length) {
+      throw new ErroDaApi(422, "servico_repetido", "o mesmo serviço aparece duas vezes no plano");
+    }
+    return servicos.map((s) => {
+      const servico = estado.servicos.find((x) => x.id === s.servicoId && x.ativo);
+      if (!servico) throw new ErroDaApi(422, "servico_invalido", "o plano só cobre serviços ativos desta barbearia");
+      return { servicoId: s.servicoId, nome: servico.nome, usosPorCiclo: s.usosPorCiclo };
+    });
+  }
+
+  // A mesma conta da API (problemaDoPlano), com o mesmo código.
+  function exigirPlanoCerto(plano: PlanoDoPainel): void {
+    const problema = problemaDoPlano(plano);
+    if (problema !== null) throw new ErroDaApi(422, `plano_${problema}`, `o plano tem um problema: ${problema}`);
   }
 
   function exigirDiaAberto(data: string): void {
@@ -1204,7 +1253,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         equipe().push(membro);
         return { ...membro };
       },
-      async atualizarMembro(id: string, edicao: EdicaoDoMembro) {
+      async atualizarMembro(id: string, { cancelarAssinaturas, ...edicao }: EdicaoDoMembro) {
         const alvo = membroOu404(id);
         if (seriaOUltimoDono(alvo, edicao)) {
           throw new ErroDaApi(
@@ -1212,6 +1261,16 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             "ultimo_dono",
             "a barbearia precisa de pelo menos um dono ativo"
           );
+        }
+        // Como a API: quem sai com assinante nos planos dele precisa da
+        // confirmação, e com ela as assinaturas caem.
+        if (edicao.ativo === false) {
+          const dele = estado.planos!.filter((p) => p.vendedor?.id === id);
+          const quantas = dele.reduce((soma, p) => soma + p.assinantes, 0);
+          if (quantas > 0 && cancelarAssinaturas !== true) {
+            throw new ErroDaApi(422, "assinaturas_ativas", `este membro tem ${quantas} assinantes nos planos dele`);
+          }
+          for (const plano of dele) plano.assinantes = 0;
         }
         Object.assign(alvo, edicao);
         return { ...alvo };
@@ -1833,6 +1892,69 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             .map((r) => ({ donoDoCliente: r.donoDoClienteId, atendente: r.atendenteId, percentual: r.percentual })),
         ];
         return divisaoFalsa();
+      },
+
+      // Os planos (Onda 2, marco 3), com as recusas da API
+      // (apps/api/src/routers/planos.ts). O dublê não confere os serviços
+      // que o vendedor faz: isso é da API.
+      async planos() {
+        exigirPlanosDaBarbearia();
+        const eu = membroOu404("bb1");
+        return {
+          vitrine: estado.vitrineDePlanos!,
+          podeCriarDaCasa: estado.papel === "dono",
+          podeCriarProprio: vendePlanos(eu) && eu.atende,
+          planos: planosVisiveis().map(copiaDoPlano),
+        };
+      },
+      async criarPlano(novo: NovoPlano) {
+        const eu = membroOu404("bb1");
+        if (!vendePlanos(eu) || (novo.daCasa && estado.papel !== "dono")) {
+          throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite isto");
+        }
+        exigirPlanosDaBarbearia();
+        const plano: PlanoDoPainel = {
+          id: `pl${estado.planos!.length + 1}`,
+          daCasa: novo.daCasa,
+          vendedor: novo.daCasa ? null : { id: eu.id, nome: eu.nome },
+          nome: novo.nome,
+          descricao: novo.descricao ?? null,
+          ciclo: novo.ciclo,
+          precoCentavos: novo.precoCentavos,
+          diasDeTeste: novo.diasDeTeste ?? 0,
+          fixoPorAtendimentoCentavos: novo.fixoPorAtendimentoCentavos ?? null,
+          aceitaOnline: novo.aceitaOnline ?? true,
+          aceitaNoBalcao: novo.aceitaNoBalcao ?? false,
+          ativo: true,
+          servicos: servicosDoPlano(novo.servicos),
+          assinantes: 0,
+        };
+        exigirPlanoCerto(plano);
+        estado.planos!.push(plano);
+        return copiaDoPlano(plano);
+      },
+      async editarPlano(id: string, mudanca: MudancaDoPlano) {
+        if (!vendePlanos(membroOu404("bb1"))) {
+          throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite isto");
+        }
+        exigirPlanosDaBarbearia();
+        const atual = planosVisiveis().find((p) => p.id === id);
+        if (!atual) throw new ErroDaApi(404, "nao_encontrado", "plano não encontrado");
+        const { servicos, ...campos } = mudanca;
+        const novo: PlanoDoPainel = {
+          ...atual,
+          ...campos,
+          servicos: servicos ? servicosDoPlano(servicos) : atual.servicos,
+        };
+        exigirPlanoCerto(novo);
+        Object.assign(atual, novo);
+        return copiaDoPlano(atual);
+      },
+      async ligarVitrine(ligada: boolean) {
+        exigirDono();
+        exigirPlanosDaBarbearia();
+        estado.vitrineDePlanos = ligada;
+        return { ligada };
       },
     },
 

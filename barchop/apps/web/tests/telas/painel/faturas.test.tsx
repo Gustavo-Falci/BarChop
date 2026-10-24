@@ -146,23 +146,23 @@ describe("Faturas sem plano pago: etapa Plano", () => {
     expect(await screen.findByRole("radio", { name: /Essencial/ })).toBeDisabled();
     expect(screen.getByRole("radio", { name: /Completo/ })).toBeChecked();
     expect(screen.getByRole("radio", { name: /Completo/ })).toHaveAccessibleName(/Recomendado/);
-    expect(await preco()).toBe("R$ 89,90/mês");
+    expect(await preco()).toBe("R$ 114,90/mês");
   });
 
   it("o + e o − recalculam; o Essencial para no limite e convida pro Completo", async () => {
     montar(resumo());
-    expect(await preco()).toBe("R$ 44,90/mês");
+    expect(await preco()).toBe("R$ 59,90/mês");
 
     await userEvent.click(screen.getByRole("button", { name: "Mais um profissional" }));
 
-    expect(await preco()).toBe("R$ 54,90/mês");
-    expect(screen.getByText("2 × R$ 10,00")).toBeInTheDocument();
+    expect(await preco()).toBe("R$ 74,90/mês");
+    expect(screen.getByText("2 × R$ 15,00")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mais um profissional" })).toBeDisabled();
     expect(screen.getByText(/O Essencial vai até 3 profissionais/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("radio", { name: /Completo/ }));
 
-    expect(await preco()).toBe("R$ 74,90/mês");
+    expect(await preco()).toBe("R$ 94,90/mês");
     expect(screen.getByRole("button", { name: "Mais um profissional" })).toBeEnabled();
   });
 
@@ -180,8 +180,8 @@ describe("Faturas sem plano pago: etapa Plano", () => {
 
     await userEvent.click(screen.getByRole("radio", { name: /Anual/ }));
 
-    expect(await preco()).toBe("R$ 449,00/ano");
-    expect(screen.getByText("Você economiza R$ 89,80 por ano")).toBeInTheDocument();
+    expect(await preco()).toBe("R$ 599,00/ano");
+    expect(screen.getByText("Você economiza R$ 119,80 por ano")).toBeInTheDocument();
   });
 
   it("o Seu pedido acompanha a escolha; no teste, hoje não cobra nada", async () => {
@@ -193,20 +193,20 @@ describe("Faturas sem plano pago: etapa Plano", () => {
     expect(lado).toHaveTextContent("2 profissionais");
     expect(lado).toHaveTextContent("Mensal");
     expect(texto(within(lado).getByTestId("hoje"))).toBe("R$ 0,00");
-    expect(texto(lado)).toContain("depois R$ 44,90/mês a partir de 28/10");
+    expect(texto(lado)).toContain("depois R$ 59,90/mês a partir de 28/10");
 
     await userEvent.click(within(lado).getByRole("button", { name: "Trocar para o anual" }));
 
     expect(screen.getByRole("radio", { name: /Anual/ })).toBeChecked();
     expect(pedido()).toHaveTextContent("Anual");
-    expect(texto(pedido())).toContain("depois R$ 449,00/ano a partir de 28/10");
+    expect(texto(pedido())).toContain("depois R$ 599,00/ano a partir de 28/10");
   });
 
   it("fora do teste, no Grátis: hoje cobra o valor cheio, e lembra que nada foi apagado", async () => {
     montar(resumo({ situacao: "gratis", planoEfetivo: "gratis", diasDeTesteRestantes: null, testeTerminaEm: null }));
     await screen.findByTestId("preco-do-plano");
 
-    expect(texto(within(pedido()).getByTestId("hoje"))).toBe("R$ 44,90");
+    expect(texto(within(pedido()).getByTestId("hoje"))).toBe("R$ 59,90");
     expect(screen.getByText(/Nada foi apagado/)).toBeInTheDocument();
   });
 
@@ -220,8 +220,8 @@ describe("Faturas sem plano pago: etapa Plano", () => {
     expect(profissionais).toHaveTextContent("Sem limite");
     const porMes = within(tabela).getByRole("row", { name: /^Por mês/ });
     expect(texto(porMes)).toContain("R$ 0,00");
-    expect(texto(porMes)).toContain("R$ 34,90");
     expect(texto(porMes)).toContain("R$ 44,90");
+    expect(texto(porMes)).toContain("R$ 54,90");
   });
 
   it("promete a troca de plano, que o Portal da Stripe faz", async () => {

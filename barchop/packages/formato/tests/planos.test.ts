@@ -40,19 +40,19 @@ describe("listas fechadas", () => {
 
 describe("precoDoPlano", () => {
   it("mensal: base com 1 profissional, mais o extra por profissional a mais", () => {
-    expect(precoDoPlano("essencial", "mensal", 1)).toBe(3490);
-    expect(precoDoPlano("essencial", "mensal", 2)).toBe(4490);
-    expect(precoDoPlano("essencial", "mensal", 3)).toBe(5490);
-    expect(precoDoPlano("completo", "mensal", 1)).toBe(4490);
-    expect(precoDoPlano("completo", "mensal", 2)).toBe(5990);
-    expect(precoDoPlano("completo", "mensal", 4)).toBe(8990);
+    expect(precoDoPlano("essencial", "mensal", 1)).toBe(4490);
+    expect(precoDoPlano("essencial", "mensal", 2)).toBe(5990);
+    expect(precoDoPlano("essencial", "mensal", 3)).toBe(7490);
+    expect(precoDoPlano("completo", "mensal", 1)).toBe(5490);
+    expect(precoDoPlano("completo", "mensal", 2)).toBe(7490);
+    expect(precoDoPlano("completo", "mensal", 4)).toBe(11490);
   });
 
   it("anual: 2 meses grátis, na base e no extra", () => {
-    expect(precoDoPlano("essencial", "anual", 1)).toBe(34900);
-    expect(precoDoPlano("completo", "anual", 1)).toBe(44900);
-    expect(precoDoPlano("essencial", "anual", 2)).toBe(44900);
-    expect(precoDoPlano("completo", "anual", 2)).toBe(59900);
+    expect(precoDoPlano("essencial", "anual", 1)).toBe(44900);
+    expect(precoDoPlano("completo", "anual", 1)).toBe(54900);
+    expect(precoDoPlano("essencial", "anual", 2)).toBe(59900);
+    expect(precoDoPlano("completo", "anual", 2)).toBe(74900);
   });
 
   it("o Grátis não custa nada", () => {
@@ -61,7 +61,7 @@ describe("precoDoPlano", () => {
   });
 
   it("o Completo não tem limite de profissionais", () => {
-    expect(precoDoPlano("completo", "mensal", 20)).toBe(4490 + 19 * 1500);
+    expect(precoDoPlano("completo", "mensal", 20)).toBe(5490 + 19 * 2000);
   });
 
   it("recusa quantidade acima do limite do plano", () => {
@@ -80,10 +80,10 @@ describe("precosDoCiclo", () => {
   // Os degraus do preço graduado na Stripe: a 1ª unidade custa a base,
   // as demais o extra.
   it("base e extra de cada ciclo", () => {
-    expect(precosDoCiclo("essencial", "mensal")).toEqual({ base: 3490, extra: 1000 });
-    expect(precosDoCiclo("essencial", "anual")).toEqual({ base: 34900, extra: 10000 });
-    expect(precosDoCiclo("completo", "mensal")).toEqual({ base: 4490, extra: 1500 });
-    expect(precosDoCiclo("completo", "anual")).toEqual({ base: 44900, extra: 15000 });
+    expect(precosDoCiclo("essencial", "mensal")).toEqual({ base: 4490, extra: 1500 });
+    expect(precosDoCiclo("essencial", "anual")).toEqual({ base: 44900, extra: 15000 });
+    expect(precosDoCiclo("completo", "mensal")).toEqual({ base: 5490, extra: 2000 });
+    expect(precosDoCiclo("completo", "anual")).toEqual({ base: 54900, extra: 20000 });
   });
 });
 

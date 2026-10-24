@@ -9,12 +9,11 @@ import {
 } from "@barchop/formato";
 import type { CicloDoCliente, PlanoDoPainel, PlanosDoPainel, VitrineDePlanos } from "@barchop/types";
 import { garantirRecurso, temORecurso } from "../lib/assinatura";
-import { PODE_ATENDER } from "../lib/disponibilidade";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
-import { temContaQueRecebe } from "../lib/planos-do-cliente";
-import { exigirPapel, membroDoToken, type Membro } from "../plugins/auth";
+import { PODE_VENDER, planosVisiveis, temContaQueRecebe } from "../lib/planos-do-cliente";
+import { exigirPapel, membroDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
 // Os planos que a barbearia e os barbeiros vendem ao cliente (Onda 2,
@@ -114,11 +113,6 @@ async function exigirQuemVende(request: FastifyRequest): Promise<void> {
   const membro = membroDoToken(request);
   if (membro.papel === "dono" || (membro.papel === "profissional" && membro.podeVenderPlanos)) return;
   throw new ErroHttp(403, "sem_permissao", "seu papel na equipe não permite vender planos");
-}
-
-// O profissional só enxerga os planos dele; dono e recepção, todos.
-function planosVisiveis(membro: Membro): Prisma.PlanoDeAssinaturaWhereInput {
-  return membro.papel === "profissional" ? { vendedorId: membro.id } : {};
 }
 
 const INCLUDE_PLANO = {
@@ -337,7 +331,7 @@ export function registrarRotasPlanosPublicos(app: App): void {
             ativo: true,
             OR: [
               { vendedorId: null },
-              { vendedor: { ...PODE_ATENDER, OR: [{ papel: "dono" }, { podeVenderPlanos: true }] } },
+              { vendedor: PODE_VENDER },
             ],
           },
           // Campos um a um: o vendedor é um barbeiro, e um include traria

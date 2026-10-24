@@ -108,6 +108,18 @@ export async function garantirRecurso(
   throw new ErroHttp(403, "recurso_do_plano", `o plano ${PLANOS[plano].nome} não tem este recurso: escolha um plano`);
 }
 
+// A mesma regra sem o 403, pra página pública: fora do plano ela mostra
+// menos, não quebra (nem conta qual plano a barbearia paga).
+export async function temORecurso(
+  db: Prisma.TransactionClient,
+  barbeariaId: string,
+  recurso: Recurso,
+  agora: Date
+): Promise<boolean> {
+  const plano = await planoQueVale(db, barbeariaId, agora);
+  return plano === null || temRecurso(plano, recurso);
+}
+
 // Quem fica fora do link público quando a equipe passa do limite do
 // plano que vale (o Grátis depois do teste ou do cancelamento). Ficam os
 // primeiros: quem atende antes de quem não atende, o dono antes do

@@ -769,3 +769,24 @@ export interface NovoPlano {
 // PATCH /barbearias/me/planos/:id. Tipo e vendedor não mudam; a lista de
 // serviços, quando vem, substitui a inteira.
 export type MudancaDoPlano = Partial<Omit<NovoPlano, "daCasa">> & { ativo?: boolean };
+
+// GET /barbearias/:slug/planos (público). Sem o fixo da casa nem quantos
+// assinam. `aceitaOnline` já diz se dá pra pagar online agora: precisa
+// da conta de quem vende conectada.
+export interface PlanoDaVitrine {
+  id: string;
+  daCasa: boolean;
+  vendedor: { id: string; nome: string; fotoUrl: string | null } | null;
+  nome: string;
+  descricao: string | null;
+  ciclo: CicloDoCliente;
+  precoCentavos: number;
+  diasDeTeste: number;
+  aceitaOnline: boolean;
+  aceitaNoBalcao: boolean;
+  servicos: ServicoDoPlano[];
+}
+
+export interface VitrineDePlanos {
+  planos: PlanoDaVitrine[];
+}

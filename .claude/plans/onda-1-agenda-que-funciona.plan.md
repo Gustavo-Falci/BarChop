@@ -4,7 +4,30 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-24 — agenda no celular mesclada na `main`: #189 a #196) — vale mais que as seções abaixo
+## RETOMAR AQUI (tarde de 2026-10-24 — preços novos no ar: #199 e #200) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = este RETOMAR AQUI** (o código é o `cec7e32`, #200). **Produção:** API com o #200 (o `criar-precos` da VM já rodou o código novo); web com pelo menos o #199 (`/precos` no ar com os valores novos), então a agenda no celular (#189 a #196) também foi pro ar.
+- **#199, preços dos planos pagos** (decisão do dono em 24/10: +R$ 10 na base, +R$ 5 no extra), só em `packages/formato/src/planos.ts`:
+
+  | Plano | Base mensal | Extra por profissional | Anual (1 profissional) |
+  |---|---|---|---|
+  | Essencial | R$ 34,90 → **R$ 44,90** | R$ 10 → **R$ 15** | R$ 349 → **R$ 449** |
+  | Completo | R$ 44,90 → **R$ 54,90** | R$ 15 → **R$ 20** | R$ 449 → **R$ 549** |
+
+- **#200, `criar-precos` e o Portal:** o Portal guarda **ids** de preço, não a `lookup_key`. Ao trocar preço, o script arquivava os antigos e a cópia "sem descida" quebrava com `Only active, per unit licensed prices are supported`. Agora o script troca, na configuração padrão do Portal, cada preço arquivado pelo novo do mesmo produto e ciclo, e só depois copia a "sem descida".
+- **Stripe, nos dois modos** (sandbox do PC e real da VM): 4 preços novos com a `lookup_key` de sempre, os antigos arquivados, Portal padrão e "sem descida" apontando para os novos. No real: padrão `bpc_1UQwUL2Lldv3THCmQPCBAkfG`, "sem descida" `bpc_1URCCv2Lldv3THCmy92C3kbo`; preços novos `price_1UU7cU…` (essencial_mensal), `price_1UU7cV…` (essencial_anual), `price_1UU7cW…` (completo_mensal) e `price_1UU7cX…` (completo_anual).
+- Branches `precos-mais-10` e `portal-com-precos-novos` apagados pelo dono. Nenhum PR aberto.
+
+**Para lembrar:**
+- **Assinaturas que já existiam continuam no preço antigo**: a Stripe não muda preço de assinatura sozinha. Os Termos prometem aviso no painel com 30 dias de antecedência e valor novo só a partir da renovação seguinte. Se um dia for migrar alguém, avisar antes.
+- Próxima mudança de preço: mudar `planos.ts`, fazer o deploy de web e API e rodar o `criar-precos` nos dois modos. O Portal acompanha sozinho.
+
+**Ao retomar:**
+1. O dono olhar a agenda no celular de verdade (lista da seção abaixo, "Ao retomar" item 2).
+2. O resto: a mesma lista da seção de 21/10.
+
+## RETOMAR AQUI (2026-10-24 — agenda no celular mesclada na `main`: #189 a #196) — histórico
 
 **Estado:**
 - **`main` = `0e2193c`** (#197, este RETOMAR AQUI; o código é o #196); **produção = `c6a3b33`** (#187). A agenda no celular está na `main` e **ainda não foi pro ar**.

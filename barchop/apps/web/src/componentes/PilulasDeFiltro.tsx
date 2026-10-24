@@ -23,15 +23,20 @@ export function PilulasDeFiltro<V extends string>({
   rotulo,
   opcoes,
   valor,
+  marcados,
   aoTrocar,
 }: {
   // Nome do grupo pro leitor de tela ("Filtrar clientes").
   rotulo: string;
   opcoes: OpcaoDeFiltro<V>[];
-  valor: V;
+  valor?: V;
+  // Vários ativos de uma vez (o filtro de profissionais da agenda): quem
+  // decide o que um clique liga ou desliga é a tela, pelo `aoTrocar`.
+  marcados?: V[];
   aoTrocar: (valor: V) => void;
 }) {
   const grupo = useId();
+  const ativo = (opcao: V) => (marcados ? marcados.includes(opcao) : opcao === valor);
   return (
     <div className={estilos.pilulas} role="group" aria-label={rotulo}>
       {opcoes.map((opcao) => {
@@ -41,10 +46,14 @@ export function PilulasDeFiltro<V extends string>({
             key={opcao.valor}
             type="button"
             className={[estilos.pilula, comTom].filter(Boolean).join(" ")}
-            aria-pressed={opcao.valor === valor}
+            aria-pressed={ativo(opcao.valor)}
             onClick={() => aoTrocar(opcao.valor)}
           >
-            {opcao.valor === valor ? <Indicador grupo={grupo} className={estilos.indicador} /> : null}
+            {/* Com vários ativos, cada um com o seu indicador: um só
+                deslizando entre eles não teria pra onde ir. */}
+            {ativo(opcao.valor) ? (
+              <Indicador grupo={marcados ? `${grupo}-${opcao.valor}` : grupo} className={estilos.indicador} />
+            ) : null}
             {opcao.rotulo}
             {/* O espaço fica FORA do <span>: dentro, o nome acessível
                 saía "Atrasados3" — o espaço inicial do filho é

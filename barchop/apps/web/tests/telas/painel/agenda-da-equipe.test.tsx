@@ -335,7 +335,7 @@ describe("semana por profissional", () => {
     const grupo = await screen.findByRole("group", { name: "Filtrar por profissional" });
     await userEvent.click(within(grupo).getByRole("button", { name: "Ana" }));
 
-    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=semana&data=2026-09-08&profissional=m2");
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=semana&data=2026-09-08&profissionais=m2");
   });
 
   it("andar de semana mantém a pessoa escolhida", async () => {
@@ -344,7 +344,7 @@ describe("semana por profissional", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "Próximo período" }));
 
-    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=semana&data=2026-09-15&profissional=m2");
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=semana&data=2026-09-15&profissionais=m2");
   });
 
   it("com o Rafael, a pausa dele aparece e só os agendamentos dele", async () => {
@@ -387,5 +387,111 @@ describe("semana por profissional", () => {
     const cabecalho = await screen.findByTestId("cabecalho-da-grade");
     await waitFor(() => expect(within(cabecalho).getByText("Ana")).toBeInTheDocument());
     expect(screen.queryByRole("group", { name: "Filtrar por profissional" })).not.toBeInTheDocument();
+  });
+
+  describe("vários de uma vez (agenda no celular, PR 7)", () => {
+    // Uma terceira pessoa: com duas, marcar as duas já é "todos".
+    function comTres() {
+      const falso = comAgendaDeCadaUm();
+      falso.estado.equipe!.push({
+        id: "m3",
+        nome: "Bia",
+        email: "bia@gr.com",
+        telefone: null,
+        papel: "profissional",
+        atende: true,
+        ativo: true,
+        fotoUrl: null,
+        convitePendente: false,
+      });
+      return falso;
+    }
+
+    it("marcar uma segunda pessoa soma as duas na URL", async () => {
+      naSemana({ profissionais: "bb1" });
+      montarPainel(<Agenda agora={AGORA} />, comTres());
+
+      const grupo = await screen.findByRole("group", { name: "Filtrar por profissional" });
+      await userEvent.click(within(grupo).getByRole("button", { name: "Ana" }));
+
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith(
+        "/painel/agenda?vista=semana&data=2026-09-08&profissionais=bb1,m2"
+      );
+    });
+
+    it("com duas marcadas, as duas pílulas ficam ligadas e Todos não", async () => {
+      naSemana({ profissionais: "bb1,m2" });
+      montarPainel(<Agenda agora={AGORA} />, comTres());
+
+      const grupo = await screen.findByRole("group", { name: "Filtrar por profissional" });
+      await waitFor(() =>
+        expect(within(grupo).getByRole("button", { name: "Bia" })).toHaveAttribute("aria-pressed", "false")
+      );
+      expect(within(grupo).getByRole("button", { name: "Rafael" })).toHaveAttribute("aria-pressed", "true");
+      expect(within(grupo).getByRole("button", { name: "Ana" })).toHaveAttribute("aria-pressed", "true");
+      expect(within(grupo).getByRole("button", { name: "Todos" })).toHaveAttribute("aria-pressed", "false");
+      // Os agendamentos dos dois.
+      expect(await screen.findAllByRole("button", { name: /João Silva/ })).toHaveLength(2);
+    });
+
+    it("desmarcar a única pessoa volta pra Todos", async () => {
+      naSemana({ profissionais: "m2" });
+      montarPainel(<Agenda agora={AGORA} />, comTres());
+
+      const grupo = await screen.findByRole("group", { name: "Filtrar por profissional" });
+      await userEvent.click(within(grupo).getByRole("button", { name: "Ana" }));
+
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=semana&data=2026-09-08");
+    });
+
+    it("marcar todo mundo é o mesmo que nenhum filtro", async () => {
+      naSemana({ profissionais: "bb1" });
+      montarPainel(<Agenda agora={AGORA} />, comAgendaDeCadaUm());
+
+      const grupo = await screen.findByRole("group", { name: "Filtrar por profissional" });
+      await userEvent.click(within(grupo).getByRole("button", { name: "Ana" }));
+
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agenda?vista=semana&data=2026-09-08");
+    });
+
+    it("na vista de dia, o filtro deixa só as colunas de quem ficou", async () => {
+      navegacaoFalsa.redefinir({
+        pathname: "/painel/agenda",
+        query: { vista: "dia", data: "2026-09-08", profissionais: "bb1,m2" },
+      });
+      montarPainel(<Agenda agora={AGORA} />, comTres());
+
+      const cabecalho = await screen.findByTestId("cabecalho-da-grade");
+      await waitFor(() => expect(within(cabecalho).getByText("Ana")).toBeInTheDocument());
+      expect(within(cabecalho).getByText("Rafael")).toBeInTheDocument();
+      expect(within(cabecalho).queryByText("Bia")).not.toBeInTheDocument();
+    });
+
+    it("no mês, as pílulas aparecem e só os agendamentos de quem ficou", async () => {
+      navegacaoFalsa.redefinir({
+        pathname: "/painel/agenda",
+        query: { vista: "mes", data: "2026-09-08", profissionais: "m2" },
+      });
+      montarPainel(<Agenda agora={AGORA} />, comTres());
+
+      expect(await screen.findByRole("group", { name: "Filtrar por profissional" })).toBeInTheDocument();
+      // O agendamento do Rafael (dia 9) sai; o da Ana (dia 10) fica.
+      expect(await screen.findByRole("button", { name: "10 de setembro" })).toHaveTextContent("15:00 João Silva");
+      expect(screen.getByRole("button", { name: "9 de setembro" })).not.toHaveTextContent("João Silva");
+    });
+
+    it("na lista, só os agendamentos de quem ficou", async () => {
+      navegacaoFalsa.redefinir({
+        pathname: "/painel/agenda",
+        query: { vista: "lista", data: "2026-09-08", profissionais: "m2" },
+      });
+      montarPainel(<Agenda agora={AGORA} />, comTres());
+
+      const lista = await screen.findByTestId("lista-da-agenda");
+      await waitFor(() =>
+        expect(within(lista).getAllByRole("button", { name: /João Silva/ })).toHaveLength(1)
+      );
+      expect(within(lista).getByRole("region", { name: "10 de setembro" })).toHaveTextContent("João Silva");
+    });
   });
 });

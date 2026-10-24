@@ -158,8 +158,8 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   // dividir. Os bloqueios entram como faixas na coluna de cada um.
   const { perfil } = usePainel();
   const daEquipe = perfil.papel !== "profissional";
-  // Na semana, a equipe dá as pílulas do filtro por profissional.
-  const comEquipe = daEquipe && vista !== "mes";
+  // A equipe dá também o filtro por profissional, que vale em toda vista.
+  const comEquipe = daEquipe;
   const equipe = useRequisicao(
     () => (comEquipe ? api.barbeiro.equipe() : Promise.resolve([])),
     [comEquipe]
@@ -194,25 +194,39 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   const atendentes = (equipe.dados ?? [])
     .filter((membro) => membro.ativo && membro.atende && !membro.convitePendente)
     .map((membro) => ({ id: membro.id, nome: membro.nome }));
-  // Com uma pessoa só, a coluna de dia de sempre: dividir por profissional
-  // só ocuparia o cabeçalho com um nome que ninguém precisa ler.
-  const profissionais = vista === "dia" && atendentes.length > 1 ? atendentes : undefined;
-
-  // A semana de uma pessoa só (pedido do dono, 2026-10-11): as pílulas
-  // "Todos · Rafael · Ana". Só pra quem vê a equipe e só na semana — no
-  // dia já há uma coluna por pessoa. Enquanto a equipe não chega, vale o
-  // que veio na URL; um id que não atende cai em Todos.
-  const pedido = query.get("profissional") ?? undefined;
-  const comPilulas = daEquipe && variosDias && atendentes.length > 1;
+  // O filtro por profissional (pedido do dono, 2026-10-11; vários de uma
+  // vez desde a agenda no celular, PR 7): ids separados por vírgula em
+  // `?profissionais=`; o `?profissional=a` de antes, de links guardados,
+  // ainda vale como a lista de um. Só pra quem vê a equipe. Enquanto a
+  // equipe não chega, vale o que veio na URL; id que não atende é
+  // ignorado, e todos marcados é o mesmo que nenhum — sem filtro.
+  const pedidos = (query.get("profissionais") ?? query.get("profissional") ?? "")
+    .split(",")
+    .filter(Boolean);
+  const validos = daEquipe
+    ? pedidos.filter((id) => !equipe.dados || atendentes.some((a) => a.id === id))
+    : [];
   const filtro =
-    daEquipe && variosDias && pedido && (!equipe.dados || atendentes.some((a) => a.id === pedido))
-      ? pedido
+    validos.length > 0 && !(equipe.dados && validos.length >= atendentes.length)
+      ? new Set(validos)
+      : undefined;
+  // As pílulas no desktop: em toda vista menos o dia, que já tem uma
+  // coluna por pessoa (lá o filtro vem do menu do celular).
+  const comPilulas = daEquipe && vista !== "dia" && atendentes.length > 1;
+
+  // Com uma pessoa só, a coluna de dia de sempre: dividir por profissional
+  // só ocuparia o cabeçalho com um nome que ninguém precisa ler. Com o
+  // filtro, só as colunas de quem ficou.
+  const profissionais =
+    vista === "dia" && atendentes.length > 1
+      ? atendentes.filter((a) => !filtro || filtro.has(a.id))
       : undefined;
 
-  function irPara(proxima: Vista, proximaData: string, quem: string | undefined = pedido) {
+  function irPara(proxima: Vista, proximaData: string, quem: string[] = filtro ? [...filtro] : []) {
     guardarVista(proxima);
     router.push(
-      `/painel/agenda?vista=${proxima}&data=${proximaData}` + (quem ? `&profissional=${quem}` : "")
+      `/painel/agenda?vista=${proxima}&data=${proximaData}` +
+        (quem.length > 0 ? `&profissionais=${quem.join(",")}` : "")
     );
   }
 
@@ -262,21 +276,30 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
   }
   if (!agendamentos.dados || !horarios.dados) return <Carregando />;
 
-  // A semana de uma pessoa: só os agendamentos e o expediente dela. Com
-  // um expediente só, a coluna da grade é dela — a pausa, as folgas e o
-  // horário livre seguem os dela.
+  // Com o filtro, só os agendamentos e o expediente de quem ficou. Com um
+  // expediente só, a coluna da grade é dele — a pausa, as folgas e o
+  // horário livre seguem os dele.
   const visiveis = filtro
-    ? agendamentos.dados.filter((a) => a.barbeiro.id === filtro)
+    ? agendamentos.dados.filter((a) => filtro.has(a.barbeiro.id))
     : agendamentos.dados;
   const expedienteDaSemana =
     ocupacaoDaSemana.dados && filtro
       ? Object.fromEntries(
           Object.entries(ocupacaoDaSemana.dados).map(([dia, deles]) => [
             dia,
-            deles.filter((p) => p.id === filtro),
+            deles.filter((p) => filtro.has(p.id)),
           ])
         )
       : (ocupacaoDaSemana.dados ?? undefined);
+  // Quem o filtro deixou, sendo um só: o horário livre já o leva.
+  const soUm = filtro?.size === 1 ? [...filtro][0] : undefined;
+  // Liga ou desliga uma pessoa no filtro; todos ligados volta a nenhum.
+  function alternar(quem: string) {
+    if (quem === TODOS) return irPara(vista, data, []);
+    const atual = filtro ? [...filtro] : [];
+    const proximo = atual.includes(quem) ? atual.filter((id) => id !== quem) : [...atual, quem];
+    irPara(vista, data, proximo.length >= atendentes.length ? [] : proximo);
+  }
 
   const titulo =
     vista === "mes"
@@ -328,8 +351,8 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
         {comPilulas ? (
           <PilulasDeFiltro
             rotulo="Filtrar por profissional"
-            valor={filtro ?? TODOS}
-            aoTrocar={(quem) => irPara(vista, data, quem === TODOS ? undefined : quem)}
+            marcados={filtro ? [...filtro] : [TODOS]}
+            aoTrocar={alternar}
             opcoes={[
               { valor: TODOS, rotulo: "Todos" },
               ...atendentes.map((a) => ({ valor: a.id, rotulo: a.nome })),
@@ -382,7 +405,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           celulas={gradeDoMes({
             mes,
             horarios: horarios.dados,
-            agendamentos: agendamentos.dados,
+            agendamentos: visiveis,
           })}
           hoje={hojeIso(agora)}
           aoAbrirDia={(dia) => irPara("dia", dia)}
@@ -405,7 +428,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             expediente:
               vista === "dia"
                 ? ocupacao.dados
-                  ? { [data]: ocupacao.dados.profissionais }
+                  ? { [data]: ocupacao.dados.profissionais.filter((p) => !filtro || filtro.has(p.id)) }
                   : undefined
                 : expedienteDaSemana,
           })}
@@ -430,7 +453,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             // Na coluna que junta a equipe, só quem pode atender naquela
             // hora; sendo um só, ele já vem escolhido.
             const unico =
-              barbeiroId ?? filtro ?? (profissionais?.length === 1 ? profissionais[0] : undefined);
+              barbeiroId ?? soUm ?? (profissionais?.length === 1 ? profissionais[0] : undefined);
             router.push(
               `/painel/agendamentos/novo?data=${dia}&hora=${encodeURIComponent(hora)}` +
                 (unico ? `&profissional=${unico}` : "") +

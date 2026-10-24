@@ -55,17 +55,38 @@ export {
 } from "./planos";
 export {
   MOTIVOS_DA_PARTE,
+  MOTIVOS_DO_PLANO,
   acertoDoDia,
   dividirPagamento,
   type AcertoDoDia,
   type AtendimentoPago,
   type LinhaDoAcerto,
   type MotivoDaParte,
+  type MotivoDoPlano,
   type PagamentoDoAcerto,
   type Parte,
   type RegrasDeDivisao,
   type Repasse,
 } from "./caixa";
+export {
+  CICLOS_DO_CLIENTE,
+  FORMAS_DA_ASSINATURA,
+  FORMAS_DO_CAIXA,
+  MAX_DIAS_DE_TESTE_DO_CLIENTE,
+  SITUACOES_DO_ASSINANTE,
+  assinanteUsaOPlano,
+  dividirMensalidade,
+  fimDoCiclo,
+  parteDoPlano,
+  problemaDoPlano,
+  usosRestantes,
+  type CicloDoCliente,
+  type FormaDaAssinatura,
+  type FormaDoCaixa,
+  type PlanoParaConferir,
+  type ProblemaDoPlano,
+  type SituacaoDoAssinante,
+} from "./planos-do-cliente";
 export {
   APARENCIA_PADRAO,
   BOTOES,

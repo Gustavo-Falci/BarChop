@@ -1,0 +1,77 @@
+/* A barra da agenda no celular (agenda no celular, PR 3). Gruda no topo
+   da área de conteúdo: no celular a página rola inteira, e o título é o
+   que diz onde se está. */
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  padding-block: var(--espaco-xs);
+  background: var(--cor-paper);
+}
+
+/* Alvos de 44px: o mínimo pro dedo. */
+.icone {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-pill);
+  background: transparent;
+  color: var(--cor-ink);
+  font-size: var(--texto-xl);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.icone:hover {
+  background: var(--cor-paper-soft);
+}
+
+/* O título cede primeiro quando a barra aperta. */
+.titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--espaco-xs);
+  border: 0;
+  border-radius: var(--raio-md);
+  background: transparent;
+  color: var(--cor-ink);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.textoDoTitulo {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.acoes {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+/* O "Hoje" é o número do dia num quadrado, como o ícone do calendário. */
+.hoje {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: var(--borda-padrao) solid currentColor;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}

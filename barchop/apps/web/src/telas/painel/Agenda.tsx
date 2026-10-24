@@ -234,9 +234,10 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     validos.length > 0 && !(equipe.dados && validos.length >= atendentes.length)
       ? new Set(validos)
       : undefined;
-  // As pílulas no desktop: em toda vista menos o dia, que já tem uma
-  // coluna por pessoa (lá o filtro vem do menu do celular).
-  const comPilulas = daEquipe && vista !== "dia" && atendentes.length > 1;
+  // As pílulas no desktop, em toda vista. No dia também: lá elas tiram e
+  // põem colunas, e o filtro que vem da semana ou do mês (tocando num
+  // dia) precisa de onde ser desfeito.
+  const comPilulas = daEquipe && atendentes.length > 1;
 
   // Com uma pessoa só, a coluna de dia de sempre: dividir por profissional
   // só ocuparia o cabeçalho com um nome que ninguém precisa ler. Com o

@@ -46,7 +46,7 @@ describe("grade de tempo no celular", () => {
   });
 
   it("o eixo mostra só a hora cheia (\"09\")", () => {
-    expect(blocoDoCelular).toMatch(/\.hora\[data-cheia\]\s*\{[^}]*width:\s*2ch;[^}]*overflow:\s*hidden/);
+    expect(blocoDoCelular).toMatch(/\.hora\[data-cheia\]\s*\{[^}]*width:\s*calc\(2ch \+ 2px\);[^}]*overflow:\s*hidden/);
   });
 
   it("cada coluna é um container, e o bloco estreito esconde hora e serviço só do olho", () => {

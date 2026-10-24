@@ -1,10 +1,7 @@
-/* A barra da agenda no celular (agenda no celular, PR 3). Gruda no topo
-   da área de conteúdo: no celular a página rola inteira, e o título é o
-   que diz onde se está. */
+/* A barra da agenda no celular (agenda no celular, PR 3). Quem a gruda
+   no alto da tela é o `.topo` da Agenda.module.css: no celular a página
+   rola inteira, e o título é o que diz onde se está. */
 .barra {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--espaco-xs);

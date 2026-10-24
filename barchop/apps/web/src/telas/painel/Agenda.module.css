@@ -28,6 +28,18 @@
     grid-template-rows: auto auto;
     flex: 0 1 auto;
   }
+
+  /* A barra do celular gruda no alto da tela enquanto a página rola
+     (agenda no celular, PR 3). O `sticky` mora aqui, e não na barra: o
+     sticky só anda dentro do pai, e o pai da barra é este bloco, da
+     altura dela. A barra de topo do painel não gruda no celular, daí o
+     `top: 0`. */
+  .topo {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--cor-paper);
+  }
 }
 
 /* A barra e, embaixo, a faixa de resumo (painel v2, marco 6). */

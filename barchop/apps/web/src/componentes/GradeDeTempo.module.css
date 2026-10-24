@@ -449,7 +449,9 @@ button.diaDoCabecalho:hover .numeroDoDia {
      o ":00" à vista. */
   .hora[data-cheia] {
     justify-self: end;
-    width: 2ch;
+    /* `border-box`: os 2px do recuo entram na largura, e sem somá-los o
+       segundo algarismo seria cortado. */
+    width: calc(2ch + 2px);
     overflow: hidden;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;

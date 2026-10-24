@@ -1,0 +1,65 @@
+/* `minmax(0, 1fr)`: sem ele a tabela vazaria pro lado no celular
+   (mesmo conserto de Equipe e de Serviços). */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-lg);
+  align-content: start;
+}
+
+/* Nome em cima, os serviços embaixo, como o nome e o e-mail da Equipe. */
+.nome {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+}
+
+.titulo {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-xs);
+}
+
+/* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
+.resumo {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 400;
+}
+
+/* A chave da vitrine e o efeito dela embaixo, sem caixa. */
+.vitrine {
+  display: grid;
+  gap: var(--espaco-xs);
+  justify-items: start;
+}
+
+.efeito {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+/* O interruptor do "Modo escuro" da prévia da página. */
+.interruptor {
+  composes: interruptor from "./configuracoes/PreviaDaPagina.module.css";
+  font-size: var(--texto-md);
+  font-weight: 600;
+}
+
+.trilho {
+  composes: trilho from "./configuracoes/PreviaDaPagina.module.css";
+}
+
+.botaozinho {
+  composes: botaozinho from "./configuracoes/PreviaDaPagina.module.css";
+}
+
+.convite {
+  composes: convite from "./CaixaDoDia.module.css";
+}
+
+.principal {
+  composes: principal from "./CaixaDoDia.module.css";
+}

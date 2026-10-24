@@ -16,6 +16,15 @@ Diferenças do plano, combinadas no caminho:
   - o `acertoDoDia` aceita `recebidoPor: null` (a casa paga) e `Repasse.de` nulo, e `RepasseDoCaixa.de` em `@barchop/types` ficou anulável;
   - a API, o dublê e a tela do Caixa escrevem "A casa repassa…";
   - achado ao desenhar a tela do Caixa no Claude Design (https://claude.ai/artifact/4hgca1aVpddptUxnUssWTG).
+- **PR 2 (migração):**
+  - **tabela nova `uso_do_plano`**: um registro por serviço coberto num atendimento pelo plano, com `pagamento_id` (sai junto com o pagamento, então desfazer devolve o uso), `assinatura_id`, `servico_id` e `data`. Sem ela, o `assinatura_id` do pagamento não dizia qual serviço foi pelo plano e qual foi cobrado à parte, e o "Corte 1 de 2" não tinha de onde sair;
+  - **sem `pagamento.avulso_centavos`**: a `forma` segue sendo a do dinheiro, e `servicos_centavos` é o que foi cobrado à parte, como o PR 1 já deixou. `plano` só vale para o atendimento todo pelo plano, sem dinheiro (CHECK: assinatura preenchida, serviços e gorjeta zero). Com `forma = plano` e dinheiro dentro, o total por forma do caixa perderia esse dinheiro. "Pelo plano" na tela = `assinatura_id` preenchido;
+  - chaves para membro, cliente, plano e assinatura são `NO ACTION`, não `RESTRICT`, como no caixa: com RESTRICT, apagar a barbearia (que leva os membros na mesma cascata) falharia;
+  - o UNIQUE `(barbeiro_id, provedor)` é parcial (`WHERE NOT da_casa`), para o dono ter a conta da casa e a dele;
+  - o UNIQUE da cobrança no provedor é `(assinatura_id, id_externo)`;
+  - novos: `assinatura_do_cliente` com uma viva (não cancelada) por cliente e plano; `ciclo_comeca_em`/`ciclo_termina_em` nulos enquanto pendente; `recebimento_do_plano.forma` com CHECK de `FORMAS_DE_PAGAMENTO`; `evento_do_provedor.tipo`;
+  - listas novas em `@barchop/formato`: `PROVEDORES_DE_PAGAMENTO` (`asaas`) e `MODOS_DA_CONEXAO` (`teste`, `real`);
+  - o teste é `apps/api/tests/banco-planos.test.ts`, ao lado do `banco-caixa.test.ts`.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

@@ -2,6 +2,7 @@ import {
   APARENCIA_PADRAO,
   CATEGORIAS_DE_SERVICO,
   COMODIDADES,
+  FORMAS_DA_MENSALIDADE,
   FORMAS_DE_PAGAMENTO,
   PADRAO_INSTAGRAM,
   REGRAS_PADRAO,
@@ -1049,7 +1050,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         ];
       }),
       ...todasAsMensalidades.map((m) => ({
-        recebidoPor: m.recebidoPor.id,
+        recebidoPor: m.recebidoPor?.id ?? null,
         partes: [
           {
             beneficiario: m.plano.vendedor?.id ?? null,
@@ -1063,10 +1064,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     const entra = (p: PagamentoDoAgendamento) =>
       p.atendente.id === somente || p.recebidoPor.id === somente || p.partes.some((x) => x.beneficiario?.id === somente);
     const pagamentos = somente ? todos.filter(entra) : todos;
-    const dele = (m: MensalidadeDoCaixa) => m.recebidoPor.id === somente || m.plano.vendedor?.id === somente;
+    const dele = (m: MensalidadeDoCaixa) => m.recebidoPor?.id === somente || m.plano.vendedor?.id === somente;
     const mensalidades = somente ? todasAsMensalidades.filter(dele) : todasAsMensalidades;
-    // A mensalidade é dinheiro na mão de alguém: entra nos totais.
-    const porForma = FORMAS_DE_PAGAMENTO.map((forma) => {
+    // A mensalidade é dinheiro que entrou: entra nos totais, a online numa
+    // linha à parte.
+    const porForma = FORMAS_DA_MENSALIDADE.map((forma) => {
       const daForma = pagamentos.filter((p) => p.forma === forma);
       const mensalidadesDaForma = mensalidades.filter((m) => m.forma === forma);
       return {
@@ -2276,6 +2278,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           data: proximoDiaAberto(estado.hoje),
           registradoEm: new Date().toISOString(),
           forma,
+          meio: null,
           valorCentavos: atual.precoCentavos,
           casaCentavos: partes.find((parte) => parte.beneficiario === null)?.valorCentavos ?? 0,
           recebidoPor: membroDoCaixa("bb1"),

@@ -3,13 +3,16 @@ import { MOTIVOS_DO_PLANO, acertoDoDia, dividirPagamento } from "../src/caixa";
 import {
   CICLOS_DO_CLIENTE,
   FORMAS_DA_ASSINATURA,
+  FORMAS_DA_MENSALIDADE,
   FORMAS_DO_CAIXA,
   MAX_DIAS_DE_TESTE_DO_CLIENTE,
+  MEIOS_DO_ONLINE,
   MODOS_DA_CONEXAO,
   PROVEDORES_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
   assinanteUsaOPlano,
   cicloEmAtraso,
+  cicloPagoOnline,
   dividirMensalidade,
   fimDoCiclo,
   parteDoPlano,
@@ -50,6 +53,11 @@ describe("listas fechadas", () => {
 
   it("o caixa aceita as formas da página pública e mais o plano", () => {
     expect(FORMAS_DO_CAIXA).toEqual(["pix", "dinheiro", "debito", "credito", "plano"]);
+  });
+
+  it("a mensalidade aceita as formas da página pública e mais o online", () => {
+    expect(FORMAS_DA_MENSALIDADE).toEqual(["pix", "dinheiro", "debito", "credito", "online"]);
+    expect(MEIOS_DO_ONLINE).toEqual(["pix", "cartao", "boleto", "outra"]);
   });
 
   it("o teste do plano vai até 30 dias", () => {
@@ -300,5 +308,43 @@ describe("o ciclo no balcão", () => {
       expect(problemaDoRecebimento({ situacao, cicloTerminaEm: "2026-11-25" }, hoje)).toBe("ciclo_em_dia");
     }
     expect(problemaDoRecebimento({ situacao: "cancelada", cicloTerminaEm: null }, hoje)).toBe("cancelada");
+  });
+});
+
+describe("o ciclo pago online", () => {
+  const ATIVA = { cicloComecaEm: "2026-10-24", cicloTerminaEm: "2026-11-24", pagoAte: null };
+
+  it("a primeira cobrança abre o ciclo no vencimento, mesmo paga dias depois", () => {
+    const pendente = { cicloComecaEm: null, cicloTerminaEm: null, pagoAte: null };
+    expect(cicloPagoOnline(pendente, "2026-10-24", "mensal", "2026-10-24")).toEqual(ATIVA);
+    expect(cicloPagoOnline(pendente, "2026-10-24", "mensal", "2026-10-27")).toEqual(ATIVA);
+    expect(cicloPagoOnline(pendente, "2026-10-24", "trimestral", "2026-10-24")).toEqual({
+      ...ATIVA,
+      cicloTerminaEm: "2027-01-24",
+    });
+  });
+
+  it("a cobrança da renovação, paga no dia ou atrasada, abre o ciclo seguinte no vencimento", () => {
+    const seguinte = { cicloComecaEm: "2026-11-24", cicloTerminaEm: "2026-12-24", pagoAte: null };
+    expect(cicloPagoOnline(ATIVA, "2026-11-24", "mensal", "2026-11-24")).toEqual(seguinte);
+    expect(cicloPagoOnline(ATIVA, "2026-11-24", "mensal", "2026-11-28")).toEqual(seguinte);
+  });
+
+  it("paga antes da renovação, o ciclo de agora segue e o seguinte fica guardado", () => {
+    expect(cicloPagoOnline(ATIVA, "2026-11-24", "mensal", "2026-11-20")).toEqual({ ...ATIVA, pagoAte: "2026-12-24" });
+  });
+
+  it("paga durante o teste grátis, o teste segue até o fim", () => {
+    const teste = { cicloComecaEm: "2026-10-24", cicloTerminaEm: "2026-10-31", pagoAte: null };
+    expect(cicloPagoOnline(teste, "2026-10-31", "mensal", "2026-10-26")).toEqual({ ...teste, pagoAte: "2026-11-30" });
+  });
+
+  it("o vencimento volta pro dia certo depois de um mês curto, como o fimDoCiclo", () => {
+    const pendente = { cicloComecaEm: null, cicloTerminaEm: null, pagoAte: null };
+    expect(cicloPagoOnline(pendente, "2027-01-31", "mensal", "2027-01-31")?.cicloTerminaEm).toBe("2027-02-28");
+  });
+
+  it("a cobrança de um ciclo que já passou não mexe no ciclo", () => {
+    expect(cicloPagoOnline(ATIVA, "2026-09-24", "mensal", "2026-10-30")).toBeNull();
   });
 });

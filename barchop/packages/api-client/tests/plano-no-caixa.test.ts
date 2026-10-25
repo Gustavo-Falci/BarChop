@@ -292,6 +292,7 @@ describe("dublê — mensalidades no caixa", () => {
       data: "2026-10-24",
       registradoEm: "2026-10-24T13:00:00.000Z",
       forma: "pix" as const,
+      meio: null,
       valorCentavos: 12000,
       casaCentavos: 12000,
       recebidoPor,

@@ -584,6 +584,10 @@ export type FormaDoPagamento = "pix" | "dinheiro" | "debito" | "credito";
 // `plano`: só no pagamento, quando nada foi cobrado e o atendimento foi
 // todo pelo plano de assinatura do cliente (marco 3).
 export type FormaDoCaixa = FormaDoPagamento | "plano";
+// `online`: só na mensalidade, a que caiu na conta de quem vende pelo
+// provedor (marco 3, PR 10a). O `meio` diz como o cliente pagou.
+export type FormaDaMensalidade = FormaDoPagamento | "online";
+export type MeioDoOnline = "pix" | "cartao" | "boleto" | "outra";
 // `plano` = o fixo do plano da casa pra quem atendeu, pago pela casa.
 export type MotivoDaParteDoPagamento = "atendimento" | "cliente" | "casa" | "gorjeta" | "plano";
 
@@ -672,7 +676,7 @@ export interface PagamentoDoCaixa extends PagamentoDoAgendamento {
 }
 
 export interface TotalDaForma {
-  forma: FormaDoPagamento;
+  forma: FormaDaMensalidade;
   quantidade: number;
   valorCentavos: number;
 }
@@ -713,10 +717,13 @@ export interface MensalidadeDoCaixa {
   // tinha fechado — aí difere de `registradoEm`.
   data: string;
   registradoEm: string;
-  forma: FormaDoPagamento;
+  forma: FormaDaMensalidade;
+  // Só na online; null quando o provedor não disse.
+  meio: MeioDoOnline | null;
   valorCentavos: number;
   casaCentavos: number;
-  recebidoPor: MembroDoCaixa;
+  // `null` = a casa: a online do plano da casa caiu na conta da casa.
+  recebidoPor: MembroDoCaixa | null;
   cliente: { id: string; nome: string };
   plano: { id: string; nome: string; daCasa: boolean; vendedor: MembroDoCaixa | null };
 }
@@ -729,8 +736,8 @@ export interface CaixaDoDia {
   // As mensalidades recebidas no dia ("recebi"), na ordem em que
   // entraram. O profissional recebe as que recebeu ou dos planos dele.
   mensalidades: MensalidadeDoCaixa[];
-  // As quatro formas, sempre na ordem de FORMAS_DE_PAGAMENTO, somando
-  // pagamentos e mensalidades.
+  // As cinco formas, sempre na ordem de FORMAS_DA_MENSALIDADE (as quatro
+  // do balcão e `online`), somando pagamentos e mensalidades.
   totais: { totalCentavos: number; porForma: TotalDaForma[] };
   acerto: { pessoas: LinhaDoAcertoDoCaixa[]; repasses: RepasseDoCaixa[] };
   pendencias: PendenciaDoCaixa[];

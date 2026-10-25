@@ -222,7 +222,9 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
               </h2>
               <p className={estilos.total}>{reais(atual.totais.totalCentavos)}</p>
               <dl className={estilos.formas}>
-                {atual.totais.porForma.map((total) => (
+                {/* A linha Online só no dia em que entrou mensalidade paga
+                    pelo provedor: a maioria das barbearias não vende online. */}
+                {atual.totais.porForma.filter((total) => total.forma !== "online" || total.quantidade > 0).map((total) => (
                   <div key={total.forma} className={estilos.forma} data-vazia={total.quantidade === 0 || undefined}>
                     <dt>{ROTULO_DA_FORMA[total.forma]}</dt>
                     <dd>{reais(total.valorCentavos)}</dd>

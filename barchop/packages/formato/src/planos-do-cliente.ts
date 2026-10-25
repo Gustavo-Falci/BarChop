@@ -41,6 +41,16 @@ export type ModoDaConexao = (typeof MODOS_DA_CONEXAO)[number];
 export const FORMAS_DO_CAIXA = [...FORMAS_DE_PAGAMENTO, "plano"] as const;
 export type FormaDoCaixa = (typeof FORMAS_DO_CAIXA)[number];
 
+// O CHECK de `recebimento_do_plano.forma`: as formas do balcão e mais
+// `online`, a mensalidade que caiu na conta de quem vende pelo provedor
+// (e não na mão de alguém da equipe).
+export const FORMAS_DA_MENSALIDADE = [...FORMAS_DE_PAGAMENTO, "online"] as const;
+export type FormaDaMensalidade = (typeof FORMAS_DA_MENSALIDADE)[number];
+
+// Como o cliente pagou a mensalidade online, como o provedor conta.
+export const MEIOS_DO_ONLINE = ["pix", "cartao", "boleto", "outra"] as const;
+export type MeioDoOnline = (typeof MEIOS_DO_ONLINE)[number];
+
 export const MAX_DIAS_DE_TESTE_DO_CLIENTE = 30;
 
 const MESES_DO_CICLO: Record<CicloDoCliente, number> = { mensal: 1, trimestral: 3, anual: 12 };
@@ -109,6 +119,34 @@ export function fimDoCiclo(inicio: string, ciclo: CicloDoCliente, diaDeVenciment
 // "AAAA-MM-DD", que ordenam como texto.
 export function cicloEmAtraso(terminaEm: string, hoje: string): boolean {
   return terminaEm < hoje;
+}
+
+export interface CicloPago {
+  cicloComecaEm: string;
+  cicloTerminaEm: string;
+  // O ciclo seguinte, já pago, que começa quando este acabar.
+  pagoAte: string | null;
+}
+
+// O ciclo depois de uma cobrança online paga. No online, quem marca o
+// ciclo é o vencimento da cobrança, como no provedor: paga atrasada, o
+// ciclo começa no vencimento mesmo, e o seguinte vence no dia de sempre.
+// Paga antes da renovação (o Pix adiantado, ou durante o teste grátis),
+// o ciclo de agora segue até o fim, com os usos dele, e o pago fica em
+// `pagoAte`. `null` = a cobrança é de um ciclo que já passou.
+export function cicloPagoOnline(
+  atual: { cicloComecaEm: string | null; cicloTerminaEm: string | null },
+  vencimento: string,
+  ciclo: CicloDoCliente,
+  hoje: string
+): CicloPago | null {
+  const { cicloComecaEm, cicloTerminaEm } = atual;
+  if (cicloComecaEm !== null && vencimento < cicloComecaEm) return null;
+  const fim = fimDoCiclo(vencimento, ciclo);
+  if (cicloComecaEm !== null && cicloTerminaEm !== null && hoje < cicloTerminaEm && vencimento >= cicloTerminaEm) {
+    return { cicloComecaEm, cicloTerminaEm, pagoAte: fim };
+  }
+  return { cicloComecaEm: vencimento, cicloTerminaEm: fim, pagoAte: null };
 }
 
 export type ProblemaDoRecebimento = "cancelada" | "ciclo_em_dia";

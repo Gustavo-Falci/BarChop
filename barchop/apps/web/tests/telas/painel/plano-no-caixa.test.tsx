@@ -371,6 +371,7 @@ describe("mensalidades no Caixa", () => {
     data: DIA,
     registradoEm: `${DIA}T13:05:00.000Z`,
     forma: "pix",
+    meio: null,
     valorCentavos: 12000,
     casaCentavos: 12000,
     recebidoPor: rafael,
@@ -411,6 +412,26 @@ describe("mensalidades no Caixa", () => {
 
     const totais = screen.getByRole("region", { name: /entrou no dia/i });
     expect(within(totais).getByText(/R\$\s210,00/)).toBeInTheDocument();
+  });
+
+  it("a mensalidade paga online diz \"paga online\" e soma numa linha Online, que só aparece quando há", async () => {
+    const falso = semear({
+      mensalidades: [mensalidade({ forma: "online", meio: "cartao", recebidoPor: null })],
+    });
+    montarPainel(<CaixaDoDia />, falso);
+
+    const secao = await screen.findByRole("region", { name: "Mensalidades" });
+    expect(within(secao).getByText("Da casa · paga online")).toBeInTheDocument();
+    expect(within(secao).getByText(/R\$\s120,00 online/)).toBeInTheDocument();
+    const totais = screen.getByRole("region", { name: /entrou no dia/i });
+    expect(within(totais).getByText("Online")).toBeInTheDocument();
+  });
+
+  it("sem mensalidade online, os totais não mostram a linha Online", async () => {
+    montarPainel(<CaixaDoDia />, semear({ mensalidades: [mensalidade({})] }));
+
+    const totais = await screen.findByRole("region", { name: /entrou no dia/i });
+    expect(within(totais).queryByText("Online")).not.toBeInTheDocument();
   });
 
   it("o atendimento pelo plano diz o que o plano cobriu, com a nota de que não é dinheiro do dia", async () => {

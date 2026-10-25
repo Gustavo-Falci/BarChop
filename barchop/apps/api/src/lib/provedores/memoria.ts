@@ -75,11 +75,13 @@ export function provedoresDeMemoria(
         return fabrica.webhooks.some((webhook) => webhook.id === id) && contaDoWebhook.get(id) === conta();
       },
       async criarCliente(dados) {
+        atender();
         const id = proximo("cus");
         fabrica.clientes.push({ id, ...dados });
         return id;
       },
       async criarAssinatura(dados) {
+        atender();
         const id = proximo("sub");
         fabrica.pedidosDeAssinatura.push({ id, ...dados });
         fabrica.assinaturas.set(id, {
@@ -92,16 +94,19 @@ export function provedoresDeMemoria(
         return { id, linkDaFatura: `https://sandbox.asaas.com/i/${id}` };
       },
       async lerAssinatura(id) {
+        atender();
         const assinatura = fabrica.assinaturas.get(id);
         if (!assinatura) throw new ErroDoProvedor("nao_encontrado", "o Asaas não achou o que foi pedido", 404);
         return { ...assinatura };
       },
       async lerCobranca(id) {
+        atender();
         const cobranca = fabrica.cobrancas.get(id);
         if (!cobranca) throw new ErroDoProvedor("nao_encontrado", "o Asaas não achou o que foi pedido", 404);
         return { ...cobranca };
       },
       async cancelarAssinatura(id) {
+        atender();
         const assinatura = fabrica.assinaturas.get(id);
         if (assinatura) fabrica.assinaturas.set(id, { ...assinatura, removida: true });
         fabrica.cancelamentos.push(id);

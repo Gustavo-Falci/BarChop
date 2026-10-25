@@ -45,14 +45,36 @@ export function temContaQueRecebe(
 // O ciclo do balcão que passou do dia da renovação sem "recebi" fica em
 // atraso (`cicloEmAtraso`, @barchop/formato). Sem tarefa agendada: quem
 // lê a situação chama isto antes — a lista de assinantes, o "recebi", e
-// depois o caixa (PR 6) e "minhas assinaturas" (PR 10). Online não entra:
-// lá quem diz é o provedor, pelo webhook.
+// depois o caixa (PR 6) e "minhas assinaturas" (PR 10). O atraso da
+// online não sai daqui: quem diz é o provedor, pelo webhook. Daqui sai o
+// ciclo online já pago antes da renovação (`pago_ate`), que entra quando
+// o de agora acaba.
 export async function marcarAtrasadas(
   db: Prisma.TransactionClient,
   barbeariaId: string,
   hoje: string,
   onde: Prisma.AssinaturaDoClienteWhereInput = {}
 ): Promise<void> {
+  // Uma a uma, porque o começo novo é o fim de cada uma. São poucas: só
+  // as pagas adiantado que viraram o ciclo desde a última leitura.
+  const pagas = await db.assinaturaDoCliente.findMany({
+    where: {
+      ...onde,
+      barbeariaId,
+      forma: "online",
+      situacao: { not: "cancelada" },
+      pagoAte: { not: null },
+      cicloTerminaEm: { lte: dataParaDate(hoje) },
+    },
+    select: { id: true, cicloTerminaEm: true, pagoAte: true },
+  });
+  for (const paga of pagas) {
+    await db.assinaturaDoCliente.update({
+      where: { id: paga.id },
+      data: { situacao: "ativa", cicloComecaEm: paga.cicloTerminaEm, cicloTerminaEm: paga.pagoAte, pagoAte: null },
+    });
+  }
+
   await db.assinaturaDoCliente.updateMany({
     where: {
       ...onde,

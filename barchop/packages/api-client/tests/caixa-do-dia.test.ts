@@ -94,7 +94,7 @@ describe("dublê — caixa do dia", () => {
 
     expect(caixa.fechamento).toBeNull();
     expect(caixa.totais.totalCentavos).toBe(14000);
-    expect(caixa.totais.porForma.map((f) => f.forma)).toEqual(["pix", "dinheiro", "debito", "credito"]);
+    expect(caixa.totais.porForma.map((f) => f.forma)).toEqual(["pix", "dinheiro", "debito", "credito", "online"]);
     expect(caixa.pagamentos.map((p) => [p.agendamentoId, p.horaInicio, p.cliente.nome])).toEqual([
       ["a1", "09:00", "João"],
       ["a2", "10:00", "João"],

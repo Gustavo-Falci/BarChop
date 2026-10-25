@@ -109,3 +109,23 @@ export async function notificarDonos(
     data: donos.map(({ id }) => ({ barbeiroId: id, tipo: "pagamento" as const, ...aviso })),
   });
 }
+
+// Os avisos dos planos do cliente (marco 3, PR 10a): vão pra quem vende.
+// No plano da casa, os donos ativos; no de barbeiro, o vendedor, se ativo.
+export async function notificarQuemVende(
+  tx: Prisma.TransactionClient,
+  plano: { barbeariaId: string; vendedorId: string | null },
+  aviso: { titulo: string; texto: string; link: string }
+): Promise<void> {
+  const quem = await tx.barbeiro.findMany({
+    where: {
+      barbeariaId: plano.barbeariaId,
+      ativo: true,
+      ...(plano.vendedorId === null ? { papel: "dono" as const } : { id: plano.vendedorId }),
+    },
+    select: { id: true },
+  });
+  await tx.notificacao.createMany({
+    data: quem.map(({ id }) => ({ barbeiroId: id, tipo: "pagamento" as const, ...aviso })),
+  });
+}

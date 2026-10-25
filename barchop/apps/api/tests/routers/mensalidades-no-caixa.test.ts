@@ -172,6 +172,7 @@ describe("as mensalidades no caixa do dia", () => {
       { forma: "dinheiro", quantidade: 1, valorCentavos: 4500 },
       { forma: "debito", quantidade: 0, valorCentavos: 0 },
       { forma: "credito", quantidade: 0, valorCentavos: 0 },
+      { forma: "online", quantidade: 0, valorCentavos: 0 },
     ]);
     expect(dia.mensalidades).toEqual([
       expect.objectContaining({

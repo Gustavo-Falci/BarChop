@@ -125,6 +125,7 @@ describe("GET /barbearias/me/caixa", () => {
         { forma: "dinheiro", quantidade: 1, valorCentavos: 10000 },
         { forma: "debito", quantidade: 0, valorCentavos: 0 },
         { forma: "credito", quantidade: 0, valorCentavos: 0 },
+        { forma: "online", quantidade: 0, valorCentavos: 0 },
       ],
     });
 

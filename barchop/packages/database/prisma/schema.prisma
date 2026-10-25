@@ -383,6 +383,9 @@ model Cliente {
   // De quem o cliente "é" no caixa: quem atendeu primeiro, e o dono
   // troca à mão. Nulo = de ninguém ainda (migration 20261017120000_caixa).
   profissionalId  String?   @map("profissional_id") @db.Uuid
+  // Só os 11 dígitos. O Asaas exige pra cobrar a assinatura online
+  // (migration 20261028120000_mensalidade_online); nulo até o checkout.
+  cpf             String?   @db.VarChar(11)
 
   barbearia    Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]
@@ -656,6 +659,9 @@ model AssinaturaDoCliente {
   // O ciclo atual; nulos enquanto pendente.
   cicloComecaEm  DateTime? @map("ciclo_comeca_em") @db.Date
   cicloTerminaEm DateTime? @map("ciclo_termina_em") @db.Date
+  // Online: o ciclo seguinte já pago antes da renovação vai até aqui, e
+  // começa quando o atual acabar (cicloPagoOnline, @barchop/formato).
+  pagoAte        DateTime? @map("pago_ate") @db.Date
   canceladaEm    DateTime? @map("cancelada_em") @db.Timestamptz
   criadoEm       DateTime  @default(now()) @map("criado_em") @db.Timestamptz
 
@@ -680,16 +686,20 @@ model RecebimentoDoPlano {
   barbeariaId   String   @map("barbearia_id") @db.Uuid
   assinaturaId  String   @map("assinatura_id") @db.Uuid
   data          DateTime @db.Date
-  recebidoPorId String   @map("recebido_por_id") @db.Uuid
+  // Nulo = a casa: a mensalidade online do plano da casa caiu na conta
+  // da casa, e não na mão de ninguém.
+  recebidoPorId String?  @map("recebido_por_id") @db.Uuid
   valorCentavos Int      @map("valor_centavos")
   casaCentavos  Int      @map("casa_centavos")
   forma         String   @db.VarChar(20)
+  // Só na online: como o cliente pagou no provedor.
+  meio          String?  @db.VarChar(20)
   idExterno     String?  @map("id_externo") @db.VarChar(100)
   registradoEm  DateTime @default(now()) @map("registrado_em") @db.Timestamptz
 
   barbearia   Barbearia           @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   assinatura  AssinaturaDoCliente @relation(fields: [assinaturaId], references: [id], onDelete: NoAction)
-  recebidoPor Barbeiro            @relation(fields: [recebidoPorId], references: [id], onDelete: NoAction)
+  recebidoPor Barbeiro?           @relation(fields: [recebidoPorId], references: [id], onDelete: NoAction)
 
   @@unique([assinaturaId, idExterno])
   @@index([barbeariaId, data])

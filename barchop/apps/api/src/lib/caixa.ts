@@ -1,14 +1,15 @@
 import type { Prisma } from "@barchop/database";
 import {
-  FORMAS_DE_PAGAMENTO,
+  FORMAS_DA_MENSALIDADE,
   MOTIVOS_DA_PARTE,
   MOTIVOS_DO_PLANO,
   acertoDoDia,
   dividirPagamento,
   parteDoPlano,
   type AcertoDoDia,
-  type FormaDePagamento,
+  type FormaDaMensalidade,
   type FormaDoCaixa,
+  type MeioDoOnline,
 } from "@barchop/formato";
 import type {
   CaixaDoDia,
@@ -331,7 +332,8 @@ const INCLUDE_MENSALIDADE = {
 type MensalidadeDoDia = Prisma.RecebimentoDoPlanoGetPayload<{ include: typeof INCLUDE_MENSALIDADE }>;
 
 // As mensalidades que o caixa do dia recebeu ("recebi" no balcão, PR 5
-// do plano planos-de-assinatura), na ordem em que entraram.
+// do plano planos-de-assinatura, e as pagas online, PR 10a), na ordem em
+// que entraram.
 function mensalidadesDoDia(db: Prisma.TransactionClient, barbeariaId: string, data: Date): Promise<MensalidadeDoDia[]> {
   return db.recebimentoDoPlano.findMany({
     where: { barbeariaId, data },
@@ -349,7 +351,8 @@ function mensalidadesDoDia(db: Prisma.TransactionClient, barbeariaId: string, da
 //
 // A mensalidade divide com o que foi congelado no "recebi" — não com a
 // parte da casa de hoje, que pode ter mudado: a casa leva a parte dela,
-// e quem vende o resto (no plano da casa, a casa leva tudo).
+// e quem vende o resto (no plano da casa, a casa leva tudo). A online
+// foi recebida pelo dono da conta: a casa (`null`) no plano da casa.
 function contarOAcerto(pagamentos: readonly PagamentoDoDia[], mensalidades: readonly MensalidadeDoDia[]): AcertoDoDia {
   const dosPagamentos = pagamentos.flatMap((pagamento) => {
     const partes = naOrdemDaConta(pagamento.partes).map((parte) => ({
@@ -428,9 +431,10 @@ export async function caixaDoDia(
   const pessoas = somente ? acerto.pessoas.filter((l) => l.pessoa === somente) : acerto.pessoas;
   const repasses = somente ? acerto.repasses.filter((r) => r.de === somente || r.para === somente) : acerto.repasses;
 
-  // A mensalidade é dinheiro na mão de alguém: entra nos totais, ou o
-  // total do dia não bate com o que cada um segura.
-  const porForma = FORMAS_DE_PAGAMENTO.map((forma) => {
+  // A mensalidade é dinheiro que entrou: entra nos totais, ou o total do
+  // dia não bate com o que cada um segura. A online, numa linha à parte:
+  // caiu na conta de quem vende, e não na mão de ninguém.
+  const porForma = FORMAS_DA_MENSALIDADE.map((forma) => {
     const daForma = pagamentos.filter((p) => p.forma === forma);
     const mensalidadesDaForma = mensalidades.filter((m) => m.forma === forma);
     return {
@@ -457,7 +461,8 @@ export async function caixaDoDia(
       assinaturaId: m.assinatura.id,
       data: dateParaData(m.data),
       registradoEm: m.registradoEm.toISOString(),
-      forma: m.forma as FormaDePagamento,
+      forma: m.forma as FormaDaMensalidade,
+      meio: m.meio as MeioDoOnline | null,
       valorCentavos: m.valorCentavos,
       casaCentavos: m.casaCentavos,
       recebidoPor: m.recebidoPor,

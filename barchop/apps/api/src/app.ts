@@ -14,6 +14,7 @@ import { registrarTratamentoDeErros } from "./plugins/erros";
 import { autenticar, autenticarCliente, autenticarSuporte, registrarAuth } from "./plugins/auth";
 import { registrarRotasAssinatura } from "./routers/assinatura";
 import { registrarRotasAuth } from "./routers/auth";
+import { registrarRotaWebhookAsaas } from "./routers/webhook-asaas";
 import { registrarRotaWebhookStripe } from "./routers/webhook-stripe";
 import { registrarRotasAuthCliente } from "./routers/auth-cliente";
 import { registrarRotasCaixa } from "./routers/caixa";
@@ -195,6 +196,9 @@ export function buildApp(
   app.register(async (daStripe: App) => {
     registrarRotaWebhookStripe(daStripe);
   });
+  // Sem login: quem prova a origem é o token de cada conta conectada.
+  // Fora do escopo da Stripe, que lê o corpo cru: aqui é JSON.
+  registrarRotaWebhookAsaas(app);
   // As imagens servidas pela própria API, só no armazenamento local.
   registrarRotaDeArquivos(app);
 

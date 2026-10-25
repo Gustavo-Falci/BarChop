@@ -121,7 +121,7 @@ Diferenças do plano, combinadas no caminho:
   - **recusar subir em produção sem a `CHAVE_DE_CIFRA` fica para o PR 9**, junto com as rotas que a usam. Até lá, ela só é lida ao usar uma conexão gravada.
 - **PR 9 (conectar a conta):**
   - **a API não sobe em produção sem a `CHAVE_DE_CIFRA`** (nem com ela fora de 32 bytes): o adiado do PR 8;
-  - **o webhook vai para a `URL_DA_API`** (`/webhooks/asaas/<conexão>`). Sem ela, conectar responde 503 `pagamentos_online_sem_endereco`, e a API sobe. O Asaas recusa `localhost` ("A url informada é inválida."): em desenvolvimento, conectar pede um túnel https. Deploy: `CHAVE_DE_CIFRA` **e** `URL_DA_API` (https) no `.env` da VM antes deste PR;
+  - **o webhook vai para a `URL_DA_API`** (`/webhooks/asaas/<conexão>`). Sem ela, conectar responde 503 `pagamentos_online_sem_endereco`, e a API sobe. O Asaas recusa `localhost` ("A url informada é inválida."): em desenvolvimento, conectar pede um túnel https. Deploy: `CHAVE_DE_CIFRA` **e** `URL_DA_API` (https) no `infra/api.env` da VM antes deste PR;
   - **`?daCasa=true`, não `=1`**: o AJV só converte `true`/`false` em booleano;
   - **desconectar desliga em vez de apagar** (migração `20261027120000_conexao_desligada`, `desconectada_em`): a assinatura online cancelada segue apontando para a conexão em que foi cobrada (CHECK `online ⇔ conexao_id`), e a chave estrangeira não deixa apagar. A chave cifrada sai do banco; os índices de "uma por barbearia" e "uma por membro" valem só entre as ligadas, e dá para conectar de novo;
   - **trocar a chave só vale com chave da mesma conta**: a nova precisa enxergar o webhook gravado (`GET /webhooks/{id}`: 200 na mesma conta, 404 em outra, conferido no sandbox). Mantém webhook e token. Outra conta é 422 `outra_conta` ("desconecte antes"): mudar de conta deixaria as assinaturas da antiga sem webhook. Lacuna: se o vendedor apagou o webhook à mão no Asaas, a troca recusa mesmo na mesma conta;
@@ -133,6 +133,20 @@ Diferenças do plano, combinadas no caminho:
   - **fica para o PR 10**:
     - o webhook só aceita conexão ligada (`desconectadaEm: null`) e do modo aceito. A desligada guarda o hash do token, mas não tem mais a chave: conexão desligada é desconhecida (200 + log), senão o `daConexao` lança e o Asaas repete até parar a fila;
     - o assinar relê a conexão ligada e do modo aceito dentro da própria transação: o desconectar conta as assinaturas vivas e desliga sem trava, e os dois não podem se cruzar.
+- **PR 10 dividido em três** (dono, 25/10), cada um em produção antes do próximo. Nada que cria assinatura online vai ao ar antes de existir quem recebe o pagamento e quem cancela no provedor:
+  - **10a: a migração e o webhook** (o lado que recebe), mais as três variáveis no `infra/api.env.example`;
+  - **10b: cancelar no provedor pelo painel** (desativar membro com `cancelarAssinaturas` e o `DELETE /assinaturas/:id`), e a frase "dele" do 422 `assinaturas_ativas`;
+  - **10c: assinar online**, "minhas assinaturas" e o cancelar do cliente, com o CPF.
+- **PR 10a (webhook e mensalidade online), decisões do dono em 25/10:**
+  - **a mensalidade online tem a forma `online`** (`FORMAS_DA_MENSALIDADE`), com o `meio` do provedor (`pix`, `cartao`, `boleto`, `outra`). Os totais do caixa ganham a 5ª linha "Online": o total do dia é tudo que entrou. A tela só mostra a linha quando há;
+  - **o sino "Nova assinatura" sai no primeiro pagamento**, e não ao assinar: pendente que nunca paga é ruído. "Pagamento em atraso" e "Pagamento estornado" também vão a quem vende (os donos no plano da casa, o vendedor no dele), com link pro cliente;
+  - **estorno não mexe no caixa** (o dia pode estar fechado): sino e log, e quem vende acerta à mão;
+  - **migração única `20261028120000_mensalidade_online`**: `recebido_por_id` anulável (só na online; nulo = a casa, no plano da casa), `meio`, `pago_ate` e `cliente.cpf` (11 dígitos, usado no 10c);
+  - **o ciclo online segue o vencimento da cobrança**, como no Asaas: paga atrasada, o ciclo começa no vencimento. **Paga antes da renovação** (Pix adiantado, ou durante o teste grátis), o ciclo de agora segue, e o pago fica em `pago_ate` até o atual acabar. Quem rola é o `marcarAtrasadas`, na leitura, sem tarefa agendada (`cicloPagoOnline`, no `formato`);
+  - **o atraso só vem da cobrança da renovação**: a vencida de um ciclo velho, a já paga ou com `pago_ate` não derruba o ciclo;
+  - **o cabeçalho do token é `asaas-access-token`** (documentação do Asaas). Token errado é 401; conexão desligada, de outro modo ou desconhecida é 200 + log, sem gravar o evento;
+  - **o mesmo pagamento entra uma vez**: o CONFIRMED do cartão e o RECEIVED são eventos diferentes da mesma cobrança, e o recebimento é conferido pelo `id_externo` antes de gravar, com a linha da barbearia travada;
+  - **assinatura removida, inativa ou expirada no provedor fica cancelada aqui**. Cobrança paga numa assinatura cancelada no BarChop só vai pro log.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
@@ -411,7 +425,7 @@ pnpm type-check && pnpm lint
 pnpm --filter @barchop/database exec prisma migrate deploy   # dev e test
 ```
 - O webhook do Asaas precisa de URL pública, então o PC não recebe. O teste ponta a ponta dos PRs 10 e 11 roda na VM, com uma conta **sandbox** do Asaas e a API de produção em modo teste por um dia (como foi com a Stripe em 16/10). Se o dono preferir, um túnel (`cloudflared`) no PC.
-- **Deploy da Parte B:** o dono gera e põe `CHAVE_DE_CIFRA` no `.env` da VM **antes** do deploy do PR 9 (`openssl rand -base64 32`). Perder essa chave obriga todo vendedor a conectar de novo.
+- **Deploy da Parte B:** o dono gera e põe `CHAVE_DE_CIFRA` no `infra/api.env` da VM **antes** do deploy do PR 9 (`openssl rand -base64 32`). Perder essa chave obriga todo vendedor a conectar de novo.
 
 ## Risks
 | Risk | Likelihood | Mitigation |

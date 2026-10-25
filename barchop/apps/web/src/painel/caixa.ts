@@ -1,29 +1,34 @@
 import { formatarReais } from "@barchop/formato";
 import type { FormaDoCaixa, MensalidadeDoCaixa, PagamentoDoAgendamento, ParteDoPagamento } from "@barchop/types";
+
+// `online`: só a mensalidade paga pelo provedor (marco 3, PR 10a).
+type FormaNaTela = FormaDoCaixa | "online";
 import { diaEMes, emLista } from "./assinatura";
 
 // O caixa do dia no painel (Onda 2, marco 2): dinheiro digitado e
 // mostrado, e a frase de como um pagamento se dividiu. A conta da
 // divisão é da API (dividirPagamento); aqui só se lê o que ela gravou.
 
-export const ROTULO_DA_FORMA: Record<FormaDoCaixa, string> = {
+export const ROTULO_DA_FORMA: Record<FormaNaTela, string> = {
   pix: "Pix",
   dinheiro: "Dinheiro",
   debito: "Débito",
   credito: "Crédito",
   plano: "Pelo plano",
+  online: "Online",
 };
 
 // "R$ 45,00 no pix", "R$ 45,00 em dinheiro".
-const NA_FORMA: Record<FormaDoCaixa, string> = {
+const NA_FORMA: Record<FormaNaTela, string> = {
   pix: "no pix",
   dinheiro: "em dinheiro",
   debito: "no débito",
   credito: "no crédito",
   plano: "pelo plano",
+  online: "online",
 };
 
-export function naForma(forma: FormaDoCaixa): string {
+export function naForma(forma: FormaNaTela): string {
   return NA_FORMA[forma];
 }
 
@@ -123,13 +128,15 @@ export function horaNaBarbearia(instante: string): string {
 
 // "De Gustavo · recebida por Rafael em 22/10 · a casa fica com R$ 18,00".
 // O dia só quando o "Recebi" foi noutro dia (o dia dele estava fechado e
-// a API lançou no próximo aberto).
+// a API lançou no próximo aberto). A online foi "paga online": caiu na
+// conta de quem vende, e não na mão de ninguém.
 export function detalheDaMensalidade(mensalidade: MensalidadeDoCaixa): string {
   const { plano, recebidoPor, registradoEm, data, casaCentavos } = mensalidade;
   const outroDia = DIA_ISO.format(new Date(registradoEm)) !== data;
+  const quem = recebidoPor === null || mensalidade.forma === "online" ? "paga online" : `recebida por ${recebidoPor.nome}`;
   return [
     plano.vendedor ? `De ${plano.vendedor.nome}` : "Da casa",
-    `recebida por ${recebidoPor.nome}${outroDia ? ` em ${diaEMes(registradoEm)}` : ""}`,
+    `${quem}${outroDia ? ` em ${diaEMes(registradoEm)}` : ""}`,
     ...(plano.vendedor && casaCentavos > 0 ? [`a casa fica com ${reais(casaCentavos)}`] : []),
   ].join(" · ");
 }

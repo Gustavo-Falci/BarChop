@@ -7,6 +7,7 @@ import { armazenamentoPadrao, type Armazenamento } from "./lib/armazenamento";
 import { confiancaNoProxy, origemPermitida, origensPermitidas, proxiesConfiaveis } from "./lib/borda";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { cobrancaDoAmbiente, type Cobranca } from "./lib/cobranca";
+import { provedoresDoAmbiente, type FabricaDeProvedores } from "./lib/provedores";
 import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDaEquipe, limitesDeAuth, limitesPublicos } from "./lib/limites";
 import { registrarTratamentoDeErros } from "./plugins/erros";
@@ -63,6 +64,9 @@ declare module "fastify" {
     // A cobrança da assinatura do BarChop (ADR-0010). Na instância pelo
     // mesmo motivo do canal: cada teste com a sua, de memória.
     cobranca: Cobranca;
+    // Os conectores dos pagamentos online dos planos (Asaas). Uma fábrica,
+    // porque cada vendedor tem a própria chave; nos testes, a de memória.
+    provedores: FabricaDeProvedores;
   }
 }
 
@@ -75,6 +79,7 @@ export function buildApp(
     fila?: Fila;
     armazenamento?: Armazenamento;
     cobranca?: Cobranca;
+    provedores?: FabricaDeProvedores;
     // A borda (proxy de confiança e CORS) lê daqui; o padrão é o
     // process.env. Existe pra o teste montar a API "atrás do Caddy" sem
     // mexer no ambiente do processo.
@@ -149,6 +154,9 @@ export function buildApp(
 
   // Em produção, recusa subir sem as chaves da Stripe (lib/cobranca.ts).
   app.decorate("cobranca", opts.cobranca ?? cobrancaDoAmbiente(ambiente));
+
+  // A CHAVE_DE_CIFRA só é lida ao usar uma conexão gravada (lib/provedores).
+  app.decorate("provedores", opts.provedores ?? provedoresDoAmbiente(ambiente));
 
   // Escopo só pras quatro rotas que recebem senha — as duas de login e
   // as duas de signup. Existe por causa do `await`: os contadores são

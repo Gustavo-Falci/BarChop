@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "code": "invalid_environment",
+      "description": "A chave de API informada não pertence a este ambiente"
+    }
+  ]
+}

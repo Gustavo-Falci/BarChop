@@ -1,0 +1,67 @@
+{
+  "id": "evt_05b708f961d739ea7eba7e4db318f621&368604920",
+  "event": "PAYMENT_CONFIRMED",
+  "dateCreated": "2026-10-24 21:59:10",
+  "account": {
+    "id": "00000000-0000-0000-0000-000000000000",
+    "ownerId": null
+  },
+  "payment": {
+    "object": "payment",
+    "id": "pay_exemplo00paga",
+    "dateCreated": "2026-10-24",
+    "customer": "cus_000009680847",
+    "subscription": "sub_vwsx29uc7fa5ekcv",
+    "checkoutSession": null,
+    "paymentLink": null,
+    "value": 120,
+    "netValue": 117.13,
+    "originalValue": null,
+    "interestValue": null,
+    "description": "Corte ilimitado",
+    "billingType": "CREDIT_CARD",
+    "confirmedDate": "2026-10-24",
+    "creditCard": {
+      "creditCardNumber": "4444",
+      "creditCardBrand": "MASTERCARD",
+      "creditCardToken": "00000000-0000-0000-0000-000000000000"
+    },
+    "pixTransaction": null,
+    "status": "CONFIRMED",
+    "dueDate": "2026-10-24",
+    "originalDueDate": "2026-10-24",
+    "paymentDate": null,
+    "clientPaymentDate": "2026-10-24",
+    "installmentNumber": null,
+    "invoiceUrl": "https://sandbox.asaas.com/i/exemplo",
+    "invoiceNumber": "00000002",
+    "externalReference": "assinatura-para-pagar",
+    "deleted": false,
+    "anticipated": false,
+    "anticipable": true,
+    "creditDate": "2026-11-25",
+    "estimatedCreditDate": "2026-11-25",
+    "transactionReceiptUrl": "https://sandbox.asaas.com/exemplo",
+    "nossoNumero": "13732097",
+    "bankSlipUrl": null,
+    "lastInvoiceViewedDate": "2026-10-25T00:57:59Z",
+    "lastBankSlipViewedDate": null,
+    "discount": {
+      "value": 0,
+      "limitDate": null,
+      "dueDateLimitDays": 0,
+      "type": "FIXED"
+    },
+    "fine": {
+      "value": 0,
+      "type": "FIXED"
+    },
+    "interest": {
+      "value": 0,
+      "type": "PERCENTAGE"
+    },
+    "postalService": false,
+    "escrow": null,
+    "refunds": null
+  }
+}

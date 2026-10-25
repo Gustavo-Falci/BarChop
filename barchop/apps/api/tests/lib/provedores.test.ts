@@ -98,7 +98,6 @@ describe("provedoresDeMemoria", () => {
       primeiroVencimento: "2026-10-24",
       descricao: "Corte ilimitado",
       referencia: "as1",
-      urlDeVolta: null,
     });
 
     expect(fabrica.webhooks).toEqual([{ id: webhook, url: "https://x/webhooks/asaas/c1", token: "t", email: null }]);

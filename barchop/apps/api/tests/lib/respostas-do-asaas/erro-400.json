@@ -1,7 +1,7 @@
 {
   "errors": [
     {
-      "code": "invalid_cpfCnpj",
+      "code": "invalid_object",
       "description": "O CPF/CNPJ informado é inválido."
     }
   ]

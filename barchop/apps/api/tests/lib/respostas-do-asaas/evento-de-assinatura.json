@@ -1,30 +1,27 @@
 {
-  "id": "evt_teste0000002&1",
+  "id": "evt_6561b631fa5ae6a0ba5a4b3dd4bb5a52&368604921",
   "event": "SUBSCRIPTION_DELETED",
-  "dateCreated": "2026-10-24 15:00:00",
+  "dateCreated": "2026-10-24 21:58:40",
   "account": {
-    "id": "conta-teste",
+    "id": "00000000-0000-0000-0000-000000000000",
     "ownerId": null
   },
   "subscription": {
     "object": "subscription",
-    "id": "sub_teste0000001",
+    "id": "sub_4dcls3tvtbf9ntip",
     "dateCreated": "2026-10-24",
-    "customer": "cus_teste0000001",
+    "customer": "cus_000009680847",
     "paymentLink": null,
-    "billingType": "UNDEFINED",
-    "cycle": "MONTHLY",
     "value": 120,
-    "nextDueDate": "2026-10-24",
-    "endDate": null,
+    "nextDueDate": "2026-11-24",
+    "cycle": "MONTHLY",
     "description": "Corte ilimitado",
-    "status": "ACTIVE",
-    "discount": {
-      "value": 0,
-      "limitDate": null,
-      "dueDateLimitDays": 0,
-      "type": "FIXED"
-    },
+    "billingType": "UNDEFINED",
+    "deleted": true,
+    "status": "INACTIVE",
+    "externalReference": "assinatura-do-barchop",
+    "checkoutSession": null,
+    "sendPaymentByPostalService": false,
     "fine": {
       "value": 0,
       "type": "FIXED"
@@ -33,9 +30,6 @@
       "value": 0,
       "type": "PERCENTAGE"
     },
-    "deleted": true,
-    "maxPayments": null,
-    "externalReference": "assinatura-do-barchop",
     "split": null
   }
 }

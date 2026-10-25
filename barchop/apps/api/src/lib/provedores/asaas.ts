@@ -211,7 +211,10 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
       });
       return String(criado?.id);
     },
-    async criarAssinatura({ clienteId, valorCentavos, ciclo, primeiroVencimento, descricao, referencia, urlDeVolta }) {
+    // Sem `callback` (a volta pro BarChop depois de pagar): o Asaas recusa
+    // a assinatura inteira se a conta do vendedor não tem um site
+    // cadastrado, e isso é configuração da conta dele, fora do BarChop.
+    async criarAssinatura({ clienteId, valorCentavos, ciclo, primeiroVencimento, descricao, referencia }) {
       const criada = await pedir("POST", "/subscriptions", {
         customer: clienteId,
         // O cliente escolhe na fatura: Pix, boleto ou cartão.
@@ -221,7 +224,6 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
         cycle: CICLO_DO_ASAAS[ciclo],
         description: descricao,
         externalReference: referencia,
-        ...(urlDeVolta ? { callback: { successUrl: urlDeVolta, autoRedirect: true } } : {}),
       });
       const id = String(criada?.id);
       // Criar não devolve o link: ele é da primeira cobrança, que a

@@ -53,12 +53,12 @@ export interface NovaAssinatura {
   descricao: string;
   // O id da assinatura no BarChop.
   referencia: string;
-  // Pra onde a fatura manda o cliente depois de pagar.
-  urlDeVolta: string | null;
 }
 
 export interface AssinaturaNoProvedor {
   id: string;
+  // A primeira cobrança sai ao criar: daí em diante, o vencimento do
+  // ciclo seguinte.
   // inativa = parou de gerar cobrança; expirada = chegou ao fim.
   situacao: "ativa" | "inativa" | "expirada";
   removida: boolean;
@@ -75,7 +75,8 @@ export interface CobrancaNoProvedor {
   vencimento: string;
   // O dia em que o cliente pagou; null enquanto não pagou.
   pagaEm: string | null;
-  // Como pagou; null enquanto não pagou (a fatura deixa escolher).
+  // Como pagou; null enquanto não pagou (a fatura deixa escolher). Pago
+  // no cartão, o Asaas guarda o cartão na assinatura.
   forma: "pix" | "cartao" | "boleto" | "outra" | null;
   linkDaFatura: string | null;
 }

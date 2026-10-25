@@ -6,7 +6,10 @@ import { BASE_DO_ASAAS, modoDaChaveDoAsaas, provedorAsaas } from "../../src/lib/
 
 // O conector do Asaas (Onda 2, marco 3, PR 8 do plano
 // planos-de-assinatura), com um `fetch` falso que devolve as respostas
-// gravadas em respostas-do-asaas/. Nada sai do processo.
+// gravadas no sandbox do Asaas em 24/10/2026 (respostas-do-asaas/; os
+// links de fatura, os ids de cobrança e o token do cartão trocados por
+// exemplos). Os eventos não foram gravados: o envelope é o da
+// documentação, e a cobrança dentro dele é a gravada. Nada sai do processo.
 
 function resposta(nome: string): unknown {
   return JSON.parse(readFileSync(join(__dirname, "respostas-do-asaas", nome), "utf-8"));
@@ -58,7 +61,7 @@ describe("o modo e o endereço da chave", () => {
 });
 
 describe("os erros do Asaas", () => {
-  it("401 é chave inválida, e o erro não carrega a chave", async () => {
+  it("401 é chave inválida (aqui, a do sandbox no endereço de produção), e o erro não carrega a chave", async () => {
     const { provedor } = montar(json(resposta("erro-401.json"), 401));
 
     const erro = await provedor.conferirChave().catch((e: unknown) => e);
@@ -102,7 +105,7 @@ describe("o webhook da conta", () => {
       email: "dono@exemplo.com",
     });
 
-    expect(id).toBe("wh_teste0000001");
+    expect(id).toBe("30afbf47-cf0e-4f00-b637-6687e922551d");
     expect(pedido()).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/webhooks`, metodo: "POST" });
     expect(pedido().corpo).toEqual({
       name: "BarChop",
@@ -125,13 +128,13 @@ describe("o webhook da conta", () => {
     });
   });
 
-  it("apaga pelo id; já apagado não é erro", async () => {
+  it("apaga pelo id (um UUID); já apagado (404) não é erro", async () => {
     const { provedor, pedido } = montar(json(resposta("webhook-removido.json")), json({ errors: [] }, 404));
 
-    await provedor.apagarWebhook("wh_teste0000001");
-    await provedor.apagarWebhook("wh_teste0000001");
+    await provedor.apagarWebhook("30afbf47-cf0e-4f00-b637-6687e922551d");
+    await provedor.apagarWebhook("30afbf47-cf0e-4f00-b637-6687e922551d");
 
-    expect(pedido()).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/webhooks/wh_teste0000001`, metodo: "DELETE" });
+    expect(pedido()).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/webhooks/30afbf47-cf0e-4f00-b637-6687e922551d`, metodo: "DELETE" });
   });
 });
 
@@ -147,7 +150,7 @@ describe("cliente e assinatura", () => {
       referencia: "c1",
     });
 
-    expect(id).toBe("cus_teste0000001");
+    expect(id).toBe("cus_000009680847");
     expect(pedido().corpo).toEqual({
       name: "Cliente de Teste",
       cpfCnpj: "52998224725",
@@ -161,27 +164,27 @@ describe("cliente e assinatura", () => {
     const { provedor, pedido } = montar(json(resposta("assinatura.json")), json(resposta("cobrancas-da-assinatura.json")));
 
     const criada = await provedor.criarAssinatura({
-      clienteId: "cus_teste0000001",
+      clienteId: "cus_000009680847",
       valorCentavos: 12000,
       ciclo: "mensal",
       primeiroVencimento: "2026-10-24",
       descricao: "Corte ilimitado",
       referencia: "as1",
-      urlDeVolta: "https://gr.barchop.com.br/minha-conta",
     });
 
-    expect(criada).toEqual({ id: "sub_teste0000001", linkDaFatura: "https://sandbox.asaas.com/i/teste0000001" });
+    expect(criada).toEqual({ id: "sub_4dcls3tvtbf9ntip", linkDaFatura: "https://sandbox.asaas.com/i/exemplo" });
+    // Sem `callback`: o Asaas recusa a assinatura se a conta do vendedor
+    // não tem site cadastrado.
     expect(pedido(0).corpo).toEqual({
-      customer: "cus_teste0000001",
+      customer: "cus_000009680847",
       billingType: "UNDEFINED",
       value: 120,
       nextDueDate: "2026-10-24",
       cycle: "MONTHLY",
       description: "Corte ilimitado",
       externalReference: "as1",
-      callback: { successUrl: "https://gr.barchop.com.br/minha-conta", autoRedirect: true },
     });
-    expect(pedido(1)).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/subscriptions/sub_teste0000001/payments`, metodo: "GET" });
+    expect(pedido(1)).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/subscriptions/sub_4dcls3tvtbf9ntip/payments`, metodo: "GET" });
   });
 
   it("o ciclo do plano vira o do Asaas, e centavos viram reais", async () => {
@@ -191,53 +194,59 @@ describe("cliente e assinatura", () => {
       json(resposta("assinatura.json")),
       json(resposta("cobrancas-da-assinatura.json"))
     );
-    const base = { clienteId: "c", primeiroVencimento: "2026-10-24", descricao: "x", referencia: "r", urlDeVolta: null };
+    const base = { clienteId: "c", primeiroVencimento: "2026-10-24", descricao: "x", referencia: "r" };
 
     await provedor.criarAssinatura({ ...base, valorCentavos: 33990, ciclo: "trimestral" });
     await provedor.criarAssinatura({ ...base, valorCentavos: 99, ciclo: "anual" });
 
     expect(pedido(0).corpo).toMatchObject({ value: 339.9, cycle: "QUARTERLY" });
-    expect(pedido(0).corpo.callback).toBeUndefined();
     expect(pedido(2).corpo).toMatchObject({ value: 0.99, cycle: "YEARLY" });
   });
 
-  it("lê a assinatura em termos do BarChop", async () => {
+  it("lê a assinatura em termos do BarChop; o vencimento já é o do ciclo seguinte", async () => {
     const { provedor } = montar(json(resposta("assinatura.json")), json({ ...(resposta("assinatura.json") as object), status: "INACTIVE", deleted: true }));
 
-    expect(await provedor.lerAssinatura("sub_teste0000001")).toEqual({
-      id: "sub_teste0000001",
+    expect(await provedor.lerAssinatura("sub_4dcls3tvtbf9ntip")).toEqual({
+      id: "sub_4dcls3tvtbf9ntip",
       situacao: "ativa",
       removida: false,
       valorCentavos: 12000,
-      proximoVencimento: "2026-10-24",
+      proximoVencimento: "2026-11-24",
     });
-    expect(await provedor.lerAssinatura("sub_teste0000001")).toMatchObject({ situacao: "inativa", removida: true });
+    expect(await provedor.lerAssinatura("sub_4dcls3tvtbf9ntip")).toMatchObject({ situacao: "inativa", removida: true });
   });
 
-  it("lê a cobrança: paga, com o dia em que o cliente pagou", async () => {
+  it("lê a cobrança: paga no cartão (CONFIRMED, ainda sem paymentDate), com o dia em que o cliente pagou", async () => {
     const { provedor } = montar(json(resposta("cobranca-paga.json")), json(resposta("cobranca.json")));
 
-    expect(await provedor.lerCobranca("pay_teste0000001")).toEqual({
-      id: "pay_teste0000001",
-      assinaturaId: "sub_teste0000001",
+    expect(await provedor.lerCobranca("pay_exemplo00paga")).toEqual({
+      id: "pay_exemplo00paga",
+      assinaturaId: "sub_vwsx29uc7fa5ekcv",
       situacao: "paga",
       removida: false,
       valorCentavos: 12000,
       vencimento: "2026-10-24",
       pagaEm: "2026-10-24",
-      forma: "pix",
-      linkDaFatura: "https://sandbox.asaas.com/i/teste0000001",
+      forma: "cartao",
+      linkDaFatura: "https://sandbox.asaas.com/i/exemplo",
     });
-    expect(await provedor.lerCobranca("pay_teste0000001")).toMatchObject({ situacao: "pendente", pagaEm: null, forma: null });
+    expect(await provedor.lerCobranca("pay_exemplo00pend")).toMatchObject({ situacao: "pendente", pagaEm: null, forma: null });
   });
 
   it("cancela removendo a assinatura; já removida não é erro", async () => {
-    const { provedor, pedido } = montar(json(resposta("assinatura-removida.json")), json({ errors: [] }, 404));
+    // O Asaas responde 200 de novo à assinatura já removida; o 404 fica
+    // coberto por garantia.
+    const { provedor, pedido } = montar(
+      json(resposta("assinatura-removida.json")),
+      json(resposta("assinatura-removida.json")),
+      json({ errors: [] }, 404)
+    );
 
-    await provedor.cancelarAssinatura("sub_teste0000001");
-    await provedor.cancelarAssinatura("sub_teste0000001");
+    await provedor.cancelarAssinatura("sub_4dcls3tvtbf9ntip");
+    await provedor.cancelarAssinatura("sub_4dcls3tvtbf9ntip");
+    await provedor.cancelarAssinatura("sub_4dcls3tvtbf9ntip");
 
-    expect(pedido()).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/subscriptions/sub_teste0000001`, metodo: "DELETE" });
+    expect(pedido()).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/subscriptions/sub_4dcls3tvtbf9ntip`, metodo: "DELETE" });
   });
 });
 
@@ -246,16 +255,16 @@ describe("o evento do webhook", () => {
     const { provedor } = montar();
 
     expect(provedor.lerEvento(resposta("evento-de-cobranca.json"))).toEqual({
-      id: "evt_teste0000001&1",
-      tipo: "PAYMENT_RECEIVED",
-      cobrancaId: "pay_teste0000001",
-      assinaturaId: "sub_teste0000001",
+      id: "evt_05b708f961d739ea7eba7e4db318f621&368604920",
+      tipo: "PAYMENT_CONFIRMED",
+      cobrancaId: "pay_exemplo00paga",
+      assinaturaId: "sub_vwsx29uc7fa5ekcv",
     });
     expect(provedor.lerEvento(resposta("evento-de-assinatura.json"))).toEqual({
-      id: "evt_teste0000002&1",
+      id: "evt_6561b631fa5ae6a0ba5a4b3dd4bb5a52&368604921",
       tipo: "SUBSCRIPTION_DELETED",
       cobrancaId: null,
-      assinaturaId: "sub_teste0000001",
+      assinaturaId: "sub_4dcls3tvtbf9ntip",
     });
   });
 

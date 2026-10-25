@@ -15,8 +15,10 @@ import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "../lib/horas";
 import { PADRAO_UUID } from "../lib/padroes";
 import {
+  ONLINE_A_CANCELAR,
   PODE_VENDER,
   assinaturasVisiveis,
+  cancelarNoProvedor,
   marcarAtrasadas,
   planosVisiveis,
   proximoDiaAberto,
@@ -268,8 +270,8 @@ export function registrarRotasAssinantes(app: App): void {
     }
   );
 
-  // Cancelada de novo não é erro. A online passa a cancelar também no
-  // provedor no PR 10.
+  // Cancelada de novo não é erro. A online é cancelada antes no provedor
+  // (PR 10b): falhou, nada muda aqui.
   app.delete(
     "/assinaturas/:id",
     { schema: { params: paramsComId } },
@@ -278,10 +280,11 @@ export function registrarRotasAssinantes(app: App): void {
       const membro = membroDoToken(request);
       const atual = await prisma.assinaturaDoCliente.findFirst({
         where: { id: request.params.id, barbeariaId, ...assinaturasVisiveis(membro) },
-        select: { id: true, situacao: true },
+        select: { id: true, situacao: true, ...ONLINE_A_CANCELAR },
       });
       if (!atual) throw naoEncontrado();
       if (atual.situacao !== "cancelada") {
+        await cancelarNoProvedor(app.provedores, [atual]);
         await prisma.assinaturaDoCliente.update({
           where: { id: atual.id },
           data: { situacao: "cancelada", canceladaEm: new Date() },

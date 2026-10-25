@@ -7,6 +7,7 @@ import { PODE_ATENDER } from "./disponibilidade";
 import { naoEncontrado } from "./erro-http";
 import { ErroDeNegocio } from "./erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "./horas";
+import { ErroDoProvedor, erroHttpDoProvedor, type ConexaoGravada, type FabricaDeProvedores } from "./provedores";
 
 // Os planos que a barbearia e os barbeiros vendem ao cliente (Onda 2,
 // marco 3). A conta mora em @barchop/formato (planos-do-cliente.ts);
@@ -269,4 +270,43 @@ export async function assinaturasNoPagamento(
       };
     })
   );
+}
+
+// As assinaturas online que vão ser canceladas aqui, com a conta em que
+// são cobradas. A do balcão não tem o que cancelar fora.
+export const ONLINE_A_CANCELAR = {
+  idExterno: true,
+  conexao: { select: { provedor: true, modo: true, chaveCifrada: true, desconectadaEm: true } },
+} satisfies Prisma.AssinaturaDoClienteSelect;
+
+// Cancela no provedor, antes de cancelar no banco (PR 10b): sem isso, a
+// cobrança seguiria caindo no cartão do cliente. Falhou, lança, e nada
+// muda aqui. Se o provedor cancelou e o banco não gravou, o
+// SUBSCRIPTION_DELETED do webhook cancela depois. A que o provedor não
+// acha mais já está cancelada lá.
+export async function cancelarNoProvedor(
+  fabrica: FabricaDeProvedores,
+  assinaturas: readonly {
+    idExterno: string | null;
+    conexao: (ConexaoGravada & { desconectadaEm: Date | null }) | null;
+  }[]
+): Promise<void> {
+  for (const { idExterno, conexao } of assinaturas) {
+    // A conexão desligada não tem mais a chave; o desconectar recusa
+    // enquanto há assinatura online viva nela.
+    if (!idExterno || !conexao || conexao.desconectadaEm !== null) continue;
+    try {
+      await fabrica.daConexao(conexao).cancelarAssinatura(idExterno);
+    } catch (erro) {
+      if (!(erro instanceof ErroDoProvedor)) throw erro;
+      if (erro.codigo === "nao_encontrado") continue;
+      if (erro.codigo === "chave_invalida") {
+        throw new ErroDeNegocio(
+          "o Asaas não aceitou a chave da conta conectada: troque a chave em Pagamentos online e tente de novo",
+          "chave_da_conta_recusada"
+        );
+      }
+      throw erroHttpDoProvedor(erro);
+    }
+  }
 }

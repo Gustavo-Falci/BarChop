@@ -8,6 +8,7 @@ import { ErroDeNegocio } from "../lib/erro-negocio";
 import { dateParaHora, horaParaDate } from "../lib/horas";
 import { corpoDaOrdem, garantirMesmoConjunto, ordemNaPosicao } from "../lib/ordem";
 import { PADRAO_EMAIL, PADRAO_HORA, PADRAO_TELEFONE, PADRAO_UUID } from "../lib/padroes";
+import { ONLINE_A_CANCELAR, cancelarNoProvedor } from "../lib/planos-do-cliente";
 import { normalizarTelefone } from "../lib/telefone";
 import { exigirPapel } from "../plugins/auth";
 import type { LimitesDaEquipe } from "../lib/limites";
@@ -49,7 +50,7 @@ const corpoPatchMembro = {
     // Os planos do cliente (Onda 2, marco 3): o dono libera o membro pra
     // vender. Tirar não mexe nas assinaturas que já existem.
     podeVenderPlanos: { type: "boolean" },
-    // Desativar quem tem assinantes vivos nos planos dele exige a
+    // Desativar quem tem assinantes vivos nos planos que vende exige a
     // confirmação: as assinaturas são canceladas no mesmo passo.
     cancelarAssinaturas: { type: "boolean" },
   },
@@ -369,6 +370,18 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         ...(telefone !== undefined ? { telefone: normalizarTelefone(telefone) } : {}),
       };
 
+      // Desativar cancelando as assinaturas: as online são canceladas antes
+      // no provedor, fora da transação (é rede). Falhou, nada muda. Se a
+      // transação depois recusar (o último dono), o provedor já cancelou,
+      // e o webhook cancela aqui também: foi o que a tela confirmou.
+      if (request.body.ativo === false && cancelarAssinaturas === true) {
+        const online = await prisma.assinaturaDoCliente.findMany({
+          where: { barbeariaId, forma: "online", situacao: { not: "cancelada" }, plano: { vendedorId: id } },
+          select: ONLINE_A_CANCELAR,
+        });
+        await cancelarNoProvedor(app.provedores, online);
+      }
+
       const membro = await prisma.$transaction(async (tx) => {
         if (tiraUmDono(request.body)) {
           // A linha da barbearia é o cadeado: dois donos se rebaixando ao
@@ -418,16 +431,16 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         // Desativar quem vende com assinantes vivos (decisão 6 do plano
         // planos-de-assinatura): recusa, ou cancela junto se a tela
         // confirmou. Vale em qualquer plano do BarChop, porque no Grátis
-        // as assinaturas do cliente seguem valendo. Online só existe a
-        // partir do PR 10, que cancela também no provedor.
+        // as assinaturas do cliente seguem valendo. As online já foram
+        // canceladas no provedor, acima.
         if (request.body.ativo === false) {
           const vivas = { barbeariaId, situacao: { not: "cancelada" }, plano: { vendedorId: id } };
           const quantas = await tx.assinaturaDoCliente.count({ where: vivas });
           if (quantas > 0 && cancelarAssinaturas !== true) {
             throw new ErroDeNegocio(
               quantas === 1
-                ? "este membro tem 1 assinante nos planos dele: cancele a assinatura para desativar"
-                : `este membro tem ${quantas} assinantes nos planos dele: cancele as assinaturas para desativar`,
+                ? "este membro tem 1 assinante nos planos que vende: cancele a assinatura para desativar"
+                : `este membro tem ${quantas} assinantes nos planos que vende: cancele as assinaturas para desativar`,
               "assinaturas_ativas"
             );
           }

@@ -22,6 +22,7 @@ import {
   ordenarCategorias,
   slugReservado,
   temRecurso,
+  normalizarCpf,
   type AreaDeConfiguracao,
   type RegrasDeDivisao,
 } from "@barchop/formato";
@@ -73,6 +74,11 @@ import type {
   SolicitacaoNaFila,
   AvisoPublicado,
   NovoAviso,
+  AssinaturaNaConta,
+  AssinaturaOnlineCriada,
+  ContaDePagamentoOnline,
+  PagamentosOnline,
+  PlanoDaVitrine,
 } from "@barchop/types";
 import type {
   AceiteDoConvite,
@@ -247,6 +253,17 @@ export interface EstadoFalso {
   // As mensalidades recebidas no balcão, de qualquer dia: o "Recebi"
   // acrescenta, e o caixa do dia mostra as dele. Sem semente, nenhuma.
   mensalidades?: MensalidadeDoCaixa[];
+  // As contas de quem vende no Asaas (PR 11): `casa` e o id de cada
+  // membro. Sem semente, nenhuma.
+  contasOnline?: Record<string, ContaDePagamentoOnline>;
+  // O modo de chave que a plataforma aceita. Sem semente, o sandbox.
+  modoAceito?: "teste" | "real";
+  // O CPF do cliente logado, só os dígitos. Sem semente, nenhum: o
+  // primeiro assinar pede.
+  cpfDoCliente?: string | null;
+  // Os usos do ciclo, por `${assinaturaId}:${servicoId}`. O dublê não
+  // conta os atendimentos pelo plano: a semente diz quantos.
+  usosNoCiclo?: Record<string, number>;
 }
 
 const FIM_DO_TESTE_PADRAO = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -432,6 +449,10 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     vitrineDePlanos: semente.vitrineDePlanos ?? false,
     assinaturas: (semente.assinaturas ?? []).map(copiaDaAssinatura),
     mensalidades: (semente.mensalidades ?? []).map(copiaDaMensalidade),
+    contasOnline: Object.fromEntries(Object.entries(semente.contasOnline ?? {}).map(([qual, conta]) => [qual, { ...conta }])),
+    modoAceito: semente.modoAceito ?? "teste",
+    cpfDoCliente: semente.cpfDoCliente ?? null,
+    usosNoCiclo: { ...(semente.usosNoCiclo ?? {}) },
   };
 
   // O pedido como o dono o vê: sem a barbearia, que é a dele.
@@ -845,6 +866,82 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     return membro.papel === "dono" || (membro.papel === "profissional" && membro.podeVenderPlanos);
   }
 
+  // A conta de quem vende (routers/pagamentos-online.ts): a da casa é
+  // do dono; a recepção não tem conta.
+  function chaveDaConta(daCasa: boolean): string {
+    if (estado.papel === "recepcao") {
+      throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite isto");
+    }
+    if (daCasa && estado.papel !== "dono") {
+      throw new ErroDaApi(403, "sem_permissao", "só o dono conecta a conta da casa");
+    }
+    return daCasa ? "casa" : "bb1";
+  }
+
+  function pagamentosOnlineFalsos(daCasa: boolean): PagamentosOnline {
+    const conta = estado.contasOnline![daCasa ? "casa" : "bb1"];
+    return { daCasa, modoAceito: estado.modoAceito!, conta: conta ? { ...conta } : null };
+  }
+
+  // A vitrine como a API a monta (GET /barbearias/:slug/planos): vitrine
+  // ligada e no Completo; plano ativo, de quem atende e pode vender, com
+  // serviço ativo; online só com a conta de quem vende ligada e do modo
+  // aceito. Sem nenhuma forma que valha, fora.
+  function vitrineFalsa(): PlanoDaVitrine[] {
+    if (!estado.vitrineDePlanos || !temRecurso(estado.assinatura!.planoEfetivo, "planosDaBarbearia")) return [];
+    const ativos = new Set(estado.servicos.filter((s) => s.ativo).map((s) => s.id));
+    return estado.planos!.flatMap((plano) => {
+      if (!plano.ativo) return [];
+      const vendedor = plano.vendedor ? equipe().find((m) => m.id === plano.vendedor!.id) : null;
+      if (plano.vendedor && !(vendedor && vendedor.ativo && vendedor.atende && vendePlanos(vendedor))) return [];
+      const servicos = plano.servicos.filter((s) => ativos.has(s.servicoId)).map((s) => ({ ...s }));
+      const conta = estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"];
+      const aceitaOnline = plano.aceitaOnline && conta !== undefined && conta.modo === estado.modoAceito;
+      if (servicos.length === 0 || (!aceitaOnline && !plano.aceitaNoBalcao)) return [];
+      return [
+        {
+          id: plano.id,
+          daCasa: plano.daCasa,
+          vendedor: vendedor ? { id: vendedor.id, nome: vendedor.nome, fotoUrl: vendedor.fotoUrl } : null,
+          nome: plano.nome,
+          descricao: plano.descricao,
+          ciclo: plano.ciclo,
+          precoCentavos: plano.precoCentavos,
+          diasDeTeste: plano.diasDeTeste,
+          aceitaOnline,
+          aceitaNoBalcao: plano.aceitaNoBalcao,
+          servicos,
+        },
+      ];
+    });
+  }
+
+  // A assinatura como o cliente a vê (GET /clientes/me/assinaturas).
+  function naConta(assinatura: AssinaturaDoPainel): AssinaturaNaConta {
+    const { cliente: _cliente, ...resto } = copiaDaAssinatura(assinatura);
+    const plano = estado.planos!.find((p) => p.id === assinatura.plano.id);
+    const ativos = new Set(estado.servicos.filter((s) => s.ativo).map((s) => s.id));
+    return {
+      ...resto,
+      servicos: (plano?.servicos ?? [])
+        .filter((s) => ativos.has(s.servicoId))
+        .map((s) => ({
+          ...s,
+          usosRestantes: usosRestantes(s.usosPorCiclo, estado.usosNoCiclo![`${assinatura.id}:${s.servicoId}`] ?? 0),
+        })),
+    };
+  }
+
+  // Um link de exemplo, nunca um de verdade: o código da fatura mostra
+  // os dados de quem vende.
+  const faturaFalsa = (assinaturaId: string) => `https://sandbox.asaas.com/i/exemplo-${assinaturaId}`;
+
+  function minhaAssinaturaOu404(id: string): AssinaturaDoPainel {
+    const assinatura = estado.assinaturas!.find((a) => a.id === id && a.cliente.id === estado.cliente.id);
+    if (!assinatura) throw new ErroDaApi(404, "nao_encontrado", "recurso não encontrado");
+    return assinatura;
+  }
+
   // O profissional só enxerga os dele; dono e recepção, todos.
   function planosVisiveis(): PlanoDoPainel[] {
     return estado.papel === "profissional"
@@ -1157,6 +1254,10 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       async servicos(slug: string) {
         exigirSlug(slug);
         return estado.servicos.filter((servico) => servico.ativo);
+      },
+      async planos(slug: string) {
+        exigirSlug(slug);
+        return { planos: vitrineFalsa() };
       },
       // O filtro entra na assinatura mesmo sem ser usado: um dublê com
       // menos parâmetros que o client real deixa a tela chamar de um
@@ -2190,6 +2291,64 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         Object.assign(atual, novo);
         return copiaDoPlano(atual);
       },
+      // A conta de quem vende (routers/pagamentos-online.ts). O dublê
+      // reconhece a chave pelo prefixo, como o `modoDaChave` da API, e
+      // não fala com provedor nenhum.
+      async pagamentosOnline(daCasa: boolean) {
+        chaveDaConta(daCasa);
+        return pagamentosOnlineFalsos(daCasa);
+      },
+      async conectarPagamentosOnline(daCasa: boolean, chave: string) {
+        const qual = chaveDaConta(daCasa);
+        if (!vendePlanos(membroOu404("bb1"))) {
+          throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite vender planos");
+        }
+        exigirPlanosDaBarbearia();
+        const limpa = chave.trim();
+        const modo = limpa.startsWith("$aact_hmlg_") ? "teste" : limpa.startsWith("$aact_prod_") ? "real" : null;
+        if (modo === null) {
+          throw new ErroDaApi(422, "chave_invalida", "isso não é uma chave de API do Asaas: ela começa com $aact_");
+        }
+        if (modo !== estado.modoAceito) {
+          throw new ErroDaApi(
+            422,
+            "modo_errado",
+            modo === "teste"
+              ? "esta é uma chave do sandbox do Asaas, que não move dinheiro: use a chave de produção"
+              : "esta é uma chave de produção do Asaas: aqui só vale a do sandbox"
+          );
+        }
+        estado.contasOnline![qual] = {
+          provedor: "asaas",
+          modo,
+          chaveFinal: limpa.slice(-4),
+          conectadaEm: estado.contasOnline![qual]?.conectadaEm ?? new Date().toISOString(),
+        };
+        return pagamentosOnlineFalsos(daCasa);
+      },
+      // Recusado com assinatura online viva nos planos da conta: os da
+      // casa na da casa, os de quem está logado na dele.
+      async desconectarPagamentosOnline(daCasa: boolean) {
+        const qual = chaveDaConta(daCasa);
+        if (!estado.contasOnline![qual]) throw new ErroDaApi(404, "nao_encontrado", "nenhuma conta conectada");
+        const vivas = estado.assinaturas!.filter(
+          (a) =>
+            a.forma === "online" &&
+            a.situacao !== "cancelada" &&
+            (daCasa ? a.plano.daCasa : a.plano.vendedor?.id === "bb1")
+        ).length;
+        if (vivas > 0) {
+          throw new ErroDaApi(
+            422,
+            "assinaturas_ativas",
+            vivas === 1
+              ? "há 1 assinatura online viva nesta conta: cancele a assinatura antes de desconectar"
+              : `há ${vivas} assinaturas online vivas nesta conta: cancele as assinaturas antes de desconectar`
+          );
+        }
+        delete estado.contasOnline![qual];
+      },
+
       async ligarVitrine(ligada: boolean) {
         exigirDono();
         exigirPlanosDaBarbearia();
@@ -2337,6 +2496,66 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             remarcacao.servicoIds ?? antigo.servicos.map((s) => s.servicoId),
           origem: "cliente",
         });
+      },
+
+      // O cliente que assina online (routers/assinaturas-do-cliente.ts),
+      // com as mesmas recusas. A fatura é um link de exemplo.
+      async minhasAssinaturas() {
+        marcarAtrasadas();
+        return estado
+          .assinaturas!.filter((a) => a.cliente.id === estado.cliente.id)
+          .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm) || a.id.localeCompare(b.id))
+          .map(naConta);
+      },
+      async assinarPlano(planoId: string, cpf?: string): Promise<AssinaturaOnlineCriada> {
+        const plano = estado.planos!.find((p) => p.id === planoId);
+        if (!plano) throw new ErroDaApi(404, "nao_encontrado", "recurso não encontrado");
+        // Antes das regras de venda, como na API: quem tem fatura a pagar
+        // volta pra ela.
+        const viva = estado.assinaturas!.find(
+          (a) => a.plano.id === planoId && a.cliente.id === estado.cliente.id && a.situacao !== "cancelada"
+        );
+        if (viva) {
+          if (viva.forma === "online" && (viva.situacao === "pendente" || viva.situacao === "em_atraso")) {
+            return { assinatura: naConta(viva), linkDaFatura: faturaFalsa(viva.id) };
+          }
+          throw new ErroDaApi(422, "ja_assina", "você já assina este plano");
+        }
+        if (!vitrineFalsa().some((p) => p.id === planoId && p.aceitaOnline)) {
+          throw new ErroDaApi(422, "plano_indisponivel", "este plano não está à venda online agora");
+        }
+        let doCadastro: string | null = estado.cpfDoCliente ?? null;
+        if (cpf?.trim()) {
+          doCadastro = normalizarCpf(cpf);
+          if (doCadastro === null) throw new ErroDaApi(422, "cpf_invalido", "o CPF não confere: confira os números");
+        }
+        if (doCadastro === null) throw new ErroDaApi(422, "cpf_obrigatorio", "o Asaas pede o CPF de quem assina");
+        estado.cpfDoCliente = doCadastro;
+
+        const emTeste = plano.diasDeTeste > 0;
+        const nova: AssinaturaDoPainel = {
+          id: `as${estado.assinaturas!.length + 1}`,
+          situacao: emTeste ? "teste" : "pendente",
+          forma: "online",
+          precoCentavos: plano.precoCentavos,
+          ciclo: plano.ciclo,
+          cicloComecaEm: emTeste ? estado.hoje : null,
+          cicloTerminaEm: emTeste ? somarDias(estado.hoje, plano.diasDeTeste) : null,
+          canceladaEm: null,
+          criadoEm: new Date().toISOString(),
+          cliente: { id: estado.cliente.id, nome: estado.cliente.nome, telefone: estado.cliente.telefone },
+          plano: { id: plano.id, nome: plano.nome, daCasa: plano.daCasa, vendedor: plano.vendedor },
+        };
+        estado.assinaturas!.push(nova);
+        contarAssinante(plano.id, 1);
+        return { assinatura: naConta(nova), linkDaFatura: faturaFalsa(nova.id) };
+      },
+      async cancelarAssinatura(id: string) {
+        const atual = minhaAssinaturaOu404(id);
+        if (atual.situacao === "cancelada") return;
+        atual.situacao = "cancelada";
+        atual.canceladaEm = new Date().toISOString();
+        contarAssinante(atual.plano.id, -1);
       },
     },
 

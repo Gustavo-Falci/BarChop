@@ -1,6 +1,9 @@
 import type {
   AgendamentoSerializado,
+  AssinaturaNaConta,
+  AssinaturaOnlineCriada,
   ClienteSerializado,
+  MinhasAssinaturas,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
@@ -78,6 +81,26 @@ export function criarApiCliente(requisicao: Requisicao) {
         comToken: true,
       });
       return resposta.agendamento;
+    },
+
+    // Os planos que o cliente assina (Onda 2, marco 3, PR 10c), com os
+    // usos que sobram no ciclo.
+    async minhasAssinaturas(): Promise<AssinaturaNaConta[]> {
+      const resposta = await requisicao<MinhasAssinaturas>("/clientes/me/assinaturas", { comToken: true });
+      return resposta.assinaturas;
+    },
+
+    // Devolve o link da fatura do Asaas, onde o cliente paga. O CPF só
+    // vai quando o cadastro não tem (422 `cpf_obrigatorio`); vazio não
+    // vai, porque a API responderia 400. Com a online pendente ou em
+    // atraso no mesmo plano, a resposta é ela, com a fatura relida.
+    assinarPlano(planoId: string, cpf?: string): Promise<AssinaturaOnlineCriada> {
+      const corpo = cpf?.trim() ? { planoId, cpf: cpf.trim() } : { planoId };
+      return requisicao("/clientes/me/assinaturas", { metodo: "POST", corpo, comToken: true });
+    },
+
+    async cancelarAssinatura(id: string): Promise<void> {
+      await requisicao(`/clientes/me/assinaturas/${id}`, { metodo: "DELETE", comToken: true });
     },
   };
 }

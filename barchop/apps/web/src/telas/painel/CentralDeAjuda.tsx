@@ -16,7 +16,7 @@ interface Pergunta {
 }
 
 // Agrupadas pelo assunto, na ordem do dia a dia: agenda, página,
-// clientes, equipe e conta. Cada resposta leva pra tela certa.
+// clientes, caixa, planos, equipe e conta. Cada resposta leva pra tela certa.
 const TEMAS: { tema: string; perguntas: Pergunta[] }[] = [
   {
     tema: "Agenda",
@@ -126,6 +126,61 @@ const TEMAS: { tema: string; perguntas: Pergunta[] }[] = [
           "Em ",
           { href: "/painel/configuracoes/divisao", rotulo: "Divisão do dinheiro" },
           ", o dono define a parte da casa de cada um e quanto vai pro profissional de quem o cliente é quando outro atende. A gorjeta é sempre de quem atendeu.",
+        ],
+      },
+    ],
+  },
+  {
+    tema: "Planos de assinatura",
+    perguntas: [
+      {
+        pergunta: "Como crio um plano de assinatura?",
+        resposta: [
+          "Em ",
+          { href: "/painel/planos", rotulo: "Planos" },
+          ", no Novo plano: o preço por ciclo, os dias grátis e os serviços incluídos, com quantas vezes cada um vale no ciclo. O plano da casa vale com qualquer profissional e paga a quem atende o valor fixo por atendimento; o plano de um profissional vale só com quem vende. No plano Completo.",
+        ],
+      },
+      {
+        pergunta: "Como o cliente assina pela minha página?",
+        resposta: [
+          "O dono liga Mostrar os planos na página, em ",
+          { href: "/painel/planos", rotulo: "Planos" },
+          ". Pra vender online, quem vende conecta a conta do Asaas em ",
+          { href: "/painel/configuracoes/pagamentos-online", rotulo: "Pagamentos online" },
+          ": o cliente entra, assina e paga por Pix, cartão ou boleto na fatura do Asaas. Sem a conta conectada, a página oferece só o balcão.",
+        ],
+      },
+      {
+        pergunta: "Como conecto a minha conta do Asaas?",
+        resposta: [
+          "Em ",
+          { href: "/painel/configuracoes/pagamentos-online", rotulo: "Pagamentos online" },
+          ", cole a chave de API do Asaas. A mensalidade cai direto na conta de quem vende, e o BarChop não cobra taxa. O dono conecta a conta da casa; cada profissional que vende, a sua. Com assinatura online viva, a conta só desconecta depois de cancelar as assinaturas.",
+        ],
+      },
+      {
+        pergunta: "Como cadastro um assinante que paga no balcão?",
+        resposta: [
+          "Em ",
+          { href: "/painel/clientes", rotulo: "Clientes" },
+          ", abra o cliente e use Assinar plano. A cada ciclo, marque Recebi com a forma de pagamento: a mensalidade entra no Caixa do dia. Ciclo vencido sem Recebi deixa a assinatura em atraso.",
+        ],
+      },
+      {
+        pergunta: "Como registro um atendimento pelo plano?",
+        resposta: [
+          "Em Concluir e registrar pagamento, escolha o plano em Usar o plano: os serviços incluídos saem do valor e o uso do ciclo é contado. O que passa do plano é cobrado à parte. Tudo aparece no ",
+          { href: "/painel/caixa", rotulo: "Caixa" },
+          " do dia.",
+        ],
+      },
+      {
+        pergunta: "Quem da equipe pode vender planos?",
+        resposta: [
+          "O dono vende sempre. Um profissional vende quando o dono liga Pode vender planos no cadastro da pessoa, em ",
+          { href: "/painel/equipe", rotulo: "Equipe" },
+          ". A casa fica com a parte da casa daquele profissional sobre cada mensalidade.",
         ],
       },
     ],

@@ -40,6 +40,19 @@ describe("central de ajuda", () => {
     );
   });
 
+  it("os planos de assinatura levam aos Planos e aos Pagamentos online", async () => {
+    render(<CentralDeAjuda />);
+
+    expect(screen.getByRole("heading", { level: 2, name: "Planos de assinatura" })).toBeInTheDocument();
+    await userEvent.type(screen.getByRole("searchbox", { name: "Buscar na ajuda" }), "asaas");
+
+    const perguntas = screen.getAllByRole("group");
+    const links = perguntas.flatMap((p) => within(p).queryAllByRole("link", { hidden: true }));
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(
+      expect.arrayContaining(["/painel/planos", "/painel/configuracoes/pagamentos-online"])
+    );
+  });
+
   it("a busca filtra as perguntas e diz quando nada casa", async () => {
     render(<CentralDeAjuda />);
 

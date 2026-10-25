@@ -90,6 +90,28 @@ describe("termos de uso", () => {
     expect(cobranca).toHaveTextContent(/Stripe/);
     expect(within(cobranca).getByRole("link", { name: /preços/i })).toHaveAttribute("href", "/precos");
   });
+
+  // Marco 3 da Onda 2: a barbearia vende planos ao cliente, e o dinheiro
+  // vai direto pra conta de quem vende no Asaas. O BarChop não é parte
+  // da venda.
+  it("explica os planos que a barbearia vende: conta de quem vende, sem taxa, contrato entre as partes", () => {
+    render(<Termos />);
+    const planos = screen.getByRole("region", { name: "Planos que a barbearia vende" });
+    expect(planos).toHaveTextContent(/Asaas/);
+    expect(planos).toHaveTextContent(/conta de quem vende/i);
+    expect(planos).toHaveTextContent(/não cobra taxa/i);
+    expect(planos).toHaveTextContent(/entre quem vende e o cliente/i);
+    expect(planos).toHaveTextContent(/Completo/);
+    // Os dados dos clientes servem ao agendamento e aos planos: o CPF de
+    // quem assina online vai pro Asaas, o que "só o agendamento" não cobre.
+    const dadosDosClientes = screen.getByRole("region", { name: "Os dados dos seus clientes" });
+    expect(dadosDosClientes).toHaveTextContent(/CPF/);
+    expect(dadosDosClientes).toHaveTextContent(/o agendamento e os planos funcionarem/i);
+    expect(screen.getByRole("link", { name: "Planos que a barbearia vende" })).toHaveAttribute(
+      "href",
+      "#planos-da-barbearia"
+    );
+  });
 });
 
 describe("política de privacidade", () => {
@@ -113,6 +135,20 @@ describe("política de privacidade", () => {
     expect(quemAjuda).toHaveTextContent(/Resend/);
     expect(quemAjuda).toHaveTextContent(/Oracle/);
     expect(quemAjuda).toHaveTextContent(/Stripe/);
+  });
+
+  it("o CPF só de quem assina online, que vai pra conta de quem vende no Asaas", () => {
+    render(<Privacidade />);
+    const dados = screen.getByRole("region", { name: /que dados coletamos/i });
+    expect(dados).toHaveTextContent(/CPF/);
+    expect(dados).toHaveTextContent(/assina um plano online/i);
+    expect(dados).toHaveTextContent(/chave de API do Asaas/i);
+    const papeis = screen.getByRole("region", { name: /quem decide/i });
+    expect(papeis).toHaveTextContent(/o agendamento e os planos funcionarem/i);
+    expect(papeis).not.toHaveTextContent(/clientes que agendam/i);
+    const quemAjuda = screen.getByRole("region", { name: /quem nos ajuda/i });
+    expect(quemAjuda).toHaveTextContent(/Asaas/);
+    expect(quemAjuda).toHaveTextContent(/conta de quem vende/i);
   });
 
   it("diz que o cartão fica com a Stripe, e não com o BarChop", () => {

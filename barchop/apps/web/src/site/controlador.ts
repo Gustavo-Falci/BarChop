@@ -33,8 +33,9 @@ export function formatarCpf(cpf: string): string {
 }
 
 // A data em que a versão atual dos textos passou a valer. Muda junto com
-// a entrada no ar da cobrança.
-export const VIGENCIA = "15 de outubro de 2026";
+// qualquer mudança nos termos ou na privacidade (a última: os planos que
+// a barbearia vende, no ar em 25/10), e a novidade do painel avisa.
+export const VIGENCIA = "25 de outubro de 2026";
 
 export function ouAPreencher(valor: string | null): string {
   return valor ?? "a preencher";

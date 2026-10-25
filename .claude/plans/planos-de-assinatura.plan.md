@@ -3,7 +3,7 @@
 **Source PRD**: `.claude/prds/onda-2-dinheiro.prd.md`
 **Selected Milestone**: 3 — Planos de assinatura para o cliente
 **Complexity**: Large (12 PRs, 1 migração no PR 2)
-**Status**: aprovado pelo dono em 2026-10-24, com as decisões propostas como estão; próximo: PR 1
+**Status**: aprovado pelo dono em 2026-10-24, com as decisões propostas como estão. Os 12 PRs prontos em 25/10 (#204 a #221 e o PR 12); falta o teste ponta a ponta do webhook na VM e o aceite com a GR Barber (Acceptance)
 
 Diferenças do plano, combinadas no caminho:
 - **PR 1:**
@@ -181,6 +181,14 @@ Diferenças do plano, combinadas no caminho:
   - **Minha conta segue com o título "Meus agendamentos"**, e as assinaturas entram numa seção depois deles. As canceladas ficam fora. Os usos só aparecem em ativa e teste (na pendente, "2 de 2" diria que já dá pra usar). "Pagar" na online pendente ou em atraso: o mesmo POST devolve a fatura, mostrada num segundo toque. Em teste não há "Pagar": a API devolve `ja_assina` pra quem está em teste, e a fatura do fim do teste aparece no assinar e, vencida, no "Pagar" do atraso;
   - **conferido no navegador em 375 e 1440 em 25/10**, com uma assinatura de verdade no sandbox (teste grátis e pendente, CPF, fatura, Pagar, cancelar; as duas canceladas no Asaas depois). A conta foi gravada direto no banco local, com uma `CHAVE_DE_CIFRA` descartável, porque conectar pela tela registra o webhook e o PC não tem endereço público. A ativação pelo pagamento (webhook) fica pro teste ponta a ponta na VM, ou com túnel;
   - **visto no navegador e anterior a este PR**: a Minha conta lê a sessão do `localStorage` no render e dá aviso de hidratação no Next; e sem agendamentos não mostra frase nenhuma.
+- **PR 12 (fechamento):**
+  - **Termos**: a seção "Planos que a barbearia vende". O plano é um acordo entre quem vende e o cliente; o dinheiro cai na conta de quem vende no Asaas, e o BarChop não recebe, não guarda e não cobra taxa; cobrança, estorno e devolução são entre as partes; o desconectar com assinatura viva é recusado e desativar um profissional cancela as assinaturas dele; fora do Completo, as assinaturas seguem e a venda para. Só fala do que existe: nada de Mercado Pago, Stripe Connect, InfinitePay ou Pix Automático;
+  - **Privacidade**: o Asaas aparece como o serviço de pagamento escolhido por quem vende, **e não como fornecedor do BarChop**: a conta é de quem vende, e o BarChop envia a ela nome, CPF, e-mail e celular de quem assina. O CPF é só de quem assina online e fica no cadastro do cliente naquela barbearia. A chave do Asaas fica cifrada e é apagada ao desconectar;
+  - **vigência em 25 de outubro de 2026**, o dia em que o online entrou no ar e o deploy esperado deste PR. Se o deploy for outro dia, a data muda junto (`src/site/controlador.ts`), e as duas novidades também;
+  - **duas novidades**: "Planos de assinatura" e "Termos e privacidade com os planos". A segunda é o aviso no painel que os termos prometem quando mudam;
+  - **Central de ajuda**: o tema "Planos de assinatura", depois do Caixa, com seis perguntas (criar, vender pela página, conectar o Asaas, assinante no balcão, atendimento pelo plano, quem vende);
+  - **marco 3 `complete` no PRD**, com o teste ponta a ponta do webhook e o aceite na GR Barber anotados como pendentes: o aceite do plano ainda não foi feito;
+  - o `screens.md` passou a ser a foto de 25/10, com as telas das duas partes do marco, e não só as do PR 11. O "Clube de assinatura" da Onda 3 ficou registrado como entrado na Onda 2.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
@@ -475,7 +483,7 @@ pnpm --filter @barchop/database exec prisma migrate deploy   # dev e test
 
 ## Acceptance
 - [ ] A GR cria um plano da casa e um plano do Gustavo, um cliente assina cada um (um no balcão, um online no sandbox), e o acerto do dia bate com a conta à mão
-- [ ] Os 12 PRs no ar, cada um em produção antes do próximo
-- [ ] Nenhuma resposta da API contém a chave do vendedor
-- [ ] Validação passa
-- [ ] Padrões espelhados, não reinventados
+- [ ] Os 12 PRs no ar, cada um em produção antes do próximo (os 11 primeiros no ar em 25/10; o 12 depois do deploy)
+- [x] Nenhuma resposta da API contém a chave do vendedor (`tests/routers/pagamentos-online.test.ts`)
+- [x] Validação passa
+- [x] Padrões espelhados, não reinventados

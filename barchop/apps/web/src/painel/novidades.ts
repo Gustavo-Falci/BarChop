@@ -10,6 +10,18 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    data: "2026-10-25",
+    titulo: "Termos e privacidade com os planos",
+    texto:
+      "Os termos de uso e a política de privacidade agora falam dos planos que a barbearia vende: o dinheiro vai direto pra conta de quem vende no Asaas, sem taxa do BarChop, e o CPF de quem assina online vai pra essa conta pra criar a cobrança.",
+  },
+  {
+    data: "2026-10-25",
+    titulo: "Planos de assinatura",
+    texto:
+      "Crie planos da casa ou de cada profissional, com os serviços incluídos e quantas vezes cada um vale no ciclo. O cliente assina pela sua página e paga na fatura do Asaas, direto na conta de quem vende, ou combina no balcão. No atendimento, Usar o plano conta o uso, e a mensalidade entra no acerto do Caixa. No plano Completo.",
+  },
+  {
     data: "2026-10-17",
     titulo: "Visual novo: menos amarelo, mais respiro",
     texto:

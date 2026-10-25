@@ -14,6 +14,7 @@ import { Aviso } from "../componentes/Aviso";
 import { Botao } from "../componentes/Botao";
 import { Campo } from "../componentes/Campo";
 import { caminhoDoPasso, lerEscolhas, passoDoVoltar } from "../fluxo/passos";
+import { caminhoDosPlanos, planoDaQuery } from "../fluxo/planos";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./Entrar.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
@@ -63,10 +64,16 @@ export function Entrar() {
   // reconstruído aqui pelo `caminhoDoPasso`, a partir do slug da rota.
   // Um valor que não seja passo conhecido cai no destino padrão — ver
   // o comentário do `caminhoDoLogin` em fluxo/passos.ts.
+  //
+  // `voltar=planos` é quem tocou em "Assinar" nos planos sem estar
+  // logado: volta pro plano escolhido, que o cliente assina com mais um
+  // toque (assinar nunca acontece sozinho).
   const voltar = passoDoVoltar(query.get("voltar"));
   const destino = voltar
     ? noHost(caminhoDoPasso(slug, voltar, lerEscolhas(query)))
-    : noHost(`/${slug}/minha-conta`);
+    : query.get("voltar") === "planos"
+      ? noHost(caminhoDosPlanos(slug, planoDaQuery(query.get("plano"))))
+      : noHost(`/${slug}/minha-conta`);
 
   const [modo, setModo] = useState<Modo>("entrar");
   // O e-mail sobrevive à troca de modo: quem errou a senha e foi pro

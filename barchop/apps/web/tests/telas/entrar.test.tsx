@@ -184,6 +184,22 @@ describe("entrar", () => {
     );
   });
 
+  it("quem tocou em Assinar volta pro plano escolhido", async () => {
+    navegacaoFalsa.redefinir({ query: { voltar: "planos", plano: "pl1" } });
+    montar();
+    await preencher();
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() => expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/planos?plano=pl1"));
+  });
+
+  it("um plano que não é id volta pros planos sem ele", async () => {
+    navegacaoFalsa.redefinir({ query: { voltar: "planos", plano: "//outro-site.com" } });
+    montar();
+    await preencher();
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() => expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/planos"));
+  });
+
   it("anuncia os tokens que o gerenciador de senhas do celular usa", async () => {
     // Este fluxo chega por link de WhatsApp, quase sempre no celular:
     // sem o par email/current-password ninguém preenche nem salva.

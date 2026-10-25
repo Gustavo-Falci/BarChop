@@ -16,6 +16,7 @@ import { iniciais } from "../formato/iniciais";
 import { rotuloDaComodidade, rotuloDoPagamento } from "../formato/pagina";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { LinkDaConta } from "../fluxo/LinkDaConta";
+import { PlanosNaPagina } from "./PlanosNaPagina";
 import { TrocaDeModo } from "../fluxo/TrocaDeModo";
 import { IconeCamera, IconeConversa, IconeMapa } from "../painel/icones";
 import estilos from "./PerfilDaBarbearia.module.css";
@@ -358,6 +359,8 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
               })()}
             </section>
           ) : null}
+
+          <PlanosNaPagina slug={slug} />
         </div>
 
         <div className={estilos.lateral}>

@@ -1,0 +1,74 @@
+import type { AssinaturaNaConta, PlanoDaVitrine } from "@barchop/types";
+import { diaEMes } from "../painel/planos";
+
+// Os planos da barbearia na página pública (Onda 2, marco 3, PR 11 do
+// plano planos-de-assinatura): a vitrine, o assinar e a Minha conta.
+
+// Um id de plano vindo da query. Só letras, números e hífen (o UUID da
+// API, e o "pl1" do dublê): o valor volta pra query e é comparado com a
+// lista, nunca vira caminho.
+const ID_SIMPLES = /^[A-Za-z0-9-]{1,64}$/;
+
+export function planoDaQuery(valor: string | null): string | null {
+  return valor !== null && ID_SIMPLES.test(valor) ? valor : null;
+}
+
+// "/gr-barber/planos?plano=pl1". Quem chama passa pelo `noHost`.
+export function caminhoDosPlanos(slug: string, planoId: string | null = null): string {
+  return planoId ? `/${slug}/planos?${new URLSearchParams({ plano: planoId })}` : `/${slug}/planos`;
+}
+
+// Assinar pede o cliente logado: o login volta pro plano escolhido. O
+// destino vai como o nome `planos`, nunca como URL (o mesmo cuidado do
+// `caminhoDoLogin` do agendamento).
+export function caminhoDoLoginParaAssinar(slug: string, planoId: string): string {
+  return `/${slug}/entrar?${new URLSearchParams({ voltar: "planos", plano: planoId })}`;
+}
+
+// "Vale com qualquer profissional", "Vale só com Lucas".
+export function comQuemVale(plano: { vendedor: Pick<NonNullable<PlanoDaVitrine["vendedor"]>, "nome"> | null }): string {
+  return plano.vendedor ? `Vale só com ${plano.vendedor.nome}` : "Vale com qualquer profissional";
+}
+
+export function fraseDoTesteGratis(dias: number): string {
+  return dias === 1 ? "1 dia grátis pra começar" : `${dias} dias grátis pra começar`;
+}
+
+// O que falta, depois de assinar online: o teste grátis empurra a
+// primeira cobrança pro fim dele.
+export function fraseDaFatura(assinatura: Pick<AssinaturaNaConta, "situacao" | "cicloTerminaEm">): string {
+  if (assinatura.situacao === "teste" && assinatura.cicloTerminaEm) {
+    return `O teste grátis vai até ${diaEMes(assinatura.cicloTerminaEm)}, e a primeira cobrança vence nesse dia.`;
+  }
+  if (assinatura.situacao === "em_atraso") return "A mensalidade venceu e ainda não foi paga.";
+  return "Falta pagar a primeira mensalidade pra assinatura começar.";
+}
+
+// Até quando vale, pro cliente. Em atraso, o atendimento é cobrado à
+// parte até a mensalidade entrar.
+export function situacaoNaConta(
+  assinatura: Pick<AssinaturaNaConta, "situacao" | "forma" | "cicloTerminaEm">
+): string {
+  const termina = assinatura.cicloTerminaEm ? diaEMes(assinatura.cicloTerminaEm) : "";
+  switch (assinatura.situacao) {
+    case "pendente":
+      return assinatura.forma === "online"
+        ? "Esperando o primeiro pagamento"
+        : "Começa quando você pagar no balcão";
+    case "teste":
+      return `Teste grátis até ${termina}`;
+    case "ativa":
+      return `Renova em ${termina}`;
+    case "em_atraso":
+      return `Venceu em ${termina}: até pagar, o atendimento é cobrado à parte`;
+    case "cancelada":
+      return "Cancelada";
+  }
+}
+
+// "Corte: sobra 1 de 2 neste ciclo", "Barba: sem limite".
+export function fraseDoUso(servico: AssinaturaNaConta["servicos"][number]): string {
+  if (servico.usosPorCiclo === null) return `${servico.nome}: sem limite`;
+  const sobram = servico.usosRestantes ?? 0;
+  return `${servico.nome}: ${sobram === 1 ? "sobra" : "sobram"} ${sobram} de ${servico.usosPorCiclo} neste ciclo`;
+}

@@ -21,6 +21,12 @@ describe("novidades do painel", () => {
     expect(contarNovas(LISTA, "banana")).toBe(3);
   });
 
+  it("anuncia os planos de assinatura e a mudança nos termos (que prometem o aviso no painel)", () => {
+    const titulos = NOVIDADES.map((n) => n.titulo);
+    expect(titulos).toContain("Planos de assinatura");
+    expect(titulos).toContain("Termos e privacidade com os planos");
+  });
+
   it("a lista de verdade vem da mais nova pra mais antiga, com data AAAA-MM-DD", () => {
     expect(NOVIDADES.length).toBeGreaterThan(0);
     for (const novidade of NOVIDADES) {

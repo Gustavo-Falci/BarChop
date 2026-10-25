@@ -356,7 +356,7 @@ export function registrarRotasPlanosPublicos(app: App): void {
           orderBy: [{ ordem: "asc" }, { criadoEm: "asc" }, { id: "asc" }],
         }),
         prisma.conexaoDePagamento.findMany({
-          where: { barbeariaId: barbearia.id },
+          where: { barbeariaId: barbearia.id, desconectadaEm: null },
           select: { barbeiroId: true, daCasa: true },
         }),
       ]);

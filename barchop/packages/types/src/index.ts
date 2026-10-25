@@ -842,6 +842,24 @@ export interface VitrineDePlanos {
   planos: PlanoDaVitrine[];
 }
 
+// GET/PUT /barbearias/me/pagamentos-online: a conta de quem vende no
+// provedor (`?daCasa=true` = a que recebe os planos da casa, só o dono).
+// A chave nunca volta: só os 4 últimos caracteres.
+export interface ContaDePagamentoOnline {
+  provedor: "asaas";
+  // `teste` = chave do sandbox, que não move dinheiro.
+  modo: "teste" | "real";
+  chaveFinal: string;
+  conectadaEm: string;
+}
+
+export interface PagamentosOnline {
+  daCasa: boolean;
+  // O modo de chave que a plataforma aceita: a tela pede a do modo certo.
+  modoAceito: "teste" | "real";
+  conta: ContaDePagamentoOnline | null;
+}
+
 export type SituacaoDoAssinante = "pendente" | "teste" | "ativa" | "em_atraso" | "cancelada";
 
 // GET /barbearias/me/assinantes e as rotas de /assinaturas (painel). O

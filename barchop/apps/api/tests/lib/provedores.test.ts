@@ -103,7 +103,7 @@ describe("provedoresDoAmbiente", () => {
     );
 
     const chaveCifrada = fabrica.cifrar("$aact_hmlg_colada");
-    expect(chaveCifrada.includes(Buffer.from("$aact_hmlg_colada"))).toBe(false);
+    expect(Buffer.from(chaveCifrada).includes(Buffer.from("$aact_hmlg_colada"))).toBe(false);
     await fabrica.daConexao({ provedor: "asaas", modo: "teste", chaveCifrada }).conferirChave();
     expect(new Headers(fetchFalso.mock.calls[0][1]?.headers).get("access_token")).toBe("$aact_hmlg_colada");
   });

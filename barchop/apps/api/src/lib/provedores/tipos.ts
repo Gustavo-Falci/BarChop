@@ -99,6 +99,9 @@ export interface Provedor {
   registrarWebhook(dados: { url: string; token: string; email: string | null }): Promise<string>;
   // Já apagado não é erro.
   apagarWebhook(id: string): Promise<void>;
+  // O webhook só é visto pela chave da conta que o criou: é assim que a
+  // troca de chave sabe se a nova é da mesma conta.
+  temWebhook(id: string): Promise<boolean>;
   criarCliente(dados: NovoCliente): Promise<string>;
   // O link é a fatura da primeira cobrança: o cliente escolhe ali como
   // paga, e o BarChop não vê cartão.
@@ -122,6 +125,13 @@ export interface ConexaoGravada {
 // um conector.
 export interface FabricaDeProvedores {
   nome: string;
+  // O modo das chaves que a plataforma aceita (PAGAMENTOS_ONLINE_MODO).
+  modoAceito: ModoDoProvedor;
+  // A chave colada, cifrada pra gravar em `chave_cifrada`.
+  cifrar(chave: string): Uint8Array;
+  // Pra onde o provedor manda os eventos da conexão; null = a API não
+  // sabe o próprio endereço (URL_DA_API).
+  urlDoWebhook(conexaoId: string): string | null;
   // O modo pelo formato da chave; null = não é chave desse provedor.
   modoDaChave(provedor: NomeDoProvedor, chave: string): ModoDoProvedor | null;
   // A chave colada na tela, antes de gravar (o conectar confere com ela).

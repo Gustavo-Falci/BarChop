@@ -205,6 +205,16 @@ describe("pagar online", () => {
     await c.app.close();
   });
 
+  it("a conta de outro modo não conta (a do sandbox, com a plataforma no real)", async () => {
+    const c = await cenario();
+    await plano(c, { aceitaOnline: true, aceitaNoBalcao: false });
+    const conexao = await conectar(c, c.dono.barbeiroId, true);
+    await prisma.conexaoDePagamento.update({ where: { id: conexao.id }, data: { modo: "real" } });
+
+    expect(await idsNaVitrine(c)).toEqual([]);
+    await c.app.close();
+  });
+
   it("a conta desconectada não conta", async () => {
     const c = await cenario();
     await plano(c, { aceitaOnline: true, aceitaNoBalcao: false });

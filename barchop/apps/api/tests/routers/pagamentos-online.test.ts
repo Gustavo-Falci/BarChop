@@ -208,16 +208,38 @@ describe("trocar a chave", () => {
 });
 
 describe("desconectar", () => {
-  it("apaga o webhook no Asaas e a conexão", async () => {
+  it("apaga o webhook no Asaas e desliga a conexão", async () => {
     const c = await cenario();
     await conectar(c, c.dono.token);
 
     const resposta = await desconectar(c, c.dono.token);
 
     expect(resposta.statusCode).toBe(204);
-    expect(await prisma.conexaoDePagamento.count()).toBe(0);
+    expect(await prisma.conexaoDePagamento.count({ where: { desconectadaEm: null } })).toBe(0);
     expect(c.provedores.webhooks).toEqual([]);
     expect((await ver(c, c.dono.token)).json().conta).toBeNull();
+  });
+
+  // A assinatura online cancelada segue apontando pra conexão (é a conta
+  // em que ela foi cobrada): a linha fica, desligada e sem a chave.
+  it("com só assinaturas canceladas: desconecta, guarda a conexão sem a chave, e deixa conectar de novo", async () => {
+    const c = await cenario();
+    await conectar(c, c.dono.token);
+    const antiga = await prisma.conexaoDePagamento.findFirstOrThrow();
+    await assinaturaOnline(c, antiga.id, "cancelada");
+
+    expect((await desconectar(c, c.dono.token)).statusCode).toBe(204);
+
+    const desligada = await prisma.conexaoDePagamento.findUniqueOrThrow({ where: { id: antiga.id } });
+    expect(desligada.desconectadaEm).not.toBeNull();
+    expect(desligada.chaveCifrada).toHaveLength(0);
+    expect((await ver(c, c.dono.token)).json().conta).toBeNull();
+    expect((await desconectar(c, c.dono.token)).statusCode).toBe(404);
+
+    const deNovo = await conectar(c, c.dono.token, "$aact_hmlg_outra-conta-7777");
+    expect(deNovo.statusCode).toBe(200);
+    expect(deNovo.json().conta.chaveFinal).toBe("7777");
+    expect(await prisma.conexaoDePagamento.count()).toBe(2);
   });
 
   it("com assinatura online viva: 422 assinaturas_ativas; a cancelada não conta", async () => {
@@ -263,7 +285,7 @@ describe("desconectar", () => {
     const resposta = await desconectar(c, c.dono.token);
 
     expect(resposta.statusCode).toBe(204);
-    expect(await prisma.conexaoDePagamento.count()).toBe(0);
+    expect(await prisma.conexaoDePagamento.count({ where: { desconectadaEm: null } })).toBe(0);
   });
 });
 

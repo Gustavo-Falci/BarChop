@@ -17,6 +17,7 @@ import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./MinhaConta.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { AvisoDoPrazo } from "./AvisoDoPrazo";
+import { MinhasAssinaturas } from "./MinhasAssinaturas";
 import { Carregando } from "../componentes/Carregando";
 
 // `agora` é prop com padrão, como na EscolhaDaData: os prazos dependem
@@ -131,6 +132,10 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
           </div>
         </Cartao>
       ))}
+
+      {/* Depois dos agendamentos: a página é "Meus agendamentos", e a
+          seção só aparece pra quem assina. */}
+      <MinhasAssinaturas />
     </main>
   );
 }

@@ -242,6 +242,24 @@ describe("assinar", () => {
     await c.app.close();
   });
 
+  it("a fatura a pagar volta mesmo com o plano fora de venda: a assinatura segue (decisão 6)", async () => {
+    const c = await cenario();
+    const id = (await assinar(c, c.daCasa.id)).json().assinatura.id;
+    await prisma.assinaturaDoCliente.update({ where: { id }, data: { situacao: "em_atraso" } });
+    await prisma.barbearia.update({ where: { id: c.dono.barbeariaId }, data: { vitrineDePlanos: false } });
+    await prisma.planoDeAssinatura.update({ where: { id: c.daCasa.id }, data: { ativo: false } });
+
+    const resposta = await assinar(c, c.daCasa.id, {});
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toMatchObject({ assinatura: { id, situacao: "em_atraso" }, linkDaFatura: expect.any(String) });
+
+    // Com a conta desligada, não há fatura pra onde voltar.
+    await prisma.conexaoDePagamento.update({ where: { id: c.casa.id }, data: { desconectadaEm: new Date() } });
+    expect((await assinar(c, c.daCasa.id, {})).json().erro).toBe("ja_assina");
+    await c.app.close();
+  });
+
   it("o provedor fora do ar: 502 e nada gravado", async () => {
     const c = await cenario();
     c.provedores.indisponivel = true;

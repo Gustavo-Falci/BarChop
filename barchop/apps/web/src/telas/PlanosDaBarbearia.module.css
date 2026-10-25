@@ -1,0 +1,148 @@
+/* Estreita e centralizada até a tela ganhar duas colunas: a largura
+   vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  padding: var(--espaco-lg);
+  width: 100%;
+  max-width: var(--fluxo-estreita);
+  margin-inline: auto;
+}
+
+.cabeca {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.cabeca h1 {
+  margin: 0;
+}
+
+.lista {
+  display: grid;
+  gap: var(--espaco-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Desktop: os planos em grade, na largura do fluxo, como a Minha conta. */
+@media (min-width: 900px) {
+  .pagina {
+    max-width: var(--fluxo-largura);
+  }
+
+  .lista {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    align-items: start;
+  }
+}
+
+/* Um plano por cartão, com a cara do Cartao. */
+.plano {
+  display: grid;
+  gap: var(--espaco-sm);
+  min-width: 0;
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
+  border-radius: var(--raio-cartao, var(--raio-lg));
+  background: var(--cor-surface);
+  box-shadow: var(--cartao-sombra, var(--sombra-1));
+}
+
+.plano p {
+  margin: 0;
+}
+
+/* O plano que o cliente escolheu antes de entrar. */
+.marcado {
+  border-color: var(--cor-accent);
+}
+
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco-xs) var(--espaco-sm);
+}
+
+.nomeDoPlano {
+  margin: 0;
+  font-size: var(--texto-lg);
+  overflow-wrap: anywhere;
+}
+
+.preco {
+  font-weight: 700;
+}
+
+.rotulo {
+  font-weight: 700;
+}
+
+.descricao {
+  overflow-wrap: anywhere;
+}
+
+.teste {
+  font-weight: 700;
+}
+
+.passo {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+/* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+/* ---------- Na página da barbearia ---------- */
+
+.secaoNaPagina {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.tituloNaPagina {
+  margin: 0;
+  font-size: var(--texto-lg);
+  word-spacing: 0.08em;
+}
+
+.resumo {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linhaDoResumo {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 var(--espaco-sm);
+  padding-block: var(--espaco-sm);
+}
+
+.linhaDoResumo + .linhaDoResumo {
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.linhaDoResumo .apoio {
+  grid-column: 1 / -1;
+}
+
+.nome {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

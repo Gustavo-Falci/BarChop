@@ -8,6 +8,7 @@ import type {
   ProximosHorariosDoServico,
   ServicoSerializado,
   SessaoCliente,
+  VitrineDePlanos,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
@@ -106,6 +107,12 @@ export function criarApiPublica(requisicao: Requisicao) {
         metodo: "POST",
         corpo: novo,
       });
+    },
+
+    // A vitrine de planos (Onda 2, marco 3). Fora do Completo ou com a
+    // vitrine desligada, lista vazia, nunca 403.
+    planos(slug: string): Promise<VitrineDePlanos> {
+      return requisicao(`/barbearias/${slug}/planos`);
     },
 
     // Os próximos 3 horários livres de cada serviço, pra página da

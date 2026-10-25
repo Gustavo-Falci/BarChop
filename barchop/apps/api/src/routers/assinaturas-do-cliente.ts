@@ -120,6 +120,30 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
       const plano = await prisma.planoDeAssinatura.findFirst({ where: { id: request.body.planoId, barbeariaId } });
       if (!plano) throw naoEncontrado();
 
+      // Uma viva por cliente e plano. A online pendente ou em atraso é
+      // quem tem fatura a pagar: volta pra ela, em vez de criar outra.
+      // Antes das regras de venda: plano fora de venda, vitrine desligada
+      // ou o Grátis não param a assinatura que existe (decisão 6), e quem
+      // está devendo precisa da fatura. Só a conta desligada (sem chave)
+      // ou de outro modo não tem pra onde voltar.
+      const viva = await prisma.assinaturaDoCliente.findFirst({
+        where: { planoId: plano.id, clienteId, situacao: { not: "cancelada" } },
+        include: { ...INCLUDE_NA_CONTA, conexao: true },
+      });
+      if (viva) {
+        const aPagar = viva.situacao === "pendente" || viva.situacao === "em_atraso";
+        const contaViva =
+          viva.conexao !== null &&
+          viva.conexao.desconectadaEm === null &&
+          viva.conexao.modo === app.provedores.modoAceito;
+        if (viva.forma !== "online" || !aPagar || !viva.idExterno || !contaViva) throw jaAssina();
+        const linkDaFatura = await noProvedor(
+          app.provedores.daConexao(viva.conexao!).linkDaFatura(viva.idExterno),
+          request.log
+        );
+        return reply.code(200).send({ assinatura: await serializar(prisma, viva), linkDaFatura });
+      }
+
       // A regra da vitrine: aberta, plano à venda e online, com serviço
       // ativo, e a conta de quem vende ligada e do modo aceito. Tudo
       // antes de falar com o provedor, pra não criar nada lá à toa.
@@ -135,22 +159,6 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
         },
       });
       if (!conexao) throw indisponivel();
-
-      // Uma viva por cliente e plano. A online pendente ou em atraso é
-      // quem tem fatura a pagar: volta pra ela, em vez de criar outra.
-      const viva = await prisma.assinaturaDoCliente.findFirst({
-        where: { planoId: plano.id, clienteId, situacao: { not: "cancelada" } },
-        include: { ...INCLUDE_NA_CONTA, conexao: true },
-      });
-      if (viva) {
-        const aPagar = viva.situacao === "pendente" || viva.situacao === "em_atraso";
-        if (viva.forma !== "online" || !aPagar || !viva.idExterno || !viva.conexao) throw jaAssina();
-        const linkDaFatura = await noProvedor(
-          app.provedores.daConexao(viva.conexao).linkDaFatura(viva.idExterno),
-          request.log
-        );
-        return reply.code(200).send({ assinatura: await serializar(prisma, viva), linkDaFatura });
-      }
 
       const cliente = await prisma.cliente.findUniqueOrThrow({
         where: { id: clienteId },

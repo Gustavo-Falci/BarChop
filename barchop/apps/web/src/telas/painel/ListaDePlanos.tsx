@@ -174,6 +174,15 @@ export function ListaDePlanos({ agora }: { agora?: Date } = {}) {
         </div>
       ) : null}
 
+      {/* O profissional não tem o índice das Configurações: a conta
+          dele se acha daqui. */}
+      {podeMexer ? (
+        <p className={estilos.efeito}>
+          Pra vender online, quem vende conecta a conta do Asaas em{" "}
+          <Link href="/painel/configuracoes/pagamentos-online">Pagamentos online</Link>.
+        </p>
+      ) : null}
+
       <Tabela
         cabecalho={["Plano", "Preço", "Assinantes"]}
         larguras={["56%", "24%", "20%"]}

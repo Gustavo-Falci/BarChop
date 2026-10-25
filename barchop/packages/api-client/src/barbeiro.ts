@@ -1,5 +1,6 @@
 import type {
   AgendamentoComCliente,
+  PagamentosOnline,
   AgendamentoSerializado,
   AntecedenciaDoLembrete,
   CategoriaDeServico,
@@ -195,6 +196,10 @@ export interface NovoBloqueio {
   horaInicio?: string | null;
   horaFim?: string | null;
   motivo?: string | null;
+}
+
+function filtroDaConta(daCasa: boolean): { daCasa?: string } {
+  return daCasa ? { daCasa: "true" } : {};
 }
 
 export function criarApiBarbeiro(requisicao: Requisicao) {
@@ -809,6 +814,33 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // A lista de serviços, quando vem, substitui a inteira.
     editarPlano(id: string, mudanca: MudancaDoPlano): Promise<PlanoDoPainel> {
       return requisicao(`/barbearias/me/planos/${id}`, { metodo: "PATCH", corpo: mudanca, comToken: true });
+    },
+
+    // A conta de quem vende no Asaas (PR 9 do plano
+    // planos-de-assinatura). `daCasa` = a que recebe os planos da casa,
+    // só do dono; sem, a de quem está logado. A chave nunca volta: só os
+    // 4 últimos caracteres. A API só lê `?daCasa=true`.
+    pagamentosOnline(daCasa: boolean): Promise<PagamentosOnline> {
+      return requisicao("/barbearias/me/pagamentos-online", { query: filtroDaConta(daCasa), comToken: true });
+    },
+
+    // Conectar, ou trocar a chave da mesma conta.
+    conectarPagamentosOnline(daCasa: boolean, chave: string): Promise<PagamentosOnline> {
+      return requisicao("/barbearias/me/pagamentos-online", {
+        metodo: "PUT",
+        query: filtroDaConta(daCasa),
+        corpo: { provedor: "asaas", chave },
+        comToken: true,
+      });
+    },
+
+    // Recusado (422 `assinaturas_ativas`) com assinatura online viva na conta.
+    async desconectarPagamentosOnline(daCasa: boolean): Promise<void> {
+      await requisicao("/barbearias/me/pagamentos-online", {
+        metodo: "DELETE",
+        query: filtroDaConta(daCasa),
+        comToken: true,
+      });
     },
 
     // Só o dono: os planos ativos na página pública.

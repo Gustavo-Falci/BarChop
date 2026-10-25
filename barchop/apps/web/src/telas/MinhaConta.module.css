@@ -10,7 +10,41 @@
 }
 .item { display: grid; gap: var(--espaco-sm); }
 .linha { display: flex; align-items: center; gap: var(--espaco-sm); }
-.acoes { display: flex; gap: var(--espaco-sm); }
+.acoes { display: flex; flex-wrap: wrap; gap: var(--espaco-sm); }
+
+/* As assinaturas (PR 11 do plano planos-de-assinatura): um cartão por
+   assinatura, com o título da seção em cima. */
+.assinaturas {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.tituloDaSecao {
+  margin: var(--espaco-md) 0 0;
+  font-size: var(--texto-lg);
+}
+
+.texto,
+.confirmacao p {
+  margin: 0;
+}
+
+.confirmacao {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+/* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.usos {
+  margin: 0;
+  padding-left: var(--espaco-lg);
+}
 
 /* Desktop: os agendamentos em grade de cartões, na largura do fluxo (as
    telas usam a largura — pedido do dono); título e avisos na linha toda. */
@@ -21,7 +55,17 @@
     align-items: start;
   }
 
-  .pagina > :not(:has(.item)) {
+  .pagina > :not(:has(.item)),
+  .pagina > .assinaturas {
+    grid-column: 1 / -1;
+  }
+
+  .assinaturas {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    align-items: start;
+  }
+
+  .assinaturas > .tituloDaSecao {
     grid-column: 1 / -1;
   }
 }

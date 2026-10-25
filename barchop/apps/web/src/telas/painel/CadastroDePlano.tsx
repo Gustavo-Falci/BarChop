@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
@@ -95,6 +96,9 @@ export function CadastroDePlano() {
   const [ciclo, setCiclo] = useState<CicloDoCliente>("mensal");
   const [fixo, setFixo] = useState("");
   const [escolhas, setEscolhas] = useState<Record<string, Escolha>>({});
+  // O plano novo nasce só no balcão: o online depende da conta de quem
+  // vende, e marcar sozinho esconderia isso.
+  const [online, setOnline] = useState(false);
   const [noBalcao, setNoBalcao] = useState(true);
   const [erros, setErros] = useState<Erros>({});
   const [aviso, setAviso] = useState<string | undefined>();
@@ -120,6 +124,7 @@ export function CadastroDePlano() {
         ])
       )
     );
+    setOnline(atual.aceitaOnline);
     setNoBalcao(atual.aceitaNoBalcao);
   }
   // Quem só cria o próprio (o profissional, ou o dono que não pode o da
@@ -210,7 +215,7 @@ export function CadastroDePlano() {
       novos.servicos = `Os usos por ciclo vão de 1 a ${USOS_MAX}, ou ficam ilimitados.`;
     }
 
-    const aceitaOnline = atual?.aceitaOnline ?? false;
+    const aceitaOnline = online;
     if (!aceitaOnline && !noBalcao) novos.formas = "Escolha como o cliente paga.";
 
     setErros(novos);
@@ -436,20 +441,26 @@ export function CadastroDePlano() {
 
           <fieldset className={estilos.grupo}>
             <legend className={estilos.rotulo}>Como o cliente paga</legend>
-            {/* Sem provedor ainda: o online chega com os pagamentos online
-                (PR 9 do plano planos-de-assinatura). */}
+            {/* A conta não é conferida aqui: o dono editando o plano de outro
+                não lê a conta dele. A vitrine é que só oferece o online com a
+                conta de quem vende conectada. */}
             <span className={estilos.marca}>
               <input
                 type="checkbox"
                 id={`${idDoForm}-online`}
-                checked={atual?.aceitaOnline ?? false}
-                disabled
+                checked={online}
+                onChange={(evento) => {
+                  setOnline(evento.target.checked);
+                  setErros((atuais) => ({ ...atuais, formas: undefined }));
+                }}
                 aria-describedby={`${idDoForm}-online-apoio`}
               />
               <label htmlFor={`${idDoForm}-online`}>Online, na página</label>
             </span>
             <span className={estilos.apoio} id={`${idDoForm}-online-apoio`}>
-              Pix ou cartão, direto na conta de quem vende. Chega com os pagamentos online.
+              Pix, cartão ou boleto na fatura do Asaas, direto na conta de quem vende. Sem a conta conectada em{" "}
+              <Link href="/painel/configuracoes/pagamentos-online">Pagamentos online</Link>, a página oferece só o
+              balcão.
             </span>
             <span className={estilos.marca}>
               <input

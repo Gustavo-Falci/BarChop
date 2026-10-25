@@ -14,8 +14,7 @@ import { montarPainel } from "../../ajudantes/painel";
 // Os planos no painel (Onda 2, marco 3, PR 7a do plano
 // planos-de-assinatura): a lista agrupada por quem vende, a vitrine, o
 // cadastro do plano e, no membro, a liberação pra vender e o desativar
-// de quem tem assinante. Sem provedor ainda: o "online" espera os
-// pagamentos online (PR 9).
+// de quem tem assinante. O "online" liga no PR 11.
 
 const gustavo: MembroDaEquipe = {
   id: "bb0",
@@ -180,12 +179,30 @@ describe("o cadastro do plano", () => {
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/planos");
   });
 
-  it("o online espera os pagamentos online", async () => {
-    montarPainel(<CadastroDePlano />, comPlanos());
+  it("o online liga no plano, e o apoio leva a Pagamentos online (PR 11)", async () => {
+    const falso = comPlanos();
+    const criar = vi.spyOn(falso.barbeiro, "criarPlano");
+    montarPainel(<CadastroDePlano />, falso);
     const online = await screen.findByRole("checkbox", { name: /online, na página/i });
-    expect(online).toBeDisabled();
-    expect(screen.getByText(/chega com os pagamentos online/i)).toBeInTheDocument();
+    // O novo nasce só no balcão.
+    expect(online).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: /no balcão/i })).toBeChecked();
+    expect(screen.getByRole("link", { name: "Pagamentos online" })).toHaveAttribute(
+      "href",
+      "/painel/configuracoes/pagamentos-online"
+    );
+
+    await userEvent.click(online);
+    await userEvent.click(screen.getByRole("checkbox", { name: /no balcão/i }));
+    await userEvent.type(screen.getByLabelText("Nome"), "Online");
+    await userEvent.type(screen.getByLabelText(/preço/i), "50,00");
+    await userEvent.type(screen.getByLabelText(/quem atende ganha/i), "0,00");
+    await userEvent.click(screen.getAllByRole("checkbox").find((c) => c.closest("li"))!);
+    await userEvent.click(screen.getByRole("button", { name: /salvar plano/i }));
+
+    await waitFor(() =>
+      expect(criar).toHaveBeenCalledWith(expect.objectContaining({ aceitaOnline: true, aceitaNoBalcao: false }))
+    );
   });
 
   it("confere antes de mandar: sem preço e sem serviço, diz os dois", async () => {

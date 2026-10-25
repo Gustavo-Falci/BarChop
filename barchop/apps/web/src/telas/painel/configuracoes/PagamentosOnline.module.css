@@ -1,0 +1,61 @@
+.pagina {
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+}
+
+/* Lado a lado no desktop: a conta da casa e a sua. */
+.contas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: var(--espaco-lg);
+  align-items: start;
+  max-width: 1240px;
+}
+
+.conta,
+.formulario,
+.confirmacao,
+.quemTrava {
+  display: grid;
+  gap: var(--espaco-sm);
+  min-width: 0;
+}
+
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-xs);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.confirmacao p,
+.quemTrava ul {
+  margin: 0;
+}
+
+.quemTrava ul {
+  padding-left: var(--espaco-lg);
+}
+
+/* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.botoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--espaco-sm);
+}
+
+.feito {
+  margin: 0;
+  color: var(--cor-ok);
+  font-weight: 700;
+}

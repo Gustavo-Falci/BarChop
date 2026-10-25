@@ -6,6 +6,7 @@ import type {
   BarbeariaDoPainel,
   DivisaoDoDinheiro,
   HorarioSerializado,
+  PagamentosOnline,
 } from "@barchop/types";
 import { Aviso } from "../../../componentes/Aviso";
 import { CabecalhoDaPagina } from "../../../componentes/CabecalhoDaPagina";
@@ -39,6 +40,13 @@ function resumoDaDivisao(divisao: DivisaoDoDinheiro | null, erro?: string): stri
   if (divisao.matriz.length > 0) partes.push(plural(divisao.matriz.length, "regra de cliente", "regras de cliente"));
   if (comCasa > 0) partes.push(`parte da casa em ${plural(comCasa, "profissional", "profissionais")}`);
   return partes.join(" · ");
+}
+
+// A conta da casa, numa frase. Sem ela (ainda carregando ou falhou), a
+// frase geral.
+function resumoDosPagamentos(daCasa: PagamentosOnline | null): string {
+  if (!daCasa?.conta) return "A conta do Asaas que recebe os planos assinados pela página";
+  return `Conta da casa conectada · chave terminando em ${daCasa.conta.chaveFinal}`;
 }
 
 function LinhaDaArea({
@@ -90,6 +98,7 @@ function IndiceDoDono() {
   const horarios = useRequisicao(() => api.barbeiro.horarios(), []);
   // Só pro resumo da linha; se falhar, a linha fica com a frase geral.
   const divisao = useRequisicao(() => api.barbeiro.divisao(), []);
+  const pagamentos = useRequisicao(() => api.barbeiro.pagamentosOnline(true), []);
 
   const erro = barbearia.erro ?? horarios.erro;
   if (erro) return <Aviso>{erro.mensagem || "Não foi possível carregar as configurações agora."}</Aviso>;
@@ -154,6 +163,15 @@ function IndiceDoDono() {
             <Link href="/painel/configuracoes/divisao" className={estilos.linha}>
               <strong className={estilos.nomeDaArea}>Divisão do dinheiro</strong>
               <span className={estilos.valor}>{resumoDaDivisao(divisao.dados, divisao.erro?.codigo)}</span>
+              <span className={estilos.seta} aria-hidden="true">
+                ›
+              </span>
+            </Link>
+          </li>
+          <li>
+            <Link href="/painel/configuracoes/pagamentos-online" className={estilos.linha}>
+              <strong className={estilos.nomeDaArea}>Pagamentos online</strong>
+              <span className={estilos.valor}>{resumoDosPagamentos(pagamentos.dados)}</span>
               <span className={estilos.seta} aria-hidden="true">
                 ›
               </span>

@@ -1,6 +1,6 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, type SementeFalsa } from "@barchop/api-client";
 import type { AssinaturaDoPainel, ContaDePagamentoOnline, PlanoDoPainel } from "@barchop/types";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
@@ -169,8 +169,13 @@ describe("os planos na página da barbearia", () => {
   });
 
   it("sem plano, a seção não aparece", async () => {
-    const falso = montar(<PlanosNaPagina slug="gr-barber" />, semear({ vitrineDePlanos: false }));
-    await waitFor(() => expect(falso.estado.vitrineDePlanos).toBe(false));
+    // Espera a resposta de verdade: antes dela a seção também não existe.
+    const falso = semear({ vitrineDePlanos: false });
+    const pedido = vi.spyOn(falso.publico, "planos");
+    montar(<PlanosNaPagina slug="gr-barber" />, falso);
+    await waitFor(() => expect(pedido).toHaveBeenCalled());
+    await pedido.mock.results[0].value;
+    await act(async () => {});
     expect(screen.queryByRole("region", { name: "Planos de assinatura" })).not.toBeInTheDocument();
   });
 });

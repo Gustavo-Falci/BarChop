@@ -128,7 +128,11 @@ Diferenças do plano, combinadas no caminho:
   - **a recusa com assinatura viva (422 `assinaturas_ativas`) diz quantas, sem a lista**: o erro da API só tem `erro` e `mensagem`. A tela (PR 11) mostra quem pela lista de assinantes;
   - **ver e desconectar não pedem o Completo nem o "pode vender"**: no Grátis, ou sem a liberação, as assinaturas que existem seguem, e quem vendeu precisa enxergar e soltar a conta. Conectar pede os dois (o dono não precisa da liberação);
   - **o e-mail do webhook é o de quem conectou**: o Asaas avisa ali quando a fila de eventos para;
-  - **fumaça no sandbox** com o conector de verdade: o token gerado aqui (43 caracteres, base64url) é aceito; registrar, ver, apagar e apagar de novo passam.
+  - **fumaça no sandbox** com o conector de verdade: o token gerado aqui (43 caracteres, base64url) é aceito; registrar, ver, apagar e apagar de novo passam;
+  - **a vitrine só conta conta ligada e do modo aceito**: a conta do sandbox do teste ponta a ponta não vende depois que o modo volta a `real` (decisão 10);
+  - **fica para o PR 10**:
+    - o webhook só aceita conexão ligada (`desconectadaEm: null`) e do modo aceito. A desligada guarda o hash do token, mas não tem mais a chave: conexão desligada é desconhecida (200 + log), senão o `daConexao` lança e o Asaas repete até parar a fila;
+    - o assinar relê a conexão ligada e do modo aceito dentro da própria transação: o desconectar conta as assinaturas vivas e desliga sem trava, e os dois não podem se cruzar.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

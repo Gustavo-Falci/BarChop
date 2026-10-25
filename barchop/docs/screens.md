@@ -14,12 +14,12 @@ ADR-0006): o **painel**, a **página pública** de cada barbearia
 (`<slug>.barchop.com.br`, hoje `/[slug]`) e o **site** de marketing
 (`www`).
 
-## O que existe hoje (2026-10-16)
+## O que existe hoje (2026-10-25)
 
 Tudo no ar. As tabelas por onda, mais abaixo, guardam de onde cada
 tela veio; esta é a foto de agora.
 
-### Painel — 34 rotas
+### Painel — 38 rotas
 
 | Rota | O que faz | Muda em |
 |---|---|---|
@@ -30,19 +30,22 @@ tela veio; esta é a foto de agora.
 | `/painel/cartaz` | Cartaz do link com QR, pra imprimir | — |
 | `/painel/agenda` | Dia, semana e mês, com eixo de tempo; dia em colunas por profissional, semana com pílulas por profissional; fora do expediente e pausa sombreados; horários livres com a hora escrita, clique de 15 em 15; faixa de resumo, "Agora" e "Bloquear" | — |
 | `/painel/agendamentos/novo` | Cliente, serviços, profissional, data e horário; Cancelar volta pra tela anterior | — |
-| `/painel/agendamentos/[id]` | Status e observações, sem caixas (Salvar/Descartar só quando muda); "Lembrar pelo WhatsApp"; presença confirmada pelo lembrete; "Concluir e registrar pagamento" (valor, desconto, gorjeta, forma e quem recebeu) com o resumo e a frase da divisão; dia fechado só leitura | — |
-| `/painel/caixa` | Caixa do dia (anterior, hoje, próximo): acerto por pessoa e repasses em frases, quanto entrou por forma, pagamentos e pendências com link; "Fechar o dia" e reabrir só do dono; o profissional vê o dele; Grátis vê o convite | — |
+| `/painel/agendamentos/[id]` | Status e observações, sem caixas (Salvar/Descartar só quando muda); "Lembrar pelo WhatsApp"; presença confirmada pelo lembrete; "Concluir e registrar pagamento" (valor, desconto, gorjeta, forma e quem recebeu) com o resumo e a frase da divisão; "Usar o plano" pra quem assina, com o uso de cada serviço e o que passa do plano cobrado à parte; dia fechado só leitura | — |
+| `/painel/caixa` | Caixa do dia (anterior, hoje, próximo): acerto por pessoa e repasses em frases, quanto entrou por forma (com a linha Online no dia de mensalidade paga pelo Asaas), pagamentos e mensalidades dos planos, pendências com link; "Fechar o dia" e reabrir só do dono; o profissional vê o dele; Grátis vê o convite | — |
 | `/painel/clientes` | Lista com busca e pílulas Todos / Vieram em 30 dias / Sem registro em 90 dias, contadas no servidor | 🔧 Onda 3 (segmentos) |
 | `/painel/clientes/novo` | Nome, telefone e e-mail | — |
-| `/painel/clientes/[id]` | Resumo, WhatsApp e Agendar no topo; histórico em Próximos e Anteriores; dados; "Cliente de X" (de quem é no caixa), com Trocar pro dono | 🔧 Onda 3 (pontos, assinatura) |
+| `/painel/clientes/[id]` | Resumo, WhatsApp e Agendar no topo; histórico em Próximos e Anteriores; dados; "Cliente de X" (de quem é no caixa), com Trocar pro dono; os planos que assina, com "Assinar plano" no balcão, o "Recebi" de cada ciclo e cancelar | 🔧 Onda 3 (pontos) |
 | `/painel/servicos` | Lista por categoria (lista fechada), pílulas, busca, "Onde aparece"; inativos atenuados | — |
 | `/painel/servicos/novo`, `/painel/servicos/[id]` | Nome, duração, preço, categoria em pílulas, descrição e foto, com a prévia "Como o cliente vê"; desativar e reativar | — |
 | `/painel/equipe` | Lista com papel e situação, pílulas Todos / Atendem / Convites pendentes / Inativos | — |
 | `/painel/equipe/novo` | Convidar por e-mail (só o dono); respeita o limite de profissionais do plano | — |
-| `/painel/equipe/[id]` | Dados, foto, papel, serviços que faz, jornada da semana com pausa, situação — cada grupo salva sozinho | — |
+| `/painel/equipe/[id]` | Dados, foto, papel, serviços que faz, jornada da semana com pausa, "Pode vender planos" (o dono libera), situação — cada grupo salva sozinho; desativar quem tem assinantes cancela as assinaturas dos planos dele | — |
+| `/painel/planos` | Planos de assinatura da casa e de cada profissional, com a aba Assinantes (situação, "Recebi" e cancelar); "Mostrar os planos na página" (só o dono); atalho pra Pagamentos online; fora do Completo, o convite | — |
+| `/painel/planos/novo`, `/painel/planos/[id]` | Nome, descrição, ciclo, preço, dias grátis, quanto quem atende ganha por atendimento (plano da casa), serviços incluídos com os usos por ciclo e como o cliente paga (online, na página, e no balcão); desativar e reativar | — |
 | `/painel/bloqueios` | Folgas e bloqueios: dia inteiro ou só algumas horas, atalhos de motivo | — |
-| `/painel/configuracoes` | Índice "X de N decididas": Operação (Horários, Regras de agendamento) e Canais com clientes (Dados do negócio, Aparência, Comunicação, Notificações); fora da contagem, Divisão do dinheiro e o Seu perfil | — |
+| `/painel/configuracoes` | Índice "X de N decididas": Operação (Horários, Regras de agendamento) e Canais com clientes (Dados do negócio, Aparência, Comunicação, Notificações); fora da contagem, Divisão do dinheiro, Pagamentos online e o Seu perfil | — |
 | `/painel/configuracoes/divisao` | Só o dono. Parte da casa de cada um e a grade "cliente de ↓ × atendeu →", com o exemplo de R$ 100,00 do efeito; Salvar/Descartar só quando muda | — |
+| `/painel/configuracoes/pagamentos-online` | A conta do Asaas da casa (só o dono) e a de quem vende: colar a chave de API, ver os últimos caracteres, chip Sandbox, trocar a chave e desconectar (recusado com assinatura online viva, com a lista de quem cancelar) | — |
 | `/painel/configuracoes/horarios` | Horário da semana com pausa, rotina pronta, exceções por data | — |
 | `/painel/configuracoes/regras-de-agendamento` | Intervalo entre horários, antecedência mínima, janela da agenda, prazo pro cliente remarcar ou cancelar | — |
 | `/painel/configuracoes/dados-do-negocio` | Abas Identidade (nome, endereço, apresentação, link), Marca (logo e capa) e Comodidades (comodidades e formas de pagamento) | — |
@@ -61,20 +64,21 @@ ajuda, Aparência do painel (claro, escuro ou sistema), o sino de
 notificações (Não lidas / Todas / Avisos) e o menu da conta (Minha
 conta, Faturas, Indique e ganhe "Em breve", Sair).
 
-### Página pública — 8 telas e 2 redirects
+### Página pública — 9 telas e 2 redirects
 
 Em `<slug>.barchop.com.br` (no desenvolvimento, `/[slug]`). Segue o
 tema do aparelho e a Aparência publicada pelo dono.
 
 | Rota | O que faz | Muda em |
 |---|---|---|
-| `/` | Capa, logo, aberto agora, serviços por categoria (lista ou abas) com os próximos horários, equipe, horário, comodidades, pagamento, contatos e mapa | 🔧 Onda 2 (planos da barbearia) |
+| `/` | Capa, logo, aberto agora, serviços por categoria (lista ou abas) com os próximos horários, os planos de assinatura em resumo, equipe, horário, comodidades, pagamento, contatos e mapa | — |
 | `/agendar` | Passo 1: serviços | — |
 | `/agendar/profissional` | Passo 2: profissional ou "qualquer um" | — |
 | `/agendar/data` | Passo 3: dia e horário numa tela | — |
 | `/agendar/confirmar` | Passo 4: identificação, resumo, confirmação e sucesso com `.ics` | 🔧 Onda 3 (pagamento/sinal) |
-| `/entrar` | Login, primeiro acesso e esqueci a senha por código no e-mail | 🔧 Onda 4 (Google/Apple) |
-| `/minha-conta` | Meus agendamentos: cancelar e remarcar | 🔧 Onda 3 (assinatura, pontos) |
+| `/planos` | Os planos de assinatura: preço, com quem vale, o que inclui, dias grátis; "Assinar" (pede login, que volta pro plano), CPF quando o Asaas pede e a fatura do Asaas em outra aba; plano só de balcão sem "Assinar" | — |
+| `/entrar` | Login, primeiro acesso e esqueci a senha por código no e-mail; volta pro passo do agendamento ou pro plano escolhido | 🔧 Onda 4 (Google/Apple) |
+| `/minha-conta` | Meus agendamentos: cancelar e remarcar; Minhas assinaturas: até quando vale, os usos que sobram, "Pagar" a fatura em aberto e cancelar | 🔧 Onda 3 (pontos) |
 | `/lembrete/[token]` | Confirmar ou cancelar pelo link do lembrete | — |
 | `/agendar/horario`, `/agendar/dados` | Redirects de URLs antigas | — |
 
@@ -136,7 +140,8 @@ Depois do mínimo: páginas de funcionalidade (template de 9 blocos),
 | ✅ Comissões | painel | `/painel/configuracoes/divisao`: parte da casa por profissional e a matriz "cliente de × atendeu" (marco 2). Regra por serviço e extrato do profissional ficam pro marco 4, se o dono pedir | comissões |
 | 🆕 Relatórios | painel | Faturamento, ocupação, faltas, clientes novos e recorrentes | relatórios |
 | ✅ Plano e assinatura | painel | `/painel/faturas`: plano atual, teste de 14 dias, assinar pelo Checkout da Stripe, faturas, trocar de plano e cancelar pelo Portal (marco 1, #141 a #150) | Faturas |
-| ✅ Detalhe do agendamento | painel | Concluir e registrar pagamento, com a divisão (marco 2) | — |
+| ✅ Detalhe do agendamento | painel | Concluir e registrar pagamento, com a divisão (marco 2) e o "Usar o plano" (marco 3) | — |
+| ✅ Planos de assinatura | painel + pública | Marco 3 (#204 a #221 e o PR 12): planos da casa e de cada profissional, assinantes, "Recebi" no balcão, "Usar o plano" no pagamento, mensalidades no caixa; vitrine na página, `/planos` pra assinar e pagar pela fatura do Asaas na conta de quem vende; as assinaturas na Minha conta; Pagamentos online nas Configurações | `/membership` |
 
 ## Onda 3 — Retenção do cliente final
 
@@ -144,7 +149,7 @@ Depois do mínimo: páginas de funcionalidade (template de 9 blocos),
 |---|---|---|---|
 | 🆕 Pagamento no agendar | pública | PIX, cartão ou no local; sinal quando a barbearia exige | pagamento no fluxo |
 | 🆕 Pacotes | painel + pública | Combos com desconto | pacotes promocionais |
-| 🆕 Clube de assinatura | painel + pública | Planos com usos por mês e regras; cobrança recorrente | `/membership` |
+| ✅ Clube de assinatura | painel + pública | Entrou na Onda 2, marco 3 (ver "Planos de assinatura" acima) | `/membership` |
 | 🆕 Fidelidade | painel + pública | Regras de pontos, níveis e recompensas; saldo do cliente | fidelidade |
 | 🆕 Lista de espera | painel + pública | Entrar na fila de um horário cheio; aviso quando vagar | lista de espera |
 | 🆕 Avaliação | pública | Nota e comentário depois do atendimento | avaliações |

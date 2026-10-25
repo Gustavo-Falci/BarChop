@@ -62,7 +62,7 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 |---|---|---|---|---|
 | 1 | BarChop cobra a assinatura | Barbearia nova testa 14 dias, escolhe grátis ou plano pago por profissional e paga online; site mostra a tabela de preços e `/gratis` | complete — no ar desde 2026-10-15, testado com cobrança real em 16/10 (PRs #141 a #150) | `.claude/plans/cobranca-do-barchop.plan.md` |
 | 2 | Caixa do dia e comissões | Dono fecha o dia no BarChop e vê o acerto por profissional segundo as regras da barbearia (de quem é o cliente × quem atendeu), sem conta de cabeça | complete — código pronto em 16/10 (PRs #153 a #160); entra no ar com o deploy do dono | `.claude/plans/caixa-do-dia.plan.md` |
-| 3 | Planos de assinatura para o cliente | Cliente assina um plano da casa ou de um barbeiro na página pública e paga online (Pix/cartão, dinheiro na conta de quem vende) ou no local; dono acompanha os assinantes; o acerto inclui a parte da casa nos planos de barbeiro e o valor fixo nos planos da casa | in-progress — plano aprovado em 24/10 | `.claude/plans/planos-de-assinatura.plan.md` |
+| 3 | Planos de assinatura para o cliente | Cliente assina um plano da casa ou de um barbeiro na página pública e paga online (Pix/cartão, dinheiro na conta de quem vende) ou no local; dono acompanha os assinantes; o acerto inclui a parte da casa nos planos de barbeiro e o valor fixo nos planos da casa | complete — no ar desde 25/10/2026 (PRs #204 a #221 e o PR 12); falta o teste ponta a ponta do webhook na VM e o aceite com a GR Barber | `.claude/plans/planos-de-assinatura.plan.md` |
 | 4 | Relatórios | Dono vê o que entrou por período, profissional e forma de pagamento, e o histórico dos fechamentos | pending | — |
 
 ## Open Questions
@@ -92,4 +92,4 @@ We'll know we're right when **a GR Barber fechar o dia no BarChop em ≥ 5 dias 
 | Acerto errado gera briga entre sócios e o dono volta ao caderno | Medium | High | Duas semanas em paralelo com o caderno na GR Barber antes de confiar só no BarChop |
 
 ---
-*Status: marcos 1 e 2 completos; marco 3 com o modelo decidido em 24/10/2026, aguardando o `/plan`; marco 4 pendente.*
+*Status: marcos 1, 2 e 3 completos (o 3 no ar desde 25/10/2026, com o teste ponta a ponta do webhook e o aceite na GR Barber pendentes); marco 4 pendente.*

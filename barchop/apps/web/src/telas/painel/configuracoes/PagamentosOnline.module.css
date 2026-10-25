@@ -4,8 +4,12 @@
   align-content: start;
 }
 
-/* Lado a lado no desktop: a conta da casa e a sua. */
+/* Lado a lado no desktop: a conta da casa e a sua. O `min-width: 0`
+   porque, como item da grade da página, o mínimo dela era 307px (o
+   `min(100%, 380px)` não resolve na conta do mínimo): abaixo de ~340px
+   de tela, a seção passava da borda direita. */
 .contas {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
   gap: var(--espaco-lg);

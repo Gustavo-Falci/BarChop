@@ -128,6 +128,17 @@ describe("o webhook da conta", () => {
     });
   });
 
+  it("é visto pela chave da mesma conta (200), e não pela de outra (404)", async () => {
+    const { provedor, pedido } = montar(json(resposta("webhook-lido.json")), json({ errors: [] }, 404));
+
+    expect(await provedor.temWebhook("8aaf5b82-9fe1-408f-9234-81b7d64f4aa7")).toBe(true);
+    expect(await provedor.temWebhook("8aaf5b82-9fe1-408f-9234-81b7d64f4aa7")).toBe(false);
+    expect(pedido()).toMatchObject({
+      url: `${BASE_DO_ASAAS.teste}/webhooks/8aaf5b82-9fe1-408f-9234-81b7d64f4aa7`,
+      metodo: "GET",
+    });
+  });
+
   it("apaga pelo id (um UUID); já apagado (404) não é erro", async () => {
     const { provedor, pedido } = montar(json(resposta("webhook-removido.json")), json({ errors: [] }, 404));
 

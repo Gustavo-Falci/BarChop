@@ -1,0 +1,21 @@
+{
+  "id": "8aaf5b82-9fe1-408f-9234-81b7d64f4aa7",
+  "name": "BarChop",
+  "url": "https://api.barchop.com.br/webhooks/asaas/teste-do-pr-9",
+  "email": "dono-teste@barchop.com.br",
+  "enabled": false,
+  "interrupted": false,
+  "apiVersion": 3,
+  "hasAuthToken": true,
+  "sendType": "SEQUENTIALLY",
+  "penalizedRequestsCount": 0,
+  "events": [
+    "SUBSCRIPTION_DELETED",
+    "SUBSCRIPTION_INACTIVATED",
+    "PAYMENT_REFUNDED",
+    "PAYMENT_DELETED",
+    "PAYMENT_OVERDUE",
+    "PAYMENT_RECEIVED",
+    "PAYMENT_CONFIRMED"
+  ]
+}

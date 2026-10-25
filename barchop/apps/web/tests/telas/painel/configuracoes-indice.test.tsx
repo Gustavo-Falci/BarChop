@@ -154,9 +154,8 @@ describe("índice das configurações", () => {
       })
     );
 
-    expect(await screen.findByRole("link", { name: /^Pagamentos online/ })).toHaveTextContent(
-      "Sua conta conectada · chave terminando em 9876"
-    );
+    // A linha aparece antes da conta chegar, com a frase geral.
+    expect(await screen.findByText("Sua conta conectada · chave terminando em 9876")).toBeInTheDocument();
   });
 
   it("a recepção vê só o próprio perfil, sem o índice", async () => {

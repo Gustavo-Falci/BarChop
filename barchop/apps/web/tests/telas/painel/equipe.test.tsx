@@ -105,11 +105,11 @@ describe("o que cada papel vê no painel", () => {
     expect(screen.queryByRole("button", { name: /novo serviço/i })).not.toBeInTheDocument();
   });
 
-  it("em Configurações, quem não é dono vê só o próprio perfil", async () => {
+  it("em Configurações, quem não é dono vê só o que é seu", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes" });
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ papel: "profissional" }));
 
-    expect(await screen.findByRole("button", { name: /salvar perfil/i })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /^Seu perfil/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /salvar dados/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /salvar horários/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /trocar link/i })).not.toBeInTheDocument();

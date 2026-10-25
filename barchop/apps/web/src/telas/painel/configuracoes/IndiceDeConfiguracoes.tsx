@@ -49,6 +49,30 @@ function resumoDosPagamentos(daCasa: PagamentosOnline | null): string {
   return `Conta da casa conectada · chave terminando em ${daCasa.conta.chaveFinal}`;
 }
 
+// A conta de quem está logado, pro índice do profissional.
+function resumoDaSuaConta(sua: PagamentosOnline | null): string {
+  if (!sua?.conta) return "A conta do Asaas que recebe os planos que você vende";
+  return `Sua conta conectada · chave terminando em ${sua.conta.chaveFinal}`;
+}
+
+function LinhaDoPerfil() {
+  const { perfil } = usePainel();
+  return (
+    <li>
+      <Link href="/painel/configuracoes/perfil" className={estilos.linha}>
+        <strong className={estilos.nomeDaArea}>Seu perfil</strong>
+        <span className={estilos.valor}>
+          {perfil.nome}
+          {perfil.telefone ? ` · ${perfil.telefone}` : ""}
+        </span>
+        <span className={estilos.seta} aria-hidden="true">
+          ›
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 function LinhaDaArea({
   descricao,
   decidida,
@@ -83,17 +107,45 @@ function LinhaDaArea({
 
 // /painel/configuracoes. Pro dono, o índice das áreas (painel v2, marco
 // 2): cada linha diz o que vale hoje ou, se a área nunca foi salva, o
-// que acontece se ficar assim. Pro resto da equipe, só o próprio perfil
-// — as áreas são da barbearia, e a API recusa o salvar de quem não é dono.
+// que acontece se ficar assim. As áreas são da barbearia, e a API recusa
+// o salvar de quem não é dono: o profissional vê só o que é dele (o
+// perfil e a conta do Asaas dos planos que vende), e a recepção, que não
+// vende plano, cai direto no perfil.
 export function IndiceDeConfiguracoes() {
   const { perfil } = usePainel();
-  if (perfil.papel !== "dono") return <SeuPerfil comVoltar={false} />;
+  if (perfil.papel === "recepcao") return <SeuPerfil comVoltar={false} />;
+  if (perfil.papel === "profissional") return <IndiceDoProfissional />;
   return <IndiceDoDono />;
+}
+
+function IndiceDoProfissional() {
+  const api = useApiDoPainel();
+  // Só pro resumo da linha; se falhar, a linha fica com a frase geral.
+  const sua = useRequisicao(() => api.barbeiro.pagamentosOnline(false), []);
+
+  return (
+    <div className={estilos.pagina}>
+      <CabecalhoDaPagina titulo="Configurações" apoio="O que é seu: o perfil e a conta que recebe os seus planos." />
+      <SecaoNumerada titulo="Você">
+        <ul className={estilos.lista}>
+          <LinhaDoPerfil />
+          <li>
+            <Link href="/painel/configuracoes/pagamentos-online" className={estilos.linha}>
+              <strong className={estilos.nomeDaArea}>Pagamentos online</strong>
+              <span className={estilos.valor}>{resumoDaSuaConta(sua.dados)}</span>
+              <span className={estilos.seta} aria-hidden="true">
+                ›
+              </span>
+            </Link>
+          </li>
+        </ul>
+      </SecaoNumerada>
+    </div>
+  );
 }
 
 function IndiceDoDono() {
   const api = useApiDoPainel();
-  const { perfil } = usePainel();
   const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
   const horarios = useRequisicao(() => api.barbeiro.horarios(), []);
   // Só pro resumo da linha; se falhar, a linha fica com a frase geral.
@@ -184,18 +236,7 @@ function IndiceDoDono() {
           fora da contagem e sem o "Configurar". */}
       <SecaoNumerada titulo="Você">
         <ul className={estilos.lista}>
-          <li>
-            <Link href="/painel/configuracoes/perfil" className={estilos.linha}>
-              <strong className={estilos.nomeDaArea}>Seu perfil</strong>
-              <span className={estilos.valor}>
-                {perfil.nome}
-                {perfil.telefone ? ` · ${perfil.telefone}` : ""}
-              </span>
-              <span className={estilos.seta} aria-hidden="true">
-                ›
-              </span>
-            </Link>
-          </li>
+          <LinhaDoPerfil />
         </ul>
       </SecaoNumerada>
     </div>

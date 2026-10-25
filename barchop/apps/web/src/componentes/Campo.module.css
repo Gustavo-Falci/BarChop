@@ -37,11 +37,17 @@
 .caixaDeSenha {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* Espaço pro botão não deitar em cima do que foi digitado. 52px = os
-   44 do alvo mais a folga da borda. */
+   44 do alvo mais a folga da borda. A largura em % e o `min-width: 0`
+   tiram a largura natural do input (com os 52px, 294px) da conta do
+   mínimo: sem eles, dentro de uma seção estreita no celular (Pagamentos
+   online, 278px a 360), o campo passava da borda e levava o botão junto. */
 .caixaDeSenha .entrada {
+  width: 100%;
+  min-width: 0;
   padding-right: 52px;
 }
 

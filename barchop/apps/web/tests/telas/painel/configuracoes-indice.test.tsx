@@ -124,7 +124,41 @@ describe("índice das configurações", () => {
     expect(screen.getByText("0 de 6 decididas")).toBeInTheDocument();
   });
 
-  it("quem não é dono vê só o próprio perfil, sem o índice", async () => {
+  // O profissional não tem as áreas da barbearia, mas tem duas coisas
+  // suas: o perfil e a conta do Asaas dos planos que vende. Sem o índice,
+  // Pagamentos online só se achava pelo atalho na tela de Planos.
+  it("o profissional vê o próprio perfil e os pagamentos online, sem as áreas da barbearia", async () => {
+    montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ papel: "profissional" }));
+
+    expect(await screen.findByRole("link", { name: /^Seu perfil/ })).toHaveAttribute(
+      "href",
+      "/painel/configuracoes/perfil"
+    );
+    expect(screen.getByRole("link", { name: /^Pagamentos online/ })).toHaveAttribute(
+      "href",
+      "/painel/configuracoes/pagamentos-online"
+    );
+    expect(screen.queryByText(/decididas/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Horários/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Divisão do dinheiro/ })).not.toBeInTheDocument();
+  });
+
+  it("o profissional com conta conectada vê a final da chave dele na linha", async () => {
+    montarPainel(
+      <IndiceDeConfiguracoes />,
+      criarApiClientFalso({
+        papel: "profissional",
+        contasOnline: {
+          bb1: { provedor: "asaas", modo: "real", chaveFinal: "9876", conectadaEm: "2026-10-25T15:00:00.000Z" },
+        },
+      })
+    );
+
+    // A linha aparece antes da conta chegar, com a frase geral.
+    expect(await screen.findByText("Sua conta conectada · chave terminando em 9876")).toBeInTheDocument();
+  });
+
+  it("a recepção vê só o próprio perfil, sem o índice", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ papel: "recepcao" }));
 
     expect(await screen.findByRole("button", { name: /salvar perfil/i })).toBeInTheDocument();

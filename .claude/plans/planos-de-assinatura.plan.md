@@ -3,7 +3,7 @@
 **Source PRD**: `.claude/prds/onda-2-dinheiro.prd.md`
 **Selected Milestone**: 3 — Planos de assinatura para o cliente
 **Complexity**: Large (12 PRs, 1 migração no PR 2)
-**Status**: aprovado pelo dono em 2026-10-24, com as decisões propostas como estão. Os 12 PRs prontos em 25/10 (#204 a #221 e o PR 12); falta o teste ponta a ponta do webhook na VM e o aceite com a GR Barber (Acceptance)
+**Status**: aprovado pelo dono em 2026-10-24, com as decisões propostas como estão. Os 12 PRs no ar em 25/10 (#204 a #222). O teste ponta a ponta do webhook foi feito em produção em 25/10 (ver o RETOMAR AQUI); falta o aceite com a GR Barber (Acceptance)
 
 Diferenças do plano, combinadas no caminho:
 - **PR 1:**
@@ -483,7 +483,7 @@ pnpm --filter @barchop/database exec prisma migrate deploy   # dev e test
 
 ## Acceptance
 - [ ] A GR cria um plano da casa e um plano do Gustavo, um cliente assina cada um (um no balcão, um online no sandbox), e o acerto do dia bate com a conta à mão
-- [ ] Os 12 PRs no ar, cada um em produção antes do próximo (os 11 primeiros no ar em 25/10; o 12 depois do deploy)
+- [x] Os 12 PRs no ar, cada um em produção antes do próximo (#204 a #222, o último em 25/10)
 - [x] Nenhuma resposta da API contém a chave do vendedor (`tests/routers/pagamentos-online.test.ts`)
 - [x] Validação passa
 - [x] Padrões espelhados, não reinventados

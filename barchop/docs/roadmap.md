@@ -102,7 +102,7 @@ até reabrir. A Divisão do dinheiro fica nas Configurações; o detalhe do
 cliente diz de quem ele é. Só nos planos Essencial e Completo.
 
 **Marco 3 — planos de assinatura para o cliente** (plano
-`.claude/plans/planos-de-assinatura.plan.md`, #204 a #221 e o PR 12;
+`.claude/plans/planos-de-assinatura.plan.md`, #204 a #222;
 migrações `20261026120000_planos_de_assinatura`,
 `20261027120000_conexao_desligada` e
 `20261028120000_mensalidade_online`). A casa e cada profissional
@@ -117,8 +117,9 @@ online, com a chave cifrada), ou no balcão, com o "Recebi" de cada
 ciclo. No pagamento do atendimento, "Usar o plano" conta o uso; as
 mensalidades entram no acerto do Caixa. O cliente vê as assinaturas e
 os usos na Minha conta e cancela por lá. O BarChop não cobra taxa nem
-guarda esse dinheiro. Só no plano Completo. Falta o teste ponta a ponta
-do webhook na VM e o aceite com a GR Barber.
+guarda esse dinheiro. Só no plano Completo. O webhook foi conferido em
+produção em 25/10 (assinatura ativa, mensalidade no caixa, aviso no
+sino); falta o aceite com a GR Barber.
 
 O marco 4 (relatórios) segue pendente.
 

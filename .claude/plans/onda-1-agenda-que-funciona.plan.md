@@ -4,23 +4,31 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-25 — marco 3 no ar: PRs 1 a 12) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-25 — marco 3 no ar e o webhook conferido em produção) — vale mais que as seções abaixo
 
 **Estado:**
-- **`main` = o PR 12 do marco 3** (fechamento: termos, privacidade, ajuda, novidades e documentos). **Produção = o #221** (PR 11), deploy de 25/10 feito pelo dono; o PR 12 só muda a web.
+- **`main` = este RETOMAR AQUI** (o código é o #223). **Produção = o #223**, deploy de 25/10 feito pelo dono. Nenhum PR de código aberto.
+- **#222 (PR 12 do marco 3):** termos, privacidade, ajuda, novidades e documentos. **#223:** Configurações do profissional vira índice (Seu perfil e Pagamentos online, com a final da chave; a recepção segue direto no perfil) e o campo da chave de Pagamentos online deixa de sair da tela no celular (o campo de senha do `Campo` ganhou `width: 100%` e `min-width: 0`).
+- **Teste ponta a ponta do webhook, feito em produção em 25/10** na `barbearia-teste`, com `PAGAMENTOS_ONLINE_MODO=teste` por algumas horas:
+  - a chave do sandbox conectada pela tela (em "Sua conta"), o plano "Teste do webhook" (R$ 10, do Gustavo, só online) e a vitrine ligada;
+  - um cliente assinou pela página, com CPF de teste; a fatura do Asaas abriu;
+  - **o cartão de teste na fatura não passou**, nem no navegador automatizado nem à mão (a página voltava pro boleto sem mensagem). O pagamento foi confirmado pelo simulador do sandbox, `POST /v3/sandbox/payment/{id}/confirm`, que dispara o mesmo `PAYMENT_RECEIVED`;
+  - o Asaas entregou o evento sem penalidade, e em segundos: **assinatura Ativa** (renova em 25/11), **Caixa** com R$ 10 na linha Online e a mensalidade "paga online", o acerto do Gustavo batendo, e o **sino** "Nova assinatura";
+  - desfeito: assinatura cancelada pelo painel (sumiu do Asaas), plano desativado, vitrine desligada, conta desconectada (o webhook saiu do Asaas) e o modo de volta a vazio (a tela pede `$aact_prod_`).
+- **`barbearia-teste` no Completo, à mão no banco** (25/10): `situacao='ativa', plano='completo'`, sem assinatura na Stripe por trás (`stripe_subscription_id` solto; a antiga, `sub_1URAuj2Lldv3THCm1Tt2gH1P`, não estava ativa na Stripe). Pra desfazer: `situacao='gratis', plano='gratis'`.
 - **Marco 3 da Onda 2 no ar**, plano `.claude/plans/planos-de-assinatura.plan.md` (as "Diferenças do plano" no topo valem mais que as tarefas):
   - Parte A, sem provedor: #204 a #214 (já descritos na seção de baixo);
-  - Parte B, Asaas: #215 (cifra e conector), #216 (conectar a conta), #218 (webhook e a mensalidade online, migração `20261028120000_mensalidade_online`), #219 (cancelar no Asaas pelo painel), #220 (assinar online, minhas assinaturas, cancelar pelo cliente), #221 (as telas: Pagamentos online, `/[slug]/planos`, assinaturas na Minha conta) e o PR 12.
-- **Conferido no sandbox em 25/10, no PC:** duas assinaturas de verdade pela tela (teste grátis e pendente), CPF, fatura, "Pagar" e cancelar. **Não conferido:** a ativação pelo pagamento, que vem pelo webhook e precisa de endereço público.
-- **Sandbox do Asaas:** chave do dono em `apps/api/.env` como `ASAAS_CHAVE_SANDBOX` (nunca no chat nem no repo). Ficaram lá clientes de teste: um sem CPF (PR 8) e dois com CPF de teste (PR 11), todos sem assinatura viva.
+  - Parte B, Asaas: #215 (cifra e conector), #216 (conectar a conta), #218 (webhook e a mensalidade online, migração `20261028120000_mensalidade_online`), #219 (cancelar no Asaas pelo painel), #220 (assinar online, minhas assinaturas, cancelar pelo cliente), #221 (as telas: Pagamentos online, `/[slug]/planos`, assinaturas na Minha conta) e #222 (PR 12, o fechamento).
+- **Conferido no sandbox em 25/10, no PC:** duas assinaturas de verdade pela tela (teste grátis e pendente), CPF, fatura, "Pagar" e cancelar.
+- **Sandbox do Asaas:** chave do dono em `apps/api/.env` como `ASAAS_CHAVE_SANDBOX` (nunca no chat nem no repo). Ficaram lá clientes de teste, todos sem assinatura viva: um sem CPF (PR 8), dois com CPF de teste (PR 11) e o do teste do webhook.
 
 **Ao retomar:**
-1. **Teste ponta a ponta de um dia na VM** com `PAGAMENTOS_ONLINE_MODO=teste` (ou um túnel no PC): conectar a conta do sandbox pela tela, assinar, pagar a fatura e ver a assinatura ficar ativa, a mensalidade entrar no caixa e o sino chegar. Depois, desconectar e voltar o modo.
-2. **Aceite do marco** (plano, Acceptance): a GR cria um plano da casa e um do Gustavo, um cliente assina cada um (um no balcão, um online) e o acerto do dia bate com a conta à mão.
-3. Conferir em 24/11, no sandbox, se a assinatura paga no cartão (`sub_vwsx29uc7fa5ekcv`, cancelada depois do teste) gerou cobrança sozinha. Cancelada, provavelmente não gera: pode ser preciso repetir com uma assinatura viva.
-4. A frase do 422 `assinaturas_ativas` do desativar membro (`routers/equipe.ts`) ainda diz "dele": trocar quando mexer ali.
-5. Vistos no navegador e anteriores ao marco: a Minha conta lê a sessão do `localStorage` no render (aviso de hidratação do Next) e, sem agendamentos, não mostra frase nenhuma.
-6. O resto da lista de 21/10: testar o caixa em produção; marco 4 (relatórios); G3; decidir a `barbearia-teste`; pendentes do redesenho.
+1. **Aceite do marco** (plano, Acceptance): a GR cria um plano da casa e um do Gustavo, um cliente assina cada um (um no balcão, um online) e o acerto do dia bate com a conta à mão.
+2. Conferir em 24/11, no sandbox, se a assinatura paga no cartão (`sub_vwsx29uc7fa5ekcv`, cancelada depois do teste) gerou cobrança sozinha. Cancelada, provavelmente não gera: pode ser preciso repetir com uma assinatura viva.
+3. A frase do 422 `assinaturas_ativas` do desativar membro (`routers/equipe.ts`) ainda diz "dele": trocar quando mexer ali.
+4. Vistos no navegador e anteriores ao marco: a Minha conta lê a sessão do `localStorage` no render (aviso de hidratação do Next) e, sem agendamentos, não mostra frase nenhuma.
+5. O cartão de teste na fatura do sandbox não passou no teste do webhook: se um dia for preciso testar cartão de ponta a ponta, ver com o suporte do Asaas qual cartão o sandbox aceita hoje.
+6. O resto da lista de 21/10: testar o caixa em produção; marco 4 (relatórios); G3; decidir a `barbearia-teste` (hoje no Completo à mão); pendentes do redesenho.
 
 ## RETOMAR AQUI (madrugada de 2026-10-25 — marco 3: PRs 1 a 9 no ar) — histórico
 

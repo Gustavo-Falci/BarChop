@@ -148,6 +148,12 @@ Diferenças do plano, combinadas no caminho:
   - **o mesmo pagamento entra uma vez**: o CONFIRMED do cartão e o RECEIVED são eventos diferentes da mesma cobrança, e o recebimento é conferido pelo `id_externo` antes de gravar, com a linha da barbearia travada;
   - **assinatura removida, inativa ou expirada no provedor fica cancelada aqui**, e também a que o provedor não acha mais (404 no `GET`, que o sandbox não gravou). Cobrança paga numa assinatura cancelada no BarChop só vai pro log.
 
+- **PR 10b (cancelar no provedor pelo painel):**
+  - **cancela no provedor antes de gravar**, fora da transação (é rede). Falhou, nada muda: 502 `provedor_indisponivel`, ou 422 `chave_da_conta_recusada` ("troque a chave em Pagamentos online") com a chave revogada. Se o provedor cancelou e o banco não gravou, o SUBSCRIPTION_DELETED do webhook (10a) cancela depois;
+  - **a que o provedor não acha mais conta como cancelada lá**; a do balcão, a já cancelada e a de conexão desligada não falam com o provedor;
+  - **no desativar membro**, as online são canceladas no provedor antes da transação. Se ela recusar depois (o último dono), o provedor já cancelou e o webhook cancela aqui: é o que a tela confirmou;
+  - **a frase do 422 `assinaturas_ativas`** diz "nos planos que vende", sem "dele".
+
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
 

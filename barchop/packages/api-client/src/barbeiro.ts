@@ -176,7 +176,7 @@ export interface EdicaoDoMembro {
   ativo?: boolean;
   // Só o dono libera; o dono vende sem ela (Onda 2, marco 3).
   podeVenderPlanos?: boolean;
-  // Desativar quem tem assinante nos planos dele é 422
+  // Desativar quem tem assinante nos planos que vende é 422
   // `assinaturas_ativas`; com isto, as assinaturas são canceladas junto.
   cancelarAssinaturas?: boolean;
 }

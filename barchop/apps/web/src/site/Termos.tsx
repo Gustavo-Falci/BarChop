@@ -6,6 +6,7 @@ const SUMARIO: ItemDoSumario[] = [
   { id: "quem-somos", titulo: "Quem somos" },
   { id: "o-servico", titulo: "O serviço" },
   { id: "planos-e-cobranca", titulo: "Planos, cobrança e cancelamento" },
+  { id: "planos-da-barbearia", titulo: "Planos que a barbearia vende" },
   { id: "sua-conta", titulo: "Sua conta e a da sua equipe" },
   { id: "dados-dos-clientes", titulo: "Os dados dos seus clientes" },
   { id: "uso-correto", titulo: "Uso correto" },
@@ -14,7 +15,8 @@ const SUMARIO: ItemDoSumario[] = [
   { id: "mudancas", titulo: "Mudanças nestes termos" },
 ];
 
-// Termos de uso do BarChop (onda 1s-b; cobrança na Onda 2, PR 6).
+// Termos de uso do BarChop (onda 1s-b; cobrança na Onda 2, PR 6; os
+// planos que a barbearia vende no marco 3, PR 12).
 // Rascunho base pra revisão jurídica; só fala do que o produto já faz.
 // As regras da cobrança são as que a Stripe e a API aplicam; os preços
 // ficam em /precos, lidos de planos.ts, e não são escritos aqui.
@@ -34,7 +36,8 @@ export function Termos() {
         <p>
           A barbearia ganha uma página própria em que o cliente escolhe o serviço, o profissional e o
           horário, e um painel para a equipe cuidar da agenda. O cliente pode receber lembrete do
-          horário por e-mail, com link para confirmar a presença ou cancelar.
+          horário por e-mail, com link para confirmar a presença ou cancelar. A barbearia também pode vender
+          planos de assinatura aos clientes, pela página ou no balcão.
         </p>
       </SecaoLegal>
 
@@ -78,6 +81,43 @@ export function Termos() {
           <li>
             Sem plano pago (no fim do teste, depois de cancelar ou quando a cobrança não passa), a barbearia vai
             para o Grátis: nada é apagado, mas só 1 profissional aparece no link de agendamento.
+          </li>
+        </ul>
+      </SecaoLegal>
+
+      <SecaoLegal id="planos-da-barbearia" titulo="Planos que a barbearia vende">
+        <ul>
+          <li>
+            A barbearia e os profissionais que o dono libera podem criar planos de assinatura para os clientes: o
+            preço por ciclo, os serviços incluídos e quantas vezes cada um vale no ciclo. Os planos ficam no plano
+            Completo do BarChop.
+          </li>
+          <li>
+            O plano é um acordo entre quem vende e o cliente. O BarChop só oferece as ferramentas: mostra os planos
+            na página, conta os usos no caixa e soma as mensalidades no acerto do dia.
+          </li>
+          <li>
+            Para receber pela página, quem vende conecta a própria conta do Asaas, colando a chave de API. O
+            pagamento cai direto na conta de quem vende: o BarChop não recebe nem guarda esse dinheiro, e não cobra
+            taxa sobre essas vendas. As tarifas do Asaas, a conta e o cumprimento dos termos do Asaas são de quem
+            vende.
+          </li>
+          <li>
+            Cobrança, recibo, estorno e devolução da mensalidade são resolvidos entre quem vende e o cliente, pelo
+            Asaas ou no balcão. O BarChop não responde por mensalidade não paga ou contestada.
+          </li>
+          <li>
+            O cliente pode cancelar a assinatura a qualquer momento, pela área do cliente na página: o plano deixa
+            de valer nos atendimentos, e a assinatura online para de ser cobrada no Asaas.
+          </li>
+          <li>
+            Enquanto houver assinatura online viva, a conta do Asaas não pode ser desconectada: antes, as assinaturas
+            precisam ser canceladas, para que ninguém siga sendo cobrado sem o BarChop saber. Desativar um
+            profissional cancela as assinaturas dos planos dele.
+          </li>
+          <li>
+            Se a barbearia sair do Completo, as assinaturas que já existem continuam e seguem contando no caixa, mas os
+            planos saem da página e não aceitam assinante novo.
           </li>
         </ul>
       </SecaoLegal>

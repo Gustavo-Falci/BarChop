@@ -40,6 +40,15 @@ export function Privacidade() {
           </li>
           <li>Dos clientes da barbearia: nome, telefone, e-mail (quando informado) e os agendamentos.</li>
           <li>
+            Dos clientes que assinam um plano da barbearia: as assinaturas, as mensalidades recebidas e os usos de cada
+            ciclo. De quem assina um plano online, também o CPF, que o Asaas exige para cobrar; ele fica no cadastro do
+            cliente naquela barbearia.
+          </li>
+          <li>
+            De quem vende planos online: a chave de API do Asaas, guardada cifrada. Ela não volta para a tela, que só
+            mostra os últimos caracteres.
+          </li>
+          <li>
             Da assinatura: o plano, a situação da cobrança e as faturas. Os dados do cartão ficam com a Stripe: o
             BarChop não vê nem guarda os dados do cartão.
           </li>
@@ -52,6 +61,10 @@ export function Privacidade() {
           <li>Fazer o agendamento funcionar: mostrar horários livres, marcar, remarcar e cancelar.</li>
           <li>Enviar o código de verificação e o lembrete do horário por e-mail.</li>
           <li>Cobrar a assinatura dos planos pagos e avisar o dono sobre ela.</li>
+          <li>
+            Fazer os planos que a barbearia vende funcionarem: criar e cancelar a cobrança na conta de quem vende,
+            receber do Asaas a situação dos pagamentos e contar os usos no caixa.
+          </li>
           <li>Proteger as contas e o sistema contra acesso indevido e uso abusivo.</li>
           <li>Cumprir obrigações legais.</li>
         </ul>
@@ -66,13 +79,20 @@ export function Privacidade() {
           <li>Cloudflare: endereço (DNS) do site.</li>
         </ul>
         <p>Eles tratam os dados só para prestar esse serviço ao BarChop.</p>
+        <p>
+          Nos planos que a barbearia vende online, o Asaas é o serviço de pagamento escolhido por quem vende, e não um
+          fornecedor do BarChop. Quando um cliente assina, o BarChop envia o nome, o CPF, o e-mail e o celular do
+          cliente para a conta de quem vende no Asaas, para criar a cobrança. O pagamento é feito na página do Asaas: o BarChop não vê nem guarda
+          os dados do cartão.
+        </p>
       </SecaoLegal>
 
       <SecaoLegal id="por-quanto-tempo" titulo="Por quanto tempo guardamos">
         <p>
           Enquanto a conta da barbearia existir. Depois do encerramento, os dados são apagados em até 90
           dias, salvo o que a lei obrigar a guardar por mais tempo. Os códigos de verificação valem
-          poucos minutos e não são guardados depois de usados.
+          poucos minutos e não são guardados depois de usados. A chave de API do Asaas é apagada quando quem vende
+          desconecta a conta.
         </p>
       </SecaoLegal>
 

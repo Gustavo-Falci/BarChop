@@ -4,6 +4,7 @@ import {
   type AssinaturaNoProvedor,
   type CobrancaNoProvedor,
   type FabricaDeProvedores,
+  type ModoDoProvedor,
   type NovaAssinatura,
   type NovoCliente,
   type Provedor,
@@ -11,11 +12,16 @@ import {
 
 // Os conectores de memória: cada teste com os seus, e o que foi pedido
 // fica à vista (como a cobrancaDeMemoria). O formato da chave é o do
-// Asaas, pra o modo sair do prefixo como no de verdade; a conexão
-// gravada vale sem decifrar (`chaveCifrada` = o texto da chave).
+// Asaas, pra o modo sair do prefixo como no de verdade; a "cifra" é o
+// próprio texto da chave, e a conexão gravada vale sem decifrar.
 
 export interface ProvedoresDeMemoria extends FabricaDeProvedores {
   chavesInvalidas: Set<string>;
+  // De que conta é cada chave; a que não está aqui é uma conta só dela.
+  // A troca de chave da mesma conta põe a nova apontando pra antiga.
+  contas: Map<string, string>;
+  // Fora do ar: todo pedido falha como `indisponivel`.
+  indisponivel: boolean;
   webhooks: { id: string; url: string; token: string; email: string | null }[];
   clientes: (NovoCliente & { id: string })[];
   pedidosDeAssinatura: (NovaAssinatura & { id: string })[];
@@ -27,27 +33,46 @@ export interface ProvedoresDeMemoria extends FabricaDeProvedores {
   eventos: unknown[];
 }
 
-export function provedoresDeMemoria(): ProvedoresDeMemoria {
+export function provedoresDeMemoria(
+  opcoes: { modoAceito?: ModoDoProvedor; urlDaApi?: string | null } = {}
+): ProvedoresDeMemoria {
   let contador = 0;
   const proximo = (prefixo: string) => `${prefixo}_memoria_${++contador}`;
+  const urlDaApi = opcoes.urlDaApi === undefined ? "https://api.barchop.test" : opcoes.urlDaApi;
+  const contaDoWebhook = new Map<string, string>();
 
   function provedor(chave: string): Provedor {
     const modo = modoDaChaveDoAsaas(chave) ?? "teste";
+    const conta = () => fabrica.contas.get(chave) ?? chave;
+    // Como o Asaas: fora do ar, nada responde; a chave revogada não
+    // passa de nenhum pedido.
+    const atender = () => {
+      if (fabrica.indisponivel) throw new ErroDoProvedor("indisponivel", "o Asaas não respondeu");
+      if (fabrica.chavesInvalidas.has(chave)) {
+        throw new ErroDoProvedor("chave_invalida", "o Asaas não aceitou a chave", 401);
+      }
+    };
     return {
       nome: "asaas",
       modo,
       async conferirChave() {
-        if (fabrica.chavesInvalidas.has(chave)) {
-          throw new ErroDoProvedor("chave_invalida", "o Asaas não aceitou a chave", 401);
-        }
+        atender();
       },
       async registrarWebhook(dados) {
+        atender();
         const id = proximo("wh");
         fabrica.webhooks.push({ id, ...dados });
+        contaDoWebhook.set(id, conta());
         return id;
       },
       async apagarWebhook(id) {
+        atender();
+        if (contaDoWebhook.get(id) !== conta()) return;
         fabrica.webhooks = fabrica.webhooks.filter((webhook) => webhook.id !== id);
+      },
+      async temWebhook(id) {
+        atender();
+        return fabrica.webhooks.some((webhook) => webhook.id === id) && contaDoWebhook.get(id) === conta();
       },
       async criarCliente(dados) {
         const id = proximo("cus");
@@ -99,7 +124,10 @@ export function provedoresDeMemoria(): ProvedoresDeMemoria {
 
   const fabrica: ProvedoresDeMemoria = {
     nome: "memoria",
+    modoAceito: opcoes.modoAceito ?? "teste",
     chavesInvalidas: new Set(),
+    contas: new Map(),
+    indisponivel: false,
     webhooks: [],
     clientes: [],
     pedidosDeAssinatura: [],
@@ -108,6 +136,8 @@ export function provedoresDeMemoria(): ProvedoresDeMemoria {
     cancelamentos: [],
     eventos: [],
     modoDaChave: (_provedor, chave) => modoDaChaveDoAsaas(chave),
+    cifrar: (chave) => Buffer.from(chave, "utf8"),
+    urlDoWebhook: (conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/asaas/${conexaoId}`),
     daChave: ({ chave }) => provedor(chave),
     daConexao: ({ chaveCifrada }) => provedor(Buffer.from(chaveCifrada).toString("utf8")),
   };

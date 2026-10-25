@@ -356,7 +356,10 @@ export function registrarRotasPlanosPublicos(app: App): void {
           orderBy: [{ ordem: "asc" }, { criadoEm: "asc" }, { id: "asc" }],
         }),
         prisma.conexaoDePagamento.findMany({
-          where: { barbeariaId: barbearia.id },
+          // Ligada e do modo que a plataforma aceita: a conta do sandbox
+          // do teste ponta a ponta não vende depois que o modo volta a
+          // `real` (decisão 10).
+          where: { barbeariaId: barbearia.id, desconectadaEm: null, modo: app.provedores.modoAceito },
           select: { barbeiroId: true, daCasa: true },
         }),
       ]);

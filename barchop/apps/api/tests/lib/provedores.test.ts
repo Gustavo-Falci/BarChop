@@ -63,13 +63,56 @@ describe("provedoresDoAmbiente", () => {
     expect(new Headers(fetchFalso.mock.calls[0][1]?.headers).get("access_token")).toBe("$aact_prod_gravada");
   });
 
-  it("sem a CHAVE_DE_CIFRA, só a conexão gravada falha, e na hora de usar", () => {
-    const fabrica = provedoresDoAmbiente({ NODE_ENV: "production" });
+  it("em produção, não sobe sem a CHAVE_DE_CIFRA, nem com ela torta (decisão 10)", () => {
+    expect(() => provedoresDoAmbiente({ NODE_ENV: "production" })).toThrow(/CHAVE_DE_CIFRA/);
+    expect(() =>
+      provedoresDoAmbiente({ NODE_ENV: "production", CHAVE_DE_CIFRA: randomBytes(16).toString("base64") })
+    ).toThrow(/32 bytes/);
+    expect(() =>
+      provedoresDoAmbiente({ NODE_ENV: "production", CHAVE_DE_CIFRA: randomBytes(32).toString("base64") })
+    ).not.toThrow();
+  });
+
+  it("fora de produção, sem a CHAVE_DE_CIFRA, só cifrar e decifrar falham, e na hora de usar", () => {
+    const fabrica = provedoresDoAmbiente({ NODE_ENV: "development" });
 
     expect(() =>
       fabrica.daConexao({ provedor: "asaas", modo: "real", chaveCifrada: Buffer.alloc(40) })
     ).toThrow(/CHAVE_DE_CIFRA/);
+    expect(() => fabrica.cifrar("$aact_prod_x")).toThrow(/CHAVE_DE_CIFRA/);
     expect(fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_x" }).modo).toBe("real");
+  });
+
+  it("o modo aceito sai do ambiente ao montar; o torto não deixa subir", () => {
+    const chave = randomBytes(32).toString("base64");
+    expect(provedoresDoAmbiente({ NODE_ENV: "production", CHAVE_DE_CIFRA: chave }).modoAceito).toBe("real");
+    expect(
+      provedoresDoAmbiente({ NODE_ENV: "production", CHAVE_DE_CIFRA: chave, PAGAMENTOS_ONLINE_MODO: "teste" }).modoAceito
+    ).toBe("teste");
+    expect(provedoresDoAmbiente({ NODE_ENV: "development" }).modoAceito).toBe("teste");
+    expect(() => provedoresDoAmbiente({ NODE_ENV: "development", PAGAMENTOS_ONLINE_MODO: "sandbox" })).toThrow(
+      /PAGAMENTOS_ONLINE_MODO/
+    );
+  });
+
+  it("o que cifra, a conexão gravada decifra", async () => {
+    const fetchFalso = vi.fn<typeof fetch>().mockResolvedValue(corpoVazio());
+    const fabrica = provedoresDoAmbiente(
+      { NODE_ENV: "development", CHAVE_DE_CIFRA: randomBytes(32).toString("base64") },
+      { fetch: fetchFalso }
+    );
+
+    const chaveCifrada = fabrica.cifrar("$aact_hmlg_colada");
+    expect(Buffer.from(chaveCifrada).includes(Buffer.from("$aact_hmlg_colada"))).toBe(false);
+    await fabrica.daConexao({ provedor: "asaas", modo: "teste", chaveCifrada }).conferirChave();
+    expect(new Headers(fetchFalso.mock.calls[0][1]?.headers).get("access_token")).toBe("$aact_hmlg_colada");
+  });
+
+  it("o endereço do webhook sai da URL_DA_API; sem ela, não há endereço", () => {
+    expect(
+      provedoresDoAmbiente({ NODE_ENV: "development", URL_DA_API: "https://api.barchop.com.br/" }).urlDoWebhook("c1")
+    ).toBe("https://api.barchop.com.br/webhooks/asaas/c1");
+    expect(provedoresDoAmbiente({ NODE_ENV: "development" }).urlDoWebhook("c1")).toBeNull();
   });
 
   it("nos testes, o padrão é o de memória", () => {
@@ -110,6 +153,35 @@ describe("provedoresDeMemoria", () => {
     expect(await provedor.lerAssinatura(assinatura.id)).toMatchObject({ removida: true });
     expect(fabrica.cancelamentos).toEqual([assinatura.id]);
     expect(fabrica.webhooks).toEqual([]);
+  });
+
+  it("o webhook só é visto pela chave da mesma conta", async () => {
+    const fabrica = provedoresDeMemoria();
+    const velha = fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_velha" });
+    const id = await velha.registrarWebhook({ url: "https://x/webhooks/asaas/c1", token: "t", email: null });
+
+    expect(await velha.temWebhook(id)).toBe(true);
+    expect(await fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_outra" }).temWebhook(id)).toBe(false);
+    fabrica.contas.set("$aact_prod_nova", "$aact_prod_velha");
+    expect(await fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_nova" }).temWebhook(id)).toBe(true);
+  });
+
+  it("o modo aceito, o endereço do webhook e a cifra são de mentira e à vista", () => {
+    const fabrica = provedoresDeMemoria({ modoAceito: "real" });
+
+    expect(fabrica.modoAceito).toBe("real");
+    expect(provedoresDeMemoria().modoAceito).toBe("teste");
+    expect(fabrica.urlDoWebhook("c1")).toBe("https://api.barchop.test/webhooks/asaas/c1");
+    expect(Buffer.from(fabrica.cifrar("$aact_prod_x")).toString("utf8")).toBe("$aact_prod_x");
+  });
+
+  it("fora do ar, tudo falha como indisponível", async () => {
+    const fabrica = provedoresDeMemoria();
+    fabrica.indisponivel = true;
+
+    await expect(fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_ok" }).apagarWebhook("wh")).rejects.toMatchObject({
+      codigo: "indisponivel",
+    });
   });
 
   it("a chave marcada como inválida falha no conferir; cobrança desconhecida é não encontrada", async () => {

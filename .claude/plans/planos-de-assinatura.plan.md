@@ -119,6 +119,20 @@ Diferenças do plano, combinadas no caminho:
   - **o id da cobrança é o código da fatura pública** (`pay_X` → `/i/X`, que mostra nome, CPF e e-mail de quem vende): as respostas gravadas nos testes trocam ids de cobrança, links e token do cartão por exemplos. Os eventos do webhook não foram gravados (nenhum foi entregue): o envelope é o da documentação;
   - **o modo aceito pela plataforma vem de `PAGAMENTOS_ONLINE_MODO`** (`teste` ou `real`; sem ela, `real` em produção e `teste` fora), e não do `NODE_ENV`: o teste ponta a ponta de um dia na VM usa chave do sandbox na API de produção;
   - **recusar subir em produção sem a `CHAVE_DE_CIFRA` fica para o PR 9**, junto com as rotas que a usam. Até lá, ela só é lida ao usar uma conexão gravada.
+- **PR 9 (conectar a conta):**
+  - **a API não sobe em produção sem a `CHAVE_DE_CIFRA`** (nem com ela fora de 32 bytes): o adiado do PR 8;
+  - **o webhook vai para a `URL_DA_API`** (`/webhooks/asaas/<conexão>`). Sem ela, conectar responde 503 `pagamentos_online_sem_endereco`, e a API sobe. O Asaas recusa `localhost` ("A url informada é inválida."): em desenvolvimento, conectar pede um túnel https. Deploy: `CHAVE_DE_CIFRA` **e** `URL_DA_API` (https) no `.env` da VM antes deste PR;
+  - **`?daCasa=true`, não `=1`**: o AJV só converte `true`/`false` em booleano;
+  - **desconectar desliga em vez de apagar** (migração `20261027120000_conexao_desligada`, `desconectada_em`): a assinatura online cancelada segue apontando para a conexão em que foi cobrada (CHECK `online ⇔ conexao_id`), e a chave estrangeira não deixa apagar. A chave cifrada sai do banco; os índices de "uma por barbearia" e "uma por membro" valem só entre as ligadas, e dá para conectar de novo;
+  - **trocar a chave só vale com chave da mesma conta**: a nova precisa enxergar o webhook gravado (`GET /webhooks/{id}`: 200 na mesma conta, 404 em outra, conferido no sandbox). Mantém webhook e token. Outra conta é 422 `outra_conta` ("desconecte antes"): mudar de conta deixaria as assinaturas da antiga sem webhook. Lacuna: se o vendedor apagou o webhook à mão no Asaas, a troca recusa mesmo na mesma conta;
+  - **a recusa com assinatura viva (422 `assinaturas_ativas`) diz quantas, sem a lista**: o erro da API só tem `erro` e `mensagem`. A tela (PR 11) mostra quem pela lista de assinantes;
+  - **ver e desconectar não pedem o Completo nem o "pode vender"**: no Grátis, ou sem a liberação, as assinaturas que existem seguem, e quem vendeu precisa enxergar e soltar a conta. Conectar pede os dois (o dono não precisa da liberação);
+  - **o e-mail do webhook é o de quem conectou**: o Asaas avisa ali quando a fila de eventos para;
+  - **fumaça no sandbox** com o conector de verdade: o token gerado aqui (43 caracteres, base64url) é aceito; registrar, ver, apagar e apagar de novo passam;
+  - **a vitrine só conta conta ligada e do modo aceito**: a conta do sandbox do teste ponta a ponta não vende depois que o modo volta a `real` (decisão 10);
+  - **fica para o PR 10**:
+    - o webhook só aceita conexão ligada (`desconectadaEm: null`) e do modo aceito. A desligada guarda o hash do token, mas não tem mais a chave: conexão desligada é desconhecida (200 + log), senão o `daConexao` lança e o Asaas repete até parar a fila;
+    - o assinar relê a conexão ligada e do modo aceito dentro da própria transação: o desconectar conta as assinaturas vivas e desliga sem trava, e os dois não podem se cruzar.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

@@ -201,6 +201,9 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
     async apagarWebhook(id) {
       await pedir("DELETE", `/webhooks/${encodeURIComponent(id)}`, undefined, true);
     },
+    async temWebhook(id) {
+      return (await pedir("GET", `/webhooks/${encodeURIComponent(id)}`, undefined, true)) !== null;
+    },
     async criarCliente({ nome, cpfCnpj, email, telefone, referencia }) {
       const criado = await pedir("POST", "/customers", {
         name: nome,

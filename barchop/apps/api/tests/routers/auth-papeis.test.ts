@@ -60,6 +60,10 @@ const SO_DO_DONO = [
   { method: "PUT", url: "/barbearias/me/vitrine-de-planos" },
   { method: "POST", url: "/barbearias/me/planos" },
   { method: "PATCH", url: `/barbearias/me/planos/${ID_QUALQUER}` },
+  // Conectar a conta do Asaas também passa o profissional com "pode
+  // vender"; ver e desconectar, qualquer profissional
+  // (tests/routers/pagamentos-online.test.ts).
+  { method: "PUT", url: "/barbearias/me/pagamentos-online" },
 ] as const;
 
 async function prepararEquipe(app: App) {

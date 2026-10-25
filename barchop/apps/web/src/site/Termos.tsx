@@ -113,7 +113,7 @@ export function Termos() {
           <li>
             Enquanto houver assinatura online viva, a conta do Asaas não pode ser desconectada: antes, as assinaturas
             precisam ser canceladas, para que ninguém siga sendo cobrado sem o BarChop saber. Desativar um
-            profissional cancela as assinaturas dos planos dele.
+            profissional cancela as assinaturas dos planos que essa pessoa vende.
           </li>
           <li>
             Se a barbearia sair do Completo, as assinaturas que já existem continuam e seguem contando no caixa, mas os

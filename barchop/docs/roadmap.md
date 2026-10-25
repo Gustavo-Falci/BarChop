@@ -109,8 +109,8 @@ migrações `20261026120000_planos_de_assinatura`,
 liberado pelo dono criam planos com preço por ciclo, dias grátis e os
 serviços incluídos, com quantas vezes cada um vale no ciclo. O plano da
 casa vale com qualquer profissional e paga a quem atende um valor fixo;
-o de um profissional vale só com ele, e a casa fica com a parte da casa
-dele sobre a mensalidade. A página da barbearia mostra os planos, e o
+o de um profissional vale só com quem vende, e a casa fica com a parte
+da casa dessa pessoa sobre a mensalidade. A página da barbearia mostra os planos, e o
 cliente assina logado: online, pela fatura do Asaas, com o dinheiro na
 conta de quem vende (quem vende conecta a própria conta em Pagamentos
 online, com a chave cifrada), ou no balcão, com o "Recebi" de cada

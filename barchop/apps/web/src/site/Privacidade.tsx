@@ -49,7 +49,7 @@ export function Privacidade() {
             mostra os últimos caracteres.
           </li>
           <li>
-            Da assinatura: o plano, a situação da cobrança e as faturas. Os dados do cartão ficam com a Stripe: o
+            Da assinatura do BarChop: o plano, a situação da cobrança e as faturas. Os dados do cartão ficam com a Stripe: o
             BarChop não vê nem guarda os dados do cartão.
           </li>
           <li>Técnicos: endereço IP e registros de acesso, para segurança e para evitar abuso.</li>
@@ -74,7 +74,7 @@ export function Privacidade() {
       <SecaoLegal id="quem-ajuda" titulo="Quem nos ajuda a operar">
         <ul>
           <li>Resend: envio dos e-mails (código de verificação e lembrete).</li>
-          <li>Stripe: cobrança da assinatura e os dados do cartão de quem assina um plano pago.</li>
+          <li>Stripe: cobrança da assinatura do BarChop e os dados do cartão de quem assina um plano pago do BarChop.</li>
           <li>Oracle Cloud: hospedagem do sistema e do banco de dados.</li>
           <li>Cloudflare: endereço (DNS) do site.</li>
         </ul>

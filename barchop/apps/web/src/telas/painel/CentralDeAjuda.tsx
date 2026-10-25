@@ -138,7 +138,7 @@ const TEMAS: { tema: string; perguntas: Pergunta[] }[] = [
         resposta: [
           "Em ",
           { href: "/painel/planos", rotulo: "Planos" },
-          ", no Novo plano: o preço por ciclo, os dias grátis e os serviços incluídos, com quantas vezes cada um vale no ciclo. O plano da casa vale com qualquer profissional e paga a quem atende o valor fixo por atendimento; o plano de um profissional vale só com ele. No plano Completo.",
+          ", no Novo plano: o preço por ciclo, os dias grátis e os serviços incluídos, com quantas vezes cada um vale no ciclo. O plano da casa vale com qualquer profissional e paga a quem atende o valor fixo por atendimento; o plano de um profissional vale só com quem vende. No plano Completo.",
         ],
       },
       {
@@ -178,7 +178,7 @@ const TEMAS: { tema: string; perguntas: Pergunta[] }[] = [
       {
         pergunta: "Quem da equipe pode vender planos?",
         resposta: [
-          "O dono vende sempre. Um profissional vende quando o dono liga Pode vender planos no cadastro dele, em ",
+          "O dono vende sempre. Um profissional vende quando o dono liga Pode vender planos no cadastro da pessoa, em ",
           { href: "/painel/equipe", rotulo: "Equipe" },
           ". A casa fica com a parte da casa daquele profissional sobre cada mensalidade.",
         ],

@@ -93,6 +93,10 @@ export function provedoresDeMemoria(
         });
         return { id, linkDaFatura: `https://sandbox.asaas.com/i/${id}` };
       },
+      async linkDaFatura(assinaturaId) {
+        atender();
+        return fabrica.assinaturas.has(assinaturaId) ? `https://sandbox.asaas.com/i/${assinaturaId}` : null;
+      },
       async lerAssinatura(id) {
         atender();
         const assinatura = fabrica.assinaturas.get(id);

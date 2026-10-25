@@ -154,6 +154,19 @@ Diferenças do plano, combinadas no caminho:
   - **no desativar membro**, as online são canceladas no provedor antes da transação. Se ela recusar depois (o último dono), o provedor já cancelou e o webhook cancela aqui: é o que a tela confirmou;
   - **a frase do 422 `assinaturas_ativas`** diz "nos planos que vende", sem "dele".
 
+- **PR 10c (assinar online, minhas assinaturas, cancelar pelo cliente):**
+  - **as rotas ficam em `/clientes/me/assinaturas`** (cliente logado na página pública), com o cliente e a barbearia do token. Plano de outra barbearia é 404;
+  - **só vende o que a vitrine mostra como online**: a regra saiu do `GET /barbearias/:slug/planos` para `lib/planos-do-cliente` (`vitrineAberta`, `PLANO_A_VENDA`, `contasQueRecebem`) e vale nas duas rotas. Fora disso, o 422 é sempre `plano_indisponivel`, inclusive fora do Completo: o cliente não fica sabendo qual plano do BarChop a barbearia paga. A chave de quem vende revogada também vira `plano_indisponivel` pro cliente, com warn no log;
+  - **o CPF é pedido só enquanto o cadastro não tem** (`normalizarCpf` no `formato`: com ou sem máscara, dígitos verificadores, recusa todos iguais). É gravado na mesma transação da assinatura e não volta em resposta nenhuma;
+  - **o provedor cria fora da transação, e a transação trava a conexão** (`FOR SHARE`) e confere que segue ligada e do modo aceito. O desconectar passou a travar a mesma linha (`FOR UPDATE`) do começo ao fim, numa transação de até 15 s, porque apaga o webhook pela rede. Não gravou (conexão desligada no meio, duplo clique no índice de uma viva), cancela no Asaas com o mesmo conector, porque o desconectar apaga a chave do banco;
+  - **a online viva no mesmo plano, pendente ou em atraso, devolve o link da fatura relido (200), em vez de `ja_assina`**: o link não é guardado, e quem tem fatura a pagar volta pra ela sem criar outra assinatura. Outra viva é 422 `ja_assina`;
+  - **cada assinatura nova cria outro cliente no Asaas** (um segundo plano, ou cancelar e assinar de novo): o id do cliente no provedor não é guardado. Limite conhecido; a conta de quem vende fica com o cliente repetido;
+  - **com dias grátis, nasce em `teste`** com o ciclo de hoje até o fim do teste, e a primeira cobrança vence no fim do teste. O Asaas já devolve o link dessa cobrança futura na criação (conferido no sandbox em 25/10);
+  - **o celular vai ao Asaas sem o 55**: com ele, o Asaas aceita e guarda 13 dígitos (conferido no sandbox em 25/10);
+  - **cancelar pelo cliente** reusa o `cancelarNoProvedor` do 10b e manda o sino "Assinatura cancelada" a quem vende (dois cancelar ao mesmo tempo avisam uma vez). Cancelada de novo é 204, sem falar com o provedor. Com a chave de quem vende revogada, o cliente ouve 422 `cancelar_indisponivel` ("fale com a barbearia") e quem vende recebe o sino "Cancelamento não feito", pedindo a chave nova;
+  - **todo pedido ao Asaas tem prazo de 8 s**, resposta lida inclusive (estourou = `indisponivel`): fica abaixo dos 15 s da transação do desconectar, que senão poderia expirar depois de o Asaas apagar o webhook. A trava do desconectar é `FOR NO KEY UPDATE`, como a da barbearia;
+  - **minhas assinaturas** rola o ciclo pago (`marcarAtrasadas`) antes de ler e devolve os usos que sobram por serviço. Os métodos do api-client e o dublê vêm no PR 11, com as telas.
+
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.
 

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { ErroDoProvedor } from "../../src/lib/provedores";
-import { BASE_DO_ASAAS, modoDaChaveDoAsaas, provedorAsaas } from "../../src/lib/provedores/asaas";
+import { BASE_DO_ASAAS, PRAZO_DO_ASAAS_MS, modoDaChaveDoAsaas, provedorAsaas } from "../../src/lib/provedores/asaas";
 
 // O conector do Asaas (Onda 2, marco 3, PR 8 do plano
 // planos-de-assinatura), com um `fetch` falso que devolve as respostas
@@ -149,6 +149,33 @@ describe("o webhook da conta", () => {
   });
 });
 
+describe("o prazo de cada pedido", () => {
+  it("todo pedido leva prazo, abaixo dos 15 s da transação do desconectar", async () => {
+    const { provedor, fetchFalso } = montar(json(resposta("clientes-vazio.json")));
+
+    await provedor.conferirChave();
+
+    expect(PRAZO_DO_ASAAS_MS).toBeLessThan(15_000 / 1.5);
+    expect(fetchFalso.mock.calls[0]![1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("prazo estourado, no pedido ou lendo a resposta, é o Asaas fora do ar", async () => {
+    const estourou = new DOMException("prazo", "TimeoutError");
+    const corpoQueEstoura = new Response(
+      new ReadableStream({
+        start(controle) {
+          controle.error(estourou);
+        },
+      }),
+      { status: 200 }
+    );
+    const { provedor } = montar(estourou, corpoQueEstoura);
+
+    await expect(provedor.conferirChave()).rejects.toMatchObject({ codigo: "indisponivel" });
+    await expect(provedor.conferirChave()).rejects.toMatchObject({ codigo: "indisponivel" });
+  });
+});
+
 describe("cliente e assinatura", () => {
   it("cria o cliente com o CPF e a referência do BarChop", async () => {
     const { provedor, pedido } = montar(json(resposta("cliente.json")));
@@ -169,6 +196,34 @@ describe("cliente e assinatura", () => {
       mobilePhone: "11999990000",
       externalReference: "c1",
     });
+  });
+
+  it("o telefone vai sem o 55 do país, como o banco do BarChop não grava", async () => {
+    const { provedor, pedido } = montar(json(resposta("cliente.json")));
+
+    await provedor.criarCliente({
+      nome: "Cliente de Teste",
+      cpfCnpj: "52998224725",
+      email: null,
+      telefone: "+5511999990000",
+      referencia: "c1",
+    });
+
+    // Com o 55, o Asaas aceita e grava os 13 dígitos (conferido no sandbox
+    // em 25/10): o celular sai torto nos avisos dele.
+    expect(pedido().corpo).toMatchObject({ mobilePhone: "11999990000" });
+  });
+
+  it("o link da fatura que falta pagar, relido pra quem volta a assinar", async () => {
+    const { provedor, pedido } = montar(
+      json(resposta("cobrancas-da-assinatura.json")),
+      json({ data: [{ status: "RECEIVED", invoiceUrl: "https://sandbox.asaas.com/i/paga" }] })
+    );
+
+    expect(await provedor.linkDaFatura("sub_4dcls3tvtbf9ntip")).toBe("https://sandbox.asaas.com/i/exemplo");
+    expect(pedido(0)).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/subscriptions/sub_4dcls3tvtbf9ntip/payments`, metodo: "GET" });
+    // Tudo pago: não há o que mandar o cliente pagar.
+    expect(await provedor.linkDaFatura("sub_4dcls3tvtbf9ntip")).toBeNull();
   });
 
   it("cria a assinatura com a forma escolhida na fatura e devolve o link da primeira cobrança", async () => {

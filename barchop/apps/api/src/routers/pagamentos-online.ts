@@ -217,36 +217,46 @@ export function registrarRotasPagamentosOnline(app: App): void {
       const conexao = await prisma.conexaoDePagamento.findFirst({ where: ondeEstaAConta(membro, daCasa) });
       if (!conexao) throw naoEncontrado("nenhuma conta conectada");
 
-      const vivas = await prisma.assinaturaDoCliente.count({
-        where: { conexaoId: conexao.id, situacao: { not: "cancelada" } },
-      });
-      if (vivas > 0) {
-        throw new ErroDeNegocio(
-          vivas === 1
-            ? "há 1 assinatura online viva nesta conta: cancele a assinatura antes de desconectar"
-            : `há ${vivas} assinaturas online vivas nesta conta: cancele as assinaturas antes de desconectar`,
-          "assinaturas_ativas"
-        );
-      }
-
-      if (conexao.idExternoWebhook !== null) {
-        try {
-          await app.provedores.daConexao(conexao).apagarWebhook(conexao.idExternoWebhook);
-        } catch (erro) {
-          // Chave revogada (ou webhook apagado à mão): o BarChop não
-          // alcança mais o webhook, e ficar com a conexão não ajuda. Fora
-          // do ar, a conexão fica pra tentar de novo.
-          if (!(erro instanceof ErroDoProvedor) || (erro.codigo !== "chave_invalida" && erro.codigo !== "nao_encontrado")) {
-            throw erro instanceof ErroDoProvedor ? erroHttpDoProvedor(erro) : erro;
+      // A conta travada do começo ao fim: o assinar online (PR 10c) trava
+      // a mesma linha pra gravar, e uma assinatura criada no meio não fica
+      // viva numa conta sem webhook. Há rede dentro (apagar o webhook),
+      // daí o prazo maior que o padrão de 5 s.
+      await prisma.$transaction(
+        async (tx) => {
+          await tx.$queryRaw`SELECT id FROM conexao_de_pagamento WHERE id = ${conexao.id}::uuid FOR NO KEY UPDATE`;
+          const vivas = await tx.assinaturaDoCliente.count({
+            where: { conexaoId: conexao.id, situacao: { not: "cancelada" } },
+          });
+          if (vivas > 0) {
+            throw new ErroDeNegocio(
+              vivas === 1
+                ? "há 1 assinatura online viva nesta conta: cancele a assinatura antes de desconectar"
+                : `há ${vivas} assinaturas online vivas nesta conta: cancele as assinaturas antes de desconectar`,
+              "assinaturas_ativas"
+            );
           }
-          request.log.warn({ conexaoId: conexao.id, codigo: erro.codigo }, "webhook do Asaas não apagado ao desconectar");
-        }
-      }
 
-      await prisma.conexaoDePagamento.update({
-        where: { id: conexao.id },
-        data: { desconectadaEm: new Date(), chaveCifrada: Buffer.alloc(0) },
-      });
+          if (conexao.idExternoWebhook !== null) {
+            try {
+              await app.provedores.daConexao(conexao).apagarWebhook(conexao.idExternoWebhook);
+            } catch (erro) {
+              // Chave revogada (ou webhook apagado à mão): o BarChop não
+              // alcança mais o webhook, e ficar com a conexão não ajuda.
+              // Fora do ar, a conexão fica pra tentar de novo.
+              if (!(erro instanceof ErroDoProvedor) || (erro.codigo !== "chave_invalida" && erro.codigo !== "nao_encontrado")) {
+                throw erro instanceof ErroDoProvedor ? erroHttpDoProvedor(erro) : erro;
+              }
+              request.log.warn({ conexaoId: conexao.id, codigo: erro.codigo }, "webhook do Asaas não apagado ao desconectar");
+            }
+          }
+
+          await tx.conexaoDePagamento.update({
+            where: { id: conexao.id },
+            data: { desconectadaEm: new Date(), chaveCifrada: Buffer.alloc(0) },
+          });
+        },
+        { timeout: 15_000 }
+      );
       return reply.code(204).send();
     }
   );

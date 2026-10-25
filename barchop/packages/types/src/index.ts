@@ -897,3 +897,31 @@ export interface RecebimentoDoBalcao {
   assinatura: AssinaturaDoPainel;
   recebimento: { id: string; data: string; valorCentavos: number; casaCentavos: number; forma: FormaDoPagamento };
 }
+
+// GET /clientes/me/assinaturas e as rotas de assinar e cancelar do
+// cliente logado (marco 3, PR 10c). Os usos que sobram são do ciclo de
+// agora; `null` = ilimitado. Sem o id do provedor nem o CPF.
+export interface AssinaturaNaConta {
+  id: string;
+  situacao: SituacaoDoAssinante;
+  forma: "online" | "no_balcao";
+  precoCentavos: number;
+  ciclo: CicloDoCliente;
+  cicloComecaEm: string | null;
+  cicloTerminaEm: string | null;
+  canceladaEm: string | null;
+  criadoEm: string;
+  plano: { id: string; nome: string; daCasa: boolean; vendedor: { id: string; nome: string } | null };
+  servicos: { servicoId: string; nome: string; usosPorCiclo: number | null; usosRestantes: number | null }[];
+}
+
+export interface MinhasAssinaturas {
+  assinaturas: AssinaturaNaConta[];
+}
+
+// POST /clientes/me/assinaturas: o cliente paga na fatura do provedor.
+// 201 quando cria; 200 com a pendente que já existia e a fatura relida.
+export interface AssinaturaOnlineCriada {
+  assinatura: AssinaturaNaConta;
+  linkDaFatura: string | null;
+}

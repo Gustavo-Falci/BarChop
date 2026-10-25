@@ -8,11 +8,17 @@ import {
   type ProblemaDoPlano,
 } from "@barchop/formato";
 import type { CicloDoCliente, PlanoDoPainel, PlanosDoPainel, VitrineDePlanos } from "@barchop/types";
-import { garantirRecurso, temORecurso } from "../lib/assinatura";
+import { garantirRecurso } from "../lib/assinatura";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
-import { PODE_VENDER, planosVisiveis, temContaQueRecebe } from "../lib/planos-do-cliente";
+import {
+  PLANO_A_VENDA,
+  contasQueRecebem,
+  planosVisiveis,
+  temContaQueRecebe,
+  vitrineAberta,
+} from "../lib/planos-do-cliente";
 import { exigirPapel, membroDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -317,23 +323,13 @@ export function registrarRotasPlanosPublicos(app: App): void {
     async (request): Promise<VitrineDePlanos> => {
       const barbearia = await prisma.barbearia.findUniqueOrThrow({
         where: { slug: request.params.slug },
-        select: { id: true, vitrineDePlanos: true },
+        select: { id: true },
       });
-      if (!barbearia.vitrineDePlanos) return { planos: [] };
-      if (!(await temORecurso(prisma, barbearia.id, "planosDaBarbearia", new Date()))) return { planos: [] };
+      if (!(await vitrineAberta(prisma, barbearia.id))) return { planos: [] };
 
       const [planos, contas] = await Promise.all([
         prisma.planoDeAssinatura.findMany({
-          // O de barbeiro só com vendedor que atende e pode vender (o dono
-          // vende sem a liberação). Tirar o "pode vender" tira da vitrine.
-          where: {
-            barbeariaId: barbearia.id,
-            ativo: true,
-            OR: [
-              { vendedorId: null },
-              { vendedor: PODE_VENDER },
-            ],
-          },
+          where: { barbeariaId: barbearia.id, ...PLANO_A_VENDA },
           // Campos um a um: o vendedor é um barbeiro, e um include traria
           // o senhaHash.
           select: {
@@ -356,10 +352,7 @@ export function registrarRotasPlanosPublicos(app: App): void {
           orderBy: [{ ordem: "asc" }, { criadoEm: "asc" }, { id: "asc" }],
         }),
         prisma.conexaoDePagamento.findMany({
-          // Ligada e do modo que a plataforma aceita: a conta do sandbox
-          // do teste ponta a ponta não vende depois que o modo volta a
-          // `real` (decisão 10).
-          where: { barbeariaId: barbearia.id, desconectadaEm: null, modo: app.provedores.modoAceito },
+          where: contasQueRecebem(barbearia.id, app.provedores.modoAceito),
           select: { barbeiroId: true, daCasa: true },
         }),
       ]);

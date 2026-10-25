@@ -24,6 +24,7 @@ import {
 } from "./routers/agendamentos";
 import { registrarRotasClientes } from "./routers/clientes";
 import { registrarRotasClientesMe } from "./routers/clientes-me";
+import { registrarRotasAssinaturasDoCliente } from "./routers/assinaturas-do-cliente";
 import { registrarRotasDisponibilidade } from "./routers/disponibilidade";
 import { registrarRotasBloqueios } from "./routers/bloqueios";
 import { registrarRotasOnboarding } from "./routers/onboarding";
@@ -243,6 +244,7 @@ export function buildApp(
   app.register(async (doCliente: App) => {
     doCliente.addHook("onRequest", autenticarCliente);
     registrarRotasClientesMe(doCliente);
+    registrarRotasAssinaturasDoCliente(doCliente);
   });
 
   // Escopo do suporte da plataforma (bloco F4), irmão dos dois de cima:

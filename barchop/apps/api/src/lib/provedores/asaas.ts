@@ -55,6 +55,23 @@ const reais = (valorCentavos: number): number => valorCentavos / 100;
 const texto = (valor: unknown): string | null => (typeof valor === "string" && valor !== "" ? valor : null);
 const soDigitos = (valor: string): string => valor.replace(/\D/g, "");
 
+// O BarChop grava o celular com o país (+5511...). Com o 55, o Asaas
+// aceita e guarda os 13 dígitos (conferido no sandbox em 25/10), e o
+// celular sai torto nos avisos dele: vai só com DDD e número.
+function celularDoAsaas(telefone: string): string {
+  const digitos = soDigitos(telefone);
+  return digitos.length > 11 && digitos.startsWith("55") ? digitos.slice(2) : digitos;
+}
+
+// O prazo de cada pedido, resposta lida inclusive. Fica bem abaixo dos
+// 15 s da transação do desconectar, que apaga o webhook com a conexão
+// travada: sem prazo, a transação expiraria depois do Asaas apagar, e a
+// conexão seguiria ligada sem webhook.
+export const PRAZO_DO_ASAAS_MS = 8_000;
+
+// Quem ainda não foi paga, na ordem do Asaas (a mais antiga primeiro).
+const A_PAGAR = new Set(["PENDING", "OVERDUE"]);
+
 function situacaoDaAssinatura(status: unknown): AssinaturaNoProvedor["situacao"] {
   if (status === "INACTIVE") return "inativa";
   if (status === "EXPIRED") return "expirada";
@@ -161,11 +178,19 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
           ...(corpo ? { "content-type": "application/json" } : {}),
         },
         ...(corpo ? { body: JSON.stringify(corpo) } : {}),
+        signal: AbortSignal.timeout(PRAZO_DO_ASAAS_MS),
       });
     } catch {
       throw new ErroDoProvedor("indisponivel", "o Asaas não respondeu");
     }
-    const lido: unknown = await resposta.json().catch(() => null);
+    // Corpo vazio vira null; o prazo estourado no meio da leitura é o
+    // Asaas fora do ar, e não uma resposta vazia.
+    const lido: unknown = await resposta.json().catch((erro: unknown) => {
+      if (erro instanceof Error && (erro.name === "TimeoutError" || erro.name === "AbortError")) {
+        throw new ErroDoProvedor("indisponivel", "o Asaas não respondeu");
+      }
+      return null;
+    });
     if (resposta.ok) return (lido ?? {}) as Json;
     const { status } = resposta;
     if (status === 404 && aceitarAusente) return null;
@@ -209,7 +234,7 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
         name: nome,
         cpfCnpj: soDigitos(cpfCnpj),
         ...(email ? { email } : {}),
-        ...(telefone ? { mobilePhone: soDigitos(telefone) } : {}),
+        ...(telefone ? { mobilePhone: celularDoAsaas(telefone) } : {}),
         externalReference: referencia,
       });
       return String(criado?.id);
@@ -234,6 +259,11 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
       const cobrancas = await pedir("GET", `/subscriptions/${encodeURIComponent(id)}/payments`);
       const primeira = ((cobrancas?.data ?? []) as Json[])[0];
       return { id, linkDaFatura: texto(primeira?.invoiceUrl) };
+    },
+    async linkDaFatura(assinaturaId) {
+      const cobrancas = await pedir("GET", `/subscriptions/${encodeURIComponent(assinaturaId)}/payments`);
+      const aPagar = ((cobrancas?.data ?? []) as Json[]).find((cobranca) => A_PAGAR.has(String(cobranca.status)));
+      return texto(aPagar?.invoiceUrl);
     },
     async lerAssinatura(id) {
       const assinatura = (await pedir("GET", `/subscriptions/${encodeURIComponent(id)}`)) as Json;

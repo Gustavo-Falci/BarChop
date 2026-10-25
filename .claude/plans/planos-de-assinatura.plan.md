@@ -146,7 +146,7 @@ Diferenças do plano, combinadas no caminho:
   - **o atraso só vem da cobrança da renovação**: a vencida de um ciclo velho, a já paga ou com `pago_ate` não derruba o ciclo;
   - **o cabeçalho do token é `asaas-access-token`** (documentação do Asaas). Token errado é 401; conexão desligada, de outro modo ou desconhecida é 200 + log, sem gravar o evento;
   - **o mesmo pagamento entra uma vez**: o CONFIRMED do cartão e o RECEIVED são eventos diferentes da mesma cobrança, e o recebimento é conferido pelo `id_externo` antes de gravar, com a linha da barbearia travada;
-  - **assinatura removida, inativa ou expirada no provedor fica cancelada aqui**. Cobrança paga numa assinatura cancelada no BarChop só vai pro log.
+  - **assinatura removida, inativa ou expirada no provedor fica cancelada aqui**, e também a que o provedor não acha mais (404 no `GET`, que o sandbox não gravou). Cobrança paga numa assinatura cancelada no BarChop só vai pro log.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

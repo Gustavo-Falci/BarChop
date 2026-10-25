@@ -12,12 +12,7 @@ import { agoraNaBarbearia, dataParaDate, dateParaData } from "../lib/horas";
 import { notificarQuemVende } from "../lib/notificacoes";
 import { PADRAO_UUID } from "../lib/padroes";
 import { proximoDiaAberto } from "../lib/planos-do-cliente";
-import {
-  ErroDoProvedor,
-  type AssinaturaNoProvedor,
-  type CobrancaNoProvedor,
-  type EventoDoProvedor,
-} from "../lib/provedores";
+import { ErroDoProvedor, type CobrancaNoProvedor, type EventoDoProvedor } from "../lib/provedores";
 import type { App } from "../tipos";
 
 // O webhook do Asaas (Onda 2, marco 3, PR 10a do plano
@@ -45,6 +40,7 @@ const paramsDoWebhook = {
 } as const;
 
 interface Log {
+  info(objeto: object, mensagem: string): void;
   warn(objeto: object, mensagem: string): void;
 }
 
@@ -156,12 +152,13 @@ async function aplicar(
     conexao: { id: string; barbeariaId: string };
     idDaAssinatura: string;
     cobranca: CobrancaNoProvedor | null;
-    noProvedor: AssinaturaNoProvedor | null;
+    // Só no evento da assinatura: se ela parou no provedor.
+    parou: boolean | null;
     evento: EventoDoProvedor;
     log: Log;
   }
 ): Promise<void> {
-  const { conexao, idDaAssinatura, cobranca, noProvedor, evento, log } = params;
+  const { conexao, idDaAssinatura, cobranca, parou, evento, log } = params;
   // A linha da barbearia é o cadeado: o fechar do dia trava a mesma (o
   // recebimento vai pro dia aberto), e duas entregas da mesma cobrança ao
   // mesmo tempo viram uma só.
@@ -170,8 +167,10 @@ async function aplicar(
     where: { conexaoId: conexao.id, idExterno: idDaAssinatura },
     include: INCLUDE_ASSINATURA,
   });
+  // A conta do vendedor recebe também o que ele vende fora do BarChop, e
+  // o webhook ouve tudo: não é erro.
   if (!assinatura) {
-    log.warn({ evento: evento.id, assinatura: idDaAssinatura }, "webhook do Asaas de assinatura desconhecida");
+    log.info({ evento: evento.id, assinatura: idDaAssinatura }, "webhook do Asaas de assinatura que não é do BarChop");
     return;
   }
 
@@ -184,8 +183,8 @@ async function aplicar(
 
   // A assinatura parou no provedor (apagada pelo vendedor, ou expirada):
   // aqui também.
-  if (noProvedor) {
-    if ((noProvedor.removida || noProvedor.situacao !== "ativa") && assinatura.situacao !== "cancelada") {
+  if (parou !== null) {
+    if (parou && assinatura.situacao !== "cancelada") {
       await tx.assinaturaDoCliente.update({
         where: { id: assinatura.id },
         data: { situacao: "cancelada", canceladaEm: new Date() },
@@ -248,23 +247,28 @@ export function registrarRotaWebhookAsaas(app: App): void {
 
     // Fora da transação: é rede. Falhou, lança (500) sem gravar o evento.
     // A cobrança que o provedor não acha (apagada) não tem o que reler:
-    // o evento entra, e nada muda.
+    // o evento entra, e nada muda. A assinatura que ele não acha parou.
     let cobranca: CobrancaNoProvedor | null = null;
-    let noProvedor: AssinaturaNoProvedor | null = null;
+    let parou: boolean | null = null;
     try {
-      if (evento.cobrancaId) cobranca = await provedor.lerCobranca(evento.cobrancaId);
-      else if (evento.assinaturaId) noProvedor = await provedor.lerAssinatura(evento.assinaturaId);
+      if (evento.cobrancaId) {
+        cobranca = await provedor.lerCobranca(evento.cobrancaId);
+      } else if (evento.assinaturaId) {
+        const noProvedor = await provedor.lerAssinatura(evento.assinaturaId);
+        parou = noProvedor.removida || noProvedor.situacao !== "ativa";
+      }
     } catch (erro) {
       if (!(erro instanceof ErroDoProvedor) || erro.codigo !== "nao_encontrado") throw erro;
+      if (!evento.cobrancaId) parou = true;
       request.log.warn({ evento: evento.id }, "webhook do Asaas sobre o que o Asaas não acha mais");
     }
-    const idDaAssinatura = cobranca ? cobranca.assinaturaId : noProvedor ? noProvedor.id : null;
+    const idDaAssinatura = evento.cobrancaId ? (cobranca?.assinaturaId ?? null) : evento.assinaturaId;
 
     try {
       await prisma.$transaction(async (tx) => {
         await tx.eventoDoProvedor.create({ data: { ...chave, tipo: evento.tipo.slice(0, 100) } });
         if (idDaAssinatura) {
-          await aplicar(tx, { conexao, idDaAssinatura, cobranca, noProvedor, evento, log: request.log });
+          await aplicar(tx, { conexao, idDaAssinatura, cobranca, parou, evento, log: request.log });
         }
       });
     } catch (erro) {

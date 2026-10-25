@@ -470,4 +470,41 @@ describe("a assinatura no provedor", () => {
     expect(depois.canceladaEm).not.toBeNull();
     await c.app.close();
   });
+
+  it("a que o provedor não acha mais também fica cancelada", async () => {
+    const c = await cenario();
+    const assinatura = await assinaturaOnline(c, { situacao: "ativa", comeca: hoje(), termina: fimDoCiclo(hoje(), "mensal") });
+    c.provedores.assinaturas.delete(assinatura.idExterno!);
+
+    const resposta = await evento(c, c.casa, { tipo: "SUBSCRIPTION_DELETED", assinaturaId: assinatura.idExterno });
+
+    expect(resposta.statusCode).toBe(200);
+    expect((await prisma.assinaturaDoCliente.findUniqueOrThrow({ where: { id: assinatura.id } })).situacao).toBe(
+      "cancelada"
+    );
+    await c.app.close();
+  });
+});
+
+describe("fechar o dia", () => {
+  it("com a mensalidade online da casa, que ninguém da equipe recebeu", async () => {
+    const c = await cenario();
+    const assinatura = await assinaturaOnline(c);
+    await pagar(c, c.casa, cobranca(c, assinatura));
+
+    const fechado = await c.app.inject({
+      method: "POST",
+      url: `/barbearias/me/caixa/${hoje()}/fechamento`,
+      headers: auth(c.dono.token),
+    });
+
+    expect(fechado.statusCode).toBe(201);
+    const dia = (
+      await c.app.inject({ method: "GET", url: `/barbearias/me/caixa?data=${hoje()}`, headers: auth(c.dono.token) })
+    ).json();
+    expect(dia.fechamento).not.toBeNull();
+    expect(dia.mensalidades).toEqual([expect.objectContaining({ forma: "online", recebidoPor: null })]);
+    expect(dia.acerto.repasses).toEqual([]);
+    await c.app.close();
+  });
 });

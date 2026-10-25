@@ -3,9 +3,11 @@ import { prisma } from "@barchop/database";
 import {
   CICLOS_DO_CLIENTE,
   FORMAS_DA_ASSINATURA,
+  FORMAS_DA_MENSALIDADE,
   FORMAS_DE_PAGAMENTO,
   FORMAS_DO_CAIXA,
   MAX_DIAS_DE_TESTE_DO_CLIENTE,
+  MEIOS_DO_ONLINE,
   MODOS_DA_CONEXAO,
   PROVEDORES_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
@@ -368,6 +370,83 @@ describe("pagamento pelo plano", () => {
     await prisma.pagamento.delete({ where: { id: pagamento.id } });
     expect(await prisma.usoDoPlano.count()).toBe(0);
     expect(await prisma.pagamentoParte.count()).toBe(0);
+    await c.app.close();
+  });
+});
+
+// A mensalidade online (PR 10a, migration 20261028120000_mensalidade_online):
+// cai na conta de quem vende, e não na mão de alguém da equipe.
+describe("mensalidade online", () => {
+  async function comAssinaturaOnline() {
+    const c = await cenario();
+    const plano = await prisma.planoDeAssinatura.create({ data: dadosDoPlano(c) });
+    const conexao = await prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { daCasa: true }) });
+    const assinatura = await assinaturaNoBalcao(c, plano.id, {
+      situacao: "ativa",
+      forma: "online",
+      conexaoId: conexao.id,
+      idExterno: "sub_1",
+    });
+    let cobranca = 0;
+    const receber = (extra: Record<string, unknown> = {}) =>
+      prisma.recebimentoDoPlano.create({
+        data: {
+          barbeariaId: c.agenda.barbeariaId,
+          assinaturaId: assinatura.id,
+          data: dataParaDate(QUINTA),
+          recebidoPorId: null,
+          valorCentavos: 12000,
+          casaCentavos: 12000,
+          forma: "online",
+          meio: "cartao",
+          idExterno: `pay_${++cobranca}`,
+          ...extra,
+        },
+      });
+    return { c, plano, assinatura, receber };
+  }
+
+  it("aceita toda forma da mensalidade e todo meio do online, e nada fora deles", async () => {
+    const { c, receber } = await comAssinaturaOnline();
+    for (const forma of FORMAS_DA_MENSALIDADE) {
+      await receber({ forma, meio: null, recebidoPorId: c.agenda.barbeiroId });
+    }
+    for (const meio of MEIOS_DO_ONLINE) await receber({ meio });
+    await receber({ meio: null });
+    await expect(receber({ forma: "boleto" })).rejects.toThrow();
+    await expect(receber({ meio: "cheque" })).rejects.toThrow();
+    await c.app.close();
+  });
+
+  it("sem quem recebeu e com o meio, só a online; a online tem a cobrança do provedor", async () => {
+    const { c, receber } = await comAssinaturaOnline();
+    await expect(receber({ forma: "pix" })).rejects.toThrow();
+    await expect(receber({ forma: "pix", recebidoPorId: c.agenda.barbeiroId })).rejects.toThrow();
+    await expect(receber({ idExterno: null })).rejects.toThrow();
+    await c.app.close();
+  });
+
+  it("o próximo ciclo já pago vem depois do ciclo de agora", async () => {
+    const { c, plano } = await comAssinaturaOnline();
+    const outubro = { cicloComecaEm: dataParaDate("2026-10-24"), cicloTerminaEm: dataParaDate("2026-11-24") };
+    await assinaturaNoBalcao(c, plano.id, { ...outubro, situacao: "cancelada", pagoAte: dataParaDate("2026-12-24") });
+    for (const ruim of [
+      { ...outubro, pagoAte: dataParaDate("2026-11-24") },
+      { pagoAte: dataParaDate("2026-12-24") },
+    ]) {
+      await expect(assinaturaNoBalcao(c, plano.id, { ...ruim, situacao: "cancelada" })).rejects.toThrow();
+    }
+    await c.app.close();
+  });
+
+  it("o CPF do cliente: 11 dígitos, ou nenhum", async () => {
+    const c = await cenario();
+    const onde = { where: { id: c.agenda.cliente.id } };
+    expect((await prisma.cliente.findUniqueOrThrow(onde)).cpf).toBeNull();
+    await prisma.cliente.update({ ...onde, data: { cpf: "52998224725" } });
+    for (const ruim of ["529.982.247-25", "5299822472", "abcdefghijk"]) {
+      await expect(prisma.cliente.update({ ...onde, data: { cpf: ruim } })).rejects.toThrow();
+    }
     await c.app.close();
   });
 });

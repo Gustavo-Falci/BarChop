@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { ErroDoProvedor } from "../../src/lib/provedores";
-import { BASE_DO_ASAAS, modoDaChaveDoAsaas, provedorAsaas } from "../../src/lib/provedores/asaas";
+import { BASE_DO_ASAAS, PRAZO_DO_ASAAS_MS, modoDaChaveDoAsaas, provedorAsaas } from "../../src/lib/provedores/asaas";
 
 // O conector do Asaas (Onda 2, marco 3, PR 8 do plano
 // planos-de-assinatura), com um `fetch` falso que devolve as respostas
@@ -146,6 +146,33 @@ describe("o webhook da conta", () => {
     await provedor.apagarWebhook("30afbf47-cf0e-4f00-b637-6687e922551d");
 
     expect(pedido()).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/webhooks/30afbf47-cf0e-4f00-b637-6687e922551d`, metodo: "DELETE" });
+  });
+});
+
+describe("o prazo de cada pedido", () => {
+  it("todo pedido leva prazo, abaixo dos 15 s da transação do desconectar", async () => {
+    const { provedor, fetchFalso } = montar(json(resposta("clientes-vazio.json")));
+
+    await provedor.conferirChave();
+
+    expect(PRAZO_DO_ASAAS_MS).toBeLessThan(15_000 / 1.5);
+    expect(fetchFalso.mock.calls[0]![1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("prazo estourado, no pedido ou lendo a resposta, é o Asaas fora do ar", async () => {
+    const estourou = new DOMException("prazo", "TimeoutError");
+    const corpoQueEstoura = new Response(
+      new ReadableStream({
+        start(controle) {
+          controle.error(estourou);
+        },
+      }),
+      { status: 200 }
+    );
+    const { provedor } = montar(estourou, corpoQueEstoura);
+
+    await expect(provedor.conferirChave()).rejects.toMatchObject({ codigo: "indisponivel" });
+    await expect(provedor.conferirChave()).rejects.toMatchObject({ codigo: "indisponivel" });
   });
 });
 

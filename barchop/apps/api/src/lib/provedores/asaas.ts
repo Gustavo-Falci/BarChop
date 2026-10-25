@@ -63,6 +63,12 @@ function celularDoAsaas(telefone: string): string {
   return digitos.length > 11 && digitos.startsWith("55") ? digitos.slice(2) : digitos;
 }
 
+// O prazo de cada pedido, resposta lida inclusive. Fica bem abaixo dos
+// 15 s da transação do desconectar, que apaga o webhook com a conexão
+// travada: sem prazo, a transação expiraria depois do Asaas apagar, e a
+// conexão seguiria ligada sem webhook.
+export const PRAZO_DO_ASAAS_MS = 8_000;
+
 // Quem ainda não foi paga, na ordem do Asaas (a mais antiga primeiro).
 const A_PAGAR = new Set(["PENDING", "OVERDUE"]);
 
@@ -172,11 +178,19 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
           ...(corpo ? { "content-type": "application/json" } : {}),
         },
         ...(corpo ? { body: JSON.stringify(corpo) } : {}),
+        signal: AbortSignal.timeout(PRAZO_DO_ASAAS_MS),
       });
     } catch {
       throw new ErroDoProvedor("indisponivel", "o Asaas não respondeu");
     }
-    const lido: unknown = await resposta.json().catch(() => null);
+    // Corpo vazio vira null; o prazo estourado no meio da leitura é o
+    // Asaas fora do ar, e não uma resposta vazia.
+    const lido: unknown = await resposta.json().catch((erro: unknown) => {
+      if (erro instanceof Error && (erro.name === "TimeoutError" || erro.name === "AbortError")) {
+        throw new ErroDoProvedor("indisponivel", "o Asaas não respondeu");
+      }
+      return null;
+    });
     if (resposta.ok) return (lido ?? {}) as Json;
     const { status } = resposta;
     if (status === 404 && aceitarAusente) return null;

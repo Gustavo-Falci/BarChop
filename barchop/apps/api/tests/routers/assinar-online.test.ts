@@ -231,6 +231,10 @@ describe("assinar", () => {
     expect(deNovo.json()).toMatchObject({ assinatura: { id: primeira.json().assinatura.id }, linkDaFatura: expect.any(String) });
     expect(c.provedores.pedidosDeAssinatura).toHaveLength(1);
 
+    // Em atraso também tem fatura a pagar.
+    await prisma.assinaturaDoCliente.update({ where: { id: primeira.json().assinatura.id }, data: { situacao: "em_atraso" } });
+    expect((await assinar(c, c.daCasa.id)).statusCode).toBe(200);
+
     await prisma.assinaturaDoCliente.update({ where: { id: primeira.json().assinatura.id }, data: { situacao: "ativa" } });
     const ativa = await assinar(c, c.daCasa.id);
     expect(ativa.statusCode).toBe(422);
@@ -246,6 +250,54 @@ describe("assinar", () => {
 
     expect(resposta.statusCode).toBe(502);
     expect(await prisma.assinaturaDoCliente.count()).toBe(0);
+    await c.app.close();
+  });
+
+  it("o duplo clique: o segundo grava antes, e este cancela no provedor e é ja_assina", async () => {
+    const c = await cenario();
+    // A outra aba grava a viva entre o provedor criar e esta gravar.
+    const daConexao = c.provedores.daConexao;
+    c.provedores.daConexao = (conexao) => {
+      const provedor = daConexao(conexao);
+      return {
+        ...provedor,
+        async criarAssinatura(dados) {
+          const criada = await provedor.criarAssinatura(dados);
+          await prisma.assinaturaDoCliente.create({
+            data: {
+              barbeariaId: c.dono.barbeariaId,
+              planoId: c.daCasa.id,
+              clienteId: c.cliente.clienteId,
+              situacao: "pendente",
+              forma: "online",
+              conexaoId: c.casa.id,
+              idExterno: "sub_da_outra_aba",
+              precoCentavos: 12000,
+              ciclo: "mensal",
+            },
+          });
+          return criada;
+        },
+      } satisfies Provedor;
+    };
+
+    const resposta = await assinar(c, c.daCasa.id);
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("ja_assina");
+    expect(c.provedores.cancelamentos).toEqual([c.provedores.pedidosDeAssinatura[0]!.id]);
+    expect(await prisma.assinaturaDoCliente.count()).toBe(1);
+    await c.app.close();
+  });
+
+  it("a chave de quem vende revogada: plano_indisponivel pro cliente", async () => {
+    const c = await cenario();
+    c.provedores.chavesInvalidas.add("$aact_hmlg_chave-da-casa-1234");
+
+    const resposta = await assinar(c, c.daCasa.id);
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("plano_indisponivel");
     await c.app.close();
   });
 
@@ -357,6 +409,24 @@ describe("cancelar", () => {
 
     expect((await cancelar(c, id)).statusCode).toBe(502);
     expect((await prisma.assinaturaDoCliente.findUniqueOrThrow({ where: { id } })).situacao).toBe("pendente");
+    await c.app.close();
+  });
+
+  it("a chave de quem vende revogada: o cliente ouve fale com a barbearia, e quem vende é avisado", async () => {
+    const c = await cenario();
+    const id = (await assinar(c, c.daCasa.id)).json().assinatura.id;
+    c.provedores.chavesInvalidas.add("$aact_hmlg_chave-da-casa-1234");
+
+    const resposta = await cancelar(c, id);
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json()).toMatchObject({ erro: "cancelar_indisponivel", mensagem: expect.stringContaining("fale com a barbearia") });
+    expect(resposta.body).not.toContain("Pagamentos online");
+    expect((await prisma.assinaturaDoCliente.findUniqueOrThrow({ where: { id } })).situacao).toBe("pendente");
+    const avisos = await prisma.notificacao.findMany({ where: { barbeiroId: c.dono.barbeiroId, tipo: "pagamento" } });
+    expect(avisos).toEqual([
+      expect.objectContaining({ titulo: "Cancelamento não feito", texto: expect.stringContaining("troque a chave em Pagamentos online") }),
+    ]);
     await c.app.close();
   });
 

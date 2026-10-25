@@ -223,7 +223,7 @@ export function registrarRotasPagamentosOnline(app: App): void {
       // daí o prazo maior que o padrão de 5 s.
       await prisma.$transaction(
         async (tx) => {
-          await tx.$queryRaw`SELECT id FROM conexao_de_pagamento WHERE id = ${conexao.id}::uuid FOR UPDATE`;
+          await tx.$queryRaw`SELECT id FROM conexao_de_pagamento WHERE id = ${conexao.id}::uuid FOR NO KEY UPDATE`;
           const vivas = await tx.assinaturaDoCliente.count({
             where: { conexaoId: conexao.id, situacao: { not: "cancelada" } },
           });

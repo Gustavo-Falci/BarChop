@@ -136,14 +136,15 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
       });
       if (!conexao) throw indisponivel();
 
-      // Uma viva por cliente e plano. A pendente online é quem saiu da
-      // fatura sem pagar: volta pra ela, em vez de criar outra.
+      // Uma viva por cliente e plano. A online pendente ou em atraso é
+      // quem tem fatura a pagar: volta pra ela, em vez de criar outra.
       const viva = await prisma.assinaturaDoCliente.findFirst({
         where: { planoId: plano.id, clienteId, situacao: { not: "cancelada" } },
         include: { ...INCLUDE_NA_CONTA, conexao: true },
       });
       if (viva) {
-        if (viva.forma !== "online" || viva.situacao !== "pendente" || !viva.idExterno || !viva.conexao) throw jaAssina();
+        const aPagar = viva.situacao === "pendente" || viva.situacao === "em_atraso";
+        if (viva.forma !== "online" || !aPagar || !viva.idExterno || !viva.conexao) throw jaAssina();
         const linkDaFatura = await noProvedor(
           app.provedores.daConexao(viva.conexao).linkDaFatura(viva.idExterno),
           request.log
@@ -246,7 +247,9 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
 
   // Cancelada de novo não é erro. A online é cancelada antes no provedor
   // (PR 10b): falhou, nada muda aqui. Quem vende fica sabendo pelo sino:
-  // o que o cliente faz sozinho vira aviso.
+  // o que o cliente faz sozinho vira aviso. A chave de quem vende
+  // revogada é com quem vende: o cliente ouve "fale com a barbearia", e
+  // o sino pede a chave nova.
   app.delete(
     "/clientes/me/assinaturas/:id",
     { schema: { params: paramsComId } },
@@ -266,21 +269,34 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
       if (!atual) throw naoEncontrado();
       if (atual.situacao === "cancelada") return reply.code(204).send();
 
-      await cancelarNoProvedor(app.provedores, [atual]);
+      const quemVende = { barbeariaId: atual.barbeariaId, vendedorId: atual.plano.vendedorId };
+      const link = `/painel/clientes/${clienteId}`;
+      try {
+        await cancelarNoProvedor(app.provedores, [atual]);
+      } catch (erro) {
+        if (!(erro instanceof ErroDeNegocio) || erro.codigo !== "chave_da_conta_recusada") throw erro;
+        await notificarQuemVende(prisma, quemVende, {
+          titulo: "Cancelamento não feito",
+          texto: `${atual.cliente.nome} tentou cancelar a assinatura do plano ${atual.plano.nome}, mas o Asaas não aceitou a chave da conta conectada: troque a chave em Pagamentos online e cancele pelo painel.`,
+          link,
+        });
+        throw new ErroDeNegocio(
+          "não deu pra cancelar agora: fale com a barbearia, que já foi avisada",
+          "cancelar_indisponivel"
+        );
+      }
       await prisma.$transaction(async (tx) => {
-        await tx.assinaturaDoCliente.update({
-          where: { id: atual.id },
+        // Dois cancelar ao mesmo tempo: só um muda a situação e avisa.
+        const { count } = await tx.assinaturaDoCliente.updateMany({
+          where: { id: atual.id, situacao: { not: "cancelada" } },
           data: { situacao: "cancelada", canceladaEm: new Date() },
         });
-        await notificarQuemVende(
-          tx,
-          { barbeariaId: atual.barbeariaId, vendedorId: atual.plano.vendedorId },
-          {
-            titulo: "Assinatura cancelada",
-            texto: `${atual.cliente.nome} cancelou a assinatura do plano ${atual.plano.nome}.`,
-            link: `/painel/clientes/${clienteId}`,
-          }
-        );
+        if (count === 0) return;
+        await notificarQuemVende(tx, quemVende, {
+          titulo: "Assinatura cancelada",
+          texto: `${atual.cliente.nome} cancelou a assinatura do plano ${atual.plano.nome}.`,
+          link,
+        });
       });
       return reply.code(204).send();
     }

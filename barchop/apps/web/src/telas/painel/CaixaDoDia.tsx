@@ -9,7 +9,16 @@ import { Aviso } from "../../componentes/Aviso";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarDataComSemana, hojeIso, somarDias } from "../../formato/datas";
-import { ROTULO_DA_FORMA, fraseDoRepasse, fraseDoSaldo, naForma, reais } from "../../painel/caixa";
+import {
+  ROTULO_DA_FORMA,
+  detalheDaMensalidade,
+  fraseDoRepasse,
+  fraseDoSaldo,
+  horaNaBarbearia,
+  naForma,
+  reais,
+  servicosDoPlano,
+} from "../../painel/caixa";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
@@ -224,31 +233,68 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
           </div>
 
           <div className={estilos.listas}>
-            <section className={estilos.grupo} aria-labelledby="caixa-pagamentos">
-              <h2 id="caixa-pagamentos" className={estilos.rotulo}>
-                Pagamentos
-              </h2>
-              {atual.pagamentos.length === 0 ? (
-                <p className={estilos.vazio}>Nenhum pagamento neste dia.</p>
-              ) : (
-                <ul className={estilos.lista}>
-                  {atual.pagamentos.map((pagamento) => (
-                    <li key={pagamento.id}>
-                      <Link className={estilos.item} href={`/painel/agendamentos/${pagamento.agendamentoId}`}>
-                        <span className={estilos.hora}>{pagamento.horaInicio}</span>
-                        <span className={estilos.quem}>
-                          {pagamento.cliente.nome}
-                          <span className={estilos.detalhe}> · com {pagamento.atendente.nome}</span>
-                        </span>
-                        <span className={estilos.valor}>
-                          {reais(pagamento.totalCentavos)} {naForma(pagamento.forma)}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+            {/* Pagamentos e mensalidades numa coluna só: os dois são o
+                dinheiro do dia. */}
+            <div className={estilos.grupo}>
+              <section className={estilos.pilha} aria-labelledby="caixa-pagamentos">
+                <h2 id="caixa-pagamentos" className={estilos.rotulo}>
+                  Pagamentos
+                </h2>
+                {atual.pagamentos.length === 0 ? (
+                  <p className={estilos.vazio}>Nenhum pagamento neste dia.</p>
+                ) : (
+                  <ul className={estilos.lista}>
+                    {atual.pagamentos.map((pagamento) => (
+                      <li key={pagamento.id}>
+                        <Link className={estilos.item} href={`/painel/agendamentos/${pagamento.agendamentoId}`}>
+                          <span className={estilos.hora}>{pagamento.horaInicio}</span>
+                          <span className={estilos.quem}>
+                            {pagamento.cliente.nome}
+                            <span className={estilos.detalhe}>
+                              {" · com "}
+                              {pagamento.atendente.nome}
+                              {pagamento.assinatura ? ` · ${servicosDoPlano(pagamento)} pelo plano` : null}
+                            </span>
+                          </span>
+                          <span className={estilos.valor}>
+                            {reais(pagamento.totalCentavos)} {naForma(pagamento.forma)}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {atual.pagamentos.some((pagamento) => pagamento.assinatura) ? (
+                  <p className={estilos.nota}>
+                    Atendimento pelo plano não entra como dinheiro do dia: a mensalidade já entrou quando foi paga.
+                  </p>
+                ) : null}
+              </section>
+
+              {atual.mensalidades.length > 0 ? (
+                <section className={estilos.pilha} aria-labelledby="caixa-mensalidades">
+                  <h2 id="caixa-mensalidades" className={estilos.rotulo}>
+                    Mensalidades
+                  </h2>
+                  <ul className={estilos.lista}>
+                    {atual.mensalidades.map((mensalidade) => (
+                      <li key={mensalidade.id}>
+                        <Link className={estilos.item} href={`/painel/clientes/${mensalidade.cliente.id}`}>
+                          <span className={estilos.hora}>{horaNaBarbearia(mensalidade.registradoEm)}</span>
+                          <span className={estilos.quem}>
+                            {`${mensalidade.cliente.nome} · ${mensalidade.plano.nome}`}
+                            <span className={estilos.detalheDaMensalidade}>{detalheDaMensalidade(mensalidade)}</span>
+                          </span>
+                          <span className={estilos.valor}>
+                            {reais(mensalidade.valorCentavos)} {naForma(mensalidade.forma)}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+            </div>
 
             <section className={estilos.grupo} aria-labelledby="caixa-pendencias">
               <h2 id="caixa-pendencias" className={estilos.rotulo}>

@@ -336,7 +336,12 @@ export function DetalheDoAgendamento() {
         {pagando ? (
           <FormularioDoPagamento
             agendamentoId={id}
-            somaDosServicos={total}
+            servicos={atual.servicos.map((s) => ({
+              servicoId: s.servicoId,
+              nome: s.nome,
+              precoCentavos: Math.round(Number(s.precoNoMomento) * 100),
+            }))}
+            assinaturas={caixa.dados?.assinaturas}
             atendenteId={atual.barbeiro.id}
             membros={membros}
             atual={pago}

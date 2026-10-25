@@ -71,7 +71,7 @@ export function diaEMes(data: string): string {
 
 // Até quando vale, numa frase. Em atraso, o plano não cobre o
 // atendimento até o próximo "Recebi".
-export function fraseDoCiclo(assinatura: AssinaturaDoPainel): string {
+export function fraseDoCiclo(assinatura: Pick<AssinaturaDoPainel, "situacao" | "cicloTerminaEm">): string {
   const termina = assinatura.cicloTerminaEm;
   switch (assinatura.situacao) {
     case "pendente":

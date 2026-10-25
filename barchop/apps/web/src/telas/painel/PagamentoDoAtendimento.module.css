@@ -11,6 +11,104 @@
   border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
+/* O "Usar o plano" em cima dos valores, nas mesmas duas colunas: a
+   escolha à esquerda, o que ela faz com cada serviço à direita. */
+.plano {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: var(--espaco-lg) var(--espaco-xl);
+  align-items: start;
+}
+
+.usarOPlano {
+  display: grid;
+  gap: var(--espaco-xs);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.legenda {
+  padding: 0;
+  margin-block-end: var(--espaco-sm);
+  font-weight: 600;
+}
+
+.opcaoDoPlano {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  cursor: pointer;
+}
+
+.opcaoDoPlano:has(input:checked) {
+  border-color: var(--cor-ink);
+  background: var(--cor-paper-soft);
+}
+
+.opcaoDoPlano:has(input:focus-visible) {
+  outline: 2px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+.opcaoDoPlano input {
+  accent-color: var(--cor-ink);
+}
+
+.textoDaOpcao {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nomeDaOpcao {
+  font-weight: 700;
+}
+
+/* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
+.apoio {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.linhas {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--espaco-md);
+  padding: var(--espaco-sm) 0;
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.precoDaLinha {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.nota,
+.nadaACobrar {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+.nadaACobrar {
+  align-self: center;
+  color: var(--cor-ink);
+  font-weight: 600;
+}
+
 /* Desktop: valores à esquerda, forma e quem recebeu à direita. */
 .campos {
   display: grid;
@@ -109,6 +207,7 @@
 
 /* Tela média: forma e quem recebeu descem pra baixo dos valores. */
 @media (max-width: 60rem) {
+  .plano,
   .campos {
     grid-template-columns: minmax(0, 1fr);
   }

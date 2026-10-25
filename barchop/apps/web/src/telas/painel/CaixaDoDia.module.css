@@ -76,6 +76,17 @@
   border-left: var(--borda-hairline) solid var(--cor-line);
 }
 
+/* Uma seção dentro da coluna (pagamentos, mensalidades). */
+.pilha {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+}
+
+.pilha + .pilha {
+  padding-top: var(--espaco-lg);
+}
+
 .rotulo {
   margin: 0;
   font-family: inherit;
@@ -226,6 +237,19 @@
 
 .quem {
   min-width: 0;
+}
+
+/* Embaixo do nome: de quem é o plano e quem recebeu. */
+.detalheDaMensalidade {
+  display: block;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.nota {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
 }
 
 .valor,

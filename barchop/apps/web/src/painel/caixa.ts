@@ -1,6 +1,6 @@
 import { formatarReais } from "@barchop/formato";
-import type { FormaDoCaixa, ParteDoPagamento } from "@barchop/types";
-import { emLista } from "./assinatura";
+import type { FormaDoCaixa, MensalidadeDoCaixa, PagamentoDoAgendamento, ParteDoPagamento } from "@barchop/types";
+import { diaEMes, emLista } from "./assinatura";
 
 // O caixa do dia no painel (Onda 2, marco 2): dinheiro digitado e
 // mostrado, e a frase de como um pagamento se dividiu. A conta da
@@ -82,4 +82,54 @@ export function fraseDaDivisao(partes: readonly ParteDoPagamento[]): string {
     `${nome} fica com ${reais(primeira.centavos)}`,
     ...resto.map((l) => `${l.nome} com ${reais(l.centavos)}`),
   ])}.`;
+}
+
+// O fixo do plano da casa não passou pela mão de quem recebeu: é a casa
+// pagando quem atendeu, e vem numa frase à parte — somado ao resto,
+// "Lucas fica com R$ 55,00" diria que ele tem 55 na mão. Plano de
+// barbeiro sem nada a cobrar não divide nada: a mensalidade já pagou.
+export function fraseDaDivisaoDoPagamento(pagamento: Pick<PagamentoDoAgendamento, "partes" | "assinatura">): string {
+  const comValor = pagamento.partes.filter((parte) => parte.valorCentavos > 0);
+  const doPlano = comValor.filter((parte) => parte.motivo === "plano");
+  const frases = [
+    fraseDaDivisao(comValor.filter((parte) => parte.motivo !== "plano")),
+    ...doPlano.map(
+      (parte) =>
+        `${parte.beneficiario?.nome ?? "A casa"} ganha ${reais(parte.valorCentavos)} do plano da casa, que a casa repassa no acerto.`
+    ),
+  ].filter((frase) => frase !== "");
+  if (frases.length === 0 && pagamento.assinatura) return "A mensalidade já pagou este atendimento: não há o que dividir.";
+  return frases.join(" ");
+}
+
+// "Corte e Barba", do que o plano cobriu no atendimento.
+export function servicosDoPlano(pagamento: Pick<PagamentoDoAgendamento, "servicosPeloPlano">): string {
+  return emLista(pagamento.servicosPeloPlano.map((servico) => servico.nome));
+}
+
+const HORA = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+// "2026-10-23": o en-CA escreve a data no formato ISO.
+const DIA_ISO = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  timeZone: "America/Sao_Paulo",
+});
+
+// "10:05", no fuso da barbearia: a API grava o instante em UTC.
+export function horaNaBarbearia(instante: string): string {
+  return HORA.format(new Date(instante));
+}
+
+// "De Gustavo · recebida por Rafael em 22/10 · a casa fica com R$ 18,00".
+// O dia só quando o "Recebi" foi noutro dia (o dia dele estava fechado e
+// a API lançou no próximo aberto).
+export function detalheDaMensalidade(mensalidade: MensalidadeDoCaixa): string {
+  const { plano, recebidoPor, registradoEm, data, casaCentavos } = mensalidade;
+  const outroDia = DIA_ISO.format(new Date(registradoEm)) !== data;
+  return [
+    plano.vendedor ? `De ${plano.vendedor.nome}` : "Da casa",
+    `recebida por ${recebidoPor.nome}${outroDia ? ` em ${diaEMes(registradoEm)}` : ""}`,
+    ...(plano.vendedor && casaCentavos > 0 ? [`a casa fica com ${reais(casaCentavos)}`] : []),
+  ].join(" · ");
 }

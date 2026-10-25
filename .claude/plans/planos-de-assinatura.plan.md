@@ -95,7 +95,18 @@ Diferenças do plano, combinadas no caminho:
   - **o "Recebi" só aparece quando a API o aceitaria** (`problemaDoRecebimento` do `formato`): no balcão, pendente, em atraso, ou do dia da renovação em diante. Numa janela, pergunta a forma (sem "Pelo plano") e diz em que caixa entrou: "no caixa de 25/10" quando hoje já fechou;
   - **o assinar só oferece o que a API aceitaria**: plano ativo, no balcão, e que o cliente ainda não tem. A frase diz o que vem: "Começa com 7 dias grátis, até 31/10" ou "Fica pendente até o primeiro Recebi";
   - **cancelar pede confirmação** ("o plano deixa de valer nos atendimentos a partir de agora") e a assinatura sai da lista do cliente;
-  - **o dublê não lança a mensalidade no caixa dele**: o Caixa com mensalidades é o 7c.
+  - **o dublê não lança a mensalidade no caixa dele**: o Caixa com mensalidades é o 7c (feito lá).
+- **PR 7c (o plano no caixa):**
+  - **o plano que vale vem escolhido** no "Usar o plano", com "Não usar: cobrar tudo avulso" ao lado. Esquecer de marcar cobraria o assinante. Trocar a escolha refaz o valor com o que é avulso nela;
+  - **a tela espelha o `conferirOPlano`** (`painel/pelo-plano.ts`): cada linha do atendimento que o plano tem gasta um uso, até os do ciclo. A linha diz "Pelo plano · 2º uso de 2 no ciclo", "Pelo plano · sem limite no ciclo" ou "Fora do plano · avulso". Sem o "4º uso" do ilimitado do canvas: `usosRestantes` do ilimitado é `null`, e o GET não conta os usados;
+  - **os planos que não valem dizem por quê**, numa frase: de outro barbeiro ("vale só nos atendimentos de Gustavo", sem supor gênero), em atraso, pendente, fora do ciclo, usos acabados, serviços fora do plano. Sem nenhum que valha, "Este atendimento é avulso.";
+  - **nada cobrado (nem gorjeta) manda `forma: "plano"`**, sem quem recebeu: as pílulas da forma dão lugar a "Nada a cobrar". Com valor ou gorjeta, a forma volta. É a regra da API, e a tela não deixa mandar a combinação recusada;
+  - **editar um pagamento pelo plano mantém a assinatura gravada**, escolhida, com o que ela cobriu (`servicosPeloPlano`), mesmo cancelada ou de outro ciclo. O GET não a traz mais, e sumir com ela regravaria tudo avulso e soltaria os usos;
+  - **sem o valor do fixo antes de registrar**: `AssinaturaNoPagamento` não traz o fixo, e `GET /planos` é do Completo e do vendedor. A frase do canvas ("ganha R$ 25,00 do plano da casa") fica no resumo, depois de gravado, com o valor das partes;
+  - **o resumo separa o fixo do dinheiro**: "Gustavo fica com R$ 30,00. Gustavo ganha R$ 25,00 do plano da casa, que a casa repassa no acerto." Somado, diria que Gustavo tem 55 na mão. Pelo plano, "Pago pelo plano X: Corte." sem quem recebeu; plano de barbeiro sem nada a cobrar, "A mensalidade já pagou este atendimento: não há o que dividir.";
+  - **no Caixa, as mensalidades ficam embaixo dos pagamentos**, na mesma coluna, só quando há. A linha leva ao cliente, com a hora do "Recebi" no fuso da barbearia, de quem é o plano, quem recebeu, o dia quando o "Recebi" foi noutro dia, e a parte da casa nos planos de barbeiro. Sem "Asaas, cartão" do canvas: é do online (PR 10);
+  - **o atendimento pelo plano diz o que o plano cobriu** ("· Corte pelo plano"), e a nota "não entra como dinheiro do dia" só aparece quando há um assim. Sem o chip "Pelo plano" e o "(+ R$ 25,00 ao Lucas)" do canvas: o acerto já mostra o repasse da casa;
+  - **o dublê conta como a API**: as assinaturas no GET do pagamento, o "pelo plano" com as recusas, o "Recebi" guardado e o caixa com o fixo como a casa pagando e as mensalidades nos totais e no acerto.
 
 ## Summary
 A barbearia e cada barbeiro liberado pelo dono criam planos de assinatura: ciclo, preço, dias de teste e serviços incluídos com limite de usos por ciclo. A página pública mostra esses planos numa vitrine. O cliente assina e paga online pelo Asaas, com o dinheiro na conta de quem vende, ou combina o pagamento no balcão.

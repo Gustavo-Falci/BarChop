@@ -171,6 +171,34 @@ describe("cliente e assinatura", () => {
     });
   });
 
+  it("o telefone vai sem o 55 do país, como o banco do BarChop não grava", async () => {
+    const { provedor, pedido } = montar(json(resposta("cliente.json")));
+
+    await provedor.criarCliente({
+      nome: "Cliente de Teste",
+      cpfCnpj: "52998224725",
+      email: null,
+      telefone: "+5511999990000",
+      referencia: "c1",
+    });
+
+    // Com o 55, o Asaas aceita e grava os 13 dígitos (conferido no sandbox
+    // em 25/10): o celular sai torto nos avisos dele.
+    expect(pedido().corpo).toMatchObject({ mobilePhone: "11999990000" });
+  });
+
+  it("o link da fatura que falta pagar, relido pra quem volta a assinar", async () => {
+    const { provedor, pedido } = montar(
+      json(resposta("cobrancas-da-assinatura.json")),
+      json({ data: [{ status: "RECEIVED", invoiceUrl: "https://sandbox.asaas.com/i/paga" }] })
+    );
+
+    expect(await provedor.linkDaFatura("sub_4dcls3tvtbf9ntip")).toBe("https://sandbox.asaas.com/i/exemplo");
+    expect(pedido(0)).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/subscriptions/sub_4dcls3tvtbf9ntip/payments`, metodo: "GET" });
+    // Tudo pago: não há o que mandar o cliente pagar.
+    expect(await provedor.linkDaFatura("sub_4dcls3tvtbf9ntip")).toBeNull();
+  });
+
   it("cria a assinatura com a forma escolhida na fatura e devolve o link da primeira cobrança", async () => {
     const { provedor, pedido } = montar(json(resposta("assinatura.json")), json(resposta("cobrancas-da-assinatura.json")));
 

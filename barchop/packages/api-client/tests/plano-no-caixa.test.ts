@@ -280,7 +280,9 @@ describe("dublê — mensalidades no caixa", () => {
     ]);
     expect(caixa.totais.porForma[0]).toEqual({ forma: "pix", quantidade: 2, valorCentavos: 15000 });
     expect(caixa.totais.totalCentavos).toBe(15000);
-    expect(caixa.acerto.repasses).toContainEqual({ de: null, para: gustavo, valorCentavos: 2500 });
+    // A casa deve os R$ 25,00 do fixo ao Gustavo, e ele segura R$ 6,00
+    // da parte da casa na barba: compensado, a casa repassa R$ 19,00.
+    expect(caixa.acerto.repasses).toContainEqual({ de: null, para: gustavo, valorCentavos: 1900 });
   });
 
   it("o profissional vê as que recebeu ou dos planos dele", async () => {

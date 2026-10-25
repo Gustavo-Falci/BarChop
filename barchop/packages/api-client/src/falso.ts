@@ -7,11 +7,14 @@ import {
   REGRAS_PADRAO,
   acertoDoDia,
   areasTocadas,
+  assinanteUsaOPlano,
   cicloEmAtraso,
   dividirMensalidade,
   fimDoCiclo,
   problemaDoPlano,
   problemaDoRecebimento,
+  parteDoPlano,
+  usosRestantes,
   dividirPagamento,
   juntarAreas,
   normalizarAparencia,
@@ -47,7 +50,9 @@ import type {
   MembroDoCaixa,
   SalvarDivisao,
   AssinaturaDoPainel,
+  AssinaturaNoPagamento,
   FormaDoPagamento,
+  MensalidadeDoCaixa,
   MudancaDoPlano,
   NovoPlano,
   PlanoDoPainel,
@@ -238,6 +243,9 @@ export interface EstadoFalso {
   // As assinaturas dos clientes nesses planos, de qualquer jeito: a
   // lista ordena como a API. Sem semente, nenhuma.
   assinaturas?: AssinaturaDoPainel[];
+  // As mensalidades recebidas no balcão, de qualquer dia: o "Recebi"
+  // acrescenta, e o caixa do dia mostra as dele. Sem semente, nenhuma.
+  mensalidades?: MensalidadeDoCaixa[];
 }
 
 const FIM_DO_TESTE_PADRAO = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -360,6 +368,10 @@ function copiaDaAssinatura(assinatura: AssinaturaDoPainel): AssinaturaDoPainel {
   return { ...assinatura, cliente: { ...assinatura.cliente }, plano: { ...assinatura.plano } };
 }
 
+function copiaDaMensalidade(mensalidade: MensalidadeDoCaixa): MensalidadeDoCaixa {
+  return JSON.parse(JSON.stringify(mensalidade)) as MensalidadeDoCaixa;
+}
+
 // "26/11", como a mensagem da API.
 function diaEMes(data: string): string {
   const [, mes, dia] = data.split("-");
@@ -418,6 +430,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     planos: (semente.planos ?? []).map(copiaDoPlano),
     vitrineDePlanos: semente.vitrineDePlanos ?? false,
     assinaturas: (semente.assinaturas ?? []).map(copiaDaAssinatura),
+    mensalidades: (semente.mensalidades ?? []).map(copiaDaMensalidade),
   };
 
   // O pedido como o dono o vê: sem a barbearia, que é a dele.
@@ -888,6 +901,72 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   }
   let recebimentos = 0;
 
+  // O dia cai no ciclo pago: de `cicloComecaEm` até a véspera da
+  // renovação (diaNoCiclo, em lib/planos-do-cliente.ts).
+  function noCicloDe(ciclo: { cicloComecaEm: string | null; cicloTerminaEm: string | null }, dia: string): boolean {
+    return (
+      ciclo.cicloComecaEm !== null && ciclo.cicloTerminaEm !== null && ciclo.cicloComecaEm <= dia && dia < ciclo.cicloTerminaEm
+    );
+  }
+
+  // Os usos de uma assinatura no ciclo, por serviço, contados nos
+  // pagamentos pelo plano; `menos` = o pagamento que está sendo refeito.
+  function usosNoCiclo(assinatura: AssinaturaDoPainel, menos: string | null): Map<string, number> {
+    const usados = new Map<string, number>();
+    for (const pagamento of estado.pagamentos!) {
+      if (pagamento.assinatura?.id !== assinatura.id || pagamento.id === menos || !noCicloDe(assinatura, pagamento.data)) {
+        continue;
+      }
+      for (const servico of pagamento.servicosPeloPlano) usados.set(servico.id, (usados.get(servico.id) ?? 0) + 1);
+    }
+    return usados;
+  }
+
+  // O conferirOPlano da API: a assinatura vale no dia, é do cliente, e o
+  // plano de barbeiro só com quem vende. Cada linha que o plano tem gasta
+  // um uso, até os do ciclo.
+  function conferirOPlano(
+    assinatura: AssinaturaDoPainel,
+    agendamento: { data: string; barbeiro: { id: string }; servicos: { servicoId: string; nome: string }[] },
+    clienteId: string,
+    pagamentoId: string | null
+  ): { id: string; nome: string }[] {
+    if (assinatura.cliente.id !== clienteId) {
+      throw new ErroDaApi(422, "assinatura_de_outro_cliente", "esta assinatura é de outro cliente");
+    }
+    if (!assinanteUsaOPlano(assinatura.situacao)) {
+      throw new ErroDaApi(422, "assinatura_inativa", "esta assinatura não está valendo: pendente, em atraso ou cancelada");
+    }
+    if (!noCicloDe(assinatura, agendamento.data)) {
+      throw new ErroDaApi(422, "fora_do_ciclo", "o dia do atendimento está fora do ciclo pago da assinatura");
+    }
+    const vendedor = assinatura.plano.vendedor?.id ?? null;
+    if (vendedor !== null && vendedor !== agendamento.barbeiro.id) {
+      throw new ErroDaApi(422, "plano_de_outro_barbeiro", "o plano de barbeiro só vale com quem vende");
+    }
+    const plano = estado.planos!.find((p) => p.id === assinatura.plano.id);
+    const usados = usosNoCiclo(assinatura, pagamentoId);
+    const cobertos: { id: string; nome: string }[] = [];
+    let esgotou = false;
+    for (const servico of agendamento.servicos) {
+      const regra = plano?.servicos.find((s) => s.servicoId === servico.servicoId);
+      if (!regra) continue;
+      const ja = usados.get(servico.servicoId) ?? 0;
+      if (usosRestantes(regra.usosPorCiclo, ja) === 0) {
+        esgotou = true;
+        continue;
+      }
+      cobertos.push({ id: servico.servicoId, nome: servico.nome });
+      usados.set(servico.servicoId, ja + 1);
+    }
+    if (cobertos.length === 0) {
+      throw esgotou
+        ? new ErroDaApi(422, "usos_esgotados", "os usos do plano neste ciclo acabaram")
+        : new ErroDaApi(422, "servico_fora_do_plano", "o plano não cobre nenhum serviço deste atendimento");
+    }
+    return cobertos;
+  }
+
   // A mesma conta da API (problemaDoPlano), com o mesmo código.
   function exigirPlanoCerto(plano: PlanoDoPainel): void {
     const problema = problemaDoPlano(plano);
@@ -952,22 +1031,50 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     const todos = estado
       .pagamentos!.filter((p) => p.data === data)
       .sort((a, b) => hora(a.agendamentoId).localeCompare(hora(b.agendamentoId)));
-    const acerto = acertoDoDia(
-      todos.map((p) => ({
-        recebidoPor: p.recebidoPor.id,
-        partes: p.partes.map((parte) => ({
+    const todasAsMensalidades = estado.mensalidades!.filter((m) => m.data === data);
+    // Como contarOAcerto: o fixo do plano da casa é a casa pagando quem
+    // atendeu (recebido por ninguém), e a mensalidade divide com a parte
+    // da casa congelada no "recebi".
+    const acerto = acertoDoDia([
+      ...todos.flatMap((p) => {
+        const partes = p.partes.map((parte) => ({
           beneficiario: parte.beneficiario?.id ?? null,
           motivo: parte.motivo,
           valorCentavos: parte.valorCentavos,
-        })),
-      }))
-    );
+        }));
+        const doPlano = partes.filter((parte) => parte.motivo === "plano");
+        return [
+          { recebidoPor: p.recebidoPor.id, partes: partes.filter((parte) => parte.motivo !== "plano") },
+          ...(doPlano.length > 0 ? [{ recebidoPor: null, partes: doPlano }] : []),
+        ];
+      }),
+      ...todasAsMensalidades.map((m) => ({
+        recebidoPor: m.recebidoPor.id,
+        partes: [
+          {
+            beneficiario: m.plano.vendedor?.id ?? null,
+            motivo: "mensalidade" as const,
+            valorCentavos: m.valorCentavos - m.casaCentavos,
+          },
+          { beneficiario: null, motivo: "casa" as const, valorCentavos: m.casaCentavos },
+        ].filter((parte) => parte.valorCentavos > 0),
+      })),
+    ]);
     const entra = (p: PagamentoDoAgendamento) =>
       p.atendente.id === somente || p.recebidoPor.id === somente || p.partes.some((x) => x.beneficiario?.id === somente);
     const pagamentos = somente ? todos.filter(entra) : todos;
+    const dele = (m: MensalidadeDoCaixa) => m.recebidoPor.id === somente || m.plano.vendedor?.id === somente;
+    const mensalidades = somente ? todasAsMensalidades.filter(dele) : todasAsMensalidades;
+    // A mensalidade é dinheiro na mão de alguém: entra nos totais.
     const porForma = FORMAS_DE_PAGAMENTO.map((forma) => {
       const daForma = pagamentos.filter((p) => p.forma === forma);
-      return { forma, quantidade: daForma.length, valorCentavos: daForma.reduce((s, p) => s + p.totalCentavos, 0) };
+      const mensalidadesDaForma = mensalidades.filter((m) => m.forma === forma);
+      return {
+        forma,
+        quantidade: daForma.length + mensalidadesDaForma.length,
+        valorCentavos:
+          daForma.reduce((s, p) => s + p.totalCentavos, 0) + mensalidadesDaForma.reduce((s, m) => s + m.valorCentavos, 0),
+      };
     });
     const pagos = new Set(todos.map((p) => p.agendamentoId));
     const pendencias = doDia
@@ -995,8 +1102,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         const cliente = agendamento ? comCliente(agendamento).cliente : estado.cliente;
         return { ...copiaDoPagamento(p), horaInicio: hora(p.agendamentoId), cliente: { id: cliente.id, nome: cliente.nome } };
       }),
-      // O falso não tem planos de assinatura (PR 7).
-      mensalidades: [],
+      mensalidades: mensalidades.map(copiaDaMensalidade),
       totais: { totalCentavos: porForma.reduce((s, f) => s + f.valorCentavos, 0), porForma },
       acerto: {
         pessoas: acerto.pessoas
@@ -1838,10 +1944,39 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         exigirCaixa();
         const achado = agendamentoOu404(id);
         const pagamento = estado.pagamentos!.find((p) => p.agendamentoId === id);
+        // Como assinaturasNoPagamento: as vivas do cliente, e o
+        // profissional só as da casa e as dele.
+        marcarAtrasadas();
+        const clienteId = achado.clienteId ?? estado.cliente.id;
+        const assinaturas: AssinaturaNoPagamento[] = estado
+          .assinaturas!.filter((a) => a.cliente.id === clienteId && a.situacao !== "cancelada")
+          .filter((a) => estado.papel !== "profissional" || a.plano.vendedor === null || a.plano.vendedor.id === "bb1")
+          .sort((a, b) => a.criadoEm.localeCompare(b.criadoEm) || a.id.localeCompare(b.id))
+          .map((a) => {
+            const usados = usosNoCiclo(a, pagamento?.id ?? null);
+            const servicos = estado.planos!.find((p) => p.id === a.plano.id)?.servicos ?? [];
+            return {
+              id: a.id,
+              situacao: a.situacao,
+              cicloComecaEm: a.cicloComecaEm,
+              cicloTerminaEm: a.cicloTerminaEm,
+              noCiclo: noCicloDe(a, achado.data),
+              valeComOAtendente: a.plano.vendedor === null || a.plano.vendedor.id === achado.barbeiro.id,
+              plano: { ...a.plano },
+              servicos: [...servicos]
+                .sort((x, y) => x.nome.localeCompare(y.nome))
+                .map((s) => ({
+                  servicoId: s.servicoId,
+                  nome: s.nome,
+                  usosPorCiclo: s.usosPorCiclo,
+                  usosRestantes: usosRestantes(s.usosPorCiclo, usados.get(s.servicoId) ?? 0),
+                })),
+            };
+          });
         return {
           pagamento: pagamento ? copiaDoPagamento(pagamento) : null,
           diaFechado: estado.diasFechados!.includes(achado.data),
-          assinaturas: [],
+          assinaturas,
         };
       },
       // A mesma conta da API (dividirPagamento); o resto, como em
@@ -1851,26 +1986,64 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         exigirCaixa();
         const achado = agendamentoOu404(id);
         exigirDiaAberto(achado.data);
-        const soma = achado.servicos.reduce((total, s) => total + Math.round(Number(s.precoNoMomento) * 100), 0);
+        const atendente = achado.barbeiro.id;
+        const clienteId = achado.clienteId ?? estado.cliente.id;
+        if (dados.forma === "plano" && dados.assinaturaId === undefined) {
+          throw new ErroDaApi(422, "forma_invalida", "pelo plano, só com a assinatura do cliente");
+        }
+        const anterior = estado.pagamentos!.find((p) => p.agendamentoId === id);
+        // Refazer com a mesma assinatura não confere de novo: ciclo
+        // renovado ou cancelada não travam a correção.
+        let peloPlano: { assinatura: AssinaturaDoPainel; cobertos: { id: string; nome: string }[] } | null = null;
+        if (dados.assinaturaId !== undefined) {
+          marcarAtrasadas();
+          const assinatura = assinaturaOu404(dados.assinaturaId);
+          peloPlano = {
+            assinatura,
+            cobertos:
+              anterior?.assinatura?.id === assinatura.id
+                ? anterior.servicosPeloPlano.map((s) => ({ ...s }))
+                : conferirOPlano(assinatura, achado, clienteId, anterior?.id ?? null),
+          };
+        }
+        // O que o plano cobriu sai da soma, uma linha por uso.
+        const aCobrar = [...achado.servicos];
+        for (const coberto of peloPlano?.cobertos ?? []) {
+          const linha = aCobrar.findIndex((s) => s.servicoId === coberto.id);
+          if (linha >= 0) aCobrar.splice(linha, 1);
+        }
+        const soma = aCobrar.reduce((total, s) => total + Math.round(Number(s.precoNoMomento) * 100), 0);
         const servicosCentavos = dados.servicosCentavos ?? soma;
         const descontoCentavos = dados.descontoCentavos ?? 0;
         const gorjetaCentavos = dados.gorjetaCentavos ?? 0;
         if (descontoCentavos > servicosCentavos) {
           throw new ErroDaApi(422, "valor_invalido", "o desconto passa do valor dos serviços");
         }
-        const atendente = achado.barbeiro.id;
+        // `plano` só quando nada foi cobrado; recusar, e não trocar sozinho.
+        const nadaCobrado = servicosCentavos === 0 && gorjetaCentavos === 0;
+        if (dados.forma === "plano" && !nadaCobrado) {
+          throw new ErroDaApi(422, "forma_invalida", "com valor a cobrar, a forma é a do dinheiro");
+        }
+        if (dados.forma !== "plano" && peloPlano && nadaCobrado) {
+          throw new ErroDaApi(422, "forma_invalida", "nada a cobrar: a forma é pelo plano");
+        }
         const recebidoPorId = dados.recebidoPorId ?? atendente;
         if (dados.recebidoPorId !== undefined && !equipe().some((m) => m.id === recebidoPorId && m.ativo)) {
           throw new ErroDaApi(422, "membro_invalido", "quem recebeu não é um membro ativo da equipe");
         }
-        const clienteId = achado.clienteId ?? estado.cliente.id;
         const donos = estado.donosDosClientes!;
         donos[clienteId] ??= atendente;
-        const partes = dividirPagamento(
-          { atendente, donoDoCliente: donos[clienteId], servicosCentavos, descontoCentavos, gorjetaCentavos },
-          { ativos: equipe().filter((m) => m.ativo).map((m) => m.id), ...estado.divisao! }
-        );
-        const anterior = estado.pagamentos!.find((p) => p.agendamentoId === id);
+        const fixoCentavos = peloPlano
+          ? (estado.planos!.find((p) => p.id === peloPlano.assinatura.plano.id)?.fixoPorAtendimentoCentavos ?? null)
+          : null;
+        const partes = [
+          ...dividirPagamento(
+            { atendente, donoDoCliente: donos[clienteId], servicosCentavos, descontoCentavos, gorjetaCentavos },
+            { ativos: equipe().filter((m) => m.ativo).map((m) => m.id), ...estado.divisao! }
+          ),
+          // O fixo do plano da casa, sobre o atendimento, não sobre o avulso.
+          ...(peloPlano ? parteDoPlano({ atendente, fixoCentavos }) : []),
+        ];
         const pagamento: PagamentoDoAgendamento = {
           id: anterior?.id ?? `p${estado.pagamentos!.length + 1}`,
           agendamentoId: id,
@@ -1890,9 +2063,10 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             motivo: parte.motivo,
             valorCentavos: parte.valorCentavos,
           })),
-          // O falso não tem planos de assinatura (PR 7).
-          assinatura: null,
-          servicosPeloPlano: [],
+          assinatura: peloPlano
+            ? { id: peloPlano.assinatura.id, plano: { id: peloPlano.assinatura.plano.id, nome: peloPlano.assinatura.plano.nome } }
+            : null,
+          servicosPeloPlano: peloPlano?.cobertos ?? [],
         };
         apagarPagamento(id);
         estado.pagamentos!.push(pagamento);
@@ -2095,15 +2269,24 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           cicloComecaEm: estado.hoje,
           cicloTerminaEm: fimDoCiclo(estado.hoje, atual.ciclo),
         });
+        // Quem recebe é quem está logado (bb1, no dublê).
+        const mensalidade: MensalidadeDoCaixa = {
+          id: `rc${++recebimentos}`,
+          assinaturaId: atual.id,
+          data: proximoDiaAberto(estado.hoje),
+          registradoEm: new Date().toISOString(),
+          forma,
+          valorCentavos: atual.precoCentavos,
+          casaCentavos: partes.find((parte) => parte.beneficiario === null)?.valorCentavos ?? 0,
+          recebidoPor: membroDoCaixa("bb1"),
+          cliente: { id: atual.cliente.id, nome: atual.cliente.nome },
+          plano: { ...atual.plano },
+        };
+        estado.mensalidades!.push(mensalidade);
+        const { id: idDoRecebimento, data, valorCentavos, casaCentavos } = mensalidade;
         return {
           assinatura: copiaDaAssinatura(atual),
-          recebimento: {
-            id: `rc${++recebimentos}`,
-            data: proximoDiaAberto(estado.hoje),
-            valorCentavos: atual.precoCentavos,
-            casaCentavos: partes.find((parte) => parte.beneficiario === null)?.valorCentavos ?? 0,
-            forma,
-          },
+          recebimento: { id: idDoRecebimento, data, valorCentavos, casaCentavos, forma },
         };
       },
       async cancelarAssinaturaDoPlano(assinaturaId: string) {

@@ -102,6 +102,11 @@ describe("termos de uso", () => {
     expect(planos).toHaveTextContent(/não cobra taxa/i);
     expect(planos).toHaveTextContent(/entre quem vende e o cliente/i);
     expect(planos).toHaveTextContent(/Completo/);
+    // Os dados dos clientes servem ao agendamento e aos planos: o CPF de
+    // quem assina online vai pro Asaas, o que "só o agendamento" não cobre.
+    const dadosDosClientes = screen.getByRole("region", { name: "Os dados dos seus clientes" });
+    expect(dadosDosClientes).toHaveTextContent(/CPF/);
+    expect(dadosDosClientes).toHaveTextContent(/o agendamento e os planos funcionarem/i);
     expect(screen.getByRole("link", { name: "Planos que a barbearia vende" })).toHaveAttribute(
       "href",
       "#planos-da-barbearia"
@@ -138,6 +143,9 @@ describe("política de privacidade", () => {
     expect(dados).toHaveTextContent(/CPF/);
     expect(dados).toHaveTextContent(/assina um plano online/i);
     expect(dados).toHaveTextContent(/chave de API do Asaas/i);
+    const papeis = screen.getByRole("region", { name: /quem decide/i });
+    expect(papeis).toHaveTextContent(/o agendamento e os planos funcionarem/i);
+    expect(papeis).not.toHaveTextContent(/clientes que agendam/i);
     const quemAjuda = screen.getByRole("region", { name: /quem nos ajuda/i });
     expect(quemAjuda).toHaveTextContent(/Asaas/);
     expect(quemAjuda).toHaveTextContent(/conta de quem vende/i);

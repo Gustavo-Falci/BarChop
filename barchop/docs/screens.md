@@ -40,7 +40,7 @@ tela veio; esta é a foto de agora.
 | `/painel/equipe` | Lista com papel e situação, pílulas Todos / Atendem / Convites pendentes / Inativos | — |
 | `/painel/equipe/novo` | Convidar por e-mail (só o dono); respeita o limite de profissionais do plano | — |
 | `/painel/equipe/[id]` | Dados, foto, papel, serviços que faz, jornada da semana com pausa, "Pode vender planos" (o dono libera), situação — cada grupo salva sozinho; desativar quem tem assinantes cancela as assinaturas dos planos que a pessoa vende | — |
-| `/painel/planos` | Planos de assinatura da casa e de cada profissional, com a aba Assinantes (situação, "Recebi" e cancelar); "Mostrar os planos na página" (só o dono); atalho pra Pagamentos online; fora do Completo, o convite | — |
+| `/painel/planos` | Planos de assinatura da casa e de cada profissional, com a aba Assinantes (filtro pela situação e "Recebi"); "Mostrar os planos na página" (só o dono); atalho pra Pagamentos online; fora do Completo, o convite | — |
 | `/painel/planos/novo`, `/painel/planos/[id]` | Nome, descrição, ciclo, preço, dias grátis, quanto quem atende ganha por atendimento (plano da casa), serviços incluídos com os usos por ciclo e como o cliente paga (online, na página, e no balcão); desativar e reativar | — |
 | `/painel/bloqueios` | Folgas e bloqueios: dia inteiro ou só algumas horas, atalhos de motivo | — |
 | `/painel/configuracoes` | Índice "X de N decididas": Operação (Horários, Regras de agendamento) e Canais com clientes (Dados do negócio, Aparência, Comunicação, Notificações); fora da contagem, Divisão do dinheiro, Pagamentos online e o Seu perfil | — |

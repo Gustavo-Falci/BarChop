@@ -25,9 +25,9 @@ export function Privacidade() {
           {ouAPreencher(nome)}) é o <strong>controlador</strong>: decide como esses dados são usados.
         </p>
         <p>
-          Para os dados dos clientes que agendam pela página da barbearia, a barbearia é a
+          Para os dados dos clientes da barbearia — quem agenda ou assina um plano —, a barbearia é a
           controladora e o BarChop é o <strong>operador</strong>: trata esses dados só em nome dela e
-          para o agendamento funcionar.
+          para o agendamento e os planos funcionarem.
         </p>
       </SecaoLegal>
 

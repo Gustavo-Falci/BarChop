@@ -134,9 +134,10 @@ export function Termos() {
 
       <SecaoLegal id="dados-dos-clientes" titulo="Os dados dos seus clientes">
         <p>
-          Nome, telefone, e-mail e histórico de agendamentos dos clientes da barbearia pertencem à
-          barbearia. O BarChop os guarda e trata só para fazer o agendamento funcionar, em nome da
-          barbearia — os detalhes estão na <a href="/privacidade">política de privacidade</a>.
+          Nome, telefone, e-mail, histórico de agendamentos e assinaturas dos clientes da barbearia, e o CPF
+          de quem assina um plano online, pertencem à barbearia. O BarChop os guarda e trata só para o
+          agendamento e os planos funcionarem, em nome da barbearia — os detalhes estão na{" "}
+          <a href="/privacidade">política de privacidade</a>.
         </p>
         <p>
           A barbearia é responsável por usar esses dados de acordo com a LGPD: só para atender o

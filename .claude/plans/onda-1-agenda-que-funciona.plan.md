@@ -4,7 +4,26 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-24 — Onda 2, marco 3: modelo decidido) — vale mais que as seções abaixo
+## RETOMAR AQUI (madrugada de 2026-10-25 — marco 3: PRs 1 a 9 no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = este RETOMAR AQUI** (o código é o `f427c3b`, #216). **Produção = o #216**, deploy de 24/10 conferido: `migrar` aplicou `20261026120000_planos_de_assinatura` e `20261027120000_conexao_desligada`, API `healthy`, `/health` 200. Nenhum PR de código aberto.
+- **Plano do marco 3:** `.claude/plans/planos-de-assinatura.plan.md`. As "Diferenças do plano", no topo dele, valem mais que as tarefas e dizem o que mudou em cada PR.
+- **Parte A, sem provedor (completa):** #204 e #205 (a conta em `@barchop/formato`), #206 (migração), #207 (API dos planos), #208 (vitrine pública), #209 (assinante no balcão), #210 ("pelo plano" no pagamento), #211 (mensalidades no caixa), #212, #213 e #214 (as telas: planos, assinantes, "pelo plano" no caixa).
+- **Parte B, Asaas:**
+  - **#215 (PR 8):** `lib/cifra.ts` (AES-256-GCM) e o conector `lib/provedores` (Asaas, memória, fábrica em `app.provedores`), com as respostas gravadas no sandbox. O sandbox confirmou: **CPF exigido na cobrança** (decisão 8 vale: CPF no checkout, trecho em Privacidade e Termos); pagar a fatura no cartão **guarda o cartão na assinatura**, mas a cobrança automática do mês seguinte só se vê em 24/11; assinatura **sem `callback`** (o Asaas recusa sem site cadastrado na conta do vendedor).
+  - **#216 (PR 9):** `GET/PUT/DELETE /barbearias/me/pagamentos-online` (`?daCasa=true` = a conta da casa). Desconectar **desliga** a conexão (`desconectada_em`) em vez de apagar. A **API não sobe em produção sem a `CHAVE_DE_CIFRA`**.
+- **VM:** `CHAVE_DE_CIFRA` e `URL_DA_API=https://api.barchop.com.br` estão em `infra/api.env`. Uma cópia da `CHAVE_DE_CIFRA` precisa ficar fora da VM: perdê-la obriga todo vendedor a conectar de novo.
+- **Sandbox do Asaas:** conta do dono, chave em `apps/api/.env` como `ASAAS_CHAVE_SANDBOX` (nunca no chat nem no repo). Ficou lá só um cliente de teste sem CPF.
+
+**Ao retomar:**
+1. **PR 10 do plano (assinar online e o webhook, API).** Começa pondo `CHAVE_DE_CIFRA`, `URL_DA_API` e `PAGAMENTOS_ONLINE_MODO` no `infra/api.env.example` (pedido do dono). Herda das diferenças do PR 9: o webhook e o assinar só aceitam conexão ligada (`desconectadaEm: null`) e do modo aceito, e o assinar relê a conexão dentro da transação. Mais: CPF no assinar, `recebido_por_id` anulável (migração), cancelar no provedor ao desativar membro e no `DELETE /assinaturas/:id`.
+2. PRs 11 (as telas do online), 12 (Privacidade, Termos e ajuda) e o teste ponta a ponta de um dia na VM com `PAGAMENTOS_ONLINE_MODO=teste`.
+3. Conferir em 24/11, no sandbox, se a assinatura paga no cartão (`sub_vwsx29uc7fa5ekcv`, cancelada depois do teste) gerou cobrança sozinha. Cancelada, provavelmente não gera: pode ser preciso repetir com uma assinatura viva.
+4. A frase do 422 `assinaturas_ativas` do desativar membro (`routers/equipe.ts`) ainda diz "dele": trocar quando mexer ali.
+5. O resto da lista de 21/10: testar o caixa em produção; marco 4; G3; decidir a `barbearia-teste`; pendentes do redesenho.
+
+## RETOMAR AQUI (noite de 2026-10-24 — Onda 2, marco 3: modelo decidido) — histórico
 
 **Estado:**
 - **`main` = este RETOMAR AQUI** (o código segue o `cec7e32`, #200; produção igual à seção abaixo). Nenhum PR de código aberto.

@@ -106,6 +106,9 @@ export interface Provedor {
   // O link é a fatura da primeira cobrança: o cliente escolhe ali como
   // paga, e o BarChop não vê cartão.
   criarAssinatura(dados: NovaAssinatura): Promise<{ id: string; linkDaFatura: string | null }>;
+  // A fatura que falta pagar, pra quem volta a assinar com a pendente
+  // viva; null = não há o que pagar.
+  linkDaFatura(assinaturaId: string): Promise<string | null>;
   lerAssinatura(id: string): Promise<AssinaturaNoProvedor>;
   lerCobranca(id: string): Promise<CobrancaNoProvedor>;
   // Encerra a recorrência; já encerrada não é erro.

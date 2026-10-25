@@ -2,6 +2,7 @@ import type { Prisma } from "@barchop/database";
 import { assinanteUsaOPlano, usosRestantes, type SituacaoDoAssinante } from "@barchop/formato";
 import type { AssinaturaNoPagamento } from "@barchop/types";
 import type { Membro } from "../plugins/auth";
+import { temORecurso } from "./assinatura";
 import { diaEstaFechado } from "./caixa";
 import { PODE_ATENDER } from "./disponibilidade";
 import { naoEncontrado } from "./erro-http";
@@ -29,6 +30,32 @@ export function planosVisiveis(membro: Membro): Prisma.PlanoDeAssinaturaWhereInp
 
 export function assinaturasVisiveis(membro: Membro): Prisma.AssinaturaDoClienteWhereInput {
   return membro.papel === "profissional" ? { plano: { vendedorId: membro.id } } : {};
+}
+
+// O plano que se vende, na vitrine e no assinar online (PRs 4 e 10c):
+// ativo, e o de barbeiro só com vendedor que atende e pode vender (o
+// dono vende sem a liberação). Tirar o "pode vender" tira da vitrine.
+export const PLANO_A_VENDA = {
+  ativo: true,
+  OR: [{ vendedorId: null }, { vendedor: PODE_VENDER }],
+} satisfies Prisma.PlanoDeAssinaturaWhereInput;
+
+// As contas que recebem online: ligadas e do modo que a plataforma
+// aceita. A conta do sandbox do teste ponta a ponta não vende depois que
+// o modo volta a `real` (decisão 10).
+export function contasQueRecebem(barbeariaId: string, modoAceito: string): Prisma.ConexaoDePagamentoWhereInput {
+  return { barbeariaId, desconectadaEm: null, modo: modoAceito };
+}
+
+// A vitrine aberta: ligada pelo dono e com o recurso no plano do BarChop.
+// Fechada, o cliente não vê nem assina, e ninguém fica sabendo qual plano
+// do BarChop a barbearia paga.
+export async function vitrineAberta(db: Prisma.TransactionClient, barbeariaId: string): Promise<boolean> {
+  const { vitrineDePlanos } = await db.barbearia.findUniqueOrThrow({
+    where: { id: barbeariaId },
+    select: { vitrineDePlanos: true },
+  });
+  return vitrineDePlanos && (await temORecurso(db, barbeariaId, "planosDaBarbearia", new Date()));
 }
 
 // A conta que recebe a mensalidade de um plano: a da casa pro plano da
@@ -119,7 +146,7 @@ function diaNoCiclo(ciclo: Ciclo, dia: Date): boolean {
 
 // Os usos do ciclo de uma assinatura, por serviço. `menos` = o pagamento
 // que está sendo refeito, que não conta contra ele mesmo.
-async function usosNoCiclo(
+export async function usosNoCiclo(
   db: Prisma.TransactionClient,
   assinatura: Ciclo & { id: string },
   menos: string | null

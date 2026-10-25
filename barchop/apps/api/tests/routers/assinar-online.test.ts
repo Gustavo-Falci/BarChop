@@ -97,9 +97,9 @@ describe("assinar", () => {
       cicloComecaEm: null,
       plano: { id: c.daCasa.id, nome: "Corte ilimitado", daCasa: true, vendedor: null },
     });
-    // Nem o CPF nem o id do provedor saem pra tela.
+    // Nem o CPF nem o id do provedor saem pra tela (o link é do provedor).
     expect(resposta.body).not.toContain(CPF);
-    expect(resposta.body).not.toContain("sub_memoria");
+    expect(JSON.stringify(corpo.assinatura)).not.toContain("sub_memoria");
 
     expect(c.provedores.clientes).toEqual([
       expect.objectContaining({ cpfCnpj: CPF, email: "caio@exemplo.com", referencia: c.cliente.clienteId }),

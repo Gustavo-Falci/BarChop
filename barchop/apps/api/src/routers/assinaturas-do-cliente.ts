@@ -1,0 +1,288 @@
+import { randomUUID } from "node:crypto";
+import type { FastifyBaseLogger } from "fastify";
+import { Prisma, prisma } from "@barchop/database";
+import { normalizarCpf, usosRestantes, type CicloDoCliente, type SituacaoDoAssinante } from "@barchop/formato";
+import type { AssinaturaNaConta, AssinaturaOnlineCriada, MinhasAssinaturas } from "@barchop/types";
+import { naoEncontrado } from "../lib/erro-http";
+import { ErroDeNegocio } from "../lib/erro-negocio";
+import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "../lib/horas";
+import { notificarQuemVende } from "../lib/notificacoes";
+import { PADRAO_UUID } from "../lib/padroes";
+import {
+  ONLINE_A_CANCELAR,
+  PLANO_A_VENDA,
+  cancelarNoProvedor,
+  contasQueRecebem,
+  marcarAtrasadas,
+  usosNoCiclo,
+  vitrineAberta,
+} from "../lib/planos-do-cliente";
+import { ErroDoProvedor, erroHttpDoProvedor } from "../lib/provedores";
+import { clienteDoToken } from "../plugins/auth";
+import type { App } from "../tipos";
+
+// O cliente assina online, vê e cancela as assinaturas dele (Onda 2,
+// marco 3, PR 10c do plano planos-de-assinatura; decisão 8). Logado na
+// página pública: o id do cliente e a barbearia vêm do token.
+//
+// Assinar só vende o que a vitrine mostra como online (a mesma regra,
+// em lib/planos-do-cliente). O Asaas cria o cliente e a assinatura, e
+// devolve o link da fatura: o cliente escolhe ali como paga, e o BarChop
+// nunca vê cartão. A assinatura nasce pendente (ou em teste, com dias
+// grátis); o webhook (PR 10a) a ativa quando o dinheiro entra.
+
+const corpoAssinar = {
+  type: "object",
+  additionalProperties: false,
+  required: ["planoId"],
+  properties: {
+    planoId: { type: "string", pattern: PADRAO_UUID },
+    // Com ou sem máscara. Obrigatório só enquanto o cadastro não tem.
+    cpf: { type: "string", minLength: 1, maxLength: 20 },
+  },
+} as const;
+
+const paramsComId = {
+  type: "object",
+  required: ["id"],
+  additionalProperties: false,
+  properties: { id: { type: "string", pattern: PADRAO_UUID } },
+} as const;
+
+// Campos um a um: o vendedor é um barbeiro, e um include traria o
+// senhaHash.
+const INCLUDE_NA_CONTA = {
+  plano: {
+    select: {
+      id: true,
+      nome: true,
+      vendedorId: true,
+      vendedor: { select: { id: true, nome: true } },
+      servicos: {
+        where: { servico: { ativo: true } },
+        select: { servicoId: true, usosPorCiclo: true, servico: { select: { nome: true } } },
+        orderBy: [{ servico: { ordem: "asc" } }, { servicoId: "asc" }],
+      },
+    },
+  },
+} satisfies Prisma.AssinaturaDoClienteInclude;
+
+type AssinaturaComPlano = Prisma.AssinaturaDoClienteGetPayload<{ include: typeof INCLUDE_NA_CONTA }>;
+
+async function serializar(db: Prisma.TransactionClient, assinatura: AssinaturaComPlano): Promise<AssinaturaNaConta> {
+  const usados = await usosNoCiclo(db, assinatura, null);
+  const { plano } = assinatura;
+  return {
+    id: assinatura.id,
+    situacao: assinatura.situacao as SituacaoDoAssinante,
+    forma: assinatura.forma as AssinaturaNaConta["forma"],
+    precoCentavos: assinatura.precoCentavos,
+    ciclo: assinatura.ciclo as CicloDoCliente,
+    cicloComecaEm: assinatura.cicloComecaEm ? dateParaData(assinatura.cicloComecaEm) : null,
+    cicloTerminaEm: assinatura.cicloTerminaEm ? dateParaData(assinatura.cicloTerminaEm) : null,
+    canceladaEm: assinatura.canceladaEm?.toISOString() ?? null,
+    criadoEm: assinatura.criadoEm.toISOString(),
+    plano: { id: plano.id, nome: plano.nome, daCasa: plano.vendedorId === null, vendedor: plano.vendedor },
+    servicos: plano.servicos.map((s) => ({
+      servicoId: s.servicoId,
+      nome: s.servico.nome,
+      usosPorCiclo: s.usosPorCiclo,
+      usosRestantes: usosRestantes(s.usosPorCiclo, usados.get(s.servicoId) ?? 0),
+    })),
+  };
+}
+
+const indisponivel = () => new ErroDeNegocio("este plano não está à venda online agora", "plano_indisponivel");
+const jaAssina = () => new ErroDeNegocio("você já assina este plano", "ja_assina");
+
+// O erro do provedor vira resposta. A chave revogada é problema da conta
+// de quem vende, e não de quem assina: pro cliente, o plano não está à
+// venda agora.
+async function noProvedor<T>(pedido: Promise<T>, log: FastifyBaseLogger): Promise<T> {
+  try {
+    return await pedido;
+  } catch (erro) {
+    if (!(erro instanceof ErroDoProvedor)) throw erro;
+    if (erro.codigo === "chave_invalida") {
+      log.warn("assinar online com a chave da conta de quem vende recusada pelo Asaas");
+      throw indisponivel();
+    }
+    throw erroHttpDoProvedor(erro);
+  }
+}
+
+export function registrarRotasAssinaturasDoCliente(app: App): void {
+  app.post(
+    "/clientes/me/assinaturas",
+    { schema: { body: corpoAssinar } },
+    async (request, reply): Promise<AssinaturaOnlineCriada> => {
+      const { clienteId, barbeariaId } = clienteDoToken(request);
+      const plano = await prisma.planoDeAssinatura.findFirst({ where: { id: request.body.planoId, barbeariaId } });
+      if (!plano) throw naoEncontrado();
+
+      // A regra da vitrine: aberta, plano à venda e online, com serviço
+      // ativo, e a conta de quem vende ligada e do modo aceito. Tudo
+      // antes de falar com o provedor, pra não criar nada lá à toa.
+      if (!(await vitrineAberta(prisma, barbeariaId))) throw indisponivel();
+      const aVenda = await prisma.planoDeAssinatura.count({
+        where: { id: plano.id, ...PLANO_A_VENDA, aceitaOnline: true, servicos: { some: { servico: { ativo: true } } } },
+      });
+      if (aVenda === 0) throw indisponivel();
+      const conexao = await prisma.conexaoDePagamento.findFirst({
+        where: {
+          ...contasQueRecebem(barbeariaId, app.provedores.modoAceito),
+          ...(plano.vendedorId === null ? { daCasa: true } : { daCasa: false, barbeiroId: plano.vendedorId }),
+        },
+      });
+      if (!conexao) throw indisponivel();
+
+      // Uma viva por cliente e plano. A pendente online é quem saiu da
+      // fatura sem pagar: volta pra ela, em vez de criar outra.
+      const viva = await prisma.assinaturaDoCliente.findFirst({
+        where: { planoId: plano.id, clienteId, situacao: { not: "cancelada" } },
+        include: { ...INCLUDE_NA_CONTA, conexao: true },
+      });
+      if (viva) {
+        if (viva.forma !== "online" || viva.situacao !== "pendente" || !viva.idExterno || !viva.conexao) throw jaAssina();
+        const linkDaFatura = await noProvedor(
+          app.provedores.daConexao(viva.conexao).linkDaFatura(viva.idExterno),
+          request.log
+        );
+        return reply.code(200).send({ assinatura: await serializar(prisma, viva), linkDaFatura });
+      }
+
+      const cliente = await prisma.cliente.findUniqueOrThrow({
+        where: { id: clienteId },
+        select: { id: true, nome: true, email: true, telefone: true, cpf: true },
+      });
+      let cpf = cliente.cpf;
+      if (request.body.cpf !== undefined) {
+        cpf = normalizarCpf(request.body.cpf);
+        if (cpf === null) throw new ErroDeNegocio("o CPF não confere: confira os números", "cpf_invalido");
+      }
+      if (cpf === null) throw new ErroDeNegocio("o Asaas pede o CPF de quem assina", "cpf_obrigatorio");
+
+      // O id sai daqui porque vai na assinatura do provedor (a referência
+      // de volta). Os pedidos ao provedor ficam fora da transação: é rede.
+      const id = randomUUID();
+      const hoje = agoraNaBarbearia().data;
+      const provedor = app.provedores.daConexao(conexao);
+      const clienteNoProvedor = await noProvedor(
+        provedor.criarCliente({ nome: cliente.nome, cpfCnpj: cpf, email: cliente.email, telefone: cliente.telefone, referencia: cliente.id }),
+        request.log
+      );
+      // Com dias grátis, a primeira cobrança vence no fim do teste; sem,
+      // hoje.
+      const criada = await noProvedor(
+        provedor.criarAssinatura({
+          clienteId: clienteNoProvedor,
+          valorCentavos: plano.precoCentavos,
+          ciclo: plano.ciclo as CicloDoCliente,
+          primeiroVencimento: somarDias(hoje, plano.diasDeTeste),
+          descricao: plano.nome,
+          referencia: id,
+        }),
+        request.log
+      );
+
+      let gravada: AssinaturaComPlano;
+      try {
+        gravada = await prisma.$transaction(async (tx) => {
+          // A conta travada: o desconectar trava a mesma linha pra contar
+          // as vivas e desligar, e os dois não se cruzam. Desligada no meio,
+          // o plano deixou de estar à venda.
+          const ligada = await tx.$queryRaw<{ id: string }[]>`
+            SELECT id FROM conexao_de_pagamento
+            WHERE id = ${conexao.id}::uuid AND desconectada_em IS NULL AND modo = ${app.provedores.modoAceito}
+            FOR SHARE`;
+          if (ligada.length === 0) throw indisponivel();
+          await tx.cliente.update({ where: { id: cliente.id }, data: { cpf } });
+          const emTeste = plano.diasDeTeste > 0;
+          return tx.assinaturaDoCliente.create({
+            data: {
+              id,
+              barbeariaId,
+              planoId: plano.id,
+              clienteId: cliente.id,
+              situacao: emTeste ? "teste" : "pendente",
+              forma: "online",
+              conexaoId: conexao.id,
+              idExterno: criada.id,
+              precoCentavos: plano.precoCentavos,
+              ciclo: plano.ciclo,
+              cicloComecaEm: emTeste ? dataParaDate(hoje) : null,
+              cicloTerminaEm: emTeste ? dataParaDate(somarDias(hoje, plano.diasDeTeste)) : null,
+            },
+            include: INCLUDE_NA_CONTA,
+          });
+        });
+      } catch (erro) {
+        // Não gravou: a assinatura não pode ficar cobrando no provedor.
+        // Com o mesmo conector de antes, porque o desconectar apaga a
+        // chave do banco.
+        await provedor.cancelarAssinatura(criada.id).catch((falha: unknown) => {
+          request.log.warn({ falha: String(falha) }, "assinatura do Asaas sem assinatura no BarChop ficou no provedor");
+        });
+        // O duplo clique: o índice de uma viva por cliente e plano deixa
+        // um gravar.
+        if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") throw jaAssina();
+        throw erro;
+      }
+      return reply.code(201).send({ assinatura: await serializar(prisma, gravada), linkDaFatura: criada.linkDaFatura });
+    }
+  );
+
+  app.get("/clientes/me/assinaturas", async (request): Promise<MinhasAssinaturas> => {
+    const { clienteId, barbeariaId } = clienteDoToken(request);
+    // Antes de ler: o atraso do balcão e o ciclo online já pago.
+    await marcarAtrasadas(prisma, barbeariaId, agoraNaBarbearia().data, { clienteId });
+    const assinaturas = await prisma.assinaturaDoCliente.findMany({
+      where: { clienteId, barbeariaId },
+      include: INCLUDE_NA_CONTA,
+      orderBy: [{ criadoEm: "desc" }, { id: "asc" }],
+    });
+    return { assinaturas: await Promise.all(assinaturas.map((assinatura) => serializar(prisma, assinatura))) };
+  });
+
+  // Cancelada de novo não é erro. A online é cancelada antes no provedor
+  // (PR 10b): falhou, nada muda aqui. Quem vende fica sabendo pelo sino:
+  // o que o cliente faz sozinho vira aviso.
+  app.delete(
+    "/clientes/me/assinaturas/:id",
+    { schema: { params: paramsComId } },
+    async (request, reply) => {
+      const { clienteId } = clienteDoToken(request);
+      const atual = await prisma.assinaturaDoCliente.findFirst({
+        where: { id: request.params.id, clienteId },
+        select: {
+          id: true,
+          situacao: true,
+          barbeariaId: true,
+          ...ONLINE_A_CANCELAR,
+          cliente: { select: { nome: true } },
+          plano: { select: { nome: true, vendedorId: true } },
+        },
+      });
+      if (!atual) throw naoEncontrado();
+      if (atual.situacao === "cancelada") return reply.code(204).send();
+
+      await cancelarNoProvedor(app.provedores, [atual]);
+      await prisma.$transaction(async (tx) => {
+        await tx.assinaturaDoCliente.update({
+          where: { id: atual.id },
+          data: { situacao: "cancelada", canceladaEm: new Date() },
+        });
+        await notificarQuemVende(
+          tx,
+          { barbeariaId: atual.barbeariaId, vendedorId: atual.plano.vendedorId },
+          {
+            titulo: "Assinatura cancelada",
+            texto: `${atual.cliente.nome} cancelou a assinatura do plano ${atual.plano.nome}.`,
+            link: `/painel/clientes/${clienteId}`,
+          }
+        );
+      });
+      return reply.code(204).send();
+    }
+  );
+}

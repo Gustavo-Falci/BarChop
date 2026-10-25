@@ -164,8 +164,9 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
                 </BotaoLink>
               </div>
               <p className={estilos.apoio}>
-                Pix, cartão ou boleto, na página do Asaas. Quando o pagamento entrar, a assinatura aparece ativa em
-                Minha conta.
+                {passo.criada.assinatura.situacao === "teste"
+                  ? "Pix, cartão ou boleto, na página do Asaas. O plano já vale no teste grátis."
+                  : "Pix, cartão ou boleto, na página do Asaas. Quando o pagamento entrar, a assinatura aparece ativa em Minha conta."}
               </p>
             </>
           ) : (

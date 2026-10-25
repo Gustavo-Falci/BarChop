@@ -245,8 +245,11 @@ function ContaOnline({
         {conta ? (
           <>
             <p className={estilos.linha}>
-              <strong>Asaas</strong> · chave terminando em {conta.chaveFinal} · conectada em{" "}
-              {dataCurta(conta.conectadaEm)}
+              {/* Um item só no flex: o texto quebra como texto, e o chip vem depois. */}
+              <span>
+                <strong>Asaas</strong> · chave terminando em {conta.chaveFinal} · conectada em{" "}
+                {dataCurta(conta.conectadaEm)}
+              </span>
               {conta.modo === "teste" ? (
                 <Chip tom="atencao" tamanho="pequeno">
                   Sandbox

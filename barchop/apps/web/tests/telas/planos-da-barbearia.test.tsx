@@ -122,6 +122,7 @@ describe("planos da barbearia", () => {
     await userEvent.click(within(comTeste).getByRole("button", { name: "Assinar" }));
 
     expect(await within(comTeste).findByText(/teste grátis vai até 01\/11/i)).toBeInTheDocument();
+    expect(within(comTeste).getByText(/o plano já vale no teste grátis/i)).toBeInTheDocument();
     expect(within(comTeste).getByRole("link", { name: "Abrir a fatura" })).toBeInTheDocument();
   });
 

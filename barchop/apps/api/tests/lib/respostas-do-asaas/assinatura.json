@@ -1,0 +1,32 @@
+{
+  "object": "subscription",
+  "id": "sub_teste0000001",
+  "dateCreated": "2026-10-24",
+  "customer": "cus_teste0000001",
+  "paymentLink": null,
+  "billingType": "UNDEFINED",
+  "cycle": "MONTHLY",
+  "value": 120,
+  "nextDueDate": "2026-10-24",
+  "endDate": null,
+  "description": "Corte ilimitado",
+  "status": "ACTIVE",
+  "discount": {
+    "value": 0,
+    "limitDate": null,
+    "dueDateLimitDays": 0,
+    "type": "FIXED"
+  },
+  "fine": {
+    "value": 0,
+    "type": "FIXED"
+  },
+  "interest": {
+    "value": 0,
+    "type": "PERCENTAGE"
+  },
+  "deleted": false,
+  "maxPayments": null,
+  "externalReference": "assinatura-do-barchop",
+  "split": null
+}

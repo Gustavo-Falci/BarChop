@@ -1,0 +1,15 @@
+{
+  "id": "wh_teste0000001",
+  "name": "BarChop",
+  "url": "https://api.barchop.com.br/webhooks/asaas/conexao",
+  "email": "dono@exemplo.com",
+  "enabled": true,
+  "interrupted": false,
+  "apiVersion": 3,
+  "hasAuthToken": true,
+  "sendType": "SEQUENTIALLY",
+  "events": [
+    "PAYMENT_CONFIRMED",
+    "PAYMENT_RECEIVED"
+  ]
+}

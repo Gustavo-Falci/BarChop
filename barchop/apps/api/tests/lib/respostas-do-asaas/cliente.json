@@ -1,0 +1,15 @@
+{
+  "object": "customer",
+  "id": "cus_teste0000001",
+  "dateCreated": "2026-10-24",
+  "name": "Cliente de Teste",
+  "email": "cliente@exemplo.com",
+  "phone": null,
+  "mobilePhone": "11999990000",
+  "cpfCnpj": "52998224725",
+  "personType": "FISICA",
+  "deleted": false,
+  "externalReference": "cliente-do-barchop",
+  "notificationDisabled": false,
+  "foreignCustomer": false
+}

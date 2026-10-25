@@ -1,0 +1,58 @@
+{
+  "id": "evt_teste0000001&1",
+  "event": "PAYMENT_RECEIVED",
+  "dateCreated": "2026-10-24 14:30:00",
+  "account": {
+    "id": "conta-teste",
+    "ownerId": null
+  },
+  "payment": {
+    "object": "payment",
+    "id": "pay_teste0000001",
+    "dateCreated": "2026-10-24",
+    "customer": "cus_teste0000001",
+    "subscription": "sub_teste0000001",
+    "paymentLink": null,
+    "value": 120,
+    "netValue": 118.01,
+    "originalValue": null,
+    "interestValue": null,
+    "description": "Corte ilimitado",
+    "billingType": "PIX",
+    "status": "RECEIVED",
+    "pixTransaction": null,
+    "dueDate": "2026-10-24",
+    "originalDueDate": "2026-10-24",
+    "paymentDate": "2026-10-24",
+    "clientPaymentDate": "2026-10-24",
+    "installmentNumber": null,
+    "invoiceUrl": "https://sandbox.asaas.com/i/teste0000001",
+    "invoiceNumber": "00000001",
+    "externalReference": "assinatura-do-barchop",
+    "deleted": false,
+    "anticipated": false,
+    "anticipable": false,
+    "creditDate": null,
+    "estimatedCreditDate": null,
+    "transactionReceiptUrl": null,
+    "nossoNumero": null,
+    "bankSlipUrl": null,
+    "discount": {
+      "value": 0,
+      "limitDate": null,
+      "dueDateLimitDays": 0,
+      "type": "FIXED"
+    },
+    "fine": {
+      "value": 0,
+      "type": "FIXED"
+    },
+    "interest": {
+      "value": 0,
+      "type": "PERCENTAGE"
+    },
+    "postalService": false,
+    "refunds": null,
+    "confirmedDate": "2026-10-24"
+  }
+}

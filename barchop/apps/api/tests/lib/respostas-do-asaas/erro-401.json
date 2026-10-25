@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "code": "invalid_access_token",
+      "description": "A chave de API fornecida é inválida"
+    }
+  ]
+}

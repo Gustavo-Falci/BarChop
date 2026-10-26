@@ -188,6 +188,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* O aviso do prazo vencido é um <p>: o espaço vem do gap do cartão. */
+.horario > :not(.resumo, .acoes) {
+  margin: 0;
+}
+
 .acoes {
   display: flex;
   flex-wrap: wrap;
@@ -412,6 +417,13 @@
   .horario {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
+  }
+
+  /* O aviso do prazo vencido desce pra linha de baixo, na largura do
+     cartão: na coluna `auto` ele cresce até o tamanho do texto e espreme
+     o resumo numa tira. */
+  .horario > :not(.resumo, .acoes) {
+    grid-column: 1 / -1;
   }
 
   .linhaDoHistorico {

@@ -122,7 +122,7 @@ describe("barra da barbearia — acesso à conta", () => {
     montar();
 
     expect(
-      await screen.findByRole("link", { name: "Meus agendamentos" })
+      await screen.findByRole("link", { name: "Minha conta" })
     ).toHaveAttribute("href", "/gr-barber/minha-conta");
     expect(screen.queryByRole("link", { name: "Entrar" })).toBeNull();
   });
@@ -150,7 +150,7 @@ describe("barra da barbearia — acesso à conta", () => {
     montar();
 
     await screen.findByRole("link", { name: "GR Barber" });
-    expect(screen.queryByRole("link", { name: "Meus agendamentos" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Minha conta" })).toBeNull();
   });
 
   it("troca pra meus agendamentos assim que a sessão é gravada, sem remontar", async () => {
@@ -162,7 +162,7 @@ describe("barra da barbearia — acesso à conta", () => {
     act(() => sessaoDoCliente("gr-barber").gravar("token"));
 
     expect(
-      await screen.findByRole("link", { name: "Meus agendamentos" })
+      await screen.findByRole("link", { name: "Minha conta" })
     ).toBeInTheDocument();
   });
 
@@ -170,7 +170,7 @@ describe("barra da barbearia — acesso à conta", () => {
     // É o "Não é você?" do passo de dados: limpa a sessão e fica na tela.
     sessaoDoCliente("gr-barber").gravar("token");
     montar();
-    await screen.findByRole("link", { name: "Meus agendamentos" });
+    await screen.findByRole("link", { name: "Minha conta" });
 
     act(() => sessaoDoCliente("gr-barber").limpar());
 

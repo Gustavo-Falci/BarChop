@@ -286,10 +286,14 @@ describe("minhas assinaturas", () => {
       })
     );
 
-    const secao = await screen.findByRole("region", { name: "Minhas assinaturas" });
+    const secao = await screen.findByRole("region", { name: "Meu plano" });
     expect(within(secao).getByText("Corte ilimitado")).toBeInTheDocument();
     expect(within(secao).getByText("Renova em 20/11")).toBeInTheDocument();
-    expect(within(secao).getByText("Corte masculino: sobra 1 de 2 neste ciclo")).toBeInTheDocument();
+    // Os usos viram uma linha por serviço, com o que sobra e a barra.
+    const uso = within(secao).getByText("Corte masculino").closest("li") as HTMLElement;
+    expect(within(uso).getByText("sobra 1 de 2")).toBeInTheDocument();
+    expect(within(secao).getByText("Neste ciclo")).toBeInTheDocument();
+    expect(within(secao).getByText("Pago online")).toBeInTheDocument();
     expect(within(secao).queryByText("Com teste")).not.toBeInTheDocument();
   });
 
@@ -300,7 +304,7 @@ describe("minhas assinaturas", () => {
         assinaturas: [assinatura({ situacao: "pendente", cicloComecaEm: null, cicloTerminaEm: null })],
       })
     );
-    const secao = await screen.findByRole("region", { name: "Minhas assinaturas" });
+    const secao = await screen.findByRole("region", { name: "Meu plano" });
     expect(within(secao).queryByText(/neste ciclo/)).not.toBeInTheDocument();
 
     await userEvent.click(within(secao).getByRole("button", { name: "Pagar" }));
@@ -318,15 +322,46 @@ describe("minhas assinaturas", () => {
         assinaturas: [assinatura({})],
       })
     );
-    const secao = await screen.findByRole("region", { name: "Minhas assinaturas" });
+    const secao = await screen.findByRole("region", { name: "Meu plano" });
 
     await userEvent.click(within(secao).getByRole("button", { name: "Cancelar assinatura" }));
     expect(within(secao).getByText(/o asaas para de cobrar/i)).toBeInTheDocument();
     await userEvent.click(within(secao).getByRole("button", { name: "Sim, cancelar" }));
 
-    await waitFor(() =>
-      expect(screen.queryByRole("region", { name: "Minhas assinaturas" })).not.toBeInTheDocument()
-    );
+    // Sem assinatura viva, e com a vitrine ligada: o convite pros planos.
+    expect(await within(secao).findByText("Você não assina um plano")).toBeInTheDocument();
+    expect(within(secao).queryByText("Corte ilimitado")).not.toBeInTheDocument();
     expect(falso.estado.assinaturas![0].situacao).toBe("cancelada");
+  });
+
+  it("sem plano e com a vitrine ligada, convida pros planos da barbearia", async () => {
+    montar(<MinhaConta />, semear({ assinaturas: [] }));
+
+    const secao = await screen.findByRole("region", { name: "Meu plano" });
+    expect(within(secao).getByText("Você não assina um plano")).toBeInTheDocument();
+    expect(within(secao).getByRole("link", { name: "Ver os planos" })).toHaveAttribute("href", "/gr-barber/planos");
+  });
+
+  it("sem plano e com a vitrine desligada, a seção não aparece", async () => {
+    const falso = semear({ assinaturas: [], vitrineDePlanos: false });
+    const pedido = vi.spyOn(falso.publico, "planos");
+    montar(<MinhaConta />, falso);
+    await waitFor(() => expect(pedido).toHaveBeenCalled());
+    await pedido.mock.results[0].value;
+    await act(async () => {});
+    expect(screen.queryByRole("region", { name: "Meu plano" })).not.toBeInTheDocument();
+  });
+
+  it("no balcão, diz que é pago no balcão", async () => {
+    montar(
+      <MinhaConta />,
+      semear({
+        assinaturas: [
+          assinatura({ forma: "no_balcao", plano: { id: "pl3", nome: "Só no balcão", daCasa: true, vendedor: null } }),
+        ],
+      })
+    );
+    const secao = await screen.findByRole("region", { name: "Meu plano" });
+    expect(within(secao).getByText("Pago no balcão")).toBeInTheDocument();
   });
 });

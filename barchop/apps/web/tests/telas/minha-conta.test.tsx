@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
@@ -234,5 +234,80 @@ describe("minha conta", () => {
       expect(screen.getByText(/o prazo pra alterar pelo link acabou/i)).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /\(11\) 3333-4444/ })).toHaveAttribute("href", "tel:1133334444");
     });
+  });
+});
+
+// A direção A do redesenho (canvas "Minha conta — redesenho"): o título
+// da conta, o Agendar no topo, os marcados em destaque e o resto num
+// histórico sem caixas. O plano fica ao lado (planos-da-barbearia.test).
+describe("minha conta: a página", () => {
+  const corte = [{ servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 }];
+  const agendamento = (id: string, data: string, horaInicio: string, status: string) => ({
+    id,
+    data,
+    horaInicio,
+    horaFim: "10:30",
+    status,
+    origem: "cliente",
+    observacoes: null,
+    servicos: corte,
+    barbeiro: { id: "bb1", nome: "Rafael" },
+  });
+
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir();
+    sessaoDoCliente("gr-barber").gravar("jwt-do-cliente");
+  });
+
+  it("o título é Minha conta, com a volta pra barbearia e o Agendar horário", async () => {
+    montar(criarApiClientFalso());
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Minha conta" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Voltar pra barbearia" })).toHaveAttribute("href", "/gr-barber");
+    expect(screen.getByRole("link", { name: "Agendar horário" })).toHaveAttribute("href", "/gr-barber/agendar");
+  });
+
+  it("os marcados ficam em cima, com as ações; o resto vai pro histórico, sem botões", async () => {
+    montar(
+      criarApiClientFalso({
+        agendamentos: [
+          agendamento("a1", "2026-09-10", "09:00", "cancelado"),
+          agendamento("a2", "2026-09-20", "10:00", "confirmado"),
+          agendamento("a3", "2026-09-05", "11:00", "concluido"),
+        ],
+      }),
+      TRES_HORAS_ANTES
+    );
+
+    const marcados = await screen.findByRole("region", { name: "Horários marcados" });
+    expect(within(marcados).getByText("20 de setembro")).toBeInTheDocument();
+    expect(within(marcados).getByText("Corte com Rafael")).toBeInTheDocument();
+    expect(within(marcados).getByRole("button", { name: "Remarcar" })).toBeInTheDocument();
+
+    const historico = screen.getByRole("region", { name: "Histórico" });
+    const linhas = within(historico).getAllByRole("listitem");
+    // O mais recente primeiro.
+    expect(linhas.map((linha) => within(linha).getByText(/de setembro/).textContent)).toEqual([
+      "10 de setembro",
+      "5 de setembro",
+    ]);
+    expect(within(linhas[0]).getByText("cancelado")).toBeInTheDocument();
+    expect(within(historico).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("sem horário marcado, diz que não há, e o histórico segue", async () => {
+    montar(criarApiClientFalso({ agendamentos: [agendamento("a1", "2026-09-10", "09:00", "cancelado")] }));
+
+    const marcados = await screen.findByRole("region", { name: "Horários marcados" });
+    expect(within(marcados).getByText("Nenhum horário marcado.")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Histórico" })).toBeInTheDocument();
+  });
+
+  it("sem nada no histórico, a seção não aparece", async () => {
+    montar(criarApiClientFalso({ agendamentos: [agendamento("a2", "2026-09-20", "10:00", "pendente")] }), TRES_HORAS_ANTES);
+
+    await screen.findByRole("region", { name: "Horários marcados" });
+    expect(screen.queryByRole("region", { name: "Histórico" })).not.toBeInTheDocument();
   });
 });

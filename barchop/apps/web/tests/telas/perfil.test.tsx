@@ -257,7 +257,7 @@ describe("perfil da barbearia", () => {
     await waitFor(() => screen.getByRole("heading", { level: 1 }));
 
     expect(
-      await screen.findByRole("link", { name: "Meus agendamentos" })
+      await screen.findByRole("link", { name: "Minha conta" })
     ).toHaveAttribute("href", "/gr-barber/minha-conta");
   });
 });

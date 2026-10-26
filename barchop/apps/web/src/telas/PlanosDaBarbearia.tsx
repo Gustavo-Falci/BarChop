@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
-import { normalizarCpf } from "@barchop/formato";
+import { formatarReais, normalizarCpf } from "@barchop/formato";
 import type { AssinaturaOnlineCriada, PlanoDaVitrine } from "@barchop/types";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
@@ -17,9 +17,12 @@ import {
   comQuemVale,
   fraseDaFatura,
   fraseDoTesteGratis,
+  incluiACada,
   planoDaQuery,
 } from "../fluxo/planos";
-import { precoDoCiclo, resumoDosServicos } from "../painel/planos";
+import { caminhoDoPasso } from "../fluxo/passos";
+import { IconeCheck, IconeSeta } from "../painel/icones";
+import { porCiclo, servicoDoPlano } from "../painel/planos";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import estilos from "./PlanosDaBarbearia.module.css";
@@ -61,21 +64,71 @@ export function PlanosDaBarbearia() {
   return (
     <main className={estilos.pagina}>
       <div className={estilos.cabeca}>
-        <h1>Planos de assinatura</h1>
-        <p className={estilos.apoio}>Um preço por ciclo, com os serviços incluídos.</p>
+        <div className={estilos.titulo}>
+          <Link href={noHost(`/${slug}`)} className={estilos.voltar}>
+            <IconeSeta width="16" height="16" className={estilos.setaDeVolta} />
+            Voltar pra barbearia
+          </Link>
+          <h1>Planos de assinatura</h1>
+          <p className={estilos.apoio}>Um valor fixo por ciclo, com os serviços incluídos.</p>
+        </div>
+        <p className={estilos.apoio}>
+          Já assina? <Link href={noHost(`/${slug}/minha-conta`)}>Veja em Minha conta</Link>
+        </p>
       </div>
       {planos.length === 0 ? (
-        <p>
-          Esta barbearia não tem planos à venda agora. <Link href={noHost(`/${slug}`)}>Voltar pra página</Link>
-        </p>
+        <p>Esta barbearia não tem planos à venda agora.</p>
       ) : (
-        <ul className={estilos.lista}>
-          {planos.map((plano) => (
-            <CartaoDoPlano key={plano.id} slug={slug} plano={plano} marcado={plano.id === marcado} />
-          ))}
-        </ul>
+        <>
+          <ul className={estilos.lista}>
+            {planos.map((plano) => (
+              <CartaoDoPlano key={plano.id} slug={slug} plano={plano} marcado={plano.id === marcado} />
+            ))}
+          </ul>
+          <ComoFunciona online={planos.some((plano) => plano.aceitaOnline)} />
+        </>
       )}
     </main>
+  );
+}
+
+// Os três passos, sem caixa. O do pagamento só fala do online quando
+// algum plano da vitrine aceita: numa casa só de balcão, falar de Asaas
+// e cartão confundiria.
+function ComoFunciona({ online }: { online: boolean }) {
+  return (
+    <section className={estilos.comoFunciona} aria-labelledby="como-funciona">
+      <h2 id="como-funciona" className={estilos.tituloDoComo}>
+        Como funciona
+      </h2>
+      <ol className={estilos.passos}>
+        <li className={estilos.passoDoComo}>
+          <span className={estilos.numero} aria-hidden="true">
+            1
+          </span>
+          <p className={estilos.nomeDoPasso}>Escolha o plano</p>
+          <p className={estilos.apoio}>Cada um diz com quem vale e o que inclui.</p>
+        </li>
+        <li className={estilos.passoDoComo}>
+          <span className={estilos.numero} aria-hidden="true">
+            2
+          </span>
+          <p className={estilos.nomeDoPasso}>{online ? "Pague online ou no balcão" : "Pague no balcão"}</p>
+          <p className={estilos.apoio}>
+            {online
+              ? "Online, a fatura abre na página do Asaas: o BarChop nunca vê seu cartão."
+              : "O pagamento é combinado na barbearia."}
+          </p>
+        </li>
+        <li className={estilos.passoDoComo}>
+          <span className={estilos.numero} aria-hidden="true">
+            3
+          </span>
+          <p className={estilos.nomeDoPasso}>Agende como sempre</p>
+          <p className={estilos.apoio}>No atendimento, o que o plano inclui já está pago pela assinatura.</p>
+        </li>
+      </ol>
+    </section>
   );
 }
 
@@ -92,6 +145,7 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
   const [jaAssina, setJaAssina] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const cartao = useRef<HTMLLIElement>(null);
+  const idDoInclui = useId();
   const temSessao = Boolean(sessaoDoCliente(slug).ler());
   const minhaConta = noHost(`/${slug}/minha-conta`);
 
@@ -137,96 +191,127 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
 
   return (
     <li ref={cartao} className={marcado ? `${estilos.plano} ${estilos.marcado}` : estilos.plano}>
-      <div className={estilos.topo}>
-        <h2 className={estilos.nomeDoPlano}>{plano.nome}</h2>
-        <span className={estilos.preco}>{precoDoCiclo(plano)}</span>
+      <div className={estilos.quem}>
+        <div className={estilos.topo}>
+          <h2 className={estilos.nomeDoPlano}>{plano.nome}</h2>
+          {plano.diasDeTeste > 0 ? <span className={estilos.selo}>{fraseDoTesteGratis(plano.diasDeTeste)}</span> : null}
+        </div>
+        <p className={estilos.apoio}>{comQuemVale(plano)}</p>
       </div>
-      <p className={estilos.apoio}>{comQuemVale(plano)}</p>
       {plano.descricao ? <p className={estilos.descricao}>{plano.descricao}</p> : null}
-      <p>
-        <span className={estilos.rotulo}>Inclui:</span> {resumoDosServicos(plano.servicos)} a cada ciclo
+      <p className={estilos.preco}>
+        <span className={estilos.valor}>{formatarReais(plano.precoCentavos)}</span>{" "}
+        <span className={estilos.ciclo}>{porCiclo(plano.ciclo)}</span>
       </p>
-      {plano.diasDeTeste > 0 ? <p className={estilos.teste}>{fraseDoTesteGratis(plano.diasDeTeste)}</p> : null}
+      <div className={estilos.inclui}>
+        <p id={idDoInclui} className={estilos.rotulo}>
+          {incluiACada(plano.ciclo)}
+        </p>
+        <ul className={estilos.servicos} aria-labelledby={idDoInclui}>
+          {plano.servicos.map((servico) => (
+            <li key={servico.servicoId} className={estilos.servico}>
+              <IconeCheck className={estilos.check} />
+              {servicoDoPlano(servico)}
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      {passo.tipo === "pagar" ? (
-        <div className={estilos.passo} role="status">
-          <p>
-            <strong>Assinatura feita.</strong> {fraseDaFatura(passo.criada.assinatura)}
-          </p>
-          {passo.criada.linkDaFatura ? (
-            <>
-              <div className={estilos.acoes}>
-                <BotaoLink href={passo.criada.linkDaFatura} externo>
-                  Abrir a fatura
-                </BotaoLink>
-                <BotaoLink href={minhaConta} variante="fantasma">
-                  Ver em Minha conta
-                </BotaoLink>
-              </div>
-              <p className={estilos.apoio}>
-                {passo.criada.assinatura.situacao === "teste"
-                  ? "Pix, cartão ou boleto, na página do Asaas. O plano já vale no teste grátis."
-                  : "Pix, cartão ou boleto, na página do Asaas. Quando o pagamento entrar, a assinatura aparece ativa em Minha conta."}
-              </p>
-            </>
-          ) : (
+      <div className={estilos.rodape}>
+        {passo.tipo === "pagar" ? (
+          <div className={estilos.passo} role="status">
             <p>
-              A fatura não abriu agora: ela fica em <Link href={minhaConta}>Minha conta</Link>.
+              <strong>Assinatura feita.</strong> {fraseDaFatura(passo.criada.assinatura)}
             </p>
-          )}
-        </div>
-      ) : passo.tipo === "cpf" ? (
-        <div className={estilos.passo}>
-          <Campo
-            rotulo="CPF"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={14}
-            placeholder="000.000.000-00"
-            apoio="O Asaas pede o CPF de quem assina. Ele fica guardado no seu cadastro desta barbearia."
-            valor={cpf}
-            onChange={(proximo) => {
-              setCpf(proximo);
-              setErroDoCpf(undefined);
-            }}
-            erro={erroDoCpf}
-          />
-          {aviso ? <Aviso>{aviso}</Aviso> : null}
-          <div className={estilos.acoes}>
-            <Botao variante="fantasma" onClick={() => setPasso({ tipo: "inicio" })} disabled={enviando}>
-              Voltar
-            </Botao>
-            <Botao onClick={continuarComCpf} carregando={enviando}>
-              Continuar pro pagamento
-            </Botao>
+            {passo.criada.linkDaFatura ? (
+              <>
+                <div className={estilos.acoes}>
+                  <BotaoLink href={passo.criada.linkDaFatura} externo>
+                    Abrir a fatura
+                  </BotaoLink>
+                  <BotaoLink href={minhaConta} variante="fantasma">
+                    Ver em Minha conta
+                  </BotaoLink>
+                </div>
+                <p className={estilos.apoio}>
+                  {passo.criada.assinatura.situacao === "teste"
+                    ? "Pix, cartão ou boleto, na página do Asaas. O plano já vale no teste grátis."
+                    : "Pix, cartão ou boleto, na página do Asaas. Quando o pagamento entrar, a assinatura aparece ativa em Minha conta."}
+                </p>
+              </>
+            ) : (
+              <p>
+                A fatura não abriu agora: ela fica em <Link href={minhaConta}>Minha conta</Link>.
+              </p>
+            )}
           </div>
-        </div>
-      ) : plano.aceitaOnline ? (
-        <div className={estilos.passo}>
-          {marcado && temSessao ? <p className={estilos.apoio}>Você entrou. Toque em Assinar pra continuar.</p> : null}
-          {aviso ? (
-            <Aviso>
-              {aviso}
-              {jaAssina ? (
-                <>
-                  {" "}
-                  <Link href={minhaConta}>Ver em Minha conta</Link>
-                </>
-              ) : null}
-            </Aviso>
-          ) : null}
-          <div className={estilos.acoes}>
-            <Botao onClick={() => void assinar()} carregando={enviando}>
-              Assinar
-            </Botao>
+        ) : passo.tipo === "cpf" ? (
+          <div className={estilos.passo}>
+            <Campo
+              rotulo="CPF"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={14}
+              placeholder="000.000.000-00"
+              apoio="O Asaas pede o CPF de quem assina. Ele fica guardado no seu cadastro desta barbearia."
+              valor={cpf}
+              onChange={(proximo) => {
+                setCpf(proximo);
+                setErroDoCpf(undefined);
+              }}
+              erro={erroDoCpf}
+            />
+            {aviso ? <Aviso>{aviso}</Aviso> : null}
+            <div className={estilos.acoes}>
+              <Botao variante="fantasma" onClick={() => setPasso({ tipo: "inicio" })} disabled={enviando}>
+                Voltar
+              </Botao>
+              <Botao onClick={continuarComCpf} carregando={enviando}>
+                Continuar pro pagamento
+              </Botao>
+            </div>
           </div>
-          {plano.aceitaNoBalcao ? (
-            <p className={estilos.apoio}>Ou assine na barbearia, pagando no balcão.</p>
-          ) : null}
-        </div>
-      ) : (
-        <p className={estilos.apoio}>Assine na barbearia: o pagamento é combinado no balcão.</p>
-      )}
+        ) : plano.aceitaOnline ? (
+          <div className={estilos.passo}>
+            {marcado && temSessao ? <p className={estilos.apoio}>Você entrou. Toque em Assinar pra continuar.</p> : null}
+            {aviso ? (
+              <Aviso>
+                {aviso}
+                {jaAssina ? (
+                  <>
+                    {" "}
+                    <Link href={minhaConta}>Ver em Minha conta</Link>
+                  </>
+                ) : null}
+              </Aviso>
+            ) : null}
+            <div className={estilos.acaoPrincipal}>
+              <Botao onClick={() => void assinar()} carregando={enviando}>
+                Assinar
+              </Botao>
+            </div>
+            <p className={`${estilos.apoio} ${estilos.centro}`}>
+              {plano.aceitaNoBalcao ? "Pix, cartão ou boleto. Ou assine no balcão." : "Pix, cartão ou boleto."}
+            </p>
+          </div>
+        ) : (
+          // Só no balcão: o caminho é ir à barbearia, então o botão leva
+          // pro agendamento, já com o profissional quando o plano é dele.
+          <div className={estilos.passo}>
+            <p className={estilos.apoio}>
+              <strong className={estilos.forte}>Assine na barbearia.</strong> O pagamento é combinado no balcão.
+            </p>
+            <div className={estilos.acaoPrincipal}>
+              <BotaoLink
+                href={noHost(caminhoDoPasso(slug, "servicos", { servicoIds: [], profissional: plano.vendedor?.id }))}
+                variante="contorno"
+              >
+                {plano.vendedor ? `Agendar com ${plano.vendedor.nome}` : "Agendar um horário"}
+              </BotaoLink>
+            </div>
+          </div>
+        )}
+      </div>
     </li>
   );
 }

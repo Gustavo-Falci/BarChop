@@ -76,7 +76,7 @@ tema do aparelho e a Aparência publicada pelo dono.
 | `/agendar/profissional` | Passo 2: profissional ou "qualquer um" | — |
 | `/agendar/data` | Passo 3: dia e horário numa tela | — |
 | `/agendar/confirmar` | Passo 4: identificação, resumo, confirmação e sucesso com `.ics` | 🔧 Onda 3 (pagamento/sinal) |
-| `/planos` | Os planos de assinatura: preço, com quem vale, o que inclui, dias grátis; "Assinar" (pede login, que volta pro plano), CPF quando o Asaas pede e a fatura do Asaas em outra aba; plano só de balcão sem "Assinar" | — |
+| `/planos` | Os planos de assinatura em cartões: o preço em destaque, com quem vale, o que inclui (lista com ✓), dias grátis; "Assinar" (pede login, que volta pro plano), CPF quando o Asaas pede e a fatura do Asaas em outra aba; plano só de balcão com "Agendar" (já com o profissional quando o plano é dele); volta pra barbearia, "Já assina?" pra Minha conta e "Como funciona" em três passos | — |
 | `/entrar` | Login, primeiro acesso e esqueci a senha por código no e-mail; volta pro passo do agendamento ou pro plano escolhido | 🔧 Onda 4 (Google/Apple) |
 | `/minha-conta` | Meus agendamentos: cancelar e remarcar; Minhas assinaturas: até quando vale, os usos que sobram, "Pagar" a fatura em aberto e cancelar | 🔧 Onda 3 (pontos) |
 | `/lembrete/[token]` | Confirmar ou cancelar pelo link do lembrete | — |

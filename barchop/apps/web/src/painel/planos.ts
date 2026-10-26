@@ -22,17 +22,25 @@ const POR_CICLO: Record<CicloDoCliente, string> = {
   anual: "por ano",
 };
 
-// "R$ 120,00 por mês".
-export function precoDoCiclo(plano: Pick<PlanoDoPainel, "precoCentavos" | "ciclo">): string {
-  return `${formatarReais(plano.precoCentavos)} ${POR_CICLO[plano.ciclo]}`;
+// "por mês": a vitrine pública põe o valor grande e isto ao lado.
+export function porCiclo(ciclo: CicloDoCliente): string {
+  return POR_CICLO[ciclo];
 }
 
-// "2× Corte, Barba sem limite". O "×" e não o plural: o nome do serviço
-// é do dono ("Pé de cabelo"), e pluralizar texto livre erraria.
+// "R$ 120,00 por mês".
+export function precoDoCiclo(plano: Pick<PlanoDoPainel, "precoCentavos" | "ciclo">): string {
+  return `${formatarReais(plano.precoCentavos)} ${porCiclo(plano.ciclo)}`;
+}
+
+// "2× Corte" ou "Barba sem limite". O "×" e não o plural: o nome do
+// serviço é do dono ("Pé de cabelo"), e pluralizar texto livre erraria.
+export function servicoDoPlano(servico: PlanoDoPainel["servicos"][number]): string {
+  return servico.usosPorCiclo === null ? `${servico.nome} sem limite` : `${servico.usosPorCiclo}× ${servico.nome}`;
+}
+
+// "2× Corte, Barba sem limite".
 export function resumoDosServicos(servicos: PlanoDoPainel["servicos"]): string {
-  return servicos
-    .map((s) => (s.usosPorCiclo === null ? `${s.nome} sem limite` : `${s.usosPorCiclo}× ${s.nome}`))
-    .join(", ");
+  return servicos.map(servicoDoPlano).join(", ");
 }
 
 export function quantosAssinam(assinantes: number): string {

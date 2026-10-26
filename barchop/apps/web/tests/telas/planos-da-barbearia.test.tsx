@@ -39,6 +39,16 @@ const CORTE: PlanoDoPainel = {
 };
 const COM_TESTE: PlanoDoPainel = { ...CORTE, id: "pl2", nome: "Com teste", diasDeTeste: 7 };
 const SO_BALCAO: PlanoDoPainel = { ...CORTE, id: "pl3", nome: "Só no balcão", aceitaOnline: false, aceitaNoBalcao: true };
+// De barbeiro, só no balcão: o Rafael (bb1) é o dono no dublê, e o dono
+// pode vender.
+const DO_RAFAEL: PlanoDoPainel = {
+  ...SO_BALCAO,
+  id: "pl4",
+  nome: "Corte com o Rafael",
+  daCasa: false,
+  vendedor: { id: "bb1", nome: "Rafael" },
+};
+const NOS_DOIS: PlanoDoPainel = { ...CORTE, id: "pl5", nome: "Online ou balcão", aceitaNoBalcao: true };
 
 function semear(extra: SementeFalsa = {}) {
   return criarApiClientFalso({
@@ -64,18 +74,61 @@ describe("planos da barbearia", () => {
     navegacaoFalsa.redefinir({ pathname: "/gr-barber/planos" });
   });
 
-  it("mostra cada plano com preço, com quem vale e o que inclui; o do balcão sem Assinar", async () => {
+  it("mostra cada plano com o preço em destaque, com quem vale e a lista do que inclui", async () => {
     montar(<PlanosDaBarbearia />);
 
     const corte = await cartaoDo("Corte ilimitado");
-    expect(within(corte).getByText(/r\$\s?120,00 por mês/i)).toBeInTheDocument();
+    expect(within(corte).getByText(/^r\$\s?120,00$/i)).toBeInTheDocument();
+    expect(within(corte).getByText("por mês")).toBeInTheDocument();
     expect(within(corte).getByText("Vale com qualquer profissional")).toBeInTheDocument();
-    expect(within(corte).getByText(/2× Corte masculino/)).toBeInTheDocument();
+    const inclui = within(corte).getByRole("list", { name: "Inclui a cada mês" });
+    expect(within(inclui).getByRole("listitem")).toHaveTextContent("2× Corte masculino");
     expect(within(await cartaoDo("Com teste")).getByText("7 dias grátis pra começar")).toBeInTheDocument();
+  });
+
+  it("o plano do balcão não tem Assinar e leva pra agendar", async () => {
+    montar(<PlanosDaBarbearia />, semear({ planos: [SO_BALCAO, DO_RAFAEL] }));
 
     const balcao = await cartaoDo("Só no balcão");
     expect(within(balcao).queryByRole("button", { name: "Assinar" })).not.toBeInTheDocument();
     expect(within(balcao).getByText(/combinado no balcão/i)).toBeInTheDocument();
+    expect(within(balcao).getByRole("link", { name: "Agendar um horário" })).toHaveAttribute("href", "/gr-barber/agendar");
+
+    const doRafael = await cartaoDo("Corte com o Rafael");
+    expect(within(doRafael).getByRole("link", { name: "Agendar com Rafael" })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar?profissional=bb1"
+    );
+  });
+
+  it("o que aceita online e balcão diz as duas formas embaixo do Assinar", async () => {
+    montar(<PlanosDaBarbearia />, semear({ planos: [NOS_DOIS] }));
+
+    const nosDois = await cartaoDo("Online ou balcão");
+    expect(within(nosDois).getByRole("button", { name: "Assinar" })).toBeInTheDocument();
+    expect(within(nosDois).getByText("Pix, cartão ou boleto. Ou assine no balcão.")).toBeInTheDocument();
+  });
+
+  it("tem a volta pra barbearia e o caminho pra Minha conta", async () => {
+    montar(<PlanosDaBarbearia />);
+
+    await cartaoDo("Corte ilimitado");
+    expect(screen.getByRole("link", { name: "Voltar pra barbearia" })).toHaveAttribute("href", "/gr-barber");
+    expect(screen.getByRole("link", { name: "Veja em Minha conta" })).toHaveAttribute("href", "/gr-barber/minha-conta");
+  });
+
+  it("explica como funciona, com o pagamento online só quando algum plano aceita", async () => {
+    montar(<PlanosDaBarbearia />);
+    const comOnline = await screen.findByRole("region", { name: "Como funciona" });
+    expect(within(comOnline).getByText("Pague online ou no balcão")).toBeInTheDocument();
+    expect(within(comOnline).getByText(/nunca vê seu cartão/i)).toBeInTheDocument();
+  });
+
+  it("só com planos de balcão, o como funciona não fala de pagamento online", async () => {
+    montar(<PlanosDaBarbearia />, semear({ planos: [SO_BALCAO] }));
+    const soBalcao = await screen.findByRole("region", { name: "Como funciona" });
+    expect(within(soBalcao).getByText("Pague no balcão")).toBeInTheDocument();
+    expect(within(soBalcao).queryByText(/asaas|cartão/i)).not.toBeInTheDocument();
   });
 
   it("sem login, Assinar leva ao login com o plano, e nada é criado", async () => {

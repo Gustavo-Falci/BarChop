@@ -33,6 +33,7 @@ const CORTE: PlanoDoPainel = {
   fixoPorAtendimentoCentavos: 2500,
   aceitaOnline: true,
   aceitaNoBalcao: false,
+  onlineIndisponivel: false,
   ativo: true,
   servicos: [{ servicoId: "s1", nome: "Corte masculino", usosPorCiclo: 2 }],
   assinantes: 0,
@@ -107,6 +108,24 @@ describe("planos da barbearia", () => {
     const nosDois = await cartaoDo("Online ou balcão");
     expect(within(nosDois).getByRole("button", { name: "Assinar" })).toBeInTheDocument();
     expect(within(nosDois).getByText("Pix, cartão ou boleto. Ou assine no balcão.")).toBeInTheDocument();
+  });
+
+  it("só online e sem a conta de quem vende: o plano aparece com o pagamento online indisponível", async () => {
+    montar(<PlanosDaBarbearia />, semear({ planos: [CORTE], contasOnline: {} }));
+
+    const corte = await cartaoDo("Corte ilimitado");
+    expect(within(corte).getByText("Pagamento online indisponível")).toBeInTheDocument();
+    expect(within(corte).queryByRole("button", { name: "Assinar" })).not.toBeInTheDocument();
+    expect(within(corte).queryByRole("link", { name: /agendar/i })).not.toBeInTheDocument();
+  });
+
+  it("online e balcão sem a conta: avisa o online indisponível e segue com o balcão", async () => {
+    montar(<PlanosDaBarbearia />, semear({ planos: [NOS_DOIS], contasOnline: {} }));
+
+    const nosDois = await cartaoDo("Online ou balcão");
+    expect(within(nosDois).getByText("Pagamento online indisponível")).toBeInTheDocument();
+    expect(within(nosDois).getByText(/combinado no balcão/i)).toBeInTheDocument();
+    expect(within(nosDois).getByRole("link", { name: "Agendar um horário" })).toBeInTheDocument();
   });
 
   it("tem a volta pra barbearia e o caminho pra Minha conta", async () => {

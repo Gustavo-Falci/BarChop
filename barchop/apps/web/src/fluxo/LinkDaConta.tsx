@@ -20,7 +20,7 @@ export function LinkDaConta({ slug }: { slug: string }) {
   if (temSessao === undefined) return null;
 
   const [destino, rotulo] = temSessao
-    ? [noHost(`/${slug}/minha-conta`), "Meus agendamentos"]
+    ? [noHost(`/${slug}/minha-conta`), "Minha conta"]
     : [noHost(`/${slug}/entrar`), "Entrar"];
 
   // Na própria tela de destino o link apontaria pra onde a pessoa já

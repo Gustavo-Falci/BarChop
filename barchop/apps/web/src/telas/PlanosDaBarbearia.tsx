@@ -295,20 +295,27 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
             </p>
           </div>
         ) : (
-          // Só no balcão: o caminho é ir à barbearia, então o botão leva
-          // pro agendamento, já com o profissional quando o plano é dele.
+          // Sem o Assinar. O online marcado sem a conta de quem vende vira
+          // "Pagamento online indisponível", no lugar do botão. No balcão,
+          // o caminho é ir à barbearia: o botão leva pro agendamento, já
+          // com o profissional quando o plano é dele.
           <div className={estilos.passo}>
-            <p className={estilos.apoio}>
-              <strong className={estilos.forte}>Assine na barbearia.</strong> O pagamento é combinado no balcão.
-            </p>
-            <div className={estilos.acaoPrincipal}>
-              <BotaoLink
-                href={noHost(caminhoDoPasso(slug, "servicos", { servicoIds: [], profissional: plano.vendedor?.id }))}
-                variante="contorno"
-              >
-                {plano.vendedor ? `Agendar com ${plano.vendedor.nome}` : "Agendar um horário"}
-              </BotaoLink>
-            </div>
+            {plano.onlineIndisponivel ? <p className={estilos.indisponivel}>Pagamento online indisponível</p> : null}
+            {plano.aceitaNoBalcao ? (
+              <>
+                <p className={estilos.apoio}>
+                  <strong className={estilos.forte}>Assine na barbearia.</strong> O pagamento é combinado no balcão.
+                </p>
+                <div className={estilos.acaoPrincipal}>
+                  <BotaoLink
+                    href={noHost(caminhoDoPasso(slug, "servicos", { servicoIds: [], profissional: plano.vendedor?.id }))}
+                    variante="contorno"
+                  >
+                    {plano.vendedor ? `Agendar com ${plano.vendedor.nome}` : "Agendar um horário"}
+                  </BotaoLink>
+                </div>
+              </>
+            ) : null}
           </div>
         )}
       </div>

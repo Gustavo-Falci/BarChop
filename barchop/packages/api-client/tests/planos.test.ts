@@ -89,6 +89,7 @@ const planoDoGustavo: PlanoDoPainel = {
   fixoPorAtendimentoCentavos: null,
   aceitaOnline: false,
   aceitaNoBalcao: true,
+  onlineIndisponivel: false,
   ativo: true,
   servicos: [{ servicoId: "s1", nome: "Corte", usosPorCiclo: 2 }],
   assinantes: 3,

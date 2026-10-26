@@ -112,6 +112,7 @@ const plano = (extra: Partial<PlanoDoPainel> = {}): PlanoDoPainel => ({
   fixoPorAtendimentoCentavos: 2500,
   aceitaOnline: true,
   aceitaNoBalcao: false,
+  onlineIndisponivel: false,
   ativo: true,
   servicos: [{ servicoId: "s1", nome: "Corte", usosPorCiclo: 2 }],
   assinantes: 0,
@@ -195,9 +196,15 @@ describe("o dublê da vitrine", () => {
       servicos: [{ ...criarApiClientFalso().estado.servicos[0], id: "s1", nome: "Corte", ativo: true }],
     };
 
-    // Sem conta nenhuma: o da casa só online some; o do Lucas fica no balcão.
+    // Sem conta nenhuma: ninguém vende online, e os dois ficam com o
+    // pagamento online indisponível (o do Lucas ainda tem o balcão).
     const semConta = criarApiClientFalso(semente);
-    expect((await semConta.publico.planos("gr-barber")).planos.map((p) => [p.id, p.aceitaOnline])).toEqual([["pl2", false]]);
+    expect(
+      (await semConta.publico.planos("gr-barber")).planos.map((p) => [p.id, p.aceitaOnline, p.onlineIndisponivel])
+    ).toEqual([
+      ["pl1", false, true],
+      ["pl2", false, true],
+    ]);
 
     const comConta = criarApiClientFalso({ ...semente, contasOnline: { casa: CONTA, bb2: CONTA } });
     const vitrine = await comConta.publico.planos("gr-barber");
@@ -209,7 +216,10 @@ describe("o dublê da vitrine", () => {
 
     // Conta de outro modo não vende.
     const deOutroModo = criarApiClientFalso({ ...semente, contasOnline: { casa: { ...CONTA, modo: "real" } } });
-    expect((await deOutroModo.publico.planos("gr-barber")).planos.map((p) => p.id)).toEqual(["pl2"]);
+    expect((await deOutroModo.publico.planos("gr-barber")).planos.map((p) => [p.id, p.aceitaOnline])).toEqual([
+      ["pl1", false],
+      ["pl2", false],
+    ]);
 
     expect((await criarApiClientFalso({ ...semente, vitrineDePlanos: false }).publico.planos("gr-barber")).planos).toEqual([]);
     const gratis = { ...semente.assinatura, plano: "gratis" as const, planoEfetivo: "gratis" as const };

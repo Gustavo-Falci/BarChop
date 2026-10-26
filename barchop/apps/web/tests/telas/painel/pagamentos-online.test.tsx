@@ -45,6 +45,7 @@ const PLANO: PlanoDoPainel = {
   fixoPorAtendimentoCentavos: 2500,
   aceitaOnline: true,
   aceitaNoBalcao: false,
+  onlineIndisponivel: false,
   ativo: true,
   servicos: [{ servicoId: "s1", nome: "Corte", usosPorCiclo: null }],
   assinantes: 1,

@@ -44,6 +44,13 @@
   composes: apoio from "./CadastroDeServico.module.css";
 }
 
+/* O online marcado sem a conta de quem vende: a cor de atenção, a mesma
+   do selo da lista. */
+.indisponivel {
+  composes: apoio from "./CadastroDeServico.module.css";
+  color: var(--cor-atencao);
+}
+
 .area {
   composes: area from "./CadastroDeServico.module.css";
 }

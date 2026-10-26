@@ -206,6 +206,22 @@
   gap: var(--espaco-sm);
 }
 
+/* O lugar do Assinar quando o online não está disponível: tracejado e
+   sem cor, pra não parecer botão. `--cor-ink-soft` passa de 4,5:1. */
+.indisponivel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--espaco-xs) var(--espaco-md);
+  border: var(--borda-hairline) dashed var(--cor-line-strong);
+  border-radius: var(--raio-pill);
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  text-align: center;
+}
+
 /* Um botão só, na largura do cartão. */
 .acaoPrincipal {
   display: grid;

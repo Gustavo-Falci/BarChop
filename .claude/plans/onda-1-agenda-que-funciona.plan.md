@@ -4,7 +4,28 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-25 — marco 3 no ar e o webhook conferido em produção) — vale mais que as seções abaixo
+## RETOMAR AQUI (tarde de 2026-10-26 — vitrine dos planos e Minha conta redesenhadas, no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = este RETOMAR AQUI** (o código é o #228, `ca68b28`). **Produção = o #228**, deploy de 26/10 feito pelo dono e conferido por curl (as regras novas no CSS publicado da Minha conta). Nenhum PR de código aberto.
+- **Feito em 26/10** (cada um com "pode mergear" e deploy do dono, conferido por curl):
+  - **#225:** redesenho da vitrine pública `/[slug]/planos` (direção A do canvas do Claude Design https://claude.ai/artifact/A4dCEGDmaEMkFu1p4LsgkZ). Só web.
+  - **#226:** plano com online marcado, mas sem a conta do Asaas de quem vende conectada, não some mais da vitrine. Mostra "Pagamento online indisponível" na página pública (no lugar do Assinar), um selo na lista de planos do painel e um aviso no cadastro do plano. Campo `onlineIndisponivel` em `PlanoDoPainel` e `PlanoDaVitrine`. API + web, sem migração.
+  - **#227:** Minha conta redesenhada (direção A do canvas https://claude.ai/artifact/AJtR5NCvPG3vh3BzZ4tnGm). Título "Minha conta" com "Voltar pra barbearia" e "Agendar horário"; horários marcados em cartões (bloco do dia, hora, status, o que e com quem, Remarcar/Cancelar); histórico em linhas sem caixa; **Meu plano** numa coluna de 360px ao lado no desktop (embaixo dos marcados no celular), com situação ("Renova em …"), "Neste ciclo" com barras de uso ("sobram N de M"), Pagar, "Pago online/no balcão" e Cancelar assinatura; sem plano e com a vitrine ligada, o convite "Você não assina um plano" com "Ver os planos" (é pra cá que o "Já assina? Veja em Minha conta" da vitrine leva). O link da barra passou de "Meus agendamentos" pra "Minha conta". Só web.
+  - **#228:** bug visto pelo dono em produção depois do #227. No desktop, um horário com os dois prazos vencidos (sem botões) punha o `AvisoDoPrazo` na coluna `auto` do cartão, que esmagava o resumo letra por letra. O aviso agora ocupa a linha inteira e perdeu a margem do `<p>`. Só CSS.
+- O resto do estado (marco 3 no ar, `barbearia-teste` no Completo à mão, sandbox do Asaas) segue como na seção de 25/10 logo abaixo.
+
+**Ao retomar:**
+1. **Pagamento online em produção:** só funciona quando cada vendedor (a casa ou o profissional) conecta uma chave `$aact_prod_` em Pagamentos online. Até lá, os planos online aparecem como "Pagamento online indisponível".
+2. **Perguntas abertas da vitrine (#225), sem resposta do dono:** o texto do passo 3 do "Como funciona" e se o selo do teste grátis encurta pra "7 dias grátis".
+3. **Minha conta, ficou de fora do #227:** a marca "corte pelo plano" no horário marcado. A API não diz qual agendamento usa o plano; precisa de um campo novo antes da tela.
+4. **Aceite do marco 3** (plano `planos-de-assinatura`, Acceptance): a GR cria um plano da casa e um do Gustavo, um cliente assina cada um (um no balcão, um online) e o acerto do dia bate com a conta à mão.
+5. Conferir em 24/11, no sandbox, se a assinatura paga no cartão (`sub_vwsx29uc7fa5ekcv`, cancelada depois do teste) gerou cobrança sozinha.
+6. A frase do 422 `assinaturas_ativas` do desativar membro (`routers/equipe.ts`) ainda diz "dele": trocar quando mexer ali.
+7. A Minha conta lê a sessão do `localStorage` no render (aviso de hidratação do Next no dev). Anterior ao redesenho; a frase de "sem agendamentos" já foi resolvida no #227 ("Nenhum horário marcado.").
+8. O resto da lista de 21/10: testar o caixa em produção; marco 4 (relatórios); G3; decidir a `barbearia-teste` (hoje no Completo à mão); pendentes do redesenho.
+
+## RETOMAR AQUI (noite de 2026-10-25 — marco 3 no ar e o webhook conferido em produção) — histórico
 
 **Estado:**
 - **`main` = este RETOMAR AQUI** (o código é o #223). **Produção = o #223**, deploy de 25/10 feito pelo dono. Nenhum PR de código aberto.

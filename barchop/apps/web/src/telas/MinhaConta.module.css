@@ -1,37 +1,56 @@
-/* Estreita e centralizada até a tela ganhar duas colunas: a largura
-   vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
+/* A Minha conta (redesenho de 26/10, direção A): estreita no celular,
+   na largura do fluxo no desktop, com o plano numa coluna ao lado. A
+   largura vem de --fluxo-estreita / --fluxo-largura, declaradas no
+   layout (app/(publico)/[slug]). */
 .pagina {
   display: grid;
-  gap: var(--espaco-md);
+  gap: var(--espaco-xl);
   padding: var(--espaco-lg);
   width: 100%;
   max-width: var(--fluxo-estreita);
   margin-inline: auto;
 }
-.item { display: grid; gap: var(--espaco-sm); }
-.linha { display: flex; align-items: center; gap: var(--espaco-sm); }
-.acoes { display: flex; flex-wrap: wrap; gap: var(--espaco-sm); }
 
-/* As assinaturas (PR 11 do plano planos-de-assinatura): um cartão por
-   assinatura, com o título da seção em cima. */
-.assinaturas {
+/* Título à esquerda e o Agendar à direita; no celular, um embaixo do
+   outro, o botão na largura toda. */
+.cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--espaco-md) var(--espaco-xxl);
+}
+
+.cabeca > a:last-child {
+  flex: 1 1 100%;
+}
+
+.titulo {
   display: grid;
-  gap: var(--espaco-md);
+  gap: var(--espaco-xs);
 }
 
-.tituloDaSecao {
-  margin: var(--espaco-md) 0 0;
-  font-size: var(--texto-lg);
-}
-
-.texto,
-.confirmacao p {
+.titulo h1 {
   margin: 0;
 }
 
-.confirmacao {
-  display: grid;
-  gap: var(--espaco-sm);
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-decoration: none;
+}
+
+.voltar:hover {
+  color: var(--cor-ink);
+}
+
+/* A seta é a das ações que avançam; aqui ela volta. */
+.setaDeVolta {
+  transform: scaleX(-1);
 }
 
 /* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
@@ -41,31 +60,363 @@
   font-size: var(--texto-sm);
 }
 
-.usos {
+/* O nome de cada parte, pequeno e em caixa alta: as partes se separam
+   pelo espaço, sem caixa em volta. `--cor-muted` passa de 4,5:1. */
+.rotulo {
   margin: 0;
-  padding-left: var(--espaco-lg);
+  color: var(--cor-muted);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-/* Desktop: os agendamentos em grade de cartões, na largura do fluxo (as
-   telas usam a largura — pedido do dono); título e avisos na linha toda. */
+/* No celular: os marcados, o plano, o histórico. No desktop, o plano
+   sobe pra coluna da direita, ao lado dos dois. */
+.corpo {
+  display: grid;
+  gap: var(--espaco-xl);
+  grid-template-areas:
+    "marcados"
+    "lado"
+    "historico";
+  align-items: start;
+}
+
+.marcados {
+  grid-area: marcados;
+  display: grid;
+  gap: var(--espaco-sm);
+  min-width: 0;
+}
+
+.lado {
+  grid-area: lado;
+  min-width: 0;
+}
+
+.lado:empty {
+  display: none;
+}
+
+.historico {
+  grid-area: historico;
+  display: grid;
+  gap: var(--espaco-xs);
+  min-width: 0;
+}
+
+/* ---------- Um horário marcado ---------- */
+
+.horario {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
+  border-radius: var(--raio-cartao, var(--raio-lg));
+  background: var(--cor-surface);
+  box-shadow: var(--cartao-sombra, var(--sombra-1));
+}
+
+.resumo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-width: 0;
+}
+
+/* O dia num bloco: o mês, o número grande e o dia da semana. O leitor
+   de tela ouve a data por extenso (.somenteLeitor). */
+.dia {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  width: 64px;
+  padding: var(--espaco-xs) 0;
+  border-radius: var(--raio-md);
+  background: var(--cor-surface-2, var(--cor-paper-soft));
+}
+
+.mes {
+  color: var(--cor-accent-text);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.numero {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.semana {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+}
+
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.detalhes {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.hora {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
+}
+
+/* ---------- Histórico: uma linha por horário, sem caixa ---------- */
+
+.linhas {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* No celular: a data e a hora em cima, o que e com quem embaixo, o
+   status na ponta. */
+.linhaDoHistorico {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "data hora . status"
+    "oque oque oque status";
+  align-items: center;
+  gap: 2px var(--espaco-sm);
+  padding-block: var(--espaco-sm);
+  border-bottom: var(--borda-hairline) solid var(--cor-line);
+}
+
+.linhaDoHistorico > :first-child {
+  grid-area: data;
+}
+
+.horaDoHistorico {
+  grid-area: hora;
+  color: var(--cor-ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.oQue {
+  grid-area: oque;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  overflow-wrap: anywhere;
+}
+
+.linhaDoHistorico > :last-child {
+  grid-area: status;
+  justify-self: end;
+}
+
+/* ---------- Meu plano ---------- */
+
+.meuPlano {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.meuPlano a:not([class]) {
+  color: var(--cor-ink);
+  font-weight: 600;
+}
+
+/* O cartão do plano: a borda no tom do destaque enquanto o plano vale,
+   na cor de atenção em atraso, neutra esperando o pagamento. */
+.plano {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-cartao, var(--raio-lg));
+  background: var(--cor-surface);
+  box-shadow: var(--cartao-sombra, var(--sombra-1));
+}
+
+.plano[data-situacao="ativa"],
+.plano[data-situacao="teste"] {
+  border-color: var(--cor-accent);
+}
+
+.plano[data-situacao="em_atraso"] {
+  border-color: var(--cor-atencao);
+}
+
+.plano p {
+  margin: 0;
+}
+
+.quem {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-xs) var(--espaco-sm);
+}
+
+.nomeDoPlano {
+  margin: 0;
+  font-size: var(--texto-lg);
+  overflow-wrap: anywhere;
+}
+
+/* "Renova em 20/11": o que o cliente mais quer saber, numa faixa. */
+.situacao {
+  padding: var(--espaco-sm) var(--espaco-md);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface-2, var(--cor-paper-soft));
+}
+
+.plano[data-situacao="em_atraso"] .situacao {
+  background: var(--cor-atencao-fundo);
+}
+
+.usos {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.servicos {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.uso {
+  display: grid;
+  gap: 6px;
+}
+
+.nomeDoUso {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  overflow-wrap: anywhere;
+}
+
+.nomeDoUso .apoio {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.barra {
+  height: 6px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-line);
+  overflow: hidden;
+}
+
+.preenchido {
+  display: block;
+  height: 100%;
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+}
+
+/* Um botão só, na largura do cartão. */
+.acaoPrincipal {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+/* Como paga numa ponta, o cancelar na outra, separados por um fio. */
+.pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-xs) var(--espaco-sm);
+  padding-top: var(--espaco-sm);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.confirmacao {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+/* Sem plano: o convite tracejado, pra não parecer um plano. */
+.convite {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-lg);
+  border: var(--borda-hairline) dashed var(--cor-line-strong);
+  border-radius: var(--raio-cartao, var(--raio-lg));
+}
+
+/* Desktop: na largura do fluxo, o plano numa coluna de 360px à direita
+   dos marcados e do histórico (as telas usam a largura: pedido do dono).
+   Sem plano, a coluna some e os dois ficam na largura toda. */
 @media (min-width: 900px) {
   .pagina {
     max-width: var(--fluxo-largura);
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    align-items: start;
   }
 
-  .pagina > :not(:has(.item)),
-  .pagina > .assinaturas {
-    grid-column: 1 / -1;
+  .cabeca > a:last-child {
+    flex: none;
   }
 
-  .assinaturas {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    align-items: start;
+  .corpo {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "marcados lado"
+      "historico lado";
+    column-gap: var(--espaco-xxl);
   }
 
-  .assinaturas > .tituloDaSecao {
-    grid-column: 1 / -1;
+  .corpo:has(> .lado:empty) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "marcados"
+      "historico";
+  }
+
+  .horario {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .linhaDoHistorico {
+    grid-template-columns: 140px 64px minmax(0, 1fr) auto;
+    grid-template-areas: "data hora oque status";
+    gap: var(--espaco-md);
   }
 }

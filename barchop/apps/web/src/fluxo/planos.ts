@@ -77,9 +77,16 @@ export function situacaoNaConta(
   }
 }
 
-// "Corte: sobra 1 de 2 neste ciclo", "Barba: sem limite".
-export function fraseDoUso(servico: AssinaturaNaConta["servicos"][number]): string {
-  if (servico.usosPorCiclo === null) return `${servico.nome}: sem limite`;
+// O que sobra de um serviço no ciclo, ao lado do nome: "sobra 1 de 2",
+// "sobram 3 de 4", "sem limite".
+export function quantoSobra(servico: AssinaturaNaConta["servicos"][number]): string {
+  if (servico.usosPorCiclo === null) return "sem limite";
   const sobram = servico.usosRestantes ?? 0;
-  return `${servico.nome}: ${sobram === 1 ? "sobra" : "sobram"} ${sobram} de ${servico.usosPorCiclo} neste ciclo`;
+  return `${sobram === 1 ? "sobra" : "sobram"} ${sobram} de ${servico.usosPorCiclo}`;
+}
+
+// A barra do que sobra, de 0 a 1; sem limite, não tem barra.
+export function parteQueSobra(servico: AssinaturaNaConta["servicos"][number]): number | null {
+  if (servico.usosPorCiclo === null || servico.usosPorCiclo === 0) return null;
+  return Math.min(1, Math.max(0, (servico.usosRestantes ?? 0) / servico.usosPorCiclo));
 }

@@ -248,9 +248,13 @@
   list-style: none;
 }
 
+/* `align-content: start`: na linha do desktop o passo estica até a
+   altura do vizinho mais alto, e as linhas da grade abririam um vão
+   entre o nome e o texto. */
 .passoDoComo {
   display: grid;
   grid-template-columns: 20px 1fr;
+  align-content: start;
   gap: 2px var(--espaco-sm);
 }
 

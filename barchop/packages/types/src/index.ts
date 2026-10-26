@@ -795,6 +795,9 @@ export interface PlanoDoPainel {
   fixoPorAtendimentoCentavos: number | null;
   aceitaOnline: boolean;
   aceitaNoBalcao: boolean;
+  // Online marcado, mas quem vende não tem a conta do Asaas conectada
+  // (e do modo aceito): a página mostra "Pagamento online indisponível".
+  onlineIndisponivel: boolean;
   ativo: boolean;
   servicos: ServicoDoPlano[];
   // Assinaturas vivas (não canceladas).
@@ -830,7 +833,8 @@ export type MudancaDoPlano = Partial<Omit<NovoPlano, "daCasa">> & { ativo?: bool
 
 // GET /barbearias/:slug/planos (público). Sem o fixo da casa nem quantos
 // assinam. `aceitaOnline` já diz se dá pra pagar online agora: precisa
-// da conta de quem vende conectada.
+// da conta de quem vende conectada. Sem ela, `onlineIndisponivel`, e o
+// plano continua na página (mesmo sem o balcão) com o aviso.
 export interface PlanoDaVitrine {
   id: string;
   daCasa: boolean;
@@ -841,6 +845,7 @@ export interface PlanoDaVitrine {
   precoCentavos: number;
   diasDeTeste: number;
   aceitaOnline: boolean;
+  onlineIndisponivel: boolean;
   aceitaNoBalcao: boolean;
   servicos: ServicoDoPlano[];
 }

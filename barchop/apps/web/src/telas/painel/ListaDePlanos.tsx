@@ -137,6 +137,13 @@ export function ListaDePlanos({ agora }: { agora?: Date } = {}) {
                 Desativado
               </Chip>
             )}
+            {/* Online marcado e quem vende sem a conta do Asaas: a página
+                mostra o plano, mas ninguém assina online. */}
+            {plano.ativo && plano.onlineIndisponivel ? (
+              <Chip tom="atencao" tamanho="pequeno">
+                Pagamento online indisponível
+              </Chip>
+            ) : null}
           </span>
           <span className={estilos.resumo}>{resumoDosServicos(plano.servicos)}</span>
         </span>,

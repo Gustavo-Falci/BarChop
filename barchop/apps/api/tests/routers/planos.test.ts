@@ -289,6 +289,36 @@ describe("ver os planos", () => {
     await c.app.close();
   });
 
+  it("marca o pagamento online indisponível quando quem vende não tem a conta conectada", async () => {
+    const c = await cenario();
+    const daCasa = (await criar(c.app, c.dono.token, planoDaCasa(c, { aceitaOnline: true }))).json();
+    const doDono = (await criar(c.app, c.dono.token, planoProprio(c, { aceitaOnline: true }))).json();
+    const soBalcao = (
+      await criar(c.app, c.dono.token, planoDaCasa(c, { nome: "Balcão", aceitaOnline: false, aceitaNoBalcao: true }))
+    ).json();
+    expect(daCasa.onlineIndisponivel).toBe(true);
+
+    await prisma.conexaoDePagamento.create({
+      data: {
+        barbeariaId: c.dono.barbeariaId,
+        barbeiroId: c.dono.barbeiroId,
+        daCasa: true,
+        provedor: "asaas",
+        modo: "teste",
+        chaveCifrada: Buffer.from("cifrada"),
+        chaveFinal: "9F3A",
+        webhookTokenHash: "hash",
+      },
+    });
+    const { planos } = (await listar(c.app, c.dono.token)).json();
+    const indisponivel = (id: string) => planos.find((p: { id: string }) => p.id === id).onlineIndisponivel;
+    expect(indisponivel(daCasa.id)).toBe(false);
+    expect(indisponivel(doDono.id)).toBe(true);
+    expect(indisponivel(soBalcao.id)).toBe(false);
+    expect((await mudar(c.app, c.dono.token, doDono.id, { nome: "Outro nome" })).json().onlineIndisponivel).toBe(true);
+    await c.app.close();
+  });
+
   it("diz a vitrine e o que quem pediu pode criar", async () => {
     const c = await cenario();
     expect((await listar(c.app, c.dono.token)).json()).toMatchObject({

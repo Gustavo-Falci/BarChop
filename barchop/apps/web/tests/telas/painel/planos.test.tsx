@@ -41,9 +41,17 @@ const daCasa: PlanoDoPainel = {
   fixoPorAtendimentoCentavos: 2500,
   aceitaOnline: false,
   aceitaNoBalcao: true,
+  onlineIndisponivel: false,
   ativo: true,
   servicos: [{ servicoId: "s1", nome: "Corte", usosPorCiclo: null }],
   assinantes: 8,
+};
+
+const CONTA_DA_CASA = {
+  provedor: "asaas" as const,
+  modo: "teste" as const,
+  chaveFinal: "1234",
+  conectadaEm: "2026-10-25T15:00:00.000Z",
 };
 
 const doGustavo: PlanoDoPainel = {
@@ -99,6 +107,24 @@ describe("a lista de planos", () => {
     expect(within(dele).getByText(/R\$\s?270,00 por trimestre/)).toBeInTheDocument();
     expect(within(dele).getByText("2× Corte, 1× Barba")).toBeInTheDocument();
     expect(within(dele).getByText("Desativado")).toBeInTheDocument();
+  });
+
+  it("o plano com online e sem a conta de quem vende diz que o pagamento online está indisponível", async () => {
+    montarPainel(<ListaDePlanos />, comPlanos({ planos: [{ ...daCasa, aceitaOnline: true }, doGustavo] }));
+
+    const casa = grupo(await screen.findByText("Da casa"));
+    expect(within(casa).getByText("Pagamento online indisponível")).toBeInTheDocument();
+    expect(within(grupo(screen.getByText("De Gustavo"))).queryByText("Pagamento online indisponível")).not.toBeInTheDocument();
+  });
+
+  it("com a conta da casa conectada, o aviso some", async () => {
+    montarPainel(
+      <ListaDePlanos />,
+      comPlanos({ planos: [{ ...daCasa, aceitaOnline: true }, doGustavo], contasOnline: { casa: CONTA_DA_CASA } })
+    );
+
+    await screen.findByText("Da casa");
+    expect(screen.queryByText("Pagamento online indisponível")).not.toBeInTheDocument();
   });
 
   it("abre o plano na linha e cria pelo botão", async () => {
@@ -234,6 +260,13 @@ describe("o cadastro do plano", () => {
         expect.objectContaining({ daCasa: false, fixoPorAtendimentoCentavos: null, precoCentavos: 9000 })
       )
     );
+  });
+
+  it("editando o plano com online e sem a conta, avisa que o pagamento online está indisponível", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/planos/pl1", params: { id: "pl1" } });
+    montarPainel(<CadastroDePlano />, comPlanos({ planos: [{ ...daCasa, aceitaOnline: true }, doGustavo] }));
+
+    expect(await screen.findByText(/pagamento online indisponível/i)).toBeInTheDocument();
   });
 
   it("edita: de quem é não muda, a lista de serviços vai inteira, e desativa", async () => {

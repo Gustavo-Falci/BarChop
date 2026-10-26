@@ -132,7 +132,12 @@ const INCLUDE_PLANO = {
 
 type PlanoComTudo = Prisma.PlanoDeAssinaturaGetPayload<{ include: typeof INCLUDE_PLANO }>;
 
-function serializarPlano(plano: PlanoComTudo): PlanoDoPainel {
+type ContasQueRecebem = Parameters<typeof temContaQueRecebe>[0];
+
+// `contas`: as que recebem online agora (contasQueRecebem). Com o online
+// marcado e sem a de quem vende, o painel avisa "Pagamento online
+// indisponível".
+function serializarPlano(plano: PlanoComTudo, contas: ContasQueRecebem): PlanoDoPainel {
   return {
     id: plano.id,
     daCasa: plano.vendedorId === null,
@@ -145,6 +150,7 @@ function serializarPlano(plano: PlanoComTudo): PlanoDoPainel {
     fixoPorAtendimentoCentavos: plano.fixoPorAtendimentoCentavos,
     aceitaOnline: plano.aceitaOnline,
     aceitaNoBalcao: plano.aceitaNoBalcao,
+    onlineIndisponivel: plano.aceitaOnline && !temContaQueRecebe(contas, plano.vendedorId),
     ativo: plano.ativo,
     servicos: plano.servicos.map((s) => ({ servicoId: s.servicoId, nome: s.servico.nome, usosPorCiclo: s.usosPorCiclo })),
     assinantes: plano._count.assinaturas,
@@ -185,11 +191,17 @@ async function garantirQueAtende(tx: Prisma.TransactionClient, vendedorId: strin
 }
 
 export function registrarRotasPlanos(app: App): void {
+  const contasDa = (barbeariaId: string) =>
+    prisma.conexaoDePagamento.findMany({
+      where: contasQueRecebem(barbeariaId, app.provedores.modoAceito),
+      select: { barbeiroId: true, daCasa: true },
+    });
+
   app.get("/barbearias/me/planos", async (request): Promise<PlanosDoPainel> => {
     const { barbeariaId } = request.user;
     await garantirRecurso(prisma, barbeariaId, "planosDaBarbearia", new Date());
     const membro = membroDoToken(request);
-    const [barbearia, eu, planos] = await Promise.all([
+    const [barbearia, eu, planos, contas] = await Promise.all([
       prisma.barbearia.findUniqueOrThrow({ where: { id: barbeariaId }, select: { vitrineDePlanos: true } }),
       prisma.barbeiro.findUniqueOrThrow({ where: { id: membro.id }, select: { atende: true } }),
       prisma.planoDeAssinatura.findMany({
@@ -197,13 +209,14 @@ export function registrarRotasPlanos(app: App): void {
         include: INCLUDE_PLANO,
         orderBy: [{ ativo: "desc" }, { ordem: "asc" }, { criadoEm: "asc" }, { id: "asc" }],
       }),
+      contasDa(barbeariaId),
     ]);
     const vende = membro.papel === "dono" || (membro.papel === "profissional" && membro.podeVenderPlanos);
     return {
       vitrine: barbearia.vitrineDePlanos,
       podeCriarDaCasa: membro.papel === "dono",
       podeCriarProprio: vende && eu.atende,
-      planos: planos.map(serializarPlano),
+      planos: planos.map((plano) => serializarPlano(plano, contas)),
     };
   });
 
@@ -244,7 +257,7 @@ export function registrarRotasPlanos(app: App): void {
           include: INCLUDE_PLANO,
         });
       });
-      return reply.code(201).send(serializarPlano(plano));
+      return reply.code(201).send(serializarPlano(plano, await contasDa(barbeariaId)));
     }
   );
 
@@ -285,7 +298,7 @@ export function registrarRotasPlanos(app: App): void {
         }
         return tx.planoDeAssinatura.update({ where: { id: atual.id }, data: campos, include: INCLUDE_PLANO });
       });
-      return serializarPlano(plano);
+      return serializarPlano(plano, await contasDa(barbeariaId));
     }
   );
 
@@ -359,10 +372,12 @@ export function registrarRotasPlanosPublicos(app: App): void {
 
       return {
         planos: planos.flatMap((plano) => {
-          // Online só com a conta de quem vende conectada. Plano que ninguém
-          // consegue assinar, ou que não cobre nada, não entra.
+          // Online só com a conta de quem vende conectada. Sem ela, o plano
+          // segue na página com "Pagamento online indisponível", mesmo sem o
+          // balcão: sumir deixava o dono sem saber por quê. Plano que não
+          // cobre nada não entra.
           const aceitaOnline = plano.aceitaOnline && temContaQueRecebe(contas, plano.vendedorId);
-          if (plano.servicos.length === 0 || (!aceitaOnline && !plano.aceitaNoBalcao)) return [];
+          if (plano.servicos.length === 0) return [];
           return [
             {
               id: plano.id,
@@ -378,6 +393,7 @@ export function registrarRotasPlanosPublicos(app: App): void {
               precoCentavos: plano.precoCentavos,
               diasDeTeste: plano.diasDeTeste,
               aceitaOnline,
+              onlineIndisponivel: plano.aceitaOnline && !aceitaOnline,
               aceitaNoBalcao: plano.aceitaNoBalcao,
               servicos: plano.servicos.map((s) => ({ servicoId: s.servicoId, nome: s.servico.nome, usosPorCiclo: s.usosPorCiclo })),
             },

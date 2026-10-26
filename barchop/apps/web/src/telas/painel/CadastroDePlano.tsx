@@ -462,6 +462,14 @@ export function CadastroDePlano() {
               <Link href="/painel/configuracoes/pagamentos-online">Pagamentos online</Link>, a página oferece só o
               balcão.
             </span>
+            {/* Só no plano salvo: a lista diz se a conta de quem vende recebe
+                (o dono editando o plano de outro não lê a conta dele). */}
+            {atual?.onlineIndisponivel && online ? (
+              <span className={estilos.indisponivel}>
+                <strong>Pagamento online indisponível.</strong> Quem vende ainda não conectou a conta do Asaas: a
+                página mostra o plano com esse aviso, sem o Assinar.
+              </span>
+            ) : null}
             <span className={estilos.marca}>
               <input
                 type="checkbox"

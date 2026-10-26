@@ -100,6 +100,7 @@ describe("a vitrine", () => {
           precoCentavos: 12000,
           diasDeTeste: 0,
           aceitaOnline: false,
+          onlineIndisponivel: false,
           aceitaNoBalcao: true,
           servicos: [
             { servicoId: c.corte.id, nome: "Corte", usosPorCiclo: 2 },
@@ -193,15 +194,23 @@ describe("o que fica fora", () => {
   });
 });
 
+// Os ids dos planos que dá pra assinar online agora.
+async function idsOnline(c: Cenario): Promise<string[]> {
+  const { planos } = (await vitrine(c)).json();
+  return planos.filter((p: { aceitaOnline: boolean }) => p.aceitaOnline).map((p: { id: string }) => p.id);
+}
+
 describe("pagar online", () => {
-  it("só online e sem conta conectada: fora; com a conta, entra", async () => {
+  it("só online e sem conta conectada: entra com o pagamento online indisponível; com a conta, vende", async () => {
     const c = await cenario();
     const daCasa = await plano(c, { aceitaOnline: true, aceitaNoBalcao: false });
-    expect(await idsNaVitrine(c)).toEqual([]);
-    await conectar(c, c.dono.barbeiroId, true);
-    const { planos } = (await vitrine(c)).json();
+    let { planos } = (await vitrine(c)).json();
     expect(planos.map((p: { id: string }) => p.id)).toEqual([daCasa.id]);
-    expect(planos[0].aceitaOnline).toBe(true);
+    expect(planos[0]).toMatchObject({ aceitaOnline: false, onlineIndisponivel: true, aceitaNoBalcao: false });
+
+    await conectar(c, c.dono.barbeiroId, true);
+    ({ planos } = (await vitrine(c)).json());
+    expect(planos[0]).toMatchObject({ aceitaOnline: true, onlineIndisponivel: false });
     await c.app.close();
   });
 
@@ -211,7 +220,8 @@ describe("pagar online", () => {
     const conexao = await conectar(c, c.dono.barbeiroId, true);
     await prisma.conexaoDePagamento.update({ where: { id: conexao.id }, data: { modo: "real" } });
 
-    expect(await idsNaVitrine(c)).toEqual([]);
+    expect(await idsOnline(c)).toEqual([]);
+    expect((await vitrine(c)).json().planos[0].onlineIndisponivel).toBe(true);
     await c.app.close();
   });
 
@@ -221,7 +231,8 @@ describe("pagar online", () => {
     const conexao = await conectar(c, c.dono.barbeiroId, true);
     await prisma.conexaoDePagamento.update({ where: { id: conexao.id }, data: { desconectadaEm: new Date() } });
 
-    expect(await idsNaVitrine(c)).toEqual([]);
+    expect(await idsOnline(c)).toEqual([]);
+    expect((await vitrine(c)).json().planos[0].onlineIndisponivel).toBe(true);
     await c.app.close();
   });
 
@@ -230,18 +241,26 @@ describe("pagar online", () => {
     const daCasa = await plano(c, { aceitaOnline: true, aceitaNoBalcao: false });
     const doDono = await plano(c, { vendedorId: c.dono.barbeiroId, aceitaOnline: true, aceitaNoBalcao: false });
     await conectar(c, c.dono.barbeiroId, false);
-    expect(await idsNaVitrine(c)).toEqual([doDono.id]);
+    expect(await idsOnline(c)).toEqual([doDono.id]);
     await prisma.conexaoDePagamento.deleteMany();
     await conectar(c, c.dono.barbeiroId, true);
-    expect(await idsNaVitrine(c)).toEqual([daCasa.id]);
+    expect(await idsOnline(c)).toEqual([daCasa.id]);
     await c.app.close();
   });
 
-  it("online e no balcão, sem conta: entra só no balcão", async () => {
+  it("online e no balcão, sem conta: o balcão vale e o online fica indisponível", async () => {
     const c = await cenario();
     await plano(c, { aceitaOnline: true, aceitaNoBalcao: true });
     const { planos } = (await vitrine(c)).json();
-    expect(planos[0]).toMatchObject({ aceitaOnline: false, aceitaNoBalcao: true });
+    expect(planos[0]).toMatchObject({ aceitaOnline: false, onlineIndisponivel: true, aceitaNoBalcao: true });
+    await c.app.close();
+  });
+
+  it("só no balcão: o online não está indisponível, só não é oferecido", async () => {
+    const c = await cenario();
+    await plano(c, { aceitaOnline: false, aceitaNoBalcao: true });
+    const { planos } = (await vitrine(c)).json();
+    expect(planos[0]).toMatchObject({ aceitaOnline: false, onlineIndisponivel: false });
     await c.app.close();
   });
 });

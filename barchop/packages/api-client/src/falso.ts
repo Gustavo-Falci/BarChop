@@ -886,7 +886,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // A vitrine como a API a monta (GET /barbearias/:slug/planos): vitrine
   // ligada e no Completo; plano ativo, de quem atende e pode vender, com
   // serviço ativo; online só com a conta de quem vende ligada e do modo
-  // aceito. Sem nenhuma forma que valha, fora.
+  // aceito. Sem ela, o plano fica, com o online indisponível.
   function vitrineFalsa(): PlanoDaVitrine[] {
     if (!estado.vitrineDePlanos || !temRecurso(estado.assinatura!.planoEfetivo, "planosDaBarbearia")) return [];
     const ativos = new Set(estado.servicos.filter((s) => s.ativo).map((s) => s.id));
@@ -895,9 +895,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       const vendedor = plano.vendedor ? equipe().find((m) => m.id === plano.vendedor!.id) : null;
       if (plano.vendedor && !(vendedor && vendedor.ativo && vendedor.atende && vendePlanos(vendedor))) return [];
       const servicos = plano.servicos.filter((s) => ativos.has(s.servicoId)).map((s) => ({ ...s }));
-      const conta = estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"];
-      const aceitaOnline = plano.aceitaOnline && conta !== undefined && conta.modo === estado.modoAceito;
-      if (servicos.length === 0 || (!aceitaOnline && !plano.aceitaNoBalcao)) return [];
+      const aceitaOnline = plano.aceitaOnline && recebeOnline(plano);
+      if (servicos.length === 0) return [];
       return [
         {
           id: plano.id,
@@ -909,11 +908,24 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           precoCentavos: plano.precoCentavos,
           diasDeTeste: plano.diasDeTeste,
           aceitaOnline,
+          onlineIndisponivel: plano.aceitaOnline && !aceitaOnline,
           aceitaNoBalcao: plano.aceitaNoBalcao,
           servicos,
         },
       ];
     });
+  }
+
+  // A conta de quem vende ligada e do modo aceito (contasQueRecebem).
+  function recebeOnline(plano: PlanoDoPainel): boolean {
+    const conta = estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"];
+    return conta !== undefined && conta.modo === estado.modoAceito;
+  }
+
+  // O plano como o painel recebe: o aviso do online calculado na hora,
+  // como a API faz (a semente não precisa acertar o campo).
+  function doPainel(plano: PlanoDoPainel): PlanoDoPainel {
+    return { ...copiaDoPlano(plano), onlineIndisponivel: plano.aceitaOnline && !recebeOnline(plano) };
   }
 
   // A assinatura como o cliente a vê (GET /clientes/me/assinaturas).
@@ -2245,7 +2257,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           vitrine: estado.vitrineDePlanos!,
           podeCriarDaCasa: estado.papel === "dono",
           podeCriarProprio: vendePlanos(eu) && eu.atende,
-          planos: planosVisiveis().map(copiaDoPlano),
+          planos: planosVisiveis().map(doPainel),
         };
       },
       async criarPlano(novo: NovoPlano) {
@@ -2266,13 +2278,14 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           fixoPorAtendimentoCentavos: novo.fixoPorAtendimentoCentavos ?? null,
           aceitaOnline: novo.aceitaOnline ?? true,
           aceitaNoBalcao: novo.aceitaNoBalcao ?? false,
+          onlineIndisponivel: false,
           ativo: true,
           servicos: servicosDoPlano(novo.servicos),
           assinantes: 0,
         };
         exigirPlanoCerto(plano);
         estado.planos!.push(plano);
-        return copiaDoPlano(plano);
+        return doPainel(plano);
       },
       async editarPlano(id: string, mudanca: MudancaDoPlano) {
         if (!vendePlanos(membroOu404("bb1"))) {
@@ -2289,7 +2302,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         };
         exigirPlanoCerto(novo);
         Object.assign(atual, novo);
-        return copiaDoPlano(atual);
+        return doPainel(atual);
       },
       // A conta de quem vende (routers/pagamentos-online.ts). O dublê
       // reconhece a chave pelo prefixo, como o `modoDaChave` da API, e

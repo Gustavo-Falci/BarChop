@@ -58,6 +58,7 @@ const DA_CASA: PlanoDoPainel = {
   fixoPorAtendimentoCentavos: 2500,
   aceitaOnline: false,
   aceitaNoBalcao: true,
+  onlineIndisponivel: false,
   ativo: true,
   servicos: [{ servicoId: "s1", nome: "Corte", usosPorCiclo: null }],
   assinantes: 1,

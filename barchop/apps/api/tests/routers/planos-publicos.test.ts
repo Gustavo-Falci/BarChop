@@ -100,6 +100,7 @@ describe("a vitrine", () => {
           precoCentavos: 12000,
           diasDeTeste: 0,
           aceitaOnline: false,
+          onlineIndisponivel: false,
           aceitaNoBalcao: true,
           servicos: [
             { servicoId: c.corte.id, nome: "Corte", usosPorCiclo: 2 },

@@ -30,6 +30,17 @@ export function comQuemVale(plano: { vendedor: Pick<NonNullable<PlanoDaVitrine["
   return plano.vendedor ? `Vale só com ${plano.vendedor.nome}` : "Vale com qualquer profissional";
 }
 
+const CADA_CICLO: Record<PlanoDaVitrine["ciclo"], string> = {
+  mensal: "a cada mês",
+  trimestral: "a cada trimestre",
+  anual: "a cada ano",
+};
+
+// "Inclui a cada mês": o título da lista do que o plano dá.
+export function incluiACada(ciclo: PlanoDaVitrine["ciclo"]): string {
+  return `Inclui ${CADA_CICLO[ciclo]}`;
+}
+
 export function fraseDoTesteGratis(dias: number): string {
   return dias === 1 ? "1 dia grátis pra começar" : `${dias} dias grátis pra começar`;
 }

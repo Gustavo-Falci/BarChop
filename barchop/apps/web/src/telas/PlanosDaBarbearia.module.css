@@ -2,20 +2,54 @@
    vem de --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
 .pagina {
   display: grid;
-  gap: var(--espaco-lg);
+  gap: var(--espaco-xl);
   padding: var(--espaco-lg);
   width: 100%;
   max-width: var(--fluxo-estreita);
   margin-inline: auto;
 }
 
+/* Título à esquerda e o "Já assina?" à direita, na mesma linha de base;
+   no celular, um embaixo do outro. */
 .cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--espaco-sm) var(--espaco-xxl);
+}
+
+.titulo {
   display: grid;
   gap: var(--espaco-xs);
 }
 
-.cabeca h1 {
+.titulo h1 {
   margin: 0;
+}
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-decoration: none;
+}
+
+.voltar:hover {
+  color: var(--cor-ink);
+}
+
+/* A seta é a das ações que avançam; aqui ela volta. */
+.setaDeVolta {
+  transform: scaleX(-1);
+}
+
+.cabeca a:not(.voltar) {
+  color: var(--cor-ink);
+  font-weight: 600;
 }
 
 .lista {
@@ -26,24 +60,26 @@
   list-style: none;
 }
 
-/* Desktop: os planos em grade, na largura do fluxo, como a Minha conta. */
+/* Desktop: os planos em grade, na largura do fluxo, como a Minha conta.
+   Mesma altura na linha, com a ação embaixo (o .rodape empurra). */
 @media (min-width: 900px) {
   .pagina {
     max-width: var(--fluxo-largura);
   }
 
   .lista {
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--espaco-lg);
   }
 }
 
 /* Um plano por cartão, com a cara do Cartao. */
 .plano {
-  display: grid;
-  gap: var(--espaco-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco-md);
   min-width: 0;
-  padding: var(--espaco-md);
+  padding: var(--espaco-lg);
   border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
   border-radius: var(--raio-cartao, var(--raio-lg));
   background: var(--cor-surface);
@@ -59,10 +95,15 @@
   border-color: var(--cor-accent);
 }
 
+.quem {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
 .topo {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--espaco-xs) var(--espaco-sm);
 }
@@ -73,20 +114,85 @@
   overflow-wrap: anywhere;
 }
 
-.preco {
-  font-weight: 700;
-}
-
-.rotulo {
-  font-weight: 700;
+/* "7 dias grátis pra começar". `--cor-accent-text` sobre o
+   `--cor-pale-yellow`: o par que já passa de 4,5:1 nos dois modos. */
+.selo {
+  padding: 2px 10px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-pale-yellow);
+  color: var(--cor-accent-text);
+  font-size: var(--texto-sm);
+  font-weight: 600;
 }
 
 .descricao {
   overflow-wrap: anywhere;
 }
 
-.teste {
+/* O preço é o que o cliente compara: o valor grande, o ciclo ao lado. */
+.preco {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--espaco-xs);
+}
+
+.valor {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
   font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ciclo {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.inclui {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* `--cor-muted` passa de 4,5:1 sobre a surface nos dois modos. */
+.rotulo {
+  color: var(--cor-muted);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.servicos {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.servico {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaco-sm);
+  overflow-wrap: anywhere;
+}
+
+.check {
+  flex: none;
+  margin-top: 2px;
+  color: var(--cor-accent-text);
+}
+
+/* A ação fica no pé do cartão, alinhada entre os vizinhos da linha. */
+.rodape {
+  display: grid;
+  margin-top: auto;
+  padding-top: var(--espaco-xs);
 }
 
 .passo {
@@ -100,11 +206,81 @@
   gap: var(--espaco-sm);
 }
 
+/* Um botão só, na largura do cartão. */
+.acaoPrincipal {
+  display: grid;
+}
+
 /* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
 .apoio {
   margin: 0;
   color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
+}
+
+.centro {
+  text-align: center;
+}
+
+.forte {
+  color: var(--cor-ink);
+}
+
+/* ---------- Como funciona: três passos, sem caixa ---------- */
+
+.comoFunciona {
+  display: grid;
+  gap: var(--espaco-md);
+  padding-top: var(--espaco-lg);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.tituloDoComo {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.passos {
+  display: grid;
+  gap: var(--espaco-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.passoDoComo {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 2px var(--espaco-sm);
+}
+
+.passoDoComo p {
+  grid-column: 2;
+  margin: 0;
+}
+
+.numero {
+  grid-row: 1 / span 2;
+  color: var(--cor-accent-text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.nomeDoPasso {
+  font-weight: 600;
+}
+
+/* Desktop: o título e os três passos numa linha só. */
+@media (min-width: 900px) {
+  .comoFunciona {
+    grid-template-columns: minmax(160px, 1fr) 3fr;
+    gap: var(--espaco-xl);
+  }
+
+  .passos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--espaco-xl);
+  }
 }
 
 /* ---------- Na página da barbearia ---------- */

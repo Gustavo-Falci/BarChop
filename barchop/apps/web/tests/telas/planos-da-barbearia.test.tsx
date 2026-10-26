@@ -46,7 +46,7 @@ const DO_RAFAEL: PlanoDoPainel = {
   id: "pl4",
   nome: "Corte com o Rafael",
   daCasa: false,
-  vendedor: { id: "bb1", nome: "Rafael", fotoUrl: null },
+  vendedor: { id: "bb1", nome: "Rafael" },
 };
 const NOS_DOIS: PlanoDoPainel = { ...CORTE, id: "pl5", nome: "Online ou balcão", aceitaNoBalcao: true };
 

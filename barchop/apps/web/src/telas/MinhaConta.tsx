@@ -15,7 +15,7 @@ import { formatarDataComSemana, formatarDataLonga } from "../formato/datas";
 import { prazoAcabou } from "../formato/prazos";
 import { TOM_DO_STATUS, rotuloDoStatus } from "../formato/status";
 import { IconeSeta } from "../painel/icones";
-import { sessaoDoCliente } from "../sessao/armazenamento";
+import { useTemSessaoDoCliente } from "../sessao/useSessaoDoCliente";
 import estilos from "./MinhaConta.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { AvisoDoPrazo } from "./AvisoDoPrazo";
@@ -50,7 +50,9 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
   const noHost = useNoHost();
   const api = useApi();
 
-  const temSessao = Boolean(sessaoDoCliente(slug).ler());
+  // `undefined` no servidor e na hidratação (lá não há localStorage):
+  // os dois desenham o mesmo Carregando, e a sessão chega logo depois.
+  const temSessao = useTemSessaoDoCliente(slug);
   const { dados, carregando, erro, recarregar } = useRequisicao(
     async () => (temSessao ? api.cliente.meusAgendamentos() : []),
     [slug, temSessao]
@@ -82,11 +84,12 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
   // Sem token, ou com token que a API recusou: o gancho da fundação já
   // limpou o armazenamento, e aqui só falta tirar a pessoa da tela.
   useEffect(() => {
-    if (!temSessao || erro?.codigo === "nao_autenticado") {
+    if (temSessao === false || erro?.codigo === "nao_autenticado") {
       router.replace(noHost(`/${slug}/entrar`));
     }
   }, [temSessao, erro, router, slug, noHost]);
 
+  if (temSessao === undefined) return <main className={estilos.pagina}><Carregando /></main>;
   if (!temSessao) return null;
 
   const cabeca = (

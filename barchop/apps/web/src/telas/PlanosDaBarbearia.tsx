@@ -23,7 +23,7 @@ import {
 import { caminhoDoPasso } from "../fluxo/passos";
 import { IconeCheck, IconeSeta } from "../painel/icones";
 import { porCiclo, servicoDoPlano } from "../painel/planos";
-import { sessaoDoCliente } from "../sessao/armazenamento";
+import { useTemSessaoDoCliente } from "../sessao/useSessaoDoCliente";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import estilos from "./PlanosDaBarbearia.module.css";
 
@@ -146,7 +146,9 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
   const [enviando, setEnviando] = useState(false);
   const cartao = useRef<HTMLLIElement>(null);
   const idDoInclui = useId();
-  const temSessao = Boolean(sessaoDoCliente(slug).ler());
+  // Como na Minha conta: lido sem quebrar a hidratação (`undefined` até
+  // o navegador responder).
+  const temSessao = useTemSessaoDoCliente(slug) === true;
   const minhaConta = noHost(`/${slug}/minha-conta`);
 
   // Quem voltou do login cai no plano que escolheu.

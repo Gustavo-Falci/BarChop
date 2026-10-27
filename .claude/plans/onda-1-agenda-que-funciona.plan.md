@@ -4,10 +4,13 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (tarde de 2026-10-26 — vitrine dos planos e Minha conta redesenhadas, no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-27 — guia da chave do Asaas no ar; vitrine e Minha conta de 26/10) — vale mais que as seções abaixo
 
 **Estado:**
-- **`main` = este RETOMAR AQUI** (o código é o #228, `ca68b28`). **Produção = o #228**, deploy de 26/10 feito pelo dono e conferido por curl (as regras novas no CSS publicado da Minha conta). Nenhum PR de código aberto.
+- **Produção = o #230** (`c6b82d2`), deploy do dono em 27/10 conferido por curl (o texto do guia e o link das chaves no chunk de Pagamentos online); o dono viu no celular. Este PR (dublê do desativar + este RETOMAR AQUI) não muda nada no ar.
+- **Feito em 27/10:**
+  - **#230:** em Configurações › Pagamentos online, enquanto uma conta que dá pra conectar está sem conexão, o quadro "Como pegar a chave no Asaas" com 3 passos lado a lado (criar a conta, com o aviso da aprovação por documentos; gerar a chave em Integrações › Chaves de API, com link direto; colar aqui, porque o Asaas mostra a chave uma vez só). Links e prefixo seguem o modo aceito (asaas.com/`$aact_prod_` ou sandbox/`$aact_hmlg_`); some ao conectar. Só web.
+  - A frase do 422 `assinaturas_ativas` do desativar membro já estava certa na API desde o #219 ("nos planos que vende"); o "dele" sobrava só no dublê do api-client, alinhado agora (com o singular).
 - **Feito em 26/10** (cada um com "pode mergear" e deploy do dono, conferido por curl):
   - **#225:** redesenho da vitrine pública `/[slug]/planos` (direção A do canvas do Claude Design https://claude.ai/artifact/A4dCEGDmaEMkFu1p4LsgkZ). Só web.
   - **#226:** plano com online marcado, mas sem a conta do Asaas de quem vende conectada, não some mais da vitrine. Mostra "Pagamento online indisponível" na página pública (no lugar do Assinar), um selo na lista de planos do painel e um aviso no cadastro do plano. Campo `onlineIndisponivel` em `PlanoDoPainel` e `PlanoDaVitrine`. API + web, sem migração.
@@ -16,14 +19,13 @@
 - O resto do estado (marco 3 no ar, `barbearia-teste` no Completo à mão, sandbox do Asaas) segue como na seção de 25/10 logo abaixo.
 
 **Ao retomar:**
-1. **Pagamento online em produção:** só funciona quando cada vendedor (a casa ou o profissional) conecta uma chave `$aact_prod_` em Pagamentos online. Até lá, os planos online aparecem como "Pagamento online indisponível".
+1. **Pagamento online em produção:** só funciona quando cada vendedor (a casa ou o profissional) conecta uma chave `$aact_prod_` em Pagamentos online (agora com o guia do #230). Até lá, os planos online aparecem como "Pagamento online indisponível".
 2. **Perguntas abertas da vitrine (#225), sem resposta do dono:** o texto do passo 3 do "Como funciona" e se o selo do teste grátis encurta pra "7 dias grátis".
 3. **Minha conta, ficou de fora do #227:** a marca "corte pelo plano" no horário marcado. A API não diz qual agendamento usa o plano; precisa de um campo novo antes da tela.
 4. **Aceite do marco 3** (plano `planos-de-assinatura`, Acceptance): a GR cria um plano da casa e um do Gustavo, um cliente assina cada um (um no balcão, um online) e o acerto do dia bate com a conta à mão.
-5. Conferir em 24/11, no sandbox, se a assinatura paga no cartão (`sub_vwsx29uc7fa5ekcv`, cancelada depois do teste) gerou cobrança sozinha.
-6. A frase do 422 `assinaturas_ativas` do desativar membro (`routers/equipe.ts`) ainda diz "dele": trocar quando mexer ali.
-7. A Minha conta lê a sessão do `localStorage` no render (aviso de hidratação do Next no dev). Anterior ao redesenho; a frase de "sem agendamentos" já foi resolvida no #227 ("Nenhum horário marcado.").
-8. O resto da lista de 21/10: testar o caixa em produção; marco 4 (relatórios); G3; decidir a `barbearia-teste` (hoje no Completo à mão); pendentes do redesenho.
+5. **Chave do Asaas parada:** pela doc do Asaas, chave sem uso por 3 meses é desabilitada e em 6 meses expira (religa em Integrações › Chaves de API). Opcional: avisar o dono antes. Ofereci em 27/10, sem resposta.
+6. A Minha conta lê a sessão do `localStorage` no render (aviso de hidratação do Next no dev). Anterior ao redesenho; a frase de "sem agendamentos" já foi resolvida no #227 ("Nenhum horário marcado.").
+7. O resto da lista de 21/10: testar o caixa em produção; marco 4 (relatórios); G3; decidir a `barbearia-teste` (hoje no Completo à mão); pendentes do redesenho.
 
 ## RETOMAR AQUI (noite de 2026-10-25 — marco 3 no ar e o webhook conferido em produção) — histórico
 

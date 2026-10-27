@@ -200,6 +200,17 @@ describe("dublê — planos", () => {
     expect((await api.barbeiro.planos()).planos[0].assinantes).toBe(0);
   });
 
+  it("a recusa do desativar fala como a API: no singular com 1, sem \"dele\"", async () => {
+    const api = semear("dono");
+    expect((await erroDe(api.barbeiro.atualizarMembro("bb0", { ativo: false }))).mensagem).toBe(
+      "este membro tem 3 assinantes nos planos que vende: cancele as assinaturas para desativar"
+    );
+    api.estado.planos![0].assinantes = 1;
+    expect((await erroDe(api.barbeiro.atualizarMembro("bb0", { ativo: false }))).mensagem).toBe(
+      "este membro tem 1 assinante nos planos que vende: cancele a assinatura para desativar"
+    );
+  });
+
   it("o dono libera o membro pra vender planos", async () => {
     const api = semear("dono");
     const liberado = await api.barbeiro.atualizarMembro("bb0", { podeVenderPlanos: false });

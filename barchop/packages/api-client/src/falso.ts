@@ -1541,13 +1541,19 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             "a barbearia precisa de pelo menos um dono ativo"
           );
         }
-        // Como a API: quem sai com assinante nos planos dele precisa da
-        // confirmação, e com ela as assinaturas caem.
+        // Como a API: quem sai com assinante nos planos que vende precisa
+        // da confirmação, e com ela as assinaturas caem.
         if (edicao.ativo === false) {
           const dele = estado.planos!.filter((p) => p.vendedor?.id === id);
           const quantas = dele.reduce((soma, p) => soma + p.assinantes, 0);
           if (quantas > 0 && cancelarAssinaturas !== true) {
-            throw new ErroDaApi(422, "assinaturas_ativas", `este membro tem ${quantas} assinantes nos planos dele`);
+            throw new ErroDaApi(
+              422,
+              "assinaturas_ativas",
+              quantas === 1
+                ? "este membro tem 1 assinante nos planos que vende: cancele a assinatura para desativar"
+                : `este membro tem ${quantas} assinantes nos planos que vende: cancele as assinaturas para desativar`
+            );
           }
           for (const plano of dele) plano.assinantes = 0;
           for (const assinatura of estado.assinaturas!) {

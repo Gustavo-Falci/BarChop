@@ -158,6 +158,63 @@ describe("pagamentos online", () => {
     expect(within(casa).queryByRole("button", { name: "Trocar a chave" })).not.toBeInTheDocument();
   });
 
+  it("sem conta, o guia diz como pegar a chave de produção no Asaas", async () => {
+    montarPainel(<PagamentosOnline />, semear({ modoAceito: "real" }));
+
+    const guia = await screen.findByRole("region", { name: "Como pegar a chave no Asaas" });
+    const passos = within(guia).getAllByRole("listitem");
+    expect(passos).toHaveLength(3);
+    expect(passos[0]).toHaveTextContent(/crie a conta/i);
+    expect(passos[1]).toHaveTextContent(/integrações › chaves de api/i);
+    expect(passos[2]).toHaveTextContent(/uma vez só/i);
+    expect(passos[2]).toHaveTextContent("$aact_prod_");
+    expect(within(guia).getByRole("link", { name: /chaves de api no asaas/i })).toHaveAttribute(
+      "href",
+      "https://www.asaas.com/customerApiAccessToken/index"
+    );
+    expect(within(guia).getByRole("link", { name: /criar a conta/i })).toHaveAttribute("href", "https://www.asaas.com/");
+  });
+
+  it("no sandbox, o guia aponta pro sandbox do Asaas", async () => {
+    montarPainel(<PagamentosOnline />, semear());
+
+    const guia = await screen.findByRole("region", { name: "Como pegar a chave no Asaas" });
+    expect(within(guia).getByText("$aact_hmlg_", { exact: false })).toBeInTheDocument();
+    expect(within(guia).getByRole("link", { name: /chaves de api no asaas/i })).toHaveAttribute(
+      "href",
+      "https://sandbox.asaas.com/customerApiAccessToken/index"
+    );
+  });
+
+  it("o guia some quando a conta conecta", async () => {
+    // O dono que não atende só tem a conta da casa pra conectar.
+    montarPainel(<PagamentosOnline />, semear({ equipe: [{ ...RAFAEL, atende: false }] }));
+    const casa = await screen.findByRole("region", { name: "Conta da casa" });
+    expect(screen.getByRole("region", { name: "Como pegar a chave no Asaas" })).toBeInTheDocument();
+
+    await userEvent.type(within(casa).getByLabelText("Chave de API do Asaas"), "$aact_hmlg_chave-9876");
+    await userEvent.click(within(casa).getByRole("button", { name: "Conectar" }));
+
+    await within(casa).findByText(/chave terminando em 9876/i);
+    expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
+  });
+
+  it("com a conta conectada, não há guia", async () => {
+    montarPainel(
+      <PagamentosOnline />,
+      semear({ equipe: [{ ...RAFAEL, atende: false }], contasOnline: { casa: CONTA } })
+    );
+    await screen.findByRole("region", { name: "Conta da casa" });
+    expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
+  });
+
+  it("o profissional sem a liberação não vê o guia", async () => {
+    const gustavo: MembroDaEquipe = { ...RAFAEL, id: "bb1", nome: "Gustavo", papel: "profissional" };
+    montarPainel(<PagamentosOnline />, semear({ papel: "profissional", equipe: [gustavo, { ...RAFAEL, id: "bb9" }] }));
+    await screen.findByText(/o dono libera a venda de planos/i);
+    expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
+  });
+
   it("no índice do dono, a linha diz a conta da casa", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes" });
     montarPainel(<IndiceDeConfiguracoes />, semear({ contasOnline: { casa: CONTA } }));

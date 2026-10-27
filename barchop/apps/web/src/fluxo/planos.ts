@@ -42,7 +42,7 @@ export function incluiACada(ciclo: PlanoDaVitrine["ciclo"]): string {
 }
 
 export function fraseDoTesteGratis(dias: number): string {
-  return dias === 1 ? "1 dia grátis pra começar" : `${dias} dias grátis pra começar`;
+  return dias === 1 ? "1 dia grátis" : `${dias} dias grátis`;
 }
 
 // O que falta, depois de assinar online: o teste grátis empurra a

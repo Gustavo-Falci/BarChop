@@ -238,7 +238,7 @@ export function CadastroDeMembro() {
       const falha = causa as ErroDaApi;
       if (falha.codigo === "assinaturas_ativas") {
         // A contagem vem na frase da API ("tem 3 assinantes nos planos
-        // dele"); sem ela, a frase fica sem o número.
+        // que vende"); sem ela, a frase fica sem o número.
         const quantas = /(\d+) assinantes?/.exec(falha.mensagem)?.[1];
         setCancelarAssinaturas(
           quantas === "1"

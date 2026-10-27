@@ -187,7 +187,8 @@ describe("pagamentos online", () => {
   });
 
   it("o guia some quando a conta conecta", async () => {
-    montarPainel(<PagamentosOnline />, semear());
+    // O dono que não atende só tem a conta da casa pra conectar.
+    montarPainel(<PagamentosOnline />, semear({ equipe: [{ ...RAFAEL, atende: false }] }));
     const casa = await screen.findByRole("region", { name: "Conta da casa" });
     expect(screen.getByRole("region", { name: "Como pegar a chave no Asaas" })).toBeInTheDocument();
 
@@ -199,7 +200,10 @@ describe("pagamentos online", () => {
   });
 
   it("com a conta conectada, não há guia", async () => {
-    montarPainel(<PagamentosOnline />, semear({ contasOnline: { casa: CONTA } }));
+    montarPainel(
+      <PagamentosOnline />,
+      semear({ equipe: [{ ...RAFAEL, atende: false }], contasOnline: { casa: CONTA } })
+    );
     await screen.findByRole("region", { name: "Conta da casa" });
     expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
   });

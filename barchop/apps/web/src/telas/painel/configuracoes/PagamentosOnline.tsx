@@ -36,6 +36,13 @@ function dataCurta(iso: string): string {
 
 // O que a API respondeu, numa frase pra quem vende. O 503 fala da
 // configuração do servidor (URL_DA_API), que não é com o dono.
+// Onde o Asaas mora em cada modo: a conta de verdade e o sandbox são
+// sites (e chaves) separados.
+const SITE_DO_ASAAS: Record<Pagamentos["modoAceito"], string> = {
+  real: "https://www.asaas.com/",
+  teste: "https://sandbox.asaas.com/",
+};
+
 function mensagemDoErro(erro: ErroDaApi): string {
   switch (erro.codigo) {
     case "pagamentos_online_sem_endereco":
@@ -73,6 +80,8 @@ function ContasDeQuemVende() {
     [ehDono]
   );
 
+  const [conectadas, setConectadas] = useState<{ casa?: boolean; minha?: boolean }>({});
+
   const foraDoCompleto = planos.erro?.codigo === "recurso_do_plano";
   const erro = minha.erro ?? daCasa.erro ?? (foraDoCompleto ? undefined : planos.erro);
   if (erro) return <Aviso>{erro.mensagem || "Não foi possível carregar as contas agora."}</Aviso>;
@@ -82,6 +91,13 @@ function ContasDeQuemVende() {
   // aparece se já existir.
   const vendeOProprio = planos.dados?.podeCriarProprio ?? false;
   const mostraMinha = vendeOProprio || minha.dados.conta !== null;
+  // O guia vale enquanto alguma conta que dá pra conectar está sem
+  // conexão; conectar ou desconectar aqui muda a resposta sem recarregar.
+  const conectada = (daCasaDela: boolean, inicial: Pagamentos | null) =>
+    conectadas[daCasaDela ? "casa" : "minha"] ?? inicial?.conta != null;
+  const mostraGuia =
+    !foraDoCompleto &&
+    ((ehDono && !conectada(true, daCasa.dados)) || (vendeOProprio && !conectada(false, minha.dados)));
 
   return (
     <div className={estilos.pagina}>
@@ -99,6 +115,7 @@ function ContasDeQuemVende() {
             titulo="Conta da casa"
             descricao="Recebe as mensalidades dos planos da casa."
             podeConectar={!foraDoCompleto}
+            aoMudar={(sim) => setConectadas((antes) => ({ ...antes, casa: sim }))}
           />
         ) : null}
         {mostraMinha ? (
@@ -107,8 +124,10 @@ function ContasDeQuemVende() {
             titulo="Sua conta"
             descricao="Recebe as mensalidades dos planos que você vende."
             podeConectar={!foraDoCompleto && vendeOProprio}
+            aoMudar={(sim) => setConectadas((antes) => ({ ...antes, minha: sim }))}
           />
         ) : null}
+        {mostraGuia ? <GuiaDaChave modo={minha.dados.modoAceito} /> : null}
       </div>
       {!ehDono && !mostraMinha ? (
         <p>
@@ -119,16 +138,53 @@ function ContasDeQuemVende() {
   );
 }
 
+// O caminho de quem nunca mexeu no Asaas até a chave colada aqui. A
+// chave aparece uma vez só no Asaas e não se recupera: o passo 3 avisa
+// antes de fechar a janela de lá.
+function GuiaDaChave({ modo }: { modo: Pagamentos["modoAceito"] }) {
+  const site = SITE_DO_ASAAS[modo];
+  const prefixo = modo === "teste" ? "$aact_hmlg_" : "$aact_prod_";
+  return (
+    <Secao titulo="Como pegar a chave no Asaas">
+      <ol className={estilos.passos}>
+        <li>
+          <strong>Crie a conta {modo === "teste" ? "no sandbox do Asaas" : "no Asaas"}.</strong>{" "}
+          {modo === "teste"
+            ? "É uma conta de teste, separada da de verdade, e não pede documentos."
+            : "Com o CPF ou CNPJ de quem recebe. O Asaas pede documentos pra aprovar a conta, e o dinheiro só vai pro seu banco depois da aprovação."}{" "}
+          <a href={site} target="_blank" rel="noreferrer">
+            Criar a conta
+          </a>
+        </li>
+        <li>
+          <strong>Gere a chave.</strong> No computador (o aplicativo do Asaas não gera), entre como administrador e vá
+          em Integrações › Chaves de API. Dê o nome BarChop e deixe sem data pra expirar.{" "}
+          <a href={`${site}customerApiAccessToken/index`} target="_blank" rel="noreferrer">
+            Abrir as chaves de API no Asaas
+          </a>
+        </li>
+        <li>
+          <strong>Copie e cole aqui.</strong> O Asaas mostra a chave uma vez só: copie antes de fechar a janela. Ela
+          começa com <code>{prefixo}</code>. O BarChop guarda a chave cifrada, mostra só o final e avisa o Asaas
+          sozinho pra onde mandar os pagamentos.
+        </li>
+      </ol>
+    </Secao>
+  );
+}
+
 function ContaOnline({
   inicial,
   titulo,
   descricao,
   podeConectar,
+  aoMudar,
 }: {
   inicial: Pagamentos;
   titulo: string;
   descricao: string;
   podeConectar: boolean;
+  aoMudar: (conectada: boolean) => void;
 }) {
   const api = useApiDoPainel();
   const { perfil } = usePainel();
@@ -148,7 +204,7 @@ function ContaOnline({
   const apoioDaChave =
     modoAceito === "teste"
       ? `Use a chave do sandbox do Asaas (começa com ${prefixo}): aqui os pagamentos são de teste.`
-      : `Gere a chave de API no Asaas, no menu Integrações, e cole aqui. Ela começa com ${prefixo}.`;
+      : `Ela começa com ${prefixo}.`;
 
   function limpar() {
     setAviso(undefined);
@@ -167,6 +223,7 @@ function ContaOnline({
     try {
       const resposta = await api.barbeiro.conectarPagamentosOnline(daCasa, chave);
       setDados(resposta);
+      aoMudar(true);
       setFeito(conta ? "Chave trocada." : "Conta conectada.");
       setTrocando(false);
     } catch (causa) {
@@ -190,6 +247,7 @@ function ContaOnline({
     try {
       await api.barbeiro.desconectarPagamentosOnline(daCasa);
       setDados({ ...dados, conta: null });
+      aoMudar(false);
       setFeito("Conta desconectada.");
     } catch (causa) {
       const falha = causa as ErroDaApi;

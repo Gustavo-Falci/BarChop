@@ -58,6 +58,23 @@
   gap: var(--espaco-sm);
 }
 
+/* Os passos do guia: número na margem, sem caixa (telas sem blocos). */
+.passos {
+  display: grid;
+  gap: var(--espaco-md);
+  margin: 0;
+  padding-left: var(--espaco-lg);
+  overflow-wrap: anywhere;
+}
+
+.passos li::marker {
+  font-weight: 700;
+}
+
+.passos code {
+  font-size: var(--texto-sm);
+}
+
 .feito {
   margin: 0;
   color: var(--cor-ok);

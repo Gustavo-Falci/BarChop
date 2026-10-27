@@ -84,7 +84,7 @@ describe("planos da barbearia", () => {
     expect(within(corte).getByText("Vale com qualquer profissional")).toBeInTheDocument();
     const inclui = within(corte).getByRole("list", { name: "Inclui a cada mês" });
     expect(within(inclui).getByRole("listitem")).toHaveTextContent("2× Corte masculino");
-    expect(within(await cartaoDo("Com teste")).getByText("7 dias grátis pra começar")).toBeInTheDocument();
+    expect(within(await cartaoDo("Com teste")).getByText("7 dias grátis")).toBeInTheDocument();
   });
 
   it("o plano do balcão não tem Assinar e leva pra agendar", async () => {
@@ -141,6 +141,10 @@ describe("planos da barbearia", () => {
     const comOnline = await screen.findByRole("region", { name: "Como funciona" });
     expect(within(comOnline).getByText("Pague online ou no balcão")).toBeInTheDocument();
     expect(within(comOnline).getByText(/nunca vê seu cartão/i)).toBeInTheDocument();
+    expect(within(comOnline).getByText("Agende como sempre")).toBeInTheDocument();
+    expect(
+      within(comOnline).getByText("No dia, você não paga o que o plano cobre. O resto é pago na hora.")
+    ).toBeInTheDocument();
   });
 
   it("só com planos de balcão, o como funciona não fala de pagamento online", async () => {

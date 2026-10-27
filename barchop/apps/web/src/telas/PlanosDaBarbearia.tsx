@@ -125,7 +125,7 @@ function ComoFunciona({ online }: { online: boolean }) {
             3
           </span>
           <p className={estilos.nomeDoPasso}>Agende como sempre</p>
-          <p className={estilos.apoio}>No atendimento, o que o plano inclui já está pago pela assinatura.</p>
+          <p className={estilos.apoio}>No dia, você não paga o que o plano cobre. O resto é pago na hora.</p>
         </li>
       </ol>
     </section>

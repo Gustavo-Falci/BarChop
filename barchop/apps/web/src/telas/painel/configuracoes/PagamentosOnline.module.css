@@ -58,17 +58,38 @@
   gap: var(--espaco-sm);
 }
 
-/* Os passos do guia: número na margem, sem caixa (telas sem blocos). */
+/* O guia ocupa a linha inteira, embaixo das contas, e no desktop os
+   três passos ficam lado a lado (telas horizontais). */
+.guia {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
 .passos {
   display: grid;
-  gap: var(--espaco-md);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--espaco-md) var(--espaco-lg);
   margin: 0;
-  padding-left: var(--espaco-lg);
+  padding: 0;
   overflow-wrap: anywhere;
+}
+
+/* O número fica na margem de cada passo, não só da primeira coluna. */
+.passos li {
+  margin-left: 1.25em;
 }
 
 .passos li::marker {
   font-weight: 700;
+}
+
+.passos a {
+  display: block;
+  margin-top: var(--espaco-xs);
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .passos code {

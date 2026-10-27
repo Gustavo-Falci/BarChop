@@ -145,31 +145,33 @@ function GuiaDaChave({ modo }: { modo: Pagamentos["modoAceito"] }) {
   const site = SITE_DO_ASAAS[modo];
   const prefixo = modo === "teste" ? "$aact_hmlg_" : "$aact_prod_";
   return (
-    <Secao titulo="Como pegar a chave no Asaas">
-      <ol className={estilos.passos}>
-        <li>
-          <strong>Crie a conta {modo === "teste" ? "no sandbox do Asaas" : "no Asaas"}.</strong>{" "}
-          {modo === "teste"
-            ? "É uma conta de teste, separada da de verdade, e não pede documentos."
-            : "Com o CPF ou CNPJ de quem recebe. O Asaas pede documentos pra aprovar a conta, e o dinheiro só vai pro seu banco depois da aprovação."}{" "}
-          <a href={site} target="_blank" rel="noreferrer">
-            Criar a conta
-          </a>
-        </li>
-        <li>
-          <strong>Gere a chave.</strong> No computador (o aplicativo do Asaas não gera), entre como administrador e vá
-          em Integrações › Chaves de API. Dê o nome BarChop e deixe sem data pra expirar.{" "}
-          <a href={`${site}customerApiAccessToken/index`} target="_blank" rel="noreferrer">
-            Abrir as chaves de API no Asaas
-          </a>
-        </li>
-        <li>
-          <strong>Copie e cole aqui.</strong> O Asaas mostra a chave uma vez só: copie antes de fechar a janela. Ela
-          começa com <code>{prefixo}</code>. O BarChop guarda a chave cifrada, mostra só o final e avisa o Asaas
-          sozinho pra onde mandar os pagamentos.
-        </li>
-      </ol>
-    </Secao>
+    <div className={estilos.guia}>
+      <Secao titulo="Como pegar a chave no Asaas">
+        <ol className={estilos.passos}>
+          <li>
+            <strong>Crie a conta {modo === "teste" ? "no sandbox do Asaas" : "no Asaas"}.</strong>{" "}
+            {modo === "teste"
+              ? "É uma conta de teste, separada da de verdade, e não pede documentos."
+              : "Com o CPF ou CNPJ de quem recebe. O Asaas pede documentos pra aprovar a conta, e o dinheiro só vai pro seu banco depois da aprovação."}{" "}
+            <a href={site} target="_blank" rel="noreferrer">
+              Criar a conta
+            </a>
+          </li>
+          <li>
+            <strong>Gere a chave.</strong> No computador (o aplicativo do Asaas não gera), entre como administrador e vá
+            em Integrações › Chaves de API. Dê o nome BarChop e deixe sem data pra expirar.{" "}
+            <a href={`${site}customerApiAccessToken/index`} target="_blank" rel="noreferrer">
+              Abrir as chaves de API no Asaas
+            </a>
+          </li>
+          <li>
+            <strong>Copie e cole aqui.</strong> O Asaas mostra a chave uma vez só: copie antes de fechar a janela. Ela
+            começa com <code>{prefixo}</code>. O BarChop guarda a chave cifrada, mostra só o final e avisa o Asaas
+            sozinho pra onde mandar os pagamentos.
+          </li>
+        </ol>
+      </Secao>
+    </div>
   );
 }
 

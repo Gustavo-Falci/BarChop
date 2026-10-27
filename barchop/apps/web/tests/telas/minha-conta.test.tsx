@@ -1,4 +1,6 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
@@ -44,6 +46,34 @@ describe("minha conta", () => {
     await waitFor(() => screen.getByText("20 de setembro"));
     expect(screen.getByText("09:30")).toBeInTheDocument();
     expect(screen.getByText(/pendente/i)).toBeInTheDocument();
+  });
+
+  it("o HTML do servidor e a primeira tela do navegador batem (sem aviso de hidratação)", async () => {
+    const falso = await comUmAgendamento();
+    const arvore = (
+      <ProvedorDaApi valor={falso}>
+        <MinhaConta />
+      </ProvedorDaApi>
+    );
+    // O servidor não enxerga o localStorage: desenha sem a sessão.
+    sessaoDoCliente("gr-barber").limpar();
+    const html = renderToString(arvore);
+    sessaoDoCliente("gr-barber").gravar("jwt-do-cliente");
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    const erros: unknown[] = [];
+    const raiz = await act(async () =>
+      hydrateRoot(container, arvore, { onRecoverableError: (erro) => erros.push(erro) })
+    );
+    try {
+      expect(erros).toEqual([]);
+      await waitFor(() => within(container).getByText("20 de setembro"));
+    } finally {
+      act(() => raiz.unmount());
+      container.remove();
+    }
   });
 
   it("cancela e atualiza a lista", async () => {

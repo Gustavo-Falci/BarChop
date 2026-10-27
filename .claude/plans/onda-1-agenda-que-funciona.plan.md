@@ -7,12 +7,12 @@
 ## RETOMAR AQUI (2026-10-27 — guia da chave do Asaas, hidratação da Minha conta e textos da vitrine) — vale mais que as seções abaixo
 
 **Estado:**
-- **Produção = o #232** (`4c22316`), deploy do dono em 27/10 conferido por curl (o HTML do servidor da Minha conta traz o Carregando). Este PR (textos da vitrine + este RETOMAR AQUI) precisa de deploy do web.
-- **Feito em 27/10:**
+- **Produção = o #233** (`6b5d442`), deploy do dono em 27/10 conferido por curl (o texto novo do passo 3 no chunk da vitrine, nenhum "pra começar" sobrando). Este PR só atualiza este RETOMAR AQUI e não muda nada no ar. Nenhum PR de código aberto.
+- **Feito em 27/10** (cada um com "pode mergear" e, os de web, deploy do dono conferido por curl):
   - **#230:** em Configurações › Pagamentos online, enquanto uma conta que dá pra conectar está sem conexão, o quadro "Como pegar a chave no Asaas" com 3 passos lado a lado (criar a conta, com o aviso da aprovação por documentos; gerar a chave em Integrações › Chaves de API, com link direto; colar aqui, porque o Asaas mostra a chave uma vez só). Links e prefixo seguem o modo aceito (asaas.com/`$aact_prod_` ou sandbox/`$aact_hmlg_`); some ao conectar. Só web.
   - **#231:** a frase do 422 `assinaturas_ativas` do desativar membro já estava certa na API desde o #219 ("nos planos que vende"); o "dele" sobrava só no dublê do api-client, alinhado (com o singular).
-  - **#232:** a Minha conta e a vitrine `/[slug]/planos` leem a sessão por `useTemSessaoDoCliente` (`undefined` no servidor e na hidratação): servidor e navegador desenham o mesmo Carregando e some o aviso de hidratação do Next. Só web.
-  - **Este PR:** as perguntas abertas do #225, respondidas pelo dono. O passo 3 do "Como funciona" diz "No dia, você não paga o que o plano cobre. O resto é pago na hora." e o selo do teste grátis encurtou pra "7 dias grátis". Só web.
+  - **#232:** a Minha conta e a vitrine `/[slug]/planos` leem a sessão por `useTemSessaoDoCliente` (`undefined` no servidor e na hidratação): servidor e navegador desenham o mesmo Carregando e some o aviso de hidratação do Next. Conferido: o HTML do servidor da Minha conta traz o Carregando. Só web.
+  - **#233:** as perguntas abertas do #225, respondidas pelo dono. O passo 3 do "Como funciona" diz "No dia, você não paga o que o plano cobre. O resto é pago na hora." e o selo do teste grátis encurtou pra "7 dias grátis". Só web.
 - **Feito em 26/10** (cada um com "pode mergear" e deploy do dono, conferido por curl):
   - **#225:** redesenho da vitrine pública `/[slug]/planos` (direção A do canvas do Claude Design https://claude.ai/artifact/A4dCEGDmaEMkFu1p4LsgkZ). Só web.
   - **#226:** plano com online marcado, mas sem a conta do Asaas de quem vende conectada, não some mais da vitrine. Mostra "Pagamento online indisponível" na página pública (no lugar do Assinar), um selo na lista de planos do painel e um aviso no cadastro do plano. Campo `onlineIndisponivel` em `PlanoDoPainel` e `PlanoDaVitrine`. API + web, sem migração.

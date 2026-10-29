@@ -4,10 +4,12 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-27 — guia da chave do Asaas, hidratação da Minha conta e textos da vitrine) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-28 — a marca "Corte pelo plano" na Minha conta) — vale mais que as seções abaixo
 
 **Estado:**
-- **Produção = o #233** (`6b5d442`), deploy do dono em 27/10 conferido por curl (o texto novo do passo 3 no chunk da vitrine, nenhum "pra começar" sobrando). Este PR só atualiza este RETOMAR AQUI e não muda nada no ar. Nenhum PR de código aberto.
+- **Produção = o #235** (`4be9f8c`), deploy do dono em 28/10 (API + web, sem migração). Conferido por curl: API `/health` 200 e o chunk da Minha conta com `peloPlano` e " pelo plano". A primeira tentativa deixou a web antiga no ar; com `docker compose up -d --build` foi. O campo da API pede login de cliente e não foi visto por curl. Este PR só atualiza este RETOMAR AQUI e não muda nada no ar. Nenhum PR de código aberto.
+- **Feito em 28/10** (com "pode mergear" e deploy do dono):
+  - **#235:** a marca "Corte pelo plano" no horário marcado da Minha conta, que tinha ficado de fora do #227. Campo `peloPlano` no `GET /clientes/me/agendamentos` (tipo `AgendamentoDoCliente`): os serviços que o plano vai cobrir. É uma previsão com a regra do balcão (`preverPeloPlano` em `@barchop/formato`, a mesma do `conferirOPlano`): assinatura ativa ou em teste, dia no ciclo, plano de barbeiro só com quem vende, usos do ciclo para os horários mais cedo (de todos os marcados de hoje em diante, não só os do filtro). Depois da renovação: no online, que renova sozinho, a marca segue nos ciclos seguintes com os usos zerados (decisão do dono, 28/10); no balcão fica sem marca, porque o próximo ciclo depende do "recebi". Histórico e marcado com data passada ficam sem marca. Cobertura parcial mostra só os cobertos. API + web, sem migração; a web nova lê o campo novo, então o deploy é API antes da web.
 - **Feito em 27/10** (cada um com "pode mergear" e, os de web, deploy do dono conferido por curl):
   - **#230:** em Configurações › Pagamentos online, enquanto uma conta que dá pra conectar está sem conexão, o quadro "Como pegar a chave no Asaas" com 3 passos lado a lado (criar a conta, com o aviso da aprovação por documentos; gerar a chave em Integrações › Chaves de API, com link direto; colar aqui, porque o Asaas mostra a chave uma vez só). Links e prefixo seguem o modo aceito (asaas.com/`$aact_prod_` ou sandbox/`$aact_hmlg_`); some ao conectar. Só web.
   - **#231:** a frase do 422 `assinaturas_ativas` do desativar membro já estava certa na API desde o #219 ("nos planos que vende"); o "dele" sobrava só no dublê do api-client, alinhado (com o singular).
@@ -22,10 +24,9 @@
 
 **Ao retomar:**
 1. **Pagamento online em produção:** só funciona quando cada vendedor (a casa ou o profissional) conecta uma chave `$aact_prod_` em Pagamentos online (agora com o guia do #230). Até lá, os planos online aparecem como "Pagamento online indisponível".
-2. **Feito em 28/10, #235, branch `marca-pelo-plano` (esperando merge; deploy: API primeiro, depois web, sem migração; a web nova lê o campo novo):** a marca "Corte pelo plano" no horário marcado da Minha conta. Campo `peloPlano` no `GET /clientes/me/agendamentos` (tipo `AgendamentoDoCliente`), previsão com a regra do balcão (`preverPeloPlano` em `@barchop/formato`): assinatura ativa ou em teste, dia no ciclo (ou no seguinte já pago online), plano de barbeiro só com quem vende, usos do ciclo para os horários mais cedo. Depois da renovação: no online, que renova sozinho, a marca segue nos ciclos seguintes com os usos zerados (decisão do dono, 28/10); no balcão fica sem marca, porque o próximo ciclo depende do "recebi". Histórico sem marca.
-3. **Aceite do marco 3** (plano `planos-de-assinatura`, Acceptance): a GR cria um plano da casa e um do Gustavo, um cliente assina cada um (um no balcão, um online) e o acerto do dia bate com a conta à mão.
-4. **Chave do Asaas parada:** pela doc do Asaas, chave sem uso por 3 meses é desabilitada e em 6 meses expira (religa em Integrações › Chaves de API). Opcional: avisar o dono antes. Ofereci em 27/10, sem resposta.
-5. O resto da lista de 21/10: testar o caixa em produção; marco 4 (relatórios); G3; decidir a `barbearia-teste` (hoje no Completo à mão); pendentes do redesenho.
+2. **Aceite do marco 3** (plano `planos-de-assinatura`, Acceptance): a GR cria um plano da casa e um do Gustavo, um cliente assina cada um (um no balcão, um online) e o acerto do dia bate com a conta à mão.
+3. **Chave do Asaas parada:** pela doc do Asaas, chave sem uso por 3 meses é desabilitada e em 6 meses expira (religa em Integrações › Chaves de API). Opcional: avisar o dono antes. Ofereci em 27/10, sem resposta.
+4. O resto da lista de 21/10: testar o caixa em produção; marco 4 (relatórios); G3; decidir a `barbearia-teste` (hoje no Completo à mão); pendentes do redesenho.
 
 ## RETOMAR AQUI (noite de 2026-10-25 — marco 3 no ar e o webhook conferido em produção) — histórico
 

@@ -1,5 +1,12 @@
 import type { Prisma } from "@barchop/database";
-import { assinanteUsaOPlano, preverPeloPlano, usosRestantes, type SituacaoDoAssinante } from "@barchop/formato";
+import {
+  assinanteUsaOPlano,
+  preverPeloPlano,
+  usosRestantes,
+  type CicloDoCliente,
+  type FormaDaAssinatura,
+  type SituacaoDoAssinante,
+} from "@barchop/formato";
 import type { AssinaturaNoPagamento } from "@barchop/types";
 import type { Membro } from "../plugins/auth";
 import { temORecurso } from "./assinatura";
@@ -301,9 +308,10 @@ export async function assinaturasNoPagamento(
 
 // A marca "Corte pelo plano" dos horários marcados na Minha conta: o que
 // o plano vai cobrir em cada um (preverPeloPlano, @barchop/formato, com
-// a regra do conferirOPlano). Os usos do ciclo se dividem entre todos os
-// marcados de hoje em diante, e não só os que a tela pediu: um filtro
-// de datas não muda qual horário fica com o último uso.
+// a regra do conferirOPlano; no online, também depois da renovação). Os
+// usos do ciclo se dividem entre todos os marcados de hoje em diante, e
+// não só os que a tela pediu: um filtro de datas não muda qual horário
+// fica com o último uso.
 export async function previsaoPeloPlano(
   db: Prisma.TransactionClient,
   params: { barbeariaId: string; clienteId: string }
@@ -333,6 +341,8 @@ export async function previsaoPeloPlano(
     await Promise.all(
       assinaturas.map(async (assinatura) => ({
         situacao: assinatura.situacao as SituacaoDoAssinante,
+        forma: assinatura.forma as FormaDaAssinatura,
+        ciclo: assinatura.ciclo as CicloDoCliente,
         cicloComecaEm: data(assinatura.cicloComecaEm),
         cicloTerminaEm: data(assinatura.cicloTerminaEm),
         pagoAte: data(assinatura.pagoAte),

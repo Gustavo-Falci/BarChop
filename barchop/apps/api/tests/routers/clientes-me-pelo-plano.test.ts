@@ -45,10 +45,26 @@ async function assinar(
       servicos: { create: plano.servicos },
     },
   });
+  // A online é cobrada numa conta conectada (CHECK do banco).
+  const conexao =
+    forma === "online"
+      ? await prisma.conexaoDePagamento.create({
+          data: {
+            barbeariaId: c.barbeariaId,
+            barbeiroId: c.barbeiroId,
+            provedor: "asaas",
+            modo: "teste",
+            chaveCifrada: Buffer.from("x"),
+            chaveFinal: "9F3A",
+            webhookTokenHash: "h",
+          },
+        })
+      : null;
   return prisma.assinaturaDoCliente.create({
     data: {
       barbeariaId: c.barbeariaId,
       planoId: criado.id,
+      conexaoId: conexao?.id ?? null,
       clienteId: c.clienteId,
       situacao,
       forma,

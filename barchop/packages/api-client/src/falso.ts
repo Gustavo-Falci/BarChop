@@ -2501,6 +2501,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             const servicos = plano?.servicos ?? [];
             return {
               situacao: a.situacao,
+              forma: a.forma,
+              ciclo: a.ciclo,
               cicloComecaEm: a.cicloComecaEm,
               cicloTerminaEm: a.cicloTerminaEm,
               pagoAte: null,

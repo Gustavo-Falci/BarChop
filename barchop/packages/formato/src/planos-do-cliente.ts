@@ -172,6 +172,9 @@ export function usosRestantes(usosPorCiclo: number | null, usados: number): numb
 
 export interface AssinaturaParaPrever {
   situacao: SituacaoDoAssinante;
+  // A online renova sozinha; a do balcão espera o "recebi".
+  forma: FormaDaAssinatura;
+  ciclo: CicloDoCliente;
   cicloComecaEm: string | null;
   cicloTerminaEm: string | null;
   // O ciclo seguinte, já pago online, que começa no fim deste.
@@ -194,9 +197,11 @@ export interface HorarioParaPrever {
 // O que o plano vai cobrir em cada horário marcado (a marca "Corte pelo
 // plano" da Minha conta). Quem decide é o balcão, no pagamento: aqui, a
 // mesma regra (conferirOPlano, na API), pra prometer só o que ele aceita.
-// A assinatura vale (ativa ou teste), o dia cai no ciclo (o de agora ou
-// o seguinte já pago, com os usos zerados), o plano de barbeiro só com
-// quem vende, e cada linha do plano gasta um uso. Os usos que sobram vão
+// A assinatura vale (ativa ou teste), o dia cai no ciclo, o plano de
+// barbeiro só com quem vende, e cada linha do plano gasta um uso. O
+// ciclo é o de agora ou, no online, que renova sozinho, um dos seguintes
+// (decisão do dono, 28/10), cada um com os usos zerados; no balcão, o
+// seguinte depende do "recebi" e fica sem marca. Os usos que sobram vão
 // pros horários mais cedo; com duas assinaturas, a primeira (na ordem de
 // quem chama) que cobre algo fica com o horário. Devolve os serviços
 // cobertos, um por linha, só dos horários com marca.
@@ -204,12 +209,23 @@ export function preverPeloPlano(
   assinaturas: readonly AssinaturaParaPrever[],
   horarios: readonly HorarioParaPrever[]
 ): Map<string, string[]> {
+  const ultimoDia = horarios.reduce((ultimo, h) => (h.data > ultimo ? h.data : ultimo), "");
   const ciclos = assinaturas.map((assinatura) => {
     const { cicloComecaEm: comeca, cicloTerminaEm: termina, pagoAte } = assinatura;
     const janelas: { comeca: string; termina: string; usados: Map<string, number> }[] = [];
     if (assinanteUsaOPlano(assinatura.situacao) && comeca !== null && termina !== null) {
       janelas.push({ comeca, termina, usados: new Map(Object.entries(assinatura.usados)) });
       if (pagoAte !== null) janelas.push({ comeca: termina, termina: pagoAte, usados: new Map() });
+      // Os ciclos da renovação, como o cicloPagoOnline os abre, até o
+      // último horário.
+      if (assinatura.forma === "online") {
+        let inicio = pagoAte ?? termina;
+        while (inicio <= ultimoDia) {
+          const fim = fimDoCiclo(inicio, assinatura.ciclo);
+          janelas.push({ comeca: inicio, termina: fim, usados: new Map() });
+          inicio = fim;
+        }
+      }
     }
     return { assinatura, janelas };
   });

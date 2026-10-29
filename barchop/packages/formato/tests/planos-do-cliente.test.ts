@@ -16,9 +16,12 @@ import {
   dividirMensalidade,
   fimDoCiclo,
   parteDoPlano,
+  preverPeloPlano,
   problemaDoPlano,
   problemaDoRecebimento,
   usosRestantes,
+  type AssinaturaParaPrever,
+  type HorarioParaPrever,
   type PlanoParaConferir,
 } from "../src/planos-do-cliente";
 
@@ -346,5 +349,96 @@ describe("o ciclo pago online", () => {
 
   it("a cobrança de um ciclo que já passou não mexe no ciclo", () => {
     expect(cicloPagoOnline(ATIVA, "2026-09-24", "mensal", "2026-10-30")).toBeNull();
+  });
+});
+
+describe("preverPeloPlano", () => {
+  // O ciclo de 24/10 a 23/11 (renova em 24/11), com o Gustavo atendendo.
+  const ATIVA: AssinaturaParaPrever = {
+    situacao: "ativa",
+    cicloComecaEm: "2026-10-24",
+    cicloTerminaEm: "2026-11-24",
+    pagoAte: null,
+    vendedorId: null,
+    servicos: [{ servicoId: "corte", usosPorCiclo: 4 }],
+    usados: {},
+  };
+  let vez = 0;
+  const horario = (extra: Partial<HorarioParaPrever> = {}): HorarioParaPrever => ({
+    id: `h${++vez}`,
+    data: "2026-10-30",
+    horaInicio: "17:00",
+    barbeiroId: "gustavo",
+    servicoIds: ["corte"],
+    ...extra,
+  });
+  const prever = (assinaturas: AssinaturaParaPrever[], horarios: HorarioParaPrever[]) =>
+    Object.fromEntries(preverPeloPlano(assinaturas, horarios));
+
+  it("marca o que o plano cobre; o resto do horário é avulso", () => {
+    const h = horario({ servicoIds: ["corte", "barba"] });
+    expect(prever([ATIVA], [h])).toEqual({ [h.id]: ["corte"] });
+  });
+
+  it("sem serviço do plano, o horário fica sem marca", () => {
+    expect(prever([ATIVA], [horario({ servicoIds: ["barba"] })])).toEqual({});
+  });
+
+  it("só no ciclo: do primeiro dia até a véspera da renovação", () => {
+    const dentro = [horario({ data: "2026-10-24" }), horario({ data: "2026-11-23" })];
+    const fora = [horario({ data: "2026-10-23" }), horario({ data: "2026-11-24" })];
+    expect(Object.keys(prever([ATIVA], [...dentro, ...fora]))).toEqual(dentro.map((h) => h.id));
+  });
+
+  it("vale como no balcão: ativa e teste, nunca pendente, em atraso ou cancelada", () => {
+    for (const situacao of ["ativa", "teste"] as const) {
+      expect(Object.keys(prever([{ ...ATIVA, situacao }], [horario()]))).toHaveLength(1);
+    }
+    for (const situacao of ["pendente", "em_atraso", "cancelada"] as const) {
+      expect(prever([{ ...ATIVA, situacao }], [horario()])).toEqual({});
+    }
+    expect(prever([{ ...ATIVA, cicloComecaEm: null, cicloTerminaEm: null }], [horario()])).toEqual({});
+  });
+
+  it("o plano de barbeiro só nos horários com quem vende", () => {
+    const doGustavo = { ...ATIVA, vendedorId: "gustavo" };
+    const comGustavo = horario();
+    expect(prever([doGustavo], [comGustavo, horario({ barbeiroId: "rafael" })])).toEqual({ [comGustavo.id]: ["corte"] });
+  });
+
+  it("os usos que sobram vão pros horários mais cedo, em qualquer ordem que cheguem", () => {
+    const tarde = horario({ data: "2026-11-02", horaInicio: "09:00" });
+    const cedo = horario({ data: "2026-11-01", horaInicio: "18:00" });
+    const mesmoDiaMaisCedo = horario({ data: "2026-11-01", horaInicio: "10:00" });
+    const sobraUm = { ...ATIVA, usados: { corte: 3 } };
+    expect(prever([sobraUm], [tarde, cedo, mesmoDiaMaisCedo])).toEqual({ [mesmoDiaMaisCedo.id]: ["corte"] });
+    expect(prever([{ ...ATIVA, usados: { corte: 4 } }], [tarde])).toEqual({});
+  });
+
+  it("o mesmo serviço duas vezes gasta dois usos; sem limite, cobre tudo", () => {
+    const duasVezes = horario({ servicoIds: ["corte", "corte"] });
+    expect(prever([{ ...ATIVA, usados: { corte: 3 } }], [duasVezes])).toEqual({ [duasVezes.id]: ["corte"] });
+    const ilimitado = { ...ATIVA, servicos: [{ servicoId: "corte", usosPorCiclo: null }], usados: { corte: 40 } };
+    expect(prever([ilimitado], [duasVezes])).toEqual({ [duasVezes.id]: ["corte", "corte"] });
+  });
+
+  it("o ciclo seguinte, já pago online, começa com os usos zerados", () => {
+    const pagoAdiantado = { ...ATIVA, pagoAte: "2026-12-24", usados: { corte: 4 } };
+    const agora = horario({ data: "2026-11-20" });
+    const seguinte = horario({ data: "2026-11-24" });
+    const depois = horario({ data: "2026-12-24" });
+    expect(prever([pagoAdiantado], [agora, seguinte, depois])).toEqual({ [seguinte.id]: ["corte"] });
+  });
+
+  it("com duas assinaturas, a primeira que cobre o horário fica com ele", () => {
+    const daCasa = { ...ATIVA, servicos: [{ servicoId: "corte", usosPorCiclo: 1 }] };
+    const doRafael = { ...ATIVA, vendedorId: "rafael", servicos: [{ servicoId: "barba", usosPorCiclo: 4 }] };
+    const barbaComRafael = horario({ barbeiroId: "rafael", servicoIds: ["barba"] });
+    const corte1 = horario({ data: "2026-11-01" });
+    const corte2 = horario({ data: "2026-11-02" });
+    expect(prever([doRafael, daCasa], [barbaComRafael, corte1, corte2])).toEqual({
+      [barbaComRafael.id]: ["barba"],
+      [corte1.id]: ["corte"],
+    });
   });
 });

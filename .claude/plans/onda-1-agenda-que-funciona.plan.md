@@ -22,7 +22,7 @@
 
 **Ao retomar:**
 1. **Pagamento online em produção:** só funciona quando cada vendedor (a casa ou o profissional) conecta uma chave `$aact_prod_` em Pagamentos online (agora com o guia do #230). Até lá, os planos online aparecem como "Pagamento online indisponível".
-2. **Minha conta, ficou de fora do #227:** a marca "corte pelo plano" no horário marcado. A API não diz qual agendamento usa o plano; precisa de um campo novo antes da tela.
+2. **Feito em 28/10, branch `marca-pelo-plano` (esperando merge e deploy de API + web, sem migração):** a marca "Corte pelo plano" no horário marcado da Minha conta. Campo `peloPlano` no `GET /clientes/me/agendamentos` (tipo `AgendamentoDoCliente`), previsão com a regra do balcão (`preverPeloPlano` em `@barchop/formato`): assinatura ativa ou em teste, dia no ciclo (ou no seguinte já pago online), plano de barbeiro só com quem vende, usos do ciclo para os horários mais cedo. Fora do ciclo pago fica sem marca, porque no balcão o próximo ciclo depende do "recebi". Histórico sem marca.
 3. **Aceite do marco 3** (plano `planos-de-assinatura`, Acceptance): a GR cria um plano da casa e um do Gustavo, um cliente assina cada um (um no balcão, um online) e o acerto do dia bate com a conta à mão.
 4. **Chave do Asaas parada:** pela doc do Asaas, chave sem uso por 3 meses é desabilitada e em 6 meses expira (religa em Integrações › Chaves de API). Opcional: avisar o dono antes. Ofereci em 27/10, sem resposta.
 5. O resto da lista de 21/10: testar o caixa em produção; marco 4 (relatórios); G3; decidir a `barbearia-teste` (hoje no Completo à mão); pendentes do redesenho.

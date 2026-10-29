@@ -63,7 +63,7 @@ let vez = 0;
 function marcar(
   c: Cenario,
   servicoIds: string[],
-  { data = QUINTA, barbeiroId = c.barbeiroId, status = "confirmado" }: { data?: string; barbeiroId?: string; status?: string } = {}
+  { data = QUINTA, barbeiroId = c.barbeiroId, status = "confirmado" }: { data?: string; barbeiroId?: string; status?: "confirmado" | "cancelado" } = {}
 ) {
   vez += 1;
   const hora = `${String(8 + (vez % 10)).padStart(2, "0")}:00`;

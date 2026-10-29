@@ -15,6 +15,7 @@ import {
   problemaDoPlano,
   problemaDoRecebimento,
   parteDoPlano,
+  preverPeloPlano,
   usosRestantes,
   dividirPagamento,
   juntarAreas,
@@ -30,6 +31,7 @@ import type {
   AparenciaDaPagina,
   FaixaDeCliente,
   AgendamentoComCliente,
+  AgendamentoDoCliente,
   AgendamentoDoLembrete,
   AgendamentoSerializado,
   CategoriaDeServico,
@@ -2487,8 +2489,36 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         estado.cliente = { ...estado.cliente, ...edicao };
         return estado.cliente;
       },
-      async meusAgendamentos() {
-        return estado.agendamentos;
+      // A marca "pelo plano" (previsaoPeloPlano na API), com os usos que
+      // a Minha conta mostra no plano.
+      async meusAgendamentos(): Promise<AgendamentoDoCliente[]> {
+        marcarAtrasadas();
+        const assinaturas = (estado.assinaturas ?? [])
+          .filter((a) => a.cliente.id === estado.cliente.id)
+          .sort((a, b) => a.criadoEm.localeCompare(b.criadoEm) || a.id.localeCompare(b.id))
+          .map((a) => {
+            const plano = estado.planos?.find((p) => p.id === a.plano.id);
+            const servicos = plano?.servicos ?? [];
+            return {
+              situacao: a.situacao,
+              cicloComecaEm: a.cicloComecaEm,
+              cicloTerminaEm: a.cicloTerminaEm,
+              pagoAte: null,
+              vendedorId: a.plano.vendedor?.id ?? null,
+              servicos,
+              usados: Object.fromEntries(
+                servicos.map((s) => [s.servicoId, estado.usosNoCiclo?.[`${a.id}:${s.servicoId}`] ?? 0])
+              ),
+            };
+          });
+        const marcados = estado.agendamentos.filter(
+          (a) => (a.status === "pendente" || a.status === "confirmado") && a.data >= estado.hoje
+        );
+        const peloPlano = preverPeloPlano(
+          assinaturas,
+          marcados.map((a) => ({ ...a, barbeiroId: a.barbeiro.id, servicoIds: a.servicos.map((s) => s.servicoId) }))
+        );
+        return estado.agendamentos.map((a) => ({ ...a, peloPlano: peloPlano.get(a.id) ?? [] }));
       },
       async cancelar(id: string) {
         return cancelarAgendamento(id);

@@ -153,6 +153,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* "Corte pelo plano", no tom do destaque, como o mês do bloco do dia. */
+.peloPlano {
+  color: var(--cor-accent-text);
+  font-weight: 600;
+}
+
 .semana {
   color: var(--cor-ink-soft);
   font-size: var(--texto-xs);

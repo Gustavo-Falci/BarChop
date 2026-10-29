@@ -170,6 +170,78 @@ export function usosRestantes(usosPorCiclo: number | null, usados: number): numb
   return Math.max(0, usosPorCiclo - usados);
 }
 
+export interface AssinaturaParaPrever {
+  situacao: SituacaoDoAssinante;
+  cicloComecaEm: string | null;
+  cicloTerminaEm: string | null;
+  // O ciclo seguinte, já pago online, que começa no fim deste.
+  pagoAte: string | null;
+  // `null` = plano da casa.
+  vendedorId: string | null;
+  servicos: readonly { servicoId: string; usosPorCiclo: number | null }[];
+  // Os usos já gastos no ciclo de agora, por serviço.
+  usados: Readonly<Record<string, number>>;
+}
+
+export interface HorarioParaPrever {
+  id: string;
+  data: string;
+  horaInicio: string;
+  barbeiroId: string;
+  servicoIds: readonly string[];
+}
+
+// O que o plano vai cobrir em cada horário marcado (a marca "Corte pelo
+// plano" da Minha conta). Quem decide é o balcão, no pagamento: aqui, a
+// mesma regra (conferirOPlano, na API), pra prometer só o que ele aceita.
+// A assinatura vale (ativa ou teste), o dia cai no ciclo (o de agora ou
+// o seguinte já pago, com os usos zerados), o plano de barbeiro só com
+// quem vende, e cada linha do plano gasta um uso. Os usos que sobram vão
+// pros horários mais cedo; com duas assinaturas, a primeira (na ordem de
+// quem chama) que cobre algo fica com o horário. Devolve os serviços
+// cobertos, um por linha, só dos horários com marca.
+export function preverPeloPlano(
+  assinaturas: readonly AssinaturaParaPrever[],
+  horarios: readonly HorarioParaPrever[]
+): Map<string, string[]> {
+  const ciclos = assinaturas.map((assinatura) => {
+    const { cicloComecaEm: comeca, cicloTerminaEm: termina, pagoAte } = assinatura;
+    const janelas: { comeca: string; termina: string; usados: Map<string, number> }[] = [];
+    if (assinanteUsaOPlano(assinatura.situacao) && comeca !== null && termina !== null) {
+      janelas.push({ comeca, termina, usados: new Map(Object.entries(assinatura.usados)) });
+      if (pagoAte !== null) janelas.push({ comeca: termina, termina: pagoAte, usados: new Map() });
+    }
+    return { assinatura, janelas };
+  });
+
+  const emOrdem = [...horarios].sort((a, b) =>
+    `${a.data} ${a.horaInicio}`.localeCompare(`${b.data} ${b.horaInicio}`)
+  );
+  const previsao = new Map<string, string[]>();
+  for (const horario of emOrdem) {
+    for (const { assinatura, janelas } of ciclos) {
+      if (assinatura.vendedorId !== null && assinatura.vendedorId !== horario.barbeiroId) continue;
+      const janela = janelas.find((j) => j.comeca <= horario.data && horario.data < j.termina);
+      if (!janela) continue;
+      const usados = new Map(janela.usados);
+      const cobertos: string[] = [];
+      for (const servicoId of horario.servicoIds) {
+        const regra = assinatura.servicos.find((s) => s.servicoId === servicoId);
+        if (!regra) continue;
+        const ja = usados.get(servicoId) ?? 0;
+        if (usosRestantes(regra.usosPorCiclo, ja) === 0) continue;
+        cobertos.push(servicoId);
+        usados.set(servicoId, ja + 1);
+      }
+      if (cobertos.length === 0) continue;
+      janela.usados = usados;
+      previsao.set(horario.id, cobertos);
+      break;
+    }
+  }
+  return previsao;
+}
+
 export interface PlanoParaConferir {
   daCasa: boolean;
   precoCentavos: number;

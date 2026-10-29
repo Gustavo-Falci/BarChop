@@ -10,10 +10,12 @@ import { ErroDeNegocio } from "../lib/erro-negocio";
 import { dataParaDate } from "../lib/horas";
 import { agendarLembrete } from "../lib/lembrete";
 import { carregarRegras, garantirPrazoDoCliente } from "../lib/regras";
+import { previsaoPeloPlano } from "../lib/planos-do-cliente";
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { PADRAO_DATA, PADRAO_EMAIL, PADRAO_HORA, PADRAO_UUID } from "../lib/padroes";
 import { serializarAgendamento, serializarCliente } from "../lib/serializar";
 import { notificarAgendamento } from "../lib/notificacoes";
+import type { AgendamentoDoCliente } from "@barchop/types";
 import type { App } from "../tipos";
 
 // Telefone fica de fora: é a chave do login e do upsert do agendamento
@@ -114,8 +116,8 @@ export function registrarRotasClientesMe(app: App): void {
   app.get(
     "/clientes/me/agendamentos",
     { schema: { querystring: filtroAgendamentos } },
-    async (request) => {
-      const { clienteId } = clienteDoToken(request);
+    async (request): Promise<{ agendamentos: AgendamentoDoCliente[] }> => {
+      const { clienteId, barbeariaId } = clienteDoToken(request);
       const { de, ate } = request.query;
 
       const agendamentos = await prisma.agendamento.findMany({
@@ -139,7 +141,14 @@ export function registrarRotasClientesMe(app: App): void {
         orderBy: [{ data: "desc" }, { horaInicio: "desc" }],
       });
 
-      return { agendamentos: agendamentos.map(serializarAgendamento) };
+      // A marca "Corte pelo plano" dos horários marcados.
+      const peloPlano = await previsaoPeloPlano(prisma, { barbeariaId, clienteId });
+      return {
+        agendamentos: agendamentos.map((agendamento) => ({
+          ...serializarAgendamento(agendamento),
+          peloPlano: peloPlano.get(agendamento.id) ?? [],
+        })),
+      };
     }
   );
 

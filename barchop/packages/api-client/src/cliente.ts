@@ -1,4 +1,5 @@
 import type {
+  AgendamentoDoCliente,
   AgendamentoSerializado,
   AssinaturaNaConta,
   AssinaturaOnlineCriada,
@@ -50,9 +51,9 @@ export function criarApiCliente(requisicao: Requisicao) {
 
     async meusAgendamentos(
       filtro: FiltroDoHistorico = {}
-    ): Promise<AgendamentoSerializado[]> {
+    ): Promise<AgendamentoDoCliente[]> {
       const resposta = await requisicao<{
-        agendamentos: AgendamentoSerializado[];
+        agendamentos: AgendamentoDoCliente[];
       }>("/clientes/me/agendamentos", { query: { ...filtro }, comToken: true });
       return resposta.agendamentos;
     },

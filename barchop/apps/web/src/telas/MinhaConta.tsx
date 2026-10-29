@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
-import type { AgendamentoSerializado } from "@barchop/types";
+import type { AgendamentoDoCliente, AgendamentoSerializado } from "@barchop/types";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
 import { Aviso } from "../componentes/Aviso";
@@ -14,6 +14,7 @@ import { caminhoDoPasso } from "../fluxo/passos";
 import { formatarDataComSemana, formatarDataLonga } from "../formato/datas";
 import { prazoAcabou } from "../formato/prazos";
 import { TOM_DO_STATUS, rotuloDoStatus } from "../formato/status";
+import { emLista } from "../painel/assinatura";
 import { IconeSeta } from "../painel/icones";
 import { useTemSessaoDoCliente } from "../sessao/useSessaoDoCliente";
 import estilos from "./MinhaConta.module.css";
@@ -34,6 +35,21 @@ function oQueEComQuem(agendamento: AgendamentoSerializado): string {
   const nomes = agendamento.servicos.map((s) => s.nome);
   const servicos = nomes.length > 1 ? `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}` : nomes[0];
   return `${servicos} com ${agendamento.barbeiro.nome}`;
+}
+
+// "Corte pelo plano": o que o plano vai cobrir no horário marcado (a
+// API prevê com a regra do balcão); null = avulso.
+function MarcaDoPlano({ agendamento }: { agendamento: AgendamentoDoCliente }) {
+  const nomes = agendamento.servicos
+    .filter((s) => agendamento.peloPlano.includes(s.servicoId))
+    .map((s) => s.nome);
+  if (nomes.length === 0) return null;
+  return (
+    <>
+      {" · "}
+      <span className={estilos.peloPlano}>{emLista([...new Set(nomes)])} pelo plano</span>
+    </>
+  );
 }
 
 const quando = (a: AgendamentoSerializado) => `${a.data} ${a.horaInicio}`;
@@ -164,7 +180,10 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
                     </Chip>
                   </div>
                   <span>{oQueEComQuem(agendamento)}</span>
-                  <span className={estilos.apoio}>até {agendamento.horaFim}</span>
+                  <span className={estilos.apoio}>
+                    até {agendamento.horaFim}
+                    <MarcaDoPlano agendamento={agendamento} />
+                  </span>
                 </div>
               </div>
               <AcoesDoAgendamento

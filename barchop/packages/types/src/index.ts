@@ -301,6 +301,14 @@ export interface AgendamentoSerializado {
   presencaConfirmadaEm: string | null;
 }
 
+// GET /clientes/me/agendamentos: a Minha conta marca o que o plano vai
+// cobrir em cada horário marcado ("Corte pelo plano"). Previsão: quem
+// decide é o balcão, no pagamento. Um id de serviço por linha coberta;
+// vazio = avulso, e sempre vazio fora dos marcados.
+export interface AgendamentoDoCliente extends AgendamentoSerializado {
+  peloPlano: string[];
+}
+
 // As rotas do barbeiro devolvem o cliente junto porque a agenda mostra
 // o nome em cada linha; as públicas nunca devolvem — quem sabe o
 // telefone de alguém não pode puxar a agenda dessa pessoa.

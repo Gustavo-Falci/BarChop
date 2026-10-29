@@ -1,5 +1,12 @@
 import type { Prisma } from "@barchop/database";
-import { assinanteUsaOPlano, usosRestantes, type SituacaoDoAssinante } from "@barchop/formato";
+import {
+  assinanteUsaOPlano,
+  preverPeloPlano,
+  usosRestantes,
+  type CicloDoCliente,
+  type FormaDaAssinatura,
+  type SituacaoDoAssinante,
+} from "@barchop/formato";
 import type { AssinaturaNoPagamento } from "@barchop/types";
 import type { Membro } from "../plugins/auth";
 import { temORecurso } from "./assinatura";
@@ -7,7 +14,7 @@ import { diaEstaFechado } from "./caixa";
 import { PODE_ATENDER } from "./disponibilidade";
 import { naoEncontrado } from "./erro-http";
 import { ErroDeNegocio } from "./erro-negocio";
-import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "./horas";
+import { agoraNaBarbearia, dataParaDate, dateParaData, dateParaHora, somarDias } from "./horas";
 import { ErroDoProvedor, erroHttpDoProvedor, type ConexaoGravada, type FabricaDeProvedores } from "./provedores";
 
 // Os planos que a barbearia e os barbeiros vendem ao cliente (Onda 2,
@@ -296,6 +303,61 @@ export async function assinaturasNoPagamento(
         })),
       };
     })
+  );
+}
+
+// A marca "Corte pelo plano" dos horários marcados na Minha conta: o que
+// o plano vai cobrir em cada um (preverPeloPlano, @barchop/formato, com
+// a regra do conferirOPlano; no online, também depois da renovação). Os
+// usos do ciclo se dividem entre todos os marcados de hoje em diante, e
+// não só os que a tela pediu: um filtro de datas não muda qual horário
+// fica com o último uso.
+export async function previsaoPeloPlano(
+  db: Prisma.TransactionClient,
+  params: { barbeariaId: string; clienteId: string }
+): Promise<Map<string, string[]>> {
+  const { barbeariaId, clienteId } = params;
+  const hoje = agoraNaBarbearia().data;
+  await marcarAtrasadas(db, barbeariaId, hoje, { clienteId });
+  const assinaturas = await db.assinaturaDoCliente.findMany({
+    where: { barbeariaId, clienteId, situacao: { in: ["ativa", "teste"] } },
+    include: { plano: { select: { vendedorId: true, servicos: { select: { servicoId: true, usosPorCiclo: true } } } } },
+    orderBy: [{ criadoEm: "asc" }, { id: "asc" }],
+  });
+  if (assinaturas.length === 0) return new Map();
+
+  const marcados = await db.agendamento.findMany({
+    where: { barbeariaId, clienteId, status: { in: ["pendente", "confirmado"] }, data: { gte: dataParaDate(hoje) } },
+    select: {
+      id: true,
+      data: true,
+      horaInicio: true,
+      barbeiroId: true,
+      servicos: { select: { servicoId: true }, orderBy: { id: "asc" } },
+    },
+  });
+  const data = (dia: Date | null) => (dia ? dateParaData(dia) : null);
+  return preverPeloPlano(
+    await Promise.all(
+      assinaturas.map(async (assinatura) => ({
+        situacao: assinatura.situacao as SituacaoDoAssinante,
+        forma: assinatura.forma as FormaDaAssinatura,
+        ciclo: assinatura.ciclo as CicloDoCliente,
+        cicloComecaEm: data(assinatura.cicloComecaEm),
+        cicloTerminaEm: data(assinatura.cicloTerminaEm),
+        pagoAte: data(assinatura.pagoAte),
+        vendedorId: assinatura.plano.vendedorId,
+        servicos: assinatura.plano.servicos,
+        usados: Object.fromEntries(await usosNoCiclo(db, assinatura, null)),
+      }))
+    ),
+    marcados.map((marcado) => ({
+      id: marcado.id,
+      data: dateParaData(marcado.data),
+      horaInicio: dateParaHora(marcado.horaInicio),
+      barbeiroId: marcado.barbeiroId,
+      servicoIds: marcado.servicos.map((s) => s.servicoId),
+    }))
   );
 }
 

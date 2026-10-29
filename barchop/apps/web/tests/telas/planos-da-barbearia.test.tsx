@@ -319,6 +319,36 @@ describe("minhas assinaturas", () => {
     );
   });
 
+  it("o horário marcado que o plano cobre diz \"pelo plano\"; o que passa dos usos, não", async () => {
+    const marcado = (id: string, data: string, servicos: { servicoId: string; nome: string }[]) => ({
+      id,
+      data,
+      horaInicio: "17:00",
+      horaFim: "17:50",
+      status: "confirmado",
+      origem: "cliente",
+      observacoes: null,
+      presencaConfirmadaEm: null,
+      barbeiro: { id: "bb1", nome: "Rafael" },
+      servicos: servicos.map((s) => ({ ...s, precoNoMomento: "40.00", duracaoNoMomento: 25 })),
+    });
+    const corte = { servicoId: "s1", nome: "Corte masculino" };
+    const barba = { servicoId: "s2", nome: "Barba" };
+    montar(
+      <MinhaConta />,
+      semear({
+        assinaturas: [assinatura({})],
+        usosNoCiclo: { "as1:s1": 1 },
+        agendamentos: [marcado("a1", "2026-10-30", [corte, barba]), marcado("a2", "2026-11-02", [corte])],
+      })
+    );
+
+    const primeiro = (await screen.findByText("Corte masculino e Barba com Rafael")).closest("article") as HTMLElement;
+    expect(within(primeiro).getByText("Corte masculino pelo plano")).toBeInTheDocument();
+    const segundo = screen.getByText("Corte masculino com Rafael").closest("article") as HTMLElement;
+    expect(within(segundo).queryByText(/pelo plano/)).not.toBeInTheDocument();
+  });
+
   it("cancelar pede confirmação e tira da lista", async () => {
     const falso = montar(
       <MinhaConta />,

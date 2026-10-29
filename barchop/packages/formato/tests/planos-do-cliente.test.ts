@@ -353,9 +353,12 @@ describe("o ciclo pago online", () => {
 });
 
 describe("preverPeloPlano", () => {
-  // O ciclo de 24/10 a 23/11 (renova em 24/11), com o Gustavo atendendo.
+  // O ciclo de 24/10 a 23/11 (renova em 24/11), no balcão, com o Gustavo
+  // atendendo.
   const ATIVA: AssinaturaParaPrever = {
     situacao: "ativa",
+    forma: "no_balcao",
+    ciclo: "mensal",
     cicloComecaEm: "2026-10-24",
     cicloTerminaEm: "2026-11-24",
     pagoAte: null,
@@ -422,12 +425,44 @@ describe("preverPeloPlano", () => {
     expect(prever([ilimitado], [duasVezes])).toEqual({ [duasVezes.id]: ["corte", "corte"] });
   });
 
-  it("o ciclo seguinte, já pago online, começa com os usos zerados", () => {
-    const pagoAdiantado = { ...ATIVA, pagoAte: "2026-12-24", usados: { corte: 4 } };
+  it("no balcão, depois da renovação não tem marca: o ciclo seguinte depende do \"recebi\"", () => {
+    expect(prever([ATIVA], [horario({ data: "2026-11-24" }), horario({ data: "2026-12-30" })])).toEqual({});
+  });
+
+  it("no online, que renova sozinho, cada ciclo seguinte começa com os usos zerados", () => {
+    const online = { ...ATIVA, forma: "online" as const, usados: { corte: 4 } };
+    const agora = horario({ data: "2026-11-20" });
+    const seguinte = [1, 2, 3, 4, 5].map((dia) => horario({ data: `2026-11-2${dia + 4}` }));
+    const doisCiclosDepois = horario({ data: "2027-01-10" });
+    expect(prever([online], [agora, ...seguinte, doisCiclosDepois])).toEqual({
+      ...Object.fromEntries(seguinte.slice(0, 4).map((h) => [h.id, ["corte"]])),
+      [doisCiclosDepois.id]: ["corte"],
+    });
+  });
+
+  it("no online, o ciclo seguinte já pago conta como os outros, e o depois dele também", () => {
+    const pagoAdiantado = { ...ATIVA, forma: "online" as const, pagoAte: "2026-12-24", usados: { corte: 4 } };
     const agora = horario({ data: "2026-11-20" });
     const seguinte = horario({ data: "2026-11-24" });
     const depois = horario({ data: "2026-12-24" });
-    expect(prever([pagoAdiantado], [agora, seguinte, depois])).toEqual({ [seguinte.id]: ["corte"] });
+    expect(prever([pagoAdiantado], [agora, seguinte, depois])).toEqual({
+      [seguinte.id]: ["corte"],
+      [depois.id]: ["corte"],
+    });
+  });
+
+  it("os ciclos seguintes seguem o ciclo do plano, e a online em atraso não tem marca", () => {
+    const trimestral = { ...ATIVA, forma: "online" as const, ciclo: "trimestral" as const, usados: { corte: 4 } };
+    // 24/11 a 23/02 é um ciclo só: os 4 usos vão pros 4 primeiros.
+    const horarios = ["2026-11-24", "2026-12-10", "2027-01-05", "2027-02-01", "2027-02-23"].map((data) =>
+      horario({ data })
+    );
+    const proximoTrimestre = horario({ data: "2027-02-24" });
+    expect(Object.keys(prever([trimestral], [...horarios, proximoTrimestre]))).toEqual([
+      ...horarios.slice(0, 4).map((h) => h.id),
+      proximoTrimestre.id,
+    ]);
+    expect(prever([{ ...trimestral, situacao: "em_atraso" }], horarios)).toEqual({});
   });
 
   it("com duas assinaturas, a primeira que cobre o horário fica com ele", () => {

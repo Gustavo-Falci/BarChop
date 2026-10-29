@@ -30,7 +30,8 @@ type Cenario = Awaited<ReturnType<typeof cenario>>;
 async function assinar(
   c: Cenario,
   plano: { vendedorId?: string; servicos: { servicoId: string; usosPorCiclo: number | null }[] },
-  situacao = "ativa"
+  situacao = "ativa",
+  forma: "no_balcao" | "online" = "no_balcao"
 ) {
   const criado = await prisma.planoDeAssinatura.create({
     data: {
@@ -50,7 +51,7 @@ async function assinar(
       planoId: criado.id,
       clienteId: c.clienteId,
       situacao,
-      forma: "no_balcao",
+      forma,
       precoCentavos: 12000,
       ciclo: "mensal",
       cicloComecaEm: dataParaDate(somarDias(QUINTA, -10)),
@@ -140,7 +141,21 @@ describe("GET /clientes/me/agendamentos — a marca do plano", () => {
     expect(await peloPlano(c, `?de=${somarDias(QUINTA, 1)}`)).toEqual({ [depois.id]: [] });
   });
 
-  it("fora do ciclo pago, o horário fica sem marca", async () => {
+  it("no online, que renova sozinho, o horário depois da renovação também leva a marca", async () => {
+    const c = await cenario();
+    await assinar(c, { servicos: [{ servicoId: c.corte.id, usosPorCiclo: 1 }] }, "ativa", "online");
+    const agora = await marcar(c, [c.corte.id]);
+    const esgotado = await marcar(c, [c.corte.id], { data: somarDias(QUINTA, 1) });
+    const depoisDaRenovacao = await marcar(c, [c.corte.id], { data: somarDias(QUINTA, 20) });
+
+    expect(await peloPlano(c)).toEqual({
+      [agora.id]: [c.corte.id],
+      [esgotado.id]: [],
+      [depoisDaRenovacao.id]: [c.corte.id],
+    });
+  });
+
+  it("no balcão, fora do ciclo pago, o horário fica sem marca", async () => {
     const c = await cenario();
     await assinar(c, { servicos: [{ servicoId: c.corte.id, usosPorCiclo: null }] });
     const depoisDaRenovacao = await marcar(c, [c.corte.id], { data: somarDias(QUINTA, 20) });

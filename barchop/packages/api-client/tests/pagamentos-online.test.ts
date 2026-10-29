@@ -282,7 +282,7 @@ describe("o dublê do cliente que assina", () => {
     await expect(api.cliente.cancelarAssinatura("nao-existe")).rejects.toMatchObject({ status: 404 });
   });
 
-  it("meus agendamentos marcam o que o plano cobre, como a API: no ciclo e até os usos", async () => {
+  it("meus agendamentos marcam o que o plano cobre, como a API: até os usos do ciclo, e o online renova", async () => {
     const api = criarApiClientFalso({ ...semente(), cpfDoCliente: "52998224725", usosNoCiclo: {} });
     const { assinatura } = await api.cliente.assinarPlano("pl2");
     api.estado.usosNoCiclo![`${assinatura.id}:s1`] = 1;
@@ -296,9 +296,9 @@ describe("o dublê do cliente que assina", () => {
       });
     const depois = await marcar("2026-10-29", "09:00");
     const cedo = await marcar("2026-10-28", "09:00");
-    const foraDoTeste = await marcar("2026-11-05", "09:00");
+    const depoisDoTeste = await marcar("2026-11-05", "09:00");
 
     const porId = Object.fromEntries((await api.cliente.meusAgendamentos()).map((a) => [a.id, a.peloPlano]));
-    expect(porId).toEqual({ [cedo.id]: ["s1"], [depois.id]: [], [foraDoTeste.id]: [] });
+    expect(porId).toEqual({ [cedo.id]: ["s1"], [depois.id]: [], [depoisDoTeste.id]: ["s1"] });
   });
 });

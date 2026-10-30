@@ -4,7 +4,22 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-28 — a marca "Corte pelo plano" na Minha conta) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-30 — a lista revista com o dono) — vale mais que as seções abaixo
+
+**Estado:**
+- **Produção = o #235** (`4be9f8c`), igual à seção de 28/10 logo abaixo. Nenhum PR aberto. Esta atualização foi direto na `main`, com o aval do dono, e não muda nada no ar.
+- **Decidido pelo dono em 30/10:**
+  - **Aceite do marco 3 feito:** plano da casa, assinatura no balcão e o acerto do dia (casa e barbeiro) já estão cobertos em produção. O marco 3 está fechado.
+  - **Caixa em produção:** funciona, não precisa de teste.
+  - **Conectar a chave `$aact_prod_`** em Pagamentos online é tarefa do dono ou da GR, pela tela. Não é pendência de código.
+  - **`barbearia-teste`:** fica online, pra testes (segue no Completo à mão).
+  - **Standby:** o marco 4 (relatórios) e o aviso da chave do Asaas parada (sem uso por 3 meses é desabilitada). Só retomar quando o dono pedir.
+
+**Ao retomar:**
+1. **Pendentes do redesenho:** levantar quais são e mostrar ao dono.
+2. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
+
+## RETOMAR AQUI (2026-10-28 — a marca "Corte pelo plano" na Minha conta) — histórico
 
 **Estado:**
 - **Produção = o #235** (`4be9f8c`), deploy do dono em 28/10 (API + web, sem migração). Conferido por curl: API `/health` 200 e o chunk da Minha conta com `peloPlano` e " pelo plano". A primeira tentativa deixou a web antiga no ar; com `docker compose up -d --build` foi. O campo da API pede login de cliente e não foi visto por curl. Este PR só atualiza este RETOMAR AQUI e não muda nada no ar. Nenhum PR de código aberto.

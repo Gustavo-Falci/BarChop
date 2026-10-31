@@ -148,15 +148,15 @@ const TEMAS: { tema: string; perguntas: Pergunta[] }[] = [
           { href: "/painel/planos", rotulo: "Planos" },
           ". Pra vender online, quem vende conecta a conta do Asaas, da Stripe ou da InfinitePay em ",
           { href: "/painel/configuracoes/pagamentos-online", rotulo: "Pagamentos online" },
-          ": o cliente entra, assina e paga na fatura do provedor (no Asaas, Pix, cartão ou boleto; na Stripe, cartão). Sem a conta conectada, a página oferece só o balcão.",
+          ": o cliente entra, assina e paga na fatura do provedor (no Asaas, Pix, cartão ou boleto; na Stripe, cartão; na InfinitePay, Pix ou cartão, num link a cada mensalidade). Sem a conta conectada, a página oferece só o balcão.",
         ],
       },
       {
-        pergunta: "Como conecto a minha conta do Asaas ou da Stripe?",
+        pergunta: "Como conecto a minha conta do Asaas, da Stripe ou da InfinitePay?",
         resposta: [
           "Em ",
           { href: "/painel/configuracoes/pagamentos-online", rotulo: "Pagamentos online" },
-          ", escolha o Asaas ou a Stripe e cole a chave (no Asaas, a chave de API; na Stripe, uma chave restrita, com as permissões que a tela lista). A mensalidade cai direto na conta de quem vende, e o BarChop não cobra taxa. Na Stripe, quem assina não precisa dar o CPF. O dono conecta a conta da casa; cada profissional que vende, a sua. Com assinatura online viva, a conta só desconecta depois de cancelar as assinaturas.",
+          ", escolha o Asaas, a Stripe ou a InfinitePay e cole a chave (no Asaas, a chave de API; na Stripe, uma chave restrita, com as permissões que a tela lista; na InfinitePay, a chave e a InfiniteTag, com o checkout integrado ligado na conta). A mensalidade cai direto na conta de quem vende, e o BarChop não cobra taxa. Na Stripe e na InfinitePay, quem assina não precisa dar o CPF. A InfinitePay não renova sozinha: o BarChop manda ao cliente um link a cada mensalidade, e você pode mandar o mesmo link pelo WhatsApp, no cliente. O dono conecta a conta da casa; cada profissional que vende, a sua. Com assinatura online viva, a conta só desconecta depois de cancelar as assinaturas.",
         ],
       },
       {

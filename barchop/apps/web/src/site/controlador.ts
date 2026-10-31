@@ -33,8 +33,9 @@ export function formatarCpf(cpf: string): string {
 }
 
 // A data em que a versão atual dos textos passou a valer. Muda junto com
-// qualquer mudança nos termos ou na privacidade (a última: os planos que
-// a barbearia vende, no ar em 25/10), e a novidade do painel avisa.
+// qualquer mudança nos termos ou na privacidade (a última: a InfinitePay
+// nos planos que a barbearia vende, em 31/10, no mesmo dia da Stripe), e
+// a novidade do painel avisa.
 export const VIGENCIA = "31 de outubro de 2026";
 
 export function ouAPreencher(valor: string | null): string {

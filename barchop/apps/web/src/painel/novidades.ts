@@ -11,6 +11,12 @@ export interface Novidade {
 export const NOVIDADES: Novidade[] = [
   {
     data: "2026-10-31",
+    titulo: "Planos pela InfinitePay",
+    texto:
+      "Quem vende planos agora pode receber pela InfinitePay: em Pagamentos online, escolha a InfinitePay e cole a chave e a InfiniteTag da conta. A InfinitePay não renova sozinha: a cada mensalidade, o BarChop manda ao cliente um link de pagamento (Pix ou cartão) por e-mail, 3 dias antes do vencimento, e o detalhe do cliente tem o botão de mandar o mesmo link pelo WhatsApp. Sem pagamento, a assinatura é cancelada depois dos dias que você escolhe na conta. Os termos de uso e a política de privacidade falam da InfinitePay também.",
+  },
+  {
+    data: "2026-10-31",
     titulo: "Planos pagos pela Stripe",
     texto:
       "Quem vende planos agora pode receber pela Stripe, além do Asaas: em Pagamentos online, escolha a Stripe e cole uma chave restrita, com o passo a passo na tela. O cliente paga no cartão, na página da Stripe, sem o CPF, e a mensalidade entra no Caixa como as do Asaas. Os termos de uso e a política de privacidade falam da Stripe também.",

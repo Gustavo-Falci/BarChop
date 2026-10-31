@@ -113,7 +113,9 @@ o de um profissional vale só com quem vende, e a casa fica com a parte
 da casa dessa pessoa sobre a mensalidade. A página da barbearia mostra os planos, e o
 cliente assina logado: online, pela fatura do Asaas ou da Stripe (a Stripe
 desde 31/10, `.claude/plans/pagamentos-online-stripe.plan.md`, #237 a
-#243, ADR-0012), com o dinheiro na
+#243, ADR-0012) ou pelo link de cada mensalidade da InfinitePay, que não
+renova sozinha (`.claude/plans/pagamentos-online-infinitepay.plan.md`,
+#246 a #256, ADR-0013), com o dinheiro na
 conta de quem vende (quem vende conecta a própria conta em Pagamentos
 online, com a chave cifrada), ou no balcão, com o "Recebi" de cada
 ciclo. No pagamento do atendimento, "Usar o plano" conta o uso; as

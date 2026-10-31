@@ -909,6 +909,9 @@ export interface AssinaturaDoPainel {
   criadoEm: string;
   cliente: { id: string; nome: string; telefone: string };
   plano: { id: string; nome: string; daCasa: boolean; vendedor: { id: string; nome: string } | null };
+  // Só na InfinitePay: o link aberto que vence antes (o que destrava o
+  // ciclo), pra quem vende mandar pelo WhatsApp. Nos outros, null.
+  linkDoCiclo: { url: string; vencimento: string } | null;
 }
 
 export interface AssinantesDoPainel {
@@ -937,6 +940,9 @@ export interface AssinaturaNaConta {
   criadoEm: string;
   plano: { id: string; nome: string; daCasa: boolean; vendedor: { id: string; nome: string } | null };
   servicos: { servicoId: string; nome: string; usosPorCiclo: number | null; usosRestantes: number | null }[];
+  // Só na InfinitePay, que não renova sozinha: o link aberto que vence
+  // antes. Pago ou fechado, null; nos outros provedores, sempre null.
+  linkParaPagar: string | null;
 }
 
 export interface MinhasAssinaturas {

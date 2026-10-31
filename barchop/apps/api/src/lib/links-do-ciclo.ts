@@ -79,6 +79,15 @@ export async function criarLinkNaInfinitePay(
   return { orderNsu, url, vencimento: pedido.vencimento, validoAte, valorCentavos: pedido.valorCentavos };
 }
 
+// O link que as telas mostram: o aberto que vence antes, o que destrava
+// o ciclo.
+export const LINK_ABERTO = {
+  where: { situacao: "aberto" },
+  orderBy: { vencimento: "asc" },
+  take: 1,
+  select: { url: true, vencimento: true },
+} satisfies Prisma.AssinaturaDoCliente$linksArgs;
+
 // `enviadoEm`: o link que o cliente já recebeu (o do assinar, na tela)
 // não vai de novo por e-mail.
 export function linkParaGravar(

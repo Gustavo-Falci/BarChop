@@ -187,6 +187,7 @@ describe("o dublê da conta de quem vende", () => {
       cicloComecaEm: "2026-10-01",
       cicloTerminaEm: "2026-11-01",
       canceladaEm: null,
+      linkDoCiclo: null,
       criadoEm: "2026-10-01T12:00:00.000Z",
       cliente: { id: "c1", nome: "Caio", telefone: "+5511999998888" },
       plano: { id: "pl1", nome: "Corte ilimitado", daCasa: true, vendedor: null },
@@ -294,6 +295,28 @@ describe("o dublê do cliente que assina", () => {
     const comTeste = await api.cliente.assinarPlano("pl2");
     expect(comTeste.assinatura).toMatchObject({ situacao: "teste" });
     expect(comTeste.linkDaFatura).toBeNull();
+  });
+
+  // Plano pagamentos-online-infinitepay, PR 6: a InfinitePay não renova
+  // sozinha, e a conta mostra o link a pagar; o "Recebi" de quem vende
+  // vale nela (decisão 10) e fecha o link.
+  it("na InfinitePay: o link a pagar na conta e no painel; o Recebi fecha", async () => {
+    const api = criarApiClientFalso({ ...semente(), contasOnline: { casa: { ...CONTA, provedor: "infinitepay" as const } } });
+
+    const criada = await api.cliente.assinarPlano("pl1");
+    expect(criada.linkDaFatura).toMatch(/^https:[/][/]checkout[.]infinitepay[.]io[/]/);
+    expect((await api.cliente.minhasAssinaturas())[0]!.linkParaPagar).toBe(criada.linkDaFatura);
+    const noPainel = (await api.barbeiro.assinantes()).assinantes[0]!;
+    expect(noPainel.linkDoCiclo).toEqual({ url: criada.linkDaFatura, vencimento: "2026-10-25" });
+
+    const recebida = await api.barbeiro.receberMensalidade(criada.assinatura.id, "pix");
+    expect(recebida.assinatura).toMatchObject({ situacao: "ativa", linkDoCiclo: null });
+    expect((await api.cliente.minhasAssinaturas())[0]!.linkParaPagar).toBeNull();
+
+    // Em teste, como na API, o link ainda não saiu.
+    const comTeste = await api.cliente.assinarPlano("pl2");
+    expect(comTeste.linkDaFatura).toBeNull();
+    expect(comTeste.assinatura.linkParaPagar).toBeNull();
   });
 
   it("volta pra fatura da pendente; ja_assina na ativa; plano fora da vitrine é indisponível", async () => {

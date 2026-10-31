@@ -21,6 +21,9 @@ export interface TextosDoProvedor {
   // O selo da conta conectada no modo de teste.
   seloDeTeste: string;
   prefixo: Record<Modo, string>;
+  // Se o provedor cobra sozinho a cada ciclo. A InfinitePay não: o
+  // BarChop manda um link por mensalidade, e a tela mostra o link a pagar.
+  renovaSozinho: boolean;
 }
 
 export const PROVEDORES: Record<ProvedorDePagamento, TextosDoProvedor> = {
@@ -34,6 +37,7 @@ export const PROVEDORES: Record<ProvedorDePagamento, TextosDoProvedor> = {
     chaveDeTeste: "a chave do sandbox do Asaas",
     seloDeTeste: "Sandbox",
     prefixo: { teste: "$aact_hmlg_", real: "$aact_prod_" },
+    renovaSozinho: true,
   },
   stripe: {
     nome: "Stripe",
@@ -45,6 +49,7 @@ export const PROVEDORES: Record<ProvedorDePagamento, TextosDoProvedor> = {
     chaveDeTeste: "a chave restrita de teste da Stripe",
     seloDeTeste: "Teste",
     prefixo: { teste: "rk_test_", real: "rk_live_" },
+    renovaSozinho: true,
   },
   // Ainda fora das opções do painel: a tela dela chega no PR 7 do plano
   // pagamentos-online-infinitepay. Sem sandbox, a chave é uma só.
@@ -58,6 +63,7 @@ export const PROVEDORES: Record<ProvedorDePagamento, TextosDoProvedor> = {
     chaveDeTeste: "a chave de API da InfinitePay",
     seloDeTeste: "Teste",
     prefixo: { teste: "inchk_", real: "inchk_" },
+    renovaSozinho: false,
   },
 };
 

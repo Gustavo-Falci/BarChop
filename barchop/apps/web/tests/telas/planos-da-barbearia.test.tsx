@@ -318,6 +318,7 @@ describe("minhas assinaturas", () => {
     cicloComecaEm: "2026-10-20",
     cicloTerminaEm: "2026-11-20",
     canceladaEm: null,
+    linkDoCiclo: null,
     criadoEm: "2026-10-20T12:00:00.000Z",
     cliente: { id: "c1", nome: "João", telefone: "+5511999998888" },
     plano: { id: "pl1", nome: "Corte ilimitado", daCasa: true, vendedor: null },

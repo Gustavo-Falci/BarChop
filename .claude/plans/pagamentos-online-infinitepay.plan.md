@@ -74,6 +74,23 @@ Diferenças do plano, combinadas no caminho:
   - **Obrigatório no PR 6:** o "Recebi" numa assinatura da InfinitePay fecha, na mesma transação, o link aberto do ciclo. Senão a varredura cancela, depois da validade, uma assinatura já paga. O teste: o "Recebi" e depois uma varredura além da validade, e a assinatura tem que seguir ativa. Hoje o "Recebi" recusa assinatura online (`assinatura_online`), então isso ainda não acontece.
   - **Valor diferente:** o link fica aberto, e a varredura cancela depois da validade, mesmo com o cliente tendo pago alguma coisa. O sino manda quem vende conferir no app, e o remédio (o "Recebi") só chega no PR 6.
   - O sino do atraso diz como o link volta ao cliente: por e-mail, ou, sem e-mail, pelo WhatsApp que quem vende manda.
+- **PR 6:**
+  - **O link nas telas:** com dois links abertos, as telas mostram o que vence antes, porque é o que destrava o ciclo. Na conta do cliente o campo é `linkParaPagar`; no painel, `linkDoCiclo`. O `include` fica num lugar só, `LINK_ABERTO` em `links-do-ciclo.ts`.
+    - Os dois campos são obrigatórios nos tipos e valem null fora da InfinitePay. Assim o `tsc` acusou cada fixture.
+  - **O "Recebi":** fecha, na mesma transação, todos os links abertos da assinatura, porque o novo ciclo começa hoje e a varredura gera o link dele. A pendente do primeiro link passa por `problemaDoRecebimento` e vira ativa: é o "primeiro pagamento perdido" da decisão 10. A do Asaas e a da Stripe seguem com `assinatura_online`.
+  - **Dentro do ciclo pago, o "Recebi" segue `ciclo_em_dia`, como no balcão.** O cliente que pagou adiantado por um link cujo aviso se perdeu só pode ser marcado a partir do fim do ciclo.
+  - **Corrida com a varredura:** o "Recebi" passa a ser um segundo escritor. Por isso a varredura agora reconfere dentro do cadeado:
+    - o cancelamento trava a linha da barbearia (o mesmo cadeado do "Recebi" e da confirmação) e reconfere que ainda há link aberto vencido;
+    - o atraso filtra também por `cicloTerminaEm < hoje`.
+    - Isso foi verificado lendo o código. Um teste de intercalação não cabe aqui.
+  - **O assinar de novo da pendente (a viva) devolve o link que vence antes.** No PR 4 era o mais novo. Agora a fatura que o cliente recebe é a mesma que a conta mostra.
+  - **O 201 do assinar** devolve o `linkParaPagar` com o link que acabou de nascer. A assinatura foi lida antes de o link entrar na transação.
+  - **Lacuna conhecida:** a varredura só reconfere links abertos com `transactionNsu`.
+    - O caso: a página de volta gravou a transação antes de o Pix cair, e o "Recebi" fechou o link depois.
+    - Se o aviso também se perder, nenhum sino pede o estorno. O estorno da decisão 10 depende então do aviso ou de o cliente voltar pela página.
+  - **A vitrine não mudou:** já dava `{ provedor: "infinitepay", pedeCpf: false }`, e agora há um teste disso. A web ganhou `renovaSozinho` em `provedores.ts` (falso só na InfinitePay), para as telas do PR 7.
+  - **Testes:** `tests/routers/infinitepay-nas-telas.test.ts`, em vez de espalhar casos por `assinantes`, `clientes-me` e `planos-publicos`.
+    - No api-client, o dublê tem o link da InfinitePay e o "Recebi" nela.
   - **Teste:** `tests/lib/ciclos-por-link.test.ts`, com o dia de hoje e datas relativas, porque a confirmação usa o relógio da barbearia. A da Stripe não tem teste próprio: o filtro é pelo provedor, e o teste cobre o Asaas e o balcão.
 
 ## Summary

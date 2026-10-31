@@ -13,7 +13,9 @@ import { garantirRecurso } from "../lib/assinatura";
 import { naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "../lib/horas";
+import { LINK_ABERTO } from "../lib/links-do-ciclo";
 import { PADRAO_UUID } from "../lib/padroes";
+import { COBRA, provedorGravado } from "../lib/provedores";
 import {
   ONLINE_A_CANCELAR,
   PODE_VENDER,
@@ -74,6 +76,7 @@ const corpoRecebi = {
 const INCLUDE_ASSINATURA = {
   cliente: { select: { id: true, nome: true, telefone: true } },
   plano: { select: { id: true, nome: true, vendedorId: true, vendedor: { select: { id: true, nome: true } } } },
+  links: LINK_ABERTO,
 } satisfies Prisma.AssinaturaDoClienteInclude;
 
 type AssinaturaComTudo = Prisma.AssinaturaDoClienteGetPayload<{ include: typeof INCLUDE_ASSINATURA }>;
@@ -96,6 +99,9 @@ function serializarAssinatura(assinatura: AssinaturaComTudo): AssinaturaDoPainel
       daCasa: assinatura.plano.vendedorId === null,
       vendedor: assinatura.plano.vendedor,
     },
+    linkDoCiclo: assinatura.links[0]
+      ? { url: assinatura.links[0].url, vencimento: dateParaData(assinatura.links[0].vencimento) }
+      : null,
   };
 }
 
@@ -199,11 +205,17 @@ export function registrarRotasAssinantes(app: App): void {
         await marcarAtrasadas(tx, barbeariaId, hoje, visivel);
         const atual = await tx.assinaturaDoCliente.findFirst({
           where: visivel,
-          include: { plano: { select: { vendedorId: true, vendedor: { select: { parteDaCasa: true } } } } },
+          include: {
+            plano: { select: { vendedorId: true, vendedor: { select: { parteDaCasa: true } } } },
+            conexao: { select: { provedor: true } },
+          },
         });
         if (!atual) throw naoEncontrado();
 
-        if (atual.forma === "online") {
+        // A da InfinitePay aceita (decisão 10): o aviso pode se perder, e
+        // quem vende confere no app. A que renova sozinha, não.
+        const porLink = atual.conexao !== null && COBRA[provedorGravado(atual.conexao.provedor)] === "link";
+        if (atual.forma === "online" && !porLink) {
           throw new ErroDeNegocio("assinatura online: o pagamento entra pelo provedor", "assinatura_online");
         }
         const termina = atual.cicloTerminaEm ? dateParaData(atual.cicloTerminaEm) : null;
@@ -243,6 +255,11 @@ export function registrarRotasAssinantes(app: App): void {
             forma: request.body.forma,
           },
         });
+        // O link aberto fica fechado: pago depois, o sino pede o estorno
+        // (decisão 11), e a varredura não cancela a assinatura paga.
+        if (porLink) {
+          await tx.linkDoCiclo.updateMany({ where: { assinaturaId: atual.id, situacao: "aberto" }, data: { situacao: "fechado" } });
+        }
         // O ciclo segue o dia do pagamento, não o do caixa.
         const renovada = await tx.assinaturaDoCliente.update({
           where: { id: atual.id },

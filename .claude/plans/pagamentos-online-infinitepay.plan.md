@@ -140,6 +140,20 @@ Diferenças do plano, combinadas no caminho:
     - Dados de exemplo no banco de teste, com o provedor em memória e a API em modo real.
     - Telas: Pagamentos online, a vitrine (o plano normal e o de R$ 0,99), a Minha conta com o "Pagar", a volta com query, o Entrar com a volta, os Assinantes com o "Recebi", o detalhe do cliente com o WhatsApp e o cadastro com o aviso do mínimo.
     - Em 375, nenhuma tela passou da largura. Em 1440, os botões do detalhe do cliente empilham na coluna lateral.
+- **PR 8:**
+  - **A vigência** dos Termos e da Privacidade segue 31/10/2026 (`controlador.ts`), o mesmo dia da Stripe, porque o texto novo vai ao ar no mesmo deploy. Se o deploy for noutro dia, a `VIGENCIA` e a data da novidade mudam juntas.
+  - **Termos:**
+    - o conectar cita a chave e a InfiniteTag;
+    - um item novo diz: não renova sozinha, o link por e-mail 3 dias antes, o link na área do cliente e pelo WhatsApp, o cancelamento depois dos dias escolhidos (3 a 30; 10 por padrão), o mínimo e o estorno no app;
+    - o cancelar do cliente diz que os links param;
+    - o "não pode ser desconectada" fala da conta de pagamento online, sem citar provedor.
+    - O mínimo é escrito "um real", porque os Termos não escrevem preço (`legal.test.tsx`); o teste novo foi ajustado para isso.
+  - **Privacidade:**
+    - a InfinitePay não pede o CPF; vão o nome, o e-mail e o celular;
+    - a chave cifrada e a InfiniteTag;
+    - o Resend também manda o e-mail do link de cada mensalidade.
+  - **A novidade** "Planos pela InfinitePay" é o aviso no painel que os Termos prometem.
+  - **ADR-0013** (InfinitePay nos planos que a barbearia vende). O `docs/screens.md` e o roadmap citam a InfinitePay.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

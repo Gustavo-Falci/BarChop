@@ -122,8 +122,10 @@ export function provedorStripe(opcoes: {
     }
   }
 
-  // Lê, cria se não existe, renomeia se o plano mudou de nome. Dois
-  // assinar ao mesmo tempo criam o mesmo id: o segundo lê o do primeiro.
+  // Lê, cria se não existe, renomeia se o plano mudou de nome e reativa
+  // se quem vende arquivou no painel da Stripe (arquivado não assina).
+  // Dois assinar ao mesmo tempo criam o mesmo id: o segundo lê o do
+  // primeiro.
   async function garantirProduto(planoId: string, nome: string): Promise<string> {
     const id = idDoProduto(planoId);
     let produto = await pedir(() => stripe.products.retrieve(id), true);
@@ -136,7 +138,9 @@ export function provedorStripe(opcoes: {
         produto = await pedir(() => stripe.products.retrieve(id));
       }
     }
-    if (produto.name !== nome) await pedir(() => stripe.products.update(id, { name: nome }));
+    if (produto.name !== nome || !produto.active) {
+      await pedir(() => stripe.products.update(id, { name: nome, active: true }));
+    }
     return id;
   }
 

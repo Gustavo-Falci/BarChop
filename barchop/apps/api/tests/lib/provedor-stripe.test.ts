@@ -240,12 +240,15 @@ describe("o cliente e a assinatura", () => {
     });
   });
 
-  it("o produto que existe com o mesmo nome não muda; com outro nome, é renomeado", async () => {
+  it("o produto que existe com o mesmo nome não muda; com outro nome, é renomeado; arquivado, é reativado", async () => {
     const produto = resposta("produto.json");
     const { provedor, pedido } = montar(
       json(produto),
       json(resposta("assinatura-criada.json")),
       json({ ...produto, name: "Nome antigo" }),
+      json(produto),
+      json(resposta("assinatura-criada.json")),
+      json({ ...produto, active: false }),
       json(produto),
       json(resposta("assinatura-criada.json"))
     );
@@ -255,7 +258,11 @@ describe("o cliente e a assinatura", () => {
 
     await provedor.criarAssinatura(NOVA);
     expect(pedido(3)).toMatchObject({ url: `https://api.stripe.com/v1/products/barchop_plano_${PLANO}`, metodo: "POST" });
-    expect(Object.fromEntries(pedido(3).corpo)).toEqual({ name: "Corte ilimitado" });
+    expect(Object.fromEntries(pedido(3).corpo)).toEqual({ name: "Corte ilimitado", active: "true" });
+
+    await provedor.criarAssinatura(NOVA);
+    expect(pedido(6)).toMatchObject({ url: `https://api.stripe.com/v1/products/barchop_plano_${PLANO}`, metodo: "POST" });
+    expect(Object.fromEntries(pedido(6).corpo)).toEqual({ name: "Corte ilimitado", active: "true" });
   });
 
   it("dois assinar ao mesmo tempo: o produto que acabou de ser criado pelo outro é lido de novo", async () => {
@@ -439,6 +446,7 @@ describe("o evento do webhook", () => {
     const paga = assinado(resposta("evento-fatura-paga.json"));
     const apagada = assinado(resposta("evento-assinatura-apagada.json"));
     const estorno = assinado(resposta("evento-estorno.json"));
+    const expirada = assinado(resposta("evento-assinatura-atualizada.json"));
 
     expect(provedor.lerEvento(paga.corpo, paga.assinatura)).toEqual({
       id: "evt_exemplo1",
@@ -451,6 +459,13 @@ describe("o evento do webhook", () => {
       tipo: "customer.subscription.deleted",
       cobrancaId: null,
       assinaturaId: "sub_exemplo2",
+    });
+    // A incompleta que não foi paga em 23 h expira: o webhook relê e para.
+    expect(provedor.lerEvento(expirada.corpo, expirada.assinatura)).toEqual({
+      id: "evt_exemplo4",
+      tipo: "customer.subscription.updated",
+      cobrancaId: null,
+      assinaturaId: "sub_exemplo3",
     });
     expect(provedor.lerEvento(estorno.corpo, estorno.assinatura)).toEqual({
       id: "evt_exemplo3",

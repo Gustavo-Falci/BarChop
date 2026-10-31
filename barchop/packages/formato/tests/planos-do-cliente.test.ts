@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MOTIVOS_DO_PLANO, acertoDoDia, dividirPagamento } from "../src/caixa";
 import {
   CICLOS_DO_CLIENTE,
+  DIAS_PARA_CANCELAR,
   FORMAS_DA_ASSINATURA,
   FORMAS_DA_MENSALIDADE,
   FORMAS_DO_CAIXA,
@@ -10,6 +11,7 @@ import {
   MODOS_DA_CONEXAO,
   PROVEDORES_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
+  SITUACOES_DO_LINK,
   assinanteUsaOPlano,
   cicloEmAtraso,
   cicloPagoOnline,
@@ -46,8 +48,15 @@ describe("listas fechadas", () => {
   });
 
   it("provedores e modos da conta conectada (viram CHECK no banco)", () => {
-    expect(PROVEDORES_DE_PAGAMENTO).toEqual(["asaas", "stripe"]);
+    expect(PROVEDORES_DE_PAGAMENTO).toEqual(["asaas", "stripe", "infinitepay"]);
     expect(MODOS_DA_CONEXAO).toEqual(["teste", "real"]);
+  });
+
+  // A InfinitePay (plano pagamentos-online-infinitepay, PR 3): um link
+  // por ciclo, e quem vende escolhe em quantos dias de atraso cancela.
+  it("o link do ciclo e os dias para cancelar (viram CHECK no banco)", () => {
+    expect(SITUACOES_DO_LINK).toEqual(["aberto", "pago", "fechado"]);
+    expect(DIAS_PARA_CANCELAR).toEqual({ minimo: 3, maximo: 30, padrao: 10 });
   });
 
   it("os motivos das partes que só o plano gera", () => {

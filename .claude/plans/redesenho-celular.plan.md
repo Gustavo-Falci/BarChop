@@ -40,5 +40,7 @@
 - Cada tela daria o conteúdo da linha no celular (nome, detalhe, valor à direita), no lugar do "Rótulo: valor". Precisa de prop nova na `Tabela`; só com o conteúdo por tela não se perde informação.
 
 ## Conferência visual
+- Semente: `pnpm --filter @barchop/api exec tsx scripts/conferencia-visual.ts` (sobe a API em :3333 já semeada), `next dev`, login `gustavo@exemplo.com` / `senha-forte-123` (token em `sessao.barbeiro`).
+- A olhar num PR seguinte: vão de ~60px acima do título no celular junto da faixa "Teste grátis" (bloco de 150px antes do `main`).
 - Não há semente de dados no repo para subir o painel logado no banco de teste (`gr_barber_test`). A de 31/10 (`apps/api/tests/visual-semente.ts`) era temporária e não existe mais.
 - A cada PR: conferir em 390 px e 1280 px, nos dois temas. O dono escolheu (31/10) criar uma semente própria no banco de teste, reaproveitável nos PRs seguintes (cuidado: o `.env.test` tem BOM e o `node --env-file` cai no banco de dev).

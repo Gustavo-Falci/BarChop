@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
+import { DIAS_PARA_CANCELAR } from "@barchop/formato";
 import type { AssinaturaDoPainel, PagamentosOnline as Pagamentos, ProvedorDePagamento } from "@barchop/types";
 import { Aviso } from "../../../componentes/Aviso";
 import { Botao } from "../../../componentes/Botao";
@@ -19,14 +20,19 @@ import { usePainel } from "../../../painel/SessaoDoPainel";
 import estilos from "./PagamentosOnline.module.css";
 
 // Pagamentos online (Onda 2, marco 3, PR 11 do plano
-// planos-de-assinatura; a Stripe no PR 6 do pagamentos-online-stripe): a
-// conta do Asaas ou da Stripe de quem vende, onde cai a mensalidade de
-// quem assina pela página. Cada um conecta a sua; a da casa recebe os
-// planos da casa e é do dono. A chave nunca volta da API: a tela mostra
-// só os 4 últimos caracteres.
+// planos-de-assinatura; a Stripe no PR 6 do pagamentos-online-stripe; a
+// InfinitePay no PR 7 do pagamentos-online-infinitepay): a conta de quem
+// vende, onde cai a mensalidade de quem assina pela página. Cada um
+// conecta a sua; a da casa recebe os planos da casa e é do dono. A chave
+// nunca volta da API: a tela mostra só os 4 últimos caracteres.
 //
 // Sem conta, a página escolhe o provedor (pílulas) e mostra o guia dele.
 // A conta conectada fala sempre pelo provedor dela, e não pela escolha.
+//
+// A InfinitePay não renova sozinha: o quadro "Como funciona" fica à vista
+// enquanto ela é a escolhida ou a conectada, e a conta dela tem os dias
+// sem pagamento até cancelar. Sem chave de teste, ela só conecta no modo
+// real.
 //
 // Ver e desconectar não pedem o Completo nem a liberação pra vender: as
 // assinaturas que existem seguem, e quem vendeu precisa enxergar e soltar
@@ -34,7 +40,7 @@ import estilos from "./PagamentosOnline.module.css";
 
 const VOLTAR = { href: "/painel/configuracoes", rotulo: "Configurações" };
 const TITULO = "Pagamentos online";
-const APOIO = "A conta do Asaas ou da Stripe onde cai a mensalidade de quem assina pela sua página.";
+const APOIO = "A conta do Asaas, da Stripe ou da InfinitePay onde cai a mensalidade de quem assina pela sua página.";
 
 function dataCurta(iso: string): string {
   return new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
@@ -47,11 +53,17 @@ const SITE_DO_ASAAS: Record<Pagamentos["modoAceito"], string> = {
   teste: "https://sandbox.asaas.com/",
 };
 const PAINEL_DA_STRIPE = "https://dashboard.stripe.com/";
+const DOCUMENTACAO_DA_INFINITEPAY = "https://www.infinitepay.io/checkout-documentacao";
 
 const OPCOES_DE_PROVEDOR: { valor: ProvedorDePagamento; rotulo: string }[] = [
   { valor: "asaas", rotulo: PROVEDORES.asaas.nome },
   { valor: "stripe", rotulo: PROVEDORES.stripe.nome },
+  { valor: "infinitepay", rotulo: PROVEDORES.infinitepay.nome },
 ];
+
+// O que é da chave fica no campo dela; o que é da tag, no da tag.
+const ERROS_DA_CHAVE = ["chave_invalida", "modo_errado", "chave_recusada", "outra_conta"];
+const ERROS_DA_TAG = ["tag_obrigatoria", "tag_invalida"];
 
 // O que a API respondeu, numa frase pra quem vende. O 503 fala da
 // configuração do servidor (URL_DA_API), que não é com o dono.
@@ -79,6 +91,8 @@ export function PagamentosOnline() {
   return <ContasDeQuemVende />;
 }
 
+type ProvedorDaConta = ProvedorDePagamento | null;
+
 function ContasDeQuemVende() {
   const api = useApiDoPainel();
   const { perfil } = usePainel();
@@ -92,7 +106,9 @@ function ContasDeQuemVende() {
     [ehDono]
   );
 
-  const [conectadas, setConectadas] = useState<{ casa?: boolean; minha?: boolean }>({});
+  // O provedor de cada conta depois de conectar ou desconectar aqui
+  // (null = sem conta); antes disso, vale o que a API respondeu.
+  const [mudadas, setMudadas] = useState<{ casa?: ProvedorDaConta; minha?: ProvedorDaConta }>({});
   // O provedor das contas que ainda não conectaram.
   const [escolhido, setEscolhido] = useState<ProvedorDePagamento>("asaas");
 
@@ -107,11 +123,19 @@ function ContasDeQuemVende() {
   const mostraMinha = vendeOProprio || minha.dados.conta !== null;
   // O guia vale enquanto alguma conta que dá pra conectar está sem
   // conexão; conectar ou desconectar aqui muda a resposta sem recarregar.
-  const conectada = (daCasaDela: boolean, inicial: Pagamentos | null) =>
-    conectadas[daCasaDela ? "casa" : "minha"] ?? inicial?.conta != null;
-  const mostraGuia =
-    !foraDoCompleto &&
-    ((ehDono && !conectada(true, daCasa.dados)) || (vendeOProprio && !conectada(false, minha.dados)));
+  const provedorDa = (daCasaDela: boolean, inicial: Pagamentos | null): ProvedorDaConta => {
+    const mudada = mudadas[daCasaDela ? "casa" : "minha"];
+    return mudada !== undefined ? mudada : (inicial?.conta?.provedor ?? null);
+  };
+  const daCasaConectada = ehDono && provedorDa(true, daCasa.dados) !== null;
+  const minhaConectada = provedorDa(false, minha.dados) !== null;
+  const mostraGuia = !foraDoCompleto && ((ehDono && !daCasaConectada) || (vendeOProprio && !minhaConectada));
+  // Como funciona na InfinitePay: enquanto é a escolha do guia, ou é a
+  // de uma conta à vista.
+  const naInfinitePay =
+    (mostraGuia && escolhido === "infinitepay") ||
+    (ehDono && provedorDa(true, daCasa.dados) === "infinitepay") ||
+    (mostraMinha && provedorDa(false, minha.dados) === "infinitepay");
 
   return (
     <div className={estilos.pagina}>
@@ -140,7 +164,7 @@ function ContasDeQuemVende() {
             descricao="Recebe as mensalidades dos planos da casa."
             escolhido={escolhido}
             podeConectar={!foraDoCompleto}
-            aoMudar={(sim) => setConectadas((antes) => ({ ...antes, casa: sim }))}
+            aoMudar={(provedor) => setMudadas((antes) => ({ ...antes, casa: provedor }))}
           />
         ) : null}
         {mostraMinha ? (
@@ -150,25 +174,26 @@ function ContasDeQuemVende() {
             descricao="Recebe as mensalidades dos planos que você vende."
             escolhido={escolhido}
             podeConectar={!foraDoCompleto && vendeOProprio}
-            aoMudar={(sim) => setConectadas((antes) => ({ ...antes, minha: sim }))}
+            aoMudar={(provedor) => setMudadas((antes) => ({ ...antes, minha: provedor }))}
           />
         ) : null}
-        {mostraGuia ? (
-          escolhido === "stripe" ? (
-            <GuiaDaStripe modo={minha.dados.modoAceito} />
-          ) : (
-            <GuiaDoAsaas modo={minha.dados.modoAceito} />
-          )
-        ) : null}
+        {mostraGuia ? <Guia provedor={escolhido} modo={minha.dados.modoAceito} /> : null}
+        {naInfinitePay ? <ComoFuncionaNaInfinitePay /> : null}
       </div>
       {!ehDono && !mostraMinha ? (
         <p>
-          Quem vende planos conecta aqui a própria conta do Asaas ou da Stripe. O dono libera a venda de planos na
-          Equipe.
+          Quem vende planos conecta aqui a própria conta do Asaas, da Stripe ou da InfinitePay. O dono libera a venda de
+          planos na Equipe.
         </p>
       ) : null}
     </div>
   );
+}
+
+function Guia({ provedor, modo }: { provedor: ProvedorDePagamento; modo: Pagamentos["modoAceito"] }) {
+  if (provedor === "stripe") return <GuiaDaStripe modo={modo} />;
+  if (provedor === "infinitepay") return <GuiaDaInfinitePay />;
+  return <GuiaDoAsaas modo={modo} />;
 }
 
 // O caminho de quem nunca mexeu no Asaas até a chave colada aqui. A
@@ -247,6 +272,67 @@ function GuiaDaStripe({ modo }: { modo: Pagamentos["modoAceito"] }) {
   );
 }
 
+// Na InfinitePay (a documentação do checkout, conferida em 31/10/2026):
+// sem o checkout integrado ligado, a conta não cria link; a chave
+// aparece uma vez só; e a InfiniteTag diz de qual conta é a chave.
+function GuiaDaInfinitePay() {
+  return (
+    <div className={estilos.guia}>
+      <Secao titulo="Como pegar a chave na InfinitePay">
+        <ol className={estilos.passos}>
+          <li>
+            <strong>Ligue o checkout integrado.</strong> Nas configurações da sua conta na InfinitePay, ligue o checkout
+            integrado. Sem ele, a InfinitePay não cria os links de pagamento.
+          </li>
+          <li>
+            <strong>Crie a chave de API.</strong> Nas mesmas configurações, crie uma chave com o nome BarChop.{" "}
+            <a href={DOCUMENTACAO_DA_INFINITEPAY} target="_blank" rel="noreferrer">
+              Ver a documentação da InfinitePay
+            </a>
+          </li>
+          <li>
+            <strong>Cole aqui a InfiniteTag e a chave.</strong> A InfiniteTag é o seu nome de usuário na InfinitePay, com
+            ou sem o $. A chave começa com <code>{PROVEDORES.infinitepay.prefixo.real}</code> e aparece uma vez só: copie
+            antes de fechar. O BarChop guarda a chave cifrada e mostra só o final.
+          </li>
+        </ol>
+      </Secao>
+    </div>
+  );
+}
+
+// A InfinitePay não tem assinatura: o BarChop toca o ciclo (a varredura
+// diária, PR 5 do plano).
+function ComoFuncionaNaInfinitePay() {
+  return (
+    <div className={estilos.guia}>
+      <Secao titulo="Como funciona na InfinitePay">
+        <ul className={estilos.passos}>
+          <li>
+            <strong>Não renova sozinha.</strong> A InfinitePay não tem cobrança automática: o BarChop manda um link de
+            pagamento a cada mensalidade, por Pix ou cartão.
+          </li>
+          <li>
+            <strong>O link sai 3 dias antes do vencimento,</strong> por e-mail para quem assina. No painel, a assinatura
+            tem o botão de mandar o mesmo link pelo WhatsApp.
+          </li>
+          <li>
+            <strong>Vencido sem pagar, fica Em atraso,</strong> e o link vai de novo.
+          </li>
+          <li>
+            <strong>Passados os dias sem pagamento que você escolher na conta,</strong> a assinatura é cancelada, e você e
+            quem assina recebem o aviso. Sem mudar, são {DIAS_PARA_CANCELAR.padrao} dias.
+          </li>
+          <li>
+            <strong>Não há conta de teste:</strong> todo pagamento é de verdade, a partir de R$ 1,00. Estorno, só no app da
+            InfinitePay.
+          </li>
+        </ul>
+      </Secao>
+    </div>
+  );
+}
+
 function ContaOnline({
   inicial,
   titulo,
@@ -261,16 +347,20 @@ function ContaOnline({
   // O provedor da página, pra quando esta conta não está conectada.
   escolhido: ProvedorDePagamento;
   podeConectar: boolean;
-  aoMudar: (conectada: boolean) => void;
+  aoMudar: (provedor: ProvedorDaConta) => void;
 }) {
   const api = useApiDoPainel();
   const { perfil } = usePainel();
   const [dados, setDados] = useState(inicial);
   const [chave, setChave] = useState("");
+  const [tag, setTag] = useState("");
+  const [dias, setDias] = useState(String(inicial.conta?.diasParaCancelar ?? DIAS_PARA_CANCELAR.padrao));
   const [trocando, setTrocando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [erroDaChave, setErroDaChave] = useState<string | undefined>();
+  const [erroDaTag, setErroDaTag] = useState<string | undefined>();
+  const [erroDosDias, setErroDosDias] = useState<string | undefined>();
   const [aviso, setAviso] = useState<string | undefined>();
   const [feito, setFeito] = useState<string | undefined>();
   // Quem trava o desconectar: as online vivas nos planos desta conta.
@@ -281,6 +371,10 @@ function ContaOnline({
   const provedor = conta?.provedor ?? escolhido;
   const textos = PROVEDORES[provedor];
   const prefixo = textos.prefixo[modoAceito];
+  const ehInfinitePay = provedor === "infinitepay";
+  // Sem chave de teste, a InfinitePay não conecta no modo de teste (a API
+  // responde `modo_errado`): a tela diz antes.
+  const semModoDeTeste = ehInfinitePay && modoAceito === "teste";
   const apoioDaChave =
     modoAceito === "teste"
       ? `Use ${textos.chaveDeTeste} (começa com ${prefixo}): aqui os pagamentos são de teste.`
@@ -289,6 +383,8 @@ function ContaOnline({
   function limpar() {
     setAviso(undefined);
     setErroDaChave(undefined);
+    setErroDaTag(undefined);
+    setErroDosDias(undefined);
     setFeito(undefined);
     setQuemTrava([]);
   }
@@ -301,15 +397,21 @@ function ContaOnline({
     }
     setEnviando(true);
     try {
-      const resposta = await api.barbeiro.conectarPagamentosOnline(daCasa, provedor, chave);
+      // Trocar a chave da InfinitePay vale só na mesma conta: a tag é a
+      // gravada.
+      const tagEnviada = ehInfinitePay ? (conta?.infiniteTag ?? tag) : undefined;
+      const resposta = await api.barbeiro.conectarPagamentosOnline(daCasa, provedor, chave, tagEnviada);
       setDados(resposta);
-      aoMudar(true);
+      setDias(String(resposta.conta?.diasParaCancelar ?? DIAS_PARA_CANCELAR.padrao));
+      aoMudar(resposta.conta?.provedor ?? null);
       setFeito(conta ? "Chave trocada." : "Conta conectada.");
       setTrocando(false);
+      setTag("");
     } catch (causa) {
       const falha = causa as ErroDaApi;
-      // O que é da chave fica no campo; o resto, no aviso.
-      if (["chave_invalida", "modo_errado", "chave_recusada", "outra_conta"].includes(falha.codigo)) {
+      if (ERROS_DA_TAG.includes(falha.codigo)) {
+        setErroDaTag(falha.mensagem);
+      } else if (ERROS_DA_CHAVE.includes(falha.codigo)) {
         setErroDaChave(falha.mensagem);
       } else {
         setAviso(mensagemDoErro(falha, provedor));
@@ -321,13 +423,34 @@ function ContaOnline({
     setEnviando(false);
   }
 
+  async function salvarDias() {
+    limpar();
+    const escolhidos = Number(dias);
+    if (
+      !Number.isInteger(escolhidos) ||
+      escolhidos < DIAS_PARA_CANCELAR.minimo ||
+      escolhidos > DIAS_PARA_CANCELAR.maximo
+    ) {
+      setErroDosDias(`Escolha de ${DIAS_PARA_CANCELAR.minimo} a ${DIAS_PARA_CANCELAR.maximo} dias.`);
+      return;
+    }
+    setEnviando(true);
+    try {
+      setDados(await api.barbeiro.mudarDiasParaCancelar(daCasa, escolhidos));
+      setFeito("Dias salvos.");
+    } catch (causa) {
+      setAviso(mensagemDoErro(causa as ErroDaApi, provedor));
+    }
+    setEnviando(false);
+  }
+
   async function desconectar() {
     limpar();
     setEnviando(true);
     try {
       await api.barbeiro.desconectarPagamentosOnline(daCasa);
       setDados({ ...dados, conta: null });
-      aoMudar(false);
+      aoMudar(null);
       setFeito("Conta desconectada.");
     } catch (causa) {
       const falha = causa as ErroDaApi;
@@ -349,8 +472,26 @@ function ContaOnline({
     setEnviando(false);
   }
 
-  const formulario = (
+  const formulario = semModoDeTeste ? (
+    <p className={estilos.apoio}>
+      A InfinitePay não tem chave de teste: ela só conecta no BarChop de produção, onde os pagamentos são de verdade.
+    </p>
+  ) : (
     <div className={estilos.formulario}>
+      {ehInfinitePay && !conta ? (
+        <Campo
+          rotulo="InfiniteTag"
+          autoComplete="off"
+          spellCheck={false}
+          apoio="O seu nome de usuário na InfinitePay, com ou sem o $."
+          valor={tag}
+          onChange={(proxima) => {
+            setTag(proxima);
+            setErroDaTag(undefined);
+          }}
+          erro={erroDaTag}
+        />
+      ) : null}
       <Campo
         rotulo={comMaiuscula(textos.chave)}
         type="password"
@@ -379,6 +520,33 @@ function ContaOnline({
     </div>
   );
 
+  // Os dias valem para os links novos: o que já saiu segue com a validade
+  // dele (a do PR 4 do plano).
+  const diasParaCancelar =
+    conta?.provedor === "infinitepay" ? (
+      <div className={estilos.formulario}>
+        <Campo
+          rotulo="Dias sem pagamento até cancelar"
+          type="number"
+          inputMode="numeric"
+          min={DIAS_PARA_CANCELAR.minimo}
+          max={DIAS_PARA_CANCELAR.maximo}
+          apoio={`Entre ${DIAS_PARA_CANCELAR.minimo} e ${DIAS_PARA_CANCELAR.maximo}, contados do vencimento. Vale para os próximos links.`}
+          valor={dias}
+          onChange={(proximo) => {
+            setDias(proximo);
+            setErroDosDias(undefined);
+          }}
+          erro={erroDosDias}
+        />
+        <div className={estilos.botoes}>
+          <Botao variante="contorno" onClick={salvarDias} carregando={enviando}>
+            Salvar os dias
+          </Botao>
+        </div>
+      </div>
+    ) : null;
+
   return (
     <Secao titulo={titulo} descricao={descricao}>
       <div className={estilos.conta}>
@@ -387,8 +555,9 @@ function ContaOnline({
             <p className={estilos.linha}>
               {/* Um item só no flex: o texto quebra como texto, e o chip vem depois. */}
               <span>
-                <strong>{textos.nome}</strong> · chave terminando em {conta.chaveFinal} · conectada em{" "}
-                {dataCurta(conta.conectadaEm)}
+                <strong>{textos.nome}</strong>
+                {conta.infiniteTag ? ` · $${conta.infiniteTag}` : ""} · chave terminando em {conta.chaveFinal} ·
+                conectada em {dataCurta(conta.conectadaEm)}
               </span>
               {conta.modo === "teste" ? (
                 <Chip tom="atencao" tamanho="pequeno">
@@ -414,28 +583,31 @@ function ContaOnline({
                 </div>
               </div>
             ) : (
-              <div className={estilos.botoes}>
-                <Botao
-                  variante="fantasma"
-                  onClick={() => {
-                    limpar();
-                    setConfirmando(true);
-                  }}
-                >
-                  Desconectar
-                </Botao>
-                {podeConectar ? (
+              <>
+                {diasParaCancelar}
+                <div className={estilos.botoes}>
                   <Botao
-                    variante="contorno"
+                    variante="fantasma"
                     onClick={() => {
                       limpar();
-                      setTrocando(true);
+                      setConfirmando(true);
                     }}
                   >
-                    Trocar a chave
+                    Desconectar
                   </Botao>
-                ) : null}
-              </div>
+                  {podeConectar ? (
+                    <Botao
+                      variante="contorno"
+                      onClick={() => {
+                        limpar();
+                        setTrocando(true);
+                      }}
+                    >
+                      Trocar a chave
+                    </Botao>
+                  ) : null}
+                </div>
+              </>
             )}
           </>
         ) : podeConectar ? (

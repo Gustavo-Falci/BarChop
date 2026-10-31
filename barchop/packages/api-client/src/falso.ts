@@ -1,5 +1,6 @@
 import {
   APARENCIA_PADRAO,
+  DIAS_PARA_CANCELAR,
   CATEGORIAS_DE_SERVICO,
   COMODIDADES,
   FORMAS_DA_MENSALIDADE,
@@ -401,11 +402,26 @@ function diaEMes(data: string): string {
 
 // Como a API lê a chave de cada provedor (lib/provedores): o modo sai
 // do prefixo.
-const NOME_DO_PROVEDOR: Record<ProvedorDePagamento, { do: string; inicio: string; teste: string }> = {
-  asaas: { do: "do Asaas", inicio: "$aact_", teste: "do sandbox" },
-  stripe: { do: "da Stripe", inicio: "sk_ ou rk_", teste: "de teste" },
-  infinitepay: { do: "da InfinitePay", inicio: "inchk_", teste: "de teste" },
+const NOME_DO_PROVEDOR: Record<ProvedorDePagamento, { o: string; do: string; inicio: string; teste: string }> = {
+  asaas: { o: "o Asaas", do: "do Asaas", inicio: "$aact_", teste: "do sandbox" },
+  stripe: { o: "a Stripe", do: "da Stripe", inicio: "sk_ ou rk_", teste: "de teste" },
+  infinitepay: { o: "a InfinitePay", do: "da InfinitePay", inicio: "inchk_", teste: "de teste" },
 };
+
+// A InfiniteTag como a API lê (`lerTag`): com ou sem o $, até 40 letras,
+// números, pontos, hífens ou sublinhados.
+function tagDaInfinitePay(colada: string | undefined): string {
+  const tag = (colada ?? "").trim().replace(/^\$/, "");
+  if (tag === "") throw new ErroDaApi(422, "tag_obrigatoria", "a InfinitePay pede a InfiniteTag da conta");
+  if (!/^[A-Za-z0-9._-]{1,40}$/.test(tag)) {
+    throw new ErroDaApi(
+      422,
+      "tag_invalida",
+      "a InfiniteTag tem até 40 letras, números, pontos, hífens ou sublinhados, sem espaço: confira no app da InfinitePay"
+    );
+  }
+  return tag;
+}
 
 function modoDaChave(provedor: ProvedorDePagamento, chave: string): "teste" | "real" | null {
   if (provedor === "stripe") {
@@ -2353,7 +2369,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         chaveDaConta(daCasa);
         return pagamentosOnlineFalsos(daCasa);
       },
-      async conectarPagamentosOnline(daCasa: boolean, provedor: ProvedorDePagamento, chave: string) {
+      async conectarPagamentosOnline(daCasa: boolean, provedor: ProvedorDePagamento, chave: string, tag?: string) {
         const qual = chaveDaConta(daCasa);
         if (!vendePlanos(membroOu404("bb1"))) {
           throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite vender planos");
@@ -2367,14 +2383,15 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           throw new ErroDaApi(422, "chave_invalida", `isso não é uma chave de API ${nome.do}: ela começa com ${nome.inicio}`);
         }
         if (modo !== estado.modoAceito) {
-          throw new ErroDaApi(
-            422,
-            "modo_errado",
-            modo === "teste"
-              ? `esta é uma chave ${nome.teste} ${nome.do}, que não move dinheiro: use a chave de produção`
-              : `esta é uma chave de produção ${nome.do}: aqui só vale a ${nome.teste}`
-          );
+          let mensagem = `esta é uma chave de produção ${nome.do}: aqui só vale a ${nome.teste}`;
+          if (modo === "teste") {
+            mensagem = `esta é uma chave ${nome.teste} ${nome.do}, que não move dinheiro: use a chave de produção`;
+          } else if (provedor === "infinitepay") {
+            mensagem = `a InfinitePay não tem chave ${nome.teste}, e aqui só vale a ${nome.teste}`;
+          }
+          throw new ErroDaApi(422, "modo_errado", mensagem);
         }
+        const infiniteTag = provedor === "infinitepay" ? tagDaInfinitePay(tag) : null;
         const atual = estado.contasOnline![qual];
         if (atual && atual.provedor !== provedor) {
           throw new ErroDaApi(
@@ -2383,16 +2400,45 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             `a conta conectada é ${NOME_DO_PROVEDOR[atual.provedor].do}: desconecte antes de conectar a ${nome.do}`
           );
         }
+        if (atual && infiniteTag !== null && atual.infiniteTag !== infiniteTag) {
+          throw new ErroDaApi(
+            422,
+            "outra_conta",
+            `a conta conectada é a da InfiniteTag ${atual.infiniteTag}: desconecte antes de conectar outra`
+          );
+        }
         estado.contasOnline![qual] = {
           provedor,
           modo,
           chaveFinal: limpa.slice(-4),
-          conectadaEm: estado.contasOnline![qual]?.conectadaEm ?? new Date().toISOString(),
-          // A tag e os dias da InfinitePay chegam no dublê com a tela
-          // (PR 7 do plano pagamentos-online-infinitepay).
-          infiniteTag: null,
-          diasParaCancelar: null,
+          conectadaEm: atual?.conectadaEm ?? new Date().toISOString(),
+          infiniteTag,
+          // Trocar a chave mantém os dias que quem vende escolheu.
+          diasParaCancelar: infiniteTag === null ? null : (atual?.diasParaCancelar ?? DIAS_PARA_CANCELAR.padrao),
         };
+        return pagamentosOnlineFalsos(daCasa);
+      },
+      // Como a API: o schema recusa fora de 3 a 30 (400); a conta de
+      // outro provedor, 422.
+      async mudarDiasParaCancelar(daCasa: boolean, diasParaCancelar: number) {
+        const qual = chaveDaConta(daCasa);
+        if (
+          !Number.isInteger(diasParaCancelar) ||
+          diasParaCancelar < DIAS_PARA_CANCELAR.minimo ||
+          diasParaCancelar > DIAS_PARA_CANCELAR.maximo
+        ) {
+          throw new ErroDaApi(400, "requisicao_invalida", "os dias para cancelar vão de 3 a 30");
+        }
+        const atual = estado.contasOnline![qual];
+        if (!atual) throw new ErroDaApi(404, "nao_encontrado", "nenhuma conta conectada");
+        if (atual.provedor !== "infinitepay") {
+          throw new ErroDaApi(
+            422,
+            "so_na_infinitepay",
+            `os dias para cancelar são só da InfinitePay: ${NOME_DO_PROVEDOR[atual.provedor].o} cancela pelas próprias regras`
+          );
+        }
+        estado.contasOnline![qual] = { ...atual, diasParaCancelar };
         return pagamentosOnlineFalsos(daCasa);
       },
       // Recusado com assinatura online viva nos planos da conta: os da

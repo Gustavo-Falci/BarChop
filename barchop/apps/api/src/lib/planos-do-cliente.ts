@@ -15,7 +15,13 @@ import { PODE_ATENDER } from "./disponibilidade";
 import { naoEncontrado } from "./erro-http";
 import { ErroDeNegocio } from "./erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData, dateParaHora, somarDias } from "./horas";
-import { ErroDoProvedor, erroHttpDoProvedor, type ConexaoGravada, type FabricaDeProvedores } from "./provedores";
+import {
+  ErroDoProvedor,
+  erroHttpDoProvedor,
+  nomeDoProvedor,
+  type ConexaoGravada,
+  type FabricaDeProvedores,
+} from "./provedores";
 
 // Os planos que a barbearia e os barbeiros vendem ao cliente (Onda 2,
 // marco 3). A conta mora em @barchop/formato (planos-do-cliente.ts);
@@ -384,18 +390,19 @@ export async function cancelarNoProvedor(
     // A conexão desligada não tem mais a chave; o desconectar recusa
     // enquanto há assinatura online viva nela.
     if (!idExterno || !conexao || conexao.desconectadaEm !== null) continue;
+    const provedor = fabrica.daConexao(conexao);
     try {
-      await fabrica.daConexao(conexao).cancelarAssinatura(idExterno);
+      await provedor.cancelarAssinatura(idExterno);
     } catch (erro) {
       if (!(erro instanceof ErroDoProvedor)) throw erro;
       if (erro.codigo === "nao_encontrado") continue;
       if (erro.codigo === "chave_invalida") {
         throw new ErroDeNegocio(
-          "o Asaas não aceitou a chave da conta conectada: troque a chave em Pagamentos online e tente de novo",
+          `${nomeDoProvedor(provedor.nome).o} não aceitou a chave da conta conectada: troque a chave em Pagamentos online e tente de novo`,
           "chave_da_conta_recusada"
         );
       }
-      throw erroHttpDoProvedor(erro);
+      throw erroHttpDoProvedor(erro, provedor.nome);
     }
   }
 }

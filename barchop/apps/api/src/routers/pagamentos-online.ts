@@ -6,7 +6,14 @@ import { garantirRecurso } from "../lib/assinatura";
 import { gerarTokenDoWebhook, hashDoToken } from "../lib/cifra";
 import { conflito, ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
-import { ErroDoProvedor, erroHttpDoProvedor, PROVEDORES, type Provedor } from "../lib/provedores";
+import {
+  ErroDoProvedor,
+  erroHttpDoProvedor,
+  nomeDoProvedor,
+  PROVEDORES,
+  type NomeDoProvedor,
+  type Provedor,
+} from "../lib/provedores";
 import { membroDoToken, type Membro } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -82,11 +89,11 @@ function serializar(daCasa: boolean, modoAceito: PagamentosOnline["modoAceito"],
 }
 
 // O erro do provedor vira resposta; o resto sobe como está.
-async function noProvedor<T>(pedido: Promise<T>): Promise<T> {
+async function noProvedor<T>(provedor: NomeDoProvedor, pedido: Promise<T>): Promise<T> {
   try {
     return await pedido;
   } catch (erro) {
-    throw erro instanceof ErroDoProvedor ? erroHttpDoProvedor(erro) : erro;
+    throw erro instanceof ErroDoProvedor ? erroHttpDoProvedor(erro, provedor) : erro;
   }
 }
 
@@ -118,23 +125,27 @@ export function registrarRotasPagamentosOnline(app: App): void {
       garantirDaCasa(membro, daCasa);
       await garantirRecurso(prisma, membro.barbeariaId, "planosDaBarbearia", new Date());
 
-      const { provedor: nomeDoProvedor } = request.body;
+      const { provedor: escolhido } = request.body;
+      const nome = nomeDoProvedor(escolhido);
       const chave = request.body.chave.trim();
       const fabrica = app.provedores;
-      const modo = fabrica.modoDaChave(nomeDoProvedor, chave);
+      const modo = fabrica.modoDaChave(escolhido, chave);
       if (modo === null) {
-        throw new ErroDeNegocio("isso não é uma chave de API do Asaas: ela começa com $aact_", "chave_invalida");
+        throw new ErroDeNegocio(
+          `isso não é uma chave de API ${nome.do}: ela começa com ${nome.inicioDaChave}`,
+          "chave_invalida"
+        );
       }
       if (modo !== fabrica.modoAceito) {
         throw new ErroDeNegocio(
           modo === "teste"
-            ? "esta é uma chave do sandbox do Asaas, que não move dinheiro: use a chave de produção"
-            : "esta é uma chave de produção do Asaas: aqui só vale a do sandbox",
+            ? `esta é uma chave ${nome.teste} ${nome.do}, que não move dinheiro: use a chave ${nome.real}`
+            : `esta é uma chave ${nome.real} ${nome.do}: aqui só vale a ${nome.teste}`,
           "modo_errado"
         );
       }
-      const provedor: Provedor = fabrica.daChave({ provedor: nomeDoProvedor, chave });
-      await noProvedor(provedor.conferirChave());
+      const provedor: Provedor = fabrica.daChave({ provedor: escolhido, chave });
+      await noProvedor(escolhido, provedor.conferirChave());
       const chaveFinal = chave.slice(-4);
 
       const atual = await prisma.conexaoDePagamento.findFirst({
@@ -142,16 +153,17 @@ export function registrarRotasPagamentosOnline(app: App): void {
         select: { id: true, idExternoWebhook: true },
       });
       if (atual) {
-        const mesmaConta = atual.idExternoWebhook !== null && (await noProvedor(provedor.temWebhook(atual.idExternoWebhook)));
+        const mesmaConta =
+          atual.idExternoWebhook !== null && (await noProvedor(escolhido, provedor.temWebhook(atual.idExternoWebhook)));
         if (!mesmaConta) {
           throw new ErroDeNegocio(
-            "esta chave é de outra conta do Asaas: desconecte a conta atual antes de conectar outra",
+            `esta chave é de outra conta ${nome.do}: desconecte a conta atual antes de conectar outra`,
             "outra_conta"
           );
         }
         const trocada = await prisma.conexaoDePagamento.update({
           where: { id: atual.id },
-          data: { chaveCifrada: Buffer.from(fabrica.cifrar(chave)), chaveFinal, modo, provedor: nomeDoProvedor },
+          data: { chaveCifrada: Buffer.from(fabrica.cifrar(chave)), chaveFinal, modo, provedor: escolhido },
         });
         return serializar(daCasa, fabrica.modoAceito, trocada);
       }
@@ -159,18 +171,18 @@ export function registrarRotasPagamentosOnline(app: App): void {
       // O id sai daqui porque vai no endereço do webhook, registrado antes
       // de gravar: sem webhook, a conexão não serve.
       const id = randomUUID();
-      const url = fabrica.urlDoWebhook(id);
+      const url = fabrica.urlDoWebhook(escolhido, id);
       if (url === null) {
         throw new ErroHttp(
           503,
           "pagamentos_online_sem_endereco",
-          "a API não sabe o próprio endereço (URL_DA_API), e o Asaas não teria para onde mandar os pagamentos"
+          `a API não sabe o próprio endereço (URL_DA_API), e ${nome.o} não teria para onde mandar os pagamentos`
         );
       }
       const chaveCifrada = Buffer.from(fabrica.cifrar(chave));
       const token = gerarTokenDoWebhook();
       const { email } = await prisma.barbeiro.findUniqueOrThrow({ where: { id: membro.id }, select: { email: true } });
-      const idExternoWebhook = await noProvedor(provedor.registrarWebhook({ url, token, email }));
+      const idExternoWebhook = await noProvedor(escolhido, provedor.registrarWebhook({ url, token, email }));
 
       try {
         const criada = await prisma.conexaoDePagamento.create({
@@ -179,7 +191,7 @@ export function registrarRotasPagamentosOnline(app: App): void {
             barbeariaId: membro.barbeariaId,
             barbeiroId: membro.id,
             daCasa,
-            provedor: nomeDoProvedor,
+            provedor: escolhido,
             modo,
             chaveCifrada,
             chaveFinal,
@@ -192,7 +204,7 @@ export function registrarRotasPagamentosOnline(app: App): void {
         // Dois PUTs ao mesmo tempo: o índice único deixa um gravar. O
         // webhook do outro não pode ficar solto no provedor.
         await provedor.apagarWebhook(idExternoWebhook).catch((falha: unknown) => {
-          request.log.warn({ falha: String(falha) }, "webhook do Asaas sem conexão ficou no provedor");
+          request.log.warn({ falha: String(falha) }, `webhook ${nome.do} sem conexão ficou no provedor`);
         });
         if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
           throw conflito("a conta acabou de ser conectada por outro pedido");
@@ -237,16 +249,20 @@ export function registrarRotasPagamentosOnline(app: App): void {
           }
 
           if (conexao.idExternoWebhook !== null) {
+            const provedor = app.provedores.daConexao(conexao);
             try {
-              await app.provedores.daConexao(conexao).apagarWebhook(conexao.idExternoWebhook);
+              await provedor.apagarWebhook(conexao.idExternoWebhook);
             } catch (erro) {
               // Chave revogada (ou webhook apagado à mão): o BarChop não
               // alcança mais o webhook, e ficar com a conexão não ajuda.
               // Fora do ar, a conexão fica pra tentar de novo.
               if (!(erro instanceof ErroDoProvedor) || (erro.codigo !== "chave_invalida" && erro.codigo !== "nao_encontrado")) {
-                throw erro instanceof ErroDoProvedor ? erroHttpDoProvedor(erro) : erro;
+                throw erro instanceof ErroDoProvedor ? erroHttpDoProvedor(erro, provedor.nome) : erro;
               }
-              request.log.warn({ conexaoId: conexao.id, codigo: erro.codigo }, "webhook do Asaas não apagado ao desconectar");
+              request.log.warn(
+                { conexaoId: conexao.id, codigo: erro.codigo },
+                `webhook ${nomeDoProvedor(provedor.nome).do} não apagado ao desconectar`
+              );
             }
           }
 

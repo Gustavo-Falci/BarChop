@@ -4,6 +4,14 @@
 **Selected Milestone**: 1 — Stripe em Pagamentos online
 **Complexity**: Large
 
+Diferenças do plano, combinadas no caminho:
+- **PR 1:**
+  - `nomeDoProvedor` devolve as formas da frase (`o`, `do`, `inicioDaChave`, `teste`, `real`), não só o nome: as mensagens pedem "o Asaas"/"a Stripe", "do Asaas"/"da Stripe", o começo da chave e como o provedor chama os modos. Mais `comMaiuscula` ("O Asaas estornou…") e `provedorGravado` (o `provedor` da conexão, texto no banco, conferido contra `PROVEDORES`).
+  - A frase do CPF no assinar e o sino "Cancelamento não feito" leem o provedor da conexão (`provedorGravado`), pra não mudar a ordem do assinar (CPF antes do `daConexao`). A troca de ordem vem no PR 5, com o `pedeCpf`.
+  - `pedeCpf` só declarado (Asaas: `true`), sem uso até o PR 5.
+  - Dois logs mudaram de texto: o do assinar com a chave recusada vira "recusada pelo provedor" com o campo `provedor`. Os textos que a pessoa vê são os de antes.
+  - `PROVEDORES` segue só `["asaas"]` até o PR 3: o PUT do conectar tira dele a lista aceita.
+
 ## Summary
 Quem vende (a casa ou o profissional) passa a escolher entre o Asaas e a Stripe em Pagamentos online e cola a chave da própria conta Stripe; o BarChop cria o webhook pela API, como no Asaas (sem Stripe Connect, decisão do dono em 30/10). O cliente assina na fatura da Stripe (cartão, renovação automática), e o resto — vitrine, Minha conta, assinantes, Caixa, acerto, sino — segue pelo mesmo caminho do Asaas, porque o conector da Stripe entra atrás da interface `Provedor` que já existe.
 

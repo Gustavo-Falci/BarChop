@@ -2,7 +2,7 @@ import { chaveDeCifra, cifrar, decifrar } from "../cifra";
 import { ErroHttp } from "../erro-http";
 import { modoDaChaveDoAsaas, provedorAsaas } from "./asaas";
 import { provedoresDeMemoria } from "./memoria";
-import { ErroDoProvedor, type FabricaDeProvedores, type ModoDoProvedor, type NomeDoProvedor } from "./tipos";
+import { ErroDoProvedor, PROVEDORES, type FabricaDeProvedores, type ModoDoProvedor, type NomeDoProvedor } from "./tipos";
 
 // Os provedores de pagamento online dos planos de assinatura (Onda 2,
 // marco 3, plano planos-de-assinatura): por enquanto, o Asaas. Como a
@@ -20,6 +20,36 @@ export function modoDosPagamentosOnline(env: Record<string, string | undefined> 
   if (valor === undefined || valor === "") return env.NODE_ENV === "production" ? "real" : "teste";
   if (valor === "teste" || valor === "real") return valor;
   throw new Error(`PAGAMENTOS_ONLINE_MODO precisa ser "teste" ou "real", e é "${valor}"`);
+}
+
+// Como cada provedor aparece nas mensagens: com o artigo ("o Asaas", "a
+// Stripe"), o começo da chave e como ele chama os dois modos.
+export interface NomesDoProvedor {
+  o: string;
+  do: string;
+  inicioDaChave: string;
+  teste: string;
+  real: string;
+}
+
+export function nomeDoProvedor(provedor: NomeDoProvedor): NomesDoProvedor {
+  switch (provedor) {
+    case "asaas":
+      return { o: "o Asaas", do: "do Asaas", inicioDaChave: "$aact_", teste: "do sandbox", real: "de produção" };
+  }
+}
+
+// O provedor gravado na conexão (texto no banco), conferido.
+export function provedorGravado(provedor: string): NomeDoProvedor {
+  if (!(PROVEDORES as readonly string[]).includes(provedor)) {
+    throw new Error(`conexão com provedor desconhecido: ${provedor}`);
+  }
+  return provedor as NomeDoProvedor;
+}
+
+// "o Asaas" no começo da frase.
+export function comMaiuscula(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 function modoDaChave(provedor: NomeDoProvedor, chave: string): ModoDoProvedor | null {
@@ -56,10 +86,10 @@ export function provedoresDoAmbiente(
     modoAceito,
     modoDaChave,
     cifrar: (chave) => cifrar(chave, chaveDeCifra(env)),
-    urlDoWebhook: (conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/asaas/${conexaoId}`),
+    urlDoWebhook: (provedor, conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/${provedor}/${conexaoId}`),
     daChave({ provedor, chave }) {
       const modo = modoDaChave(provedor, chave);
-      if (!modo) throw new ErroDoProvedor("chave_invalida", "isso não é uma chave de API do Asaas");
+      if (!modo) throw new ErroDoProvedor("chave_invalida", `isso não é uma chave de API ${nomeDoProvedor(provedor).do}`);
       return conector(provedor, chave, modo);
     },
     daConexao({ provedor, modo, chaveCifrada }) {
@@ -72,21 +102,22 @@ export function provedoresDoAmbiente(
 }
 
 // A resposta HTTP de um erro do provedor, pras rotas que falam com ele
-// (conectar, assinar). A mensagem do `recusado` é a do Asaas, que
+// (conectar, assinar). A mensagem do `recusado` é a do provedor, que
 // explica (CPF inválido, endereço do webhook inválido).
-export function erroHttpDoProvedor(erro: ErroDoProvedor): ErroHttp {
+export function erroHttpDoProvedor(erro: ErroDoProvedor, provedor: NomeDoProvedor): ErroHttp {
+  const nome = nomeDoProvedor(provedor);
   switch (erro.codigo) {
     case "chave_invalida":
       return new ErroHttp(
         422,
         "chave_recusada",
-        "o Asaas não aceitou esta chave: confira se ela foi copiada inteira e se ainda está ativa"
+        `${nome.o} não aceitou esta chave: confira se ela foi copiada inteira e se ainda está ativa`
       );
     case "recusado":
     case "nao_encontrado":
       return new ErroHttp(422, "recusado_pelo_provedor", erro.message);
     case "limite":
     case "indisponivel":
-      return new ErroHttp(502, "provedor_indisponivel", "o Asaas não respondeu agora: tente de novo em alguns minutos");
+      return new ErroHttp(502, "provedor_indisponivel", `${nome.o} não respondeu agora: tente de novo em alguns minutos`);
   }
 }

@@ -88,7 +88,7 @@ describe("conectar a conta", () => {
     expect(c.provedores.webhooks).toHaveLength(1);
     const [webhook] = c.provedores.webhooks;
     expect(webhook.id).toBe(conexao.idExternoWebhook);
-    expect(webhook.url).toBe(c.provedores.urlDoWebhook(conexao.id));
+    expect(webhook.url).toBe(c.provedores.urlDoWebhook("asaas", conexao.id));
     expect(webhook.email).toBe("um@exemplo.com");
     expect(tokenConfere(webhook.token, conexao.webhookTokenHash)).toBe(true);
     expect(conexao.webhookTokenHash).not.toContain(webhook.token);

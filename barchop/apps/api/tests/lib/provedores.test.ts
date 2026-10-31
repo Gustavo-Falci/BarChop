@@ -110,9 +110,9 @@ describe("provedoresDoAmbiente", () => {
 
   it("o endereço do webhook sai da URL_DA_API; sem ela, não há endereço", () => {
     expect(
-      provedoresDoAmbiente({ NODE_ENV: "development", URL_DA_API: "https://api.barchop.com.br/" }).urlDoWebhook("c1")
+      provedoresDoAmbiente({ NODE_ENV: "development", URL_DA_API: "https://api.barchop.com.br/" }).urlDoWebhook("asaas", "c1")
     ).toBe("https://api.barchop.com.br/webhooks/asaas/c1");
-    expect(provedoresDoAmbiente({ NODE_ENV: "development" }).urlDoWebhook("c1")).toBeNull();
+    expect(provedoresDoAmbiente({ NODE_ENV: "development" }).urlDoWebhook("asaas", "c1")).toBeNull();
   });
 
   it("nos testes, o padrão é o de memória", () => {
@@ -171,7 +171,7 @@ describe("provedoresDeMemoria", () => {
 
     expect(fabrica.modoAceito).toBe("real");
     expect(provedoresDeMemoria().modoAceito).toBe("teste");
-    expect(fabrica.urlDoWebhook("c1")).toBe("https://api.barchop.test/webhooks/asaas/c1");
+    expect(fabrica.urlDoWebhook("asaas", "c1")).toBe("https://api.barchop.test/webhooks/asaas/c1");
     expect(Buffer.from(fabrica.cifrar("$aact_prod_x")).toString("utf8")).toBe("$aact_prod_x");
   });
 

@@ -1,0 +1,22 @@
+{
+  "id": "we_exemplo1",
+  "object": "webhook_endpoint",
+  "api_version": "2026-09-30.endive",
+  "application": null,
+  "created": 1793445885,
+  "description": "BarChop (gravação do teste, apagar)",
+  "enabled_events": [
+    "invoice.paid",
+    "invoice.payment_failed",
+    "invoice.marked_uncollectible",
+    "customer.subscription.updated",
+    "customer.subscription.deleted",
+    "charge.refunded"
+  ],
+  "livemode": false,
+  "metadata": {
+    "barchop": "928c61a4-3df7-4184-b12d-7eb5e5e7c066"
+  },
+  "status": "enabled",
+  "url": "https://example.com/webhooks/stripe/928c61a4-3df7-4184-b12d-7eb5e5e7c066"
+}

@@ -1,0 +1,39 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "cus_exemplo1",
+      "object": "customer",
+      "address": null,
+      "balance": 0,
+      "created": 1792243969,
+      "currency": "brl",
+      "customer_account": null,
+      "default_source": null,
+      "delinquent": false,
+      "description": null,
+      "discount": null,
+      "email": "dono@exemplo.com",
+      "invoice_prefix": "IUAUODWX",
+      "invoice_settings": {
+        "custom_fields": null,
+        "default_payment_method": null,
+        "footer": null,
+        "rendering_options": null
+      },
+      "livemode": false,
+      "metadata": {
+        "barbeariaId": "a49527c6-718f-470d-8b3b-6414af79e5a4"
+      },
+      "name": "Barbearia Exemplo",
+      "next_invoice_sequence": 2,
+      "phone": null,
+      "preferred_locales": [],
+      "shipping": null,
+      "tax_exempt": "none",
+      "test_clock": null
+    }
+  ],
+  "has_more": true,
+  "url": "/v1/customers"
+}

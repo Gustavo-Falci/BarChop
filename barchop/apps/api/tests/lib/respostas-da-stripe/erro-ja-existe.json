@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "resource_already_exists",
+    "doc_url": "https://stripe.com/docs/error-codes/resource-already-exists",
+    "message": "Product already exists.",
+    "param": "id",
+    "request_log_url": "https://dashboard.stripe.com/exemplo",
+    "type": "invalid_request_error"
+  }
+}

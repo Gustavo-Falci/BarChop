@@ -1,0 +1,25 @@
+{
+  "id": "barchop_plano_2246558f-34f4-4a5d-9e2a-529df7c00214",
+  "object": "product",
+  "active": true,
+  "attributes": [],
+  "created": 1793445887,
+  "default_price": null,
+  "description": null,
+  "images": [],
+  "livemode": false,
+  "marketing_features": [],
+  "metadata": {
+    "barchop": "2246558f-34f4-4a5d-9e2a-529df7c00214"
+  },
+  "name": "Corte ilimitado",
+  "package_dimensions": null,
+  "shippable": null,
+  "statement_descriptor": null,
+  "tax_code": null,
+  "tax_details": null,
+  "type": "service",
+  "unit_label": null,
+  "updated": 1793445887,
+  "url": null
+}

@@ -18,6 +18,24 @@ Diferenças do plano, combinadas no caminho:
   - `conferirPagamento`: 400, 404 e 422 voltam como não pago. Pago sem `amount` inteiro e positivo é `indisponivel` (tenta de novo, sem entrar no Caixa).
   - O celular vai com `+55` quando vem sem o país. `valid_until` é o fim do dia com `-03:00`.
   - As respostas de `tests/lib/respostas-da-infinitepay/` saem dos exemplos da documentação, com um README que diz isso. A do criar link é palpite (`url`).
+- **PR 3:**
+  - Para o compilador aceitar os lugares que já existiam, eles tratam o conector de link assim:
+    - **Webhooks do Asaas e da Stripe:** usam `recorrente(provedor)` (em `tipos.ts`), que lança se receber um de link. O mesmo vale nos testes que embrulham o `daConexao`.
+    - **Cancelar no provedor:** pula a InfinitePay, que não tem assinatura lá. O `ONLINE_A_CANCELAR` agora lê o `infiniteTag`.
+    - **Assinar:** com a conta da InfinitePay, responde `indisponivel` (e `ja_assina` no caminho da viva) até o PR 4. Entre o PR 3 e o PR 4, quem conectar a InfinitePay direto pela API (o painel não oferece) vê o plano online na vitrine, e o assinar responde `indisponivel`. Nenhuma tela leva a esse estado.
+  - **Conectar a InfinitePay:** ganhou uma função própria na rota, porque a ordem é outra:
+    1. procura a conta atual;
+    2. recusa se ela for de outro provedor ou de outra tag (`outra_conta`);
+    3. confere a chave com a tag;
+    4. na troca de chave, um `chave_invalida` também vira `outra_conta`, e diz a tag.
+  - Na conexão da InfinitePay, o `webhookTokenHash` guarda o hash de um token que ninguém recebe, porque a coluna é obrigatória. O aviso da InfinitePay não traz nada que se confira, e cada pagamento passa pelo `payment_check` (PR 4).
+  - A tag vale com até 40 letras, números, `.`, `-` e `_`, depois de tirar espaços e o `$` do começo.
+  - Os dois que pedem a tag, `daChave` e `daConexao`, lançam `Error` (não `ErroDoProvedor`) quando ela falta, porque é erro do código.
+  - O CHECK da migração tem `dias_para_cancelar IS NOT NULL` explícito, porque `NULL BETWEEN 3 AND 30` dá NULL e o CHECK deixaria passar.
+  - O teste do PATCH trocou `"10"` por `"dez"`: o Fastify converte `"10"` em número, como nas outras rotas. A frase do `so_na_infinitepay` ficou "cancela pelas próprias regras", sem "dele" ou "dela". O teste que criava dois cenários virou dois testes, porque o signup do cenário repete o e-mail.
+  - O `ContaDePagamentoOnline` ganhou `infiniteTag` e `diasParaCancelar`, que valem `null` nas outras contas.
+  - O cliente da API (o `PUT` com a tag e o `PATCH` dos dias) fica para o PR 7, junto da tela. Até lá, o cliente falso e os textos da web (`PROVEDORES`) só conhecem a InfinitePay para compilar, e ela não aparece nas opções do painel.
+  - O provedor de memória ganhou `tagsDasContas` (que diz se a chave é da conta da tag, como o 403 de verdade), `links` e `pagamentosDosLinks`, este último para o PR 4.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

@@ -137,7 +137,7 @@ export function ListaDePlanos({ agora }: { agora?: Date } = {}) {
                 Desativado
               </Chip>
             )}
-            {/* Online marcado e quem vende sem a conta do Asaas: a página
+            {/* Online marcado e quem vende sem a conta de pagamento: a página
                 mostra o plano, mas ninguém assina online. */}
             {plano.ativo && plano.onlineIndisponivel ? (
               <Chip tom="atencao" tamanho="pequeno">
@@ -185,7 +185,7 @@ export function ListaDePlanos({ agora }: { agora?: Date } = {}) {
           dele se acha daqui. */}
       {podeMexer ? (
         <p className={estilos.efeito}>
-          Pra vender online, quem vende conecta a conta do Asaas em{" "}
+          Pra vender online, quem vende conecta a conta do Asaas ou da Stripe em{" "}
           <Link href="/painel/configuracoes/pagamentos-online">Pagamentos online</Link>.
         </p>
       ) : null}

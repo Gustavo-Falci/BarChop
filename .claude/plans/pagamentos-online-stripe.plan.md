@@ -44,6 +44,15 @@ Diferenças do plano, combinadas no caminho:
   - A vitrine devolve `pagamento: { provedor, pedeCpf } | null` (null sem o online agora), em vez de `{ provedor, pedeCpf }` sempre. O `falso.ts` do api-client faz o mesmo. A web ainda não lê: segue pedindo o CPF até o PR 6, e o CPF que ela mandar para um plano da Stripe é ignorado.
   - O cancelar (painel e cliente) já falava pelo provedor desde o PR 1: sem mudança no código, só os testes com a Stripe.
   - O provedor de memória fala o nome do provedor nos erros e dá o link de fatura de cada um (`invoice.stripe.com` na Stripe).
+- **PR 6:**
+  - Correção do PR 5: a página **não** pedia o CPF de antemão. O passo do CPF já só aparecia quando a API respondia `cpf_obrigatorio`, e com a Stripe ela não responde. O corpo do #241 dizia o contrário.
+  - A escolha do provedor é **uma por página** (pílulas "Onde você recebe", acima das contas, só enquanto há conta a conectar), e não uma por conta: o guia é um só, embaixo das contas, e mostra o do escolhido. A conta conectada fala sempre pelo provedor dela (linha, selo, campo do "Trocar a chave", confirmação do desconectar, erro padrão), nunca pela pílula.
+  - O selo do modo de teste: "Sandbox" no Asaas, "Teste" na Stripe. O campo: "Chave de API do Asaas" / "Chave restrita da Stripe"; o prefixo mostrado na Stripe é `rk_test_`/`rk_live_` (a API aceita `sk_` também).
+  - Guia da Stripe: criar a conta (`dashboard.stripe.com/register`), criar a chave restrita em Desenvolvedores › Chaves de API (link `/test/apikeys` ou `/apikeys` pelo modo) com as permissões nomeadas como no painel da Stripe (escrita: Customers, Products, Prices, Subscriptions, Webhook Endpoints; leitura: Invoices, Invoice Payments, PaymentIntents), e colar. Conferir os nomes no E2E (tarefa 9).
+  - Os textos de provedor ficam num módulo só (`apps/web/src/fluxo/provedores.ts`), usado pelo painel e pela vitrine. "Cartão" na Stripe confere com o conector (`payment_method_types: ["card"]`).
+  - O "Como funciona" da vitrine nomeia o provedor só quando todo plano online é pago no mesmo; com os dois, "na página de pagamento".
+  - api-client: `conectarPagamentosOnline(daCasa, provedor, chave)`; tipo `ProvedorDePagamento` em `@barchop/types`. O `falso.ts` lê o prefixo de cada provedor com as frases da API, responde `outra_conta` e só pede o CPF no Asaas.
+  - Termos, Privacidade e novidades ficaram para o PR 7, como no plano.
 
 ## Summary
 Quem vende (a casa ou o profissional) passa a escolher entre o Asaas e a Stripe em Pagamentos online e cola a chave da própria conta Stripe; o BarChop cria o webhook pela API, como no Asaas (sem Stripe Connect, decisão do dono em 30/10). O cliente assina na fatura da Stripe (cartão, renovação automática), e o resto — vitrine, Minha conta, assinantes, Caixa, acerto, sino — segue pelo mesmo caminho do Asaas, porque o conector da Stripe entra atrás da interface `Provedor` que já existe.

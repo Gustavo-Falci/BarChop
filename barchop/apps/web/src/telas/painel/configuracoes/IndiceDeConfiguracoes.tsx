@@ -45,13 +45,13 @@ function resumoDaDivisao(divisao: DivisaoDoDinheiro | null, erro?: string): stri
 // A conta da casa, numa frase. Sem ela (ainda carregando ou falhou), a
 // frase geral.
 function resumoDosPagamentos(daCasa: PagamentosOnline | null): string {
-  if (!daCasa?.conta) return "A conta do Asaas que recebe os planos assinados pela página";
+  if (!daCasa?.conta) return "A conta do Asaas ou da Stripe que recebe os planos assinados pela página";
   return `Conta da casa conectada · chave terminando em ${daCasa.conta.chaveFinal}`;
 }
 
 // A conta de quem está logado, pro índice do profissional.
 function resumoDaSuaConta(sua: PagamentosOnline | null): string {
-  if (!sua?.conta) return "A conta do Asaas que recebe os planos que você vende";
+  if (!sua?.conta) return "A conta do Asaas ou da Stripe que recebe os planos que você vende";
   return `Sua conta conectada · chave terminando em ${sua.conta.chaveFinal}`;
 }
 
@@ -109,7 +109,7 @@ function LinhaDaArea({
 // 2): cada linha diz o que vale hoje ou, se a área nunca foi salva, o
 // que acontece se ficar assim. As áreas são da barbearia, e a API recusa
 // o salvar de quem não é dono: o profissional vê só o que é dele (o
-// perfil e a conta do Asaas dos planos que vende), e a recepção, que não
+// perfil e a conta de pagamento dos planos que vende), e a recepção, que não
 // vende plano, cai direto no perfil.
 export function IndiceDeConfiguracoes() {
   const { perfil } = usePainel();

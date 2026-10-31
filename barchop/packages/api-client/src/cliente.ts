@@ -91,8 +91,8 @@ export function criarApiCliente(requisicao: Requisicao) {
       return resposta.assinaturas;
     },
 
-    // Devolve o link da fatura do Asaas, onde o cliente paga. O CPF só
-    // vai quando o cadastro não tem (422 `cpf_obrigatorio`); vazio não
+    // Devolve o link da fatura do provedor, onde o cliente paga. O CPF só
+    // vai quando o Asaas pede e o cadastro não tem (422 `cpf_obrigatorio`); vazio não
     // vai, porque a API responderia 400. Com a online pendente ou em
     // atraso no mesmo plano, a resposta é ela, com a fatura relida.
     assinarPlano(planoId: string, cpf?: string): Promise<AssinaturaOnlineCriada> {

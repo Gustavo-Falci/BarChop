@@ -33,6 +33,8 @@ const CONTA: ContaDePagamentoOnline = {
   conectadaEm: "2026-10-25T15:00:00.000Z",
 };
 
+const CONTA_DA_STRIPE: ContaDePagamentoOnline = { ...CONTA, provedor: "stripe", chaveFinal: "5678" };
+
 const PLANO: PlanoDoPainel = {
   id: "pl1",
   daCasa: true,
@@ -213,6 +215,90 @@ describe("pagamentos online", () => {
     montarPainel(<PagamentosOnline />, semear({ papel: "profissional", equipe: [gustavo, { ...RAFAEL, id: "bb9" }] }));
     await screen.findByText(/o dono libera a venda de planos/i);
     expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
+  });
+
+  it("escolher a Stripe troca o guia e o campo, e conecta na Stripe", async () => {
+    // O dono que não atende só tem a conta da casa pra conectar.
+    const falso = montarPainel(<PagamentosOnline />, semear({ equipe: [{ ...RAFAEL, atende: false }] }));
+    const casa = await screen.findByRole("region", { name: "Conta da casa" });
+    expect(screen.getByRole("radio", { name: "Asaas" })).toBeChecked();
+    expect(screen.getByText(/pix, cartão ou boleto/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("radio", { name: "Stripe" }));
+
+    expect(screen.getByText(/só cartão, e não pede o cpf/i)).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
+    const guia = screen.getByRole("region", { name: "Como pegar a chave na Stripe" });
+    const passos = within(guia).getAllByRole("listitem");
+    expect(passos).toHaveLength(3);
+    expect(passos[1]).toHaveTextContent(/desenvolvedores › chaves de api/i);
+    expect(passos[1]).toHaveTextContent(/chave restrita/i);
+    for (const permissao of [
+      "Customers",
+      "Products",
+      "Prices",
+      "Subscriptions",
+      "Webhook Endpoints",
+      "Invoices",
+      "Invoice Payments",
+      "PaymentIntents",
+    ]) {
+      expect(passos[1]).toHaveTextContent(permissao);
+    }
+    expect(passos[2]).toHaveTextContent("rk_test_");
+    expect(within(guia).getByRole("link", { name: /chaves de api na stripe/i })).toHaveAttribute(
+      "href",
+      "https://dashboard.stripe.com/test/apikeys"
+    );
+
+    const campo = within(casa).getByLabelText("Chave restrita da Stripe");
+    expect(campo).toHaveAttribute("type", "password");
+    await userEvent.type(campo, "rk_test_chave-secreta-9876");
+    await userEvent.click(within(casa).getByRole("button", { name: "Conectar" }));
+
+    expect(await within(casa).findByText(/chave terminando em 9876/i)).toBeInTheDocument();
+    expect(within(casa).getByText("Stripe", { selector: "strong" })).toBeInTheDocument();
+    expect(within(casa).getByText("Teste")).toBeInTheDocument();
+    expect(falso.estado.contasOnline!.casa).toMatchObject({ provedor: "stripe", chaveFinal: "9876" });
+    // Conectada, a escolha e o guia somem.
+    expect(screen.queryByRole("radio", { name: "Stripe" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Como pegar a chave na Stripe" })).not.toBeInTheDocument();
+  });
+
+  it("no modo real, o guia da Stripe aponta pras chaves de produção", async () => {
+    montarPainel(<PagamentosOnline />, semear({ modoAceito: "real" }));
+    await userEvent.click(await screen.findByRole("radio", { name: "Stripe" }));
+
+    const guia = screen.getByRole("region", { name: "Como pegar a chave na Stripe" });
+    expect(within(guia).getByText("rk_live_", { exact: false })).toBeInTheDocument();
+    expect(within(guia).getByRole("link", { name: /chaves de api na stripe/i })).toHaveAttribute(
+      "href",
+      "https://dashboard.stripe.com/apikeys"
+    );
+    expect(within(guia).getByRole("link", { name: /criar a conta/i })).toHaveAttribute(
+      "href",
+      "https://dashboard.stripe.com/register"
+    );
+  });
+
+  it("a conta ligada fala pelo provedor dela, e não pela escolha da página", async () => {
+    // A casa na Stripe; a do Rafael, sem conta, deixa a escolha à vista.
+    const falso = montarPainel(<PagamentosOnline />, semear({ contasOnline: { casa: CONTA_DA_STRIPE } }));
+    const casa = await screen.findByRole("region", { name: "Conta da casa" });
+    expect(screen.getByRole("radio", { name: "Asaas" })).toBeChecked();
+    expect(within(casa).getByText(/chave terminando em 5678/i)).toBeInTheDocument();
+
+    await userEvent.click(within(casa).getByRole("button", { name: "Trocar a chave" }));
+    const campo = within(casa).getByLabelText("Chave restrita da Stripe");
+    expect(within(casa).getByText(/mesma conta da stripe/i)).toBeInTheDocument();
+    await userEvent.type(campo, "sk_test_chave-nova-4321");
+    await userEvent.click(within(casa).getByRole("button", { name: "Salvar a chave nova" }));
+
+    expect(await within(casa).findByText(/chave terminando em 4321/i)).toBeInTheDocument();
+    expect(falso.estado.contasOnline!.casa).toMatchObject({ provedor: "stripe", chaveFinal: "4321" });
+
+    await userEvent.click(within(casa).getByRole("button", { name: "Desconectar" }));
+    expect(within(casa).getByText(/a stripe para de avisar o barchop/i)).toBeInTheDocument();
   });
 
   it("no índice do dono, a linha diz a conta da casa", async () => {

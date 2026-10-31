@@ -8,6 +8,11 @@ import type { CicloDoCliente } from "@barchop/formato";
 export const PROVEDORES = ["asaas", "stripe"] as const;
 export type NomeDoProvedor = (typeof PROVEDORES)[number];
 
+// Se o provedor pede o CPF (ou CNPJ) de quem assina pra criar o cliente.
+// Aqui, e não só no conector, porque a vitrine diz isso sem a chave de
+// quem vende: o Asaas não cobra sem ele; a Stripe não usa.
+export const PEDE_CPF: Record<NomeDoProvedor, boolean> = { asaas: true, stripe: false };
+
 // O modo da chave: a de teste (sandbox) não move dinheiro.
 export type ModoDoProvedor = "teste" | "real";
 
@@ -37,7 +42,8 @@ export class ErroDoProvedor extends Error {
 
 export interface NovoCliente {
   nome: string;
-  cpfCnpj: string;
+  // Só no provedor que pede (`pedeCpf`); nos outros, null.
+  cpfCnpj: string | null;
   email: string | null;
   telefone: string | null;
   // O id do cliente no BarChop, pra achar de volta no painel do provedor.
@@ -95,7 +101,7 @@ export interface EventoDoProvedor {
 export interface Provedor {
   nome: NomeDoProvedor;
   modo: ModoDoProvedor;
-  // Se o provedor pede o CPF (ou CNPJ) de quem assina pra criar o cliente.
+  // O `PEDE_CPF` do provedor.
   pedeCpf: boolean;
   // Lança `chave_invalida` se a chave não vale.
   conferirChave(): Promise<void>;

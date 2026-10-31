@@ -1,6 +1,7 @@
 import type { CicloDoCliente } from "@barchop/formato";
 import {
   ErroDoProvedor,
+  PEDE_CPF,
   type AssinaturaNoProvedor,
   type CobrancaNoProvedor,
   type EventoDoProvedor,
@@ -205,7 +206,7 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
 
   return {
     nome: "asaas",
-    pedeCpf: true,
+    pedeCpf: PEDE_CPF.asaas,
     modo,
     async conferirChave() {
       await pedir("GET", "/customers?limit=1");
@@ -234,7 +235,7 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
     async criarCliente({ nome, cpfCnpj, email, telefone, referencia }) {
       const criado = await pedir("POST", "/customers", {
         name: nome,
-        cpfCnpj: soDigitos(cpfCnpj),
+        ...(cpfCnpj ? { cpfCnpj: soDigitos(cpfCnpj) } : {}),
         ...(email ? { email } : {}),
         ...(telefone ? { mobilePhone: celularDoAsaas(telefone) } : {}),
         externalReference: referencia,

@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { agoraNaBarbearia, instanteNaBarbearia } from "../horas";
 import {
   ErroDoProvedor,
+  PEDE_CPF,
   type AssinaturaNoProvedor,
   type CobrancaNoProvedor,
   type EventoDoProvedor,
@@ -180,7 +181,7 @@ export function provedorStripe(opcoes: {
   return {
     nome: "stripe",
     modo,
-    pedeCpf: false,
+    pedeCpf: PEDE_CPF.stripe,
     // Lê tudo o que o webhook relê: a chave restrita sem uma dessas
     // permissões passaria aqui e só falharia no webhook, que a Stripe
     // repete até desligar. As de escrita só aparecem ao assinar.

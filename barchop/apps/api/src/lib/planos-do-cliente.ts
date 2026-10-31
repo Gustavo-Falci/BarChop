@@ -80,7 +80,15 @@ export function temContaQueRecebe(
   contas: readonly { barbeiroId: string; daCasa: boolean }[],
   vendedorId: string | null
 ): boolean {
-  return contas.some((conta) => (vendedorId === null ? conta.daCasa : !conta.daCasa && conta.barbeiroId === vendedorId));
+  return contaQueRecebe(contas, vendedorId) !== undefined;
+}
+
+// A conta de quem vende o plano, entre as que recebem.
+export function contaQueRecebe<T extends { barbeiroId: string; daCasa: boolean }>(
+  contas: readonly T[],
+  vendedorId: string | null
+): T | undefined {
+  return contas.find((conta) => (vendedorId === null ? conta.daCasa : !conta.daCasa && conta.barbeiroId === vendedorId));
 }
 
 // O ciclo do balcão que passou do dia da renovação sem "recebi" fica em

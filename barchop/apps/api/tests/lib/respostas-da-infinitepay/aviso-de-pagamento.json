@@ -1,0 +1,11 @@
+{
+  "invoice_slug": "abc123",
+  "amount": 1000,
+  "paid_amount": 1010,
+  "installments": 1,
+  "capture_method": "credit_card",
+  "transaction_nsu": "transacao-de-exemplo",
+  "order_nsu": "pedido-de-exemplo",
+  "receipt_url": "https://comprovante.exemplo/123",
+  "items": [{ "description": "Corte ilimitado", "price": 1000, "quantity": 1 }]
+}

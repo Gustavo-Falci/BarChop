@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "paid": true,
+  "amount": 1500,
+  "paid_amount": 1510,
+  "installments": 1,
+  "capture_method": "pix"
+}

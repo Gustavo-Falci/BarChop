@@ -4,7 +4,29 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-31 — Stripe nos planos no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (noite de 2026-10-31 — InfinitePay nos planos no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **Produção = o #256** (`2204eac`), deploy do dono em 31/10, com a migração `20261102120000_infinitepay_nos_planos` (API e web). Conferido por curl:
+  - `/health` 200;
+  - `POST /webhooks/infinitepay/<conexão desconhecida>` 200 com `{"recebido":true}`; com id inválido, 400;
+  - Termos e Privacidade com a InfiniteTag e "Vigente desde 31 de outubro de 2026";
+  - o código publicado do painel com "Como funciona na InfinitePay", "Mandar o link pelo WhatsApp", o aviso do mínimo no cadastro do plano e a novidade "Planos pela InfinitePay".
+  - Nenhum PR de código aberto. As branches da InfinitePay foram apagadas (locais e remotas).
+- **Marco 2 do PRD `pagamentos-online-stripe-infinitepay` feito:** plano `.claude/plans/pagamentos-online-infinitepay.plan.md`, #246 a #256 (as "Diferenças" no topo do plano valem mais que as tarefas), ADR-0013.
+  - Quem vende cola a chave `inchk_` e a InfiniteTag. A InfinitePay não renova sozinha: a varredura diária (`ciclos-por-link`, 08:00 de São Paulo) cria o link 3 dias antes do vencimento e manda por e-mail; o painel manda o mesmo link pelo WhatsApp.
+  - Sem pagamento: Em atraso no dia seguinte ao vencimento, e cancelada depois dos dias que quem vende escolhe (3 a 30, padrão 10). O "Recebi" vale na InfinitePay. Mínimo de R$ 1,00. Sem modo de teste.
+- **Sem teste ponta a ponta** (decisão do dono em 31/10): a primeira conta real conectada é o teste. O conector registra no log o status e os nomes dos campos da resposta do criar link, sem valores; se a documentação não bater, o ajuste vem num PR pequeno.
+- **Conhecidos** (nas Diferenças do plano): o caixa ainda diz "Renova em" na assinatura da InfinitePay; o link pago depois de fechado mostra "ainda não confirmamos" ao cliente, e quem vende recebe o sino do estorno.
+- **Ambiente:** o `apps/api/.env.test` começa com BOM, e o `node --env-file` não lê o `DATABASE_URL` dele (cai no banco de desenvolvimento). Para rodar algo no banco de teste fora do vitest, ler os dois `.env` com o `dotenv` e recusar banco que não termine em `_test`.
+- **Continua de 30/10:** marco 4 e o aviso da chave do Asaas parada em standby; G3 adiado; `barbearia-teste` fica no Completo à mão.
+
+**Ao retomar:**
+1. **Pendentes do redesenho:** levantar quais são e mostrar ao dono.
+2. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
+3. **A primeira conta real da InfinitePay:** quando alguém conectar, olhar o log do conector e confirmar que a resposta do criar link bate.
+
+## RETOMAR AQUI (2026-10-31 — Stripe nos planos no ar) — histórico
 
 **Estado:**
 - **Produção = o #244** (`5713322`), deploy do dono em 31/10 (API e web). Conferido por curl: `/health` 200, `/webhooks/stripe/<conexão>` no ar, vitrine com `pagamento`, Termos e Privacidade com "Vigente desde 31 de outubro de 2026", e o código publicado da web com as telas da Stripe e o texto do teste grátis. Nenhum PR aberto.

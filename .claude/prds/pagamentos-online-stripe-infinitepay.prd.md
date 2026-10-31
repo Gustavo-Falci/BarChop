@@ -47,7 +47,7 @@ We'll know we're right when **TBD — needs validation via prospecção (ex.: pe
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
 | 1 | Stripe em Pagamentos online | Quem vende conecta a Stripe; o cliente assina no cartão com renovação automática; o pagamento cai na conta de quem vende e aparece no Caixa e no acerto; cancelar funciona pelo painel e pelo cliente | complete (#237–#244, teste ponta a ponta em 31/10) | `.claude/plans/pagamentos-online-stripe.plan.md` |
-| 2 | InfinitePay em Pagamentos online (link por ciclo) | Quem vende conecta a InfinitePay e vê como funciona sem recorrência; a cada ciclo o cliente recebe o link por e-mail e WhatsApp; o link pago ativa o ciclo e entra no Caixa e no acerto | in-progress | `.claude/plans/pagamentos-online-infinitepay.plan.md` |
+| 2 | InfinitePay em Pagamentos online (link por ciclo) | Quem vende conecta a InfinitePay e vê como funciona sem recorrência; a cada ciclo o cliente recebe o link por e-mail e WhatsApp; o link pago ativa o ciclo e entra no Caixa e no acerto | complete (#246–#256, no ar em 31/10, sem teste ponta a ponta) | `.claude/plans/pagamentos-online-infinitepay.plan.md` |
 
 ## Open Questions
 - [x] **Como o vendedor conecta a Stripe** — decidido pelo dono em 30/10/2026: **colando uma chave**, como no Asaas (o BarChop cria o webhook pela API). Sem Stripe Connect.

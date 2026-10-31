@@ -105,6 +105,16 @@ describe("agenda no celular: barra e menu", () => {
     expect(await screen.findByRole("dialog", { name: "Bloquear horário" })).toBeInTheDocument();
   });
 
+  // Redesenho do celular, PR 3: só o "8" num quadrado e um calendário
+  // com X não diziam o que faziam. O rótulo fica à vista, embaixo do
+  // ícone, como na barra de baixo; os nomes acessíveis não mudam.
+  it("o Hoje e o cadeado têm rótulo à vista", async () => {
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    expect(await screen.findByRole("button", { name: "Hoje" })).toHaveTextContent(/hoje/i);
+    expect(screen.getByRole("button", { name: "Bloquear horário" })).toHaveTextContent(/^bloquear$/i);
+  });
+
   it("o título abre o calendário, e escolher o dia 28 vai pra ele na mesma vista", async () => {
     montarPainel(<Agenda agora={AGORA} />, semear());
 

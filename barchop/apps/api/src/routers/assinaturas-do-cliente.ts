@@ -2,10 +2,18 @@ import { randomUUID } from "node:crypto";
 import type { FastifyBaseLogger } from "fastify";
 import { Prisma, prisma } from "@barchop/database";
 import { normalizarCpf, usosRestantes, type CicloDoCliente, type SituacaoDoAssinante } from "@barchop/formato";
-import type { AssinaturaNaConta, AssinaturaOnlineCriada, MinhasAssinaturas } from "@barchop/types";
+import type { AssinaturaNaConta, AssinaturaOnlineCriada, MinhasAssinaturas, PagamentoConferido } from "@barchop/types";
 import { naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "../lib/horas";
+import {
+  confirmarPagamentoDoLink,
+  criarLinkNaInfinitePay,
+  linkParaGravar,
+  MINIMO_DA_INFINITEPAY_CENTAVOS,
+  type ConferenciaDoLink,
+  type LinkCriado,
+} from "../lib/links-do-ciclo";
 import { notificarQuemVende } from "../lib/notificacoes";
 import { PADRAO_UUID } from "../lib/padroes";
 import {
@@ -47,6 +55,17 @@ const corpoAssinar = {
     planoId: { type: "string", pattern: PADRAO_UUID },
     // Com ou sem máscara. Obrigatório só enquanto o cadastro não tem.
     cpf: { type: "string", minLength: 1, maxLength: 20 },
+  },
+} as const;
+
+const corpoConferir = {
+  type: "object",
+  additionalProperties: false,
+  required: ["orderNsu", "transactionNsu", "slug"],
+  properties: {
+    orderNsu: { type: "string", minLength: 1, maxLength: 100 },
+    transactionNsu: { type: "string", minLength: 1, maxLength: 100 },
+    slug: { type: "string", minLength: 1, maxLength: 100 },
   },
 } as const;
 
@@ -111,6 +130,11 @@ async function noProvedor<T>(provedor: NomeDoProvedor, pedido: Promise<T>, log: 
     return await pedido;
   } catch (erro) {
     if (!(erro instanceof ErroDoProvedor)) throw erro;
+    // A InfinitePay não tem sandbox e a documentação é vaga: a mensagem
+    // do conector (os campos que vieram) é o que diz o que mudou.
+    if (provedor === "infinitepay") {
+      log.warn({ codigo: erro.codigo, mensagem: erro.message }, "a InfinitePay recusou o pedido do assinar");
+    }
     if (erro.codigo === "chave_invalida") {
       log.warn({ provedor }, "assinar online com a chave da conta de quem vende recusada pelo provedor");
       throw indisponivel();
@@ -144,10 +168,20 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
           viva.conexao !== null &&
           viva.conexao.desconectadaEm === null &&
           viva.conexao.modo === app.provedores.modoAceito;
-        if (viva.forma !== "online" || !aPagar || !viva.idExterno || !contaViva) throw jaAssina();
+        if (viva.forma !== "online" || !aPagar || !contaViva) throw jaAssina();
+        // Na InfinitePay, a fatura é o link aberto do ciclo, que já está
+        // no banco: nada de pedir outro.
+        if (viva.conexao!.provedor === "infinitepay") {
+          const aberto = await prisma.linkDoCiclo.findFirst({
+            where: { assinaturaId: viva.id, situacao: "aberto" },
+            orderBy: { vencimento: "desc" },
+            select: { url: true },
+          });
+          if (!aberto) throw jaAssina();
+          return reply.code(200).send({ assinatura: await serializar(prisma, viva), linkDaFatura: aberto.url });
+        }
+        if (!viva.idExterno) throw jaAssina();
         const provedor = app.provedores.daConexao(viva.conexao!);
-        // O link do ciclo da InfinitePay chega no PR 4 do plano
-        // pagamentos-online-infinitepay.
         if (provedor.cobra !== "recorrente") throw jaAssina();
         const linkDaFatura = await noProvedor(provedor.nome, provedor.linkDaFatura(viva.idExterno), request.log);
         return reply.code(200).send({ assinatura: await serializar(prisma, viva), linkDaFatura });
@@ -170,13 +204,78 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
       if (!conexao) throw indisponivel();
 
       const provedor = app.provedores.daConexao(conexao);
-      // Assinar pela InfinitePay chega no PR 4 do plano
-      // pagamentos-online-infinitepay.
-      if (provedor.cobra !== "recorrente") throw indisponivel();
       const cliente = await prisma.cliente.findUniqueOrThrow({
         where: { id: clienteId },
         select: { id: true, nome: true, email: true, telefone: true, cpf: true },
       });
+
+      // A InfinitePay (plano pagamentos-online-infinitepay, PR 4): sem
+      // assinatura nem cliente no provedor. Sem dias grátis, o link do
+      // primeiro ciclo sai agora, vence hoje e vale os dias para cancelar
+      // da conta; com dias grátis, sai no fim do teste (a varredura do
+      // PR 5). A assinatura e o link são gravados juntos: não há pendente
+      // sem link.
+      if (provedor.cobra === "link") {
+        if (plano.precoCentavos < MINIMO_DA_INFINITEPAY_CENTAVOS) throw indisponivel();
+        const hoje = agoraNaBarbearia().data;
+        const emTeste = plano.diasDeTeste > 0;
+        const id = randomUUID();
+        let link: LinkCriado | null = null;
+        if (!emTeste) {
+          const { slug } = await prisma.barbearia.findUniqueOrThrow({ where: { id: barbeariaId }, select: { slug: true } });
+          link = await noProvedor(
+            provedor.nome,
+            criarLinkNaInfinitePay(app.provedores, provedor, {
+              conexaoId: conexao.id,
+              slug,
+              vencimento: hoje,
+              valorCentavos: plano.precoCentavos,
+              descricao: plano.nome,
+              cliente: { nome: cliente.nome, email: cliente.email, telefone: cliente.telefone },
+              diasParaCancelar: conexao.diasParaCancelar!,
+            }),
+            request.log
+          );
+        }
+        let gravada: AssinaturaComPlano;
+        try {
+          gravada = await prisma.$transaction(async (tx) => {
+            const ligada = await tx.$queryRaw<{ id: string }[]>`
+              SELECT id FROM conexao_de_pagamento
+              WHERE id = ${conexao.id}::uuid AND desconectada_em IS NULL AND modo = ${app.provedores.modoAceito}
+              FOR SHARE`;
+            if (ligada.length === 0) throw indisponivel();
+            const criada = await tx.assinaturaDoCliente.create({
+              data: {
+                id,
+                barbeariaId,
+                planoId: plano.id,
+                clienteId: cliente.id,
+                situacao: emTeste ? "teste" : "pendente",
+                forma: "online",
+                conexaoId: conexao.id,
+                precoCentavos: plano.precoCentavos,
+                ciclo: plano.ciclo,
+                cicloComecaEm: emTeste ? dataParaDate(hoje) : null,
+                cicloTerminaEm: emTeste ? dataParaDate(somarDias(hoje, plano.diasDeTeste)) : null,
+              },
+              include: INCLUDE_NA_CONTA,
+            });
+            if (link) await tx.linkDoCiclo.create({ data: linkParaGravar(barbeariaId, id, link) });
+            return criada;
+          });
+        } catch (erro) {
+          // O link já criado não tem como ser apagado pela API: ninguém o
+          // recebeu, e ele vence sozinho.
+          if (link) {
+            request.log.warn({ orderNsu: link.orderNsu }, "link da InfinitePay sem assinatura no BarChop ficou no provedor");
+          }
+          if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") throw jaAssina();
+          throw erro;
+        }
+        return reply.code(201).send({ assinatura: await serializar(prisma, gravada), linkDaFatura: link?.url ?? null });
+      }
+
       let cpf: string | null = null;
       if (provedor.pedeCpf) {
         cpf = cliente.cpf;
@@ -261,6 +360,48 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
         throw erro;
       }
       return reply.code(201).send({ assinatura: await serializar(prisma, gravada), linkDaFatura: criada.linkDaFatura });
+    }
+  );
+
+  // A volta do comprador pela página da InfinitePay (decisão 9): a
+  // página da barbearia manda o que veio na query, e a API confere no
+  // `payment_check`. Só o link de uma assinatura de quem está logado.
+  app.post(
+    "/clientes/me/assinaturas/conferir-pagamento",
+    { schema: { body: corpoConferir } },
+    async (request): Promise<PagamentoConferido> => {
+      const { clienteId, barbeariaId } = clienteDoToken(request);
+      const { orderNsu, transactionNsu, slug } = request.body;
+      const link = await prisma.linkDoCiclo.findFirst({
+        where: { orderNsu, barbeariaId, assinatura: { clienteId } },
+        select: { id: true, assinaturaId: true },
+      });
+      if (!link) throw naoEncontrado();
+      let resultado: ConferenciaDoLink;
+      try {
+        resultado = await confirmarPagamentoDoLink({
+          fabrica: app.provedores,
+          linkId: link.id,
+          transactionNsu,
+          slug,
+          log: request.log,
+        });
+      } catch (erro) {
+        // A chave recusada é problema de quem vende: pro cliente, a
+        // InfinitePay só não respondeu.
+        if (erro instanceof ErroDoProvedor) {
+          throw erroHttpDoProvedor(
+            erro.codigo === "chave_invalida" ? new ErroDoProvedor("indisponivel", erro.message) : erro,
+            "infinitepay"
+          );
+        }
+        throw erro;
+      }
+      const assinatura = await prisma.assinaturaDoCliente.findUniqueOrThrow({
+        where: { id: link.assinaturaId },
+        include: INCLUDE_NA_CONTA,
+      });
+      return { pago: resultado === "pago", assinatura: await serializar(prisma, assinatura) };
     }
   );
 

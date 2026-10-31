@@ -15,6 +15,7 @@ import { autenticar, autenticarCliente, autenticarSuporte, registrarAuth } from 
 import { registrarRotasAssinatura } from "./routers/assinatura";
 import { registrarRotasAuth } from "./routers/auth";
 import { registrarRotaWebhookAsaas } from "./routers/webhook-asaas";
+import { registrarRotaWebhookInfinitePayPlanos } from "./routers/webhook-infinitepay-planos";
 import { registrarRotaWebhookStripePlanos } from "./routers/webhook-stripe-planos";
 import { registrarRotaWebhookStripe } from "./routers/webhook-stripe";
 import { registrarRotasAuthCliente } from "./routers/auth-cliente";
@@ -202,6 +203,9 @@ export function buildApp(
   // Sem login: quem prova a origem é o token de cada conta conectada.
   // Fora do escopo da Stripe, que lê o corpo cru: aqui é JSON.
   registrarRotaWebhookAsaas(app);
+  // O aviso da InfinitePay, em JSON: nada nele prova a origem, e cada
+  // pagamento é conferido no `payment_check`.
+  registrarRotaWebhookInfinitePayPlanos(app);
   // O da Stripe nos planos: cada conta conectada com o seu segredo, e o
   // corpo cru num escopo próprio, como o da cobrança.
   app.register(async (daStripeDosPlanos: App) => {

@@ -949,3 +949,11 @@ export interface AssinaturaOnlineCriada {
   assinatura: AssinaturaNaConta;
   linkDaFatura: string | null;
 }
+
+// POST /clientes/me/assinaturas/conferir-pagamento: a volta da página da
+// InfinitePay, que traz `order_nsu`, `transaction_nsu` e `slug` na
+// query. `pago` só depois de conferido na InfinitePay.
+export interface PagamentoConferido {
+  pago: boolean;
+  assinatura: AssinaturaNaConta;
+}

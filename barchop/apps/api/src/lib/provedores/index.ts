@@ -22,6 +22,7 @@ import {
 
 export * from "./tipos";
 export { provedoresDeMemoria, type ProvedoresDeMemoria } from "./memoria";
+export { lerAvisoDaInfinitePay } from "./infinitepay";
 
 // O modo que a plataforma aceita nas chaves dos vendedores. Não sai do
 // NODE_ENV sozinho: o teste ponta a ponta dos pagamentos roda na API de

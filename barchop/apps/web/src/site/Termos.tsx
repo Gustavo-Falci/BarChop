@@ -97,21 +97,31 @@ export function Termos() {
             na página, conta os usos no caixa e soma as mensalidades no acerto do dia.
           </li>
           <li>
-            Para receber pela página, quem vende conecta a própria conta do Asaas ou da Stripe, uma por vez, colando
-            a chave de API (na Stripe, uma chave restrita). O pagamento cai direto na conta de quem vende: o BarChop
-            não recebe nem guarda esse dinheiro, e não cobra taxa sobre essas vendas. As tarifas, a conta e o
-            cumprimento dos termos do Asaas ou da Stripe são de quem vende.
+            Para receber pela página, quem vende conecta a própria conta do Asaas, da Stripe ou da InfinitePay, uma
+            por vez, colando a chave de API (na Stripe, uma chave restrita; na InfinitePay, a chave e a InfiniteTag
+            da conta). O pagamento cai direto na conta de quem vende: o BarChop não recebe nem guarda esse dinheiro,
+            e não cobra taxa sobre essas vendas. As tarifas, a conta e o cumprimento dos termos do Asaas, da Stripe
+            ou da InfinitePay são de quem vende.
+          </li>
+          <li>
+            Na InfinitePay, a assinatura não renova sozinha: a cada mensalidade, o BarChop cria um link de pagamento
+            na conta de quem vende e manda ao cliente por e-mail, 3 dias antes do vencimento; o link também fica na
+            área do cliente, e quem vende pode mandar pelo WhatsApp. Sem pagamento até o número de dias depois do
+            vencimento que quem vende escolhe (de 3 a 30; 10, se não mudar), a assinatura é cancelada. A InfinitePay
+            não cobra menos de um real por mensalidade, e o estorno é feito por quem vende, no app da InfinitePay.
           </li>
           <li>
             Cobrança, recibo, estorno e devolução da mensalidade são resolvidos entre quem vende e o cliente, pelo
-            Asaas, pela Stripe ou no balcão. O BarChop não responde por mensalidade não paga ou contestada.
+            Asaas, pela Stripe, pela InfinitePay ou no balcão. O BarChop não responde por mensalidade não paga ou
+            contestada.
           </li>
           <li>
             O cliente pode cancelar a assinatura a qualquer momento, pela área do cliente na página: o plano deixa
-            de valer nos atendimentos, e a assinatura online para de ser cobrada no Asaas ou na Stripe.
+            de valer nos atendimentos, e a assinatura online para de ser cobrada no Asaas ou na Stripe; na
+            InfinitePay, os links das próximas mensalidades param.
           </li>
           <li>
-            Enquanto houver assinatura online viva, a conta do Asaas ou da Stripe não pode ser desconectada: antes, as assinaturas
+            Enquanto houver assinatura online viva, a conta de pagamento online não pode ser desconectada: antes, as assinaturas
             precisam ser canceladas, para que ninguém siga sendo cobrado sem o BarChop saber. Desativar um
             profissional cancela as assinaturas dos planos que essa pessoa vende.
           </li>

@@ -166,6 +166,15 @@ describe("o webhook da conta", () => {
     expect(corpo.toString()).not.toContain("t".repeat(43));
   });
 
+  it("sem o segredo na resposta, apaga o webhook e falha: a conexão recusaria todo evento", async () => {
+    const { provedor, pedido } = montar(json({ ...resposta("webhook.json"), secret: null }), json(resposta("webhook-apagado.json")));
+
+    await expect(
+      provedor.registrarWebhook({ url: "https://api.barchop.com.br/webhooks/stripe/conexao", token: "t", email: null })
+    ).rejects.toMatchObject({ codigo: "indisponivel" });
+    expect(pedido(1)).toMatchObject({ url: "https://api.stripe.com/v1/webhook_endpoints/we_exemplo1", metodo: "DELETE" });
+  });
+
   it("é visto pela chave da mesma conta (200), e não pela de outra ou depois de apagado (404)", async () => {
     const { provedor, pedido } = montar(json(resposta("webhook-lido.json")), json(resposta("erro-404.json"), 404));
 

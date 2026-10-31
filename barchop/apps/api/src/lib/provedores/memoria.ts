@@ -1,19 +1,22 @@
 import { modoDaChaveDoAsaas } from "./asaas";
+import { modoDaChaveDaStripe } from "./stripe";
 import {
   ErroDoProvedor,
   type AssinaturaNoProvedor,
   type CobrancaNoProvedor,
   type FabricaDeProvedores,
   type ModoDoProvedor,
+  type NomeDoProvedor,
   type NovaAssinatura,
   type NovoCliente,
   type Provedor,
 } from "./tipos";
 
 // Os conectores de memória: cada teste com os seus, e o que foi pedido
-// fica à vista (como a cobrancaDeMemoria). O formato da chave é o do
-// Asaas, pra o modo sair do prefixo como no de verdade; a "cifra" é o
-// próprio texto da chave, e a conexão gravada vale sem decifrar.
+// fica à vista (como a cobrancaDeMemoria). Servem o Asaas e a Stripe: o
+// formato da chave é o de cada um, pra o modo sair do prefixo como no de
+// verdade, e o webhook da Stripe devolve um segredo. A "cifra" é o
+// próprio texto, e a conexão gravada vale sem decifrar.
 
 export interface ProvedoresDeMemoria extends FabricaDeProvedores {
   chavesInvalidas: Set<string>;
@@ -22,7 +25,8 @@ export interface ProvedoresDeMemoria extends FabricaDeProvedores {
   contas: Map<string, string>;
   // Fora do ar: todo pedido falha como `indisponivel`.
   indisponivel: boolean;
-  webhooks: { id: string; url: string; token: string; email: string | null }[];
+  // `segredo` só no da Stripe.
+  webhooks: { id: string; url: string; token: string; email: string | null; segredo?: string }[];
   clientes: (NovoCliente & { id: string })[];
   pedidosDeAssinatura: (NovaAssinatura & { id: string })[];
   // O que o "provedor" diz quando o webhook relê.
@@ -41,8 +45,11 @@ export function provedoresDeMemoria(
   const urlDaApi = opcoes.urlDaApi === undefined ? "https://api.barchop.test" : opcoes.urlDaApi;
   const contaDoWebhook = new Map<string, string>();
 
-  function provedor(chave: string): Provedor {
-    const modo = modoDaChaveDoAsaas(chave) ?? "teste";
+  const modoDaChave = (nome: NomeDoProvedor, chave: string): ModoDoProvedor | null =>
+    nome === "stripe" ? modoDaChaveDaStripe(chave) : modoDaChaveDoAsaas(chave);
+
+  function provedor(nome: NomeDoProvedor, chave: string): Provedor {
+    const modo = modoDaChave(nome, chave) ?? "teste";
     const conta = () => fabrica.contas.get(chave) ?? chave;
     // Como o Asaas: fora do ar, nada responde; a chave revogada não
     // passa de nenhum pedido.
@@ -53,18 +60,19 @@ export function provedoresDeMemoria(
       }
     };
     return {
-      nome: "asaas",
+      nome,
       modo,
-      pedeCpf: true,
+      pedeCpf: nome === "asaas",
       async conferirChave() {
         atender();
       },
       async registrarWebhook(dados) {
         atender();
         const id = proximo("wh");
-        fabrica.webhooks.push({ id, ...dados });
+        const segredo = nome === "stripe" ? proximo("whsec") : null;
+        fabrica.webhooks.push({ id, ...dados, ...(segredo ? { segredo } : {}) });
         contaDoWebhook.set(id, conta());
-        return { id, segredo: null };
+        return { id, segredo };
       },
       async apagarWebhook(id) {
         atender();
@@ -145,11 +153,12 @@ export function provedoresDeMemoria(
     cobrancas: new Map(),
     cancelamentos: [],
     eventos: [],
-    modoDaChave: (_provedor, chave) => modoDaChaveDoAsaas(chave),
+    modoDaChave,
     cifrar: (chave) => Buffer.from(chave, "utf8"),
     urlDoWebhook: (provedor, conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/${provedor}/${conexaoId}`),
-    daChave: ({ chave }) => provedor(chave),
-    daConexao: ({ chaveCifrada }) => provedor(Buffer.from(chaveCifrada).toString("utf8")),
+    daChave: ({ provedor: nome, chave }) => provedor(nome, chave),
+    daConexao: ({ provedor: nome, chaveCifrada }) =>
+      provedor(nome === "stripe" ? "stripe" : "asaas", Buffer.from(chaveCifrada).toString("utf8")),
   };
   return fabrica;
 }

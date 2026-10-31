@@ -27,9 +27,9 @@ export type SituacaoDoAssinante = (typeof SITUACOES_DO_ASSINANTE)[number];
 export const FORMAS_DA_ASSINATURA = ["online", "no_balcao"] as const;
 export type FormaDaAssinatura = (typeof FORMAS_DA_ASSINATURA)[number];
 
-// Onde a conta de quem vende está. Um conector por provedor; o Asaas é o
-// primeiro (Mercado Pago, Stripe e InfinitePay depois).
-export const PROVEDORES_DE_PAGAMENTO = ["asaas"] as const;
+// Onde a conta de quem vende está. Um conector por provedor: o Asaas e a
+// Stripe (a InfinitePay depois).
+export const PROVEDORES_DE_PAGAMENTO = ["asaas", "stripe"] as const;
 export type ProvedorDePagamento = (typeof PROVEDORES_DE_PAGAMENTO)[number];
 
 // A chave conectada é de sandbox (`teste`) ou de produção (`real`).

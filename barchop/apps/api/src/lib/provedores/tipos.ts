@@ -130,6 +130,8 @@ export interface ConexaoGravada {
   provedor: string;
   modo: string;
   chaveCifrada: Uint8Array;
+  // O segredo que assina os eventos da Stripe; null no Asaas.
+  segredoDoWebhookCifrado: Uint8Array | null;
 }
 
 // Cada vendedor tem a própria chave: a instância guarda a fábrica, e não

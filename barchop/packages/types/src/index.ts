@@ -866,7 +866,7 @@ export interface VitrineDePlanos {
 // provedor (`?daCasa=true` = a que recebe os planos da casa, só o dono).
 // A chave nunca volta: só os 4 últimos caracteres.
 export interface ContaDePagamentoOnline {
-  provedor: "asaas";
+  provedor: "asaas" | "stripe";
   // `teste` = chave do sandbox, que não move dinheiro.
   modo: "teste" | "real";
   chaveFinal: string;

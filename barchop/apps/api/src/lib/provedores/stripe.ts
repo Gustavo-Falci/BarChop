@@ -198,7 +198,12 @@ export function provedorStripe(opcoes: {
           description: "BarChop",
         })
       );
-      return { id: criado.id, segredo: criado.secret ?? null };
+      // Sem o segredo, a conexão recusaria todo evento: o webhook não fica.
+      if (!criado.secret) {
+        await pedir(() => stripe.webhookEndpoints.del(criado.id), true);
+        throw new ErroDoProvedor("indisponivel", "a Stripe não devolveu o segredo do webhook");
+      }
+      return { id: criado.id, segredo: criado.secret };
     },
     async apagarWebhook(id) {
       await pedir(() => stripe.webhookEndpoints.del(id), true);

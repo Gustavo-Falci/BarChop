@@ -122,12 +122,20 @@ describe("conexao_de_pagamento", () => {
     await c.app.close();
   });
 
-  it("uma conta por membro e provedor", async () => {
+  // Uma ligada por membro, de qualquer provedor (decisão 8 do plano da
+  // Stripe): dois conectar ao mesmo tempo, um no Asaas e outro na
+  // Stripe, não deixam duas.
+  it("uma conta ligada por membro, de qualquer provedor", async () => {
     const c = await cenario();
     await prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { barbeiroId: c.parceiro.id }) });
     await expect(
       prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { barbeiroId: c.parceiro.id, modo: "real" }) })
     ).rejects.toThrow();
+    await expect(
+      prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { barbeiroId: c.parceiro.id, provedor: "stripe" }) })
+    ).rejects.toThrow();
+    await prisma.conexaoDePagamento.updateMany({ data: { desconectadaEm: new Date() } });
+    await prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { barbeiroId: c.parceiro.id, provedor: "stripe" }) });
     await c.app.close();
   });
 });
@@ -304,6 +312,8 @@ describe("evento_do_provedor", () => {
       prisma.eventoDoProvedor.create({ data: { provedor: "asaas", id: "evt_1", tipo: "PAYMENT_RECEIVED" } })
     ).rejects.toThrow();
     await expect(prisma.eventoDoProvedor.create({ data: { provedor: "paypal", id: "evt_2", tipo: "x" } })).rejects.toThrow();
+    // O mesmo id em outro provedor é outro evento.
+    await prisma.eventoDoProvedor.create({ data: { provedor: "stripe", id: "evt_1", tipo: "invoice.paid" } });
   });
 });
 

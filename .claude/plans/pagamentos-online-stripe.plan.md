@@ -23,6 +23,14 @@ Diferenças do plano, combinadas no caminho:
   - O `recusado` da Stripe sai com frase nossa ("a Stripe recusou o pedido"): a mensagem dela vem em inglês.
   - A gravação usou a `STRIPE_SECRET_KEY` de teste do `apps/api/.env` (a conta de teste do BarChop). Ficou nela 1 produto arquivado (`barchop_plano_…`); cliente, assinaturas e webhook apagados.
   - Pro PR 4: a Stripe ancora a renovação no dia da assinatura (31/01 → 28/02 → 31/03); conferir se o `fimDoCiclo` do BarChop bate.
+- **PR 3:**
+  - Migração `20261101120000_stripe_nos_planos`: a coluna `segredo_do_webhook_cifrado` (anulável), `stripe` nos CHECKs de provedor da conexão **e do `evento_do_provedor`** (sem este, o dedupe do PR 4 falharia), e o índice "uma por membro e provedor" virou "uma por membro" (`conexao_de_pagamento_barbeiro_key`): com dois provedores, dois conectar ao mesmo tempo (um em cada) deixariam duas contas ligadas, contra a decisão 8. `PROVEDORES_DE_PAGAMENTO` do formato com `stripe`.
+  - Trocar de provedor com a conta ligada é `outra_conta` antes de falar com o provedor ("a conta conectada é do Asaas: desconecte antes de conectar a da Stripe").
+  - Se a Stripe não devolve o segredo ao criar o webhook, o conector apaga o webhook e falha (`indisponivel`): conexão sem segredo recusaria todo evento.
+  - Desconectar apaga o segredo junto com a chave. O token e o hash do webhook seguem gravados na Stripe também (a coluna é NOT NULL), sem uso.
+  - O provedor de memória serve os dois (modo pelo prefixo de cada um, `pedeCpf`, segredo `whsec_memoria_N` no webhook da Stripe); os eventos assinados na memória ficam pro PR 4.
+  - O assinar com a Stripe ainda pede o CPF até o PR 5. O api-client segue mandando `provedor: "asaas"` e a tela só mostra o Asaas até o PR 6.
+  - **Deploy:** a rota `/webhooks/stripe/<conexão>` só chega no PR 4. Uma conta da Stripe conectada (pela API, já que a tela não oferece) antes dele faria a Stripe receber 404, tentar de novo e desligar o endpoint. Subir o PR 3 junto com o 4 (ou não conectar Stripe antes). Ordem: migração antes da API.
 
 ## Summary
 Quem vende (a casa ou o profissional) passa a escolher entre o Asaas e a Stripe em Pagamentos online e cola a chave da própria conta Stripe; o BarChop cria o webhook pela API, como no Asaas (sem Stripe Connect, decisão do dono em 30/10). O cliente assina na fatura da Stripe (cartão, renovação automática), e o resto — vitrine, Minha conta, assinantes, Caixa, acerto, sino — segue pelo mesmo caminho do Asaas, porque o conector da Stripe entra atrás da interface `Provedor` que já existe.

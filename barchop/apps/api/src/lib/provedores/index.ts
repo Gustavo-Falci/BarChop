@@ -80,14 +80,14 @@ export function provedoresDoAmbiente(
   // conectar pede um túnel https na URL_DA_API.
   const urlDaApi = env.URL_DA_API?.replace(/\/+$/, "") || null;
 
-  function conector(provedor: NomeDoProvedor, chave: string, modo: ModoDoProvedor) {
+  // O segredo do webhook vem da conexão gravada; a chave colada só
+  // confere e registra o webhook.
+  function conector(provedor: NomeDoProvedor, chave: string, modo: ModoDoProvedor, segredoDoWebhook: string | null = null) {
     switch (provedor) {
       case "asaas":
         return provedorAsaas({ chave, modo, fetch: opcoes.fetch });
-      // O segredo do webhook vem da conexão gravada (PR 3); a chave colada
-      // só confere e registra o webhook.
       case "stripe":
-        return provedorStripe({ chave, modo, segredoDoWebhook: null, fetch: opcoes.fetch });
+        return provedorStripe({ chave, modo, segredoDoWebhook, fetch: opcoes.fetch });
     }
   }
 
@@ -102,13 +102,13 @@ export function provedoresDoAmbiente(
       if (!modo) throw new ErroDoProvedor("chave_invalida", `isso não é uma chave de API ${nomeDoProvedor(provedor).do}`);
       return conector(provedor, chave, modo);
     },
-    // A conexão da Stripe só existe com o segredo do webhook gravado,
-    // que entra no PR 3.
-    daConexao({ provedor, modo, chaveCifrada }) {
-      if (provedor !== "asaas" || (modo !== "teste" && modo !== "real")) {
+    daConexao({ provedor, modo, chaveCifrada, segredoDoWebhookCifrado }) {
+      if (!(PROVEDORES as readonly string[]).includes(provedor) || (modo !== "teste" && modo !== "real")) {
         throw new Error(`conexão com provedor ou modo desconhecido: ${provedor}/${modo}`);
       }
-      return conector(provedor, decifrar(chaveCifrada, chaveDeCifra(env)), modo);
+      const cifra = chaveDeCifra(env);
+      const segredo = segredoDoWebhookCifrado ? decifrar(segredoDoWebhookCifrado, cifra) : null;
+      return conector(provedor as NomeDoProvedor, decifrar(chaveCifrada, cifra), modo, segredo);
     },
   };
 }

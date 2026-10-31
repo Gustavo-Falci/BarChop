@@ -574,24 +574,26 @@ model FechamentoDoDia {
 // em packages/formato/src/planos-do-cliente.ts. Dinheiro em centavos.
 
 // A conta de quem vende num provedor. `daCasa` = a que recebe os planos
-// da casa (uma por barbearia, índice parcial); fora ela, uma por membro e
-// provedor, as duas regras só entre as ligadas. A chave vai cifrada e
-// nunca volta pra tela. Desconectar desliga (`desconectadaEm`, chave
+// da casa (uma por barbearia, índice parcial); fora ela, uma por membro,
+// de qualquer provedor, as duas regras só entre as ligadas. A chave vai
+// cifrada e nunca volta pra tela; o segredo do webhook da Stripe também
+// (nulo no Asaas). Desconectar desliga (`desconectadaEm`, chave
 // apagada) em vez de apagar: a assinatura online cancelada segue
 // apontando pra conexão em que foi cobrada.
 model ConexaoDePagamento {
-  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  barbeariaId      String    @map("barbearia_id") @db.Uuid
-  barbeiroId       String    @map("barbeiro_id") @db.Uuid
-  daCasa           Boolean   @default(false) @map("da_casa")
-  provedor         String    @db.VarChar(20)
-  modo             String    @db.VarChar(10)
-  chaveCifrada     Bytes     @map("chave_cifrada")
-  chaveFinal       String    @map("chave_final") @db.VarChar(4)
-  webhookTokenHash String    @map("webhook_token_hash") @db.VarChar(128)
-  idExternoWebhook String?   @map("id_externo_webhook") @db.VarChar(100)
-  criadoEm         DateTime  @default(now()) @map("criado_em") @db.Timestamptz
-  desconectadaEm   DateTime? @map("desconectada_em") @db.Timestamptz
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId             String    @map("barbearia_id") @db.Uuid
+  barbeiroId              String    @map("barbeiro_id") @db.Uuid
+  daCasa                  Boolean   @default(false) @map("da_casa")
+  provedor                String    @db.VarChar(20)
+  modo                    String    @db.VarChar(10)
+  chaveCifrada            Bytes     @map("chave_cifrada")
+  chaveFinal              String    @map("chave_final") @db.VarChar(4)
+  webhookTokenHash        String    @map("webhook_token_hash") @db.VarChar(128)
+  idExternoWebhook        String?   @map("id_externo_webhook") @db.VarChar(100)
+  segredoDoWebhookCifrado Bytes?    @map("segredo_do_webhook_cifrado")
+  criadoEm                DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  desconectadaEm          DateTime? @map("desconectada_em") @db.Timestamptz
 
   barbearia   Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   barbeiro    Barbeiro              @relation(fields: [barbeiroId], references: [id], onDelete: NoAction)

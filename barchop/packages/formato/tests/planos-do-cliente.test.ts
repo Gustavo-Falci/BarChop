@@ -46,7 +46,7 @@ describe("listas fechadas", () => {
   });
 
   it("provedores e modos da conta conectada (viram CHECK no banco)", () => {
-    expect(PROVEDORES_DE_PAGAMENTO).toEqual(["asaas"]);
+    expect(PROVEDORES_DE_PAGAMENTO).toEqual(["asaas", "stripe"]);
     expect(MODOS_DA_CONEXAO).toEqual(["teste", "real"]);
   });
 

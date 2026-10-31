@@ -1,7 +1,7 @@
 import { prisma } from "@barchop/database";
 import { ErroHttp } from "../lib/erro-http";
 import { PADRAO_UUID } from "../lib/padroes";
-import type { EventoDoProvedor } from "../lib/provedores";
+import { recorrente, type EventoDoProvedor } from "../lib/provedores";
 import { receberEvento } from "../lib/webhook-dos-planos";
 import type { App } from "../tipos";
 
@@ -41,7 +41,7 @@ export function registrarRotaWebhookStripePlanos(app: App): void {
       return reply.send({ recebido: true });
     }
 
-    const provedor = app.provedores.daConexao(conexao);
+    const provedor = recorrente(app.provedores.daConexao(conexao));
     const assinatura = request.headers["stripe-signature"];
     let evento: EventoDoProvedor;
     try {

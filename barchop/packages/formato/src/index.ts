@@ -71,6 +71,7 @@ export {
 } from "./caixa";
 export {
   CICLOS_DO_CLIENTE,
+  DIAS_PARA_CANCELAR,
   FORMAS_DA_ASSINATURA,
   FORMAS_DA_MENSALIDADE,
   FORMAS_DO_CAIXA,
@@ -79,6 +80,7 @@ export {
   MODOS_DA_CONEXAO,
   PROVEDORES_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
+  SITUACOES_DO_LINK,
   assinanteUsaOPlano,
   cicloEmAtraso,
   cicloPagoOnline,

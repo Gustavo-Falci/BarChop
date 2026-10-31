@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import {
   CICLOS_DO_CLIENTE,
+  DIAS_PARA_CANCELAR,
   FORMAS_DA_ASSINATURA,
   FORMAS_DA_MENSALIDADE,
   FORMAS_DE_PAGAMENTO,
@@ -11,6 +12,7 @@ import {
   MODOS_DA_CONEXAO,
   PROVEDORES_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
+  SITUACOES_DO_LINK,
 } from "@barchop/formato";
 import { buildApp } from "../src/app";
 import { dataParaDate } from "../src/lib/horas";
@@ -45,6 +47,8 @@ function dadosDoPlano(c: Cenario, extra: Record<string, unknown> = {}) {
     ...extra,
   };
 }
+
+const DA_INFINITEPAY = { infiniteTag: "barbearia-exemplo", diasParaCancelar: DIAS_PARA_CANCELAR.padrao };
 
 function dadosDaConexao(c: Cenario, extra: Record<string, unknown> = {}) {
   return {
@@ -103,12 +107,38 @@ describe("conexao_de_pagamento", () => {
     for (const provedor of PROVEDORES_DE_PAGAMENTO) {
       for (const modo of MODOS_DA_CONEXAO) {
         await prisma.conexaoDePagamento.deleteMany();
-        await prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { provedor, modo }) });
+        const daInfinitePay = provedor === "infinitepay" ? DA_INFINITEPAY : {};
+        await prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { provedor, modo, ...daInfinitePay }) });
       }
     }
     await prisma.conexaoDePagamento.deleteMany();
     await expect(prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { provedor: "paypal" }) })).rejects.toThrow();
     await expect(prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, { modo: "producao" }) })).rejects.toThrow();
+    await c.app.close();
+  });
+
+  // A InfinitePay (plano pagamentos-online-infinitepay, PR 3): o
+  // `payment_check` pede a InfiniteTag, e quem vende escolhe em quantos
+  // dias de atraso a assinatura cancela. As outras não têm nenhum dos dois.
+  it("a da InfinitePay tem a tag e os dias para cancelar, dentro dos limites do código; as outras, nenhum", async () => {
+    const c = await cenario();
+    const criar = (extra: Record<string, unknown>) => prisma.conexaoDePagamento.create({ data: dadosDaConexao(c, extra) });
+    for (const dias of [DIAS_PARA_CANCELAR.minimo, DIAS_PARA_CANCELAR.maximo]) {
+      await prisma.conexaoDePagamento.deleteMany();
+      await criar({ provedor: "infinitepay", modo: "real", infiniteTag: "barbearia-exemplo", diasParaCancelar: dias });
+    }
+    await prisma.conexaoDePagamento.deleteMany();
+    for (const ruim of [
+      { provedor: "infinitepay", modo: "real" },
+      { provedor: "infinitepay", modo: "real", infiniteTag: "barbearia-exemplo" },
+      { provedor: "infinitepay", modo: "real", diasParaCancelar: 10 },
+      { provedor: "infinitepay", modo: "real", infiniteTag: "barbearia-exemplo", diasParaCancelar: DIAS_PARA_CANCELAR.minimo - 1 },
+      { provedor: "infinitepay", modo: "real", infiniteTag: "barbearia-exemplo", diasParaCancelar: DIAS_PARA_CANCELAR.maximo + 1 },
+      { provedor: "asaas", infiniteTag: "barbearia-exemplo" },
+      { provedor: "stripe", diasParaCancelar: 10 },
+    ]) {
+      await expect(criar(ruim)).rejects.toThrow();
+    }
     await c.app.close();
   });
 
@@ -314,6 +344,71 @@ describe("evento_do_provedor", () => {
     await expect(prisma.eventoDoProvedor.create({ data: { provedor: "paypal", id: "evt_2", tipo: "x" } })).rejects.toThrow();
     // O mesmo id em outro provedor é outro evento.
     await prisma.eventoDoProvedor.create({ data: { provedor: "stripe", id: "evt_1", tipo: "invoice.paid" } });
+    await prisma.eventoDoProvedor.create({ data: { provedor: "infinitepay", id: "evt_1", tipo: "paid" } });
+  });
+});
+
+// O link de pagamento de cada ciclo, na InfinitePay (plano
+// pagamentos-online-infinitepay, PR 3): um por assinatura e vencimento,
+// com a referência do BarChop (`order_nsu`) única.
+describe("link_do_ciclo", () => {
+  async function comAssinaturaDaInfinitePay() {
+    const c = await cenario();
+    const plano = await prisma.planoDeAssinatura.create({ data: dadosDoPlano(c) });
+    const conexao = await prisma.conexaoDePagamento.create({
+      data: dadosDaConexao(c, { daCasa: true, provedor: "infinitepay", modo: "real", ...DA_INFINITEPAY }),
+    });
+    const assinatura = await assinaturaNoBalcao(c, plano.id, { situacao: "pendente", forma: "online", conexaoId: conexao.id });
+    const criarLink = (extra: Record<string, unknown> = {}) =>
+      prisma.linkDoCiclo.create({
+        data: {
+          barbeariaId: c.agenda.barbeariaId,
+          assinaturaId: assinatura.id,
+          vencimento: dataParaDate("2026-11-10"),
+          valorCentavos: 12000,
+          orderNsu: `${assinatura.id}:2026-11-10`,
+          url: "https://checkout.infinitepay.io/exemplo/a",
+          validoAte: dataParaDate("2026-11-20"),
+          ...extra,
+        },
+      });
+    return { c, assinatura, criarLink };
+  }
+
+  it("nasce aberto; aceita toda situação do código, e nada fora dela", async () => {
+    const { c, criarLink } = await comAssinaturaDaInfinitePay();
+    expect((await criarLink()).situacao).toBe("aberto");
+    for (const situacao of SITUACOES_DO_LINK) {
+      await prisma.linkDoCiclo.deleteMany();
+      await criarLink({ situacao, ...(situacao === "pago" ? { transactionNsu: "t1", slug: "s1", pagoEm: new Date() } : {}) });
+    }
+    await prisma.linkDoCiclo.deleteMany();
+    await expect(criarLink({ situacao: "vencido" })).rejects.toThrow();
+    await c.app.close();
+  });
+
+  it("um link por assinatura e vencimento; a referência é única", async () => {
+    const { c, assinatura, criarLink } = await comAssinaturaDaInfinitePay();
+    await criarLink();
+    await expect(criarLink({ orderNsu: "outra" })).rejects.toThrow();
+    await expect(
+      criarLink({ vencimento: dataParaDate("2026-12-10"), validoAte: dataParaDate("2026-12-20"), orderNsu: `${assinatura.id}:2026-11-10` })
+    ).rejects.toThrow();
+    await criarLink({ vencimento: dataParaDate("2026-12-10"), validoAte: dataParaDate("2026-12-20"), orderNsu: `${assinatura.id}:2026-12-10` });
+    await c.app.close();
+  });
+
+  it("pago tem a transação e o dia; o valor é de pelo menos R$ 1; a validade não vem antes do vencimento", async () => {
+    const { c, criarLink } = await comAssinaturaDaInfinitePay();
+    for (const ruim of [
+      { situacao: "pago" },
+      { situacao: "pago", transactionNsu: "t1" },
+      { valorCentavos: 99 },
+      { validoAte: dataParaDate("2026-11-09") },
+    ]) {
+      await expect(criarLink(ruim)).rejects.toThrow();
+    }
+    await c.app.close();
   });
 });
 
@@ -488,6 +583,17 @@ describe("apagar a barbearia", () => {
     await prisma.usoDoPlano.create({
       data: { pagamentoId: pagamento.id, assinaturaId: assinatura.id, servicoId: c.agenda.servico.id, data: dataParaDate(QUINTA) },
     });
+    await prisma.linkDoCiclo.create({
+      data: {
+        barbeariaId: c.agenda.barbeariaId,
+        assinaturaId: assinatura.id,
+        vencimento: dataParaDate(QUINTA),
+        valorCentavos: 9000,
+        orderNsu: `${assinatura.id}:${QUINTA}`,
+        url: "https://checkout.infinitepay.io/exemplo/a",
+        validoAte: dataParaDate(QUINTA),
+      },
+    });
 
     await prisma.agendamento.delete({ where: { id: agendamento.id } });
     await prisma.barbearia.delete({ where: { id: c.agenda.barbeariaId } });
@@ -498,6 +604,7 @@ describe("apagar a barbearia", () => {
     expect(await prisma.assinaturaDoCliente.count()).toBe(0);
     expect(await prisma.recebimentoDoPlano.count()).toBe(0);
     expect(await prisma.usoDoPlano.count()).toBe(0);
+    expect(await prisma.linkDoCiclo.count()).toBe(0);
     await c.app.close();
   });
 });

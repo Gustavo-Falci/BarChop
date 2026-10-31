@@ -26,10 +26,6 @@ export function modoDaChaveDaInfinitePay(chave: string): ModoDoProvedor | null {
   return chave.startsWith("inchk_") && chave.length > "inchk_".length ? "real" : null;
 }
 
-// Até a InfinitePay entrar em PROVEDORES (PR 3), o nome dela não é um
-// NomeDoProvedor: depois, este tipo vira só `ProvedorDeLink`.
-export type ConectorDaInfinitePay = Omit<ProvedorDeLink, "nome"> & { nome: "infinitepay" };
-
 type Json = Record<string, unknown>;
 
 const texto = (valor: unknown): string | null => (typeof valor === "string" && valor !== "" ? valor : null);
@@ -63,7 +59,7 @@ export function lerAvisoDaInfinitePay(corpo: unknown): AvisoDoLink {
   return { orderNsu, transactionNsu, slug };
 }
 
-export function provedorInfinitePay(opcoes: { chave: string; tag: string; fetch?: typeof fetch }): ConectorDaInfinitePay {
+export function provedorInfinitePay(opcoes: { chave: string; tag: string; fetch?: typeof fetch }): ProvedorDeLink {
   const { chave, tag } = opcoes;
   const buscar = opcoes.fetch ?? fetch;
 

@@ -113,6 +113,8 @@ describe("conectar a conta", () => {
       modo: "teste",
       chaveFinal: "1234",
       conectadaEm: expect.any(String),
+      infiniteTag: null,
+      diasParaCancelar: null,
     });
   });
 
@@ -322,6 +324,207 @@ describe("a Stripe", () => {
 
     expect(resposta.statusCode).toBe(200);
     expect(resposta.json().conta.provedor).toBe("asaas");
+  });
+});
+
+// A InfinitePay (plano pagamentos-online-infinitepay, PR 3): sem sandbox
+// (toda `inchk_` é de produção), sem webhook da conta (o aviso vai em cada
+// link) e com a InfiniteTag, que o `payment_check` pede. Quem vende
+// escolhe em quantos dias de atraso a assinatura cancela.
+const CHAVE_DA_INFINITEPAY = "inchk_chave-do-dono-2468";
+const TAG = "barbearia-exemplo";
+
+function conectarInfinitePay(c: Cenario, token: string, corpo: { chave?: string; tag?: string } = {}, daCasa = false) {
+  return c.app.inject({
+    method: "PUT",
+    url: url(daCasa),
+    headers: auth(token),
+    payload: { provedor: "infinitepay", chave: CHAVE_DA_INFINITEPAY, tag: TAG, ...corpo },
+  });
+}
+
+function mudarDias(c: Cenario, token: string, diasParaCancelar: unknown, daCasa = false) {
+  return c.app.inject({ method: "PATCH", url: url(daCasa), headers: auth(token), payload: { diasParaCancelar } });
+}
+
+describe("a InfinitePay", () => {
+  it("conecta com a chave e a tag (sem o $), sem webhook, e os dias para cancelar no padrão", async () => {
+    const c = await cenario({ modoAceito: "real" });
+
+    const resposta = await conectarInfinitePay(c, c.dono.token, { tag: "  $barbearia-exemplo " });
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.body).not.toContain(CHAVE_DA_INFINITEPAY);
+    expect(resposta.json().conta).toMatchObject({
+      provedor: "infinitepay",
+      modo: "real",
+      chaveFinal: "2468",
+      infiniteTag: TAG,
+      diasParaCancelar: 10,
+    });
+    const conexao = await prisma.conexaoDePagamento.findFirstOrThrow();
+    expect(conexao).toMatchObject({
+      provedor: "infinitepay",
+      infiniteTag: TAG,
+      diasParaCancelar: 10,
+      idExternoWebhook: null,
+      segredoDoWebhookCifrado: null,
+    });
+    expect(Buffer.from(conexao.chaveCifrada).toString("utf8")).toBe(CHAVE_DA_INFINITEPAY);
+    expect(c.provedores.webhooks).toEqual([]);
+    expect((await ver(c, c.dono.token)).json().conta).toMatchObject({ infiniteTag: TAG, diasParaCancelar: 10 });
+  });
+
+  it("as outras contas não têm tag nem dias para cancelar", async () => {
+    const c = await cenario();
+    await conectar(c, c.dono.token);
+    expect((await ver(c, c.dono.token)).json().conta).toMatchObject({ infiniteTag: null, diasParaCancelar: null });
+  });
+
+  it("sem a tag é 422 tag_obrigatoria; tag torta é 422 tag_invalida; nada gravado", async () => {
+    const c = await cenario({ modoAceito: "real" });
+
+    const semTag = await c.app.inject({
+      method: "PUT",
+      url: url(),
+      headers: auth(c.dono.token),
+      payload: { provedor: "infinitepay", chave: CHAVE_DA_INFINITEPAY },
+    });
+    const torta = await conectarInfinitePay(c, c.dono.token, { tag: "barbearia exemplo" });
+
+    expect(semTag.statusCode).toBe(422);
+    expect(semTag.json()).toMatchObject({ erro: "tag_obrigatoria", mensagem: "a InfinitePay pede a InfiniteTag da conta" });
+    expect(torta.statusCode).toBe(422);
+    expect(torta.json().erro).toBe("tag_invalida");
+    expect(await prisma.conexaoDePagamento.count()).toBe(0);
+  });
+
+  it("chave fora do formato: a frase da InfinitePay", async () => {
+    const real = await cenario({ modoAceito: "real" });
+    const torta = await conectarInfinitePay(real, real.dono.token, { chave: "rk_live_qualquer" });
+    expect(torta.statusCode).toBe(422);
+    expect(torta.json()).toMatchObject({
+      erro: "chave_invalida",
+      mensagem: "isso não é uma chave de API da InfinitePay: ela começa com inchk_",
+    });
+  });
+
+  it("com a plataforma no modo de teste, a InfinitePay não conecta", async () => {
+    const teste = await cenario();
+    const emTeste = await conectarInfinitePay(teste, teste.dono.token);
+    expect(emTeste.statusCode).toBe(422);
+    expect(emTeste.json()).toMatchObject({
+      erro: "modo_errado",
+      mensagem: "a InfinitePay não tem chave de teste, e aqui só vale a de teste",
+    });
+    expect(await prisma.conexaoDePagamento.count()).toBe(0);
+  });
+
+  it("chave que a InfinitePay não aceita (ou de outra conta que não a da tag) é 422 chave_recusada", async () => {
+    const c = await cenario({ modoAceito: "real" });
+    c.provedores.chavesInvalidas.add(CHAVE_DA_INFINITEPAY);
+
+    const resposta = await conectarInfinitePay(c, c.dono.token);
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("chave_recusada");
+    expect(await prisma.conexaoDePagamento.count()).toBe(0);
+  });
+
+  it("trocar a chave: a nova vale com a tag gravada; de outra conta, 422 outra_conta e nada muda", async () => {
+    const c = await cenario({ modoAceito: "real" });
+    await conectarInfinitePay(c, c.dono.token);
+    c.provedores.tagsDasContas.set(TAG, CHAVE_DA_INFINITEPAY);
+    const daMesma = "inchk_chave-nova-1357";
+    c.provedores.contas.set(daMesma, CHAVE_DA_INFINITEPAY);
+
+    const trocada = await conectarInfinitePay(c, c.dono.token, { chave: daMesma });
+    const deOutra = await conectarInfinitePay(c, c.dono.token, { chave: "inchk_de-outra-conta-9999" });
+
+    expect(trocada.statusCode).toBe(200);
+    expect(trocada.json().conta).toMatchObject({ chaveFinal: "1357", infiniteTag: TAG, diasParaCancelar: 10 });
+    expect(deOutra.statusCode).toBe(422);
+    expect(deOutra.json()).toMatchObject({
+      erro: "outra_conta",
+      mensagem: "esta chave não vale para a InfiniteTag barbearia-exemplo: confira se ela é dessa conta e se está ativa",
+    });
+    const conexao = await prisma.conexaoDePagamento.findFirstOrThrow();
+    expect(conexao.chaveFinal).toBe("1357");
+  });
+
+  it("trocar a tag com a conta ligada é 422 outra_conta: desconecte antes", async () => {
+    const c = await cenario({ modoAceito: "real" });
+    await conectarInfinitePay(c, c.dono.token);
+
+    const resposta = await conectarInfinitePay(c, c.dono.token, { tag: "outra-tag" });
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json()).toMatchObject({
+      erro: "outra_conta",
+      mensagem: "a conta conectada é a da InfiniteTag barbearia-exemplo: desconecte antes de conectar outra",
+    });
+  });
+
+  it("com o Asaas conectado, a InfinitePay é 422 outra_conta", async () => {
+    const c = await cenario({ modoAceito: "real" });
+    await conectar(c, c.dono.token, "$aact_prod_chave-do-dono-1234");
+
+    const resposta = await conectarInfinitePay(c, c.dono.token);
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json()).toMatchObject({
+      erro: "outra_conta",
+      mensagem: "a conta conectada é do Asaas: desconecte antes de conectar a da InfinitePay",
+    });
+  });
+
+  it("os dias para cancelar: de 3 a 30, só na conta da InfinitePay", async () => {
+    const c = await cenario({ modoAceito: "real" });
+    expect((await mudarDias(c, c.dono.token, 15)).statusCode).toBe(404);
+    await conectarInfinitePay(c, c.dono.token);
+
+    const mudou = await mudarDias(c, c.dono.token, 15);
+
+    expect(mudou.statusCode).toBe(200);
+    expect(mudou.json().conta).toMatchObject({ provedor: "infinitepay", diasParaCancelar: 15 });
+    for (const ruim of [2, 31, 7.5, "dez"]) {
+      expect((await mudarDias(c, c.dono.token, ruim)).statusCode).toBe(400);
+    }
+    expect((await prisma.conexaoDePagamento.findFirstOrThrow()).diasParaCancelar).toBe(15);
+
+    await desconectar(c, c.dono.token);
+    await conectar(c, c.dono.token, "$aact_prod_chave-do-dono-1234");
+    const noAsaas = await mudarDias(c, c.dono.token, 15);
+    expect(noAsaas.statusCode).toBe(422);
+    expect(noAsaas.json()).toMatchObject({
+      erro: "so_na_infinitepay",
+      mensagem: "os dias para cancelar são só da InfinitePay: o Asaas cancela pelas próprias regras",
+    });
+  });
+
+  it("os dias para cancelar: quem tem a conta muda a dele; a da casa, só o dono; recepção, nada", async () => {
+    const c = await cenario({ modoAceito: "real" });
+    await liberarVenda(c, c.lucas.barbeiroId);
+    await conectarInfinitePay(c, c.lucas.token);
+    await conectarInfinitePay(c, c.dono.token, {}, true);
+
+    expect((await mudarDias(c, c.lucas.token, 20)).statusCode).toBe(200);
+    expect((await mudarDias(c, c.lucas.token, 20, true)).statusCode).toBe(403);
+    expect((await mudarDias(c, c.recepcao.token, 20)).statusCode).toBe(403);
+    expect((await mudarDias(c, c.dono.token, 25, true)).json().conta.diasParaCancelar).toBe(25);
+  });
+
+  it("desconectar desliga sem falar com a InfinitePay e tira a chave; a tag fica, pelo histórico", async () => {
+    const c = await cenario({ modoAceito: "real" });
+    await conectarInfinitePay(c, c.dono.token);
+
+    const resposta = await desconectar(c, c.dono.token);
+
+    expect(resposta.statusCode).toBe(204);
+    const conexao = await prisma.conexaoDePagamento.findFirstOrThrow();
+    expect(conexao.desconectadaEm).not.toBeNull();
+    expect(Buffer.from(conexao.chaveCifrada)).toHaveLength(0);
+    expect(conexao.infiniteTag).toBe(TAG);
   });
 });
 

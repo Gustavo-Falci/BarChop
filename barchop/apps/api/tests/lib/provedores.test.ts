@@ -8,6 +8,9 @@ import {
   modoDosPagamentosOnline,
   provedoresDeMemoria,
   provedoresDoAmbiente,
+  recorrente,
+  nomeDoProvedor,
+  type ProvedorDeLink,
   type ProvedorRecorrente,
 } from "../../src/lib/provedores";
 
@@ -136,8 +139,8 @@ describe("provedoresDoAmbiente", () => {
     const assinatura = Stripe.webhooks.generateTestHeaderString({ payload: corpo, secret: segredo });
     const gravada = { provedor: "stripe", modo: "teste", chaveCifrada: fabrica.cifrar("sk_test_x") };
 
-    const comSegredo = fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: fabrica.cifrar(segredo) });
-    const semSegredo = fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: null });
+    const comSegredo = recorrente(fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: fabrica.cifrar(segredo) }));
+    const semSegredo = recorrente(fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: null }));
 
     expect(comSegredo).toMatchObject({ nome: "stripe", modo: "teste" });
     expect(comSegredo.lerEvento(Buffer.from(corpo), assinatura)).toMatchObject({ id: "evt_1", cobrancaId: "in_1" });
@@ -230,24 +233,82 @@ describe("provedoresDeMemoria", () => {
   });
 });
 
-// Como cada provedor cobra (plano pagamentos-online-infinitepay, PR 1): o
-// Asaas e a Stripe renovam sozinhos; a InfinitePay (PR 3) só gera link, e
-// o BarChop toca o ciclo. O tipo do conector segue o provedor: enquanto
-// nenhum cobra por link, toda conexão é recorrente.
+// Como cada provedor cobra (plano pagamentos-online-infinitepay, PRs 1 e
+// 3): o Asaas e a Stripe renovam sozinhos; a InfinitePay só gera link, e
+// o BarChop toca o ciclo. O tipo do conector segue o provedor.
 describe("tipo de cobrança", () => {
-  it("o Asaas e a Stripe são recorrentes, no conector de verdade e no de memória", () => {
-    expect(COBRA).toEqual({ asaas: "recorrente", stripe: "recorrente" });
+  it("o Asaas e a Stripe são recorrentes; a InfinitePay cobra por link, no conector de verdade e no de memória", () => {
+    expect(COBRA).toEqual({ asaas: "recorrente", stripe: "recorrente", infinitepay: "link" });
     const ambiente = provedoresDoAmbiente({ NODE_ENV: "development", CHAVE_DE_CIFRA: randomBytes(32).toString("base64") });
     const memoria = provedoresDeMemoria();
     for (const fabrica of [ambiente, memoria]) {
       expect(fabrica.daChave({ provedor: "asaas", chave: "$aact_hmlg_x" }).cobra).toBe("recorrente");
       expect(fabrica.daChave({ provedor: "stripe", chave: "sk_test_x" }).cobra).toBe("recorrente");
+      expect(fabrica.daChave({ provedor: "infinitepay", chave: "inchk_x", tag: "barbearia-exemplo" })).toMatchObject({
+        nome: "infinitepay",
+        modo: "real",
+        cobra: "link",
+        pedeCpf: false,
+      });
     }
   });
 
-  it("a conexão gravada é do tipo recorrente enquanto nenhum provedor cobra por link", () => {
+  it("o tipo do conector segue o provedor; a conexão gravada pode ser dos dois", () => {
     const fabrica = provedoresDeMemoria();
-    expectTypeOf(fabrica.daConexao).returns.toEqualTypeOf<ProvedorRecorrente>();
+    expectTypeOf(fabrica.daConexao).returns.toEqualTypeOf<ProvedorRecorrente | ProvedorDeLink>();
     expectTypeOf(fabrica.daChave<"stripe">).returns.toEqualTypeOf<ProvedorRecorrente>();
+    expectTypeOf(fabrica.daChave<"infinitepay">).returns.toEqualTypeOf<ProvedorDeLink>();
+  });
+});
+
+describe("a InfinitePay na fábrica", () => {
+  const cifra = randomBytes(32);
+  const ambiente = (fetchFalso?: typeof fetch) =>
+    provedoresDoAmbiente(
+      { NODE_ENV: "development", CHAVE_DE_CIFRA: cifra.toString("base64"), URL_DA_API: "https://api.barchop.com.br" },
+      { fetch: fetchFalso }
+    );
+
+  it("só a `inchk_` é chave dela, e é de produção; os nomes nas mensagens", () => {
+    expect(ambiente().modoDaChave("infinitepay", "inchk_x")).toBe("real");
+    expect(ambiente().modoDaChave("infinitepay", "$aact_prod_x")).toBeNull();
+    expect(ambiente().modoDaChave("stripe", "inchk_x")).toBeNull();
+    expect(() => ambiente().daChave({ provedor: "infinitepay", chave: "sk_live_x", tag: "t" })).toThrow(
+      /chave de API da InfinitePay/
+    );
+    expect(nomeDoProvedor("infinitepay")).toEqual({
+      o: "a InfinitePay",
+      do: "da InfinitePay",
+      inicioDaChave: "inchk_",
+      teste: "de teste",
+      real: "de produção",
+    });
+    expect(ambiente().urlDoWebhook("infinitepay", "c1")).toBe("https://api.barchop.com.br/webhooks/infinitepay/c1");
+  });
+
+  it("sem a InfiniteTag não há conector: o payment_check pede a tag", () => {
+    expect(() => ambiente().daChave({ provedor: "infinitepay", chave: "inchk_x" })).toThrow(/InfiniteTag/);
+    expect(() =>
+      ambiente().daConexao({ provedor: "infinitepay", modo: "real", chaveCifrada: cifrar("inchk_x", cifra), segredoDoWebhookCifrado: null })
+    ).toThrow(/InfiniteTag/);
+  });
+
+  it("a conexão gravada decifra a chave e manda a tag gravada", async () => {
+    const fetchFalso = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(new Response(JSON.stringify({ success: false, paid: false }), { headers: { "content-type": "application/json" } }));
+    const provedor = ambiente(fetchFalso).daConexao({
+      provedor: "infinitepay",
+      modo: "real",
+      chaveCifrada: cifrar("inchk_gravada", cifra),
+      segredoDoWebhookCifrado: null,
+      infiniteTag: "barbearia-exemplo",
+    });
+
+    await provedor.conferirChave();
+
+    expect(provedor.cobra).toBe("link");
+    expect(new Headers(fetchFalso.mock.calls[0][1]?.headers).get("x-api-key")).toBe("inchk_gravada");
+    expect(JSON.parse(String(fetchFalso.mock.calls[0][1]?.body))).toMatchObject({ handle: "barbearia-exemplo" });
   });
 });

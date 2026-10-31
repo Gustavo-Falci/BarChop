@@ -404,6 +404,7 @@ function diaEMes(data: string): string {
 const NOME_DO_PROVEDOR: Record<ProvedorDePagamento, { do: string; inicio: string; teste: string }> = {
   asaas: { do: "do Asaas", inicio: "$aact_", teste: "do sandbox" },
   stripe: { do: "da Stripe", inicio: "sk_ ou rk_", teste: "de teste" },
+  infinitepay: { do: "da InfinitePay", inicio: "inchk_", teste: "de teste" },
 };
 
 function modoDaChave(provedor: ProvedorDePagamento, chave: string): "teste" | "real" | null {
@@ -411,6 +412,8 @@ function modoDaChave(provedor: ProvedorDePagamento, chave: string): "teste" | "r
     const lido = /^(?:sk|rk)_(live|test)_/.exec(chave);
     return lido ? (lido[1] === "test" ? "teste" : "real") : null;
   }
+  // Sem sandbox: toda chave da InfinitePay é de produção.
+  if (provedor === "infinitepay") return chave.startsWith("inchk_") && chave.length > 6 ? "real" : null;
   return chave.startsWith("$aact_hmlg_") ? "teste" : chave.startsWith("$aact_prod_") ? "real" : null;
 }
 
@@ -2382,6 +2385,10 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           modo,
           chaveFinal: limpa.slice(-4),
           conectadaEm: estado.contasOnline![qual]?.conectadaEm ?? new Date().toISOString(),
+          // A tag e os dias da InfinitePay chegam no dublê com a tela
+          // (PR 7 do plano pagamentos-online-infinitepay).
+          infiniteTag: null,
+          diasParaCancelar: null,
         };
         return pagamentosOnlineFalsos(daCasa);
       },

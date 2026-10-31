@@ -867,7 +867,7 @@ export interface VitrineDePlanos {
 }
 
 // Onde quem vende recebe a mensalidade online.
-export type ProvedorDePagamento = "asaas" | "stripe";
+export type ProvedorDePagamento = "asaas" | "stripe" | "infinitepay";
 
 // GET/PUT /barbearias/me/pagamentos-online: a conta de quem vende no
 // provedor (`?daCasa=true` = a que recebe os planos da casa, só o dono).
@@ -878,6 +878,10 @@ export interface ContaDePagamentoOnline {
   modo: "teste" | "real";
   chaveFinal: string;
   conectadaEm: string;
+  // Só na InfinitePay (null nas outras): a InfiniteTag da conta e em
+  // quantos dias de atraso a assinatura cancela sozinha.
+  infiniteTag: string | null;
+  diasParaCancelar: number | null;
 }
 
 export interface PagamentosOnline {

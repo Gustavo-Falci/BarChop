@@ -2,6 +2,7 @@ import { PgBoss } from "pg-boss";
 import { buildApp } from "./app";
 import { filaDoPgBoss, urlDoPg } from "./lib/fila";
 import { enderecoDasBarbearias } from "./lib/endereco";
+import { registrarCiclosPorLink } from "./lib/ciclos-por-link";
 import { criarLinkDoLembrete, registrarLembrete } from "./lib/lembrete";
 
 // Entrypoint do bundle (ver tsup.config.ts). Toda a montagem da
@@ -51,6 +52,8 @@ async function main(): Promise<void> {
   // Os workers depois do start: `work` num pg-boss parado lança. No
   // buildApp rodaria antes, e os testes (fila de memória) não veriam.
   await registrarLembrete(app.fila, { canal: app.canal, log: app.log, link });
+  // A varredura diária dos ciclos da InfinitePay (8h de São Paulo).
+  await registrarCiclosPorLink(app.fila, { fabrica: app.provedores, canal: app.canal, log: app.log });
 
   for (const sinal of ["SIGINT", "SIGTERM"] as const) {
     process.once(sinal, () => {

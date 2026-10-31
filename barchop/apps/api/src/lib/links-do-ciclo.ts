@@ -79,12 +79,16 @@ export async function criarLinkNaInfinitePay(
   return { orderNsu, url, vencimento: pedido.vencimento, validoAte, valorCentavos: pedido.valorCentavos };
 }
 
+// `enviadoEm`: o link que o cliente já recebeu (o do assinar, na tela)
+// não vai de novo por e-mail.
 export function linkParaGravar(
   barbeariaId: string,
   assinaturaId: string,
-  link: LinkCriado
+  link: LinkCriado,
+  enviadoEm: Date | null = null
 ): Prisma.LinkDoCicloUncheckedCreateInput {
   return {
+    enviadoEm,
     barbeariaId,
     assinaturaId,
     vencimento: dataParaDate(link.vencimento),

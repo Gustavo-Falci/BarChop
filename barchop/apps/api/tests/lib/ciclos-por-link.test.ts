@@ -313,7 +313,7 @@ describe("a conferência de novo", () => {
 });
 
 describe("o que a varredura não toca", () => {
-  it("a do balcão, a do Asaas e a da Stripe ficam como estão", async () => {
+  it("a do balcão e a de outro provedor (o Asaas) ficam como estão", async () => {
     const c = await cenarioDaInfinitePay();
     const canal = canalDeMemoria();
     const asaas = await prisma.conexaoDePagamento.create({
@@ -328,7 +328,7 @@ describe("o que a varredura não toca", () => {
         webhookTokenHash: "hash-de-teste",
       },
     });
-    const doDono = await c.plano({ nome: "Do dono", vendedorId: c.dono.barbeiroId });
+    const doDono = await c.plano({ nome: "Do dono", vendedorId: c.dono.barbeiroId, fixoPorAtendimentoCentavos: null });
     const pelaAsaas = await prisma.assinaturaDoCliente.create({
       data: {
         barbeariaId: c.dono.barbeariaId,

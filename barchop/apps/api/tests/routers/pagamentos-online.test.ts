@@ -36,6 +36,12 @@ function conectar(c: Cenario, token: string, chave = CHAVE, daCasa = false) {
   return c.app.inject({ method: "PUT", url: url(daCasa), headers: auth(token), payload: { provedor: "asaas", chave } });
 }
 
+const CHAVE_DA_STRIPE = "sk_test_chave-do-dono-5678";
+
+function conectarStripe(c: Cenario, token: string, chave = CHAVE_DA_STRIPE, daCasa = false) {
+  return c.app.inject({ method: "PUT", url: url(daCasa), headers: auth(token), payload: { provedor: "stripe", chave } });
+}
+
 function desconectar(c: Cenario, token: string, daCasa = false) {
   return c.app.inject({ method: "DELETE", url: url(daCasa), headers: auth(token) });
 }
@@ -125,21 +131,6 @@ describe("conectar a conta", () => {
     expect(c.provedores.webhooks).toEqual([]);
   });
 
-  it("a Stripe ainda não conecta (entra com o segredo do webhook, no PR 3): 400", async () => {
-    const c = await cenario();
-
-    const resposta = await c.app.inject({
-      method: "PUT",
-      url: url(false),
-      headers: auth(c.dono.token),
-      payload: { provedor: "stripe", chave: "sk_test_qualquer-coisa" },
-    });
-
-    expect(resposta.statusCode).toBe(400);
-    expect(await prisma.conexaoDePagamento.count()).toBe(0);
-    expect(c.provedores.webhooks).toEqual([]);
-  });
-
   it("chave que o Asaas não aceita é 422 chave_recusada, sem gravar nem registrar nada", async () => {
     const c = await cenario();
     c.provedores.chavesInvalidas.add(CHAVE);
@@ -219,6 +210,118 @@ describe("trocar a chave", () => {
     const conexao = await prisma.conexaoDePagamento.findFirstOrThrow();
     expect(conexao.chaveFinal).toBe("1234");
     expect(c.provedores.webhooks).toHaveLength(1);
+  });
+});
+
+// A Stripe (plano pagamentos-online-stripe, PR 3): a chave colada como a
+// do Asaas, o webhook criado pela API, e o segredo que assina os eventos
+// guardado cifrado (a Stripe só mostra na criação).
+describe("a Stripe", () => {
+  it("conecta: o webhook no endereço da Stripe e o segredo dele cifrado", async () => {
+    const c = await cenario();
+
+    const resposta = await conectarStripe(c, c.dono.token);
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.body).not.toContain(CHAVE_DA_STRIPE);
+    expect(resposta.json().conta).toMatchObject({ provedor: "stripe", modo: "teste", chaveFinal: "5678" });
+    const conexao = await prisma.conexaoDePagamento.findFirstOrThrow();
+    expect(conexao).toMatchObject({ provedor: "stripe", modo: "teste" });
+    expect(Buffer.from(conexao.chaveCifrada).toString("utf8")).toBe(CHAVE_DA_STRIPE);
+    const [webhook] = c.provedores.webhooks;
+    expect(webhook.url).toBe(c.provedores.urlDoWebhook("stripe", conexao.id));
+    expect(webhook.url).toMatch(/\/webhooks\/stripe\//);
+    expect(webhook.segredo).toMatch(/^whsec_/);
+    expect(Buffer.from(conexao.segredoDoWebhookCifrado!).toString("utf8")).toBe(webhook.segredo);
+    expect(resposta.body).not.toContain(webhook.segredo!);
+  });
+
+  it("chave fora do formato da Stripe e a do outro modo: as frases da Stripe", async () => {
+    const c = await cenario({ modoAceito: "real" });
+
+    const torta = await conectarStripe(c, c.dono.token, "$aact_prod_qualquer-coisa");
+    const deTeste = await conectarStripe(c, c.dono.token);
+
+    expect(torta.statusCode).toBe(422);
+    expect(torta.json()).toMatchObject({
+      erro: "chave_invalida",
+      mensagem: "isso não é uma chave de API da Stripe: ela começa com sk_ ou rk_",
+    });
+    expect(deTeste.statusCode).toBe(422);
+    expect(deTeste.json()).toMatchObject({
+      erro: "modo_errado",
+      mensagem: "esta é uma chave de teste da Stripe, que não move dinheiro: use a chave de produção",
+    });
+    expect(await prisma.conexaoDePagamento.count()).toBe(0);
+  });
+
+  it("trocar a chave da mesma conta mantém o webhook e o segredo", async () => {
+    const c = await cenario();
+    await conectarStripe(c, c.dono.token);
+    const antes = await prisma.conexaoDePagamento.findFirstOrThrow();
+    const nova = "rk_test_chave-restrita-4321";
+    c.provedores.contas.set(nova, CHAVE_DA_STRIPE);
+
+    const resposta = await conectarStripe(c, c.dono.token, nova);
+
+    expect(resposta.statusCode).toBe(200);
+    const depois = await prisma.conexaoDePagamento.findFirstOrThrow();
+    expect(depois.id).toBe(antes.id);
+    expect(depois.chaveFinal).toBe("4321");
+    expect(depois.idExternoWebhook).toBe(antes.idExternoWebhook);
+    expect(Buffer.from(depois.segredoDoWebhookCifrado!)).toEqual(Buffer.from(antes.segredoDoWebhookCifrado!));
+    expect(c.provedores.webhooks).toHaveLength(1);
+  });
+
+  it("com o Asaas conectado, a Stripe é 422 outra_conta (e o contrário), sem registrar nada", async () => {
+    const c = await cenario();
+    await conectar(c, c.dono.token);
+    await liberarVenda(c, c.lucas.barbeiroId);
+    await conectarStripe(c, c.lucas.token);
+
+    const paraStripe = await conectarStripe(c, c.dono.token);
+    const paraAsaas = await conectar(c, c.lucas.token);
+
+    expect(paraStripe.statusCode).toBe(422);
+    expect(paraStripe.json()).toMatchObject({
+      erro: "outra_conta",
+      mensagem: "a conta conectada é do Asaas: desconecte antes de conectar a da Stripe",
+    });
+    expect(paraAsaas.statusCode).toBe(422);
+    expect(paraAsaas.json()).toMatchObject({
+      erro: "outra_conta",
+      mensagem: "a conta conectada é da Stripe: desconecte antes de conectar a do Asaas",
+    });
+    expect(c.provedores.webhooks).toHaveLength(2);
+    expect(await prisma.conexaoDePagamento.findMany({ select: { provedor: true }, orderBy: { provedor: "asc" } })).toEqual([
+      { provedor: "asaas" },
+      { provedor: "stripe" },
+    ]);
+  });
+
+  it("desconectar apaga o webhook e tira a chave e o segredo do banco", async () => {
+    const c = await cenario();
+    await conectarStripe(c, c.dono.token);
+
+    const resposta = await desconectar(c, c.dono.token);
+
+    expect(resposta.statusCode).toBe(204);
+    const conexao = await prisma.conexaoDePagamento.findFirstOrThrow();
+    expect(conexao.desconectadaEm).not.toBeNull();
+    expect(Buffer.from(conexao.chaveCifrada)).toHaveLength(0);
+    expect(conexao.segredoDoWebhookCifrado).toBeNull();
+    expect(c.provedores.webhooks).toEqual([]);
+  });
+
+  it("depois de desconectar a Stripe, conecta o Asaas", async () => {
+    const c = await cenario();
+    await conectarStripe(c, c.dono.token);
+    await desconectar(c, c.dono.token);
+
+    const resposta = await conectar(c, c.dono.token);
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json().conta.provedor).toBe("asaas");
   });
 });
 

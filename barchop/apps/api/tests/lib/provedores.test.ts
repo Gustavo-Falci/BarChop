@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import Stripe from "stripe";
 import { describe, expect, it, vi } from "vitest";
 import { cifrar } from "../../src/lib/cifra";
 import {
@@ -56,6 +57,7 @@ describe("provedoresDoAmbiente", () => {
       provedor: "asaas",
       modo: "real",
       chaveCifrada: cifrar("$aact_prod_gravada", chaveDeCifra),
+      segredoDoWebhookCifrado: null,
     });
     await provedor.conferirChave();
 
@@ -77,7 +79,7 @@ describe("provedoresDoAmbiente", () => {
     const fabrica = provedoresDoAmbiente({ NODE_ENV: "development" });
 
     expect(() =>
-      fabrica.daConexao({ provedor: "asaas", modo: "real", chaveCifrada: Buffer.alloc(40) })
+      fabrica.daConexao({ provedor: "asaas", modo: "real", chaveCifrada: Buffer.alloc(40), segredoDoWebhookCifrado: null })
     ).toThrow(/CHAVE_DE_CIFRA/);
     expect(() => fabrica.cifrar("$aact_prod_x")).toThrow(/CHAVE_DE_CIFRA/);
     expect(fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_x" }).modo).toBe("real");
@@ -104,7 +106,7 @@ describe("provedoresDoAmbiente", () => {
 
     const chaveCifrada = fabrica.cifrar("$aact_hmlg_colada");
     expect(Buffer.from(chaveCifrada).includes(Buffer.from("$aact_hmlg_colada"))).toBe(false);
-    await fabrica.daConexao({ provedor: "asaas", modo: "teste", chaveCifrada }).conferirChave();
+    await fabrica.daConexao({ provedor: "asaas", modo: "teste", chaveCifrada, segredoDoWebhookCifrado: null }).conferirChave();
     expect(new Headers(fetchFalso.mock.calls[0][1]?.headers).get("access_token")).toBe("$aact_hmlg_colada");
   });
 
@@ -115,7 +117,7 @@ describe("provedoresDoAmbiente", () => {
     expect(provedoresDoAmbiente({ NODE_ENV: "development" }).urlDoWebhook("asaas", "c1")).toBeNull();
   });
 
-  it("a Stripe: o modo sai do prefixo e a chave colada conecta; a conexão gravada, só com o segredo do webhook (PR 3)", () => {
+  it("a Stripe: o modo sai do prefixo e a chave colada conecta", () => {
     const fabrica = provedoresDoAmbiente({ NODE_ENV: "development", CHAVE_DE_CIFRA: randomBytes(32).toString("base64") });
 
     expect(fabrica.modoDaChave("stripe", "rk_live_x")).toBe("real");
@@ -123,8 +125,23 @@ describe("provedoresDoAmbiente", () => {
     expect(fabrica.modoDaChave("asaas", "sk_live_x")).toBeNull();
     expect(fabrica.daChave({ provedor: "stripe", chave: "sk_test_x" })).toMatchObject({ nome: "stripe", modo: "teste" });
     expect(() => fabrica.daChave({ provedor: "stripe", chave: "$aact_hmlg_x" })).toThrow(/chave de API da Stripe/);
+  });
+
+  it("a conexão gravada da Stripe decifra o segredo do webhook e confere os eventos com ele; sem segredo, recusa", () => {
+    const fabrica = provedoresDoAmbiente({ NODE_ENV: "development", CHAVE_DE_CIFRA: randomBytes(32).toString("base64") });
+    const segredo = "whsec_gravado_na_conexao";
+    const corpo = JSON.stringify({ id: "evt_1", object: "event", type: "invoice.paid", data: { object: { id: "in_1", object: "invoice" } } });
+    const assinatura = Stripe.webhooks.generateTestHeaderString({ payload: corpo, secret: segredo });
+    const gravada = { provedor: "stripe", modo: "teste", chaveCifrada: fabrica.cifrar("sk_test_x") };
+
+    const comSegredo = fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: fabrica.cifrar(segredo) });
+    const semSegredo = fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: null });
+
+    expect(comSegredo).toMatchObject({ nome: "stripe", modo: "teste" });
+    expect(comSegredo.lerEvento(Buffer.from(corpo), assinatura)).toMatchObject({ id: "evt_1", cobrancaId: "in_1" });
+    expect(() => semSegredo.lerEvento(Buffer.from(corpo), assinatura)).toThrow(ErroDoProvedor);
     expect(() =>
-      fabrica.daConexao({ provedor: "stripe", modo: "teste", chaveCifrada: fabrica.cifrar("sk_test_x") })
+      fabrica.daConexao({ ...gravada, provedor: "paypal", segredoDoWebhookCifrado: null })
     ).toThrow(/desconhecido/);
   });
 

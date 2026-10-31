@@ -252,6 +252,11 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
                     : `${naPagina} Quando o pagamento entrar, a assinatura aparece ativa em Minha conta.`}
                 </p>
               </>
+            ) : passo.criada.assinatura.situacao === "teste" ? (
+              <p>
+                O plano já vale no teste grátis. A primeira fatura chega no fim do teste, em{" "}
+                <Link href={minhaConta}>Minha conta</Link>.
+              </p>
             ) : (
               <p>
                 A fatura não abriu agora: ela fica em <Link href={minhaConta}>Minha conta</Link>.

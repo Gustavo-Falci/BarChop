@@ -234,6 +234,24 @@ describe("planos da barbearia", () => {
     expect(within(comTeste).getByRole("link", { name: "Abrir a fatura" })).toBeInTheDocument();
   });
 
+  it("teste grátis na Stripe: sem fatura agora, e a primeira chega no fim do teste", async () => {
+    sessaoDoCliente("gr-barber").gravar("jwt-do-cliente");
+    montar(<PlanosDaBarbearia />, semear({ planos: [COM_TESTE], contasOnline: { casa: CONTA_DA_STRIPE } }));
+    const comTeste = await cartaoDo("Com teste");
+
+    await userEvent.click(within(comTeste).getByRole("button", { name: "Assinar" }));
+
+    expect(await within(comTeste).findByText(/teste grátis vai até/i)).toBeInTheDocument();
+    expect(within(comTeste).queryByRole("link", { name: "Abrir a fatura" })).not.toBeInTheDocument();
+    expect(within(comTeste).queryByText(/não abriu/i)).not.toBeInTheDocument();
+    expect(within(comTeste).getByText(/o plano já vale no teste grátis/i)).toBeInTheDocument();
+    expect(within(comTeste).getByText(/a primeira fatura chega no fim do teste/i)).toBeInTheDocument();
+    expect(within(comTeste).getByRole("link", { name: "Minha conta" })).toHaveAttribute(
+      "href",
+      "/gr-barber/minha-conta"
+    );
+  });
+
   it("volta do login com o plano marcado, mas só assina no toque", async () => {
     sessaoDoCliente("gr-barber").gravar("jwt-do-cliente");
     navegacaoFalsa.redefinir({ pathname: "/gr-barber/planos", query: { plano: "pl1" } });

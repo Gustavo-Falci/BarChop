@@ -281,6 +281,19 @@ describe("o dublê do cliente que assina", () => {
     expect(comTeste.assinatura).toMatchObject({ situacao: "teste", cicloComecaEm: "2026-10-25", cicloTerminaEm: "2026-11-01" });
   });
 
+  // Como a Stripe (teste ponta a ponta, 31/10): com dias grátis, a fatura
+  // de R$ 0 nasce paga e não há fatura aberta para mostrar.
+  it("na Stripe: sem CPF; com dias grátis, sem fatura agora", async () => {
+    const api = criarApiClientFalso({ ...semente(), contasOnline: { casa: { ...CONTA, provedor: "stripe" as const } } });
+
+    const criada = await api.cliente.assinarPlano("pl1");
+    expect(criada.linkDaFatura).toMatch(/^https:[/][/]invoice[.]stripe[.]com[/]/);
+
+    const comTeste = await api.cliente.assinarPlano("pl2");
+    expect(comTeste.assinatura).toMatchObject({ situacao: "teste" });
+    expect(comTeste.linkDaFatura).toBeNull();
+  });
+
   it("volta pra fatura da pendente; ja_assina na ativa; plano fora da vitrine é indisponível", async () => {
     const api = criarApiClientFalso({ ...semente(), cpfDoCliente: "52998224725" });
     const primeira = await api.cliente.assinarPlano("pl1");

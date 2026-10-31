@@ -206,9 +206,13 @@ async function marcarAtraso(assinatura: AssinaturaDaVarredura): Promise<void> {
       data: { situacao: "em_atraso" },
     });
     if (count === 0) return;
+    const { cliente, plano } = assinatura;
+    const reenvio = cliente.email
+      ? "O link vai de novo para o cliente por e-mail."
+      : `${cliente.nome} não tem e-mail: mande o link de novo pelo WhatsApp.`;
     await notificarQuemVende(tx, quemVende(assinatura), {
       titulo: "Pagamento em atraso",
-      texto: `A mensalidade de ${assinatura.cliente.nome} no plano ${assinatura.plano.nome} venceu e não foi paga. O link vai de novo para o cliente.`,
+      texto: `A mensalidade de ${cliente.nome} no plano ${plano.nome} venceu e não foi paga. ${reenvio}`,
       link: linkDoPainel(assinatura),
     });
   });

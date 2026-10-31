@@ -194,6 +194,22 @@ describe("o atraso e o cancelamento", () => {
     expect((await prisma.linkDoCiclo.findUniqueOrThrow({ where: { id: link.id } })).reenviadoEm).not.toBeNull();
   });
 
+  it("em atraso sem e-mail do cliente: o sino pede para mandar o link de novo pelo WhatsApp", async () => {
+    const c = await cenarioDaInfinitePay();
+    await prisma.cliente.update({ where: { id: c.cliente.clienteId }, data: { email: null } });
+    const canal = canalDeMemoria();
+    const ontem = somarDias(hoje(), -1);
+    const assinatura = await comCiclo(c, { terminaEm: ontem });
+    await linkGravado(c, assinatura.id, { vencimento: ontem, validoAte: somarDias(ontem, 10) });
+
+    await varrer(c, canal);
+
+    expect(canal.enviadas).toEqual([]);
+    const sino = await avisosDoSino(c.dono.barbeiroId);
+    expect(sino.map((aviso) => aviso.titulo)).toEqual(["Pagamento em atraso"]);
+    expect(sino[0]!.texto).toContain("WhatsApp");
+  });
+
   it("passada a validade do link sem pagar, cancela: o sino avisa quem vende e o e-mail, o cliente", async () => {
     const c = await cenarioDaInfinitePay();
     const canal = canalDeMemoria();

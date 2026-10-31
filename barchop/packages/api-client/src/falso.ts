@@ -2641,7 +2641,13 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         };
         estado.assinaturas!.push(nova);
         contarAssinante(plano.id, 1);
-        return { assinatura: naConta(nova), linkDaFatura: faturaFalsa(nova.id, naVitrine.pagamento.provedor) };
+        // Na Stripe, a fatura de R$ 0 do teste grátis nasce paga: não há
+        // fatura aberta até o fim do teste (o conector devolve null).
+        const semFaturaAgora = emTeste && naVitrine.pagamento.provedor === "stripe";
+        return {
+          assinatura: naConta(nova),
+          linkDaFatura: semFaturaAgora ? null : faturaFalsa(nova.id, naVitrine.pagamento.provedor),
+        };
       },
       async cancelarAssinatura(id: string) {
         const atual = minhaAssinaturaOu404(id);

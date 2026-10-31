@@ -72,3 +72,40 @@
   font-size: 11px;
   font-weight: 700;
 }
+
+/* O Hoje e o cadeado com o rótulo embaixo do ícone. A largura segue o
+   rótulo, nunca abaixo dos 44px do alvo; quem cede espaço é o título. */
+.comRotulo {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  width: auto;
+  min-width: 44px;
+  height: 48px;
+  /* Sem folga do lado: a 360px cada pixel vai pro título do mês. */
+  padding: 0;
+  border-radius: var(--raio-md);
+}
+
+.rotulo {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* O quadrado do dia encolhe um pouco pra caber o rótulo nos 48px. */
+.comRotulo .hoje {
+  width: 22px;
+  height: 22px;
+}
+
+/* No celular estreito (360px) sobram ~92px pro título, com Hoje e
+   Bloquear rotulados: a 20px "Outubro" virava "Outu…". Um passo abaixo,
+   o mês cabe inteiro. */
+@media (max-width: 374px) {
+  .titulo {
+    font-size: var(--texto-md);
+  }
+}

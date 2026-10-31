@@ -59,14 +59,26 @@ export function BarraDaAgendaNoCelular({
         <button type="button" className={estilos.icone} aria-label="Próximo período" onClick={() => aoAndar(1)}>
           ›
         </button>
-        <button type="button" className={estilos.icone} aria-label="Hoje" onClick={aoVoltarAHoje}>
+        {/* Rótulo à vista embaixo do ícone, como na barra de baixo: o
+            número num quadrado e o calendário com X não diziam o que
+            faziam (redesenho do celular, PR 3). O nome do Hoje vem do
+            rótulo; o do cadeado segue "Bloquear horário", que contém o
+            texto visível (WCAG 2.5.3). */}
+        <button type="button" className={`${estilos.icone} ${estilos.comRotulo}`} onClick={aoVoltarAHoje}>
           <span className={estilos.hoje} aria-hidden="true">
             {diaDeHoje}
           </span>
+          <span className={estilos.rotulo}>Hoje</span>
         </button>
         {aoBloquear ? (
-          <button type="button" className={estilos.icone} aria-label="Bloquear horário" onClick={aoBloquear}>
+          <button
+            type="button"
+            className={`${estilos.icone} ${estilos.comRotulo}`}
+            aria-label="Bloquear horário"
+            onClick={aoBloquear}
+          >
             <IconeBloqueio />
+            <span className={estilos.rotulo}>Bloquear</span>
           </button>
         ) : null}
       </div>

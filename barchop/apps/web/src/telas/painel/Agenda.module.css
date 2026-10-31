@@ -11,6 +11,11 @@
    simplesmente não acontece. É o erro clássico deste arranjo. */
 .pagina {
   display: grid;
+  /* `minmax(0, 1fr)` e não a coluna `auto` implícita: com `auto`, um
+     filho de mínimo largo (a barra do celular, a grade da semana)
+     alargava a página além da tela, e o celular encolhia tudo pra caber
+     — a barra de baixo ficava com os rótulos cortados (redesenho, PR 3). */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   gap: var(--espaco-md);
   /* `flex: 1` contra o container de altura cheia, e não `height: 100%`:
@@ -45,6 +50,7 @@
 /* A barra e, embaixo, a faixa de resumo (painel v2, marco 6). */
 .topo {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--espaco-sm);
 }
 

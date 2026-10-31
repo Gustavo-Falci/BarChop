@@ -47,6 +47,7 @@ import type {
   SessaoBarbeiro,
   EstadoDoOnboarding,
   SolicitacaoDeLink,
+  ProvedorDePagamento,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
@@ -816,20 +817,21 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao(`/barbearias/me/planos/${id}`, { metodo: "PATCH", corpo: mudanca, comToken: true });
     },
 
-    // A conta de quem vende no Asaas (PR 9 do plano
-    // planos-de-assinatura). `daCasa` = a que recebe os planos da casa,
+    // A conta de quem vende no Asaas ou na Stripe (PR 9 do plano
+    // planos-de-assinatura; a Stripe no PR 6 do pagamentos-online-stripe). `daCasa` = a que recebe os planos da casa,
     // só do dono; sem, a de quem está logado. A chave nunca volta: só os
     // 4 últimos caracteres. A API só lê `?daCasa=true`.
     pagamentosOnline(daCasa: boolean): Promise<PagamentosOnline> {
       return requisicao("/barbearias/me/pagamentos-online", { query: filtroDaConta(daCasa), comToken: true });
     },
 
-    // Conectar, ou trocar a chave da mesma conta.
-    conectarPagamentosOnline(daCasa: boolean, chave: string): Promise<PagamentosOnline> {
+    // Conectar, ou trocar a chave da mesma conta. Com a conta ligada de
+    // outro provedor, 422 `outra_conta`: desconecte antes.
+    conectarPagamentosOnline(daCasa: boolean, provedor: ProvedorDePagamento, chave: string): Promise<PagamentosOnline> {
       return requisicao("/barbearias/me/pagamentos-online", {
         metodo: "PUT",
         query: filtroDaConta(daCasa),
-        corpo: { provedor: "asaas", chave },
+        corpo: { provedor, chave },
         comToken: true,
       });
     },

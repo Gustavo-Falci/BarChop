@@ -81,6 +81,7 @@ import type {
   ContaDePagamentoOnline,
   PagamentosOnline,
   PlanoDaVitrine,
+  ProvedorDePagamento,
 } from "@barchop/types";
 import type {
   AceiteDoConvite,
@@ -396,6 +397,21 @@ function copiaDaMensalidade(mensalidade: MensalidadeDoCaixa): MensalidadeDoCaixa
 function diaEMes(data: string): string {
   const [, mes, dia] = data.split("-");
   return `${dia}/${mes}`;
+}
+
+// Como a API lê a chave de cada provedor (lib/provedores): o modo sai
+// do prefixo.
+const NOME_DO_PROVEDOR: Record<ProvedorDePagamento, { do: string; inicio: string; teste: string }> = {
+  asaas: { do: "do Asaas", inicio: "$aact_", teste: "do sandbox" },
+  stripe: { do: "da Stripe", inicio: "sk_ ou rk_", teste: "de teste" },
+};
+
+function modoDaChave(provedor: ProvedorDePagamento, chave: string): "teste" | "real" | null {
+  if (provedor === "stripe") {
+    const lido = /^(?:sk|rk)_(live|test)_/.exec(chave);
+    return lido ? (lido[1] === "test" ? "teste" : "real") : null;
+  }
+  return chave.startsWith("$aact_hmlg_") ? "teste" : chave.startsWith("$aact_prod_") ? "real" : null;
 }
 
 export function criarApiClientFalso(semente: SementeFalsa = {}) {
@@ -951,7 +967,16 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
 
   // Um link de exemplo, nunca um de verdade: o código da fatura mostra
   // os dados de quem vende.
-  const faturaFalsa = (assinaturaId: string) => `https://sandbox.asaas.com/i/exemplo-${assinaturaId}`;
+  // O link da fatura no provedor da conta de quem vende o plano.
+  const faturaFalsa = (assinaturaId: string, provedor: ProvedorDePagamento) =>
+    provedor === "stripe"
+      ? `https://invoice.stripe.com/i/exemplo-${assinaturaId}`
+      : `https://sandbox.asaas.com/i/exemplo-${assinaturaId}`;
+  const provedorDoPlano = (planoId: string): ProvedorDePagamento => {
+    const plano = estado.planos!.find((p) => p.id === planoId);
+    const conta = plano && estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"];
+    return conta?.provedor ?? "asaas";
+  };
 
   function minhaAssinaturaOu404(id: string): AssinaturaDoPainel {
     const assinatura = estado.assinaturas!.find((a) => a.id === id && a.cliente.id === estado.cliente.id);
@@ -2322,28 +2347,38 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         chaveDaConta(daCasa);
         return pagamentosOnlineFalsos(daCasa);
       },
-      async conectarPagamentosOnline(daCasa: boolean, chave: string) {
+      async conectarPagamentosOnline(daCasa: boolean, provedor: ProvedorDePagamento, chave: string) {
         const qual = chaveDaConta(daCasa);
         if (!vendePlanos(membroOu404("bb1"))) {
           throw new ErroDaApi(403, "sem_permissao", "seu papel na equipe não permite vender planos");
         }
         exigirPlanosDaBarbearia();
+        // As frases da API (routers/pagamentos-online.ts), pelo provedor.
+        const nome = NOME_DO_PROVEDOR[provedor];
         const limpa = chave.trim();
-        const modo = limpa.startsWith("$aact_hmlg_") ? "teste" : limpa.startsWith("$aact_prod_") ? "real" : null;
+        const modo = modoDaChave(provedor, limpa);
         if (modo === null) {
-          throw new ErroDaApi(422, "chave_invalida", "isso não é uma chave de API do Asaas: ela começa com $aact_");
+          throw new ErroDaApi(422, "chave_invalida", `isso não é uma chave de API ${nome.do}: ela começa com ${nome.inicio}`);
         }
         if (modo !== estado.modoAceito) {
           throw new ErroDaApi(
             422,
             "modo_errado",
             modo === "teste"
-              ? "esta é uma chave do sandbox do Asaas, que não move dinheiro: use a chave de produção"
-              : "esta é uma chave de produção do Asaas: aqui só vale a do sandbox"
+              ? `esta é uma chave ${nome.teste} ${nome.do}, que não move dinheiro: use a chave de produção`
+              : `esta é uma chave de produção ${nome.do}: aqui só vale a ${nome.teste}`
+          );
+        }
+        const atual = estado.contasOnline![qual];
+        if (atual && atual.provedor !== provedor) {
+          throw new ErroDaApi(
+            422,
+            "outra_conta",
+            `a conta conectada é ${NOME_DO_PROVEDOR[atual.provedor].do}: desconecte antes de conectar a ${nome.do}`
           );
         }
         estado.contasOnline![qual] = {
-          provedor: "asaas",
+          provedor,
           modo,
           chaveFinal: limpa.slice(-4),
           conectadaEm: estado.contasOnline![qual]?.conectadaEm ?? new Date().toISOString(),
@@ -2571,20 +2606,24 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         );
         if (viva) {
           if (viva.forma === "online" && (viva.situacao === "pendente" || viva.situacao === "em_atraso")) {
-            return { assinatura: naConta(viva), linkDaFatura: faturaFalsa(viva.id) };
+            return { assinatura: naConta(viva), linkDaFatura: faturaFalsa(viva.id, provedorDoPlano(planoId)) };
           }
           throw new ErroDaApi(422, "ja_assina", "você já assina este plano");
         }
-        if (!vitrineFalsa().some((p) => p.id === planoId && p.aceitaOnline)) {
+        const naVitrine = vitrineFalsa().find((p) => p.id === planoId && p.aceitaOnline);
+        if (!naVitrine?.pagamento) {
           throw new ErroDaApi(422, "plano_indisponivel", "este plano não está à venda online agora");
         }
-        let doCadastro: string | null = estado.cpfDoCliente ?? null;
-        if (cpf?.trim()) {
-          doCadastro = normalizarCpf(cpf);
-          if (doCadastro === null) throw new ErroDaApi(422, "cpf_invalido", "o CPF não confere: confira os números");
+        // O CPF só no provedor que pede (o Asaas); na Stripe, ignorado.
+        if (naVitrine.pagamento.pedeCpf) {
+          let doCadastro: string | null = estado.cpfDoCliente ?? null;
+          if (cpf?.trim()) {
+            doCadastro = normalizarCpf(cpf);
+            if (doCadastro === null) throw new ErroDaApi(422, "cpf_invalido", "o CPF não confere: confira os números");
+          }
+          if (doCadastro === null) throw new ErroDaApi(422, "cpf_obrigatorio", "o Asaas pede o CPF de quem assina");
+          estado.cpfDoCliente = doCadastro;
         }
-        if (doCadastro === null) throw new ErroDaApi(422, "cpf_obrigatorio", "o Asaas pede o CPF de quem assina");
-        estado.cpfDoCliente = doCadastro;
 
         const emTeste = plano.diasDeTeste > 0;
         const nova: AssinaturaDoPainel = {
@@ -2602,7 +2641,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         };
         estado.assinaturas!.push(nova);
         contarAssinante(plano.id, 1);
-        return { assinatura: naConta(nova), linkDaFatura: faturaFalsa(nova.id) };
+        return { assinatura: naConta(nova), linkDaFatura: faturaFalsa(nova.id, naVitrine.pagamento.provedor) };
       },
       async cancelarAssinatura(id: string) {
         const atual = minhaAssinaturaOu404(id);

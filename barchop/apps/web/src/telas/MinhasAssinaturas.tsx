@@ -173,7 +173,7 @@ function Assinatura({ assinatura, aoCancelar }: { assinatura: AssinaturaNaConta;
           <div className={estilos.confirmacao}>
             <p>
               {online
-                ? "O Asaas para de cobrar, e o plano deixa de valer nos atendimentos a partir de agora."
+                ? "A cobrança online para, e o plano deixa de valer nos atendimentos a partir de agora."
                 : "O plano deixa de valer nos atendimentos a partir de agora."}
             </p>
             <div className={estilos.acoes}>

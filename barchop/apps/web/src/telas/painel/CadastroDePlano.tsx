@@ -458,7 +458,8 @@ export function CadastroDePlano() {
               <label htmlFor={`${idDoForm}-online`}>Online, na página</label>
             </span>
             <span className={estilos.apoio} id={`${idDoForm}-online-apoio`}>
-              Pix, cartão ou boleto na fatura do Asaas, direto na conta de quem vende. Sem a conta conectada em{" "}
+              Na fatura do Asaas (Pix, cartão ou boleto) ou da Stripe (cartão), direto na conta de quem vende. Sem a
+              conta conectada em{" "}
               <Link href="/painel/configuracoes/pagamentos-online">Pagamentos online</Link>, a página oferece só o
               balcão.
             </span>
@@ -466,8 +467,8 @@ export function CadastroDePlano() {
                 (o dono editando o plano de outro não lê a conta dele). */}
             {atual?.onlineIndisponivel && online ? (
               <span className={estilos.indisponivel}>
-                <strong>Pagamento online indisponível.</strong> Quem vende ainda não conectou a conta do Asaas: a
-                página mostra o plano com esse aviso, sem o Assinar.
+                <strong>Pagamento online indisponível.</strong> Quem vende ainda não conectou a conta do Asaas ou da
+                Stripe: a página mostra o plano com esse aviso, sem o Assinar.
               </span>
             ) : null}
             <span className={estilos.marca}>

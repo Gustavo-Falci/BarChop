@@ -146,17 +146,17 @@ const TEMAS: { tema: string; perguntas: Pergunta[] }[] = [
         resposta: [
           "O dono liga Mostrar os planos na página, em ",
           { href: "/painel/planos", rotulo: "Planos" },
-          ". Pra vender online, quem vende conecta a conta do Asaas em ",
+          ". Pra vender online, quem vende conecta a conta do Asaas ou da Stripe em ",
           { href: "/painel/configuracoes/pagamentos-online", rotulo: "Pagamentos online" },
-          ": o cliente entra, assina e paga por Pix, cartão ou boleto na fatura do Asaas. Sem a conta conectada, a página oferece só o balcão.",
+          ": o cliente entra, assina e paga na fatura do provedor (no Asaas, Pix, cartão ou boleto; na Stripe, cartão). Sem a conta conectada, a página oferece só o balcão.",
         ],
       },
       {
-        pergunta: "Como conecto a minha conta do Asaas?",
+        pergunta: "Como conecto a minha conta do Asaas ou da Stripe?",
         resposta: [
           "Em ",
           { href: "/painel/configuracoes/pagamentos-online", rotulo: "Pagamentos online" },
-          ", cole a chave de API do Asaas. A mensalidade cai direto na conta de quem vende, e o BarChop não cobra taxa. O dono conecta a conta da casa; cada profissional que vende, a sua. Com assinatura online viva, a conta só desconecta depois de cancelar as assinaturas.",
+          ", escolha o Asaas ou a Stripe e cole a chave (no Asaas, a chave de API; na Stripe, uma chave restrita, com as permissões que a tela lista). A mensalidade cai direto na conta de quem vende, e o BarChop não cobra taxa. Na Stripe, quem assina não precisa dar o CPF. O dono conecta a conta da casa; cada profissional que vende, a sua. Com assinatura online viva, a conta só desconecta depois de cancelar as assinaturas.",
         ],
       },
       {

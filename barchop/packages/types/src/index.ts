@@ -857,7 +857,7 @@ export interface PlanoDaVitrine {
   onlineIndisponivel: boolean;
   // Onde se paga online: o provedor da conta de quem vende, e se ele
   // pede o CPF de quem assina. Null sem o online agora.
-  pagamento: { provedor: "asaas" | "stripe"; pedeCpf: boolean } | null;
+  pagamento: { provedor: ProvedorDePagamento; pedeCpf: boolean } | null;
   aceitaNoBalcao: boolean;
   servicos: ServicoDoPlano[];
 }
@@ -866,11 +866,14 @@ export interface VitrineDePlanos {
   planos: PlanoDaVitrine[];
 }
 
+// Onde quem vende recebe a mensalidade online.
+export type ProvedorDePagamento = "asaas" | "stripe";
+
 // GET/PUT /barbearias/me/pagamentos-online: a conta de quem vende no
 // provedor (`?daCasa=true` = a que recebe os planos da casa, só o dono).
 // A chave nunca volta: só os 4 últimos caracteres.
 export interface ContaDePagamentoOnline {
-  provedor: "asaas" | "stripe";
+  provedor: ProvedorDePagamento;
   // `teste` = chave do sandbox, que não move dinheiro.
   modo: "teste" | "real";
   chaveFinal: string;

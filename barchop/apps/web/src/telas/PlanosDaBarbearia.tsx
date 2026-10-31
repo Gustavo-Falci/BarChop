@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import { formatarReais, normalizarCpf } from "@barchop/formato";
-import type { AssinaturaOnlineCriada, PlanoDaVitrine } from "@barchop/types";
+import type { AssinaturaOnlineCriada, PlanoDaVitrine, ProvedorDePagamento } from "@barchop/types";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
 import { Aviso } from "../componentes/Aviso";
@@ -21,6 +21,7 @@ import {
   planoDaQuery,
 } from "../fluxo/planos";
 import { caminhoDoPasso } from "../fluxo/passos";
+import { PROVEDORES, comMaiuscula } from "../fluxo/provedores";
 import { IconeCheck, IconeSeta } from "../painel/icones";
 import { porCiclo, servicoDoPlano } from "../painel/planos";
 import { useTemSessaoDoCliente } from "../sessao/useSessaoDoCliente";
@@ -31,10 +32,11 @@ import estilos from "./PlanosDaBarbearia.module.css";
 // planos-de-assinatura). Assinar online pede o cliente logado: sem
 // sessão, o "Assinar" leva ao login, que volta pra cá com o plano
 // marcado. Assinar acontece só no toque, nunca ao abrir a página: um
-// link montado por outra pessoa criaria cliente e cobrança no Asaas.
+// link montado por outra pessoa criaria cliente e cobrança no provedor.
 //
-// O pagamento é na fatura do Asaas, em outra aba: o BarChop nunca vê
-// cartão. O link é um <a> de verdade, e não um `window.open` depois do
+// O pagamento é na fatura do provedor da conta de quem vende (Asaas ou
+// Stripe, `plano.pagamento`), em outra aba: o BarChop nunca vê cartão. O
+// CPF só aparece quando a API pede (`cpf_obrigatorio`, só no Asaas). O link é um <a> de verdade, e não um `window.open` depois do
 // pedido, que o Safari do iPhone bloqueia.
 export function PlanosDaBarbearia() {
   const { slug } = useParams<{ slug: string }>();
@@ -61,6 +63,9 @@ export function PlanosDaBarbearia() {
   }
 
   const planos = vitrine.dados?.planos ?? [];
+  // O "Como funciona" nomeia o provedor só quando todo plano online é
+  // pago no mesmo.
+  const provedores = new Set(planos.flatMap((plano) => (plano.pagamento ? [plano.pagamento.provedor] : [])));
   return (
     <main className={estilos.pagina}>
       <div className={estilos.cabeca}>
@@ -85,7 +90,10 @@ export function PlanosDaBarbearia() {
               <CartaoDoPlano key={plano.id} slug={slug} plano={plano} marcado={plano.id === marcado} />
             ))}
           </ul>
-          <ComoFunciona online={planos.some((plano) => plano.aceitaOnline)} />
+          <ComoFunciona
+            online={planos.some((plano) => plano.aceitaOnline)}
+            provedor={provedores.size === 1 ? [...provedores][0]! : null}
+          />
         </>
       )}
     </main>
@@ -93,9 +101,9 @@ export function PlanosDaBarbearia() {
 }
 
 // Os três passos, sem caixa. O do pagamento só fala do online quando
-// algum plano da vitrine aceita: numa casa só de balcão, falar de Asaas
-// e cartão confundiria.
-function ComoFunciona({ online }: { online: boolean }) {
+// algum plano da vitrine aceita: numa casa só de balcão, falar de
+// provedor e cartão confundiria.
+function ComoFunciona({ online, provedor }: { online: boolean; provedor: ProvedorDePagamento | null }) {
   return (
     <section className={estilos.comoFunciona} aria-labelledby="como-funciona">
       <h2 id="como-funciona" className={estilos.tituloDoComo}>
@@ -116,7 +124,7 @@ function ComoFunciona({ online }: { online: boolean }) {
           <p className={estilos.nomeDoPasso}>{online ? "Pague online ou no balcão" : "Pague no balcão"}</p>
           <p className={estilos.apoio}>
             {online
-              ? "Online, a fatura abre na página do Asaas: o BarChop nunca vê seu cartão."
+              ? `Online, a fatura abre na página ${provedor ? PROVEDORES[provedor].do : "de pagamento"}: o BarChop nunca vê seu cartão.`
               : "O pagamento é combinado na barbearia."}
           </p>
         </li>
@@ -150,6 +158,9 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
   // o navegador responder).
   const temSessao = useTemSessaoDoCliente(slug) === true;
   const minhaConta = noHost(`/${slug}/minha-conta`);
+  // Sem o online agora, nenhum texto de pagamento aparece.
+  const textos = PROVEDORES[plano.pagamento?.provedor ?? "asaas"];
+  const naPagina = `${textos.formas}, na página ${textos.do}.`;
 
   // Quem voltou do login cai no plano que escolheu.
   useEffect(() => {
@@ -237,8 +248,8 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
                 </div>
                 <p className={estilos.apoio}>
                   {passo.criada.assinatura.situacao === "teste"
-                    ? "Pix, cartão ou boleto, na página do Asaas. O plano já vale no teste grátis."
-                    : "Pix, cartão ou boleto, na página do Asaas. Quando o pagamento entrar, a assinatura aparece ativa em Minha conta."}
+                    ? `${naPagina} O plano já vale no teste grátis.`
+                    : `${naPagina} Quando o pagamento entrar, a assinatura aparece ativa em Minha conta.`}
                 </p>
               </>
             ) : (
@@ -255,7 +266,7 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
               autoComplete="off"
               maxLength={14}
               placeholder="000.000.000-00"
-              apoio="O Asaas pede o CPF de quem assina. Ele fica guardado no seu cadastro desta barbearia."
+              apoio={`${comMaiuscula(textos.o)} pede o CPF de quem assina. Ele fica guardado no seu cadastro desta barbearia.`}
               valor={cpf}
               onChange={(proximo) => {
                 setCpf(proximo);
@@ -293,7 +304,7 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
               </Botao>
             </div>
             <p className={`${estilos.apoio} ${estilos.centro}`}>
-              {plano.aceitaNoBalcao ? "Pix, cartão ou boleto. Ou assine no balcão." : "Pix, cartão ou boleto."}
+              {plano.aceitaNoBalcao ? `${textos.formas}. Ou assine no balcão.` : `${textos.formas}.`}
             </p>
           </div>
         ) : (

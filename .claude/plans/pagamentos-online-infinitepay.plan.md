@@ -10,6 +10,14 @@ Diferenças do plano, combinadas no caminho:
   - `registrarPagamento` do webhook dos planos virou `registrarMensalidadeOnline`, para não confundir com o `registrarPagamento` do `lib/caixa.ts`. Ele recebe `MensalidadePaga { idExterno, valorCentavos, forma, vencimento }`, e `INCLUDE_ASSINATURA`, `AssinaturaDoWebhook` e `Avisar` também são exportados.
   - `recomecaNoDiaPago` fica para o PR 4, junto do primeiro uso e dos testes. Quem chama passa o `vencimento` já como `max(vencimento do link, hoje)`.
   - Fila de memória: `repeticoes` e `rodarRepeticao(trabalho)`, que roda o tratador com `{}`. No pg-boss, `schedule(trabalho, cron, {}, { tz: "America/Sao_Paulo" })`, depois do `garantirFila`.
+- **PR 2:**
+  - O conector (`provedorInfinitePay({ chave, tag, fetch })`) ainda não está na fábrica. Até a InfinitePay entrar em `PROVEDORES` (PR 3), ele devolve `ConectorDaInfinitePay` (`ProvedorDeLink` com `nome: "infinitepay"`), que vira só `ProvedorDeLink` no PR 3. A tag chega sem o `$`, e quem tira é a rota do PR 3.
+  - Sem log dentro do conector: a fábrica não tem log. No lugar, o erro `indisponivel` do criar link sem URL traz os nomes dos campos que vieram, nunca os valores. **As rotas dos PRs 3 e 4 registram a `message` do `ErroDoProvedor` no log** quando o provedor é a InfinitePay.
+  - `conferirChave`: 400, 404 e 422 no `payment_check` inventado passam. Só 401 e 403 são chave recusada, e 5xx ou rede são `indisponivel`.
+  - `external_checkout_not_enabled` em qualquer parte do corpo (e com qualquer status) vira `recusado`, com o que fazer ("ligue em Configurações do Checkout").
+  - `conferirPagamento`: 400, 404 e 422 voltam como não pago. Pago sem `amount` inteiro e positivo é `indisponivel` (tenta de novo, sem entrar no Caixa).
+  - O celular vai com `+55` quando vem sem o país. `valid_until` é o fim do dia com `-03:00`.
+  - As respostas de `tests/lib/respostas-da-infinitepay/` saem dos exemplos da documentação, com um README que diz isso. A do criar link é palpite (`url`).
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

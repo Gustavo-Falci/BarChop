@@ -181,11 +181,16 @@ export function provedorStripe(opcoes: {
     nome: "stripe",
     modo,
     pedeCpf: false,
-    // A chave restrita precisa ler clientes e webhooks: as duas leituras
-    // conferem as duas permissões antes de conectar.
+    // Lê tudo o que o webhook relê: a chave restrita sem uma dessas
+    // permissões passaria aqui e só falharia no webhook, que a Stripe
+    // repete até desligar. As de escrita só aparecem ao assinar.
     async conferirChave() {
       await pedir(() => stripe.customers.list({ limit: 1 }));
       await pedir(() => stripe.webhookEndpoints.list({ limit: 1 }));
+      await pedir(() => stripe.subscriptions.list({ limit: 1 }));
+      await pedir(() => stripe.invoices.list({ limit: 1 }));
+      await pedir(() => stripe.invoicePayments.list({ limit: 1 }));
+      await pedir(() => stripe.paymentIntents.list({ limit: 1 }));
     },
     // Sem o token do BarChop: quem prova a origem é a assinatura dos
     // eventos, com o segredo que a Stripe gera aqui e não mostra de novo.
@@ -275,20 +280,23 @@ export function provedorStripe(opcoes: {
     async cancelarAssinatura(id) {
       await pedir(() => stripe.subscriptions.cancel(id), true);
     },
-    // O corpo cru, como chegou: a assinatura é sobre os bytes.
-    lerEvento(corpo, assinatura) {
-      if (!segredoDoWebhook || !assinatura || !(Buffer.isBuffer(corpo) || typeof corpo === "string")) {
-        throw new ErroDoProvedor("recusado", "o corpo não é um evento da Stripe");
-      }
-      let evento: Stripe.Event;
-      try {
-        evento = Stripe.webhooks.constructEvent(corpo, assinatura, segredoDoWebhook);
-      } catch {
-        throw new ErroDoProvedor("recusado", "a assinatura do evento da Stripe não confere");
-      }
-      return { id: evento.id, tipo: evento.type, ...doEvento(evento) };
-    },
+    lerEvento: (corpo, assinatura) => lerEventoDaStripe(corpo, assinatura, segredoDoWebhook),
   };
+}
+
+// O corpo cru, como chegou: a assinatura é sobre os bytes. Sem o
+// segredo da conexão ou sem a assinatura, recusa.
+export function lerEventoDaStripe(corpo: unknown, assinatura: string | undefined, segredo: string | null): EventoDoProvedor {
+  if (!segredo || !assinatura || !(Buffer.isBuffer(corpo) || typeof corpo === "string")) {
+    throw new ErroDoProvedor("recusado", "o corpo não é um evento da Stripe");
+  }
+  let evento: Stripe.Event;
+  try {
+    evento = Stripe.webhooks.constructEvent(corpo, assinatura, segredo);
+  } catch {
+    throw new ErroDoProvedor("recusado", "a assinatura do evento da Stripe não confere");
+  }
+  return { id: evento.id, tipo: evento.type, ...doEvento(evento) };
 }
 
 function doEvento(evento: Stripe.Event): Pick<EventoDoProvedor, "cobrancaId" | "assinaturaId"> {

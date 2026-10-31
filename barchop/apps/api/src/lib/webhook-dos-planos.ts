@@ -1,4 +1,4 @@
-import { Prisma } from "@barchop/database";
+import { Prisma, prisma } from "@barchop/database";
 import {
   assinanteUsaOPlano,
   cicloPagoOnline,
@@ -11,16 +11,28 @@ import { notificarQuemVende } from "./notificacoes";
 import { proximoDiaAberto } from "./planos-do-cliente";
 import {
   comMaiuscula,
+  ErroDoProvedor,
   nomeDoProvedor,
   type CobrancaNoProvedor,
   type EventoDoProvedor,
   type NomeDoProvedor,
+  type Provedor,
 } from "./provedores";
 
-// O que o webhook dos planos faz com o que releu no provedor, igual pra
-// todos os provedores (plano pagamentos-online-stripe, PR 1). A rota de
-// cada um confere a origem, lê o evento, relê no provedor e chama
-// `aplicar` na transação que grava o evento.
+// O que o webhook dos planos faz com o evento, igual pra todos os
+// provedores (plano pagamentos-online-stripe, PRs 1 e 4). A rota de cada
+// um acha a conexão, confere a origem e lê o evento; daí em diante é
+// `receberEvento`.
+//
+// Regras, as do webhook da cobrança do BarChop:
+// - o estado vem relido no provedor, nunca do evento, porque os eventos
+//   chegam fora de ordem;
+// - a releitura (rede) fica fora da transação; falhou, 500 sem gravar o
+//   evento, e o provedor tenta de novo;
+// - o evento é gravado na mesma transação da mudança: o mesmo evento
+//   entregue duas vezes só vale uma;
+// - dado estranho (assinatura que o BarChop não conhece) vai pro log e
+//   responde 200: um erro aí faria o provedor tentar até parar a fila.
 
 export interface LogDoWebhook {
   info(objeto: object, mensagem: string): void;
@@ -200,4 +212,49 @@ export async function aplicar(
   }
   if (cobranca.situacao === "paga") await registrarPagamento(tx, assinatura, cobranca, avisar);
   if (cobranca.situacao === "vencida") await marcarAtraso(tx, assinatura, cobranca, avisar);
+}
+
+export async function receberEvento(params: {
+  conexao: { id: string; barbeariaId: string };
+  provedor: Provedor;
+  evento: EventoDoProvedor;
+  log: LogDoWebhook;
+}): Promise<void> {
+  const { conexao, provedor, evento, log } = params;
+  const nome = nomeDoProvedor(provedor.nome);
+  const chave = { provedor: provedor.nome, id: evento.id };
+  if (await prisma.eventoDoProvedor.findUnique({ where: { provedor_id: chave } })) return;
+
+  // Fora da transação: é rede. Falhou, lança (500) sem gravar o evento.
+  // A cobrança que o provedor não acha (apagada) não tem o que reler:
+  // o evento entra, e nada muda. A assinatura que ele não acha parou.
+  let cobranca: CobrancaNoProvedor | null = null;
+  let parou: boolean | null = null;
+  try {
+    if (evento.cobrancaId) {
+      cobranca = await provedor.lerCobranca(evento.cobrancaId);
+    } else if (evento.assinaturaId) {
+      const noProvedor = await provedor.lerAssinatura(evento.assinaturaId);
+      parou = noProvedor.removida || noProvedor.situacao !== "ativa";
+    }
+  } catch (erro) {
+    if (!(erro instanceof ErroDoProvedor) || erro.codigo !== "nao_encontrado") throw erro;
+    if (!evento.cobrancaId) parou = true;
+    log.warn({ evento: evento.id }, `webhook ${nome.do} sobre o que ${nome.o} não acha mais`);
+  }
+  const idDaAssinatura = evento.cobrancaId ? (cobranca?.assinaturaId ?? null) : evento.assinaturaId;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.eventoDoProvedor.create({ data: { ...chave, tipo: evento.tipo.slice(0, 100) } });
+      if (idDaAssinatura) {
+        await aplicar(tx, { conexao, provedor: provedor.nome, idDaAssinatura, cobranca, parou, evento, log });
+      }
+    });
+  } catch (erro) {
+    // Duas entregas do mesmo evento ao mesmo tempo: a segunda bate na
+    // chave e já foi aplicada pela primeira.
+    if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") return;
+    throw erro;
+  }
 }

@@ -1,9 +1,9 @@
-import { Prisma, prisma } from "@barchop/database";
+import { prisma } from "@barchop/database";
 import { tokenConfere } from "../lib/cifra";
 import { ErroHttp } from "../lib/erro-http";
 import { PADRAO_UUID } from "../lib/padroes";
-import { ErroDoProvedor, type CobrancaNoProvedor, type EventoDoProvedor } from "../lib/provedores";
-import { aplicar } from "../lib/webhook-dos-planos";
+import type { EventoDoProvedor } from "../lib/provedores";
+import { receberEvento } from "../lib/webhook-dos-planos";
 import type { App } from "../tipos";
 
 // O webhook do Asaas (Onda 2, marco 3, PR 10a do plano
@@ -12,16 +12,10 @@ import type { App } from "../tipos";
 // guardado só como hash. Sem login: quem prova a origem é o token no
 // cabeçalho `asaas-access-token`.
 //
-// Regras, as do webhook da Stripe:
-// - o estado vem relido no provedor, nunca do evento, porque os eventos
-//   chegam fora de ordem;
-// - a releitura (rede) fica fora da transação; falhou, 500 sem gravar o
-//   evento, e o Asaas tenta de novo;
-// - o evento é gravado na mesma transação da mudança: o mesmo evento
-//   entregue duas vezes só vale uma;
-// - dado estranho (conexão desligada, assinatura que o BarChop não
-//   conhece) vai pro log e responde 200: um erro aí faria o Asaas tentar
-//   até parar a fila de eventos da conta.
+// Conexão desligada ou desconhecida vai pro log e responde 200: um erro
+// aí faria o Asaas tentar até parar a fila de eventos da conta. Lido o
+// evento, o resto (releitura, dedupe, transação) é o `receberEvento` de
+// lib/webhook-dos-planos.ts, o mesmo da Stripe.
 
 const paramsDoWebhook = {
   type: "object",
@@ -32,10 +26,10 @@ const paramsDoWebhook = {
 
 export function registrarRotaWebhookAsaas(app: App): void {
   app.post("/webhooks/asaas/:conexaoId", { schema: { params: paramsDoWebhook } }, async (request, reply) => {
-    // Só a conexão ligada e do modo aceito. A desligada não tem mais a
-    // chave pra reler nada: o evento dela é de ninguém.
+    // Só a conexão do Asaas, ligada e do modo aceito. A desligada não tem
+    // mais a chave pra reler nada: o evento dela é de ninguém.
     const conexao = await prisma.conexaoDePagamento.findFirst({
-      where: { id: request.params.conexaoId, desconectadaEm: null, modo: app.provedores.modoAceito },
+      where: { id: request.params.conexaoId, provedor: "asaas", desconectadaEm: null, modo: app.provedores.modoAceito },
     });
     if (!conexao) {
       request.log.warn({ conexaoId: request.params.conexaoId }, "webhook do Asaas sem conexão ligada");
@@ -53,45 +47,7 @@ export function registrarRotaWebhookAsaas(app: App): void {
     } catch {
       throw new ErroHttp(400, "evento_invalido", "o corpo não é um evento do Asaas");
     }
-    const chave = { provedor: conexao.provedor, id: evento.id };
-    if (await prisma.eventoDoProvedor.findUnique({ where: { provedor_id: chave } })) {
-      return reply.send({ recebido: true });
-    }
-
-    // Fora da transação: é rede. Falhou, lança (500) sem gravar o evento.
-    // A cobrança que o provedor não acha (apagada) não tem o que reler:
-    // o evento entra, e nada muda. A assinatura que ele não acha parou.
-    let cobranca: CobrancaNoProvedor | null = null;
-    let parou: boolean | null = null;
-    try {
-      if (evento.cobrancaId) {
-        cobranca = await provedor.lerCobranca(evento.cobrancaId);
-      } else if (evento.assinaturaId) {
-        const noProvedor = await provedor.lerAssinatura(evento.assinaturaId);
-        parou = noProvedor.removida || noProvedor.situacao !== "ativa";
-      }
-    } catch (erro) {
-      if (!(erro instanceof ErroDoProvedor) || erro.codigo !== "nao_encontrado") throw erro;
-      if (!evento.cobrancaId) parou = true;
-      request.log.warn({ evento: evento.id }, "webhook do Asaas sobre o que o Asaas não acha mais");
-    }
-    const idDaAssinatura = evento.cobrancaId ? (cobranca?.assinaturaId ?? null) : evento.assinaturaId;
-
-    try {
-      await prisma.$transaction(async (tx) => {
-        await tx.eventoDoProvedor.create({ data: { ...chave, tipo: evento.tipo.slice(0, 100) } });
-        if (idDaAssinatura) {
-          await aplicar(tx, { conexao, provedor: provedor.nome, idDaAssinatura, cobranca, parou, evento, log: request.log });
-        }
-      });
-    } catch (erro) {
-      // Duas entregas do mesmo evento ao mesmo tempo: a segunda bate na
-      // chave e já foi aplicada pela primeira.
-      if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
-        return reply.send({ recebido: true });
-      }
-      throw erro;
-    }
+    await receberEvento({ conexao, provedor, evento, log: request.log });
     return reply.send({ recebido: true });
   });
 }

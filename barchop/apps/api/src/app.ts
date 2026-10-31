@@ -15,6 +15,7 @@ import { autenticar, autenticarCliente, autenticarSuporte, registrarAuth } from 
 import { registrarRotasAssinatura } from "./routers/assinatura";
 import { registrarRotasAuth } from "./routers/auth";
 import { registrarRotaWebhookAsaas } from "./routers/webhook-asaas";
+import { registrarRotaWebhookStripePlanos } from "./routers/webhook-stripe-planos";
 import { registrarRotaWebhookStripe } from "./routers/webhook-stripe";
 import { registrarRotasAuthCliente } from "./routers/auth-cliente";
 import { registrarRotasCaixa } from "./routers/caixa";
@@ -67,8 +68,9 @@ declare module "fastify" {
     // A cobrança da assinatura do BarChop (ADR-0010). Na instância pelo
     // mesmo motivo do canal: cada teste com a sua, de memória.
     cobranca: Cobranca;
-    // Os conectores dos pagamentos online dos planos (Asaas). Uma fábrica,
-    // porque cada vendedor tem a própria chave; nos testes, a de memória.
+    // Os conectores dos pagamentos online dos planos (Asaas e Stripe).
+    // Uma fábrica, porque cada vendedor tem a própria chave; nos testes,
+    // a de memória.
     provedores: FabricaDeProvedores;
   }
 }
@@ -200,6 +202,11 @@ export function buildApp(
   // Sem login: quem prova a origem é o token de cada conta conectada.
   // Fora do escopo da Stripe, que lê o corpo cru: aqui é JSON.
   registrarRotaWebhookAsaas(app);
+  // O da Stripe nos planos: cada conta conectada com o seu segredo, e o
+  // corpo cru num escopo próprio, como o da cobrança.
+  app.register(async (daStripeDosPlanos: App) => {
+    registrarRotaWebhookStripePlanos(daStripeDosPlanos);
+  });
   // As imagens servidas pela própria API, só no armazenamento local.
   registrarRotaDeArquivos(app);
 

@@ -17,7 +17,13 @@ import {
   usosNoCiclo,
   vitrineAberta,
 } from "../lib/planos-do-cliente";
-import { ErroDoProvedor, erroHttpDoProvedor } from "../lib/provedores";
+import {
+  ErroDoProvedor,
+  erroHttpDoProvedor,
+  nomeDoProvedor,
+  provedorGravado,
+  type NomeDoProvedor,
+} from "../lib/provedores";
 import { clienteDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -98,16 +104,16 @@ const jaAssina = () => new ErroDeNegocio("você já assina este plano", "ja_assi
 // O erro do provedor vira resposta. A chave revogada é problema da conta
 // de quem vende, e não de quem assina: pro cliente, o plano não está à
 // venda agora.
-async function noProvedor<T>(pedido: Promise<T>, log: FastifyBaseLogger): Promise<T> {
+async function noProvedor<T>(provedor: NomeDoProvedor, pedido: Promise<T>, log: FastifyBaseLogger): Promise<T> {
   try {
     return await pedido;
   } catch (erro) {
     if (!(erro instanceof ErroDoProvedor)) throw erro;
     if (erro.codigo === "chave_invalida") {
-      log.warn("assinar online com a chave da conta de quem vende recusada pelo Asaas");
+      log.warn({ provedor }, "assinar online com a chave da conta de quem vende recusada pelo provedor");
       throw indisponivel();
     }
-    throw erroHttpDoProvedor(erro);
+    throw erroHttpDoProvedor(erro, provedor);
   }
 }
 
@@ -137,10 +143,8 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
           viva.conexao.desconectadaEm === null &&
           viva.conexao.modo === app.provedores.modoAceito;
         if (viva.forma !== "online" || !aPagar || !viva.idExterno || !contaViva) throw jaAssina();
-        const linkDaFatura = await noProvedor(
-          app.provedores.daConexao(viva.conexao!).linkDaFatura(viva.idExterno),
-          request.log
-        );
+        const provedor = app.provedores.daConexao(viva.conexao!);
+        const linkDaFatura = await noProvedor(provedor.nome, provedor.linkDaFatura(viva.idExterno), request.log);
         return reply.code(200).send({ assinatura: await serializar(prisma, viva), linkDaFatura });
       }
 
@@ -169,7 +173,12 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
         cpf = normalizarCpf(request.body.cpf);
         if (cpf === null) throw new ErroDeNegocio("o CPF não confere: confira os números", "cpf_invalido");
       }
-      if (cpf === null) throw new ErroDeNegocio("o Asaas pede o CPF de quem assina", "cpf_obrigatorio");
+      if (cpf === null) {
+        throw new ErroDeNegocio(
+          `${nomeDoProvedor(provedorGravado(conexao.provedor)).o} pede o CPF de quem assina`,
+          "cpf_obrigatorio"
+        );
+      }
 
       // O id sai daqui porque vai na assinatura do provedor (a referência
       // de volta). Os pedidos ao provedor ficam fora da transação: é rede.
@@ -177,12 +186,14 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
       const hoje = agoraNaBarbearia().data;
       const provedor = app.provedores.daConexao(conexao);
       const clienteNoProvedor = await noProvedor(
+        provedor.nome,
         provedor.criarCliente({ nome: cliente.nome, cpfCnpj: cpf, email: cliente.email, telefone: cliente.telefone, referencia: cliente.id }),
         request.log
       );
       // Com dias grátis, a primeira cobrança vence no fim do teste; sem,
       // hoje.
       const criada = await noProvedor(
+        provedor.nome,
         provedor.criarAssinatura({
           clienteId: clienteNoProvedor,
           valorCentavos: plano.precoCentavos,
@@ -230,7 +241,10 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
         // Com o mesmo conector de antes, porque o desconectar apaga a
         // chave do banco.
         await provedor.cancelarAssinatura(criada.id).catch((falha: unknown) => {
-          request.log.warn({ falha: String(falha) }, "assinatura do Asaas sem assinatura no BarChop ficou no provedor");
+          request.log.warn(
+            { falha: String(falha) },
+            `assinatura ${nomeDoProvedor(provedor.nome).do} sem assinatura no BarChop ficou no provedor`
+          );
         });
         // O duplo clique: o índice de uma viva por cliente e plano deixa
         // um gravar.
@@ -283,9 +297,11 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
         await cancelarNoProvedor(app.provedores, [atual]);
       } catch (erro) {
         if (!(erro instanceof ErroDeNegocio) || erro.codigo !== "chave_da_conta_recusada") throw erro;
+        // A chave recusada é a da conexão: sem ela, o cancelar não pede nada.
+        const nome = nomeDoProvedor(provedorGravado(atual.conexao!.provedor));
         await notificarQuemVende(prisma, quemVende, {
           titulo: "Cancelamento não feito",
-          texto: `${atual.cliente.nome} tentou cancelar a assinatura do plano ${atual.plano.nome}, mas o Asaas não aceitou a chave da conta conectada: troque a chave em Pagamentos online e cancele pelo painel.`,
+          texto: `${atual.cliente.nome} tentou cancelar a assinatura do plano ${atual.plano.nome}, mas ${nome.o} não aceitou a chave da conta conectada: troque a chave em Pagamentos online e cancele pelo painel.`,
           link,
         });
         throw new ErroDeNegocio(

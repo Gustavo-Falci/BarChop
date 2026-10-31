@@ -93,6 +93,8 @@ export interface EventoDoProvedor {
 export interface Provedor {
   nome: NomeDoProvedor;
   modo: ModoDoProvedor;
+  // Se o provedor pede o CPF (ou CNPJ) de quem assina pra criar o cliente.
+  pedeCpf: boolean;
   // Lança `chave_invalida` se a chave não vale.
   conferirChave(): Promise<void>;
   // Devolve o id do webhook no provedor.
@@ -134,7 +136,7 @@ export interface FabricaDeProvedores {
   cifrar(chave: string): Uint8Array;
   // Pra onde o provedor manda os eventos da conexão; null = a API não
   // sabe o próprio endereço (URL_DA_API).
-  urlDoWebhook(conexaoId: string): string | null;
+  urlDoWebhook(provedor: NomeDoProvedor, conexaoId: string): string | null;
   // O modo pelo formato da chave; null = não é chave desse provedor.
   modoDaChave(provedor: NomeDoProvedor, chave: string): ModoDoProvedor | null;
   // A chave colada na tela, antes de gravar (o conectar confere com ela).

@@ -205,6 +205,7 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
 
   return {
     nome: "asaas",
+    pedeCpf: true,
     modo,
     async conferirChave() {
       await pedir("GET", "/customers?limit=1");

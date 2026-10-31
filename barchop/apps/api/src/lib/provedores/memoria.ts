@@ -55,6 +55,7 @@ export function provedoresDeMemoria(
     return {
       nome: "asaas",
       modo,
+      pedeCpf: true,
       async conferirChave() {
         atender();
       },
@@ -146,7 +147,7 @@ export function provedoresDeMemoria(
     eventos: [],
     modoDaChave: (_provedor, chave) => modoDaChaveDoAsaas(chave),
     cifrar: (chave) => Buffer.from(chave, "utf8"),
-    urlDoWebhook: (conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/asaas/${conexaoId}`),
+    urlDoWebhook: (provedor, conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/${provedor}/${conexaoId}`),
     daChave: ({ chave }) => provedor(chave),
     daConexao: ({ chaveCifrada }) => provedor(Buffer.from(chaveCifrada).toString("utf8")),
   };

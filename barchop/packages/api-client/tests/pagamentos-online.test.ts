@@ -34,21 +34,25 @@ describe("as rotas", () => {
       .mockResolvedValueOnce(respostaJson({ daCasa: false, modoAceito: "teste", conta: null }))
       .mockResolvedValueOnce(respostaJson({ daCasa: true, modoAceito: "teste", conta: null }))
       .mockResolvedValueOnce(respostaJson({ daCasa: true, modoAceito: "teste", conta: null }))
-      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(respostaJson({ daCasa: false, modoAceito: "teste", conta: null }));
     const api = cliente(fetchFalso);
 
     await api.barbeiro.pagamentosOnline(false);
     await api.barbeiro.pagamentosOnline(true);
-    await api.barbeiro.conectarPagamentosOnline(true, "$aact_hmlg_x");
+    await api.barbeiro.conectarPagamentosOnline(true, "asaas", "$aact_hmlg_x");
     await api.barbeiro.desconectarPagamentosOnline(true);
+    await api.barbeiro.conectarPagamentosOnline(false, "stripe", "rk_test_x");
 
     expect(chamadasDe(fetchFalso)).toEqual([
       ["https://api.exemplo.br/barbearias/me/pagamentos-online", "GET"],
       ["https://api.exemplo.br/barbearias/me/pagamentos-online?daCasa=true", "GET"],
       ["https://api.exemplo.br/barbearias/me/pagamentos-online?daCasa=true", "PUT"],
       ["https://api.exemplo.br/barbearias/me/pagamentos-online?daCasa=true", "DELETE"],
+      ["https://api.exemplo.br/barbearias/me/pagamentos-online", "PUT"],
     ]);
     expect(corpoDa(fetchFalso, 2)).toEqual({ provedor: "asaas", chave: "$aact_hmlg_x" });
+    expect(corpoDa(fetchFalso, 4)).toEqual({ provedor: "stripe", chave: "rk_test_x" });
   });
 
   it("a vitrine e as assinaturas do cliente; CPF vazio não vai no corpo", async () => {
@@ -130,19 +134,45 @@ describe("o dublê da conta de quem vende", () => {
     const api = criarApiClientFalso({ assinatura: { ...criarApiClientFalso().estado.assinatura!, ...COMPLETO } });
 
     expect(await api.barbeiro.pagamentosOnline(true)).toEqual({ daCasa: true, modoAceito: "teste", conta: null });
-    await expect(api.barbeiro.conectarPagamentosOnline(true, "sk_live_x")).rejects.toMatchObject({
+    await expect(api.barbeiro.conectarPagamentosOnline(true, "asaas", "sk_live_x")).rejects.toMatchObject({
       codigo: "chave_invalida",
     });
-    await expect(api.barbeiro.conectarPagamentosOnline(true, "$aact_prod_abcd")).rejects.toMatchObject({
+    await expect(api.barbeiro.conectarPagamentosOnline(true, "asaas", "$aact_prod_abcd")).rejects.toMatchObject({
       codigo: "modo_errado",
     });
 
-    const conectada = await api.barbeiro.conectarPagamentosOnline(true, " $aact_hmlg_abcd9876 ");
+    const conectada = await api.barbeiro.conectarPagamentosOnline(true, "asaas", " $aact_hmlg_abcd9876 ");
     expect(conectada.conta).toMatchObject({ provedor: "asaas", modo: "teste", chaveFinal: "9876" });
     expect(JSON.stringify(conectada)).not.toContain("aact");
 
     await api.barbeiro.desconectarPagamentosOnline(true);
     expect((await api.barbeiro.pagamentosOnline(true)).conta).toBeNull();
+  });
+
+  it("a Stripe: o prefixo dela, as frases da API e uma conta ligada por vez", async () => {
+    const api = criarApiClientFalso({ assinatura: { ...criarApiClientFalso().estado.assinatura!, ...COMPLETO } });
+
+    await expect(api.barbeiro.conectarPagamentosOnline(true, "stripe", "$aact_hmlg_abcd")).rejects.toMatchObject({
+      codigo: "chave_invalida",
+      mensagem: "isso não é uma chave de API da Stripe: ela começa com sk_ ou rk_",
+    });
+    await expect(api.barbeiro.conectarPagamentosOnline(true, "stripe", "rk_live_abcd")).rejects.toMatchObject({
+      codigo: "modo_errado",
+      mensagem: "esta é uma chave de produção da Stripe: aqui só vale a de teste",
+    });
+
+    const conectada = await api.barbeiro.conectarPagamentosOnline(true, "stripe", "rk_test_abcd5678");
+    expect(conectada.conta).toMatchObject({ provedor: "stripe", modo: "teste", chaveFinal: "5678" });
+
+    await expect(api.barbeiro.conectarPagamentosOnline(true, "asaas", "$aact_hmlg_abcd")).rejects.toMatchObject({
+      codigo: "outra_conta",
+      mensagem: "a conta conectada é da Stripe: desconecte antes de conectar a do Asaas",
+    });
+    // Trocar a chave da mesma conta da Stripe vale.
+    expect((await api.barbeiro.conectarPagamentosOnline(true, "stripe", "sk_test_wxyz4321")).conta).toMatchObject({
+      provedor: "stripe",
+      chaveFinal: "4321",
+    });
   });
 
   it("recusa desconectar com assinatura online viva na conta, como a API", async () => {

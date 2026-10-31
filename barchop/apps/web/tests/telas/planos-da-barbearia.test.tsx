@@ -51,6 +51,8 @@ const DO_RAFAEL: PlanoDoPainel = {
 };
 const NOS_DOIS: PlanoDoPainel = { ...CORTE, id: "pl5", nome: "Online ou balcão", aceitaNoBalcao: true };
 
+const CONTA_DA_STRIPE: ContaDePagamentoOnline = { ...CONTA, provedor: "stripe" };
+
 function semear(extra: SementeFalsa = {}) {
   return criarApiClientFalso({
     vitrineDePlanos: true,
@@ -188,6 +190,36 @@ describe("planos da barbearia", () => {
     );
     expect(within(corte).getByText(/falta pagar a primeira mensalidade/i)).toBeInTheDocument();
     expect(falso.estado.cpfDoCliente).toBe("52998224725");
+  });
+
+  it("na conta da Stripe: sem CPF, direto pra fatura, e a página diz que é cartão na Stripe", async () => {
+    sessaoDoCliente("gr-barber").gravar("jwt-do-cliente");
+    const falso = montar(<PlanosDaBarbearia />, semear({ planos: [CORTE], contasOnline: { casa: CONTA_DA_STRIPE } }));
+    const corte = await cartaoDo("Corte ilimitado");
+    expect(within(corte).getByText("Cartão.")).toBeInTheDocument();
+    const como = screen.getByRole("region", { name: "Como funciona" });
+    expect(within(como).getByText(/na página da stripe/i)).toBeInTheDocument();
+
+    await userEvent.click(within(corte).getByRole("button", { name: "Assinar" }));
+
+    const fatura = await within(corte).findByRole("link", { name: "Abrir a fatura" });
+    expect(fatura.getAttribute("href")).toMatch(/^https:[/][/]invoice[.]stripe[.]com[/]/);
+    expect(within(corte).queryByLabelText("CPF")).not.toBeInTheDocument();
+    expect(within(corte).getByText(/cartão, na página da stripe/i)).toBeInTheDocument();
+    expect(falso.estado.cpfDoCliente ?? null).toBeNull();
+  });
+
+  it("planos em provedores diferentes: o como funciona não nomeia nenhum", async () => {
+    const doRafael: PlanoDoPainel = { ...DO_RAFAEL, aceitaOnline: true, aceitaNoBalcao: false };
+    montar(
+      <PlanosDaBarbearia />,
+      semear({ planos: [CORTE, doRafael], contasOnline: { casa: CONTA, bb1: CONTA_DA_STRIPE } })
+    );
+    const como = await screen.findByRole("region", { name: "Como funciona" });
+    expect(within(como).getByText(/nunca vê seu cartão/i)).toBeInTheDocument();
+    expect(within(como).queryByText(/asaas|stripe/i)).not.toBeInTheDocument();
+    expect(within(await cartaoDo("Corte ilimitado")).getByText("Pix, cartão ou boleto.")).toBeInTheDocument();
+    expect(within(await cartaoDo("Corte com o Rafael")).getByText("Cartão.")).toBeInTheDocument();
   });
 
   it("com CPF no cadastro e teste grátis: direto pra fatura, com o fim do teste", async () => {
@@ -359,7 +391,7 @@ describe("minhas assinaturas", () => {
     const secao = await screen.findByRole("region", { name: "Meu plano" });
 
     await userEvent.click(within(secao).getByRole("button", { name: "Cancelar assinatura" }));
-    expect(within(secao).getByText(/o asaas para de cobrar/i)).toBeInTheDocument();
+    expect(within(secao).getByText(/a cobrança online para/i)).toBeInTheDocument();
     await userEvent.click(within(secao).getByRole("button", { name: "Sim, cancelar" }));
 
     // Sem assinatura viva, e com a vitrine ligada: o convite pros planos.

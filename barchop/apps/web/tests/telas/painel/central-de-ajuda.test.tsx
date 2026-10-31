@@ -44,7 +44,7 @@ describe("central de ajuda", () => {
     render(<CentralDeAjuda />);
 
     expect(screen.getByRole("heading", { level: 2, name: "Planos de assinatura" })).toBeInTheDocument();
-    await userEvent.type(screen.getByRole("searchbox", { name: "Buscar na ajuda" }), "asaas");
+    await userEvent.type(screen.getByRole("searchbox", { name: "Buscar na ajuda" }), "stripe");
 
     const perguntas = screen.getAllByRole("group");
     const links = perguntas.flatMap((p) => within(p).queryAllByRole("link", { hidden: true }));

@@ -8,7 +8,7 @@ import {
   type CobrancaNoProvedor,
   type EventoDoProvedor,
   type ModoDoProvedor,
-  type Provedor,
+  type ProvedorRecorrente,
 } from "./tipos";
 
 // O conector da Stripe nos planos de assinatura (plano
@@ -101,7 +101,7 @@ export function provedorStripe(opcoes: {
   // evento é recusado.
   segredoDoWebhook: string | null;
   fetch?: typeof fetch;
-}): Provedor {
+}): ProvedorRecorrente {
   const { modo, segredoDoWebhook } = opcoes;
   const stripe = new Stripe(opcoes.chave, {
     maxNetworkRetries: 0,
@@ -182,6 +182,7 @@ export function provedorStripe(opcoes: {
     nome: "stripe",
     modo,
     pedeCpf: PEDE_CPF.stripe,
+    cobra: "recorrente",
     // Lê tudo o que o webhook relê: a chave restrita sem uma dessas
     // permissões passaria aqui e só falharia no webhook, que a Stripe
     // repete até desligar. As de escrita só aparecem ao assinar.

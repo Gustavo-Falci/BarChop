@@ -13,6 +13,13 @@ export type NomeDoProvedor = (typeof PROVEDORES)[number];
 // quem vende: o Asaas não cobra sem ele; a Stripe não usa.
 export const PEDE_CPF: Record<NomeDoProvedor, boolean> = { asaas: true, stripe: false };
 
+// Como o provedor cobra (plano pagamentos-online-infinitepay): o
+// recorrente renova sozinho e avisa pelo webhook; o de link só gera um
+// link de pagamento por vez, e o BarChop é quem toca o ciclo. Aqui, e
+// não só no conector, porque o tipo do conector sai disto (`ProvedorDe`).
+export type FormaDeCobrar = "recorrente" | "link";
+export const COBRA = { asaas: "recorrente", stripe: "recorrente" } as const satisfies Record<NomeDoProvedor, FormaDeCobrar>;
+
 // O modo da chave: a de teste (sandbox) não move dinheiro.
 export type ModoDoProvedor = "teste" | "real";
 
@@ -98,13 +105,20 @@ export interface EventoDoProvedor {
   assinaturaId: string | null;
 }
 
-export interface Provedor {
+// O que todo conector tem.
+interface ProvedorBase {
   nome: NomeDoProvedor;
   modo: ModoDoProvedor;
   // O `PEDE_CPF` do provedor.
   pedeCpf: boolean;
   // Lança `chave_invalida` se a chave não vale.
   conferirChave(): Promise<void>;
+}
+
+// O Asaas e a Stripe: o provedor guarda o cliente e a assinatura, cobra
+// a cada ciclo e avisa pelo webhook da conta.
+export interface ProvedorRecorrente extends ProvedorBase {
+  cobra: "recorrente";
   // Devolve o id do webhook no provedor e, quando é o provedor que gera
   // o segredo que assina os eventos (a Stripe), o segredo: ele só volta
   // aqui. O Asaas usa o `token` do BarChop e devolve null.
@@ -131,6 +145,58 @@ export interface Provedor {
   lerEvento(corpo: unknown, assinatura?: string): EventoDoProvedor;
 }
 
+// Um link de pagamento de um ciclo. `orderNsu` é a referência do BarChop,
+// fixa por assinatura e vencimento: pedir o mesmo link de novo não cria
+// outro.
+export interface NovoLink {
+  orderNsu: string;
+  valorCentavos: number;
+  descricao: string;
+  cliente: { nome: string; email: string | null; telefone: string | null };
+  // Pra onde o comprador volta depois de pagar, e pra onde vai o aviso.
+  redirectUrl: string;
+  webhookUrl: string;
+  // AAAA-MM-DD: depois disso, o link não aceita pagamento.
+  validoAte: string;
+}
+
+// O pagamento de um link, conferido no provedor (nunca só pelo aviso).
+export interface PagamentoDoLink {
+  pago: boolean;
+  // O valor do link, sem os juros que o comprador pagou a mais.
+  valorCentavos: number;
+  forma: "pix" | "cartao" | null;
+}
+
+// O que o aviso de pagamento diz: só serve pra conferir no provedor.
+export interface AvisoDoLink {
+  orderNsu: string;
+  transactionNsu: string;
+  slug: string;
+}
+
+// A InfinitePay (a partir do PR 3): sem assinatura, sem cliente e sem
+// webhook da conta; cada link leva o endereço do aviso.
+export interface ProvedorDeLink extends ProvedorBase {
+  cobra: "link";
+  criarLink(dados: NovoLink): Promise<{ url: string }>;
+  conferirPagamento(dados: AvisoDoLink): Promise<PagamentoDoLink>;
+  // Lança `recusado` se o corpo não é um aviso.
+  lerAviso(corpo: unknown): AvisoDoLink;
+}
+
+// O conector de um provedor, pelo jeito que ele cobra. Enquanto nenhum
+// cobra por link, toda conexão é recorrente: quando um entrar em
+// PROVEDORES e COBRA, o compilador aponta cada lugar que precisa tratar
+// os dois.
+export type ProvedorDe<P extends NomeDoProvedor> = P extends unknown
+  ? (typeof COBRA)[P] extends "link"
+    ? ProvedorDeLink
+    : ProvedorRecorrente
+  : never;
+
+export type Provedor = ProvedorDe<NomeDoProvedor>;
+
 // A conexão gravada no banco (`conexao_de_pagamento`).
 export interface ConexaoGravada {
   provedor: string;
@@ -154,7 +220,7 @@ export interface FabricaDeProvedores {
   // O modo pelo formato da chave; null = não é chave desse provedor.
   modoDaChave(provedor: NomeDoProvedor, chave: string): ModoDoProvedor | null;
   // A chave colada na tela, antes de gravar (o conectar confere com ela).
-  daChave(dados: { provedor: NomeDoProvedor; chave: string }): Provedor;
+  daChave<P extends NomeDoProvedor>(dados: { provedor: P; chave: string }): ProvedorDe<P>;
   // A conexão gravada: decifra a chave na hora de usar.
   daConexao(conexao: ConexaoGravada): Provedor;
 }

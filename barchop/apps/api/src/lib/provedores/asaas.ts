@@ -6,7 +6,7 @@ import {
   type CobrancaNoProvedor,
   type EventoDoProvedor,
   type ModoDoProvedor,
-  type Provedor,
+  type ProvedorRecorrente,
 } from "./tipos";
 
 // O conector do Asaas (Onda 2, marco 3, PR 8 do plano
@@ -156,7 +156,7 @@ export function lerEventoDoAsaas(corpo: unknown): EventoDoProvedor {
   };
 }
 
-export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fetch?: typeof fetch }): Provedor {
+export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fetch?: typeof fetch }): ProvedorRecorrente {
   const { chave, modo } = opcoes;
   const buscar = opcoes.fetch ?? fetch;
   const base = BASE_DO_ASAAS[modo];
@@ -207,6 +207,7 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
   return {
     nome: "asaas",
     pedeCpf: PEDE_CPF.asaas,
+    cobra: "recorrente",
     modo,
     async conferirChave() {
       await pedir("GET", "/customers?limit=1");

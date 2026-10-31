@@ -3,7 +3,14 @@ import { ErroHttp } from "../erro-http";
 import { modoDaChaveDoAsaas, provedorAsaas } from "./asaas";
 import { provedoresDeMemoria } from "./memoria";
 import { modoDaChaveDaStripe, provedorStripe } from "./stripe";
-import { ErroDoProvedor, PROVEDORES, type FabricaDeProvedores, type ModoDoProvedor, type NomeDoProvedor } from "./tipos";
+import {
+  ErroDoProvedor,
+  PROVEDORES,
+  type FabricaDeProvedores,
+  type ModoDoProvedor,
+  type NomeDoProvedor,
+  type ProvedorDe,
+} from "./tipos";
 
 // Os provedores de pagamento online dos planos de assinatura (Onda 2,
 // marco 3, plano planos-de-assinatura): o Asaas e a Stripe (plano
@@ -97,10 +104,12 @@ export function provedoresDoAmbiente(
     modoDaChave,
     cifrar: (chave) => cifrar(chave, chaveDeCifra(env)),
     urlDoWebhook: (provedor, conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/${provedor}/${conexaoId}`),
-    daChave({ provedor, chave }) {
+    daChave<P extends NomeDoProvedor>({ provedor, chave }: { provedor: P; chave: string }) {
       const modo = modoDaChave(provedor, chave);
       if (!modo) throw new ErroDoProvedor("chave_invalida", `isso não é uma chave de API ${nomeDoProvedor(provedor).do}`);
-      return conector(provedor, chave, modo);
+      // O conector do provedor pedido é do tipo dele (COBRA); o TypeScript
+      // não resolve o condicional sobre um genérico.
+      return conector(provedor, chave, modo) as ProvedorDe<P>;
     },
     daConexao({ provedor, modo, chaveCifrada, segredoDoWebhookCifrado }) {
       if (!(PROVEDORES as readonly string[]).includes(provedor) || (modo !== "teste" && modo !== "real")) {

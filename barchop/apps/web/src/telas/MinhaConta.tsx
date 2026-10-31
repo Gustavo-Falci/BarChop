@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { AgendamentoDoCliente, AgendamentoSerializado } from "@barchop/types";
 import { useApi } from "../api/ProvedorDaApi";
@@ -11,6 +11,7 @@ import { Aviso } from "../componentes/Aviso";
 import { Botao, BotaoLink } from "../componentes/Botao";
 import { Chip } from "../componentes/Chip";
 import { caminhoDoPasso } from "../fluxo/passos";
+import { queryDaVolta, voltaDoPagamento } from "../fluxo/planos";
 import { formatarDataComSemana, formatarDataLonga } from "../formato/datas";
 import { prazoAcabou } from "../formato/prazos";
 import { TOM_DO_STATUS, rotuloDoStatus } from "../formato/status";
@@ -65,6 +66,9 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
   const router = useRouter();
   const noHost = useNoHost();
   const api = useApi();
+  // A volta da InfinitePay sem a sessão passa pelo Entrar e volta aqui.
+  const volta = voltaDoPagamento(useSearchParams());
+  const doEntrar = `/${slug}/entrar${volta ? `?${queryDaVolta(volta)}` : ""}`;
 
   // `undefined` no servidor e na hidratação (lá não há localStorage):
   // os dois desenham o mesmo Carregando, e a sessão chega logo depois.
@@ -101,9 +105,9 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
   // limpou o armazenamento, e aqui só falta tirar a pessoa da tela.
   useEffect(() => {
     if (temSessao === false || erro?.codigo === "nao_autenticado") {
-      router.replace(noHost(`/${slug}/entrar`));
+      router.replace(noHost(doEntrar));
     }
-  }, [temSessao, erro, router, slug, noHost]);
+  }, [temSessao, erro, router, doEntrar, noHost]);
 
   if (temSessao === undefined) return <main className={estilos.pagina}><Carregando /></main>;
   if (!temSessao) return null;

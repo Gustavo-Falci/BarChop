@@ -11,6 +11,7 @@ import type { CicloDoCliente, PlanoDoPainel, PlanosDoPainel, VitrineDePlanos } f
 import { garantirRecurso } from "../lib/assinatura";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
+import { MINIMO_DA_INFINITEPAY_CENTAVOS } from "../lib/links-do-ciclo";
 import { PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
 import { PEDE_CPF, provedorGravado } from "../lib/provedores";
 import {
@@ -379,7 +380,14 @@ export function registrarRotasPlanosPublicos(app: App): void {
           // balcão: sumir deixava o dono sem saber por quê. Plano que não
           // cobre nada não entra.
           // A página pergunta o CPF e diz onde se paga pelo provedor dela.
-          const conta = plano.aceitaOnline ? contaQueRecebe(contas, plano.vendedorId) : undefined;
+          // A InfinitePay não cria link abaixo de R$ 1,00: o assinar
+          // recusa, e a vitrine mostra o online indisponível.
+          const recebe = plano.aceitaOnline ? contaQueRecebe(contas, plano.vendedorId) : undefined;
+          const abaixoDoMinimo =
+            recebe !== undefined &&
+            provedorGravado(recebe.provedor) === "infinitepay" &&
+            plano.precoCentavos < MINIMO_DA_INFINITEPAY_CENTAVOS;
+          const conta = abaixoDoMinimo ? undefined : recebe;
           const aceitaOnline = conta !== undefined;
           const provedor = conta && provedorGravado(conta.provedor);
           if (plano.servicos.length === 0) return [];

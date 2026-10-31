@@ -19,6 +19,7 @@ import {
   fraseDoTesteGratis,
   incluiACada,
   planoDaQuery,
+  SEM_RENOVACAO,
 } from "../fluxo/planos";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { PROVEDORES, comMaiuscula } from "../fluxo/provedores";
@@ -161,6 +162,8 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
   // Sem o online agora, nenhum texto de pagamento aparece.
   const textos = PROVEDORES[plano.pagamento?.provedor ?? "asaas"];
   const naPagina = `${textos.formas}, na página ${textos.do}.`;
+  // A InfinitePay não renova sozinha: a frase diz que vem um link por ciclo.
+  const renovacao = textos.renovaSozinho ? "" : ` ${SEM_RENOVACAO}`;
 
   // Quem voltou do login cai no plano que escolheu.
   useEffect(() => {
@@ -248,15 +251,22 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
                 </div>
                 <p className={estilos.apoio}>
                   {passo.criada.assinatura.situacao === "teste"
-                    ? `${naPagina} O plano já vale no teste grátis.`
-                    : `${naPagina} Quando o pagamento entrar, a assinatura aparece ativa em Minha conta.`}
+                    ? `${naPagina} O plano já vale no teste grátis.${renovacao}`
+                    : `${naPagina} Quando o pagamento entrar, a assinatura aparece ativa em Minha conta.${renovacao}`}
                 </p>
               </>
             ) : passo.criada.assinatura.situacao === "teste" ? (
-              <p>
-                O plano já vale no teste grátis. A primeira fatura chega no fim do teste, em{" "}
-                <Link href={minhaConta}>Minha conta</Link>.
-              </p>
+              textos.renovaSozinho ? (
+                <p>
+                  O plano já vale no teste grátis. A primeira fatura chega no fim do teste, em{" "}
+                  <Link href={minhaConta}>Minha conta</Link>.
+                </p>
+              ) : (
+                <p>
+                  O plano já vale no teste grátis. O link do primeiro pagamento chega por e-mail 3 dias antes do fim
+                  do teste, e fica em <Link href={minhaConta}>Minha conta</Link>.
+                </p>
+              )
             ) : (
               <p>
                 A fatura não abriu agora: ela fica em <Link href={minhaConta}>Minha conta</Link>.
@@ -309,7 +319,11 @@ function CartaoDoPlano({ slug, plano, marcado }: { slug: string; plano: PlanoDaV
               </Botao>
             </div>
             <p className={`${estilos.apoio} ${estilos.centro}`}>
-              {plano.aceitaNoBalcao ? `${textos.formas}. Ou assine no balcão.` : `${textos.formas}.`}
+              {textos.renovaSozinho
+                ? plano.aceitaNoBalcao
+                  ? `${textos.formas}. Ou assine no balcão.`
+                  : `${textos.formas}.`
+                : `${naPagina}${renovacao}${plano.aceitaNoBalcao ? " Ou assine no balcão." : ""}`}
             </p>
           </div>
         ) : (

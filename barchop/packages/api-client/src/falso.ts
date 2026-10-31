@@ -1,6 +1,7 @@
 import {
   APARENCIA_PADRAO,
   DIAS_PARA_CANCELAR,
+  MINIMO_DA_INFINITEPAY_CENTAVOS,
   CATEGORIAS_DE_SERVICO,
   COMODIDADES,
   FORMAS_DA_MENSALIDADE,
@@ -29,6 +30,7 @@ import {
   type RegrasDeDivisao,
 } from "@barchop/formato";
 import type {
+  PagamentoConferido,
   AparenciaDaPagina,
   FaixaDeCliente,
   AgendamentoComCliente,
@@ -262,6 +264,9 @@ export interface EstadoFalso {
   contasOnline?: Record<string, ContaDePagamentoOnline>;
   // O modo de chave que a plataforma aceita. Sem semente, o sandbox.
   modoAceito?: "teste" | "real";
+  // O que a InfinitePay responde na conferência do link (o
+  // `payment_check`). Sem semente, pago.
+  pagamentoDoLink?: "pago" | "nao_pago";
   // O CPF do cliente logado, só os dígitos. Sem semente, nenhum: o
   // primeiro assinar pede.
   cpfDoCliente?: string | null;
@@ -488,6 +493,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     mensalidades: (semente.mensalidades ?? []).map(copiaDaMensalidade),
     contasOnline: Object.fromEntries(Object.entries(semente.contasOnline ?? {}).map(([qual, conta]) => [qual, { ...conta }])),
     modoAceito: semente.modoAceito ?? "teste",
+    pagamentoDoLink: semente.pagamentoDoLink ?? "pago",
     cpfDoCliente: semente.cpfDoCliente ?? null,
     usosNoCiclo: { ...(semente.usosNoCiclo ?? {}) },
   };
@@ -932,7 +938,10 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       const vendedor = plano.vendedor ? equipe().find((m) => m.id === plano.vendedor!.id) : null;
       if (plano.vendedor && !(vendedor && vendedor.ativo && vendedor.atende && vendePlanos(vendedor))) return [];
       const servicos = plano.servicos.filter((s) => ativos.has(s.servicoId)).map((s) => ({ ...s }));
-      const aceitaOnline = plano.aceitaOnline && recebeOnline(plano);
+      const conta = estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"];
+      // A InfinitePay não cria link abaixo de R$ 1,00, como na API.
+      const abaixoDoMinimo = conta?.provedor === "infinitepay" && plano.precoCentavos < MINIMO_DA_INFINITEPAY_CENTAVOS;
+      const aceitaOnline = plano.aceitaOnline && recebeOnline(plano) && !abaixoDoMinimo;
       const provedor = aceitaOnline ? estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"]!.provedor : null;
       if (servicos.length === 0) return [];
       return [
@@ -971,11 +980,13 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // A assinatura como o cliente a vê (GET /clientes/me/assinaturas).
   function naConta(assinatura: AssinaturaDoPainel): AssinaturaNaConta {
     const { cliente: _cliente, linkDoCiclo, ...resto } = copiaDaAssinatura(assinatura);
+    const provedor = assinatura.forma === "online" ? provedorDoPlano(assinatura.plano.id) : null;
     const plano = estado.planos!.find((p) => p.id === assinatura.plano.id);
     const ativos = new Set(estado.servicos.filter((s) => s.ativo).map((s) => s.id));
     return {
       ...resto,
       linkParaPagar: linkDoCiclo?.url ?? null,
+      provedor,
       servicos: (plano?.servicos ?? [])
         .filter((s) => ativos.has(s.servicoId))
         .map((s) => ({
@@ -2724,6 +2735,24 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         atual.situacao = "cancelada";
         atual.canceladaEm = new Date().toISOString();
         contarAssinante(atual.plano.id, -1);
+      },
+      // O link do dublê é o `pedido-<id da assinatura>`; o de outro
+      // cliente, 404. Pago, abre o ciclo de hoje, como a API.
+      async conferirPagamento(volta: { orderNsu: string; transactionNsu: string; slug: string }): Promise<PagamentoConferido> {
+        const atual = estado.assinaturas!.find(
+          (a) => `pedido-${a.id}` === volta.orderNsu && a.cliente.id === estado.cliente.id
+        );
+        if (!atual) throw new ErroDaApi(404, "nao_encontrado", "recurso não encontrado");
+        const pago = estado.pagamentoDoLink === "pago" && atual.linkDoCiclo !== null;
+        if (pago) {
+          Object.assign(atual, {
+            situacao: "ativa",
+            linkDoCiclo: null,
+            cicloComecaEm: estado.hoje,
+            cicloTerminaEm: fimDoCiclo(estado.hoje, atual.ciclo),
+          });
+        }
+        return { pago, assinatura: naConta(atual) };
       },
     },
 

@@ -943,6 +943,8 @@ export interface AssinaturaNaConta {
   // Só na InfinitePay, que não renova sozinha: o link aberto que vence
   // antes. Pago ou fechado, null; nos outros provedores, sempre null.
   linkParaPagar: string | null;
+  // Onde a online é paga (a tela diz se renova sozinha); no balcão, null.
+  provedor: ProvedorDePagamento | null;
 }
 
 export interface MinhasAssinaturas {

@@ -27,6 +27,12 @@ describe("novidades do painel", () => {
     expect(titulos).toContain("Termos e privacidade com os planos");
   });
 
+  it("anuncia a Stripe nos pagamentos online dos planos", () => {
+    const stripe = NOVIDADES.find((n) => n.titulo === "Planos pagos pela Stripe");
+    expect(stripe?.texto).toMatch(/Pagamentos online/);
+    expect(stripe?.texto).toMatch(/sem o CPF/);
+  });
+
   it("a lista de verdade vem da mais nova pra mais antiga, com data AAAA-MM-DD", () => {
     expect(NOVIDADES.length).toBeGreaterThan(0);
     for (const novidade of NOVIDADES) {

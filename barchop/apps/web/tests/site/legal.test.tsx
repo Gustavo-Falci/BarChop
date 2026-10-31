@@ -112,6 +112,17 @@ describe("termos de uso", () => {
       "#planos-da-barbearia"
     );
   });
+
+  // Pagamentos online com a Stripe (PR 7 do plano pagamentos-online-stripe):
+  // quem vende escolhe o Asaas ou a Stripe, uma conta por vez.
+  it("os planos recebem pelo Asaas ou pela Stripe, na conta de quem vende", () => {
+    render(<Termos />);
+    const planos = screen.getByRole("region", { name: "Planos que a barbearia vende" });
+    expect(planos).toHaveTextContent(/conta do Asaas ou da Stripe/i);
+    expect(planos).toHaveTextContent(/chave restrita/i);
+    expect(planos).toHaveTextContent(/termos do Asaas ou da Stripe/i);
+    expect(planos).toHaveTextContent(/pelo Asaas, pela Stripe ou no balcão/i);
+  });
 });
 
 describe("política de privacidade", () => {
@@ -149,6 +160,18 @@ describe("política de privacidade", () => {
     const quemAjuda = screen.getByRole("region", { name: /quem nos ajuda/i });
     expect(quemAjuda).toHaveTextContent(/Asaas/);
     expect(quemAjuda).toHaveTextContent(/conta de quem vende/i);
+  });
+
+  it("na Stripe de quem vende vão o nome, o e-mail e o celular, sem o CPF", () => {
+    render(<Privacidade />);
+    const dados = screen.getByRole("region", { name: /que dados coletamos/i });
+    expect(dados).toHaveTextContent(/chave restrita da Stripe/i);
+    expect(dados).toHaveTextContent(/o CPF, quando quem vende recebe pelo Asaas/i);
+    const quemAjuda = screen.getByRole("region", { name: /quem nos ajuda/i });
+    expect(quemAjuda).toHaveTextContent(/o Asaas ou a Stripe é o serviço de pagamento escolhido por quem vende/i);
+    expect(quemAjuda).toHaveTextContent(/na Stripe, o nome, o e-mail e o celular, sem o CPF/i);
+    const prazo = screen.getByRole("region", { name: /por quanto tempo/i });
+    expect(prazo).toHaveTextContent(/chave do Asaas ou da Stripe é apagada/i);
   });
 
   it("diz que o cartão fica com a Stripe, e não com o BarChop", () => {

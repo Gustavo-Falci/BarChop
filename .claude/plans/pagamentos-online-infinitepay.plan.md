@@ -83,6 +83,11 @@ Diferenças do plano, combinadas no caminho:
     - o cancelamento trava a linha da barbearia (o mesmo cadeado do "Recebi" e da confirmação) e reconfere que ainda há link aberto vencido;
     - o atraso filtra também por `cicloTerminaEm < hoje`.
     - Isso foi verificado lendo o código. Um teste de intercalação não cabe aqui.
+  - **O assinar de novo da pendente (a viva) devolve o link que vence antes.** No PR 4 era o mais novo. Agora a fatura que o cliente recebe é a mesma que a conta mostra.
+  - **O 201 do assinar** devolve o `linkParaPagar` com o link que acabou de nascer. A assinatura foi lida antes de o link entrar na transação.
+  - **Lacuna conhecida:** a varredura só reconfere links abertos com `transactionNsu`.
+    - O caso: a página de volta gravou a transação antes de o Pix cair, e o "Recebi" fechou o link depois.
+    - Se o aviso também se perder, nenhum sino pede o estorno. O estorno da decisão 10 depende então do aviso ou de o cliente voltar pela página.
   - **A vitrine não mudou:** já dava `{ provedor: "infinitepay", pedeCpf: false }`, e agora há um teste disso. A web ganhou `renovaSozinho` em `provedores.ts` (falso só na InfinitePay), para as telas do PR 7.
   - **Testes:** `tests/routers/infinitepay-nas-telas.test.ts`, em vez de espalhar casos por `assinantes`, `clientes-me` e `planos-publicos`.
     - No api-client, o dublê tem o link da InfinitePay e o "Recebi" nela.

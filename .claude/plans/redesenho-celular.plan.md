@@ -15,7 +15,7 @@
 - `Tabela`: nome do cartão alinhado com as outras linhas (o botão somava 16px ao recuo do cartão); título de grupo vira título de seção, sem caixa dentro de cartão.
 - `CabecalhoDaPagina`: quebra em vez de empilhar; título curto e um botão dividem a linha.
 - `CampoDeBusca`: dica da tecla / some com `hover: none`.
-- Fora: `PilulasDeFiltro` continua quebrando linha (decisão do CSS: "um filtro escondido fora da tela é um filtro que ninguém usa"). O canvas mostra rolagem de lado; **o dono decide**.
+- Fora: `PilulasDeFiltro` continua quebrando linha (decisão do CSS: "um filtro escondido fora da tela é um filtro que ninguém usa"). O canvas mostra rolagem de lado; o dono decidiu em 31/10: **mantém quebrando linha**.
 
 ### PR 2 — Hoje
 - No celular, sem "Novo agendamento" no cabeçalho (o "Novo" da barra de baixo faz o mesmo). No desktop o botão fica: lá não há barra de baixo.
@@ -41,4 +41,4 @@
 
 ## Conferência visual
 - Não há semente de dados no repo para subir o painel logado no banco de teste (`gr_barber_test`). A de 31/10 (`apps/api/tests/visual-semente.ts`) era temporária e não existe mais.
-- A cada PR: conferir em 390 px e 1280 px, nos dois temas. Sem semente, pedir ao dono ou criar uma semente própria no banco de teste (cuidado: o `.env.test` tem BOM e o `node --env-file` cai no banco de dev).
+- A cada PR: conferir em 390 px e 1280 px, nos dois temas. O dono escolheu (31/10) criar uma semente própria no banco de teste, reaproveitável nos PRs seguintes (cuidado: o `.env.test` tem BOM e o `node --env-file` cai no banco de dev).

@@ -5,7 +5,11 @@
 **Complexity**: Large (8 PRs + deploy; sem teste ponta a ponta, decisão 16)
 
 Diferenças do plano, combinadas no caminho:
-- (nenhuma ainda)
+- **PR 1:**
+  - Nenhum `if (p.cobra === "recorrente")` nos lugares que chamam o provedor. O tipo do conector sai de `COBRA` (`ProvedorDe<P>`), e enquanto nenhum provedor cobra por link, `daConexao` devolve `ProvedorRecorrente`. Quando a InfinitePay entrar em `PROVEDORES` e `COBRA` (PR 3), o compilador aponta cada lugar a tratar. `daChave` é genérico no provedor.
+  - `registrarPagamento` do webhook dos planos virou `registrarMensalidadeOnline`, para não confundir com o `registrarPagamento` do `lib/caixa.ts`. Ele recebe `MensalidadePaga { idExterno, valorCentavos, forma, vencimento }`, e `INCLUDE_ASSINATURA`, `AssinaturaDoWebhook` e `Avisar` também são exportados.
+  - `recomecaNoDiaPago` fica para o PR 4, junto do primeiro uso e dos testes. Quem chama passa o `vencimento` já como `max(vencimento do link, hoje)`.
+  - Fila de memória: `repeticoes` e `rodarRepeticao(trabalho)`, que roda o tratador com `{}`. No pg-boss, `schedule(trabalho, cron, {}, { tz: "America/Sao_Paulo" })`, depois do `garantirFila`.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

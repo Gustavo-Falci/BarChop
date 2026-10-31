@@ -33,6 +33,14 @@ describe("novidades do painel", () => {
     expect(stripe?.texto).toMatch(/sem o CPF/);
   });
 
+  it("anuncia a InfinitePay nos pagamentos online dos planos", () => {
+    const infinitepay = NOVIDADES.find((n) => n.titulo === "Planos pela InfinitePay");
+    expect(infinitepay?.texto).toMatch(/Pagamentos online/);
+    expect(infinitepay?.texto).toMatch(/InfiniteTag/);
+    expect(infinitepay?.texto).toMatch(/link/);
+    expect(infinitepay?.texto).toMatch(/WhatsApp/);
+  });
+
   it("a lista de verdade vem da mais nova pra mais antiga, com data AAAA-MM-DD", () => {
     expect(NOVIDADES.length).toBeGreaterThan(0);
     for (const novidade of NOVIDADES) {

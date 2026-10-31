@@ -113,15 +113,28 @@ describe("termos de uso", () => {
     );
   });
 
-  // Pagamentos online com a Stripe (PR 7 do plano pagamentos-online-stripe):
-  // quem vende escolhe o Asaas ou a Stripe, uma conta por vez.
-  it("os planos recebem pelo Asaas ou pela Stripe, na conta de quem vende", () => {
+  // Pagamentos online com a Stripe (PR 7 do plano pagamentos-online-stripe)
+  // e a InfinitePay (PR 8 do plano pagamentos-online-infinitepay): quem
+  // vende escolhe um dos três, uma conta por vez.
+  it("os planos recebem pelo Asaas, pela Stripe ou pela InfinitePay, na conta de quem vende", () => {
     render(<Termos />);
     const planos = screen.getByRole("region", { name: "Planos que a barbearia vende" });
-    expect(planos).toHaveTextContent(/conta do Asaas ou da Stripe/i);
+    expect(planos).toHaveTextContent(/conta do Asaas, da Stripe ou da InfinitePay/i);
     expect(planos).toHaveTextContent(/chave restrita/i);
-    expect(planos).toHaveTextContent(/termos do Asaas ou da Stripe/i);
-    expect(planos).toHaveTextContent(/pelo Asaas, pela Stripe ou no balcão/i);
+    expect(planos).toHaveTextContent(/termos do Asaas, da Stripe ou da InfinitePay/i);
+    expect(planos).toHaveTextContent(/pelo Asaas, pela Stripe, pela InfinitePay ou no balcão/i);
+  });
+
+  it("na InfinitePay, um link por mensalidade, o cancelamento sem pagar, o mínimo e o estorno no app", () => {
+    render(<Termos />);
+    const planos = screen.getByRole("region", { name: "Planos que a barbearia vende" });
+    expect(planos).toHaveTextContent(/InfiniteTag/);
+    expect(planos).toHaveTextContent(/não renova sozinha/i);
+    expect(planos).toHaveTextContent(/link de pagamento.*por e-mail.*3 dias antes do vencimento/i);
+    expect(planos).toHaveTextContent(/de 3 a 30/i);
+    expect(planos).toHaveTextContent(/R\$\s?1,00/);
+    expect(planos).toHaveTextContent(/estorno.*no app da InfinitePay/i);
+    expect(planos).toHaveTextContent(/os links das próximas mensalidades param/i);
   });
 });
 
@@ -168,10 +181,25 @@ describe("política de privacidade", () => {
     expect(dados).toHaveTextContent(/chave restrita da Stripe/i);
     expect(dados).toHaveTextContent(/o CPF, quando quem vende recebe pelo Asaas/i);
     const quemAjuda = screen.getByRole("region", { name: /quem nos ajuda/i });
-    expect(quemAjuda).toHaveTextContent(/o Asaas ou a Stripe é o serviço de pagamento escolhido por quem vende/i);
-    expect(quemAjuda).toHaveTextContent(/na Stripe, o nome, o e-mail e o celular, sem o CPF/i);
+    expect(quemAjuda).toHaveTextContent(
+      /o Asaas, a Stripe ou a InfinitePay é o serviço de pagamento escolhido por quem vende/i
+    );
+    expect(quemAjuda).toHaveTextContent(/na Stripe e na InfinitePay, o nome, o e-mail e o celular, sem o CPF/i);
     const prazo = screen.getByRole("region", { name: /por quanto tempo/i });
-    expect(prazo).toHaveTextContent(/chave do Asaas ou da Stripe é apagada/i);
+    expect(prazo).toHaveTextContent(/chave do Asaas, da Stripe ou da InfinitePay é apagada/i);
+  });
+
+  it("na InfinitePay: a chave e a InfiniteTag, e o e-mail do link de cada mensalidade sai pelo BarChop", () => {
+    render(<Privacidade />);
+    const dados = screen.getByRole("region", { name: /que dados coletamos/i });
+    expect(dados).toHaveTextContent(/chave da InfinitePay/i);
+    expect(dados).toHaveTextContent(/InfiniteTag/);
+    expect(dados).toHaveTextContent(/A Stripe e a InfinitePay não pedem o CPF/i);
+    const paraQue = screen.getByRole("region", { name: /para que usamos/i });
+    expect(paraQue).toHaveTextContent(/da InfinitePay a situação dos pagamentos/i);
+    expect(paraQue).toHaveTextContent(/link de cada mensalidade/i);
+    const quemAjuda = screen.getByRole("region", { name: /quem nos ajuda/i });
+    expect(quemAjuda).toHaveTextContent(/Resend: envio dos e-mails.*link de cada mensalidade/i);
   });
 
   it("diz que o cartão fica com a Stripe, e não com o BarChop", () => {

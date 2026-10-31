@@ -67,6 +67,7 @@ const assinatura = (
   cicloTerminaEm: "2026-11-10",
   canceladaEm: null,
   linkDoCiclo: null,
+  provedor: null,
   criadoEm: "2026-10-10T12:00:00.000Z",
   cliente: { ...cliente, telefone: "(11) 99999-0000" },
   plano: { id: plano.id, nome: plano.nome, daCasa: plano.daCasa, vendedor: plano.vendedor },

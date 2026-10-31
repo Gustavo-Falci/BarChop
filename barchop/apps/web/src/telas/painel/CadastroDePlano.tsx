@@ -8,6 +8,7 @@ import {
   CICLOS_DO_CLIENTE,
   formatarReais,
   MAX_DIAS_DE_TESTE_DO_CLIENTE,
+  MINIMO_DA_INFINITEPAY_CENTAVOS,
   type CicloDoCliente,
 } from "@barchop/formato";
 import type { NovoPlano, PlanoDoPainel } from "@barchop/types";
@@ -272,6 +273,11 @@ export function CadastroDePlano() {
   // A frase do efeito, com os números digitados. Plano de barbeiro sem
   // número da casa: a parte da casa de cada um só o dono vê (Divisão).
   const precoDigitado = paraCentavos(preco);
+  // A InfinitePay não cria link abaixo de R$ 1,00. O cadastro não sabe o
+  // provedor de quem vende (o dono editando o plano de outro não lê a
+  // conta dele), então avisa sempre que o online vem com o preço abaixo.
+  const abaixoDoMinimo =
+    online && precoDigitado !== null && precoDigitado > 0 && precoDigitado < MINIMO_DA_INFINITEPAY_CENTAVOS;
   const fixoDigitado = fixo.trim() === "" ? null : paraCentavos(fixo);
   const efeito =
     precoDigitado === null || precoDigitado === 0
@@ -458,8 +464,8 @@ export function CadastroDePlano() {
               <label htmlFor={`${idDoForm}-online`}>Online, na página</label>
             </span>
             <span className={estilos.apoio} id={`${idDoForm}-online-apoio`}>
-              Na fatura do Asaas (Pix, cartão ou boleto) ou da Stripe (cartão), direto na conta de quem vende. Sem a
-              conta conectada em{" "}
+              Na fatura do Asaas (Pix, cartão ou boleto), da Stripe (cartão) ou no link da InfinitePay (Pix ou
+              cartão), direto na conta de quem vende. Sem a conta conectada em{" "}
               <Link href="/painel/configuracoes/pagamentos-online">Pagamentos online</Link>, a página oferece só o
               balcão.
             </span>
@@ -467,8 +473,14 @@ export function CadastroDePlano() {
                 (o dono editando o plano de outro não lê a conta dele). */}
             {atual?.onlineIndisponivel && online ? (
               <span className={estilos.indisponivel}>
-                <strong>Pagamento online indisponível.</strong> Quem vende ainda não conectou a conta do Asaas ou da
-                Stripe: a página mostra o plano com esse aviso, sem o Assinar.
+                <strong>Pagamento online indisponível.</strong> Quem vende ainda não conectou a conta de pagamento
+                online, ou o preço fica abaixo do mínimo dela: a página mostra o plano com esse aviso, sem o Assinar.
+              </span>
+            ) : null}
+            {abaixoDoMinimo ? (
+              <span className={estilos.indisponivel} role="status">
+                Na InfinitePay, o mínimo é {formatarReais(MINIMO_DA_INFINITEPAY_CENTAVOS)}: abaixo disso, a página
+                mostra o plano sem o pagamento online.
               </span>
             ) : null}
             <span className={estilos.marca}>

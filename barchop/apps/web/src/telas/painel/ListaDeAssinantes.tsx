@@ -117,8 +117,8 @@ export function ListaDeAssinantes({
 
       {assinantes.length > 0 ? (
         <p className={estilos.nota}>
-          Em atraso, o assinante é atendido como avulso até o pagamento entrar. No balcão, o Recebi lança a
-          mensalidade no caixa de hoje.
+          Em atraso, o assinante é atendido como avulso até o pagamento entrar. No balcão, e na InfinitePay quando
+          pagam fora do link, o Recebi lança a mensalidade no caixa de hoje.
         </p>
       ) : null}
 

@@ -1,5 +1,6 @@
 import type { Prisma } from "@barchop/database";
 import {
+  MINIMO_DA_INFINITEPAY_CENTAVOS,
   assinanteUsaOPlano,
   preverPeloPlano,
   usosRestantes,
@@ -71,19 +72,24 @@ export async function vitrineAberta(db: Prisma.TransactionClient, barbeariaId: s
   return vitrineDePlanos && (await temORecurso(db, barbeariaId, "planosDaBarbearia", new Date()));
 }
 
+// A conta que vende o plano online agora: a de quem vende, entre as que
+// recebem, e, na InfinitePay, com o preço no mínimo dela (decisão 15:
+// abaixo de R$ 1,00 ela não cria link). O painel avisa e a vitrine
+// mostra o online indisponível pela mesma regra.
+export function contaQueVende<T extends { barbeiroId: string; daCasa: boolean; provedor: string }>(
+  contas: readonly T[],
+  plano: { vendedorId: string | null; precoCentavos: number }
+): T | undefined {
+  const conta = contaQueRecebe(contas, plano.vendedorId);
+  if (conta?.provedor === "infinitepay" && plano.precoCentavos < MINIMO_DA_INFINITEPAY_CENTAVOS) return undefined;
+  return conta;
+}
+
 // A conta que recebe a mensalidade de um plano: a da casa pro plano da
 // casa; a pessoal do vendedor pro plano dele. A conta pessoal do dono
 // não recebe plano da casa, nem a da casa o plano dele. Sobre as contas
 // já lidas da barbearia (a vitrine lê todas de uma vez); o "assinar
 // online" (PR 10) usa a mesma regra.
-export function temContaQueRecebe(
-  contas: readonly { barbeiroId: string; daCasa: boolean }[],
-  vendedorId: string | null
-): boolean {
-  return contaQueRecebe(contas, vendedorId) !== undefined;
-}
-
-// A conta de quem vende o plano, entre as que recebem.
 export function contaQueRecebe<T extends { barbeiroId: string; daCasa: boolean }>(
   contas: readonly T[],
   vendedorId: string | null

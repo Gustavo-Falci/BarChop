@@ -276,6 +276,7 @@ describe("o dublê da conta de quem vende", () => {
       cicloTerminaEm: "2026-11-01",
       canceladaEm: null,
       linkDoCiclo: null,
+      provedor: null,
       criadoEm: "2026-10-01T12:00:00.000Z",
       cliente: { id: "c1", nome: "Caio", telefone: "+5511999998888" },
       plano: { id: "pl1", nome: "Corte ilimitado", daCasa: true, vendedor: null },

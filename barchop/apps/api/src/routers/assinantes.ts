@@ -77,6 +77,7 @@ const INCLUDE_ASSINATURA = {
   cliente: { select: { id: true, nome: true, telefone: true } },
   plano: { select: { id: true, nome: true, vendedorId: true, vendedor: { select: { id: true, nome: true } } } },
   links: LINK_ABERTO,
+  conexao: { select: { provedor: true } },
 } satisfies Prisma.AssinaturaDoClienteInclude;
 
 type AssinaturaComTudo = Prisma.AssinaturaDoClienteGetPayload<{ include: typeof INCLUDE_ASSINATURA }>;
@@ -102,6 +103,7 @@ function serializarAssinatura(assinatura: AssinaturaComTudo): AssinaturaDoPainel
     linkDoCiclo: assinatura.links[0]
       ? { url: assinatura.links[0].url, vencimento: dateParaData(assinatura.links[0].vencimento) }
       : null,
+    provedor: assinatura.conexao ? provedorGravado(assinatura.conexao.provedor) : null,
   };
 }
 

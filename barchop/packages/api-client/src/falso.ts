@@ -938,10 +938,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       const vendedor = plano.vendedor ? equipe().find((m) => m.id === plano.vendedor!.id) : null;
       if (plano.vendedor && !(vendedor && vendedor.ativo && vendedor.atende && vendePlanos(vendedor))) return [];
       const servicos = plano.servicos.filter((s) => ativos.has(s.servicoId)).map((s) => ({ ...s }));
-      const conta = estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"];
-      // A InfinitePay não cria link abaixo de R$ 1,00, como na API.
-      const abaixoDoMinimo = conta?.provedor === "infinitepay" && plano.precoCentavos < MINIMO_DA_INFINITEPAY_CENTAVOS;
-      const aceitaOnline = plano.aceitaOnline && recebeOnline(plano) && !abaixoDoMinimo;
+      const aceitaOnline = plano.aceitaOnline && vendeOnline(plano);
       const provedor = aceitaOnline ? estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"]!.provedor : null;
       if (servicos.length === 0) return [];
       return [
@@ -971,22 +968,39 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     return conta !== undefined && conta.modo === estado.modoAceito;
   }
 
+  // A conta que recebe e, na InfinitePay, o preço no mínimo dela: abaixo
+  // de R$ 1,00 ela não cria link (contaQueVende, na API).
+  function vendeOnline(plano: PlanoDoPainel): boolean {
+    const conta = estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"];
+    const abaixoDoMinimo = conta?.provedor === "infinitepay" && plano.precoCentavos < MINIMO_DA_INFINITEPAY_CENTAVOS;
+    return recebeOnline(plano) && !abaixoDoMinimo;
+  }
+
   // O plano como o painel recebe: o aviso do online calculado na hora,
   // como a API faz (a semente não precisa acertar o campo).
   function doPainel(plano: PlanoDoPainel): PlanoDoPainel {
-    return { ...copiaDoPlano(plano), onlineIndisponivel: plano.aceitaOnline && !recebeOnline(plano) };
+    return { ...copiaDoPlano(plano), onlineIndisponivel: plano.aceitaOnline && !vendeOnline(plano) };
+  }
+
+  // A assinatura como o painel recebe. A semente pode deixar o provedor
+  // nulo na online: ele sai da conta de quem vende o plano.
+  function noPainel(assinatura: AssinaturaDoPainel): AssinaturaDoPainel {
+    return { ...copiaDaAssinatura(assinatura), provedor: provedorDaAssinatura(assinatura) };
+  }
+
+  function provedorDaAssinatura(assinatura: AssinaturaDoPainel): ProvedorDePagamento | null {
+    if (assinatura.forma !== "online") return null;
+    return assinatura.provedor ?? provedorDoPlano(assinatura.plano.id);
   }
 
   // A assinatura como o cliente a vê (GET /clientes/me/assinaturas).
   function naConta(assinatura: AssinaturaDoPainel): AssinaturaNaConta {
-    const { cliente: _cliente, linkDoCiclo, ...resto } = copiaDaAssinatura(assinatura);
-    const provedor = assinatura.forma === "online" ? provedorDoPlano(assinatura.plano.id) : null;
+    const { cliente: _cliente, linkDoCiclo, ...resto } = noPainel(assinatura);
     const plano = estado.planos!.find((p) => p.id === assinatura.plano.id);
     const ativos = new Set(estado.servicos.filter((s) => s.ativo).map((s) => s.id));
     return {
       ...resto,
       linkParaPagar: linkDoCiclo?.url ?? null,
-      provedor,
       servicos: (plano?.servicos ?? [])
         .filter((s) => ativos.has(s.servicoId))
         .map((s) => ({
@@ -2490,7 +2504,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         const lista = assinaturasVisiveis()
           .filter((a) => clienteId === undefined || a.cliente.id === clienteId)
           .sort((a, b) => b.criadoEm.localeCompare(a.criadoEm) || a.id.localeCompare(b.id));
-        return { assinantes: lista.map(copiaDaAssinatura) };
+        return { assinantes: lista.map(noPainel) };
       },
       async assinarPlano(clienteId: string, planoId: string) {
         exigirPlanosDaBarbearia();
@@ -2511,6 +2525,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           id: `as${estado.assinaturas!.length + 1}`,
           situacao: emTeste ? "teste" : "pendente",
           forma: "no_balcao",
+          provedor: null,
           linkDoCiclo: null,
           precoCentavos: plano.precoCentavos,
           ciclo: plano.ciclo,
@@ -2523,7 +2538,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         };
         estado.assinaturas!.push(nova);
         contarAssinante(plano.id, 1);
-        return copiaDaAssinatura(nova);
+        return noPainel(nova);
       },
       async receberMensalidade(assinaturaId: string, forma: FormaDoPagamento) {
         if (!(FORMAS_DE_PAGAMENTO as readonly string[]).includes(forma)) {
@@ -2532,7 +2547,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         marcarAtrasadas();
         const atual = assinaturaOu404(assinaturaId);
         // A da InfinitePay aceita (decisão 10), e o link aberto fica fechado.
-        const porLink = estado.contasOnline![atual.plano.vendedor?.id ?? "casa"]?.provedor === "infinitepay";
+        const porLink = provedorDaAssinatura(atual) === "infinitepay";
         if (atual.forma === "online" && !porLink) {
           throw new ErroDaApi(422, "assinatura_online", "assinatura online: o pagamento entra pelo provedor");
         }
@@ -2577,7 +2592,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         estado.mensalidades!.push(mensalidade);
         const { id: idDoRecebimento, data, valorCentavos, casaCentavos } = mensalidade;
         return {
-          assinatura: copiaDaAssinatura(atual),
+          assinatura: noPainel(atual),
           recebimento: { id: idDoRecebimento, data, valorCentavos, casaCentavos, forma },
         };
       },
@@ -2701,6 +2716,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           id: `as${estado.assinaturas!.length + 1}`,
           situacao: emTeste ? "teste" : "pendente",
           forma: "online",
+          provedor: naVitrine.pagamento.provedor,
           // Na InfinitePay, o link do primeiro pagamento; em teste, ele sai
           // na varredura (fora do dublê).
           linkDoCiclo:

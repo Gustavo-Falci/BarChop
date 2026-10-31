@@ -83,6 +83,7 @@ const carlosAtrasado: AssinaturaDoPainel = {
   cicloTerminaEm: "2026-10-20",
   canceladaEm: null,
   linkDoCiclo: null,
+  provedor: null,
   criadoEm: "2026-09-20T12:00:00.000Z",
   cliente: { id: "c2", nome: "Carlos Mendes", telefone: "(11) 99999-0002" },
   plano: { id: "pl1", nome: "Corte ilimitado", daCasa: true, vendedor: null },

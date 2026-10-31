@@ -912,6 +912,9 @@ export interface AssinaturaDoPainel {
   // Só na InfinitePay: o link aberto que vence antes (o que destrava o
   // ciclo), pra quem vende mandar pelo WhatsApp. Nos outros, null.
   linkDoCiclo: { url: string; vencimento: string } | null;
+  // Onde a online é paga (a InfinitePay aceita o "Recebi" e não renova
+  // sozinha); no balcão, null.
+  provedor: ProvedorDePagamento | null;
 }
 
 export interface AssinantesDoPainel {

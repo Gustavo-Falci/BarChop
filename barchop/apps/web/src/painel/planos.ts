@@ -4,7 +4,8 @@ import {
   type CicloDoCliente,
   type SituacaoDoAssinante,
 } from "@barchop/formato";
-import type { AssinaturaDoPainel, PlanoDoPainel, RecebimentoDoBalcao } from "@barchop/types";
+import type { AssinaturaDoPainel, PlanoDoPainel, ProvedorDePagamento, RecebimentoDoBalcao } from "@barchop/types";
+import { PROVEDORES } from "../fluxo/provedores";
 import { naForma } from "./caixa";
 
 // As frases dos planos que o cliente assina (Onda 2, marco 3), as mesmas
@@ -79,7 +80,15 @@ export function diaEMes(data: string): string {
 
 // Até quando vale, numa frase. Em atraso, o plano não cobre o
 // atendimento até o próximo "Recebi".
-export function fraseDoCiclo(assinatura: Pick<AssinaturaDoPainel, "situacao" | "cicloTerminaEm">): string {
+// A online que não renova sozinha (a InfinitePay): um link por ciclo, e
+// o "Recebi" vale nela (decisão 10 do plano pagamentos-online-infinitepay).
+export function porLink(assinatura: { provedor?: ProvedorDePagamento | null }): boolean {
+  return assinatura.provedor != null && !PROVEDORES[assinatura.provedor].renovaSozinho;
+}
+
+export function fraseDoCiclo(
+  assinatura: Pick<AssinaturaDoPainel, "situacao" | "cicloTerminaEm"> & { provedor?: ProvedorDePagamento | null }
+): string {
   const termina = assinatura.cicloTerminaEm;
   switch (assinatura.situacao) {
     case "pendente":
@@ -87,7 +96,7 @@ export function fraseDoCiclo(assinatura: Pick<AssinaturaDoPainel, "situacao" | "
     case "teste":
       return `Teste grátis até ${diaEMes(termina!)}`;
     case "ativa":
-      return `Renova em ${diaEMes(termina!)}`;
+      return porLink(assinatura) ? `Vale até ${diaEMes(termina!)}` : `Renova em ${diaEMes(termina!)}`;
     case "em_atraso":
       return `Venceu em ${diaEMes(termina!)} · atende como avulso`;
     case "cancelada":
@@ -95,10 +104,23 @@ export function fraseDoCiclo(assinatura: Pick<AssinaturaDoPainel, "situacao" | "
   }
 }
 
-// O "Recebi" só aparece quando a API o aceitaria: no balcão, e não
-// antes do dia da renovação (problemaDoRecebimento).
+// O "Recebi" só aparece quando a API o aceitaria: no balcão ou na
+// InfinitePay, e não antes do dia da renovação (problemaDoRecebimento).
 export function podeReceber(assinatura: AssinaturaDoPainel, hoje: string): boolean {
-  return assinatura.forma === "no_balcao" && problemaDoRecebimento(assinatura, hoje) === null;
+  return (
+    (assinatura.forma === "no_balcao" || porLink(assinatura)) && problemaDoRecebimento(assinatura, hoje) === null
+  );
+}
+
+// O link do ciclo pelo WhatsApp de quem assina, com o texto pronto
+// (decisão 13): quem não tem e-mail só recebe por aqui.
+export function linkDoCicloPeloZap(assinatura: AssinaturaDoPainel, zap: string): string | null {
+  const link = assinatura.linkDoCiclo;
+  if (!link) return null;
+  const texto =
+    `Oi, ${assinatura.cliente.nome}! O link para pagar o plano ${assinatura.plano.nome} ` +
+    `(${precoDoCiclo(assinatura)}), com vencimento em ${diaEMes(link.vencimento)}: ${link.url}`;
+  return `${zap}?text=${encodeURIComponent(texto)}`;
 }
 
 // "R$ 120,00 em dinheiro no caixa de hoje". Com o dia de hoje fechado, a

@@ -11,15 +11,13 @@ import type { CicloDoCliente, PlanoDoPainel, PlanosDoPainel, VitrineDePlanos } f
 import { garantirRecurso } from "../lib/assinatura";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
-import { MINIMO_DA_INFINITEPAY_CENTAVOS } from "../lib/links-do-ciclo";
 import { PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
 import { PEDE_CPF, provedorGravado } from "../lib/provedores";
 import {
   PLANO_A_VENDA,
-  contaQueRecebe,
+  contaQueVende,
   contasQueRecebem,
   planosVisiveis,
-  temContaQueRecebe,
   vitrineAberta,
 } from "../lib/planos-do-cliente";
 import { exigirPapel, membroDoToken } from "../plugins/auth";
@@ -135,7 +133,7 @@ const INCLUDE_PLANO = {
 
 type PlanoComTudo = Prisma.PlanoDeAssinaturaGetPayload<{ include: typeof INCLUDE_PLANO }>;
 
-type ContasQueRecebem = Parameters<typeof temContaQueRecebe>[0];
+type ContasQueRecebem = Parameters<typeof contaQueVende>[0];
 
 // `contas`: as que recebem online agora (contasQueRecebem). Com o online
 // marcado e sem a de quem vende, o painel avisa "Pagamento online
@@ -153,7 +151,7 @@ function serializarPlano(plano: PlanoComTudo, contas: ContasQueRecebem): PlanoDo
     fixoPorAtendimentoCentavos: plano.fixoPorAtendimentoCentavos,
     aceitaOnline: plano.aceitaOnline,
     aceitaNoBalcao: plano.aceitaNoBalcao,
-    onlineIndisponivel: plano.aceitaOnline && !temContaQueRecebe(contas, plano.vendedorId),
+    onlineIndisponivel: plano.aceitaOnline && contaQueVende(contas, plano) === undefined,
     ativo: plano.ativo,
     servicos: plano.servicos.map((s) => ({ servicoId: s.servicoId, nome: s.servico.nome, usosPorCiclo: s.usosPorCiclo })),
     assinantes: plano._count.assinaturas,
@@ -197,7 +195,7 @@ export function registrarRotasPlanos(app: App): void {
   const contasDa = (barbeariaId: string) =>
     prisma.conexaoDePagamento.findMany({
       where: contasQueRecebem(barbeariaId, app.provedores.modoAceito),
-      select: { barbeiroId: true, daCasa: true },
+      select: { barbeiroId: true, daCasa: true, provedor: true },
     });
 
   app.get("/barbearias/me/planos", async (request): Promise<PlanosDoPainel> => {
@@ -380,14 +378,9 @@ export function registrarRotasPlanosPublicos(app: App): void {
           // balcão: sumir deixava o dono sem saber por quê. Plano que não
           // cobre nada não entra.
           // A página pergunta o CPF e diz onde se paga pelo provedor dela.
-          // A InfinitePay não cria link abaixo de R$ 1,00: o assinar
-          // recusa, e a vitrine mostra o online indisponível.
-          const recebe = plano.aceitaOnline ? contaQueRecebe(contas, plano.vendedorId) : undefined;
-          const abaixoDoMinimo =
-            recebe !== undefined &&
-            provedorGravado(recebe.provedor) === "infinitepay" &&
-            plano.precoCentavos < MINIMO_DA_INFINITEPAY_CENTAVOS;
-          const conta = abaixoDoMinimo ? undefined : recebe;
+          // A InfinitePay não cria link abaixo de R$ 1,00 (`contaQueVende`):
+          // o assinar recusa, e a vitrine mostra o online indisponível.
+          const conta = plano.aceitaOnline ? contaQueVende(contas, plano) : undefined;
           const aceitaOnline = conta !== undefined;
           const provedor = conta && provedorGravado(conta.provedor);
           if (plano.servicos.length === 0) return [];

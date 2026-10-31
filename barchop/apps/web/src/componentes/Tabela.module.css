@@ -192,21 +192,64 @@
     background: var(--cor-surface);
   }
 
+  /* O título do grupo é título de seção, fora dos cartões. Ele herdava
+     o cartão de `.tabela tr` e ainda a faixa de `th.grupo` por dentro:
+     um cartão com outra caixa dentro, com cara de linha de dado. */
+  .tabela tr.linhaDoGrupo {
+    margin-block: var(--espaco-md) var(--espaco-sm);
+    border: 0;
+    border-radius: 0;
+    background: none;
+    padding: 0;
+  }
+
+  .tabela tbody:first-of-type tr.linhaDoGrupo {
+    margin-block-start: 0;
+  }
+
+  .tabela tbody th.grupo,
+  .tabela tbody tr.linhaDoGrupo:hover th {
+    padding: 0 var(--espaco-xs);
+    border: 0;
+    background: none;
+    font-size: var(--texto-md);
+  }
+
   .tabela td {
     padding: 2px 0;
     border: 0;
     text-align: start;
   }
 
+  /* O nome alinha com as outras linhas do cartão. O botão tinha 16px de
+     lado próprios somados aos 16px do cartão: o nome ficava 32px pra
+     dentro, e o telefone embaixo dele a 16px. A altura de toque fica. */
+  .tabela td:first-child button {
+    padding-inline: 0;
+    padding-block: var(--espaco-xs);
+    min-height: 44px;
+  }
+
+  /* Sem moldura cortando no celular, o anel volta pra fora do texto. */
+  .tabela td:first-child button:focus-visible {
+    outline-offset: 2px;
+  }
+
+  /* O valor longo quebra dentro do cartão: o `nowrap` da tabela larga
+     fazia "Sem registro nos últimos 90 dias" vazar pela borda. O rótulo
+     não encolhe; quem quebra é o valor, alinhado à direita. */
   .tabela td[data-rotulo]:not(:first-child) {
     display: flex;
     justify-content: space-between;
     gap: var(--espaco-md);
     color: var(--cor-ink-soft);
     font-size: var(--texto-sm);
+    white-space: normal;
+    text-align: end;
   }
 
   .tabela td[data-rotulo]:not(:first-child)::before {
+    flex: none;
     content: attr(data-rotulo);
     color: var(--cor-muted);
   }

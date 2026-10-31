@@ -52,9 +52,19 @@
   flex-shrink: 0;
 }
 
+/* No celular o cabeçalho quebra, em vez de empilhar: título curto e um
+   botão dividem a linha (o botão à direita, do tamanho do rótulo), e só
+   desce o que não cabe — o título longo, ou os dois botões de Serviços
+   e Equipe. Em coluna, toda tela gastava título + botão + régua antes
+   do conteúdo (redesenho do celular, PR 1; manual §2 e §16). */
 @media (max-width: 560px) {
   .cabecalho {
-    flex-direction: column;
-    align-items: stretch;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espaco-sm) var(--espaco-md);
+  }
+
+  .textos {
+    flex: 1 1 160px;
   }
 }

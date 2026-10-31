@@ -177,9 +177,22 @@ export async function confirmarPagamentoDoLink(params: {
       }
       return concluir("nao_pago");
     }
-    if (atual.situacao === "pago") return concluir("pago");
-
     const { cliente, plano } = assinatura;
+    const estornar = async (motivo: string) => {
+      await avisar({
+        titulo: "Estorne o pagamento",
+        texto: `${cliente.nome} pagou ${formatarReais(pagamento.valorCentavos)} do plano ${plano.nome} pela InfinitePay, mas ${motivo}. O caixa não mudou: estorne no app da InfinitePay.`,
+      });
+      return concluir("estornar");
+    };
+
+    // Outra transação confirmada no link já pago é dinheiro a mais (o
+    // `single_payment` devia impedir, e sem sandbox não há como ver).
+    if (atual.situacao === "pago") {
+      if (atual.transactionNsu === transactionNsu) return concluir("pago");
+      return estornar("esta mensalidade já tinha sido paga");
+    }
+
     if (pagamento.valorCentavos !== atual.valorCentavos) {
       log.warn(
         { linkId, esperado: atual.valorCentavos, pago: pagamento.valorCentavos },
@@ -194,13 +207,11 @@ export async function confirmarPagamentoDoLink(params: {
 
     if (assinatura.situacao === "cancelada" || atual.situacao === "fechado") {
       await tx.linkDoCiclo.update({ where: { id: atual.id }, data: { situacao: "fechado", transactionNsu, slug } });
-      const motivo =
-        assinatura.situacao === "cancelada" ? "a assinatura já estava cancelada" : "esta mensalidade já tinha sido recebida no BarChop";
-      await avisar({
-        titulo: "Estorne o pagamento",
-        texto: `${cliente.nome} pagou ${formatarReais(pagamento.valorCentavos)} do plano ${plano.nome} pela InfinitePay, mas ${motivo}. O caixa não mudou: estorne no app da InfinitePay.`,
-      });
-      return concluir("estornar");
+      return estornar(
+        assinatura.situacao === "cancelada"
+          ? "a assinatura já estava cancelada"
+          : "esta mensalidade já tinha sido recebida no BarChop"
+      );
     }
 
     // Pago atrasado, o ciclo recomeça no dia pago (decisão 2); adiantado,

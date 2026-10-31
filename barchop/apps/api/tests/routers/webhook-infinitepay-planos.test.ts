@@ -181,6 +181,25 @@ describe("o aviso de pagamento", () => {
     expect(sino[0]!.texto).toContain("app da InfinitePay");
   });
 
+  it("outra transação paga no mesmo link já pago: não entra de novo, e o sino pede o estorno", async () => {
+    const { c, assinaturaId, orderNsu } = await comPendente();
+    const primeira = { orderNsu, transactionNsu: "transacao-1", slug: "fatura-1" };
+    const segunda = { orderNsu, transactionNsu: "transacao-2", slug: "fatura-2" };
+    pagar(c, primeira);
+    pagar(c, segunda);
+
+    await avisar(c, c.casa.id, avisoDePagamento(primeira));
+    await avisar(c, c.casa.id, avisoDePagamento(segunda));
+
+    expect(await prisma.recebimentoDoPlano.count({ where: { assinaturaId } })).toBe(1);
+    expect(await prisma.linkDoCiclo.findFirstOrThrow({ where: { orderNsu } })).toMatchObject({
+      situacao: "pago",
+      transactionNsu: "transacao-1",
+    });
+    const sino = await avisosDoSino(c.dono.barbeiroId);
+    expect(sino.map((aviso) => aviso.titulo)).toEqual(["Nova assinatura", "Estorne o pagamento"]);
+  });
+
   it("pago num link que o BarChop já fechou (o recebi do balcão): também pede o estorno", async () => {
     const { c, assinaturaId, orderNsu } = await comPendente();
     await prisma.linkDoCiclo.updateMany({ where: { orderNsu }, data: { situacao: "fechado" } });

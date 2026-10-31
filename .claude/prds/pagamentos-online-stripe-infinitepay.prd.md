@@ -47,17 +47,17 @@ We'll know we're right when **TBD — needs validation via prospecção (ex.: pe
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
 | 1 | Stripe em Pagamentos online | Quem vende conecta a Stripe; o cliente assina no cartão com renovação automática; o pagamento cai na conta de quem vende e aparece no Caixa e no acerto; cancelar funciona pelo painel e pelo cliente | complete (#237–#244, teste ponta a ponta em 31/10) | `.claude/plans/pagamentos-online-stripe.plan.md` |
-| 2 | InfinitePay em Pagamentos online (link por ciclo) | Quem vende conecta a InfinitePay e vê como funciona sem recorrência; a cada ciclo o cliente recebe o link por e-mail e WhatsApp; o link pago ativa o ciclo e entra no Caixa e no acerto | pending | — |
+| 2 | InfinitePay em Pagamentos online (link por ciclo) | Quem vende conecta a InfinitePay e vê como funciona sem recorrência; a cada ciclo o cliente recebe o link por e-mail e WhatsApp; o link pago ativa o ciclo e entra no Caixa e no acerto | in-progress | `.claude/plans/pagamentos-online-infinitepay.plan.md` |
 
 ## Open Questions
 - [x] **Como o vendedor conecta a Stripe** — decidido pelo dono em 30/10/2026: **colando uma chave**, como no Asaas (o BarChop cria o webhook pela API). Sem Stripe Connect.
 - [ ] **Stripe só com cartão?** O Pix em conta brasileira é por convite. Se o vendedor tiver Pix liberado, entra no MVP ou fica para depois?
-- [ ] **Como o vendedor conecta a InfinitePay**: só a InfiniteTag (que basta para o link, mas sem Pix) ou com a chave de API `inchk_` (Pix e opções do link)?
+- [x] **Como o vendedor conecta a InfinitePay** — decidido pelo dono em 31/10/2026: **com a chave `inchk_`** (link de pagamento único, com validade e Pix). O plano pede também a InfiniteTag, que o `payment_check` exige.
 - [x] **WhatsApp do link da InfinitePay** — decidido pelo dono em 30/10/2026: enquanto o canal da Cloud API está desligado (`WHATSAPP_ATIVO=false`, ADR-0009), **botão "Mandar pelo WhatsApp" à mão** (`wa.me`), como no lembrete; o e-mail sai automático.
-- [ ] **InfinitePay, link não pago**: quando o cliente fica "em atraso" e quando a assinatura é cancelada? Reenvia o link? Em que dias?
-- [ ] **InfinitePay, o cliente também é avisado ao assinar** que não renova sozinho (na vitrine e na Minha conta)? Hoje a decisão cobre só a tela do vendedor.
+- [x] **InfinitePay, link não pago** — decidido pelo dono em 31/10/2026: link 3 dias antes do vencimento; sem pagamento, Em atraso e link reenviado; **cancelada depois de N dias, e quem vende escolhe o N**; pago atrasado recomeça o ciclo no dia pago.
+- [x] **InfinitePay, o cliente também é avisado ao assinar** — decidido pelo dono em 31/10/2026: sim, na vitrine e na Minha conta.
 - [x] **Trocar de plataforma com assinantes ativos** — resolvido pela regra que já existe (marco 3, decisão 6): uma conta ligada por vendedor, e desconectar só sem assinatura online viva. Para trocar, cancela as assinaturas, desconecta e conecta a outra.
-- [ ] **Recurso do plano do BarChop**: Stripe e InfinitePay ficam nos mesmos planos do BarChop que o Asaas?
+- [x] **Recurso do plano do BarChop** — decidido pelo dono em 31/10/2026: os mesmos planos do Asaas (`planosDaBarbearia`).
 
 ## Risks
 | Risk | Likelihood | Impact | Mitigation |

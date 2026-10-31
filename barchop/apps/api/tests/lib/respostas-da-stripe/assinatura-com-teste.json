@@ -1,0 +1,333 @@
+{
+  "id": "sub_exemplo2",
+  "object": "subscription",
+  "application": null,
+  "application_fee_percent": null,
+  "automatic_tax": {
+    "disabled_reason": null,
+    "enabled": false,
+    "liability": null
+  },
+  "billing_cycle_anchor": 1794050723,
+  "billing_cycle_anchor_config": null,
+  "billing_mode": {
+    "flexible": {
+      "proration_discounts": "included"
+    },
+    "type": "flexible",
+    "updated_at": 1793445896
+  },
+  "billing_schedules": [],
+  "billing_thresholds": null,
+  "cancel_at": null,
+  "cancel_at_period_end": false,
+  "canceled_at": null,
+  "cancellation_details": {
+    "comment": null,
+    "feedback": null,
+    "feedback_option": null,
+    "reason": null
+  },
+  "collection_method": "charge_automatically",
+  "created": 1793445896,
+  "currency": "brl",
+  "customer": "cus_exemplo2",
+  "customer_account": null,
+  "days_until_due": null,
+  "default_payment_method": null,
+  "default_source": null,
+  "default_tax_rates": [],
+  "description": null,
+  "discounts": [],
+  "ended_at": null,
+  "invoice_settings": {
+    "account_tax_ids": null,
+    "custom_fields": null,
+    "description": null,
+    "footer": null,
+    "issuer": {
+      "type": "self"
+    }
+  },
+  "items": {
+    "object": "list",
+    "data": [
+      {
+        "id": "si_exemplo2",
+        "object": "subscription_item",
+        "billing_thresholds": null,
+        "created": 1793445896,
+        "current_period_end": 1794050723,
+        "current_period_start": 1793445896,
+        "current_trial": null,
+        "discounts": [],
+        "metadata": {},
+        "plan": {
+          "id": "price_exemplo2",
+          "object": "plan",
+          "active": false,
+          "amount": 9000,
+          "amount_decimal": "9000",
+          "billing_scheme": "per_unit",
+          "created": 1793445896,
+          "currency": "brl",
+          "interval": "month",
+          "interval_count": 3,
+          "livemode": false,
+          "metadata": {},
+          "meter": null,
+          "nickname": null,
+          "product": "barchop_plano_2246558f-34f4-4a5d-9e2a-529df7c00214",
+          "tiers_mode": null,
+          "transform_usage": null,
+          "trial_period_days": null,
+          "usage_type": "licensed"
+        },
+        "price": {
+          "id": "price_exemplo2",
+          "object": "price",
+          "active": false,
+          "billing_scheme": "per_unit",
+          "created": 1793445896,
+          "currency": "brl",
+          "custom_unit_amount": null,
+          "livemode": false,
+          "lookup_key": null,
+          "metadata": {},
+          "nickname": null,
+          "product": "barchop_plano_2246558f-34f4-4a5d-9e2a-529df7c00214",
+          "recurring": {
+            "interval": "month",
+            "interval_count": 3,
+            "meter": null,
+            "trial_period_days": null,
+            "usage_type": "licensed"
+          },
+          "tax_behavior": "unspecified",
+          "tiers_mode": null,
+          "transform_quantity": null,
+          "type": "recurring",
+          "unit_amount": 9000,
+          "unit_amount_decimal": "9000"
+        },
+        "quantity": 1,
+        "subscription": "sub_exemplo2",
+        "tax_rates": []
+      }
+    ],
+    "has_more": false,
+    "total_count": 1,
+    "url": "/v1/subscription_items?subscription=sub_exemplo2"
+  },
+  "latest_invoice": {
+    "id": "in_exemplo2",
+    "object": "invoice",
+    "account_country": "BR",
+    "account_name": "BarChop",
+    "account_tax_ids": null,
+    "amount_due": 0,
+    "amount_overpaid": 0,
+    "amount_paid": 0,
+    "amount_remaining": 0,
+    "amount_shipping": 0,
+    "application": null,
+    "attempt_count": 0,
+    "attempted": true,
+    "auto_advance": false,
+    "automatic_tax": {
+      "disabled_reason": null,
+      "enabled": false,
+      "liability": null,
+      "provider": null,
+      "status": null
+    },
+    "automatically_finalizes_at": null,
+    "billing_reason": "subscription_create",
+    "collection_method": "charge_automatically",
+    "created": 1793445896,
+    "currency": "brl",
+    "custom_fields": null,
+    "customer": "cus_exemplo2",
+    "customer_account": null,
+    "customer_address": null,
+    "customer_email": "caio@exemplo.com",
+    "customer_name": "Caio Rocha",
+    "customer_phone": "+5511999990000",
+    "customer_shipping": null,
+    "customer_tax_exempt": "none",
+    "customer_tax_ids": [],
+    "default_payment_method": null,
+    "default_source": null,
+    "default_tax_rates": [],
+    "description": null,
+    "discounts": [],
+    "due_date": null,
+    "effective_at": 1793445896,
+    "ending_balance": 0,
+    "footer": null,
+    "from_invoice": null,
+    "hosted_invoice_url": "https://invoice.stripe.com/exemplo",
+    "invoice_pdf": "https://pay.stripe.com/exemplo",
+    "issuer": {
+      "type": "self"
+    },
+    "last_finalization_error": null,
+    "latest_revision": null,
+    "lines": {
+      "object": "list",
+      "data": [
+        {
+          "id": "il_exemplo2",
+          "object": "line_item",
+          "amount": 0,
+          "currency": "brl",
+          "description": "Avaliação gratuita de 1 × Corte ilimitado mensal",
+          "discount_amounts": [],
+          "discountable": true,
+          "discounts": [],
+          "invoice": "in_exemplo2",
+          "livemode": false,
+          "metadata": {
+            "barchop": "ee6bf431-f300-4d99-a55e-f89885bb65af"
+          },
+          "parent": {
+            "invoice_item_details": null,
+            "subscription_item_details": {
+              "invoice_item": null,
+              "proration": false,
+              "proration_details": {
+                "credited_items": null
+              },
+              "subscription": "sub_exemplo2",
+              "subscription_item": "si_exemplo2"
+            },
+            "type": "subscription_item_details"
+          },
+          "period": {
+            "end": 1794050723,
+            "start": 1793445896
+          },
+          "pretax_credit_amounts": [],
+          "pricing": {
+            "price_details": {
+              "price": "price_exemplo2",
+              "product": "barchop_plano_2246558f-34f4-4a5d-9e2a-529df7c00214"
+            },
+            "type": "price_details",
+            "unit_amount_decimal": "0"
+          },
+          "quantity": 1,
+          "quantity_decimal": "1",
+          "subtotal": 0,
+          "taxes": []
+        }
+      ],
+      "has_more": false,
+      "total_count": 1,
+      "url": "/v1/invoices/in_exemplo2/lines"
+    },
+    "livemode": false,
+    "metadata": {},
+    "next_payment_attempt": null,
+    "number": "EXEMPLO-0001",
+    "on_behalf_of": null,
+    "parent": {
+      "quote_details": null,
+      "subscription_details": {
+        "metadata": {
+          "barchop": "ee6bf431-f300-4d99-a55e-f89885bb65af"
+        },
+        "subscription": "sub_exemplo2"
+      },
+      "type": "subscription_details"
+    },
+    "payment_settings": {
+      "default_mandate": null,
+      "payment_method_options": null,
+      "payment_method_types": [
+        "card"
+      ]
+    },
+    "period_end": 1793445896,
+    "period_start": 1793445896,
+    "post_payment_credit_notes_amount": 0,
+    "pre_payment_credit_notes_amount": 0,
+    "receipt_number": null,
+    "rendering": null,
+    "shipping_cost": null,
+    "shipping_details": null,
+    "starting_balance": 0,
+    "statement_descriptor": null,
+    "status": "paid",
+    "status_transitions": {
+      "finalized_at": 1793445896,
+      "marked_uncollectible_at": null,
+      "paid_at": 1793445896,
+      "voided_at": null
+    },
+    "subtotal": 0,
+    "subtotal_excluding_tax": 0,
+    "test_clock": null,
+    "total": 0,
+    "total_discount_amounts": [],
+    "total_excluding_tax": 0,
+    "total_pretax_credit_amounts": [],
+    "total_taxes": [],
+    "webhooks_delivered_at": 1793445896
+  },
+  "livemode": false,
+  "managed_payments": {
+    "enabled": false
+  },
+  "metadata": {
+    "barchop": "ee6bf431-f300-4d99-a55e-f89885bb65af"
+  },
+  "next_pending_invoice_item_invoice": null,
+  "on_behalf_of": null,
+  "pause_collection": null,
+  "payment_settings": {
+    "payment_method_options": null,
+    "payment_method_types": [
+      "card"
+    ],
+    "save_default_payment_method": "on_subscription"
+  },
+  "pending_invoice_item_interval": null,
+  "pending_setup_intent": "seti_exemplo1",
+  "pending_update": null,
+  "plan": {
+    "id": "price_exemplo2",
+    "object": "plan",
+    "active": false,
+    "amount": 9000,
+    "amount_decimal": "9000",
+    "billing_scheme": "per_unit",
+    "created": 1793445896,
+    "currency": "brl",
+    "interval": "month",
+    "interval_count": 3,
+    "livemode": false,
+    "metadata": {},
+    "meter": null,
+    "nickname": null,
+    "product": "barchop_plano_2246558f-34f4-4a5d-9e2a-529df7c00214",
+    "tiers_mode": null,
+    "transform_usage": null,
+    "trial_period_days": null,
+    "usage_type": "licensed"
+  },
+  "quantity": 1,
+  "schedule": null,
+  "start_date": 1793445896,
+  "status": "trialing",
+  "test_clock": null,
+  "transfer_data": null,
+  "trial_end": 1794050723,
+  "trial_settings": {
+    "end_behavior": {
+      "billing_cycle_anchor": "now",
+      "missing_payment_method": "create_invoice"
+    }
+  },
+  "trial_start": 1793445896
+}

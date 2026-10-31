@@ -113,6 +113,7 @@ describe("assinar", () => {
         primeiroVencimento: hoje(),
         descricao: "Corte ilimitado",
         referencia: gravada.id,
+        planoId: c.daCasa.id,
       }),
     ]);
     expect(gravada).toMatchObject({ conexaoId: c.casa.id, idExterno: c.provedores.pedidosDeAssinatura[0]!.id });

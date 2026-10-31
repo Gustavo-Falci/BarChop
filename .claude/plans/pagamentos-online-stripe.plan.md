@@ -10,7 +10,19 @@ Diferenças do plano, combinadas no caminho:
   - A frase do CPF no assinar e o sino "Cancelamento não feito" leem o provedor da conexão (`provedorGravado`), pra não mudar a ordem do assinar (CPF antes do `daConexao`). A troca de ordem vem no PR 5, com o `pedeCpf`.
   - `pedeCpf` só declarado (Asaas: `true`), sem uso até o PR 5.
   - Dois logs mudaram de texto: o do assinar com a chave recusada vira "recusada pelo provedor" com o campo `provedor`. Os textos que a pessoa vê são os de antes.
-  - `PROVEDORES` segue só `["asaas"]` até o PR 3: o PUT do conectar tira dele a lista aceita.
+  - `PROVEDORES` segue só `["asaas"]` até o PR 3: o PUT do conectar tira dele a lista aceita. (Mudou no PR 2: ver abaixo.)
+- **PR 2:**
+  - `PROVEDORES` já tem `stripe` (o tipo e o `nomeDoProvedor` pedem); o PUT do conectar ficou com `enum: ["asaas"]` fixo, e o `daConexao` recusa a Stripe até o PR 3 gravar o segredo do webhook.
+  - Interface: `NovaAssinatura.planoId` (o produto `barchop_plano_<planoId>`; o Asaas ignora); `registrarWebhook` devolve `{ id, segredo }` (Asaas: `segredo: null`); `lerEvento(corpo, assinatura?)` (a Stripe pede o corpo cru e o `stripe-signature`; sem segredo ou sem assinatura, recusa).
+  - Gravado na API `2026-09-30.endive` (31/10, `respostas-da-stripe/`). Nela a charge não diz a fatura: o `charge.refunded` vira `cobrancaId = payment_intent`, e o `lerCobranca("pi_…")` acha a fatura por `invoice_payments`. A fatura paga não diz se foi estornada: o conector relê o pagamento (`latest_charge.amount_refunded > 0` = estornada, parcial também). A expansão direta passa do limite de 4 níveis da Stripe.
+  - A assinatura com dias grátis nasce com uma fatura de R$ 0 já paga, e o `invoice.paid` dela chega: o conector devolve fatura de R$ 0 como `pendente`, pra não entrar no Caixa nem avisar "Nova assinatura". Sem fatura aberta, o assinar com dias grátis devolve `linkDaFatura: null` (o Asaas devolve o link da cobrança do fim do teste). O `trial_end` é 00:00 do primeiro vencimento no fuso da barbearia.
+  - Vencida = aberta com `attempt_count > 0`, ou `uncollectible`; `void` = removida. Assinatura: `canceled` → inativa, `incomplete_expired` → expirada (é o que o cancelar da incompleta dá), o resto segue ativa. O vencimento é o início do período da linha da fatura.
+  - Cancelar a já cancelada dá 404 na Stripe: aceito. O `conferirChave` lê clientes e webhooks.
+  - As permissões que o conector usa na chave restrita (pro guia do PR 6 e o teste da tarefa 9): Customers (escrita), Products (escrita), Prices (escrita: o `price_data` cria preço), Subscriptions (escrita), Invoices (leitura), Invoice Payments (leitura), PaymentIntents (leitura), Webhook Endpoints (escrita). O `conferirChave` só confere clientes e webhooks: uma chave sem PaymentIntents conecta e falha com 403 (`chave_invalida`) no webhook da fatura paga. Decidir no PR 4: recusar no conectar ou tratar `chave_invalida` no webhook (sem virar 500, que a Stripe repete até desligar o endpoint).
+  - O produto arquivado no painel da Stripe por quem vende é reativado no assinar (arquivado não assina).
+  - O `recusado` da Stripe sai com frase nossa ("a Stripe recusou o pedido"): a mensagem dela vem em inglês.
+  - A gravação usou a `STRIPE_SECRET_KEY` de teste do `apps/api/.env` (a conta de teste do BarChop). Ficou nela 1 produto arquivado (`barchop_plano_…`); cliente, assinaturas e webhook apagados.
+  - Pro PR 4: a Stripe ancora a renovação no dia da assinatura (31/01 → 28/02 → 31/03); conferir se o `fimDoCiclo` do BarChop bate.
 
 ## Summary
 Quem vende (a casa ou o profissional) passa a escolher entre o Asaas e a Stripe em Pagamentos online e cola a chave da própria conta Stripe; o BarChop cria o webhook pela API, como no Asaas (sem Stripe Connect, decisão do dono em 30/10). O cliente assina na fatura da Stripe (cartão, renovação automática), e o resto — vitrine, Minha conta, assinantes, Caixa, acerto, sino — segue pelo mesmo caminho do Asaas, porque o conector da Stripe entra atrás da interface `Provedor` que já existe.

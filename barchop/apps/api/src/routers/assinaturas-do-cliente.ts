@@ -201,6 +201,7 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
           primeiroVencimento: somarDias(hoje, plano.diasDeTeste),
           descricao: plano.nome,
           referencia: id,
+          planoId: plano.id,
         }),
         request.log
       );

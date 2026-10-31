@@ -1,0 +1,27 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "inpay_exemplo1",
+      "object": "invoice_payment",
+      "amount_paid": 12000,
+      "amount_requested": 12000,
+      "created": 1793445889,
+      "currency": "brl",
+      "invoice": "in_exemplo1",
+      "is_default": true,
+      "livemode": false,
+      "payment": {
+        "payment_intent": "pi_exemplo1",
+        "type": "payment_intent"
+      },
+      "status": "paid",
+      "status_transitions": {
+        "canceled_at": null,
+        "paid_at": 1793445890
+      }
+    }
+  ],
+  "has_more": false,
+  "url": "/v1/invoice_payments"
+}

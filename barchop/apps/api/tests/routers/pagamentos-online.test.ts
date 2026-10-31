@@ -125,6 +125,21 @@ describe("conectar a conta", () => {
     expect(c.provedores.webhooks).toEqual([]);
   });
 
+  it("a Stripe ainda não conecta (entra com o segredo do webhook, no PR 3): 400", async () => {
+    const c = await cenario();
+
+    const resposta = await c.app.inject({
+      method: "PUT",
+      url: url(false),
+      headers: auth(c.dono.token),
+      payload: { provedor: "stripe", chave: "sk_test_qualquer-coisa" },
+    });
+
+    expect(resposta.statusCode).toBe(400);
+    expect(await prisma.conexaoDePagamento.count()).toBe(0);
+    expect(c.provedores.webhooks).toEqual([]);
+  });
+
   it("chave que o Asaas não aceita é 422 chave_recusada, sem gravar nem registrar nada", async () => {
     const c = await cenario();
     c.provedores.chavesInvalidas.add(CHAVE);

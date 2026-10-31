@@ -898,6 +898,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       if (plano.vendedor && !(vendedor && vendedor.ativo && vendedor.atende && vendePlanos(vendedor))) return [];
       const servicos = plano.servicos.filter((s) => ativos.has(s.servicoId)).map((s) => ({ ...s }));
       const aceitaOnline = plano.aceitaOnline && recebeOnline(plano);
+      const provedor = aceitaOnline ? estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"]!.provedor : null;
       if (servicos.length === 0) return [];
       return [
         {
@@ -911,6 +912,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           diasDeTeste: plano.diasDeTeste,
           aceitaOnline,
           onlineIndisponivel: plano.aceitaOnline && !aceitaOnline,
+          // O Asaas pede o CPF; a Stripe não.
+          pagamento: provedor ? { provedor, pedeCpf: provedor === "asaas" } : null,
           aceitaNoBalcao: plano.aceitaNoBalcao,
           servicos,
         },

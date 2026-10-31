@@ -32,9 +32,11 @@ import type { App } from "../tipos";
 // página pública: o id do cliente e a barbearia vêm do token.
 //
 // Assinar só vende o que a vitrine mostra como online (a mesma regra,
-// em lib/planos-do-cliente). O Asaas cria o cliente e a assinatura, e
-// devolve o link da fatura: o cliente escolhe ali como paga, e o BarChop
-// nunca vê cartão. A assinatura nasce pendente (ou em teste, com dias
+// em lib/planos-do-cliente). O provedor da conta de quem vende (Asaas ou
+// Stripe) cria o cliente e a assinatura, e devolve o link da fatura: o
+// cliente escolhe ali como paga, e o BarChop nunca vê cartão. O CPF só
+// quando o provedor pede (`pedeCpf`): na Stripe, nem conferido nem
+// guardado. A assinatura nasce pendente (ou em teste, com dias
 // grátis); o webhook (PR 10a) a ativa quando o dinheiro entra.
 
 const corpoAssinar = {
@@ -164,27 +166,27 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
       });
       if (!conexao) throw indisponivel();
 
+      const provedor = app.provedores.daConexao(conexao);
       const cliente = await prisma.cliente.findUniqueOrThrow({
         where: { id: clienteId },
         select: { id: true, nome: true, email: true, telefone: true, cpf: true },
       });
-      let cpf = cliente.cpf;
-      if (request.body.cpf !== undefined) {
-        cpf = normalizarCpf(request.body.cpf);
-        if (cpf === null) throw new ErroDeNegocio("o CPF não confere: confira os números", "cpf_invalido");
-      }
-      if (cpf === null) {
-        throw new ErroDeNegocio(
-          `${nomeDoProvedor(provedorGravado(conexao.provedor)).o} pede o CPF de quem assina`,
-          "cpf_obrigatorio"
-        );
+      let cpf: string | null = null;
+      if (provedor.pedeCpf) {
+        cpf = cliente.cpf;
+        if (request.body.cpf !== undefined) {
+          cpf = normalizarCpf(request.body.cpf);
+          if (cpf === null) throw new ErroDeNegocio("o CPF não confere: confira os números", "cpf_invalido");
+        }
+        if (cpf === null) {
+          throw new ErroDeNegocio(`${nomeDoProvedor(provedor.nome).o} pede o CPF de quem assina`, "cpf_obrigatorio");
+        }
       }
 
       // O id sai daqui porque vai na assinatura do provedor (a referência
       // de volta). Os pedidos ao provedor ficam fora da transação: é rede.
       const id = randomUUID();
       const hoje = agoraNaBarbearia().data;
-      const provedor = app.provedores.daConexao(conexao);
       const clienteNoProvedor = await noProvedor(
         provedor.nome,
         provedor.criarCliente({ nome: cliente.nome, cpfCnpj: cpf, email: cliente.email, telefone: cliente.telefone, referencia: cliente.id }),
@@ -217,7 +219,7 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
             WHERE id = ${conexao.id}::uuid AND desconectada_em IS NULL AND modo = ${app.provedores.modoAceito}
             FOR SHARE`;
           if (ligada.length === 0) throw indisponivel();
-          await tx.cliente.update({ where: { id: cliente.id }, data: { cpf } });
+          if (cpf !== null && cpf !== cliente.cpf) await tx.cliente.update({ where: { id: cliente.id }, data: { cpf } });
           const emTeste = plano.diasDeTeste > 0;
           return tx.assinaturaDoCliente.create({
             data: {

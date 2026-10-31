@@ -346,6 +346,105 @@ describe("assinar", () => {
   });
 });
 
+// A Stripe não pede o CPF (`pedeCpf`): o BarChop não pede nem guarda.
+describe("com a Stripe", () => {
+  const CHAVE_DA_STRIPE = "sk_test_chave-da-casa-1234";
+
+  // A casa troca o Asaas pela Stripe: desconecta e conecta.
+  async function comAStripe(c: Cenario) {
+    const desligou = await c.app.inject({
+      method: "DELETE",
+      url: "/barbearias/me/pagamentos-online?daCasa=true",
+      headers: auth(c.dono.token),
+    });
+    expect(desligou.statusCode).toBe(204);
+    const ligou = await c.app.inject({
+      method: "PUT",
+      url: "/barbearias/me/pagamentos-online?daCasa=true",
+      headers: auth(c.dono.token),
+      payload: { provedor: "stripe", chave: CHAVE_DA_STRIPE },
+    });
+    expect(ligou.statusCode).toBe(200);
+    return prisma.conexaoDePagamento.findFirstOrThrow({
+      where: { barbeariaId: c.dono.barbeariaId, daCasa: true, desconectadaEm: null },
+    });
+  }
+
+  it("assina sem CPF, com o link da fatura da Stripe, e não guarda CPF nenhum", async () => {
+    const c = await cenario();
+    const conexao = await comAStripe(c);
+
+    const resposta = await assinar(c, c.daCasa.id, {});
+
+    expect(resposta.statusCode).toBe(201);
+    expect(resposta.json().linkDaFatura).toMatch(/^https:\/\/invoice\.stripe\.com\//);
+    expect(c.provedores.clientes).toEqual([
+      expect.objectContaining({ cpfCnpj: null, email: "caio@exemplo.com", referencia: c.cliente.clienteId }),
+    ]);
+    const gravada = await prisma.assinaturaDoCliente.findUniqueOrThrow({ where: { id: resposta.json().assinatura.id } });
+    expect(gravada.conexaoId).toBe(conexao.id);
+    expect((await prisma.cliente.findUniqueOrThrow({ where: { id: c.cliente.clienteId } })).cpf).toBeNull();
+    await c.app.close();
+  });
+
+  it("o CPF mandado mesmo assim é ignorado: nem conferido, nem guardado, nem enviado", async () => {
+    const c = await cenario();
+    await comAStripe(c);
+    const comTeste = await c.plano({ nome: "Com teste", diasDeTeste: 7 });
+
+    expect((await assinar(c, c.daCasa.id, { cpf: "529.982.247-25" })).statusCode).toBe(201);
+    expect((await assinar(c, comTeste.id, { cpf: "529.982.247-24" })).statusCode).toBe(201);
+
+    expect(c.provedores.clientes.map((cliente) => cliente.cpfCnpj)).toEqual([null, null]);
+    expect((await prisma.cliente.findUniqueOrThrow({ where: { id: c.cliente.clienteId } })).cpf).toBeNull();
+    await c.app.close();
+  });
+
+  it("o CPF já no cadastro também não vai para a Stripe", async () => {
+    const c = await cenario();
+    await comAStripe(c);
+    await prisma.cliente.update({ where: { id: c.cliente.clienteId }, data: { cpf: CPF } });
+
+    expect((await assinar(c, c.daCasa.id, {})).statusCode).toBe(201);
+
+    expect(c.provedores.clientes[0]!.cpfCnpj).toBeNull();
+    await c.app.close();
+  });
+
+  it("o Asaas do plano de barbeiro, na mesma barbearia, segue pedindo o CPF", async () => {
+    const c = await cenario();
+    await comAStripe(c);
+    const doLucas = await c.plano({ nome: "Do Lucas", vendedorId: c.lucas.barbeiroId, fixoPorAtendimentoCentavos: null });
+
+    const sem = await assinar(c, doLucas.id, {});
+
+    expect(sem.statusCode).toBe(422);
+    expect(sem.json()).toMatchObject({ erro: "cpf_obrigatorio", mensagem: "o Asaas pede o CPF de quem assina" });
+    expect(c.provedores.clientes).toEqual([]);
+    await c.app.close();
+  });
+
+  it("cancelar: cancela na Stripe; com a chave revogada, o sino diz que foi a Stripe", async () => {
+    const c = await cenario();
+    await comAStripe(c);
+    const primeira = (await assinar(c, c.daCasa.id, {})).json().assinatura.id;
+
+    expect((await cancelar(c, primeira)).statusCode).toBe(204);
+    expect(c.provedores.cancelamentos).toEqual([c.provedores.pedidosDeAssinatura[0]!.id]);
+
+    const segunda = (await assinar(c, c.daCasa.id, {})).json().assinatura.id;
+    c.provedores.chavesInvalidas.add(CHAVE_DA_STRIPE);
+    expect((await cancelar(c, segunda)).statusCode).toBe(422);
+    const avisos = await prisma.notificacao.findMany({
+      where: { barbeiroId: c.dono.barbeiroId, tipo: "pagamento", titulo: "Cancelamento não feito" },
+    });
+    expect(avisos).toEqual([
+      expect.objectContaining({ texto: expect.stringContaining("mas a Stripe não aceitou a chave da conta conectada") }),
+    ]);
+    await c.app.close();
+  });
+});
+
 describe("minhas assinaturas", () => {
   it("as do cliente, com os usos que sobram no ciclo; sem CPF nem id do provedor", async () => {
     const c = await cenario();

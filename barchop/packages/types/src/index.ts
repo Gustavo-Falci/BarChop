@@ -803,8 +803,9 @@ export interface PlanoDoPainel {
   fixoPorAtendimentoCentavos: number | null;
   aceitaOnline: boolean;
   aceitaNoBalcao: boolean;
-  // Online marcado, mas quem vende não tem a conta do Asaas conectada
-  // (e do modo aceito): a página mostra "Pagamento online indisponível".
+  // Online marcado, mas quem vende não tem a conta de pagamento online
+  // conectada (e do modo aceito): a página mostra "Pagamento online
+  // indisponível".
   onlineIndisponivel: boolean;
   ativo: boolean;
   servicos: ServicoDoPlano[];
@@ -854,6 +855,9 @@ export interface PlanoDaVitrine {
   diasDeTeste: number;
   aceitaOnline: boolean;
   onlineIndisponivel: boolean;
+  // Onde se paga online: o provedor da conta de quem vende, e se ele
+  // pede o CPF de quem assina. Null sem o online agora.
+  pagamento: { provedor: "asaas" | "stripe"; pedeCpf: boolean } | null;
   aceitaNoBalcao: boolean;
   servicos: ServicoDoPlano[];
 }

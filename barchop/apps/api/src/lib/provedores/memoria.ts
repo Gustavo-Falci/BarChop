@@ -2,6 +2,7 @@ import { modoDaChaveDoAsaas } from "./asaas";
 import { lerEventoDaStripe, modoDaChaveDaStripe } from "./stripe";
 import {
   ErroDoProvedor,
+  PEDE_CPF,
   type AssinaturaNoProvedor,
   type CobrancaNoProvedor,
   type FabricaDeProvedores,
@@ -53,18 +54,21 @@ export function provedoresDeMemoria(
   function provedor(nome: NomeDoProvedor, chave: string, segredo: string | null = null): Provedor {
     const modo = modoDaChave(nome, chave) ?? "teste";
     const conta = () => fabrica.contas.get(chave) ?? chave;
-    // Como o Asaas: fora do ar, nada responde; a chave revogada não
+    const o = nome === "stripe" ? "a Stripe" : "o Asaas";
+    // Como o de verdade: fora do ar, nada responde; a chave revogada não
     // passa de nenhum pedido.
     const atender = () => {
-      if (fabrica.indisponivel) throw new ErroDoProvedor("indisponivel", "o Asaas não respondeu");
+      if (fabrica.indisponivel) throw new ErroDoProvedor("indisponivel", `${o} não respondeu`);
       if (fabrica.chavesInvalidas.has(chave)) {
-        throw new ErroDoProvedor("chave_invalida", "o Asaas não aceitou a chave", 401);
+        throw new ErroDoProvedor("chave_invalida", `${o} não aceitou a chave`, 401);
       }
     };
+    const link = (id: string) =>
+      nome === "stripe" ? `https://invoice.stripe.com/i/memoria/${id}` : `https://sandbox.asaas.com/i/${id}`;
     return {
       nome,
       modo,
-      pedeCpf: nome === "asaas",
+      pedeCpf: PEDE_CPF[nome],
       async conferirChave() {
         atender();
       },
@@ -102,11 +106,11 @@ export function provedoresDeMemoria(
           valorCentavos: dados.valorCentavos,
           proximoVencimento: dados.primeiroVencimento,
         });
-        return { id, linkDaFatura: `https://sandbox.asaas.com/i/${id}` };
+        return { id, linkDaFatura: link(id) };
       },
       async linkDaFatura(assinaturaId) {
         atender();
-        return fabrica.assinaturas.has(assinaturaId) ? `https://sandbox.asaas.com/i/${assinaturaId}` : null;
+        return fabrica.assinaturas.has(assinaturaId) ? link(assinaturaId) : null;
       },
       async lerAssinatura(id) {
         atender();

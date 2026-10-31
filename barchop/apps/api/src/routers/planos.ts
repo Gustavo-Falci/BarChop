@@ -12,8 +12,10 @@ import { garantirRecurso } from "../lib/assinatura";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { PADRAO_SLUG, PADRAO_UUID } from "../lib/padroes";
+import { PEDE_CPF, provedorGravado } from "../lib/provedores";
 import {
   PLANO_A_VENDA,
+  contaQueRecebe,
   contasQueRecebem,
   planosVisiveis,
   temContaQueRecebe,
@@ -366,7 +368,7 @@ export function registrarRotasPlanosPublicos(app: App): void {
         }),
         prisma.conexaoDePagamento.findMany({
           where: contasQueRecebem(barbearia.id, app.provedores.modoAceito),
-          select: { barbeiroId: true, daCasa: true },
+          select: { barbeiroId: true, daCasa: true, provedor: true },
         }),
       ]);
 
@@ -376,7 +378,10 @@ export function registrarRotasPlanosPublicos(app: App): void {
           // segue na página com "Pagamento online indisponível", mesmo sem o
           // balcão: sumir deixava o dono sem saber por quê. Plano que não
           // cobre nada não entra.
-          const aceitaOnline = plano.aceitaOnline && temContaQueRecebe(contas, plano.vendedorId);
+          // A página pergunta o CPF e diz onde se paga pelo provedor dela.
+          const conta = plano.aceitaOnline ? contaQueRecebe(contas, plano.vendedorId) : undefined;
+          const aceitaOnline = conta !== undefined;
+          const provedor = conta && provedorGravado(conta.provedor);
           if (plano.servicos.length === 0) return [];
           return [
             {
@@ -394,6 +399,7 @@ export function registrarRotasPlanosPublicos(app: App): void {
               diasDeTeste: plano.diasDeTeste,
               aceitaOnline,
               onlineIndisponivel: plano.aceitaOnline && !aceitaOnline,
+              pagamento: provedor ? { provedor, pedeCpf: PEDE_CPF[provedor] } : null,
               aceitaNoBalcao: plano.aceitaNoBalcao,
               servicos: plano.servicos.map((s) => ({ servicoId: s.servicoId, nome: s.servico.nome, usosPorCiclo: s.usosPorCiclo })),
             },

@@ -131,6 +131,36 @@ describe("cancelar uma assinatura no painel", () => {
     await c.app.close();
   });
 
+  it("com a Stripe: cancela lá; a chave revogada diz que foi a Stripe", async () => {
+    const c = await cenario();
+    const chave = "sk_test_chave-do-lucas-5678";
+    const desligou = await c.app.inject({ method: "DELETE", url: "/barbearias/me/pagamentos-online", headers: auth(c.lucas.token) });
+    expect(desligou.statusCode).toBe(204);
+    const ligou = await c.app.inject({
+      method: "PUT",
+      url: "/barbearias/me/pagamentos-online",
+      headers: auth(c.lucas.token),
+      payload: { provedor: "stripe", chave },
+    });
+    expect(ligou.statusCode).toBe(200);
+    const daStripe = await prisma.conexaoDePagamento.findFirstOrThrow({
+      where: { barbeiroId: c.lucas.barbeiroId, provedor: "stripe", desconectadaEm: null },
+    });
+    const online = await c.assinatura("online");
+    const outra = await c.assinatura("online");
+    await prisma.assinaturaDoCliente.updateMany({ where: { id: { in: [online.id, outra.id] } }, data: { conexaoId: daStripe.id } });
+
+    expect((await cancelar(c, online.id)).statusCode).toBe(204);
+    expect(c.provedores.cancelamentos).toEqual([online.idExterno]);
+
+    c.provedores.chavesInvalidas.add(chave);
+    const recusada = await cancelar(c, outra.id);
+    expect(recusada.statusCode).toBe(422);
+    expect(recusada.json().mensagem).toMatch(/^a Stripe não aceitou a chave da conta conectada/);
+    expect(await situacaoDe(outra.id)).toBe("ativa");
+    await c.app.close();
+  });
+
   it("no balcão, ou já cancelada, não fala com o provedor", async () => {
     const c = await cenario();
     const noBalcao = await c.assinatura("no_balcao");

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { PgBoss } from "pg-boss";
+import { FUSO_DA_BARBEARIA } from "./horas";
 
 // Trabalhos que rodam depois, fora da requisição — o primeiro é o
 // lembrete do agendamento. Quem agenda e quem trata falam só com esta
@@ -20,6 +21,10 @@ export interface Fila {
   // `false` quando a chave já estava na fila e nada foi agendado.
   agendar<T extends object>(trabalho: string, dados: T, opcoes?: OpcoesDeAgendar): Promise<boolean>;
   trabalhar<T extends object>(trabalho: string, tratador: Tratador<T>): Promise<void>;
+  // Roda o trabalho (sem dados) a cada vez que o cron bate, no fuso da
+  // barbearia. Registrar de novo troca o cron, e não duplica: o server.ts
+  // registra a cada start. O tratador vem do `trabalhar`.
+  repetir(trabalho: string, cron: string): Promise<void>;
 }
 
 interface Pendente {
@@ -35,15 +40,21 @@ export interface FilaDeMemoria extends Fila {
   // Roda o que já venceu até `agora`. O relógio é de quem testa: nada
   // roda sozinho, então o teste decide o instante sem fake timers.
   rodarVencidos(agora: Date): Promise<number>;
+  // As repetições registradas; nada roda sozinho: o teste chama
+  // `rodarRepeticao` como se o cron tivesse batido.
+  repeticoes: readonly { trabalho: string; cron: string }[];
+  rodarRepeticao(trabalho: string): Promise<void>;
 }
 
 export function filaDeMemoria(): FilaDeMemoria {
   const pendentes: Pendente[] = [];
   const tratadores = new Map<string, Tratador<object>>();
+  const repeticoes: { trabalho: string; cron: string }[] = [];
 
   return {
     nome: "memoria",
     pendentes,
+    repeticoes,
     async agendar(trabalho, dados, { quando, chave } = {}) {
       if (chave !== undefined && pendentes.some((p) => p.trabalho === trabalho && p.chave === chave)) {
         return false;
@@ -72,6 +83,18 @@ export function filaDeMemoria(): FilaDeMemoria {
         }
       }
       return vencidos.length;
+    },
+    async repetir(trabalho, cron) {
+      const ja = repeticoes.find((r) => r.trabalho === trabalho);
+      if (ja) ja.cron = cron;
+      else repeticoes.push({ trabalho, cron });
+    },
+    async rodarRepeticao(trabalho) {
+      const tratador = tratadores.get(trabalho);
+      if (!repeticoes.some((r) => r.trabalho === trabalho) || !tratador) {
+        throw new Error(`nenhuma repetição com tratador para ${trabalho}`);
+      }
+      await tratador({});
     },
   };
 }
@@ -144,6 +167,12 @@ export function filaDoPgBoss(
           if (job) await tratador(job.data);
         }
       );
+    },
+    async repetir(trabalho, cron) {
+      await garantirFila(trabalho);
+      // `schedule` grava por nome (e chave): de novo, troca o cron. A cada
+      // batida, o pg-boss manda um trabalho com estes dados pra fila.
+      await boss.schedule(trabalho, cron, {}, { tz: FUSO_DA_BARBEARIA });
     },
   };
 }

@@ -187,6 +187,40 @@ describe("fila do pg-boss", () => {
   });
 });
 
+// A repetição diária (plano pagamentos-online-infinitepay, PR 1): a
+// varredura dos ciclos por link roda uma vez por dia, no fuso da
+// barbearia. Registrar de novo a cada start não duplica.
+describe("repetir", () => {
+  it("na memória: guarda o cron, não duplica, e o teste roda à mão", async () => {
+    const fila = filaDeMemoria();
+    const trabalho = `teste-${randomUUID()}`;
+    const rodadas: unknown[] = [];
+    await fila.trabalhar(trabalho, async (dados) => {
+      rodadas.push(dados);
+    });
+
+    await fila.repetir(trabalho, "0 8 * * *");
+    await fila.repetir(trabalho, "0 9 * * *");
+    expect(fila.repeticoes).toEqual([{ trabalho, cron: "0 9 * * *" }]);
+
+    await fila.rodarRepeticao(trabalho);
+    expect(rodadas).toEqual([{}]);
+  });
+
+  it("no pg-boss: agenda com o cron no fuso da barbearia, uma vez só", async () => {
+    const fila = filaDoPgBoss(boss);
+    const trabalho = `teste-${randomUUID()}`;
+
+    await fila.repetir(trabalho, "0 8 * * *");
+    await fila.repetir(trabalho, "0 8 * * *");
+
+    const agendas = await boss.getSchedules(trabalho);
+    expect(agendas).toHaveLength(1);
+    expect(agendas[0]).toMatchObject({ cron: "0 8 * * *", timezone: "America/Sao_Paulo" });
+    await boss.unschedule(trabalho);
+  });
+});
+
 describe("filaPadrao", () => {
   it("nos testes, é a de memória", () => {
     expect(filaPadrao({ NODE_ENV: "test" }).nome).toBe("memoria");

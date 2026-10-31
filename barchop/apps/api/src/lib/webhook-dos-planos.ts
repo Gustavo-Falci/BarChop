@@ -16,7 +16,7 @@ import {
   type CobrancaNoProvedor,
   type EventoDoProvedor,
   type NomeDoProvedor,
-  type Provedor,
+  type ProvedorRecorrente,
 } from "./provedores";
 
 // O que o webhook dos planos faz com o evento, igual pra todos os
@@ -39,26 +39,38 @@ export interface LogDoWebhook {
   warn(objeto: object, mensagem: string): void;
 }
 
-const INCLUDE_ASSINATURA = {
+export const INCLUDE_ASSINATURA = {
   cliente: { select: { nome: true } },
   plano: { select: { nome: true, vendedorId: true, vendedor: { select: { parteDaCasa: true } } } },
 } satisfies Prisma.AssinaturaDoClienteInclude;
 
-type AssinaturaDoWebhook = Prisma.AssinaturaDoClienteGetPayload<{ include: typeof INCLUDE_ASSINATURA }>;
+export type AssinaturaDoWebhook = Prisma.AssinaturaDoClienteGetPayload<{ include: typeof INCLUDE_ASSINATURA }>;
 
-type Avisar = (aviso: { titulo: string; texto: string }) => Promise<void>;
+export type Avisar = (aviso: { titulo: string; texto: string }) => Promise<void>;
+
+// Uma mensalidade paga online, venha de onde vier: a cobrança relida no
+// provedor recorrente ou, no de link, o pagamento conferido (plano
+// pagamentos-online-infinitepay).
+export interface MensalidadePaga {
+  // O que identifica o pagamento no provedor: entra uma vez só.
+  idExterno: string;
+  valorCentavos: number;
+  forma: CobrancaNoProvedor["forma"];
+  // AAAA-MM-DD: o dia em que o ciclo pago começa.
+  vencimento: string;
+}
 
 // Paga: a mensalidade entra no caixa do dia (ou do próximo aberto) e o
 // ciclo segue o vencimento da cobrança. O CONFIRMED do cartão e o
 // RECEIVED, quando o dinheiro cai, falam da mesma cobrança: ela entra
-// uma vez.
-async function registrarPagamento(
+// uma vez. Quem chama já travou a linha da barbearia.
+export async function registrarMensalidadeOnline(
   tx: Prisma.TransactionClient,
   assinatura: AssinaturaDoWebhook,
-  cobranca: CobrancaNoProvedor,
+  pagamento: MensalidadePaga,
   avisar: Avisar
 ): Promise<void> {
-  const ja = await tx.recebimentoDoPlano.count({ where: { assinaturaId: assinatura.id, idExterno: cobranca.id } });
+  const ja = await tx.recebimentoDoPlano.count({ where: { assinaturaId: assinatura.id, idExterno: pagamento.idExterno } });
   if (ja > 0) return;
   const primeira = (await tx.recebimentoDoPlano.count({ where: { assinaturaId: assinatura.id } })) === 0;
 
@@ -67,7 +79,7 @@ async function registrarPagamento(
   // valor que o provedor cobrou.
   const { plano } = assinatura;
   const partes = dividirMensalidade({
-    precoCentavos: cobranca.valorCentavos,
+    precoCentavos: pagamento.valorCentavos,
     vendedor: plano.vendedorId,
     parteDaCasa: plano.vendedor?.parteDaCasa ?? 0,
   });
@@ -79,11 +91,11 @@ async function registrarPagamento(
       data: dataParaDate(dia),
       // O dono da conta que recebeu: a casa (null) no plano da casa.
       recebidoPorId: plano.vendedorId,
-      valorCentavos: cobranca.valorCentavos,
+      valorCentavos: pagamento.valorCentavos,
       casaCentavos: partes.find((parte) => parte.beneficiario === null)?.valorCentavos ?? 0,
       forma: "online",
-      meio: cobranca.forma,
-      idExterno: cobranca.id,
+      meio: pagamento.forma,
+      idExterno: pagamento.idExterno,
     },
   });
 
@@ -92,7 +104,7 @@ async function registrarPagamento(
       cicloComecaEm: assinatura.cicloComecaEm ? dateParaData(assinatura.cicloComecaEm) : null,
       cicloTerminaEm: assinatura.cicloTerminaEm ? dateParaData(assinatura.cicloTerminaEm) : null,
     },
-    cobranca.vencimento,
+    pagamento.vencimento,
     assinatura.ciclo as CicloDoCliente,
     hoje
   );
@@ -210,13 +222,16 @@ export async function aplicar(
     }
     return;
   }
-  if (cobranca.situacao === "paga") await registrarPagamento(tx, assinatura, cobranca, avisar);
+  if (cobranca.situacao === "paga") {
+    const { id, valorCentavos, forma, vencimento } = cobranca;
+    await registrarMensalidadeOnline(tx, assinatura, { idExterno: id, valorCentavos, forma, vencimento }, avisar);
+  }
   if (cobranca.situacao === "vencida") await marcarAtraso(tx, assinatura, cobranca, avisar);
 }
 
 export async function receberEvento(params: {
   conexao: { id: string; barbeariaId: string };
-  provedor: Provedor;
+  provedor: ProvedorRecorrente;
   evento: EventoDoProvedor;
   log: LogDoWebhook;
 }): Promise<void> {

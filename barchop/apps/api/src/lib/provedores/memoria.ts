@@ -10,7 +10,8 @@ import {
   type NomeDoProvedor,
   type NovaAssinatura,
   type NovoCliente,
-  type Provedor,
+  type ProvedorDe,
+  type ProvedorRecorrente,
 } from "./tipos";
 
 // Os conectores de memória: cada teste com os seus, e o que foi pedido
@@ -51,7 +52,7 @@ export function provedoresDeMemoria(
 
   // `segredo`: o do webhook da conexão da Stripe, que confere os eventos
   // como no de verdade.
-  function provedor(nome: NomeDoProvedor, chave: string, segredo: string | null = null): Provedor {
+  function provedor(nome: NomeDoProvedor, chave: string, segredo: string | null = null): ProvedorRecorrente {
     const modo = modoDaChave(nome, chave) ?? "teste";
     const conta = () => fabrica.contas.get(chave) ?? chave;
     const o = nome === "stripe" ? "a Stripe" : "o Asaas";
@@ -69,6 +70,7 @@ export function provedoresDeMemoria(
       nome,
       modo,
       pedeCpf: PEDE_CPF[nome],
+      cobra: "recorrente",
       async conferirChave() {
         atender();
       },
@@ -167,7 +169,11 @@ export function provedoresDeMemoria(
     modoDaChave,
     cifrar: (chave) => Buffer.from(chave, "utf8"),
     urlDoWebhook: (provedor, conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/${provedor}/${conexaoId}`),
-    daChave: ({ provedor: nome, chave }) => provedor(nome, chave),
+    // Com um provedor só de cada tipo de cobrança por enquanto, o conector
+    // é o do tipo pedido; o TypeScript não resolve o condicional sobre um
+    // genérico, daí a conversão.
+    daChave: <P extends NomeDoProvedor>({ provedor: nome, chave }: { provedor: P; chave: string }) =>
+      provedor(nome, chave) as ProvedorDe<P>,
     daConexao: ({ provedor: nome, chaveCifrada, segredoDoWebhookCifrado }) =>
       provedor(
         nome === "stripe" ? "stripe" : "asaas",

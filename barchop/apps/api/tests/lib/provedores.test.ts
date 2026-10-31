@@ -1,12 +1,14 @@
 import { randomBytes } from "node:crypto";
 import Stripe from "stripe";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { cifrar } from "../../src/lib/cifra";
 import {
+  COBRA,
   ErroDoProvedor,
   modoDosPagamentosOnline,
   provedoresDeMemoria,
   provedoresDoAmbiente,
+  type ProvedorRecorrente,
 } from "../../src/lib/provedores";
 
 // A fábrica dos conectores (Onda 2, marco 3, PR 8 do plano
@@ -225,5 +227,27 @@ describe("provedoresDeMemoria", () => {
     await expect(fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_ok" }).lerCobranca("pay_x")).rejects.toMatchObject({
       codigo: "nao_encontrado",
     });
+  });
+});
+
+// Como cada provedor cobra (plano pagamentos-online-infinitepay, PR 1): o
+// Asaas e a Stripe renovam sozinhos; a InfinitePay (PR 3) só gera link, e
+// o BarChop toca o ciclo. O tipo do conector segue o provedor: enquanto
+// nenhum cobra por link, toda conexão é recorrente.
+describe("tipo de cobrança", () => {
+  it("o Asaas e a Stripe são recorrentes, no conector de verdade e no de memória", () => {
+    expect(COBRA).toEqual({ asaas: "recorrente", stripe: "recorrente" });
+    const ambiente = provedoresDoAmbiente({ NODE_ENV: "development", CHAVE_DE_CIFRA: randomBytes(32).toString("base64") });
+    const memoria = provedoresDeMemoria();
+    for (const fabrica of [ambiente, memoria]) {
+      expect(fabrica.daChave({ provedor: "asaas", chave: "$aact_hmlg_x" }).cobra).toBe("recorrente");
+      expect(fabrica.daChave({ provedor: "stripe", chave: "sk_test_x" }).cobra).toBe("recorrente");
+    }
+  });
+
+  it("a conexão gravada é do tipo recorrente enquanto nenhum provedor cobra por link", () => {
+    const fabrica = provedoresDeMemoria();
+    expectTypeOf(fabrica.daConexao).returns.toEqualTypeOf<ProvedorRecorrente>();
+    expectTypeOf(fabrica.daChave<"stripe">).returns.toEqualTypeOf<ProvedorRecorrente>();
   });
 });

@@ -59,6 +59,13 @@ describe("resumo do dia no celular", () => {
 
     expect(celular).toMatch(/white-space:\s*nowrap/);
   });
+
+  it("o número acompanha a largura da coluna: \"R$ 1.380,00\" cortava a 360px", () => {
+    const celular = blocoDaMedia(lerCss("telas/painel/DashboardDoDia.module.css"), "@media (max-width: 640px)");
+
+    expect(celular).toMatch(/\.numeros > \*\s*\{[^}]*container-type:\s*inline-size/);
+    expect(celular).toMatch(/\.numeros > \* > :first-child\s*\{[^}]*font-size:\s*clamp\([^;]*cqi/);
+  });
 });
 
 describe("cartão do link", () => {

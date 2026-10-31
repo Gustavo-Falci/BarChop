@@ -12,6 +12,7 @@ export function CabecalhoDaPagina({
   acao,
   selo,
   voltar,
+  acaoSoNoDesktop = false,
 }: {
   titulo: string;
   // Uma linha de contexto sob o título — a data por extenso na agenda,
@@ -26,6 +27,11 @@ export function CabecalhoDaPagina({
   // A tela de cima, pras subtelas (Horários volta pra Configurações).
   // Sem ele, o único caminho de volta era a barra lateral.
   voltar?: { href: string; rotulo: string };
+  // A ação some onde a barra de baixo do painel aparece: lá o "Novo"
+  // dela já faz o mesmo, e dois botões iguais disputavam o topo da tela
+  // (redesenho do celular, PR 2). Some o invólucro inteiro, sem deixar
+  // um item vazio ocupando o vão do flex.
+  acaoSoNoDesktop?: boolean;
 }) {
   return (
     <header className={estilos.cabecalho}>
@@ -42,7 +48,11 @@ export function CabecalhoDaPagina({
         </div>
         {apoio ? <p className={estilos.apoio}>{apoio}</p> : null}
       </div>
-      {acao ? <div className={estilos.acao}>{acao}</div> : null}
+      {acao ? (
+        <div className={estilos.acao} data-so-no-desktop={acaoSoNoDesktop ? "" : undefined}>
+          {acao}
+        </div>
+      ) : null}
     </header>
   );
 }

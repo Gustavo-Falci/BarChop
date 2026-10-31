@@ -70,6 +70,7 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
       <CabecalhoDaPagina
         titulo={`Hoje, ${perfil.nome}`}
         apoio={formatarDataLonga(hoje)}
+        acaoSoNoDesktop
         acao={
           <Botao onClick={() => router.push("/painel/agendamentos/novo")}>
             Novo agendamento
@@ -93,9 +94,9 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
       ) : null}
 
       <div className={estilos.numeros}>
-        <Estatistica numero={String(doDia.length)} legenda="agendamentos hoje" />
+        <Estatistica numero={String(doDia.length)} legenda="agendados" />
         <Estatistica numero={String(proximos(doDia, agora).length)} legenda="ainda hoje" />
-        <Estatistica numero={formatarPreco(previstoDoDia(doDia))} legenda="previsto hoje" />
+        <Estatistica numero={formatarPreco(previstoDoDia(doDia))} legenda="previsto" />
       </div>
 
       <LadoALado>
@@ -106,7 +107,11 @@ export function DashboardDoDia({ agora = new Date() }: { agora?: Date }) {
         />
         <div className={estilos.lateral}>
           {link && barbearia.dados ? (
-            <CartaoDoLink link={link} aoCompartilhar={() => setCompartilhando(true)} />
+            <CartaoDoLink
+              link={link}
+              aoCompartilhar={() => setCompartilhando(true)}
+              aoCopiar={marcarLinkCompartilhado}
+            />
           ) : null}
           {ocupacao.dados ? (
             <BarraDeOcupacao ocupacao={ocupacao.dados} soDoProfissional={perfil.papel === "profissional"} />

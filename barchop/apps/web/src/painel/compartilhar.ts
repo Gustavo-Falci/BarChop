@@ -19,3 +19,16 @@ export function mensagemDoLink(nomeDaBarbearia: string, link: string): string {
 export function urlDoWhatsApp(nomeDaBarbearia: string, link: string): string {
   return `https://wa.me/?text=${encodeURIComponent(mensagemDoLink(nomeDaBarbearia, link))}`;
 }
+
+// Põe o link na área de transferência. Falso quando o navegador nega
+// (sem permissão, http fora do localhost): quem chama mostra o link pra
+// copiar à mão e não marca o passo "Seu link" — nada foi copiado. Usado
+// pela janela de compartilhar e pelo cartão do link no Hoje.
+export async function copiarLink(link: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(link);
+    return true;
+  } catch {
+    return false;
+  }
+}

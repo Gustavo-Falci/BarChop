@@ -108,7 +108,7 @@ describe("trilha de primeiros passos", () => {
       })
     );
 
-    await screen.findByText(/agendamentos hoje/i);
+    await screen.findByText(/^agendados$/i);
     expect(screen.queryByRole("region", { name: /primeiros passos/i })).toBeNull();
   });
 
@@ -122,7 +122,7 @@ describe("trilha de primeiros passos", () => {
     };
     montarPainel(<DashboardDoDia agora={AGORA} />, falso);
 
-    await screen.findByText(/agendamentos hoje/i);
+    await screen.findByText(/^agendados$/i);
     expect(screen.queryByRole("region", { name: /primeiros passos/i })).toBeNull();
     expect(perguntou).toBe(false);
   });
@@ -134,7 +134,7 @@ describe("trilha de primeiros passos", () => {
     };
     montarPainel(<DashboardDoDia agora={AGORA} />, falso);
 
-    await screen.findByText(/agendamentos hoje/i);
+    await screen.findByText(/^agendados$/i);
     expect(screen.queryByRole("region", { name: /primeiros passos/i })).toBeNull();
   });
 });

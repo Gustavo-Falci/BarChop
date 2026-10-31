@@ -28,6 +28,12 @@ describe("Tabela no celular", () => {
     expect(celular).toMatch(/\.tabela td:first-child button\s*\{[^}]*min-height:\s*44px/);
   });
 
+  it("valor longo quebra dentro do cartão, em vez de vazar pela borda", () => {
+    // "Sem registro nos últimos 90 dias" saía do cartão de Clientes: o
+    // `nowrap` da tabela larga valia também no cartão do celular.
+    expect(celular).toMatch(/\.tabela td\[data-rotulo\]:not\(:first-child\)\s*\{[^}]*white-space:\s*normal/);
+  });
+
   it("o título do grupo é um título de seção, e não um cartão com outra caixa dentro", () => {
     expect(celular).toMatch(
       /\.tabela tr\.linhaDoGrupo\s*\{[^}]*border:\s*0[^}]*background:\s*none[^}]*padding:\s*0/

@@ -235,15 +235,21 @@
     outline-offset: 2px;
   }
 
+  /* O valor longo quebra dentro do cartão: o `nowrap` da tabela larga
+     fazia "Sem registro nos últimos 90 dias" vazar pela borda. O rótulo
+     não encolhe; quem quebra é o valor, alinhado à direita. */
   .tabela td[data-rotulo]:not(:first-child) {
     display: flex;
     justify-content: space-between;
     gap: var(--espaco-md);
     color: var(--cor-ink-soft);
     font-size: var(--texto-sm);
+    white-space: normal;
+    text-align: end;
   }
 
   .tabela td[data-rotulo]:not(:first-child)::before {
+    flex: none;
     content: attr(data-rotulo);
     color: var(--cor-muted);
   }

@@ -108,7 +108,7 @@ export function Termos() {
             na conta de quem vende e manda ao cliente por e-mail, 3 dias antes do vencimento; o link também fica na
             área do cliente, e quem vende pode mandar pelo WhatsApp. Sem pagamento até o número de dias depois do
             vencimento que quem vende escolhe (de 3 a 30; 10, se não mudar), a assinatura é cancelada. A InfinitePay
-            não cobra menos de um real por mensalidade, e o estorno é feito por quem vende, no app da InfinitePay.
+            tem um valor mínimo por mensalidade, e o estorno é feito por quem vende, no app da InfinitePay.
           </li>
           <li>
             Cobrança, recibo, estorno e devolução da mensalidade são resolvidos entre quem vende e o cliente, pelo
@@ -145,7 +145,7 @@ export function Termos() {
       <SecaoLegal id="dados-dos-clientes" titulo="Os dados dos seus clientes">
         <p>
           Nome, telefone, e-mail, histórico de agendamentos e assinaturas dos clientes da barbearia, e o CPF
-          de quem assina um plano online, pertencem à barbearia. O BarChop os guarda e trata só para o
+          de quem assina um plano online pelo Asaas, pertencem à barbearia. O BarChop os guarda e trata só para o
           agendamento e os planos funcionarem, em nome da barbearia — os detalhes estão na{" "}
           <a href="/privacidade">política de privacidade</a>.
         </p>

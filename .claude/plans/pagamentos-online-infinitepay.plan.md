@@ -147,13 +147,15 @@ Diferenças do plano, combinadas no caminho:
     - um item novo diz: não renova sozinha, o link por e-mail 3 dias antes, o link na área do cliente e pelo WhatsApp, o cancelamento depois dos dias escolhidos (3 a 30; 10 por padrão), o mínimo e o estorno no app;
     - o cancelar do cliente diz que os links param;
     - o "não pode ser desconectada" fala da conta de pagamento online, sem citar provedor.
-    - O mínimo é escrito "um real", porque os Termos não escrevem preço (`legal.test.tsx`); o teste novo foi ajustado para isso.
+    - O mínimo aparece sem o valor ("um valor mínimo por mensalidade"), porque os Termos não escrevem preço (`legal.test.tsx`), e o valor é regra da InfinitePay, que pode mudar. O teste novo foi ajustado para isso.
+    - "Os dados dos seus clientes" diz que o CPF é de quem assina pelo Asaas.
   - **Privacidade:**
     - a InfinitePay não pede o CPF; vão o nome, o e-mail e o celular;
     - a chave cifrada e a InfiniteTag;
     - o Resend também manda o e-mail do link de cada mensalidade.
   - **A novidade** "Planos pela InfinitePay" é o aviso no painel que os Termos prometem.
   - **ADR-0013** (InfinitePay nos planos que a barbearia vende). O `docs/screens.md` e o roadmap citam a InfinitePay.
+  - **Textos do painel que citavam só o Asaas e a Stripe:** duas perguntas da Central de Ajuda e o resumo de Pagamentos online no índice de Configurações.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

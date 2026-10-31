@@ -132,7 +132,7 @@ describe("termos de uso", () => {
     expect(planos).toHaveTextContent(/não renova sozinha/i);
     expect(planos).toHaveTextContent(/link de pagamento.*por e-mail.*3 dias antes do vencimento/i);
     expect(planos).toHaveTextContent(/de 3 a 30/i);
-    expect(planos).toHaveTextContent(/não cobra menos de um real/i);
+    expect(planos).toHaveTextContent(/valor mínimo por mensalidade/i);
     expect(planos).toHaveTextContent(/estorno.*no app da InfinitePay/i);
     expect(planos).toHaveTextContent(/os links das próximas mensalidades param/i);
   });

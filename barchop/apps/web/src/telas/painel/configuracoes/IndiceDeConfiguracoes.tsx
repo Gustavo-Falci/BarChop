@@ -45,13 +45,13 @@ function resumoDaDivisao(divisao: DivisaoDoDinheiro | null, erro?: string): stri
 // A conta da casa, numa frase. Sem ela (ainda carregando ou falhou), a
 // frase geral.
 function resumoDosPagamentos(daCasa: PagamentosOnline | null): string {
-  if (!daCasa?.conta) return "A conta do Asaas ou da Stripe que recebe os planos assinados pela página";
+  if (!daCasa?.conta) return "A conta do Asaas, da Stripe ou da InfinitePay que recebe os planos assinados pela página";
   return `Conta da casa conectada · chave terminando em ${daCasa.conta.chaveFinal}`;
 }
 
 // A conta de quem está logado, pro índice do profissional.
 function resumoDaSuaConta(sua: PagamentosOnline | null): string {
-  if (!sua?.conta) return "A conta do Asaas ou da Stripe que recebe os planos que você vende";
+  if (!sua?.conta) return "A conta do Asaas, da Stripe ou da InfinitePay que recebe os planos que você vende";
   return `Sua conta conectada · chave terminando em ${sua.conta.chaveFinal}`;
 }
 

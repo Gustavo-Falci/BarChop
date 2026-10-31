@@ -7,11 +7,11 @@
 ## Context
 
 Quem vende plano de assinatura recebe online conectando a própria conta
-do Asaas ou da Stripe (ADR-0012). Muitas barbearias já recebem pela
-maquininha e pelo Pix da InfinitePay, e teriam de abrir outra conta só
-para vender planos pelo BarChop. O dono decidiu (30/10/2026) ter a
-InfinitePay também, com uma plataforma por vendedor (PRD
-`pagamentos-online-stripe-infinitepay`, marco 2).
+do Asaas ou da Stripe (ADR-0012). Quem recebe por outra plataforma
+teria de abrir uma dessas contas só para vender planos pelo BarChop. O
+dono decidiu (30/10/2026) oferecer a InfinitePay também, com uma
+plataforma por vendedor (PRD `pagamentos-online-stripe-infinitepay`,
+marco 2).
 
 A InfinitePay não tem assinatura recorrente nem sandbox. A API do
 checkout tem só dois pedidos: criar um link de pagamento e conferir um

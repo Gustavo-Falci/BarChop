@@ -10,6 +10,8 @@ import {
   ErroDoProvedor,
   erroHttpDoProvedor,
   nomeDoProvedor,
+  PROVEDORES,
+  provedorGravado,
   type NomeDoProvedor,
   type Provedor,
 } from "../lib/provedores";
@@ -38,9 +40,7 @@ const corpoConectar = {
   additionalProperties: false,
   required: ["provedor", "chave"],
   properties: {
-    // A Stripe entra quando a conexão guardar o segredo do webhook (PR 3
-    // do plano pagamentos-online-stripe).
-    provedor: { type: "string", enum: ["asaas"] },
+    provedor: { type: "string", enum: [...PROVEDORES] },
     // A do Asaas tem uns 170 caracteres; a folga cobre espaço colado junto.
     chave: { type: "string", minLength: 1, maxLength: 500 },
   },
@@ -81,7 +81,7 @@ function serializar(daCasa: boolean, modoAceito: PagamentosOnline["modoAceito"],
     daCasa,
     modoAceito,
     conta: conta && {
-      provedor: conta.provedor as "asaas",
+      provedor: provedorGravado(conta.provedor),
       modo: conta.modo as "teste" | "real",
       chaveFinal: conta.chaveFinal,
       conectadaEm: conta.criadoEm.toISOString(),
@@ -151,8 +151,17 @@ export function registrarRotasPagamentosOnline(app: App): void {
 
       const atual = await prisma.conexaoDePagamento.findFirst({
         where: ondeEstaAConta(membro, daCasa),
-        select: { id: true, idExternoWebhook: true },
+        select: { id: true, provedor: true, idExternoWebhook: true },
       });
+      // Uma conta ligada por vendedor (decisão 8): pra trocar de
+      // provedor, desconecta antes. O webhook gravado é do outro provedor,
+      // e a chave nova nem o enxergaria.
+      if (atual && atual.provedor !== escolhido) {
+        throw new ErroDeNegocio(
+          `a conta conectada é ${nomeDoProvedor(provedorGravado(atual.provedor)).do}: desconecte antes de conectar a ${nome.do}`,
+          "outra_conta"
+        );
+      }
       if (atual) {
         const mesmaConta =
           atual.idExternoWebhook !== null && (await noProvedor(escolhido, provedor.temWebhook(atual.idExternoWebhook)));
@@ -183,7 +192,7 @@ export function registrarRotasPagamentosOnline(app: App): void {
       const chaveCifrada = Buffer.from(fabrica.cifrar(chave));
       const token = gerarTokenDoWebhook();
       const { email } = await prisma.barbeiro.findUniqueOrThrow({ where: { id: membro.id }, select: { email: true } });
-      const { id: idExternoWebhook } = await noProvedor(escolhido, provedor.registrarWebhook({ url, token, email }));
+      const { id: idExternoWebhook, segredo } = await noProvedor(escolhido, provedor.registrarWebhook({ url, token, email }));
 
       try {
         const criada = await prisma.conexaoDePagamento.create({
@@ -198,6 +207,7 @@ export function registrarRotasPagamentosOnline(app: App): void {
             chaveFinal,
             webhookTokenHash: hashDoToken(token),
             idExternoWebhook,
+            segredoDoWebhookCifrado: segredo === null ? null : Buffer.from(fabrica.cifrar(segredo)),
           },
         });
         return serializar(daCasa, fabrica.modoAceito, criada);
@@ -269,7 +279,7 @@ export function registrarRotasPagamentosOnline(app: App): void {
 
           await tx.conexaoDePagamento.update({
             where: { id: conexao.id },
-            data: { desconectadaEm: new Date(), chaveCifrada: Buffer.alloc(0) },
+            data: { desconectadaEm: new Date(), chaveCifrada: Buffer.alloc(0), segredoDoWebhookCifrado: null },
           });
         },
         { timeout: 15_000 }

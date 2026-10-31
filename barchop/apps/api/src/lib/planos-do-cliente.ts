@@ -371,7 +371,7 @@ export async function previsaoPeloPlano(
 // são cobradas. A do balcão não tem o que cancelar fora.
 export const ONLINE_A_CANCELAR = {
   idExterno: true,
-  conexao: { select: { provedor: true, modo: true, chaveCifrada: true, desconectadaEm: true } },
+  conexao: { select: { provedor: true, modo: true, chaveCifrada: true, segredoDoWebhookCifrado: true, desconectadaEm: true } },
 } satisfies Prisma.AssinaturaDoClienteSelect;
 
 // Cancela no provedor, antes de cancelar no banco (PR 10b): sem isso, a

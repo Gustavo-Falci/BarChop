@@ -1,5 +1,5 @@
 import { modoDaChaveDoAsaas } from "./asaas";
-import { modoDaChaveDaStripe } from "./stripe";
+import { lerEventoDaStripe, modoDaChaveDaStripe } from "./stripe";
 import {
   ErroDoProvedor,
   type AssinaturaNoProvedor,
@@ -48,7 +48,9 @@ export function provedoresDeMemoria(
   const modoDaChave = (nome: NomeDoProvedor, chave: string): ModoDoProvedor | null =>
     nome === "stripe" ? modoDaChaveDaStripe(chave) : modoDaChaveDoAsaas(chave);
 
-  function provedor(nome: NomeDoProvedor, chave: string): Provedor {
+  // `segredo`: o do webhook da conexão da Stripe, que confere os eventos
+  // como no de verdade.
+  function provedor(nome: NomeDoProvedor, chave: string, segredo: string | null = null): Provedor {
     const modo = modoDaChave(nome, chave) ?? "teste";
     const conta = () => fabrica.contas.get(chave) ?? chave;
     // Como o Asaas: fora do ar, nada responde; a chave revogada não
@@ -124,7 +126,12 @@ export function provedoresDeMemoria(
         if (assinatura) fabrica.assinaturas.set(id, { ...assinatura, removida: true });
         fabrica.cancelamentos.push(id);
       },
-      lerEvento(corpo) {
+      lerEvento(corpo, assinatura) {
+        if (nome === "stripe") {
+          const lido = lerEventoDaStripe(corpo, assinatura, segredo);
+          fabrica.eventos.push(JSON.parse(String(corpo)));
+          return lido;
+        }
         const evento = corpo as { id?: unknown; event?: unknown; cobrancaId?: unknown; assinaturaId?: unknown } | null;
         if (!evento || typeof evento.id !== "string" || typeof evento.event !== "string") {
           throw new ErroDoProvedor("recusado", "o corpo não é um evento do Asaas");
@@ -157,8 +164,12 @@ export function provedoresDeMemoria(
     cifrar: (chave) => Buffer.from(chave, "utf8"),
     urlDoWebhook: (provedor, conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/${provedor}/${conexaoId}`),
     daChave: ({ provedor: nome, chave }) => provedor(nome, chave),
-    daConexao: ({ provedor: nome, chaveCifrada }) =>
-      provedor(nome === "stripe" ? "stripe" : "asaas", Buffer.from(chaveCifrada).toString("utf8")),
+    daConexao: ({ provedor: nome, chaveCifrada, segredoDoWebhookCifrado }) =>
+      provedor(
+        nome === "stripe" ? "stripe" : "asaas",
+        Buffer.from(chaveCifrada).toString("utf8"),
+        segredoDoWebhookCifrado ? Buffer.from(segredoDoWebhookCifrado).toString("utf8") : null
+      ),
   };
   return fabrica;
 }

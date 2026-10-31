@@ -285,7 +285,8 @@ function GuiaDaInfinitePay() {
             integrado. Sem ele, a InfinitePay não cria os links de pagamento.
           </li>
           <li>
-            <strong>Crie a chave de API.</strong> Nas mesmas configurações, crie uma chave com o nome BarChop.{" "}
+            <strong>Crie a chave de API.</strong> Nas mesmas configurações, crie uma chave de API. A InfinitePay deixa até
+            5 por conta.{" "}
             <a href={DOCUMENTACAO_DA_INFINITEPAY} target="_blank" rel="noreferrer">
               Ver a documentação da InfinitePay
             </a>

@@ -46,7 +46,15 @@ Diferenças do plano, combinadas no caminho:
     - `nao_pago` e `sem_conta` não são gravados. Assim a InfinitePay pode repetir o aviso, e a varredura pode conferir de novo.
   - **Pagamento não confirmado:** a primeira transação e o `slug` ficam guardados no link aberto e não são mais trocados, para a varredura do PR 5.
   - **Valor diferente** do link: não entra no Caixa, e o sino avisa "Pagamento com valor diferente".
-  - **Pago numa assinatura cancelada** ou num link fechado: o link fica `fechado` com a transação, e o sino diz "Estorne o pagamento".
+  - **Pago numa assinatura cancelada** ou num link fechado: o link fica `fechado` com a transação, e o sino diz "Estorne o pagamento". O sino diz o mesmo para **outra transação paga num link já pago** (o `single_payment` devia impedir isso, mas sem sandbox não dá para ver). Nesse caso o link guarda a primeira transação.
+  - **Até o PR 5,** quem conectar a InfinitePay direto pela API consegue assinar, mas nada move o ciclo:
+    - a pendente que nunca paga fica pendente;
+    - a ativa no fim do ciclo não ganha link novo, não fica em atraso e não cancela.
+    Nenhuma tela leva a esse estado (o painel só oferece a InfinitePay no PR 7).
+  - **Risco da janela de 1 s:** a documentação pede o 2xx do aviso em até 1 s, mas a rota faz o `payment_check` na hora, com prazo de 8 s.
+    - Se demorar, a InfinitePay repete, e a repetição não duplica nada (o evento final).
+    - Não se sabe o que ela faz com um endereço que perde a janela sempre. Se ela o desligar, o pagamento ainda chega pela volta da página e pela varredura.
+    - A correção seria pôr a conferência na fila e responder na hora.
   - **Conta desligada** (sem a chave): `sem_conta`, com um registro no log. A página responde `pago: false`.
   - Na volta da página, uma chave recusada vira 502 `provedor_indisponivel`: para o cliente, a InfinitePay só não respondeu.
   - O piso de R$ 1,00 vale só no assinar. A vitrine ainda mostra como online um plano de R$ 0,99 numa conta da InfinitePay, e o aviso no cadastro do plano fica para o PR 7.

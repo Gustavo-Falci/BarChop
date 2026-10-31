@@ -105,14 +105,14 @@ async function varrerAssinatura(id: string, hoje: string, deps: DepsDosCiclos): 
     where: { assinaturaId: id, situacao: "aberto", validoAte: { lt: dataParaDate(hoje) } },
   });
   if (vencido) {
-    await cancelarPorFaltaDePagamento(assinatura, deps);
+    await cancelarPorFaltaDePagamento(assinatura, hoje, deps);
     return;
   }
 
   // 3. O atraso, no dia seguinte ao vencimento.
   const termina = assinatura.cicloTerminaEm ? dateParaData(assinatura.cicloTerminaEm) : null;
   if (termina !== null && termina < hoje && assinatura.pagoAte === null) {
-    await marcarAtraso(assinatura);
+    await marcarAtraso(assinatura, hoje);
     await reenviarNoAtraso(assinatura, termina, deps);
   }
 
@@ -199,10 +199,17 @@ async function enviarLink(assinatura: AssinaturaDaVarredura, link: LinkGravado, 
   }
 }
 
-async function marcarAtraso(assinatura: AssinaturaDaVarredura): Promise<void> {
+// O filtro relê o ciclo: o "Recebi" que renovou no meio da varredura
+// tira a assinatura do atraso.
+async function marcarAtraso(assinatura: AssinaturaDaVarredura, hoje: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     const { count } = await tx.assinaturaDoCliente.updateMany({
-      where: { id: assinatura.id, situacao: { in: ["ativa", "teste"] }, pagoAte: null },
+      where: {
+        id: assinatura.id,
+        situacao: { in: ["ativa", "teste"] },
+        pagoAte: null,
+        cicloTerminaEm: { lt: dataParaDate(hoje) },
+      },
       data: { situacao: "em_atraso" },
     });
     if (count === 0) return;
@@ -246,10 +253,22 @@ async function reenviarNoAtraso(assinatura: AssinaturaDaVarredura, vencimento: s
   }
 }
 
-async function cancelarPorFaltaDePagamento(assinatura: AssinaturaDaVarredura, deps: DepsDosCiclos): Promise<void> {
+// No cadeado da barbearia, o mesmo do "Recebi" e da confirmação: o link
+// vencido é relido ali, e o pago ou fechado no meio do caminho não
+// cancela.
+async function cancelarPorFaltaDePagamento(
+  assinatura: AssinaturaDaVarredura,
+  hoje: string,
+  deps: DepsDosCiclos
+): Promise<void> {
   const { cliente, plano, barbearia } = assinatura;
   const primeira = assinatura.situacao === "pendente";
   const cancelou = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM barbearia WHERE id = ${assinatura.barbeariaId}::uuid FOR NO KEY UPDATE`;
+    const vencido = await tx.linkDoCiclo.count({
+      where: { assinaturaId: assinatura.id, situacao: "aberto", validoAte: { lt: dataParaDate(hoje) } },
+    });
+    if (vencido === 0) return false;
     const { count } = await tx.assinaturaDoCliente.updateMany({
       where: { id: assinatura.id, situacao: { not: "cancelada" } },
       data: { situacao: "cancelada", canceladaEm: new Date() },

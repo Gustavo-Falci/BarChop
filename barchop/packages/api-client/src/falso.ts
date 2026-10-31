@@ -954,11 +954,12 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
 
   // A assinatura como o cliente a vê (GET /clientes/me/assinaturas).
   function naConta(assinatura: AssinaturaDoPainel): AssinaturaNaConta {
-    const { cliente: _cliente, ...resto } = copiaDaAssinatura(assinatura);
+    const { cliente: _cliente, linkDoCiclo, ...resto } = copiaDaAssinatura(assinatura);
     const plano = estado.planos!.find((p) => p.id === assinatura.plano.id);
     const ativos = new Set(estado.servicos.filter((s) => s.ativo).map((s) => s.id));
     return {
       ...resto,
+      linkParaPagar: linkDoCiclo?.url ?? null,
       servicos: (plano?.servicos ?? [])
         .filter((s) => ativos.has(s.servicoId))
         .map((s) => ({
@@ -974,7 +975,9 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   const faturaFalsa = (assinaturaId: string, provedor: ProvedorDePagamento) =>
     provedor === "stripe"
       ? `https://invoice.stripe.com/i/exemplo-${assinaturaId}`
-      : `https://sandbox.asaas.com/i/exemplo-${assinaturaId}`;
+      : provedor === "infinitepay"
+        ? `https://checkout.infinitepay.io/exemplo/${assinaturaId}`
+        : `https://sandbox.asaas.com/i/exemplo-${assinaturaId}`;
   const provedorDoPlano = (planoId: string): ProvedorDePagamento => {
     const plano = estado.planos!.find((p) => p.id === planoId);
     const conta = plano && estado.contasOnline![plano.vendedor ? plano.vendedor.id : "casa"];
@@ -2451,6 +2454,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           id: `as${estado.assinaturas!.length + 1}`,
           situacao: emTeste ? "teste" : "pendente",
           forma: "no_balcao",
+          linkDoCiclo: null,
           precoCentavos: plano.precoCentavos,
           ciclo: plano.ciclo,
           cicloComecaEm: emTeste ? estado.hoje : null,
@@ -2470,7 +2474,9 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         }
         marcarAtrasadas();
         const atual = assinaturaOu404(assinaturaId);
-        if (atual.forma === "online") {
+        // A da InfinitePay aceita (decisão 10), e o link aberto fica fechado.
+        const porLink = estado.contasOnline![atual.plano.vendedor?.id ?? "casa"]?.provedor === "infinitepay";
+        if (atual.forma === "online" && !porLink) {
           throw new ErroDaApi(422, "assinatura_online", "assinatura online: o pagamento entra pelo provedor");
         }
         const problema = problemaDoRecebimento(atual, estado.hoje);
@@ -2493,6 +2499,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         });
         Object.assign(atual, {
           situacao: "ativa",
+          linkDoCiclo: null,
           cicloComecaEm: estado.hoje,
           cicloTerminaEm: fimDoCiclo(estado.hoje, atual.ciclo),
         });
@@ -2637,6 +2644,12 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           id: `as${estado.assinaturas!.length + 1}`,
           situacao: emTeste ? "teste" : "pendente",
           forma: "online",
+          // Na InfinitePay, o link do primeiro pagamento; em teste, ele sai
+          // na varredura (fora do dublê).
+          linkDoCiclo:
+            naVitrine.pagamento.provedor === "infinitepay" && !emTeste
+              ? { url: faturaFalsa(`as${estado.assinaturas!.length + 1}`, "infinitepay"), vencimento: estado.hoje }
+              : null,
           precoCentavos: plano.precoCentavos,
           ciclo: plano.ciclo,
           cicloComecaEm: emTeste ? estado.hoje : null,

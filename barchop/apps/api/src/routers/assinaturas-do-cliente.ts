@@ -9,6 +9,7 @@ import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "../lib/
 import {
   confirmarPagamentoDoLink,
   criarLinkNaInfinitePay,
+  LINK_ABERTO,
   linkParaGravar,
   MINIMO_DA_INFINITEPAY_CENTAVOS,
   type ConferenciaDoLink,
@@ -92,6 +93,7 @@ const INCLUDE_NA_CONTA = {
       },
     },
   },
+  links: LINK_ABERTO,
 } satisfies Prisma.AssinaturaDoClienteInclude;
 
 type AssinaturaComPlano = Prisma.AssinaturaDoClienteGetPayload<{ include: typeof INCLUDE_NA_CONTA }>;
@@ -116,6 +118,7 @@ async function serializar(db: Prisma.TransactionClient, assinatura: AssinaturaCo
       usosPorCiclo: s.usosPorCiclo,
       usosRestantes: usosRestantes(s.usosPorCiclo, usados.get(s.servicoId) ?? 0),
     })),
+    linkParaPagar: assinatura.links[0]?.url ?? null,
   };
 }
 

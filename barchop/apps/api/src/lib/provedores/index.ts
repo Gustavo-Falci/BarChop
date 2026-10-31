@@ -2,10 +2,12 @@ import { chaveDeCifra, cifrar, decifrar } from "../cifra";
 import { ErroHttp } from "../erro-http";
 import { modoDaChaveDoAsaas, provedorAsaas } from "./asaas";
 import { provedoresDeMemoria } from "./memoria";
+import { modoDaChaveDaStripe, provedorStripe } from "./stripe";
 import { ErroDoProvedor, PROVEDORES, type FabricaDeProvedores, type ModoDoProvedor, type NomeDoProvedor } from "./tipos";
 
 // Os provedores de pagamento online dos planos de assinatura (Onda 2,
-// marco 3, plano planos-de-assinatura): por enquanto, o Asaas. Como a
+// marco 3, plano planos-de-assinatura): o Asaas e a Stripe (plano
+// pagamentos-online-stripe). Como a
 // cobrança da Stripe, os testes usam o de memória e o de verdade só
 // existe fora deles.
 
@@ -36,6 +38,8 @@ export function nomeDoProvedor(provedor: NomeDoProvedor): NomesDoProvedor {
   switch (provedor) {
     case "asaas":
       return { o: "o Asaas", do: "do Asaas", inicioDaChave: "$aact_", teste: "do sandbox", real: "de produção" };
+    case "stripe":
+      return { o: "a Stripe", do: "da Stripe", inicioDaChave: "sk_ ou rk_", teste: "de teste", real: "de produção" };
   }
 }
 
@@ -56,6 +60,8 @@ function modoDaChave(provedor: NomeDoProvedor, chave: string): ModoDoProvedor | 
   switch (provedor) {
     case "asaas":
       return modoDaChaveDoAsaas(chave);
+    case "stripe":
+      return modoDaChaveDaStripe(chave);
   }
 }
 
@@ -78,6 +84,10 @@ export function provedoresDoAmbiente(
     switch (provedor) {
       case "asaas":
         return provedorAsaas({ chave, modo, fetch: opcoes.fetch });
+      // O segredo do webhook vem da conexão gravada (PR 3); a chave colada
+      // só confere e registra o webhook.
+      case "stripe":
+        return provedorStripe({ chave, modo, segredoDoWebhook: null, fetch: opcoes.fetch });
     }
   }
 
@@ -92,6 +102,8 @@ export function provedoresDoAmbiente(
       if (!modo) throw new ErroDoProvedor("chave_invalida", `isso não é uma chave de API ${nomeDoProvedor(provedor).do}`);
       return conector(provedor, chave, modo);
     },
+    // A conexão da Stripe só existe com o segredo do webhook gravado,
+    // que entra no PR 3.
     daConexao({ provedor, modo, chaveCifrada }) {
       if (provedor !== "asaas" || (modo !== "teste" && modo !== "real")) {
         throw new Error(`conexão com provedor ou modo desconhecido: ${provedor}/${modo}`);

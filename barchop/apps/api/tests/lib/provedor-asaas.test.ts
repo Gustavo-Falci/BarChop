@@ -99,13 +99,13 @@ describe("o webhook da conta", () => {
   it("registra com o token do BarChop e os eventos que o BarChop lê", async () => {
     const { provedor, pedido } = montar(json(resposta("webhook.json")));
 
-    const id = await provedor.registrarWebhook({
+    const criado = await provedor.registrarWebhook({
       url: "https://api.barchop.com.br/webhooks/asaas/conexao",
       token: "t".repeat(43),
       email: "dono@exemplo.com",
     });
 
-    expect(id).toBe("30afbf47-cf0e-4f00-b637-6687e922551d");
+    expect(criado).toEqual({ id: "30afbf47-cf0e-4f00-b637-6687e922551d", segredo: null });
     expect(pedido()).toMatchObject({ url: `${BASE_DO_ASAAS.teste}/webhooks`, metodo: "POST" });
     expect(pedido().corpo).toEqual({
       name: "BarChop",
@@ -236,6 +236,7 @@ describe("cliente e assinatura", () => {
       primeiroVencimento: "2026-10-24",
       descricao: "Corte ilimitado",
       referencia: "as1",
+      planoId: "p1",
     });
 
     expect(criada).toEqual({ id: "sub_4dcls3tvtbf9ntip", linkDaFatura: "https://sandbox.asaas.com/i/exemplo" });
@@ -260,7 +261,7 @@ describe("cliente e assinatura", () => {
       json(resposta("assinatura.json")),
       json(resposta("cobrancas-da-assinatura.json"))
     );
-    const base = { clienteId: "c", primeiroVencimento: "2026-10-24", descricao: "x", referencia: "r" };
+    const base = { clienteId: "c", primeiroVencimento: "2026-10-24", descricao: "x", referencia: "r", planoId: "p1" };
 
     await provedor.criarAssinatura({ ...base, valorCentavos: 33990, ciclo: "trimestral" });
     await provedor.criarAssinatura({ ...base, valorCentavos: 99, ciclo: "anual" });

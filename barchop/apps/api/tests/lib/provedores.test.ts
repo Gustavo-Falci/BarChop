@@ -115,6 +115,19 @@ describe("provedoresDoAmbiente", () => {
     expect(provedoresDoAmbiente({ NODE_ENV: "development" }).urlDoWebhook("asaas", "c1")).toBeNull();
   });
 
+  it("a Stripe: o modo sai do prefixo e a chave colada conecta; a conexão gravada, só com o segredo do webhook (PR 3)", () => {
+    const fabrica = provedoresDoAmbiente({ NODE_ENV: "development", CHAVE_DE_CIFRA: randomBytes(32).toString("base64") });
+
+    expect(fabrica.modoDaChave("stripe", "rk_live_x")).toBe("real");
+    expect(fabrica.modoDaChave("stripe", "$aact_prod_x")).toBeNull();
+    expect(fabrica.modoDaChave("asaas", "sk_live_x")).toBeNull();
+    expect(fabrica.daChave({ provedor: "stripe", chave: "sk_test_x" })).toMatchObject({ nome: "stripe", modo: "teste" });
+    expect(() => fabrica.daChave({ provedor: "stripe", chave: "$aact_hmlg_x" })).toThrow(/chave de API da Stripe/);
+    expect(() =>
+      fabrica.daConexao({ provedor: "stripe", modo: "teste", chaveCifrada: fabrica.cifrar("sk_test_x") })
+    ).toThrow(/desconhecido/);
+  });
+
   it("nos testes, o padrão é o de memória", () => {
     expect(provedoresDoAmbiente({ NODE_ENV: "test" }).nome).toBe("memoria");
   });
@@ -126,7 +139,7 @@ describe("provedoresDeMemoria", () => {
     const provedor = fabrica.daChave({ provedor: "asaas", chave: "$aact_hmlg_memoria" });
 
     await provedor.conferirChave();
-    const webhook = await provedor.registrarWebhook({ url: "https://x/webhooks/asaas/c1", token: "t", email: null });
+    const { id: webhook } = await provedor.registrarWebhook({ url: "https://x/webhooks/asaas/c1", token: "t", email: null });
     const cliente = await provedor.criarCliente({
       nome: "Ana",
       cpfCnpj: "52998224725",
@@ -141,6 +154,7 @@ describe("provedoresDeMemoria", () => {
       primeiroVencimento: "2026-10-24",
       descricao: "Corte ilimitado",
       referencia: "as1",
+      planoId: "p1",
     });
 
     expect(fabrica.webhooks).toEqual([{ id: webhook, url: "https://x/webhooks/asaas/c1", token: "t", email: null }]);
@@ -158,7 +172,7 @@ describe("provedoresDeMemoria", () => {
   it("o webhook só é visto pela chave da mesma conta", async () => {
     const fabrica = provedoresDeMemoria();
     const velha = fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_velha" });
-    const id = await velha.registrarWebhook({ url: "https://x/webhooks/asaas/c1", token: "t", email: null });
+    const { id } = await velha.registrarWebhook({ url: "https://x/webhooks/asaas/c1", token: "t", email: null });
 
     expect(await velha.temWebhook(id)).toBe(true);
     expect(await fabrica.daChave({ provedor: "asaas", chave: "$aact_prod_outra" }).temWebhook(id)).toBe(false);

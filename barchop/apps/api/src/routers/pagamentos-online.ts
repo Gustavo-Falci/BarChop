@@ -10,7 +10,6 @@ import {
   ErroDoProvedor,
   erroHttpDoProvedor,
   nomeDoProvedor,
-  PROVEDORES,
   type NomeDoProvedor,
   type Provedor,
 } from "../lib/provedores";
@@ -39,7 +38,9 @@ const corpoConectar = {
   additionalProperties: false,
   required: ["provedor", "chave"],
   properties: {
-    provedor: { type: "string", enum: [...PROVEDORES] },
+    // A Stripe entra quando a conexão guardar o segredo do webhook (PR 3
+    // do plano pagamentos-online-stripe).
+    provedor: { type: "string", enum: ["asaas"] },
     // A do Asaas tem uns 170 caracteres; a folga cobre espaço colado junto.
     chave: { type: "string", minLength: 1, maxLength: 500 },
   },
@@ -182,7 +183,7 @@ export function registrarRotasPagamentosOnline(app: App): void {
       const chaveCifrada = Buffer.from(fabrica.cifrar(chave));
       const token = gerarTokenDoWebhook();
       const { email } = await prisma.barbeiro.findUniqueOrThrow({ where: { id: membro.id }, select: { email: true } });
-      const idExternoWebhook = await noProvedor(escolhido, provedor.registrarWebhook({ url, token, email }));
+      const { id: idExternoWebhook } = await noProvedor(escolhido, provedor.registrarWebhook({ url, token, email }));
 
       try {
         const criada = await prisma.conexaoDePagamento.create({

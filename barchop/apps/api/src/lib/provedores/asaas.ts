@@ -222,7 +222,8 @@ export function provedorAsaas(opcoes: { chave: string; modo: ModoDoProvedor; fet
         sendType: "SEQUENTIALLY",
         events: EVENTOS,
       });
-      return String(criado?.id);
+      // O token é do BarChop: o Asaas não gera segredo.
+      return { id: String(criado?.id), segredo: null };
     },
     async apagarWebhook(id) {
       await pedir("DELETE", `/webhooks/${encodeURIComponent(id)}`, undefined, true);

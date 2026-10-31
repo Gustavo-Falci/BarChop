@@ -64,7 +64,7 @@ export function provedoresDeMemoria(
         const id = proximo("wh");
         fabrica.webhooks.push({ id, ...dados });
         contaDoWebhook.set(id, conta());
-        return id;
+        return { id, segredo: null };
       },
       async apagarWebhook(id) {
         atender();

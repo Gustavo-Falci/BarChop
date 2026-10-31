@@ -2,10 +2,10 @@ import type { CicloDoCliente } from "@barchop/formato";
 
 // O que o BarChop pede a um provedor de pagamento (Onda 2, marco 3,
 // plano planos-de-assinatura). Quem chama fala só com estes tipos:
-// nenhum nome do Asaas (status, ciclo, forma) sai do conector, e o
-// próximo provedor (Mercado Pago, Stripe) entra como outro conector.
+// nenhum nome do provedor (status, ciclo, forma) sai do conector: o
+// Asaas e a Stripe são dois conectores atrás da mesma interface.
 
-export const PROVEDORES = ["asaas"] as const;
+export const PROVEDORES = ["asaas", "stripe"] as const;
 export type NomeDoProvedor = (typeof PROVEDORES)[number];
 
 // O modo da chave: a de teste (sandbox) não move dinheiro.
@@ -53,6 +53,8 @@ export interface NovaAssinatura {
   descricao: string;
   // O id da assinatura no BarChop.
   referencia: string;
+  // O plano do BarChop: a Stripe guarda um produto por plano.
+  planoId: string;
 }
 
 export interface AssinaturaNoProvedor {
@@ -97,8 +99,10 @@ export interface Provedor {
   pedeCpf: boolean;
   // Lança `chave_invalida` se a chave não vale.
   conferirChave(): Promise<void>;
-  // Devolve o id do webhook no provedor.
-  registrarWebhook(dados: { url: string; token: string; email: string | null }): Promise<string>;
+  // Devolve o id do webhook no provedor e, quando é o provedor que gera
+  // o segredo que assina os eventos (a Stripe), o segredo: ele só volta
+  // aqui. O Asaas usa o `token` do BarChop e devolve null.
+  registrarWebhook(dados: { url: string; token: string; email: string | null }): Promise<{ id: string; segredo: string | null }>;
   // Já apagado não é erro.
   apagarWebhook(id: string): Promise<void>;
   // O webhook só é visto pela chave da conta que o criou: é assim que a
@@ -115,8 +119,10 @@ export interface Provedor {
   lerCobranca(id: string): Promise<CobrancaNoProvedor>;
   // Encerra a recorrência; já encerrada não é erro.
   cancelarAssinatura(id: string): Promise<void>;
-  // O corpo já lido como JSON. Lança `recusado` se não é evento.
-  lerEvento(corpo: unknown): EventoDoProvedor;
+  // O Asaas: o corpo já lido como JSON. A Stripe: o corpo cru e o
+  // cabeçalho `stripe-signature`, conferido com o segredo do webhook.
+  // Lança `recusado` se não é evento (ou a assinatura não confere).
+  lerEvento(corpo: unknown, assinatura?: string): EventoDoProvedor;
 }
 
 // A conexão gravada no banco (`conexao_de_pagamento`).

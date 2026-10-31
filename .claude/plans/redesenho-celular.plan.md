@@ -26,6 +26,8 @@
 - **Não** trocar a vista padrão: no celular já é "Lista", e a vista escolhida fica guardada (`vistaPadrao`, `CHAVE_DA_VISTA`). A semana do print era escolha guardada.
 - Rótulos nos ícones da barra (o "31" e o calendário-x).
 - Conferir os rótulos da barra de baixo, que pareciam cortados no print (possível bug).
+  - Achado: era a Agenda mais larga que a tela (coluna `auto` do `.pagina`); o celular encolhia a página e a barra de baixo descia além da borda. Corrigido com `minmax(0, 1fr)`.
+  - Fica: a 360px, meses de 8–9 letras (setembro a dezembro, fevereiro) ainda cortam com reticências no título da barra.
 
 ### PR 4 — Caixa
 - Dia anterior / próximo numa barra só, com volta pra hoje.

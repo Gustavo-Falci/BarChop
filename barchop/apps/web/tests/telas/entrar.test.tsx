@@ -192,6 +192,21 @@ describe("entrar", () => {
     await waitFor(() => expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/planos?plano=pl1"));
   });
 
+  // PR 7b do plano pagamentos-online-infinitepay: quem volta da
+  // InfinitePay sem a sessão entra e cai na Minha conta com o pagamento a
+  // conferir.
+  it("quem voltou do pagamento sem a sessão volta pra Minha conta com ele", async () => {
+    navegacaoFalsa.redefinir({ query: { order_nsu: "pedido-as1", transaction_nsu: "transacao-1", slug: "fatura-1" } });
+    montar();
+    await preencher();
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() =>
+      expect(navegacaoFalsa.push).toHaveBeenCalledWith(
+        "/gr-barber/minha-conta?order_nsu=pedido-as1&transaction_nsu=transacao-1&slug=fatura-1"
+      )
+    );
+  });
+
   it("um plano que não é id volta pros planos sem ele", async () => {
     navegacaoFalsa.redefinir({ query: { voltar: "planos", plano: "//outro-site.com" } });
     montar();

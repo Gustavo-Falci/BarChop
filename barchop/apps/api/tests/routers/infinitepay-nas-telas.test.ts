@@ -156,3 +156,51 @@ describe("o Recebi na assinatura da InfinitePay", () => {
     expect(deNovo.json().erro).toBe("ciclo_em_dia");
   });
 });
+
+// PR 7b: o que a Minha conta e a vitrine precisam para falar da
+// InfinitePay.
+describe("a conta e a vitrine (PR 7b)", () => {
+  it("a assinatura na conta diz o provedor; a do balcão, nulo", async () => {
+    const c = await cenarioDaInfinitePay();
+    const { id } = await assinada(c);
+    const balcao = await c.plano({ nome: "Balcão", aceitaOnline: false, aceitaNoBalcao: true });
+    const noBalcao = await c.app.inject({
+      method: "POST",
+      url: `/clientes/${c.cliente.clienteId}/assinaturas`,
+      headers: auth(c.dono.token),
+      payload: { planoId: balcao.id },
+    });
+
+    const assinaturas = await naConta(c);
+    expect(assinaturas.find((a: { id: string }) => a.id === id).provedor).toBe("infinitepay");
+    expect(assinaturas.find((a: { id: string }) => a.id === noBalcao.json().id).provedor).toBeNull();
+  });
+
+  it("na vitrine, o plano da InfinitePay abaixo de R$ 1,00 fica com o online indisponível", async () => {
+    const c = await cenarioDaInfinitePay();
+    const barato = await c.plano({ nome: "Barato", precoCentavos: 99 });
+
+    const { planos } = (await c.app.inject({ method: "GET", url: `/barbearias/${c.dono.slug}/planos` })).json();
+
+    expect(planos.find((p: { id: string }) => p.id === barato.id)).toMatchObject({
+      aceitaOnline: false,
+      onlineIndisponivel: true,
+      pagamento: null,
+    });
+    expect(planos.find((p: { id: string }) => p.id === c.daCasa.id)).toMatchObject({ aceitaOnline: true });
+  });
+
+  it("o cliente cancela a pendente da InfinitePay", async () => {
+    const c = await cenarioDaInfinitePay();
+    const { id } = await assinada(c);
+
+    const resposta = await c.app.inject({
+      method: "DELETE",
+      url: `/clientes/me/assinaturas/${id}`,
+      headers: auth(c.cliente.token),
+    });
+
+    expect(resposta.statusCode).toBe(204);
+    expect((await prisma.assinaturaDoCliente.findUniqueOrThrow({ where: { id } })).situacao).toBe("cancelada");
+  });
+});

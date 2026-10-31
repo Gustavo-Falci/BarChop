@@ -5,6 +5,7 @@ import type {
   AssinaturaOnlineCriada,
   ClienteSerializado,
   MinhasAssinaturas,
+  PagamentoConferido,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
@@ -102,6 +103,14 @@ export function criarApiCliente(requisicao: Requisicao) {
 
     async cancelarAssinatura(id: string): Promise<void> {
       await requisicao(`/clientes/me/assinaturas/${id}`, { metodo: "DELETE", comToken: true });
+    },
+
+    // A volta da InfinitePay (plano pagamentos-online-infinitepay, PR 4):
+    // o `redirect_url` traz `order_nsu`, `transaction_nsu` e `slug` na
+    // query, e a API confere o pagamento na InfinitePay. O link de outro
+    // cliente é 404.
+    conferirPagamento(volta: { orderNsu: string; transactionNsu: string; slug: string }): Promise<PagamentoConferido> {
+      return requisicao("/clientes/me/assinaturas/conferir-pagamento", { metodo: "POST", corpo: volta, comToken: true });
     },
   };
 }

@@ -80,6 +80,19 @@ describe("as rotas", () => {
     expect(corpoDa(fetchFalso, 2)).toEqual({ diasParaCancelar: 15 });
   });
 
+  // PR 7b: a página de volta do pagamento confere o link pelo order_nsu.
+  it("a conferência do pagamento na volta da InfinitePay", async () => {
+    const fetchFalso = vi.fn().mockResolvedValueOnce(respostaJson({ pago: true, assinatura: { id: "as1" } }));
+    const api = cliente(fetchFalso);
+
+    await api.cliente.conferirPagamento({ orderNsu: "pedido-1", transactionNsu: "transacao-1", slug: "fatura-1" });
+
+    expect(chamadasDe(fetchFalso)).toEqual([
+      ["https://api.exemplo.br/clientes/me/assinaturas/conferir-pagamento", "POST"],
+    ]);
+    expect(corpoDa(fetchFalso, 0)).toEqual({ orderNsu: "pedido-1", transactionNsu: "transacao-1", slug: "fatura-1" });
+  });
+
   it("a vitrine e as assinaturas do cliente; CPF vazio não vai no corpo", async () => {
     const fetchFalso = vi
       .fn()
@@ -392,6 +405,45 @@ describe("o dublê do cliente que assina", () => {
     const comTeste = await api.cliente.assinarPlano("pl2");
     expect(comTeste.linkDaFatura).toBeNull();
     expect(comTeste.assinatura.linkParaPagar).toBeNull();
+  });
+
+  it("na InfinitePay: a conta diz o provedor; a volta confere o link (pago, não pago, de outra conta)", async () => {
+    const naInfinitePay = { ...semente(), contasOnline: { casa: { ...CONTA, provedor: "infinitepay" as const } } };
+    const api = criarApiClientFalso(naInfinitePay);
+    const criada = await api.cliente.assinarPlano("pl1");
+    expect(criada.assinatura.provedor).toBe("infinitepay");
+
+    await expect(
+      api.cliente.conferirPagamento({ orderNsu: "pedido-de-outro", transactionNsu: "t1", slug: "f1" })
+    ).rejects.toMatchObject({ status: 404 });
+    const conferido = await api.cliente.conferirPagamento({
+      orderNsu: `pedido-${criada.assinatura.id}`,
+      transactionNsu: "t1",
+      slug: "f1",
+    });
+    expect(conferido).toMatchObject({ pago: true, assinatura: { situacao: "ativa", linkParaPagar: null } });
+
+    const naoPago = criarApiClientFalso({ ...naInfinitePay, pagamentoDoLink: "nao_pago" });
+    const pendente = await naoPago.cliente.assinarPlano("pl1");
+    const semPagar = await naoPago.cliente.conferirPagamento({
+      orderNsu: `pedido-${pendente.assinatura.id}`,
+      transactionNsu: "t1",
+      slug: "f1",
+    });
+    expect(semPagar).toMatchObject({ pago: false, assinatura: { situacao: "pendente" } });
+  });
+
+  it("na vitrine da InfinitePay, o plano abaixo de R$ 1,00 fica com o online indisponível", async () => {
+    const api = criarApiClientFalso({
+      ...semente(),
+      planos: [plano(), plano({ id: "pl2", nome: "Barato", precoCentavos: 99 })],
+      contasOnline: { casa: { ...CONTA, provedor: "infinitepay" as const } },
+    });
+
+    const vitrine = (await api.publico.planos("gr-barber")).planos;
+    expect(vitrine.find((p) => p.id === "pl2")).toMatchObject({ aceitaOnline: false, onlineIndisponivel: true, pagamento: null });
+    expect(vitrine.find((p) => p.id === "pl1")).toMatchObject({ aceitaOnline: true });
+    await expect(api.cliente.assinarPlano("pl2")).rejects.toMatchObject({ codigo: "plano_indisponivel" });
   });
 
   it("volta pra fatura da pendente; ja_assina na ativa; plano fora da vitrine é indisponível", async () => {

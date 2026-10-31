@@ -94,6 +94,7 @@ const INCLUDE_NA_CONTA = {
     },
   },
   links: LINK_ABERTO,
+  conexao: { select: { provedor: true } },
 } satisfies Prisma.AssinaturaDoClienteInclude;
 
 type AssinaturaComPlano = Prisma.AssinaturaDoClienteGetPayload<{ include: typeof INCLUDE_NA_CONTA }>;
@@ -119,6 +120,7 @@ async function serializar(db: Prisma.TransactionClient, assinatura: AssinaturaCo
       usosRestantes: usosRestantes(s.usosPorCiclo, usados.get(s.servicoId) ?? 0),
     })),
     linkParaPagar: assinatura.links[0]?.url ?? null,
+    provedor: assinatura.conexao ? provedorGravado(assinatura.conexao.provedor) : null,
   };
 }
 

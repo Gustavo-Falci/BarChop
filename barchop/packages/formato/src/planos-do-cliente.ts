@@ -43,6 +43,10 @@ export type SituacaoDoLink = (typeof SITUACOES_DO_LINK)[number];
 // cancelar sozinha. Quem vende escolhe (decisão do dono em 31/10/2026).
 export const DIAS_PARA_CANCELAR = { minimo: 3, maximo: 30, padrao: 10 } as const;
 
+// A InfinitePay não cobra menos de R$ 1,00 (decisão 15): o plano abaixo
+// disso não vende online por ela.
+export const MINIMO_DA_INFINITEPAY_CENTAVOS = 100;
+
 // A chave conectada é de sandbox (`teste`) ou de produção (`real`).
 export const MODOS_DA_CONEXAO = ["teste", "real"] as const;
 export type ModoDaConexao = (typeof MODOS_DA_CONEXAO)[number];

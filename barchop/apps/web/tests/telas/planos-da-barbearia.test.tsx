@@ -452,3 +452,135 @@ describe("minhas assinaturas", () => {
     expect(within(secao).getByText("Pago no balcão")).toBeInTheDocument();
   });
 });
+
+// A InfinitePay para quem assina (plano pagamentos-online-infinitepay,
+// PR 7b): não renova sozinha, o "Pagar" é o link do ciclo, e a página de
+// volta do pagamento confere se ele entrou.
+describe("na InfinitePay", () => {
+  const CONTA_DA_INFINITEPAY: ContaDePagamentoOnline = { ...CONTA, provedor: "infinitepay" };
+  const LINK = "https://checkout.infinitepay.io/exemplo/as1";
+  const naInfinitePay = (extra: SementeFalsa = {}) => semear({ contasOnline: { casa: CONTA_DA_INFINITEPAY }, ...extra });
+  const assinatura = (extra: Partial<AssinaturaDoPainel>): AssinaturaDoPainel => ({
+    id: "as1",
+    situacao: "ativa",
+    forma: "online",
+    precoCentavos: 12000,
+    ciclo: "mensal",
+    cicloComecaEm: "2026-10-20",
+    cicloTerminaEm: "2026-11-20",
+    canceladaEm: null,
+    linkDoCiclo: null,
+    criadoEm: "2026-10-20T12:00:00.000Z",
+    cliente: { id: "c1", nome: "João", telefone: "+5511999998888" },
+    plano: { id: "pl1", nome: "Corte ilimitado", daCasa: true, vendedor: null },
+    ...extra,
+  });
+  const VOLTA = { order_nsu: "pedido-as1", transaction_nsu: "transacao-1", slug: "fatura-1" };
+
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ slug: "gr-barber", pathname: "/gr-barber/planos" });
+    sessaoDoCliente("gr-barber").gravar("jwt-do-cliente");
+  });
+
+  it("na vitrine, diz que não renova sozinho; assinado, o link abre na InfinitePay", async () => {
+    montar(<PlanosDaBarbearia />, naInfinitePay());
+    const corte = await cartaoDo("Corte ilimitado");
+    expect(corte).toHaveTextContent(/não renova sozinho: a cada ciclo chega um link por e-mail e whatsapp/i);
+
+    await userEvent.click(within(corte).getByRole("button", { name: "Assinar" }));
+
+    const fatura = await within(corte).findByRole("link", { name: "Abrir a fatura" });
+    expect(fatura.getAttribute("href")).toMatch(/^https:[/][/]checkout[.]infinitepay[.]io[/]/);
+    expect(corte).toHaveTextContent(/pix ou cartão, na página da infinitepay/i);
+    expect(corte).toHaveTextContent(/não renova sozinho/i);
+  });
+
+  it("o plano abaixo de R$ 1,00 aparece com o online indisponível", async () => {
+    montar(
+      <PlanosDaBarbearia />,
+      naInfinitePay({ planos: [CORTE, { ...CORTE, id: "pl9", nome: "Barato", precoCentavos: 99 }] })
+    );
+    const barato = await cartaoDo("Barato");
+    expect(within(barato).getByText("Pagamento online indisponível")).toBeInTheDocument();
+    expect(within(barato).queryByRole("button", { name: "Assinar" })).not.toBeInTheDocument();
+  });
+
+  it("na Minha conta, a ativa com o link do próximo ciclo: vale até, e o Pagar abre o link", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/gr-barber/minha-conta" });
+    montar(
+      <MinhaConta />,
+      naInfinitePay({ assinaturas: [assinatura({ linkDoCiclo: { url: LINK, vencimento: "2026-11-20" } })] })
+    );
+
+    const pagar = await screen.findByRole("link", { name: "Pagar" });
+    expect(pagar).toHaveAttribute("href", LINK);
+    expect(screen.getByText(/vale até 20\/11/i)).toBeInTheDocument();
+    expect(screen.queryByText(/renova em/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/não renova sozinho/i)).toBeInTheDocument();
+  });
+
+  it("a ativa sem link ainda: vale até, sem o Pagar", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/gr-barber/minha-conta" });
+    montar(<MinhaConta />, naInfinitePay({ assinaturas: [assinatura({})] }));
+
+    expect(await screen.findByText(/vale até 20\/11/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Pagar" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pagar" })).not.toBeInTheDocument();
+  });
+
+  it("a volta do pagamento confere o link: pago, a assinatura fica ativa e a query sai da URL", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/gr-barber/minha-conta", query: VOLTA });
+    montar(
+      <MinhaConta />,
+      naInfinitePay({
+        assinaturas: [
+          assinatura({ situacao: "pendente", cicloComecaEm: null, cicloTerminaEm: null, linkDoCiclo: { url: LINK, vencimento: "2026-10-25" } }),
+        ],
+      })
+    );
+
+    expect(await screen.findByText(/pagamento recebido/i)).toBeInTheDocument();
+    expect(await screen.findByText("Ativa")).toBeInTheDocument();
+    expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/gr-barber/minha-conta");
+  });
+
+  it("a volta sem o pagamento confirmado pede para conferir depois", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/gr-barber/minha-conta", query: VOLTA });
+    montar(
+      <MinhaConta />,
+      naInfinitePay({
+        pagamentoDoLink: "nao_pago",
+        assinaturas: [
+          assinatura({ situacao: "pendente", cicloComecaEm: null, cicloTerminaEm: null, linkDoCiclo: { url: LINK, vencimento: "2026-10-25" } }),
+        ],
+      })
+    );
+
+    expect(
+      await screen.findByText("Ainda não confirmamos o pagamento: confira em alguns minutos.")
+    ).toBeInTheDocument();
+  });
+
+  it("sem a query da volta, nada é conferido", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/gr-barber/minha-conta" });
+    const falso = naInfinitePay({ assinaturas: [assinatura({})] });
+    const conferir = vi.spyOn(falso.cliente, "conferirPagamento");
+    montar(<MinhaConta />, falso);
+
+    expect(await screen.findByText(/vale até 20\/11/i)).toBeInTheDocument();
+    expect(conferir).not.toHaveBeenCalled();
+  });
+
+  it("a volta sem a sessão leva ao Entrar com o pagamento a conferir", async () => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/gr-barber/minha-conta", query: VOLTA });
+    montar(<MinhaConta />, naInfinitePay());
+
+    await waitFor(() =>
+      expect(navegacaoFalsa.replace).toHaveBeenCalledWith(
+        "/gr-barber/entrar?order_nsu=pedido-as1&transaction_nsu=transacao-1&slug=fatura-1"
+      )
+    );
+  });
+});

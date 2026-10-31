@@ -14,8 +14,9 @@ import { INCLUDE_ASSINATURA, registrarMensalidadeOnline, type Avisar, type LogDo
 // pagamento no `payment_check`, venha o aviso de onde vier (o aviso da
 // InfinitePay, a volta do comprador pela página, a varredura do PR 5).
 
-// A InfinitePay não cobra menos de R$ 1,00 (decisão 15).
-export const MINIMO_DA_INFINITEPAY_CENTAVOS = 100;
+// A InfinitePay não cobra menos de R$ 1,00 (decisão 15). O valor mora no
+// formato, que a tela também lê.
+export { MINIMO_DA_INFINITEPAY_CENTAVOS } from "@barchop/formato";
 
 // A página da barbearia, pra onde o comprador volta depois de pagar. Em
 // produção, sem o endereço configurado, não há pra onde voltar; fora

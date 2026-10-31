@@ -14,7 +14,7 @@ import { Aviso } from "../componentes/Aviso";
 import { Botao } from "../componentes/Botao";
 import { Campo } from "../componentes/Campo";
 import { caminhoDoPasso, lerEscolhas, passoDoVoltar } from "../fluxo/passos";
-import { caminhoDosPlanos, planoDaQuery } from "../fluxo/planos";
+import { caminhoDosPlanos, planoDaQuery, queryDaVolta, voltaDoPagamento } from "../fluxo/planos";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./Entrar.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
@@ -68,12 +68,19 @@ export function Entrar() {
   // `voltar=planos` é quem tocou em "Assinar" nos planos sem estar
   // logado: volta pro plano escolhido, que o cliente assina com mais um
   // toque (assinar nunca acontece sozinho).
+  //
+  // Quem voltou da InfinitePay sem a sessão (o link do e-mail aberto em
+  // outro navegador) entra e cai na Minha conta com o pagamento a
+  // conferir (PR 7b do plano pagamentos-online-infinitepay).
   const voltar = passoDoVoltar(query.get("voltar"));
+  const volta = voltaDoPagamento(query);
   const destino = voltar
     ? noHost(caminhoDoPasso(slug, voltar, lerEscolhas(query)))
     : query.get("voltar") === "planos"
       ? noHost(caminhoDosPlanos(slug, planoDaQuery(query.get("plano"))))
-      : noHost(`/${slug}/minha-conta`);
+      : volta
+        ? noHost(`/${slug}/minha-conta?${queryDaVolta(volta)}`)
+        : noHost(`/${slug}/minha-conta`);
 
   const [modo, setModo] = useState<Modo>("entrar");
   // O e-mail sobrevive à troca de modo: quem errou a senha e foi pro

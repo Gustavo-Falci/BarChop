@@ -109,6 +109,21 @@ Diferenças do plano, combinadas no caminho:
   - **O guia não cita os menus da InfinitePay:** a documentação não diz o caminho exato, então ele diz "nas configurações da conta" e aponta para a documentação do checkout.
   - **O estado das contas mudadas na página** passou de booleano para o provedor, para o quadro saber quando a conta conectada é a InfinitePay.
   - **A conferência visual em 375 e 1440** fica para o 7c, de uma vez em todas as telas: a web não tem modo com o dublê, e a InfinitePay só conecta no modo real.
+- **PR 7b:**
+  - **`AssinaturaNaConta.provedor`** (null no balcão), fora do plano. Sem ele, a Minha conta não tinha como trocar "Renova em" por "Vale até" na ativa da InfinitePay entre um ciclo e outro, quando ainda não há link. O campo é obrigatório, e o `tsc` acusou as fixtures.
+  - **O "Pagar" da InfinitePay** é o `linkParaPagar`, aberto direto. Não passa pelo `assinarPlano`, que daria `ja_assina` na ativa. Aparece sempre que há link aberto, inclusive na ativa, 3 dias antes do vencimento. Sem link, fica só a frase de que não renova sozinho.
+  - **O mínimo de R$ 1,00 na vitrine:** o plano da InfinitePay abaixo dele vem como sem conta (`aceitaOnline: false`, `onlineIndisponivel: true`, `pagamento: null`), como o assinar já recusava. O `onlineIndisponivel` do painel não mudou: o aviso no cadastro do plano é do 7c.
+    - `MINIMO_DA_INFINITEPAY_CENTAVOS` passou para o `@barchop/formato`, e `links-do-ciclo.ts` só reexporta, para a API, o dublê e a tela lerem o mesmo valor.
+  - **A volta do pagamento:**
+    - a Minha conta lê `order_nsu`, `transaction_nsu` e `slug` (o da fatura, com nome separado do slug da barbearia) e confere uma vez;
+    - mostra a frase com `role="status"`: pago, não confirmado, ou de outra conta (o 404);
+    - recarrega a lista e tira a query da URL.
+    - A página ganhou o Suspense, que o `useSearchParams` exige. O `next build` passou.
+  - **A volta sem sessão** (o link do e-mail aberto em outro navegador) leva os três valores pelo Entrar e volta para a Minha conta com eles. Assim a segunda via da decisão 9 vale também nas renovações.
+  - **O cancelar da InfinitePay** diz que os links das próximas mensalidades param. A API já pulava o provedor por link (`cancelarNoProvedor`), e agora há um teste do cliente cancelando a pendente.
+  - **O dublê:** o link é `pedido-<id da assinatura>`, com a semente `pagamentoDoLink` (`pago`, o padrão, ou `nao_pago`).
+  - **Os valores da volta** seguem a regra do corpo da API (de 1 a 100 caracteres), e não um padrão mais estrito: sem sandbox, um formato real fora do padrão faria a web perder a volta sem avisar.
+  - **Conhecido:** o link fechado e pago depois, ou a assinatura cancelada (o `estornar`), voltam `pago: false`. O cliente lê "confira em alguns minutos", mas isso nunca vai confirmar; quem vende recebe o sino do estorno. Mais adiante, o `PagamentoConferido` pode devolver o resultado.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

@@ -36,6 +36,41 @@ const CADA_CICLO: Record<PlanoDaVitrine["ciclo"], string> = {
   anual: "a cada ano",
 };
 
+// A InfinitePay não tem cobrança automática: o BarChop manda um link a
+// cada ciclo (plano pagamentos-online-infinitepay, PR 7b).
+export const SEM_RENOVACAO = "Não renova sozinho: a cada ciclo chega um link por e-mail e WhatsApp.";
+
+// A volta da InfinitePay (o `redirect_url` da Minha conta): ela põe na
+// query `order_nsu`, `transaction_nsu` e `slug` (o da fatura, não o da
+// barbearia). Só com os três, e com a regra do corpo da API (1 a 100
+// caracteres): sem sandbox, não há como saber o formato de verdade, e uma
+// regra mais estrita aqui perderia a volta calada. Os valores vão no
+// corpo do POST (JSON) e na query do Entrar (codificada).
+export interface VoltaDoPagamento {
+  orderNsu: string;
+  transactionNsu: string;
+  slug: string;
+}
+
+
+export function voltaDoPagamento(query: Pick<URLSearchParams, "get">): VoltaDoPagamento | null {
+  const orderNsu = query.get("order_nsu");
+  const transactionNsu = query.get("transaction_nsu");
+  const slugDaFatura = query.get("slug");
+  if (orderNsu === null || transactionNsu === null || slugDaFatura === null) return null;
+  if (![orderNsu, transactionNsu, slugDaFatura].every((valor) => valor.length >= 1 && valor.length <= 100)) return null;
+  return { orderNsu, transactionNsu, slug: slugDaFatura };
+}
+
+// A mesma query, pra levar a volta pelo Entrar quando a sessão caiu.
+export function queryDaVolta(volta: VoltaDoPagamento): string {
+  return new URLSearchParams({
+    order_nsu: volta.orderNsu,
+    transaction_nsu: volta.transactionNsu,
+    slug: volta.slug,
+  }).toString();
+}
+
 // "Inclui a cada mês": o título da lista do que o plano dá.
 export function incluiACada(ciclo: PlanoDaVitrine["ciclo"]): string {
   return `Inclui ${CADA_CICLO[ciclo]}`;
@@ -56,9 +91,11 @@ export function fraseDaFatura(assinatura: Pick<AssinaturaNaConta, "situacao" | "
 }
 
 // Até quando vale, pro cliente. Em atraso, o atendimento é cobrado à
-// parte até a mensalidade entrar.
+// parte até a mensalidade entrar. O que não renova sozinho (a InfinitePay)
+// "vale até": o ciclo seguinte é outro link.
 export function situacaoNaConta(
-  assinatura: Pick<AssinaturaNaConta, "situacao" | "forma" | "cicloTerminaEm">
+  assinatura: Pick<AssinaturaNaConta, "situacao" | "forma" | "cicloTerminaEm">,
+  renovaSozinha = true
 ): string {
   const termina = assinatura.cicloTerminaEm ? diaEMes(assinatura.cicloTerminaEm) : "";
   switch (assinatura.situacao) {
@@ -69,7 +106,7 @@ export function situacaoNaConta(
     case "teste":
       return `Teste grátis até ${termina}`;
     case "ativa":
-      return `Renova em ${termina}`;
+      return renovaSozinha ? `Renova em ${termina}` : `Vale até ${termina}`;
     case "em_atraso":
       return `Venceu em ${termina}: até pagar, o atendimento é cobrado à parte`;
     case "cancelada":

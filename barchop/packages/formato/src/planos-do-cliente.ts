@@ -27,10 +27,21 @@ export type SituacaoDoAssinante = (typeof SITUACOES_DO_ASSINANTE)[number];
 export const FORMAS_DA_ASSINATURA = ["online", "no_balcao"] as const;
 export type FormaDaAssinatura = (typeof FORMAS_DA_ASSINATURA)[number];
 
-// Onde a conta de quem vende está. Um conector por provedor: o Asaas e a
-// Stripe (a InfinitePay depois).
-export const PROVEDORES_DE_PAGAMENTO = ["asaas", "stripe"] as const;
+// Onde a conta de quem vende está. Um conector por provedor: o Asaas, a
+// Stripe e a InfinitePay.
+export const PROVEDORES_DE_PAGAMENTO = ["asaas", "stripe", "infinitepay"] as const;
 export type ProvedorDePagamento = (typeof PROVEDORES_DE_PAGAMENTO)[number];
+
+// A InfinitePay não renova sozinha (plano pagamentos-online-infinitepay):
+// o BarChop gera um link por ciclo. `aberto` espera o pagamento; `pago`
+// foi conferido no provedor; `fechado` não aceita mais nada pelo BarChop
+// (o "recebi" de quem vende, ou a assinatura cancelada).
+export const SITUACOES_DO_LINK = ["aberto", "pago", "fechado"] as const;
+export type SituacaoDoLink = (typeof SITUACOES_DO_LINK)[number];
+
+// Quantos dias de atraso a assinatura da InfinitePay espera antes de
+// cancelar sozinha. Quem vende escolhe (decisão do dono em 31/10/2026).
+export const DIAS_PARA_CANCELAR = { minimo: 3, maximo: 30, padrao: 10 } as const;
 
 // A chave conectada é de sandbox (`teste`) ou de produção (`real`).
 export const MODOS_DA_CONEXAO = ["teste", "real"] as const;

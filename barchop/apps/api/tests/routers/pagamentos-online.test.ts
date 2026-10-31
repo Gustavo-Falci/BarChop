@@ -113,6 +113,8 @@ describe("conectar a conta", () => {
       modo: "teste",
       chaveFinal: "1234",
       conectadaEm: expect.any(String),
+      infiniteTag: null,
+      diasParaCancelar: null,
     });
   });
 
@@ -397,7 +399,7 @@ describe("a InfinitePay", () => {
     expect(await prisma.conexaoDePagamento.count()).toBe(0);
   });
 
-  it("chave fora do formato: a frase da InfinitePay; com a plataforma no modo de teste, a InfinitePay não conecta", async () => {
+  it("chave fora do formato: a frase da InfinitePay", async () => {
     const real = await cenario({ modoAceito: "real" });
     const torta = await conectarInfinitePay(real, real.dono.token, { chave: "rk_live_qualquer" });
     expect(torta.statusCode).toBe(422);
@@ -405,7 +407,9 @@ describe("a InfinitePay", () => {
       erro: "chave_invalida",
       mensagem: "isso não é uma chave de API da InfinitePay: ela começa com inchk_",
     });
+  });
 
+  it("com a plataforma no modo de teste, a InfinitePay não conecta", async () => {
     const teste = await cenario();
     const emTeste = await conectarInfinitePay(teste, teste.dono.token);
     expect(emTeste.statusCode).toBe(422);
@@ -483,7 +487,7 @@ describe("a InfinitePay", () => {
 
     expect(mudou.statusCode).toBe(200);
     expect(mudou.json().conta).toMatchObject({ provedor: "infinitepay", diasParaCancelar: 15 });
-    for (const ruim of [2, 31, 7.5, "10"]) {
+    for (const ruim of [2, 31, 7.5, "dez"]) {
       expect((await mudarDias(c, c.dono.token, ruim)).statusCode).toBe(400);
     }
     expect((await prisma.conexaoDePagamento.findFirstOrThrow()).diasParaCancelar).toBe(15);
@@ -494,7 +498,7 @@ describe("a InfinitePay", () => {
     expect(noAsaas.statusCode).toBe(422);
     expect(noAsaas.json()).toMatchObject({
       erro: "so_na_infinitepay",
-      mensagem: "os dias para cancelar são só da InfinitePay: o Asaas cancela pelas regras dele",
+      mensagem: "os dias para cancelar são só da InfinitePay: o Asaas cancela pelas próprias regras",
     });
   });
 

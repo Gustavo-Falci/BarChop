@@ -19,6 +19,8 @@ const CONTA: ContaDePagamentoOnline = {
   modo: "teste",
   chaveFinal: "1234",
   conectadaEm: "2026-10-25T15:00:00.000Z",
+  infiniteTag: null,
+  diasParaCancelar: null,
 };
 
 const CORTE: PlanoDoPainel = {

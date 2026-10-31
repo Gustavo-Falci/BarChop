@@ -1,4 +1,5 @@
 import { modoDaChaveDoAsaas } from "./asaas";
+import { lerAvisoDaInfinitePay, modoDaChaveDaInfinitePay } from "./infinitepay";
 import { lerEventoDaStripe, modoDaChaveDaStripe } from "./stripe";
 import {
   ErroDoProvedor,
@@ -10,12 +11,15 @@ import {
   type NomeDoProvedor,
   type NovaAssinatura,
   type NovoCliente,
+  type NovoLink,
+  type PagamentoDoLink,
   type ProvedorDe,
+  type ProvedorDeLink,
   type ProvedorRecorrente,
 } from "./tipos";
 
 // Os conectores de memória: cada teste com os seus, e o que foi pedido
-// fica à vista (como a cobrancaDeMemoria). Servem o Asaas e a Stripe: o
+// fica à vista (como a cobrancaDeMemoria). Servem os três provedores: o
 // formato da chave é o de cada um, pra o modo sair do prefixo como no de
 // verdade, e o webhook da Stripe devolve um segredo. A "cifra" é o
 // próprio texto, e a conexão gravada vale sem decifrar.
@@ -37,6 +41,12 @@ export interface ProvedoresDeMemoria extends FabricaDeProvedores {
   cancelamentos: string[];
   // Os eventos que o webhook recebeu e leu.
   eventos: unknown[];
+  // A InfinitePay: de que conta é cada InfiniteTag (a chave de outra
+  // conta com essa tag dá 403, como na de verdade); os links criados; e o
+  // que o `payment_check` responde, por `transactionNsu`.
+  tagsDasContas: Map<string, string>;
+  links: (NovoLink & { url: string; tag: string })[];
+  pagamentosDosLinks: Map<string, { orderNsu: string; slug: string; pagamento: PagamentoDoLink }>;
 }
 
 export function provedoresDeMemoria(
@@ -47,8 +57,49 @@ export function provedoresDeMemoria(
   const urlDaApi = opcoes.urlDaApi === undefined ? "https://api.barchop.test" : opcoes.urlDaApi;
   const contaDoWebhook = new Map<string, string>();
 
-  const modoDaChave = (nome: NomeDoProvedor, chave: string): ModoDoProvedor | null =>
-    nome === "stripe" ? modoDaChaveDaStripe(chave) : modoDaChaveDoAsaas(chave);
+  const modoDaChave = (nome: NomeDoProvedor, chave: string): ModoDoProvedor | null => {
+    if (nome === "stripe") return modoDaChaveDaStripe(chave);
+    if (nome === "infinitepay") return modoDaChaveDaInfinitePay(chave);
+    return modoDaChaveDoAsaas(chave);
+  };
+
+  // A InfinitePay: sem webhook nem assinatura; a chave só vale com a tag
+  // da mesma conta.
+  function provedorDeLink(chave: string, tag: string | null | undefined): ProvedorDeLink {
+    if (!tag) throw new Error("a InfinitePay pede a InfiniteTag da conta");
+    const conta = () => fabrica.contas.get(chave) ?? chave;
+    const atender = () => {
+      if (fabrica.indisponivel) throw new ErroDoProvedor("indisponivel", "a InfinitePay não respondeu");
+      const dona = fabrica.tagsDasContas.get(tag);
+      if (fabrica.chavesInvalidas.has(chave) || (dona !== undefined && dona !== conta())) {
+        throw new ErroDoProvedor("chave_invalida", "a InfinitePay não aceitou a chave (ou a InfiniteTag é de outra conta)", 403);
+      }
+    };
+    return {
+      nome: "infinitepay",
+      modo: "real",
+      pedeCpf: PEDE_CPF.infinitepay,
+      cobra: "link",
+      async conferirChave() {
+        atender();
+      },
+      async criarLink(dados) {
+        atender();
+        const url = `https://checkout.infinitepay.io/${tag}/${proximo("link")}`;
+        fabrica.links.push({ ...dados, url, tag });
+        return { url };
+      },
+      async conferirPagamento({ orderNsu, transactionNsu, slug }) {
+        atender();
+        const conferido = fabrica.pagamentosDosLinks.get(transactionNsu);
+        if (!conferido || conferido.orderNsu !== orderNsu || conferido.slug !== slug) {
+          return { pago: false, valorCentavos: 0, forma: null };
+        }
+        return { ...conferido.pagamento };
+      },
+      lerAviso: lerAvisoDaInfinitePay,
+    };
+  }
 
   // `segredo`: o do webhook da conexão da Stripe, que confere os eventos
   // como no de verdade.
@@ -166,20 +217,25 @@ export function provedoresDeMemoria(
     cobrancas: new Map(),
     cancelamentos: [],
     eventos: [],
+    tagsDasContas: new Map(),
+    links: [],
+    pagamentosDosLinks: new Map(),
     modoDaChave,
     cifrar: (chave) => Buffer.from(chave, "utf8"),
     urlDoWebhook: (provedor, conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/${provedor}/${conexaoId}`),
-    // Com um provedor só de cada tipo de cobrança por enquanto, o conector
-    // é o do tipo pedido; o TypeScript não resolve o condicional sobre um
-    // genérico, daí a conversão.
-    daChave: <P extends NomeDoProvedor>({ provedor: nome, chave }: { provedor: P; chave: string }) =>
-      provedor(nome, chave) as ProvedorDe<P>,
-    daConexao: ({ provedor: nome, chaveCifrada, segredoDoWebhookCifrado }) =>
-      provedor(
+    // O conector é o do tipo do provedor pedido (COBRA); o TypeScript não
+    // resolve o condicional sobre um genérico, daí a conversão.
+    daChave: <P extends NomeDoProvedor>({ provedor: nome, chave, tag }: { provedor: P; chave: string; tag?: string }) =>
+      (nome === "infinitepay" ? provedorDeLink(chave, tag) : provedor(nome, chave)) as ProvedorDe<P>,
+    daConexao: ({ provedor: nome, chaveCifrada, segredoDoWebhookCifrado, infiniteTag }) => {
+      const chave = Buffer.from(chaveCifrada).toString("utf8");
+      if (nome === "infinitepay") return provedorDeLink(chave, infiniteTag);
+      return provedor(
         nome === "stripe" ? "stripe" : "asaas",
-        Buffer.from(chaveCifrada).toString("utf8"),
+        chave,
         segredoDoWebhookCifrado ? Buffer.from(segredoDoWebhookCifrado).toString("utf8") : null
-      ),
+      );
+    },
   };
   return fabrica;
 }

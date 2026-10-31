@@ -2,7 +2,7 @@ import { prisma } from "@barchop/database";
 import { tokenConfere } from "../lib/cifra";
 import { ErroHttp } from "../lib/erro-http";
 import { PADRAO_UUID } from "../lib/padroes";
-import type { EventoDoProvedor } from "../lib/provedores";
+import { recorrente, type EventoDoProvedor } from "../lib/provedores";
 import { receberEvento } from "../lib/webhook-dos-planos";
 import type { App } from "../tipos";
 
@@ -40,7 +40,7 @@ export function registrarRotaWebhookAsaas(app: App): void {
       throw new ErroHttp(401, "token_invalido", "o token do webhook não confere");
     }
 
-    const provedor = app.provedores.daConexao(conexao);
+    const provedor = recorrente(app.provedores.daConexao(conexao));
     let evento: EventoDoProvedor;
     try {
       evento = provedor.lerEvento(request.body);

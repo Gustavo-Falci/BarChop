@@ -1,6 +1,7 @@
 import { chaveDeCifra, cifrar, decifrar } from "../cifra";
 import { ErroHttp } from "../erro-http";
 import { modoDaChaveDoAsaas, provedorAsaas } from "./asaas";
+import { modoDaChaveDaInfinitePay, provedorInfinitePay } from "./infinitepay";
 import { provedoresDeMemoria } from "./memoria";
 import { modoDaChaveDaStripe, provedorStripe } from "./stripe";
 import {
@@ -13,8 +14,9 @@ import {
 } from "./tipos";
 
 // Os provedores de pagamento online dos planos de assinatura (Onda 2,
-// marco 3, plano planos-de-assinatura): o Asaas e a Stripe (plano
-// pagamentos-online-stripe). Como a
+// marco 3, plano planos-de-assinatura): o Asaas, a Stripe (plano
+// pagamentos-online-stripe) e a InfinitePay (plano
+// pagamentos-online-infinitepay). Como a
 // cobrança da Stripe, os testes usam o de memória e o de verdade só
 // existe fora deles.
 
@@ -47,6 +49,8 @@ export function nomeDoProvedor(provedor: NomeDoProvedor): NomesDoProvedor {
       return { o: "o Asaas", do: "do Asaas", inicioDaChave: "$aact_", teste: "do sandbox", real: "de produção" };
     case "stripe":
       return { o: "a Stripe", do: "da Stripe", inicioDaChave: "sk_ ou rk_", teste: "de teste", real: "de produção" };
+    case "infinitepay":
+      return { o: "a InfinitePay", do: "da InfinitePay", inicioDaChave: "inchk_", teste: "de teste", real: "de produção" };
   }
 }
 
@@ -69,6 +73,8 @@ function modoDaChave(provedor: NomeDoProvedor, chave: string): ModoDoProvedor | 
       return modoDaChaveDoAsaas(chave);
     case "stripe":
       return modoDaChaveDaStripe(chave);
+    case "infinitepay":
+      return modoDaChaveDaInfinitePay(chave);
   }
 }
 
@@ -88,13 +94,22 @@ export function provedoresDoAmbiente(
   const urlDaApi = env.URL_DA_API?.replace(/\/+$/, "") || null;
 
   // O segredo do webhook vem da conexão gravada; a chave colada só
-  // confere e registra o webhook.
-  function conector(provedor: NomeDoProvedor, chave: string, modo: ModoDoProvedor, segredoDoWebhook: string | null = null) {
+  // confere e registra o webhook. A InfinitePay pede a InfiniteTag em
+  // todo pedido.
+  function conector(
+    provedor: NomeDoProvedor,
+    chave: string,
+    modo: ModoDoProvedor,
+    { segredoDoWebhook = null, tag = null }: { segredoDoWebhook?: string | null; tag?: string | null } = {}
+  ) {
     switch (provedor) {
       case "asaas":
         return provedorAsaas({ chave, modo, fetch: opcoes.fetch });
       case "stripe":
         return provedorStripe({ chave, modo, segredoDoWebhook, fetch: opcoes.fetch });
+      case "infinitepay":
+        if (!tag) throw new Error("a InfinitePay pede a InfiniteTag da conta");
+        return provedorInfinitePay({ chave, tag, fetch: opcoes.fetch });
     }
   }
 
@@ -104,20 +119,23 @@ export function provedoresDoAmbiente(
     modoDaChave,
     cifrar: (chave) => cifrar(chave, chaveDeCifra(env)),
     urlDoWebhook: (provedor, conexaoId) => (urlDaApi === null ? null : `${urlDaApi}/webhooks/${provedor}/${conexaoId}`),
-    daChave<P extends NomeDoProvedor>({ provedor, chave }: { provedor: P; chave: string }) {
+    daChave<P extends NomeDoProvedor>({ provedor, chave, tag }: { provedor: P; chave: string; tag?: string }) {
       const modo = modoDaChave(provedor, chave);
       if (!modo) throw new ErroDoProvedor("chave_invalida", `isso não é uma chave de API ${nomeDoProvedor(provedor).do}`);
       // O conector do provedor pedido é do tipo dele (COBRA); o TypeScript
       // não resolve o condicional sobre um genérico.
-      return conector(provedor, chave, modo) as ProvedorDe<P>;
+      return conector(provedor, chave, modo, { tag }) as ProvedorDe<P>;
     },
-    daConexao({ provedor, modo, chaveCifrada, segredoDoWebhookCifrado }) {
+    daConexao({ provedor, modo, chaveCifrada, segredoDoWebhookCifrado, infiniteTag }) {
       if (!(PROVEDORES as readonly string[]).includes(provedor) || (modo !== "teste" && modo !== "real")) {
         throw new Error(`conexão com provedor ou modo desconhecido: ${provedor}/${modo}`);
       }
       const cifra = chaveDeCifra(env);
       const segredo = segredoDoWebhookCifrado ? decifrar(segredoDoWebhookCifrado, cifra) : null;
-      return conector(provedor as NomeDoProvedor, decifrar(chaveCifrada, cifra), modo, segredo);
+      return conector(provedor as NomeDoProvedor, decifrar(chaveCifrada, cifra), modo, {
+        segredoDoWebhook: segredo,
+        tag: infiniteTag,
+      });
     },
   };
 }

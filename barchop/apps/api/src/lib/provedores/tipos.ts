@@ -5,20 +5,23 @@ import type { CicloDoCliente } from "@barchop/formato";
 // nenhum nome do provedor (status, ciclo, forma) sai do conector: o
 // Asaas e a Stripe são dois conectores atrás da mesma interface.
 
-export const PROVEDORES = ["asaas", "stripe"] as const;
+export const PROVEDORES = ["asaas", "stripe", "infinitepay"] as const;
 export type NomeDoProvedor = (typeof PROVEDORES)[number];
 
 // Se o provedor pede o CPF (ou CNPJ) de quem assina pra criar o cliente.
 // Aqui, e não só no conector, porque a vitrine diz isso sem a chave de
 // quem vende: o Asaas não cobra sem ele; a Stripe não usa.
-export const PEDE_CPF: Record<NomeDoProvedor, boolean> = { asaas: true, stripe: false };
+export const PEDE_CPF: Record<NomeDoProvedor, boolean> = { asaas: true, stripe: false, infinitepay: false };
 
 // Como o provedor cobra (plano pagamentos-online-infinitepay): o
 // recorrente renova sozinho e avisa pelo webhook; o de link só gera um
 // link de pagamento por vez, e o BarChop é quem toca o ciclo. Aqui, e
 // não só no conector, porque o tipo do conector sai disto (`ProvedorDe`).
 export type FormaDeCobrar = "recorrente" | "link";
-export const COBRA = { asaas: "recorrente", stripe: "recorrente" } as const satisfies Record<NomeDoProvedor, FormaDeCobrar>;
+export const COBRA = { asaas: "recorrente", stripe: "recorrente", infinitepay: "link" } as const satisfies Record<
+  NomeDoProvedor,
+  FormaDeCobrar
+>;
 
 // O modo da chave: a de teste (sandbox) não move dinheiro.
 export type ModoDoProvedor = "teste" | "real";
@@ -175,8 +178,8 @@ export interface AvisoDoLink {
   slug: string;
 }
 
-// A InfinitePay (a partir do PR 3): sem assinatura, sem cliente e sem
-// webhook da conta; cada link leva o endereço do aviso.
+// A InfinitePay: sem assinatura, sem cliente e sem webhook da conta;
+// cada link leva o endereço do aviso.
 export interface ProvedorDeLink extends ProvedorBase {
   cobra: "link";
   criarLink(dados: NovoLink): Promise<{ url: string }>;
@@ -185,10 +188,15 @@ export interface ProvedorDeLink extends ProvedorBase {
   lerAviso(corpo: unknown): AvisoDoLink;
 }
 
-// O conector de um provedor, pelo jeito que ele cobra. Enquanto nenhum
-// cobra por link, toda conexão é recorrente: quando um entrar em
-// PROVEDORES e COBRA, o compilador aponta cada lugar que precisa tratar
-// os dois.
+// O conector de um provedor, pelo jeito que ele cobra. A conexão gravada
+// pode ser dos dois: quem a usa olha o `cobra`.
+// Onde só cabe o recorrente (o webhook do Asaas e o da Stripe, a
+// assinatura no provedor): o de link ali é erro do código.
+export function recorrente(provedor: ProvedorRecorrente | ProvedorDeLink): ProvedorRecorrente {
+  if (provedor.cobra !== "recorrente") throw new Error(`o conector ${provedor.nome} não cobra por assinatura`);
+  return provedor;
+}
+
 export type ProvedorDe<P extends NomeDoProvedor> = P extends unknown
   ? (typeof COBRA)[P] extends "link"
     ? ProvedorDeLink
@@ -202,8 +210,10 @@ export interface ConexaoGravada {
   provedor: string;
   modo: string;
   chaveCifrada: Uint8Array;
-  // O segredo que assina os eventos da Stripe; null no Asaas.
+  // O segredo que assina os eventos da Stripe; null nos outros.
   segredoDoWebhookCifrado: Uint8Array | null;
+  // A InfiniteTag, só na InfinitePay (o `payment_check` pede).
+  infiniteTag?: string | null;
 }
 
 // Cada vendedor tem a própria chave: a instância guarda a fábrica, e não
@@ -220,7 +230,8 @@ export interface FabricaDeProvedores {
   // O modo pelo formato da chave; null = não é chave desse provedor.
   modoDaChave(provedor: NomeDoProvedor, chave: string): ModoDoProvedor | null;
   // A chave colada na tela, antes de gravar (o conectar confere com ela).
-  daChave<P extends NomeDoProvedor>(dados: { provedor: P; chave: string }): ProvedorDe<P>;
+  // A InfinitePay pede também a InfiniteTag.
+  daChave<P extends NomeDoProvedor>(dados: { provedor: P; chave: string; tag?: string }): ProvedorDe<P>;
   // A conexão gravada: decifra a chave na hora de usar.
   daConexao(conexao: ConexaoGravada): Provedor;
 }

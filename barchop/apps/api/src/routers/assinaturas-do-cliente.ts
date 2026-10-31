@@ -146,6 +146,9 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
           viva.conexao.modo === app.provedores.modoAceito;
         if (viva.forma !== "online" || !aPagar || !viva.idExterno || !contaViva) throw jaAssina();
         const provedor = app.provedores.daConexao(viva.conexao!);
+        // O link do ciclo da InfinitePay chega no PR 4 do plano
+        // pagamentos-online-infinitepay.
+        if (provedor.cobra !== "recorrente") throw jaAssina();
         const linkDaFatura = await noProvedor(provedor.nome, provedor.linkDaFatura(viva.idExterno), request.log);
         return reply.code(200).send({ assinatura: await serializar(prisma, viva), linkDaFatura });
       }
@@ -167,6 +170,9 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
       if (!conexao) throw indisponivel();
 
       const provedor = app.provedores.daConexao(conexao);
+      // Assinar pela InfinitePay chega no PR 4 do plano
+      // pagamentos-online-infinitepay.
+      if (provedor.cobra !== "recorrente") throw indisponivel();
       const cliente = await prisma.cliente.findUniqueOrThrow({
         where: { id: clienteId },
         select: { id: true, nome: true, email: true, telefone: true, cpf: true },

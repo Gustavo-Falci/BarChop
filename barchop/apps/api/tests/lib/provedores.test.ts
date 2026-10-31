@@ -8,6 +8,7 @@ import {
   modoDosPagamentosOnline,
   provedoresDeMemoria,
   provedoresDoAmbiente,
+  recorrente,
   nomeDoProvedor,
   type ProvedorDeLink,
   type ProvedorRecorrente,
@@ -138,8 +139,8 @@ describe("provedoresDoAmbiente", () => {
     const assinatura = Stripe.webhooks.generateTestHeaderString({ payload: corpo, secret: segredo });
     const gravada = { provedor: "stripe", modo: "teste", chaveCifrada: fabrica.cifrar("sk_test_x") };
 
-    const comSegredo = fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: fabrica.cifrar(segredo) });
-    const semSegredo = fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: null });
+    const comSegredo = recorrente(fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: fabrica.cifrar(segredo) }));
+    const semSegredo = recorrente(fabrica.daConexao({ ...gravada, segredoDoWebhookCifrado: null }));
 
     expect(comSegredo).toMatchObject({ nome: "stripe", modo: "teste" });
     expect(comSegredo.lerEvento(Buffer.from(corpo), assinatura)).toMatchObject({ id: "evt_1", cobrancaId: "in_1" });

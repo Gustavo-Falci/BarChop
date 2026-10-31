@@ -379,7 +379,16 @@ export async function previsaoPeloPlano(
 // são cobradas. A do balcão não tem o que cancelar fora.
 export const ONLINE_A_CANCELAR = {
   idExterno: true,
-  conexao: { select: { provedor: true, modo: true, chaveCifrada: true, segredoDoWebhookCifrado: true, desconectadaEm: true } },
+  conexao: {
+    select: {
+      provedor: true,
+      modo: true,
+      chaveCifrada: true,
+      segredoDoWebhookCifrado: true,
+      infiniteTag: true,
+      desconectadaEm: true,
+    },
+  },
 } satisfies Prisma.AssinaturaDoClienteSelect;
 
 // Cancela no provedor, antes de cancelar no banco (PR 10b): sem isso, a
@@ -399,6 +408,9 @@ export async function cancelarNoProvedor(
     // enquanto há assinatura online viva nela.
     if (!idExterno || !conexao || conexao.desconectadaEm !== null) continue;
     const provedor = fabrica.daConexao(conexao);
+    // A InfinitePay não tem assinatura lá: o BarChop só para de gerar o
+    // link do ciclo.
+    if (provedor.cobra !== "recorrente") continue;
     try {
       await provedor.cancelarAssinatura(idExterno);
     } catch (erro) {

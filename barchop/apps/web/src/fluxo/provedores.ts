@@ -46,6 +46,19 @@ export const PROVEDORES: Record<ProvedorDePagamento, TextosDoProvedor> = {
     seloDeTeste: "Teste",
     prefixo: { teste: "rk_test_", real: "rk_live_" },
   },
+  // Ainda fora das opções do painel: a tela dela chega no PR 7 do plano
+  // pagamentos-online-infinitepay. Sem sandbox, a chave é uma só.
+  infinitepay: {
+    nome: "InfinitePay",
+    o: "a InfinitePay",
+    do: "da InfinitePay",
+    formas: "Pix ou cartão",
+    efeito: "Pix ou cartão, por um link a cada mensalidade, e não pede o CPF de quem assina.",
+    chave: "chave de API da InfinitePay",
+    chaveDeTeste: "a chave de API da InfinitePay",
+    seloDeTeste: "Teste",
+    prefixo: { teste: "inchk_", real: "inchk_" },
+  },
 };
 
 // "a Stripe" → "A Stripe", no começo da frase.

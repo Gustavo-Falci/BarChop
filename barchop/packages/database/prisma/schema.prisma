@@ -132,6 +132,7 @@ model Barbearia {
   planosDeAssinatura    PlanoDeAssinatura[]
   assinaturasDeClientes AssinaturaDoCliente[]
   recebimentosDePlanos  RecebimentoDoPlano[]
+  linksDosCiclos        LinkDoCiclo[]
 
   @@map("barbearia")
 }
@@ -592,6 +593,10 @@ model ConexaoDePagamento {
   webhookTokenHash        String    @map("webhook_token_hash") @db.VarChar(128)
   idExternoWebhook        String?   @map("id_externo_webhook") @db.VarChar(100)
   segredoDoWebhookCifrado Bytes?    @map("segredo_do_webhook_cifrado")
+  // Só na InfinitePay: a InfiniteTag (sem o $), que o `payment_check`
+  // pede, e em quantos dias de atraso a assinatura cancela sozinha.
+  infiniteTag             String?   @map("infinite_tag") @db.VarChar(40)
+  diasParaCancelar        Int?      @map("dias_para_cancelar") @db.SmallInt
   criadoEm                DateTime  @default(now()) @map("criado_em") @db.Timestamptz
   desconectadaEm          DateTime? @map("desconectada_em") @db.Timestamptz
 
@@ -674,6 +679,7 @@ model AssinaturaDoCliente {
   recebimentos RecebimentoDoPlano[]
   pagamentos   Pagamento[]
   usos         UsoDoPlano[]
+  links        LinkDoCiclo[]
 
   @@unique([conexaoId, idExterno])
   @@index([barbeariaId])
@@ -727,6 +733,35 @@ model UsoDoPlano {
 }
 
 // A deduplicação do webhook dos provedores, como `evento_stripe`.
+// O link de pagamento de um ciclo, na InfinitePay (plano
+// pagamentos-online-infinitepay): o BarChop gera um por assinatura e
+// vencimento. `orderNsu` é a referência que vai no link e volta no aviso.
+model LinkDoCiclo {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId    String    @map("barbearia_id") @db.Uuid
+  assinaturaId   String    @map("assinatura_id") @db.Uuid
+  vencimento     DateTime  @db.Date
+  valorCentavos  Int       @map("valor_centavos")
+  orderNsu       String    @unique @map("order_nsu") @db.VarChar(100)
+  url            String    @db.VarChar(500)
+  validoAte      DateTime  @map("valido_ate") @db.Date
+  situacao       String    @default("aberto") @db.VarChar(10)
+  // Do aviso ou da volta da página; o `payment_check` confere com eles.
+  transactionNsu String?   @map("transaction_nsu") @db.VarChar(100)
+  slug           String?   @db.VarChar(100)
+  enviadoEm      DateTime? @map("enviado_em") @db.Timestamptz
+  reenviadoEm    DateTime? @map("reenviado_em") @db.Timestamptz
+  pagoEm         DateTime? @map("pago_em") @db.Timestamptz
+  criadoEm       DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+
+  barbearia  Barbearia           @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  assinatura AssinaturaDoCliente @relation(fields: [assinaturaId], references: [id], onDelete: NoAction)
+
+  @@unique([assinaturaId, vencimento])
+  @@index([barbeariaId, situacao])
+  @@map("link_do_ciclo")
+}
+
 model EventoDoProvedor {
   provedor   String   @db.VarChar(20)
   id         String   @db.VarChar(255)

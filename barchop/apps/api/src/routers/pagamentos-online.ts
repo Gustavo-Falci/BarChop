@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyRequest } from "fastify";
 import { Prisma, prisma } from "@barchop/database";
+import { DIAS_PARA_CANCELAR } from "@barchop/formato";
 import type { PagamentosOnline } from "@barchop/types";
 import { garantirRecurso } from "../lib/assinatura";
 import { gerarTokenDoWebhook, hashDoToken } from "../lib/cifra";
@@ -12,8 +13,10 @@ import {
   nomeDoProvedor,
   PROVEDORES,
   provedorGravado,
+  recorrente,
+  type FabricaDeProvedores,
   type NomeDoProvedor,
-  type Provedor,
+  type ProvedorRecorrente,
 } from "../lib/provedores";
 import { membroDoToken, type Membro } from "../plugins/auth";
 import type { App } from "../tipos";
@@ -43,6 +46,18 @@ const corpoConectar = {
     provedor: { type: "string", enum: [...PROVEDORES] },
     // A do Asaas tem uns 170 caracteres; a folga cobre espaço colado junto.
     chave: { type: "string", minLength: 1, maxLength: 500 },
+    // Só a InfinitePay pede (a InfiniteTag, com ou sem o $); as outras
+    // não olham.
+    tag: { type: "string", maxLength: 100 },
+  },
+} as const;
+
+const corpoDias = {
+  type: "object",
+  additionalProperties: false,
+  required: ["diasParaCancelar"],
+  properties: {
+    diasParaCancelar: { type: "integer", minimum: DIAS_PARA_CANCELAR.minimo, maximum: DIAS_PARA_CANCELAR.maximo },
   },
 } as const;
 
@@ -74,7 +89,16 @@ function ondeEstaAConta(membro: Membro, daCasa: boolean): Prisma.ConexaoDePagame
   return daCasa ? { ...ligada, daCasa: true } : { ...ligada, barbeiroId: membro.id, daCasa: false };
 }
 
-type ContaGravada = { provedor: string; modo: string; chaveFinal: string; criadoEm: Date };
+const SELECT_DA_CONTA = {
+  provedor: true,
+  modo: true,
+  chaveFinal: true,
+  infiniteTag: true,
+  diasParaCancelar: true,
+  criadoEm: true,
+} satisfies Prisma.ConexaoDePagamentoSelect;
+
+type ContaGravada = Prisma.ConexaoDePagamentoGetPayload<{ select: typeof SELECT_DA_CONTA }>;
 
 function serializar(daCasa: boolean, modoAceito: PagamentosOnline["modoAceito"], conta: ContaGravada | null): PagamentosOnline {
   return {
@@ -85,6 +109,8 @@ function serializar(daCasa: boolean, modoAceito: PagamentosOnline["modoAceito"],
       modo: conta.modo as "teste" | "real",
       chaveFinal: conta.chaveFinal,
       conectadaEm: conta.criadoEm.toISOString(),
+      infiniteTag: conta.infiniteTag,
+      diasParaCancelar: conta.diasParaCancelar,
     },
   };
 }
@@ -98,6 +124,111 @@ async function noProvedor<T>(provedor: NomeDoProvedor, pedido: Promise<T>): Prom
   }
 }
 
+// A InfiniteTag como quem vende copia do app: com ou sem o $. Letras,
+// números, ponto, hífen e sublinhado: o que cabe no `handle` sem espaço.
+const PADRAO_DA_TAG = /^[A-Za-z0-9._-]{1,40}$/;
+
+function lerTag(colada: string | undefined): string {
+  const tag = (colada ?? "").trim().replace(/^\$/, "");
+  if (tag === "") throw new ErroDeNegocio("a InfinitePay pede a InfiniteTag da conta", "tag_obrigatoria");
+  if (!PADRAO_DA_TAG.test(tag)) {
+    throw new ErroDeNegocio(
+      "a InfiniteTag tem até 40 letras, números, pontos, hífens ou sublinhados, sem espaço: confira no app da InfinitePay",
+      "tag_invalida"
+    );
+  }
+  return tag;
+}
+
+// Conectar a InfinitePay (plano pagamentos-online-infinitepay, PR 3).
+// Sem webhook da conta: cada link leva o endereço do aviso. A conta é a
+// da InfiniteTag: trocar a chave só vale com uma da mesma conta (a que o
+// `payment_check` aceita com a tag gravada); trocar a tag é outra conta,
+// e pede desconectar antes, como trocar de provedor.
+async function conectarInfinitePay(dados: {
+  fabrica: FabricaDeProvedores;
+  membro: Membro;
+  daCasa: boolean;
+  chave: string;
+  tag: string;
+  modo: "teste" | "real";
+  log: FastifyRequest["log"];
+}): Promise<PagamentosOnline> {
+  const { fabrica, membro, daCasa, chave, tag, modo } = dados;
+  const nome = nomeDoProvedor("infinitepay");
+  const atual = await prisma.conexaoDePagamento.findFirst({
+    where: ondeEstaAConta(membro, daCasa),
+    select: { id: true, provedor: true, infiniteTag: true },
+  });
+  if (atual && atual.provedor !== "infinitepay") {
+    throw new ErroDeNegocio(
+      `a conta conectada é ${nomeDoProvedor(provedorGravado(atual.provedor)).do}: desconecte antes de conectar a ${nome.do}`,
+      "outra_conta"
+    );
+  }
+  if (atual && atual.infiniteTag !== tag) {
+    throw new ErroDeNegocio(
+      `a conta conectada é a da InfiniteTag ${atual.infiniteTag}: desconecte antes de conectar outra`,
+      "outra_conta"
+    );
+  }
+
+  const provedor = fabrica.daChave({ provedor: "infinitepay", chave, tag });
+  try {
+    await provedor.conferirChave();
+  } catch (erro) {
+    if (erro instanceof ErroDoProvedor) {
+      dados.log.warn({ codigo: erro.codigo, mensagem: erro.message }, "a InfinitePay recusou conectar");
+    }
+    if (atual && erro instanceof ErroDoProvedor && erro.codigo === "chave_invalida") {
+      throw new ErroDeNegocio(
+        `esta chave não vale para a InfiniteTag ${tag}: confira se ela é dessa conta e se está ativa`,
+        "outra_conta"
+      );
+    }
+    if (erro instanceof ErroDoProvedor) throw erroHttpDoProvedor(erro, "infinitepay");
+    throw erro;
+  }
+  const chaveFinal = chave.slice(-4);
+  const chaveCifrada = Buffer.from(fabrica.cifrar(chave));
+
+  if (atual) {
+    const trocada = await prisma.conexaoDePagamento.update({
+      where: { id: atual.id },
+      data: { chaveCifrada, chaveFinal },
+      select: SELECT_DA_CONTA,
+    });
+    return serializar(daCasa, fabrica.modoAceito, trocada);
+  }
+
+  try {
+    const criada = await prisma.conexaoDePagamento.create({
+      data: {
+        barbeariaId: membro.barbeariaId,
+        barbeiroId: membro.id,
+        daCasa,
+        provedor: "infinitepay",
+        modo,
+        chaveCifrada,
+        chaveFinal,
+        // O aviso da InfinitePay não traz nada que se confira: cada
+        // pagamento passa pelo `payment_check` (PR 4). A coluna pede um
+        // hash; fica o de um token que ninguém recebe.
+        webhookTokenHash: hashDoToken(gerarTokenDoWebhook()),
+        infiniteTag: tag,
+        diasParaCancelar: DIAS_PARA_CANCELAR.padrao,
+      },
+      select: SELECT_DA_CONTA,
+    });
+    return serializar(daCasa, fabrica.modoAceito, criada);
+  } catch (erro) {
+    if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
+      throw conflito("a conta acabou de ser conectada por outro pedido");
+    }
+    throw erro;
+  }
+}
+
 export function registrarRotasPagamentosOnline(app: App): void {
   app.get(
     "/barbearias/me/pagamentos-online",
@@ -108,7 +239,7 @@ export function registrarRotasPagamentosOnline(app: App): void {
       garantirDaCasa(membro, daCasa);
       const conta = await prisma.conexaoDePagamento.findFirst({
         where: ondeEstaAConta(membro, daCasa),
-        select: { provedor: true, modo: true, chaveFinal: true, criadoEm: true },
+        select: SELECT_DA_CONTA,
       });
       return serializar(daCasa, app.provedores.modoAceito, conta);
     }
@@ -138,14 +269,19 @@ export function registrarRotasPagamentosOnline(app: App): void {
         );
       }
       if (modo !== fabrica.modoAceito) {
-        throw new ErroDeNegocio(
-          modo === "teste"
-            ? `esta é uma chave ${nome.teste} ${nome.do}, que não move dinheiro: use a chave ${nome.real}`
-            : `esta é uma chave ${nome.real} ${nome.do}: aqui só vale a ${nome.teste}`,
-          "modo_errado"
-        );
+        let mensagem = `esta é uma chave ${nome.real} ${nome.do}: aqui só vale a ${nome.teste}`;
+        if (modo === "teste") {
+          mensagem = `esta é uma chave ${nome.teste} ${nome.do}, que não move dinheiro: use a chave ${nome.real}`;
+        } else if (escolhido === "infinitepay") {
+          mensagem = `${nome.o} não tem chave ${nome.teste}, e aqui só vale a ${nome.teste}`;
+        }
+        throw new ErroDeNegocio(mensagem, "modo_errado");
       }
-      const provedor: Provedor = fabrica.daChave({ provedor: escolhido, chave });
+      if (escolhido === "infinitepay") {
+        const tag = lerTag(request.body.tag);
+        return conectarInfinitePay({ fabrica, membro, daCasa, chave, tag, modo, log: request.log });
+      }
+      const provedor: ProvedorRecorrente = fabrica.daChave({ provedor: escolhido, chave });
       await noProvedor(escolhido, provedor.conferirChave());
       const chaveFinal = chave.slice(-4);
 
@@ -225,6 +361,38 @@ export function registrarRotasPagamentosOnline(app: App): void {
     }
   );
 
+  // Em quantos dias de atraso a assinatura da InfinitePay cancela
+  // sozinha (decisão do dono em 31/10/2026). Quem tem a conta muda a
+  // dele; a da casa, o dono. Sem pedir o Completo: só ajusta a conta que
+  // já está ligada.
+  app.patch(
+    "/barbearias/me/pagamentos-online",
+    { onRequest: exigirQuemTemConta, schema: { querystring: filtroDaConta, body: corpoDias } },
+    async (request): Promise<PagamentosOnline> => {
+      const membro = membroDoToken(request);
+      const daCasa = request.query.daCasa ?? false;
+      garantirDaCasa(membro, daCasa);
+      const conta = await prisma.conexaoDePagamento.findFirst({
+        where: ondeEstaAConta(membro, daCasa),
+        select: { id: true, provedor: true },
+      });
+      if (!conta) throw naoEncontrado("nenhuma conta conectada");
+      const provedor = provedorGravado(conta.provedor);
+      if (provedor !== "infinitepay") {
+        throw new ErroDeNegocio(
+          `os dias para cancelar são só da InfinitePay: ${nomeDoProvedor(provedor).o} cancela pelas próprias regras`,
+          "so_na_infinitepay"
+        );
+      }
+      const mudada = await prisma.conexaoDePagamento.update({
+        where: { id: conta.id },
+        data: { diasParaCancelar: request.body.diasParaCancelar },
+        select: SELECT_DA_CONTA,
+      });
+      return serializar(daCasa, app.provedores.modoAceito, mudada);
+    }
+  );
+
   // Recusado com assinatura online viva na conta (decisão 6): sem o
   // webhook, a cobrança continuaria no provedor e o BarChop não saberia.
   // As do balcão não dependem da conta. Desliga em vez de apagar: a
@@ -259,8 +427,9 @@ export function registrarRotasPagamentosOnline(app: App): void {
             );
           }
 
+          // A InfinitePay não tem webhook da conta: só desliga.
           if (conexao.idExternoWebhook !== null) {
-            const provedor = app.provedores.daConexao(conexao);
+            const provedor = recorrente(app.provedores.daConexao(conexao));
             try {
               await provedor.apagarWebhook(conexao.idExternoWebhook);
             } catch (erro) {

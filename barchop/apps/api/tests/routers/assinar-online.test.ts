@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { agoraNaBarbearia, dataParaDate, somarDias } from "../../src/lib/horas";
-import { provedoresDeMemoria, type Provedor } from "../../src/lib/provedores";
+import { provedoresDeMemoria, recorrente, type Provedor } from "../../src/lib/provedores";
 import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
 import { criarClienteComToken } from "../helpers/cliente";
 
@@ -277,7 +277,7 @@ describe("assinar", () => {
     // A outra aba grava a viva entre o provedor criar e esta gravar.
     const daConexao = c.provedores.daConexao;
     c.provedores.daConexao = (conexao) => {
-      const provedor = daConexao(conexao);
+      const provedor = recorrente(daConexao(conexao));
       return {
         ...provedor,
         async criarAssinatura(dados) {
@@ -325,7 +325,7 @@ describe("assinar", () => {
     // O desconectar acontece entre o provedor criar e o BarChop gravar.
     const daConexao = c.provedores.daConexao;
     c.provedores.daConexao = (conexao) => {
-      const provedor = daConexao(conexao);
+      const provedor = recorrente(daConexao(conexao));
       return {
         ...provedor,
         async criarAssinatura(dados) {

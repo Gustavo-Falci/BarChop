@@ -37,6 +37,13 @@ Diferenças do plano, combinadas no caminho:
   - A rota do Asaas passou a filtrar `provedor: "asaas"` na conexão (e a nova, `provedor: "stripe"`): o token de uma conta da Stripe não serve no endereço do Asaas, e vice-versa. Antes não importava, só havia um provedor.
   - Rota nova em `routers/webhook-stripe-planos.ts`, num escopo próprio com o corpo cru (como `/stripe/webhook` da cobrança). Assinatura inválida ou ausente: 400 sem gravar; conexão desconhecida, desligada, de outro modo ou do Asaas: 200 e log.
   - A leitura do evento assinado virou `lerEventoDaStripe(corpo, assinatura, segredo)` exportada do conector, para o provedor de memória conferir a assinatura como o de verdade (os testes assinam com `Stripe.webhooks.generateTestHeaderString`).
+- **PR 5:**
+  - `PEDE_CPF` (`{ asaas: true, stripe: false }`) em `provedores/tipos.ts`, e o `pedeCpf` de cada conector lê dele: a vitrine precisa saber sem decifrar a chave de quem vende.
+  - O assinar faz o `daConexao` antes do CPF (a troca de ordem prevista no PR 1). Na Stripe, o CPF mandado é ignorado (nem conferido, nem guardado, nem enviado) e o do cadastro não vai para ela: só o necessário sai do BarChop (os Termos do PR 7 dizem "sem CPF"). O cadastro só é regravado quando o CPF muda.
+  - `NovoCliente.cpfCnpj` passou a `string | null`; o conector do Asaas só manda o campo com valor.
+  - A vitrine devolve `pagamento: { provedor, pedeCpf } | null` (null sem o online agora), em vez de `{ provedor, pedeCpf }` sempre. O `falso.ts` do api-client faz o mesmo. A web ainda não lê: segue pedindo o CPF até o PR 6, e o CPF que ela mandar para um plano da Stripe é ignorado.
+  - O cancelar (painel e cliente) já falava pelo provedor desde o PR 1: sem mudança no código, só os testes com a Stripe.
+  - O provedor de memória fala o nome do provedor nos erros e dá o link de fatura de cada um (`invoice.stripe.com` na Stripe).
 
 ## Summary
 Quem vende (a casa ou o profissional) passa a escolher entre o Asaas e a Stripe em Pagamentos online e cola a chave da própria conta Stripe; o BarChop cria o webhook pela API, como no Asaas (sem Stripe Connect, decisão do dono em 30/10). O cliente assina na fatura da Stripe (cartão, renovação automática), e o resto — vitrine, Minha conta, assinantes, Caixa, acerto, sino — segue pelo mesmo caminho do Asaas, porque o conector da Stripe entra atrás da interface `Provedor` que já existe.

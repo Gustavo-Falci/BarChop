@@ -122,6 +122,8 @@ Diferenças do plano, combinadas no caminho:
   - **A volta sem sessão** (o link do e-mail aberto em outro navegador) leva os três valores pelo Entrar e volta para a Minha conta com eles. Assim a segunda via da decisão 9 vale também nas renovações.
   - **O cancelar da InfinitePay** diz que os links das próximas mensalidades param. A API já pulava o provedor por link (`cancelarNoProvedor`), e agora há um teste do cliente cancelando a pendente.
   - **O dublê:** o link é `pedido-<id da assinatura>`, com a semente `pagamentoDoLink` (`pago`, o padrão, ou `nao_pago`).
+  - **Os valores da volta** seguem a regra do corpo da API (de 1 a 100 caracteres), e não um padrão mais estrito: sem sandbox, um formato real fora do padrão faria a web perder a volta sem avisar.
+  - **Conhecido:** o link fechado e pago depois, ou a assinatura cancelada (o `estornar`), voltam `pago: false`. O cliente lê "confira em alguns minutos", mas isso nunca vai confirmar; quem vende recebe o sino do estorno. Mais adiante, o `PagamentoConferido` pode devolver o resultado.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

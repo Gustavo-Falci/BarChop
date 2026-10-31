@@ -42,22 +42,23 @@ export const SEM_RENOVACAO = "Não renova sozinho: a cada ciclo chega um link po
 
 // A volta da InfinitePay (o `redirect_url` da Minha conta): ela põe na
 // query `order_nsu`, `transaction_nsu` e `slug` (o da fatura, não o da
-// barbearia). Só com os três, e só com caracteres simples: os valores
-// voltam pro corpo do POST e pra query do Entrar.
+// barbearia). Só com os três, e com a regra do corpo da API (1 a 100
+// caracteres): sem sandbox, não há como saber o formato de verdade, e uma
+// regra mais estrita aqui perderia a volta calada. Os valores vão no
+// corpo do POST (JSON) e na query do Entrar (codificada).
 export interface VoltaDoPagamento {
   orderNsu: string;
   transactionNsu: string;
   slug: string;
 }
 
-const VALOR_DA_VOLTA = /^[A-Za-z0-9._-]{1,100}$/;
 
 export function voltaDoPagamento(query: Pick<URLSearchParams, "get">): VoltaDoPagamento | null {
   const orderNsu = query.get("order_nsu");
   const transactionNsu = query.get("transaction_nsu");
   const slugDaFatura = query.get("slug");
   if (orderNsu === null || transactionNsu === null || slugDaFatura === null) return null;
-  if (![orderNsu, transactionNsu, slugDaFatura].every((valor) => VALOR_DA_VOLTA.test(valor))) return null;
+  if (![orderNsu, transactionNsu, slugDaFatura].every((valor) => valor.length >= 1 && valor.length <= 100)) return null;
   return { orderNsu, transactionNsu, slug: slugDaFatura };
 }
 

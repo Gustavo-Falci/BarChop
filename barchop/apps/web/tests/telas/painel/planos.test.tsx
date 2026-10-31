@@ -314,6 +314,26 @@ describe("o cadastro do plano", () => {
   });
 });
 
+// PR 7c do plano pagamentos-online-infinitepay: a InfinitePay não cobra
+// menos de R$ 1,00.
+describe("o mínimo da InfinitePay no cadastro", () => {
+  beforeEach(() => navegacaoFalsa.redefinir({ pathname: "/painel/planos/novo" }));
+
+  it("online e abaixo de R$ 1,00, o cadastro avisa o mínimo", async () => {
+    montarPainel(<CadastroDePlano />, comPlanos());
+
+    await userEvent.type(await screen.findByLabelText("Preço"), "0,99");
+    const online = screen.getByRole("checkbox", { name: /online, na página/i });
+    if (!(online as HTMLInputElement).checked) await userEvent.click(online);
+
+    expect(screen.getByText(/na infinitepay, o mínimo é r\$\s?1,00/i)).toBeInTheDocument();
+
+    await userEvent.clear(screen.getByLabelText("Preço"));
+    await userEvent.type(screen.getByLabelText("Preço"), "1,00");
+    expect(screen.queryByText(/na infinitepay, o mínimo é/i)).not.toBeInTheDocument();
+  });
+});
+
 describe("o membro e os planos", () => {
   beforeEach(() => navegacaoFalsa.redefinir({ pathname: "/painel/equipe/bb0", params: { id: "bb0" } }));
 

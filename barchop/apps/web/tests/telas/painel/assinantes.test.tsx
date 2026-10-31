@@ -289,3 +289,82 @@ describe("os planos no detalhe do cliente", () => {
     await waitFor(() => expect(screen.queryByRole("region", { name: "Planos" })).not.toBeInTheDocument());
   });
 });
+
+// A InfinitePay no painel (plano pagamentos-online-infinitepay, PR 7c):
+// o Recebi vale nela (decisão 10), a ativa "vale até", e o link do ciclo
+// vai pelo WhatsApp (decisão 13).
+describe("a InfinitePay no painel", () => {
+  const LINK = "https://checkout.infinitepay.io/exemplo/as3";
+  const carlosNaInfinitePay: AssinaturaDoPainel = {
+    ...carlosAtrasado,
+    id: "as3",
+    forma: "online",
+    provedor: "infinitepay",
+    situacao: "em_atraso",
+    linkDoCiclo: { url: LINK, vencimento: "2026-10-20" },
+  };
+  const carlosNoAsaas: AssinaturaDoPainel = {
+    ...carlosAtrasado,
+    id: "as4",
+    forma: "online",
+    provedor: "asaas",
+    situacao: "em_atraso",
+  };
+  const CONTA_DA_INFINITEPAY = {
+    provedor: "infinitepay" as const,
+    modo: "teste" as const,
+    chaveFinal: "4321",
+    conectadaEm: "2026-10-01T12:00:00.000Z",
+    infiniteTag: "loja-exemplo",
+    diasParaCancelar: 10,
+  };
+  const naInfinitePay = (assinaturas: AssinaturaDoPainel[]) =>
+    semear({ assinaturas, contasOnline: { casa: CONTA_DA_INFINITEPAY } });
+
+  it("na lista, o Recebi vale na da InfinitePay e ela volta a valer, até o fim do ciclo", async () => {
+    const falso = naInfinitePay([carlosNaInfinitePay]);
+    const receber = vi.spyOn(falso.barbeiro, "receberMensalidade");
+    montarPainel(<ListaDePlanos agora={AGORA} />, falso);
+    await abrirAssinantes();
+
+    await userEvent.click(await within(linhaDe("Carlos Mendes")).findByRole("button", { name: /recebi/i }));
+    const janela = await screen.findByRole("dialog", { name: /recebi a mensalidade/i });
+    await userEvent.click(within(janela).getByRole("radio", { name: "Pix" }));
+    await userEvent.click(within(janela).getByRole("button", { name: /confirmar/i }));
+
+    await waitFor(() => expect(receber).toHaveBeenCalledWith("as3", "pix"));
+    expect(await within(linhaDe("Carlos Mendes")).findByText("Ativa")).toBeInTheDocument();
+    expect(within(linhaDe("Carlos Mendes")).getByText(/vale até 24\/11/i)).toBeInTheDocument();
+  });
+
+  it("a online do Asaas segue sem o Recebi", async () => {
+    montarPainel(<ListaDePlanos agora={AGORA} />, semear({ assinaturas: [carlosNoAsaas] }));
+    await abrirAssinantes();
+
+    expect(await screen.findByText("Carlos Mendes")).toBeInTheDocument();
+    expect(within(linhaDe("Carlos Mendes")).queryByRole("button", { name: /recebi/i })).not.toBeInTheDocument();
+  });
+
+  it("no detalhe do cliente, o link do ciclo vai pelo WhatsApp, com o texto pronto", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c2", params: { id: "c2" } });
+    montarPainel(<DetalheDoCliente agora={AGORA} />, naInfinitePay([carlosNaInfinitePay]));
+    const planos = await screen.findByRole("region", { name: "Planos" });
+
+    const zap = await within(planos).findByRole("link", { name: /mandar o link pelo whatsapp/i });
+    const href = zap.getAttribute("href")!;
+    expect(href.startsWith("https://wa.me/5511999990002?text=")).toBe(true);
+    const texto = new URL(href).searchParams.get("text")!;
+    expect(texto).toContain(LINK);
+    expect(texto).toContain("Corte ilimitado");
+    expect(within(planos).getByRole("button", { name: /recebi/i })).toBeInTheDocument();
+  });
+
+  it("sem link do ciclo, não há o WhatsApp", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes/c2", params: { id: "c2" } });
+    montarPainel(<DetalheDoCliente agora={AGORA} />, semear({ assinaturas: [carlosNoAsaas] }));
+    const planos = await screen.findByRole("region", { name: "Planos" });
+
+    expect(await within(planos).findByText("Corte ilimitado")).toBeInTheDocument();
+    expect(within(planos).queryByRole("link", { name: /whatsapp/i })).not.toBeInTheDocument();
+  });
+});

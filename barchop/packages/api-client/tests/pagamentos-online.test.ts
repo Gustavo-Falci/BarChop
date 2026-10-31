@@ -433,6 +433,18 @@ describe("o dublê do cliente que assina", () => {
     expect(semPagar).toMatchObject({ pago: false, assinatura: { situacao: "pendente" } });
   });
 
+  it("no painel da InfinitePay, o plano abaixo de R$ 1,00 avisa o online indisponível", async () => {
+    const api = criarApiClientFalso({
+      ...semente(),
+      planos: [plano(), plano({ id: "pl2", nome: "Barato", precoCentavos: 99 })],
+      contasOnline: { casa: { ...CONTA, provedor: "infinitepay" as const } },
+    });
+
+    const { planos } = await api.barbeiro.planos();
+    expect(planos.find((p) => p.id === "pl2")!.onlineIndisponivel).toBe(true);
+    expect(planos.find((p) => p.id === "pl1")!.onlineIndisponivel).toBe(false);
+  });
+
   it("na vitrine da InfinitePay, o plano abaixo de R$ 1,00 fica com o online indisponível", async () => {
     const api = criarApiClientFalso({
       ...semente(),

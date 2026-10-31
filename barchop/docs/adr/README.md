@@ -19,3 +19,4 @@ Para uma decisão nova, copie `template.md` com o próximo número.
 | [0009](0009-lembrete-por-email-primeiro.md) | Lembrete por e-mail primeiro, WhatsApp oficial atrás de flag | accepted | 2026-10-04 |
 | [0010](0010-stripe-na-cobranca-do-saas.md) | Stripe na cobrança da assinatura do BarChop | accepted | 2026-10-14 |
 | [0011](0011-motion-e-dnd-kit.md) | `motion` pra animação e dnd-kit pra arrastar no web | accepted | 2026-10-21 |
+| [0012](0012-stripe-nos-planos-da-barbearia.md) | Stripe nos planos que a barbearia vende | accepted | 2026-10-31 |

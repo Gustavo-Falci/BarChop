@@ -53,6 +53,10 @@ Diferenças do plano, combinadas no caminho:
   - O "Como funciona" da vitrine nomeia o provedor só quando todo plano online é pago no mesmo; com os dois, "na página de pagamento".
   - api-client: `conectarPagamentosOnline(daCasa, provedor, chave)`; tipo `ProvedorDePagamento` em `@barchop/types`. O `falso.ts` lê o prefixo de cada provedor com as frases da API, responde `outra_conta` e só pede o CPF no Asaas.
   - Termos, Privacidade e novidades ficaram para o PR 7, como no plano.
+- **PR 7:**
+  - A vigência dos Termos e da Privacidade passou para 31/10/2026 (`controlador.ts`), como o #222 fez com a dos planos; a novidade "Planos pagos pela Stripe" é o aviso no painel que os Termos prometem.
+  - Privacidade: o CPF só "quando quem vende recebe pelo Asaas"; o que vai para a Stripe é nome, e-mail e celular, sem o CPF. A chave apagada ao desconectar vale para as duas.
+  - ADR-0012 (Stripe nos planos que a barbearia vende): chave restrita colada, sem Stripe Connect; uma conta por vendedor; só cartão. `docs/screens.md` e o roadmap citam a Stripe.
 
 ## Summary
 Quem vende (a casa ou o profissional) passa a escolher entre o Asaas e a Stripe em Pagamentos online e cola a chave da própria conta Stripe; o BarChop cria o webhook pela API, como no Asaas (sem Stripe Connect, decisão do dono em 30/10). O cliente assina na fatura da Stripe (cartão, renovação automática), e o resto — vitrine, Minha conta, assinantes, Caixa, acerto, sino — segue pelo mesmo caminho do Asaas, porque o conector da Stripe entra atrás da interface `Provedor` que já existe.

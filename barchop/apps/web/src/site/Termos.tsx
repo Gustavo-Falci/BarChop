@@ -97,21 +97,21 @@ export function Termos() {
             na página, conta os usos no caixa e soma as mensalidades no acerto do dia.
           </li>
           <li>
-            Para receber pela página, quem vende conecta a própria conta do Asaas, colando a chave de API. O
-            pagamento cai direto na conta de quem vende: o BarChop não recebe nem guarda esse dinheiro, e não cobra
-            taxa sobre essas vendas. As tarifas do Asaas, a conta e o cumprimento dos termos do Asaas são de quem
-            vende.
+            Para receber pela página, quem vende conecta a própria conta do Asaas ou da Stripe, uma por vez, colando
+            a chave de API (na Stripe, uma chave restrita). O pagamento cai direto na conta de quem vende: o BarChop
+            não recebe nem guarda esse dinheiro, e não cobra taxa sobre essas vendas. As tarifas, a conta e o
+            cumprimento dos termos do Asaas ou da Stripe são de quem vende.
           </li>
           <li>
             Cobrança, recibo, estorno e devolução da mensalidade são resolvidos entre quem vende e o cliente, pelo
-            Asaas ou no balcão. O BarChop não responde por mensalidade não paga ou contestada.
+            Asaas, pela Stripe ou no balcão. O BarChop não responde por mensalidade não paga ou contestada.
           </li>
           <li>
             O cliente pode cancelar a assinatura a qualquer momento, pela área do cliente na página: o plano deixa
-            de valer nos atendimentos, e a assinatura online para de ser cobrada no Asaas.
+            de valer nos atendimentos, e a assinatura online para de ser cobrada no Asaas ou na Stripe.
           </li>
           <li>
-            Enquanto houver assinatura online viva, a conta do Asaas não pode ser desconectada: antes, as assinaturas
+            Enquanto houver assinatura online viva, a conta do Asaas ou da Stripe não pode ser desconectada: antes, as assinaturas
             precisam ser canceladas, para que ninguém siga sendo cobrado sem o BarChop saber. Desativar um
             profissional cancela as assinaturas dos planos que essa pessoa vende.
           </li>

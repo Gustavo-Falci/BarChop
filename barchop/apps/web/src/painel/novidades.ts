@@ -10,6 +10,12 @@ export interface Novidade {
 
 export const NOVIDADES: Novidade[] = [
   {
+    data: "2026-10-31",
+    titulo: "Planos pagos pela Stripe",
+    texto:
+      "Quem vende planos agora pode receber pela Stripe, além do Asaas: em Pagamentos online, escolha a Stripe e cole uma chave restrita, com o passo a passo na tela. O cliente paga no cartão, na página da Stripe, sem o CPF, e a mensalidade entra no Caixa como as do Asaas. Os termos de uso e a política de privacidade falam da Stripe também.",
+  },
+  {
     data: "2026-10-25",
     titulo: "Termos e privacidade com os planos",
     texto:

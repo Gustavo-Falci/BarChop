@@ -71,6 +71,9 @@ Diferenças do plano, combinadas no caminho:
   - **`marcarAtrasadas`:** a varredura o chama antes, filtrado em `conexao.provedor = infinitepay`, para virar o `pagoAte` sem mexer na do balcão.
   - **Cancelar:** fecha os links abertos. O pago depois disso pede o estorno (decisão 11).
   - **Trabalho:** `ciclos-por-link`, `0 8 * * *` no fuso da barbearia, registrado no `server.ts` depois do lembrete.
+  - **Obrigatório no PR 6:** o "Recebi" numa assinatura da InfinitePay fecha, na mesma transação, o link aberto do ciclo. Senão a varredura cancela, depois da validade, uma assinatura já paga. O teste: o "Recebi" e depois uma varredura além da validade, e a assinatura tem que seguir ativa. Hoje o "Recebi" recusa assinatura online (`assinatura_online`), então isso ainda não acontece.
+  - **Valor diferente:** o link fica aberto, e a varredura cancela depois da validade, mesmo com o cliente tendo pago alguma coisa. O sino manda quem vende conferir no app, e o remédio (o "Recebi") só chega no PR 6.
+  - O sino do atraso diz como o link volta ao cliente: por e-mail, ou, sem e-mail, pelo WhatsApp que quem vende manda.
   - **Teste:** `tests/lib/ciclos-por-link.test.ts`, com o dia de hoje e datas relativas, porque a confirmação usa o relógio da barbearia. A da Stripe não tem teste próprio: o filtro é pelo provedor, e o teste cobre o Asaas e o balcão.
 
 ## Summary

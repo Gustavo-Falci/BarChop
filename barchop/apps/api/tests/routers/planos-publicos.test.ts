@@ -57,13 +57,13 @@ async function plano(c: Cenario, extra: Partial<{
   });
 }
 
-function conectar(c: Cenario, barbeiroId: string, daCasa: boolean) {
+function conectar(c: Cenario, barbeiroId: string, daCasa: boolean, provedor = "asaas") {
   return prisma.conexaoDePagamento.create({
     data: {
       barbeariaId: c.dono.barbeariaId,
       barbeiroId,
       daCasa,
-      provedor: "asaas",
+      provedor,
       modo: "teste",
       chaveCifrada: Buffer.from("cifrada"),
       chaveFinal: "9F3A",
@@ -101,6 +101,7 @@ describe("a vitrine", () => {
           diasDeTeste: 0,
           aceitaOnline: false,
           onlineIndisponivel: false,
+          pagamento: null,
           aceitaNoBalcao: true,
           servicos: [
             { servicoId: c.corte.id, nome: "Corte", usosPorCiclo: 2 },
@@ -211,6 +212,29 @@ describe("pagar online", () => {
     await conectar(c, c.dono.barbeiroId, true);
     ({ planos } = (await vitrine(c)).json());
     expect(planos[0]).toMatchObject({ aceitaOnline: true, onlineIndisponivel: false });
+    await c.app.close();
+  });
+
+  // A página pergunta o CPF e diz onde se paga pelo provedor da conta
+  // de quem vende.
+  it("diz o provedor de cada plano online e se ele pede o CPF; sem online, nulo", async () => {
+    const c = await cenario();
+    const daCasa = await plano(c, { aceitaOnline: true, aceitaNoBalcao: false });
+    const doDono = await plano(c, { vendedorId: c.dono.barbeiroId, aceitaOnline: true, aceitaNoBalcao: false });
+    const soBalcao = await plano(c, { aceitaOnline: false, aceitaNoBalcao: true });
+    await conectar(c, c.dono.barbeiroId, true, "asaas");
+    await conectar(c, c.dono.barbeiroId, false, "stripe");
+
+    const { planos } = (await vitrine(c)).json();
+    const pagamentoDe = (id: string) => planos.find((p: { id: string }) => p.id === id).pagamento;
+    expect(pagamentoDe(daCasa.id)).toEqual({ provedor: "asaas", pedeCpf: true });
+    expect(pagamentoDe(doDono.id)).toEqual({ provedor: "stripe", pedeCpf: false });
+    expect(pagamentoDe(soBalcao.id)).toBeNull();
+
+    // Sem a conta, o online fica indisponível e não há onde pagar.
+    await prisma.conexaoDePagamento.updateMany({ data: { desconectadaEm: new Date() } });
+    const depois = (await vitrine(c)).json().planos;
+    expect(depois.map((p: { pagamento: unknown }) => p.pagamento)).toEqual([null, null, null]);
     await c.app.close();
   });
 

@@ -79,14 +79,38 @@ describe("o modo da chave", () => {
 });
 
 describe("a chave", () => {
-  it("confere lendo um cliente e os webhooks (a restrita precisa das duas permissões), com a chave no Authorization", async () => {
-    const { provedor, pedido } = montar(json(resposta("clientes.json")), json(resposta("webhooks-vazio.json")));
+  // A chave restrita sem uma das leituras passaria no conectar e só
+  // falharia no webhook, que a Stripe repete até desligar: aqui ela é
+  // recusada antes.
+  it("confere lendo tudo o que o webhook relê (a restrita precisa dessas permissões), com a chave no Authorization", async () => {
+    const vazia = () => json(resposta("faturas-vazio.json"));
+    const { provedor, pedido, fetchFalso } = montar(
+      json(resposta("clientes.json")),
+      json(resposta("webhooks-vazio.json")),
+      vazia(),
+      vazia(),
+      vazia(),
+      vazia()
+    );
 
     await provedor.conferirChave();
 
-    expect(pedido(0)).toMatchObject({ url: "https://api.stripe.com/v1/customers?limit=1", metodo: "GET" });
     expect(pedido(0).cabecalhos.get("authorization")).toBe(`Bearer ${CHAVE}`);
-    expect(pedido(1)).toMatchObject({ url: "https://api.stripe.com/v1/webhook_endpoints?limit=1", metodo: "GET" });
+    expect(fetchFalso.mock.calls.map(([url, init]) => `${init?.method ?? "GET"} ${String(url)}`)).toEqual([
+      "GET https://api.stripe.com/v1/customers?limit=1",
+      "GET https://api.stripe.com/v1/webhook_endpoints?limit=1",
+      "GET https://api.stripe.com/v1/subscriptions?limit=1",
+      "GET https://api.stripe.com/v1/invoices?limit=1",
+      "GET https://api.stripe.com/v1/invoice_payments?limit=1",
+      "GET https://api.stripe.com/v1/payment_intents?limit=1",
+    ]);
+  });
+
+  it("a restrita sem a leitura dos pagamentos é recusada no conectar", async () => {
+    const vazia = () => json(resposta("faturas-vazio.json"));
+    const { provedor } = montar(json(resposta("clientes.json")), json(resposta("webhooks-vazio.json")), vazia(), vazia(), vazia(), erro(403));
+
+    await expect(provedor.conferirChave()).rejects.toMatchObject({ codigo: "chave_invalida", status: 403 });
   });
 });
 

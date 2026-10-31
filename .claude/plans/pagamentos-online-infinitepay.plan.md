@@ -36,6 +36,22 @@ Diferenças do plano, combinadas no caminho:
   - O `ContaDePagamentoOnline` ganhou `infiniteTag` e `diasParaCancelar`, que valem `null` nas outras contas.
   - O cliente da API (o `PUT` com a tag e o `PATCH` dos dias) fica para o PR 7, junto da tela. Até lá, o cliente falso e os textos da web (`PROVEDORES`) só conhecem a InfinitePay para compilar, e ela não aparece nas opções do painel.
   - O provedor de memória ganhou `tagsDasContas` (que diz se a chave é da conta da tag, como o 403 de verdade), `links` e `pagamentosDosLinks`, este último para o PR 4.
+- **PR 4:**
+  - A volta do comprador:
+    - A `redirect_url` vai **sem query**: `<página da barbearia>/minha-conta`. Sem sandbox, não dá para confirmar como a InfinitePay junta `order_nsu` e o resto a um endereço que já tem `?`.
+    - Por isso a rota de conferir é `POST /clientes/me/assinaturas/conferir-pagamento { orderNsu, transactionNsu, slug }`, sem o `:id`. O link é procurado pelo `orderNsu` dentro das assinaturas do cliente logado.
+    - A página da barbearia sai de `enderecoDasBarbearias`. Fora de produção, sem endereço, vale `http://localhost:3000/<slug>`. Em produção sem endereço (e também sem `URL_DA_API`), o assinar responde 503 `pagamentos_online_sem_endereco`.
+  - **Quem não confere de novo uma transação:** a deduplicação em `evento_do_provedor` fica dentro do `confirmarPagamentoDoLink`, e não só no webhook. Assim vale também para a volta da página.
+    - Ela olha o evento com a barbearia travada e grava só os resultados finais: `pago`, `valor_diferente` e `estornar`. O `tipo` guarda qual foi.
+    - `nao_pago` e `sem_conta` não são gravados. Assim a InfinitePay pode repetir o aviso, e a varredura pode conferir de novo.
+  - **Pagamento não confirmado:** a primeira transação e o `slug` ficam guardados no link aberto e não são mais trocados, para a varredura do PR 5.
+  - **Valor diferente** do link: não entra no Caixa, e o sino avisa "Pagamento com valor diferente".
+  - **Pago numa assinatura cancelada** ou num link fechado: o link fica `fechado` com a transação, e o sino diz "Estorne o pagamento".
+  - **Conta desligada** (sem a chave): `sem_conta`, com um registro no log. A página responde `pago: false`.
+  - Na volta da página, uma chave recusada vira 502 `provedor_indisponivel`: para o cliente, a InfinitePay só não respondeu.
+  - O piso de R$ 1,00 vale só no assinar. A vitrine ainda mostra como online um plano de R$ 0,99 numa conta da InfinitePay, e o aviso no cadastro do plano fica para o PR 7.
+  - Os testes ficaram em `assinar-infinitepay.test.ts` (o assinar e a volta da página) e `webhook-infinitepay-planos.test.ts`, com o cenário em `tests/helpers/infinitepay.ts`. Eles não entraram no `assinar-online.test.ts` porque esse cenário usa chaves do sandbox do Asaas, e a InfinitePay só conecta no modo real.
+  - Tipo novo `PagamentoConferido { pago, assinatura }`. O método no cliente da API fica para o PR 7, junto da página.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

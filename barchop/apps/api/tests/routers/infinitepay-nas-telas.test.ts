@@ -20,6 +20,7 @@ async function assinada(c: CenarioDaInfinitePay) {
   const resposta = await assinar(c, c.daCasa.id);
   expect(resposta.statusCode).toBe(201);
   const { assinatura, linkDaFatura } = resposta.json();
+  expect(assinatura.linkParaPagar).toBe(linkDaFatura);
   const link = await prisma.linkDoCiclo.findFirstOrThrow({ where: { assinaturaId: assinatura.id } });
   return { id: assinatura.id as string, url: linkDaFatura as string, link };
 }

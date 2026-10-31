@@ -173,13 +173,10 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
           viva.conexao.modo === app.provedores.modoAceito;
         if (viva.forma !== "online" || !aPagar || !contaViva) throw jaAssina();
         // Na InfinitePay, a fatura é o link aberto do ciclo, que já está
-        // no banco: nada de pedir outro.
+        // no banco: nada de pedir outro. O mesmo que a conta mostra, o que
+        // vence antes (`LINK_ABERTO`).
         if (viva.conexao!.provedor === "infinitepay") {
-          const aberto = await prisma.linkDoCiclo.findFirst({
-            where: { assinaturaId: viva.id, situacao: "aberto" },
-            orderBy: { vencimento: "desc" },
-            select: { url: true },
-          });
+          const aberto = viva.links[0];
           if (!aberto) throw jaAssina();
           return reply.code(200).send({ assinatura: await serializar(prisma, viva), linkDaFatura: aberto.url });
         }
@@ -276,7 +273,10 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
           if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") throw jaAssina();
           throw erro;
         }
-        return reply.code(201).send({ assinatura: await serializar(prisma, gravada), linkDaFatura: link?.url ?? null });
+        // A assinatura foi lida antes do link entrar na transação: o link a
+        // pagar é o que acabou de nascer.
+        const assinatura = { ...(await serializar(prisma, gravada)), linkParaPagar: link?.url ?? null };
+        return reply.code(201).send({ assinatura, linkDaFatura: link?.url ?? null });
       }
 
       let cpf: string | null = null;

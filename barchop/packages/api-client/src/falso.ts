@@ -2663,7 +2663,10 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         contarAssinante(plano.id, 1);
         // Na Stripe, a fatura de R$ 0 do teste grátis nasce paga: não há
         // fatura aberta até o fim do teste (o conector devolve null).
-        const semFaturaAgora = emTeste && naVitrine.pagamento.provedor === "stripe";
+        // Na InfinitePay, em teste, o link do primeiro pagamento sai na
+        // varredura, 3 dias antes do fim do teste.
+        const semFaturaAgora =
+          emTeste && (naVitrine.pagamento.provedor === "stripe" || naVitrine.pagamento.provedor === "infinitepay");
         return {
           assinatura: naConta(nova),
           linkDaFatura: semFaturaAgora ? null : faturaFalsa(nova.id, naVitrine.pagamento.provedor),

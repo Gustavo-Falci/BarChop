@@ -312,6 +312,11 @@ describe("o dublê do cliente que assina", () => {
     const recebida = await api.barbeiro.receberMensalidade(criada.assinatura.id, "pix");
     expect(recebida.assinatura).toMatchObject({ situacao: "ativa", linkDoCiclo: null });
     expect((await api.cliente.minhasAssinaturas())[0]!.linkParaPagar).toBeNull();
+
+    // Em teste, como na API, o link ainda não saiu.
+    const comTeste = await api.cliente.assinarPlano("pl2");
+    expect(comTeste.linkDaFatura).toBeNull();
+    expect(comTeste.assinatura.linkParaPagar).toBeNull();
   });
 
   it("volta pra fatura da pendente; ja_assina na ativa; plano fora da vitrine é indisponível", async () => {

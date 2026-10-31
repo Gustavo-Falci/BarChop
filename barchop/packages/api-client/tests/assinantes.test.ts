@@ -109,6 +109,7 @@ const doGustavoEmDia: AssinaturaDoPainel = {
   cicloTerminaEm: "2026-11-10",
   canceladaEm: null,
   linkDoCiclo: null,
+  provedor: null,
   criadoEm: "2026-10-10T12:00:00.000Z",
   cliente: { id: "c9", nome: "Bruno Lima", telefone: "11988887777" },
   plano: { id: "pl2", nome: "2 cortes", daCasa: false, vendedor: { id: "bb0", nome: "Gustavo" } },

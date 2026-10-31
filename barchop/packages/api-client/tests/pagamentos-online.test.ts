@@ -276,6 +276,7 @@ describe("o dublê da conta de quem vende", () => {
       cicloTerminaEm: "2026-11-01",
       canceladaEm: null,
       linkDoCiclo: null,
+      provedor: null,
       criadoEm: "2026-10-01T12:00:00.000Z",
       cliente: { id: "c1", nome: "Caio", telefone: "+5511999998888" },
       plano: { id: "pl1", nome: "Corte ilimitado", daCasa: true, vendedor: null },
@@ -431,6 +432,18 @@ describe("o dublê do cliente que assina", () => {
       slug: "f1",
     });
     expect(semPagar).toMatchObject({ pago: false, assinatura: { situacao: "pendente" } });
+  });
+
+  it("no painel da InfinitePay, o plano abaixo de R$ 1,00 avisa o online indisponível", async () => {
+    const api = criarApiClientFalso({
+      ...semente(),
+      planos: [plano(), plano({ id: "pl2", nome: "Barato", precoCentavos: 99 })],
+      contasOnline: { casa: { ...CONTA, provedor: "infinitepay" as const } },
+    });
+
+    const { planos } = await api.barbeiro.planos();
+    expect(planos.find((p) => p.id === "pl2")!.onlineIndisponivel).toBe(true);
+    expect(planos.find((p) => p.id === "pl1")!.onlineIndisponivel).toBe(false);
   });
 
   it("na vitrine da InfinitePay, o plano abaixo de R$ 1,00 fica com o online indisponível", async () => {

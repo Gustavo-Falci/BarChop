@@ -146,7 +146,7 @@ const TEMAS: { tema: string; perguntas: Pergunta[] }[] = [
         resposta: [
           "O dono liga Mostrar os planos na página, em ",
           { href: "/painel/planos", rotulo: "Planos" },
-          ". Pra vender online, quem vende conecta a conta do Asaas ou da Stripe em ",
+          ". Pra vender online, quem vende conecta a conta do Asaas, da Stripe ou da InfinitePay em ",
           { href: "/painel/configuracoes/pagamentos-online", rotulo: "Pagamentos online" },
           ": o cliente entra, assina e paga na fatura do provedor (no Asaas, Pix, cartão ou boleto; na Stripe, cartão). Sem a conta conectada, a página oferece só o balcão.",
         ],

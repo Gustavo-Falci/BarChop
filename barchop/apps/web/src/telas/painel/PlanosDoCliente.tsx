@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { AssinaturaDoPainel, PlanoDoPainel } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
-import { Botao } from "../../componentes/Botao";
+import { Botao, BotaoLink } from "../../componentes/Botao";
 import { Chip } from "../../componentes/Chip";
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import { useRequisicao } from "../../api/useRequisicao";
@@ -16,9 +16,12 @@ import {
   diaEMes,
   fraseDoCiclo,
   fraseDoRecebido,
+  linkDoCicloPeloZap,
   podeReceber,
+  porLink,
   precoDoCiclo,
 } from "../../painel/planos";
+import { linkDoZap } from "../../painel/whatsapp";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { JanelaDoRecebi } from "./JanelaDoRecebi";
 import estilos from "./PlanosDoCliente.module.css";
@@ -49,6 +52,8 @@ function Assinatura({
   const [confirmando, setConfirmando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
   const [aviso, setAviso] = useState<string | undefined>();
+  // Na InfinitePay, o link aberto do ciclo, pra mandar a quem assina.
+  const zap = linkDoCicloPeloZap(assinatura, linkDoZap(assinatura.cliente.telefone));
 
   async function cancelar() {
     setAviso(undefined);
@@ -77,7 +82,11 @@ function Assinatura({
 
       {confirmando ? (
         <div className={estilos.confirmacao}>
-          <p>O plano deixa de valer nos atendimentos a partir de agora.</p>
+          <p>
+            {porLink(assinatura)
+              ? "Os links das próximas mensalidades param, e o plano deixa de valer nos atendimentos a partir de agora."
+              : "O plano deixa de valer nos atendimentos a partir de agora."}
+          </p>
           {aviso ? <Aviso>{aviso}</Aviso> : null}
           <div className={estilos.botoes}>
             <Botao variante="fantasma" onClick={() => setConfirmando(false)} disabled={cancelando}>
@@ -93,6 +102,11 @@ function Assinatura({
           <Botao variante="fantasma" onClick={() => setConfirmando(true)}>
             Cancelar assinatura
           </Botao>
+          {zap ? (
+            <BotaoLink href={zap} variante="contorno" externo>
+              Mandar o link pelo WhatsApp
+            </BotaoLink>
+          ) : null}
           {podeReceber(assinatura, hoje) ? <Botao onClick={aoReceber}>Recebi</Botao> : null}
         </div>
       )}

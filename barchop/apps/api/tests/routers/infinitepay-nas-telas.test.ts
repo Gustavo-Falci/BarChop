@@ -204,3 +204,34 @@ describe("a conta e a vitrine (PR 7b)", () => {
     expect((await prisma.assinaturaDoCliente.findUniqueOrThrow({ where: { id } })).situacao).toBe("cancelada");
   });
 });
+
+// PR 7c: o painel das assinaturas e o cadastro do plano.
+describe("o painel (PR 7c)", () => {
+  it("a assinatura do painel diz o provedor; a do balcão, nulo", async () => {
+    const c = await cenarioDaInfinitePay();
+    const { id } = await assinada(c);
+    const balcao = await c.plano({ nome: "Balcão", aceitaOnline: false, aceitaNoBalcao: true });
+    const noBalcao = await c.app.inject({
+      method: "POST",
+      url: `/clientes/${c.cliente.clienteId}/assinaturas`,
+      headers: auth(c.dono.token),
+      payload: { planoId: balcao.id },
+    });
+
+    const assinantes = await noPainel(c);
+    expect(assinantes.find((a: { id: string }) => a.id === id).provedor).toBe("infinitepay");
+    expect(assinantes.find((a: { id: string }) => a.id === noBalcao.json().id).provedor).toBeNull();
+  });
+
+  it("no painel, o plano da InfinitePay abaixo de R$ 1,00 fica com o online indisponível", async () => {
+    const c = await cenarioDaInfinitePay();
+    const barato = await c.plano({ nome: "Barato", precoCentavos: 99 });
+
+    const { planos } = (
+      await c.app.inject({ method: "GET", url: "/barbearias/me/planos", headers: auth(c.dono.token) })
+    ).json();
+
+    expect(planos.find((p: { id: string }) => p.id === barato.id).onlineIndisponivel).toBe(true);
+    expect(planos.find((p: { id: string }) => p.id === c.daCasa.id).onlineIndisponivel).toBe(false);
+  });
+});

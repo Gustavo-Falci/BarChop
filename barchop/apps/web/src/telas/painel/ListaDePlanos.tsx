@@ -185,7 +185,7 @@ export function ListaDePlanos({ agora }: { agora?: Date } = {}) {
           dele se acha daqui. */}
       {podeMexer ? (
         <p className={estilos.efeito}>
-          Pra vender online, quem vende conecta a conta do Asaas ou da Stripe em{" "}
+          Pra vender online, quem vende conecta a conta do Asaas, da Stripe ou da InfinitePay em{" "}
           <Link href="/painel/configuracoes/pagamentos-online">Pagamentos online</Link>.
         </p>
       ) : null}

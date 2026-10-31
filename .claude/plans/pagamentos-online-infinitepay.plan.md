@@ -60,6 +60,21 @@ Diferenças do plano, combinadas no caminho:
   - O piso de R$ 1,00 vale só no assinar. A vitrine ainda mostra como online um plano de R$ 0,99 numa conta da InfinitePay, e o aviso no cadastro do plano fica para o PR 7.
   - Os testes ficaram em `assinar-infinitepay.test.ts` (o assinar e a volta da página) e `webhook-infinitepay-planos.test.ts`, com o cenário em `tests/helpers/infinitepay.ts`. Eles não entraram no `assinar-online.test.ts` porque esse cenário usa chaves do sandbox do Asaas, e a InfinitePay só conecta no modo real.
   - Tipo novo `PagamentoConferido { pago, assinatura }`. O método no cliente da API fica para o PR 7, junto da página.
+- **PR 5:**
+  - **Cancelamento no dia seguinte:** a assinatura cancela no dia seguinte ao `valido_ate` do link aberto, e não no próprio dia (`hoje ≥ vencimento + N`). O link vale até as 23:59 do último dia, e cancelar antes faria quem paga nesse dia cair no "estorne".
+    - A regra olha qualquer link aberto com a validade vencida. Assim vale também para a pendente do primeiro link, cuja validade foi fixada quando ela foi criada (decisão 6).
+  - **O link do assinar não vai por e-mail:** ele já nasce com `enviado_em`, porque o cliente o recebe na tela. Por isso a varredura não manda e-mail com ele nem pede pelo sino para mandar pelo WhatsApp.
+  - **Reenvio no atraso:** só por e-mail, uma vez por link (`reenviado_em`). Cliente sem e-mail não gera um sino a mais, porque o "Pagamento em atraso" já avisou quem vende.
+  - **Falhas:** a falha numa assinatura vai para o log e não para as outras. O trabalho não lança, e o que não saiu hoje sai na varredura de amanhã:
+    - e-mail que falha devolve a marca (`enviado_em` ou `reenviado_em`);
+    - a InfinitePay fora do ar não impede o atraso nem o cancelamento.
+  - **`marcarAtrasadas`:** a varredura o chama antes, filtrado em `conexao.provedor = infinitepay`, para virar o `pagoAte` sem mexer na do balcão.
+  - **Cancelar:** fecha os links abertos. O pago depois disso pede o estorno (decisão 11).
+  - **Trabalho:** `ciclos-por-link`, `0 8 * * *` no fuso da barbearia, registrado no `server.ts` depois do lembrete.
+  - **Obrigatório no PR 6:** o "Recebi" numa assinatura da InfinitePay fecha, na mesma transação, o link aberto do ciclo. Senão a varredura cancela, depois da validade, uma assinatura já paga. O teste: o "Recebi" e depois uma varredura além da validade, e a assinatura tem que seguir ativa. Hoje o "Recebi" recusa assinatura online (`assinatura_online`), então isso ainda não acontece.
+  - **Valor diferente:** o link fica aberto, e a varredura cancela depois da validade, mesmo com o cliente tendo pago alguma coisa. O sino manda quem vende conferir no app, e o remédio (o "Recebi") só chega no PR 6.
+  - O sino do atraso diz como o link volta ao cliente: por e-mail, ou, sem e-mail, pelo WhatsApp que quem vende manda.
+  - **Teste:** `tests/lib/ciclos-por-link.test.ts`, com o dia de hoje e datas relativas, porque a confirmação usa o relógio da barbearia. A da Stripe não tem teste próprio: o filtro é pelo provedor, e o teste cobre o Asaas e o balcão.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

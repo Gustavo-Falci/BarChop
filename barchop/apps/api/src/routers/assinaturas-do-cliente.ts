@@ -261,7 +261,7 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
               },
               include: INCLUDE_NA_CONTA,
             });
-            if (link) await tx.linkDoCiclo.create({ data: linkParaGravar(barbeariaId, id, link) });
+            if (link) await tx.linkDoCiclo.create({ data: linkParaGravar(barbeariaId, id, link, new Date()) });
             return criada;
           });
         } catch (erro) {

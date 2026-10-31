@@ -826,12 +826,31 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     },
 
     // Conectar, ou trocar a chave da mesma conta. Com a conta ligada de
-    // outro provedor, 422 `outra_conta`: desconecte antes.
-    conectarPagamentosOnline(daCasa: boolean, provedor: ProvedorDePagamento, chave: string): Promise<PagamentosOnline> {
+    // outro provedor, 422 `outra_conta`: desconecte antes. A InfinitePay
+    // pede a InfiniteTag (`tag`, com ou sem o $); trocar a tag é outra
+    // conta. As outras não levam tag.
+    conectarPagamentosOnline(
+      daCasa: boolean,
+      provedor: ProvedorDePagamento,
+      chave: string,
+      tag?: string
+    ): Promise<PagamentosOnline> {
       return requisicao("/barbearias/me/pagamentos-online", {
         metodo: "PUT",
         query: filtroDaConta(daCasa),
-        corpo: { provedor, chave },
+        corpo: tag === undefined ? { provedor, chave } : { provedor, chave, tag },
+        comToken: true,
+      });
+    },
+
+    // Só na InfinitePay (422 `so_na_infinitepay` nas outras): os dias sem
+    // pagamento até a assinatura cancelar, de 3 a 30. Valem para os links
+    // novos (plano pagamentos-online-infinitepay, decisão 2).
+    mudarDiasParaCancelar(daCasa: boolean, diasParaCancelar: number): Promise<PagamentosOnline> {
+      return requisicao("/barbearias/me/pagamentos-online", {
+        metodo: "PATCH",
+        query: filtroDaConta(daCasa),
+        corpo: { diasParaCancelar },
         comToken: true,
       });
     },

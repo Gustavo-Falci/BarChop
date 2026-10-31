@@ -313,3 +313,110 @@ describe("pagamentos online", () => {
     await waitFor(() => expect(linha).toHaveTextContent(/chave terminando em 1234/i));
   });
 });
+
+// A InfinitePay em Pagamentos online (plano pagamentos-online-infinitepay,
+// PR 7): a InfiniteTag e a chave, o guia, como funciona sem renovação
+// automática e os dias para cancelar. Sem chave de teste, só conecta no
+// modo real.
+describe("a InfinitePay", () => {
+  const SO_A_CASA = [{ ...RAFAEL, atende: false }];
+  const CONTA_DA_INFINITEPAY: ContaDePagamentoOnline = {
+    provedor: "infinitepay",
+    modo: "real",
+    chaveFinal: "4321",
+    conectadaEm: "2026-10-25T15:00:00.000Z",
+    infiniteTag: "loja-exemplo",
+    diasParaCancelar: 10,
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes/pagamentos-online" });
+  });
+
+  it("escolhida: o guia em 3 passos, como funciona e os dois campos; conecta com a tag", async () => {
+    const falso = montarPainel(<PagamentosOnline />, semear({ equipe: SO_A_CASA, modoAceito: "real" }));
+    const casa = await screen.findByRole("region", { name: "Conta da casa" });
+
+    await userEvent.click(screen.getByRole("radio", { name: "InfinitePay" }));
+
+    expect(screen.getByText(/por um link a cada mensalidade/i)).toBeInTheDocument();
+    const guia = screen.getByRole("region", { name: "Como pegar a chave na InfinitePay" });
+    const passos = within(guia).getAllByRole("listitem");
+    expect(passos).toHaveLength(3);
+    expect(passos[0]).toHaveTextContent(/checkout integrado/i);
+    expect(passos[2]).toHaveTextContent("inchk_");
+    const comoFunciona = screen.getByRole("region", { name: "Como funciona na InfinitePay" });
+    expect(comoFunciona).toHaveTextContent(/não renova sozinh/i);
+    expect(comoFunciona).toHaveTextContent(/3 dias antes/i);
+    expect(comoFunciona).toHaveTextContent(/whatsapp/i);
+    expect(comoFunciona).toHaveTextContent(/em atraso/i);
+    expect(comoFunciona).toHaveTextContent(/cancelada/i);
+
+    await userEvent.type(within(casa).getByLabelText("InfiniteTag"), "$loja-exemplo");
+    const campo = within(casa).getByLabelText("Chave de API da InfinitePay");
+    expect(campo).toHaveAttribute("type", "password");
+    await userEvent.type(campo, "inchk_chave-secreta-9876");
+    await userEvent.click(within(casa).getByRole("button", { name: "Conectar" }));
+
+    expect(await within(casa).findByText(/chave terminando em 9876/i)).toBeInTheDocument();
+    expect(within(casa).getByText(/\$loja-exemplo/)).toBeInTheDocument();
+    expect(falso.estado.contasOnline!.casa).toMatchObject({ provedor: "infinitepay", infiniteTag: "loja-exemplo" });
+    expect(within(casa).getByLabelText("Dias sem pagamento até cancelar")).toHaveValue(10);
+    // Conectada, o guia sai; como funciona fica, porque segue valendo.
+    expect(screen.queryByRole("region", { name: "Como pegar a chave na InfinitePay" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Como funciona na InfinitePay" })).toBeInTheDocument();
+  });
+
+  it("sem a tag, o erro fica no campo da tag", async () => {
+    montarPainel(<PagamentosOnline />, semear({ equipe: SO_A_CASA, modoAceito: "real" }));
+    const casa = await screen.findByRole("region", { name: "Conta da casa" });
+    await userEvent.click(screen.getByRole("radio", { name: "InfinitePay" }));
+
+    await userEvent.type(within(casa).getByLabelText("Chave de API da InfinitePay"), "inchk_chave-9876");
+    await userEvent.click(within(casa).getByRole("button", { name: "Conectar" }));
+
+    expect(await within(casa).findByText(/pede a infinitetag/i)).toBeInTheDocument();
+    expect(within(casa).getByLabelText("InfiniteTag")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("no modo de teste, não conecta: a InfinitePay não tem chave de teste", async () => {
+    montarPainel(<PagamentosOnline />, semear({ equipe: SO_A_CASA }));
+    const casa = await screen.findByRole("region", { name: "Conta da casa" });
+    await userEvent.click(screen.getByRole("radio", { name: "InfinitePay" }));
+
+    expect(within(casa).getByText(/não tem chave de teste/i)).toBeInTheDocument();
+    expect(within(casa).queryByRole("button", { name: "Conectar" })).not.toBeInTheDocument();
+    expect(within(casa).queryByLabelText("InfiniteTag")).not.toBeInTheDocument();
+  });
+
+  it("conectada: muda os dias para cancelar, e trocar a chave mantém a tag", async () => {
+    const falso = montarPainel(
+      <PagamentosOnline />,
+      semear({ equipe: SO_A_CASA, modoAceito: "real", contasOnline: { casa: CONTA_DA_INFINITEPAY } })
+    );
+    const casa = await screen.findByRole("region", { name: "Conta da casa" });
+    expect(screen.getByRole("region", { name: "Como funciona na InfinitePay" })).toBeInTheDocument();
+
+    const dias = within(casa).getByLabelText("Dias sem pagamento até cancelar");
+    await userEvent.clear(dias);
+    await userEvent.type(dias, "40");
+    await userEvent.click(within(casa).getByRole("button", { name: "Salvar os dias" }));
+    expect(await within(casa).findByText(/de 3 a 30 dias/i)).toBeInTheDocument();
+    expect(falso.estado.contasOnline!.casa).toMatchObject({ diasParaCancelar: 10 });
+
+    await userEvent.clear(dias);
+    await userEvent.type(dias, "15");
+    await userEvent.click(within(casa).getByRole("button", { name: "Salvar os dias" }));
+    expect(await within(casa).findByRole("status")).toHaveTextContent("Dias salvos.");
+    expect(falso.estado.contasOnline!.casa).toMatchObject({ diasParaCancelar: 15 });
+
+    await userEvent.click(within(casa).getByRole("button", { name: "Trocar a chave" }));
+    expect(within(casa).queryByLabelText("InfiniteTag")).not.toBeInTheDocument();
+    await userEvent.type(within(casa).getByLabelText("Chave de API da InfinitePay"), "inchk_chave-nova-5555");
+    await userEvent.click(within(casa).getByRole("button", { name: "Salvar a chave nova" }));
+
+    expect(await within(casa).findByText(/chave terminando em 5555/i)).toBeInTheDocument();
+    expect(falso.estado.contasOnline!.casa).toMatchObject({ infiniteTag: "loja-exemplo", diasParaCancelar: 15 });
+  });
+});

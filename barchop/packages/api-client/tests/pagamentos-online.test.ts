@@ -55,6 +55,31 @@ describe("as rotas", () => {
     expect(corpoDa(fetchFalso, 4)).toEqual({ provedor: "stripe", chave: "rk_test_x" });
   });
 
+  // Plano pagamentos-online-infinitepay, PR 7: a InfinitePay leva a
+  // InfiniteTag no conectar, e os dias para cancelar mudam no PATCH.
+  it("a InfinitePay: a tag vai no corpo do conectar; os dias, no PATCH", async () => {
+    const conta = { daCasa: true, modoAceito: "real", conta: null };
+    const fetchFalso = vi
+      .fn()
+      .mockResolvedValueOnce(respostaJson(conta))
+      .mockResolvedValueOnce(respostaJson(conta))
+      .mockResolvedValueOnce(respostaJson(conta));
+    const api = cliente(fetchFalso);
+
+    await api.barbeiro.conectarPagamentosOnline(true, "infinitepay", "inchk_x", "$barbearia-exemplo");
+    await api.barbeiro.conectarPagamentosOnline(true, "asaas", "$aact_hmlg_x");
+    await api.barbeiro.mudarDiasParaCancelar(true, 15);
+
+    expect(chamadasDe(fetchFalso)).toEqual([
+      ["https://api.exemplo.br/barbearias/me/pagamentos-online?daCasa=true", "PUT"],
+      ["https://api.exemplo.br/barbearias/me/pagamentos-online?daCasa=true", "PUT"],
+      ["https://api.exemplo.br/barbearias/me/pagamentos-online?daCasa=true", "PATCH"],
+    ]);
+    expect(corpoDa(fetchFalso, 0)).toEqual({ provedor: "infinitepay", chave: "inchk_x", tag: "$barbearia-exemplo" });
+    expect(corpoDa(fetchFalso, 1)).toEqual({ provedor: "asaas", chave: "$aact_hmlg_x" });
+    expect(corpoDa(fetchFalso, 2)).toEqual({ diasParaCancelar: 15 });
+  });
+
   it("a vitrine e as assinaturas do cliente; CPF vazio não vai no corpo", async () => {
     const fetchFalso = vi
       .fn()
@@ -132,6 +157,56 @@ const COMPLETO = {
 };
 
 describe("o dublê da conta de quem vende", () => {
+  // As frases e as regras da API (routers/pagamentos-online.ts) na
+  // InfinitePay: sem chave de teste, a tag obrigatória, e trocar a tag é
+  // outra conta.
+  it("a InfinitePay: só no modo real, com a tag; os dias para cancelar começam em 10", async () => {
+    const semente = { assinatura: { ...criarApiClientFalso().estado.assinatura!, ...COMPLETO } };
+    const noTeste = criarApiClientFalso(semente);
+    await expect(noTeste.barbeiro.conectarPagamentosOnline(true, "infinitepay", "inchk_abcd", "loja")).rejects.toMatchObject({
+      codigo: "modo_errado",
+      mensagem: "a InfinitePay não tem chave de teste, e aqui só vale a de teste",
+    });
+
+    const api = criarApiClientFalso({ ...semente, modoAceito: "real" });
+    await expect(api.barbeiro.conectarPagamentosOnline(true, "infinitepay", "inchk_abcd")).rejects.toMatchObject({
+      codigo: "tag_obrigatoria",
+    });
+    await expect(api.barbeiro.conectarPagamentosOnline(true, "infinitepay", "inchk_abcd", "minha loja")).rejects.toMatchObject({
+      codigo: "tag_invalida",
+    });
+
+    const conectada = await api.barbeiro.conectarPagamentosOnline(true, "infinitepay", "inchk_abcd9876", " $loja-exemplo ");
+    expect(conectada.conta).toMatchObject({
+      provedor: "infinitepay",
+      modo: "real",
+      chaveFinal: "9876",
+      infiniteTag: "loja-exemplo",
+      diasParaCancelar: 10,
+    });
+    await expect(api.barbeiro.conectarPagamentosOnline(true, "infinitepay", "inchk_wxyz", "outra-loja")).rejects.toMatchObject({
+      codigo: "outra_conta",
+      mensagem: "a conta conectada é a da InfiniteTag loja-exemplo: desconecte antes de conectar outra",
+    });
+
+    expect((await api.barbeiro.mudarDiasParaCancelar(true, 20)).conta).toMatchObject({ diasParaCancelar: 20 });
+    await expect(api.barbeiro.mudarDiasParaCancelar(true, 2)).rejects.toMatchObject({ status: 400 });
+    // Trocar a chave mantém os dias.
+    expect((await api.barbeiro.conectarPagamentosOnline(true, "infinitepay", "inchk_nova4321", "loja-exemplo")).conta).toMatchObject({
+      chaveFinal: "4321",
+      diasParaCancelar: 20,
+    });
+  });
+
+  it("os dias para cancelar são só da InfinitePay; sem conta, 404", async () => {
+    const api = criarApiClientFalso({
+      assinatura: { ...criarApiClientFalso().estado.assinatura!, ...COMPLETO },
+      contasOnline: { casa: CONTA },
+    });
+    await expect(api.barbeiro.mudarDiasParaCancelar(true, 15)).rejects.toMatchObject({ codigo: "so_na_infinitepay" });
+    await expect(api.barbeiro.mudarDiasParaCancelar(false, 15)).rejects.toMatchObject({ status: 404 });
+  });
+
   it("conecta pelo prefixo da chave, mostra só a final e desconecta", async () => {
     const api = criarApiClientFalso({ assinatura: { ...criarApiClientFalso().estado.assinatura!, ...COMPLETO } });
 

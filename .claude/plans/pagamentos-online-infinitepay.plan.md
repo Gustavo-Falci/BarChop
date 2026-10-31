@@ -74,6 +74,7 @@ Diferenças do plano, combinadas no caminho:
   - **Obrigatório no PR 6:** o "Recebi" numa assinatura da InfinitePay fecha, na mesma transação, o link aberto do ciclo. Senão a varredura cancela, depois da validade, uma assinatura já paga. O teste: o "Recebi" e depois uma varredura além da validade, e a assinatura tem que seguir ativa. Hoje o "Recebi" recusa assinatura online (`assinatura_online`), então isso ainda não acontece.
   - **Valor diferente:** o link fica aberto, e a varredura cancela depois da validade, mesmo com o cliente tendo pago alguma coisa. O sino manda quem vende conferir no app, e o remédio (o "Recebi") só chega no PR 6.
   - O sino do atraso diz como o link volta ao cliente: por e-mail, ou, sem e-mail, pelo WhatsApp que quem vende manda.
+  - **Teste:** `tests/lib/ciclos-por-link.test.ts`, com o dia de hoje e datas relativas, porque a confirmação usa o relógio da barbearia. A da Stripe não tem teste próprio: o filtro é pelo provedor, e o teste cobre o Asaas e o balcão.
 - **PR 6:**
   - **O link nas telas:** com dois links abertos, as telas mostram o que vence antes, porque é o que destrava o ciclo. Na conta do cliente o campo é `linkParaPagar`; no painel, `linkDoCiclo`. O `include` fica num lugar só, `LINK_ABERTO` em `links-do-ciclo.ts`.
     - Os dois campos são obrigatórios nos tipos e valem null fora da InfinitePay. Assim o `tsc` acusou cada fixture.
@@ -91,7 +92,23 @@ Diferenças do plano, combinadas no caminho:
   - **A vitrine não mudou:** já dava `{ provedor: "infinitepay", pedeCpf: false }`, e agora há um teste disso. A web ganhou `renovaSozinho` em `provedores.ts` (falso só na InfinitePay), para as telas do PR 7.
   - **Testes:** `tests/routers/infinitepay-nas-telas.test.ts`, em vez de espalhar casos por `assinantes`, `clientes-me` e `planos-publicos`.
     - No api-client, o dublê tem o link da InfinitePay e o "Recebi" nela.
-  - **Teste:** `tests/lib/ciclos-por-link.test.ts`, com o dia de hoje e datas relativas, porque a confirmação usa o relógio da barbearia. A da Stripe não tem teste próprio: o filtro é pelo provedor, e o teste cobre o Asaas e o balcão.
+- **PR 7, dividido em três:**
+  - **7a:** Pagamentos online e o api-client.
+  - **7b:** a vitrine, a Minha conta e a página de volta do pagamento.
+  - **7c:** o painel das assinaturas (WhatsApp e "Recebi") e o aviso do mínimo no cadastro do plano.
+  - O motivo: cada um fica com o seu ciclo de TDD e uma revisão de tamanho razoável.
+- **PR 7a:**
+  - **api-client:**
+    - `conectarPagamentosOnline(daCasa, provedor, chave, tag?)`: a tag só vai no corpo quando vem;
+    - `mudarDiasParaCancelar(daCasa, dias)` para o `PATCH`.
+    - O dublê segue as regras da API: a tag como o `lerTag` lê, `tag_obrigatoria` e `tag_invalida`, `outra_conta` com a tag diferente, a frase do `modo_errado` sem chave de teste, os 10 dias por padrão, trocar a chave mantendo os dias, e o `PATCH` com 400 fora de 3 a 30, 404 sem conta e `so_na_infinitepay`.
+  - **No modo de teste**, a conta escolhida na InfinitePay mostra a frase "não tem chave de teste" no lugar do formulário (decisão 14). A pílula aparece nos dois modos, com o guia e o quadro.
+  - **A InfiniteTag só aparece no primeiro conectar.** Para trocar a chave, a tela manda a tag gravada, porque trocar a tag é outra conta e pede desconectar antes.
+  - **Os dias para cancelar** aparecem para quem vê a conta conectada da InfinitePay, sem pedir o Completo, como o `PATCH`. A tela confere de 3 a 30 antes de enviar. O texto diz que valem para os próximos links, porque o que já saiu tem a validade gravada.
+  - **"Como funciona na InfinitePay"** fica à vista enquanto ela é a escolhida no guia ou a conta conectada.
+  - **O guia não cita os menus da InfinitePay:** a documentação não diz o caminho exato, então ele diz "nas configurações da conta" e aponta para a documentação do checkout.
+  - **O estado das contas mudadas na página** passou de booleano para o provedor, para o quadro saber quando a conta conectada é a InfinitePay.
+  - **A conferência visual em 375 e 1440** fica para o 7c, de uma vez em todas as telas: a web não tem modo com o dublê, e a InfinitePay só conecta no modo real.
 
 ## Summary
 Quem vende passa a poder conectar a InfinitePay em Pagamentos online, colando a InfiniteTag e uma chave de API `inchk_`. A InfinitePay não tem assinatura recorrente: **o BarChop é quem toca o ciclo**. A cada ciclo, ele gera um link de pagamento único, manda ao cliente por e-mail e deixa um botão "Mandar pelo WhatsApp" para quem vende. Quando o link é pago, a confirmação vem pela própria InfinitePay (`/payment_check`, nunca só o aviso). O ciclo é ativado e a mensalidade entra no Caixa e no acerto pelo mesmo `registrarPagamento` do Asaas e da Stripe. Sem pagamento, a assinatura fica Em atraso e é cancelada sozinha depois dos dias que quem vende escolheu.

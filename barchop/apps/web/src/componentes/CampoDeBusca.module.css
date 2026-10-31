@@ -99,3 +99,12 @@
   font-family: var(--fonte-corpo), system-ui, sans-serif;
   font-size: var(--texto-xs);
 }
+
+/* Sem teclado físico (celular, tablet), a tecla / não existe: a dica
+   ocupava o campo sem ensinar nada. Por `hover: none`, e não pela
+   largura: a janela estreita do desktop ainda tem teclado. */
+@media (hover: none) {
+  .atalho {
+    display: none;
+  }
+}

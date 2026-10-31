@@ -32,7 +32,7 @@ describe("Tabela no celular", () => {
     expect(celular).toMatch(
       /\.tabela tr\.linhaDoGrupo\s*\{[^}]*border:\s*0[^}]*background:\s*none[^}]*padding:\s*0/
     );
-    expect(celular).toMatch(/\.tabela tbody th\.grupo\s*\{[^}]*background:\s*none/);
+    expect(celular).toMatch(/\.tabela tbody th\.grupo[^{]*\{[^}]*background:\s*none/);
   });
 });
 

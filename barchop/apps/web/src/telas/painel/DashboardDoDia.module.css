@@ -49,9 +49,21 @@
 
   .numeros > * {
     padding: var(--espaco-sm);
+    container-type: inline-size;
   }
 
+  /* O número acompanha a largura da coluna: a 360px sobram 94px, e
+     "R$ 1.380,00" (5,4em) a 20px cortava. 16cqi dá 15px ali e 17px a
+     390px; o piso é o texto pequeno, o teto o tamanho de antes. */
   .numeros > * > :first-child {
     font-size: var(--texto-lg);
+    font-size: clamp(var(--texto-sm), 16cqi, var(--texto-lg));
+  }
+
+  /* A legenda numa linha só: "agendados", "ainda hoje" e "previsto"
+     cabem nos ~100px de cada coluna a 360px. A antiga "agendamentos
+     hoje" quebrava em duas e desalinhava os três (redesenho, PR 2). */
+  .numeros > * > :last-child {
+    white-space: nowrap;
   }
 }

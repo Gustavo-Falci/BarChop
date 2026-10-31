@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CodigoQr, carregarQrcode, OPCOES_DO_QR } from "../../../componentes/CodigoQr";
-import { urlDoWhatsApp } from "../../../painel/compartilhar";
+import { copiarLink, urlDoWhatsApp } from "../../../painel/compartilhar";
 import estilos from "./JanelaDeCompartilhar.module.css";
 import { depoisDaSaida } from "../../../movimento/depoisDaSaida";
 
@@ -34,12 +34,7 @@ export function JanelaDeCompartilhar({
   }, []);
 
   async function copiar() {
-    try {
-      await navigator.clipboard.writeText(link);
-    } catch {
-      // Sem permissão de área de transferência (navegador antigo, http
-      // fora do localhost): o link fica à vista pra copiar à mão, e o
-      // passo não marca — nada foi copiado.
+    if (!(await copiarLink(link))) {
       setAviso(`Não deu pra copiar daqui. Seu link: ${link}`);
       return;
     }

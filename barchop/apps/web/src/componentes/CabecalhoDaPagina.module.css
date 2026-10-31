@@ -68,3 +68,13 @@
     flex: 1 1 160px;
   }
 }
+
+/* A ação que só vale com a barra lateral: abaixo de 900px a barra de
+   baixo assume (o "Novo" do centro dela). A mesma consulta de
+   CONSULTA_DO_CELULAR e da NavegacaoDoPainel, senão entre 641 e 900px
+   haveria dois "Novo", ou nenhum. */
+@media (max-width: 900px) {
+  .acao[data-so-no-desktop] {
+    display: none;
+  }
+}

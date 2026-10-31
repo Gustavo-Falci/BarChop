@@ -64,10 +64,10 @@ describe("Hoje", () => {
     );
 
     await proximosAtendimentos();
-    expect(numeroDe(/agendamentos hoje/i)).toBe("2");
-    expect(numeroDe(/ainda hoje/i)).toBe("1");
+    expect(numeroDe(/^agendados$/i)).toBe("2");
+    expect(numeroDe(/^ainda hoje$/i)).toBe("1");
     // "Previsto", não "faturamento": o número é promessa, não caixa.
-    expect(numeroDe(/previsto hoje/i)).toBe("R$ 80,00");
+    expect(numeroDe(/^previsto$/i)).toBe("R$ 80,00");
   });
 
   // O que o barbeiro procura entre um corte e outro (17/10): no celular,

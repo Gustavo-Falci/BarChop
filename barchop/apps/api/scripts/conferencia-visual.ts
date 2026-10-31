@@ -1,4 +1,5 @@
-// Sobe a API no banco de TESTE com uma barbearia de exemplo, pra
+// Sobe a API no banco de TESTE com uma barbearia de exemplo (equipe,
+// serviços, clientes, planos e agendamentos de hoje), pra
 // conferir as telas do painel no navegador (redesenho do celular).
 //
 // Uso (de barchop/):
@@ -44,6 +45,7 @@ async function main() {
   const { comCodigo } = await import("../tests/helpers/barbearia");
   const { gerarHashSenha } = await import("../src/lib/senha");
   const { normalizarTelefoneObrigatorio } = await import("../src/lib/telefone");
+  const { agoraNaBarbearia, dataParaDate, horaParaDate, somarMinutos } = await import("../src/lib/horas");
 
   await limparBanco();
   const app = buildApp({ logger: false });
@@ -78,12 +80,46 @@ async function main() {
     data: { barbeariaId: barbearia.id, nome: "Corte social", duracaoMinutos: 30, preco: 30, categoria: "cabelo" },
   });
 
+  const clientes = [];
   for (const [nome, telefone] of [
     ["Gustavo", "(11) 90000-0001"],
     ["Teste", "(11) 90000-0002"],
   ] as const) {
-    await prisma.cliente.create({
-      data: { barbeariaId: barbearia.id, nome, telefone: normalizarTelefoneObrigatorio(telefone) },
+    clientes.push(
+      await prisma.cliente.create({
+        data: { barbeariaId: barbearia.id, nome, telefone: normalizarTelefoneObrigatorio(telefone) },
+      })
+    );
+  }
+
+  // Um serviço caro, pro previsto do Hoje chegar aos quatro dígitos: é o
+  // pior caso do número na coluna estreita do celular.
+  const noivo = await prisma.servico.create({
+    data: { barbeariaId: barbearia.id, nome: "Dia do noivo", duracaoMinutos: 30, preco: 450, categoria: "cabelo" },
+  });
+
+  // Agendamentos de hoje, no fuso da barbearia (o mesmo "hoje" da API):
+  // um de manhã, que já passou, e três à noite, pros "ainda hoje".
+  const hoje = agoraNaBarbearia().data;
+  const agenda: [string, typeof corte, typeof membro | null, number][] = [
+    ["09:00", corte, null, 0],
+    ["21:00", noivo, null, 0],
+    ["21:30", noivo, membro, 1],
+    ["23:00", noivo, null, 1],
+  ];
+  for (const [hora, servico, quem, cliente] of agenda) {
+    await prisma.agendamento.create({
+      data: {
+        barbeariaId: barbearia.id,
+        barbeiroId: quem?.id ?? barbeiro.id,
+        clienteId: clientes[cliente]!.id,
+        data: dataParaDate(hoje),
+        horaInicio: horaParaDate(hora),
+        horaFim: horaParaDate(somarMinutos(hora, servico.duracaoMinutos)),
+        servicos: {
+          create: { servicoId: servico.id, precoNoMomento: servico.preco, duracaoNoMomento: servico.duracaoMinutos },
+        },
+      },
     });
   }
 

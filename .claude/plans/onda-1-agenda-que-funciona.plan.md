@@ -4,7 +4,27 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-10-30 — a lista revista com o dono) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-10-31 — Stripe nos planos no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **Produção = o #244** (`5713322`), deploy do dono em 31/10 (API e web). Conferido por curl: `/health` 200, `/webhooks/stripe/<conexão>` no ar, vitrine com `pagamento`, Termos e Privacidade com "Vigente desde 31 de outubro de 2026", e o código publicado da web com as telas da Stripe e o texto do teste grátis. Nenhum PR aberto.
+- **Marco 1 do PRD `pagamentos-online-stripe-infinitepay` feito:** plano `.claude/plans/pagamentos-online-stripe.plan.md`, #237 a #244 (as "Diferenças" no topo do plano valem mais que as tarefas), ADR-0012.
+  - Quem vende escolhe Asaas ou Stripe em Pagamentos online (uma conta por vez), colando uma chave restrita `rk_` na Stripe. Sem Stripe Connect.
+  - Na Stripe: só cartão, sem CPF, webhook criado pela API com o segredo cifrado na conexão.
+- **Teste ponta a ponta da Stripe feito em produção em 31/10** (`barbearia-teste`, modo `teste`, desfeito no fim; detalhes na tarefa 9 do plano):
+  - as permissões do guia bastaram e os nomes batem com o painel da Stripe;
+  - o cartão `4242` passou na fatura: Ativa, Caixa na linha Online, acerto e sino;
+  - cancelar pelo cliente e pelo painel cancelou também na Stripe; o plano com dias grátis nasceu Em teste;
+  - o achado (o texto do teste grátis sem fatura) foi corrigido no #244.
+- **Não foi visto pelo dono:** as telas da Stripe em 375 (o 1440 apareceu nos prints do teste).
+- **Continua de 30/10:** marco 4 e o aviso da chave do Asaas parada em standby; G3 adiado; `barbearia-teste` fica no Completo à mão. O aviso "tarefas obrigatórias vencidas" no painel da Stripe é só do ambiente de teste da conta do BarChop; a de produção está limpa.
+
+**Ao retomar:**
+1. **Marco 2 do PRD (InfinitePay, link por ciclo):** ainda sem plano. Só começar quando o dono pedir (`/plan` a partir do PRD).
+2. **Pendentes do redesenho:** levantar quais são e mostrar ao dono.
+3. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
+
+## RETOMAR AQUI (2026-10-30 — a lista revista com o dono) — histórico
 
 **Estado:**
 - **Produção = o #235** (`4be9f8c`), igual à seção de 28/10 logo abaixo. Nenhum PR aberto. Esta atualização foi direto na `main`, com o aval do dono, e não muda nada no ar.

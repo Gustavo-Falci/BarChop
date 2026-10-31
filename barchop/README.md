@@ -48,6 +48,7 @@ um (`apps/mobile/README.md`, `apps/web/README.md`).
 - [`docs/product-brief.md`](docs/product-brief.md) — problema, escopo do MVP, o fluxo central de agendamento
 - [`docs/screens.md`](docs/screens.md) — as 23 telas mapeadas, por grupo
 - [`docs/design-system.html`](docs/design-system.html) — identidade visual, abra no navegador (tem toggle de modo escuro)
+- [`docs/UI_UX_DESIGN_GUIDELINES.md`](docs/UI_UX_DESIGN_GUIDELINES.md) — o manual de UI/UX que toda tela segue (web e celular)
 - [`docs/decisions.md`](docs/decisions.md) — porquê de cada escolha técnica (monorepo, Fastify, Prisma, banco)
 - [`docs/roadmap.md`](docs/roadmap.md) — o que falta, em ordem
 

@@ -4,20 +4,61 @@
   align-content: start;
 }
 
-/* Lado a lado no desktop: a conta da casa e a sua. O `min-width: 0`
+/* As contas num cartão só (redesenho, PR 9): uma embaixo da outra no
+   celular, lado a lado no desktop. O fio entre elas é o fundo do cartão
+   aparecendo no vão de 1px, e vale nas duas direções. O `min-width: 0`
    porque, como item da grade da página, o mínimo dela era 307px (o
    `min(100%, 380px)` não resolve na conta do mínimo): abaixo de ~340px
-   de tela, a seção passava da borda direita. */
+   de tela, a conta passava da borda direita. */
 .contas {
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
-  gap: var(--espaco-lg);
-  align-items: start;
+  gap: var(--borda-hairline);
   max-width: 1240px;
+  overflow: hidden;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-line);
+  box-shadow: var(--sombra-1);
 }
 
-.conta,
+.conta {
+  display: grid;
+  gap: var(--espaco-md);
+  align-content: start;
+  min-width: 0;
+  padding: var(--espaco-lg);
+  background: var(--cor-surface);
+}
+
+/* O nome e a descrição à esquerda, o selo (Conectada, Não conectada) na
+   ponta. */
+.topoDaConta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+}
+
+.textoDaConta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* O selo numa linha só: a 360px, "Não conectada" quebrava em duas. */
+.topoDaConta > :last-child {
+  flex: none;
+  white-space: nowrap;
+}
+
+.nomeDaConta {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.corpoDaConta,
 .formulario,
 .confirmacao,
 .quemTrava {
@@ -58,17 +99,76 @@
   gap: var(--espaco-sm);
 }
 
-/* O guia ocupa a linha inteira, embaixo das contas, e no desktop os
-   três passos ficam lado a lado (telas horizontais). */
-.guia {
-  grid-column: 1 / -1;
+/* A ajuda: linhas que abrem a folha (redesenho, PR 9), num cartão. */
+.ajuda {
+  display: grid;
+  gap: var(--espaco-sm);
+  max-width: 1240px;
   min-width: 0;
 }
 
+.tituloDaAjuda {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.ajudas {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+}
+
+.ajudas li + li {
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+.linhaDeAjuda {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: 0;
+  background: transparent;
+  color: var(--cor-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.linhaDeAjuda:hover {
+  background: var(--cor-paper-soft);
+}
+
+.linhaDeAjuda:focus-visible {
+  outline-offset: -3px;
+}
+
+.textoDaAjuda {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nomeDaAjuda {
+  font-weight: 600;
+}
+
+.seta {
+  flex: none;
+  color: var(--cor-muted);
+}
+
+/* Os passos, dentro da folha: um embaixo do outro. */
 .passos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-  gap: var(--espaco-md) var(--espaco-lg);
+  gap: var(--espaco-md);
   margin: 0;
   padding: 0;
   overflow-wrap: anywhere;
@@ -100,4 +200,18 @@
   margin: 0;
   color: var(--cor-ok);
   font-weight: 700;
+}
+
+/* No celular, o recuo do cartão do canvas (16px): com 24px, a 390px,
+   "Desconectar" e "Trocar a chave" não cabiam lado a lado. Se ainda não
+   couberem (360px), cada botão ocupa a linha, em vez de ficar torto à
+   direita. */
+@media (max-width: 560px) {
+  .conta {
+    padding: var(--espaco-md);
+  }
+
+  .botoes > * {
+    flex: 1 1 auto;
+  }
 }

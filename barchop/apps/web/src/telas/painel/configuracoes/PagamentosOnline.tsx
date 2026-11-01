@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import { DIAS_PARA_CANCELAR } from "@barchop/formato";
 import type { AssinaturaDoPainel, PagamentosOnline as Pagamentos, ProvedorDePagamento } from "@barchop/types";
@@ -11,7 +11,7 @@ import { CabecalhoDaPagina } from "../../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../../componentes/Campo";
 import { Carregando } from "../../../componentes/Carregando";
 import { Chip } from "../../../componentes/Chip";
-import { Secao } from "../../../componentes/Secao";
+import { FolhaDeAjuda } from "../../../componentes/FolhaDeAjuda";
 import { SeletorEmPilulas } from "../../../componentes/SeletorEmPilulas";
 import { PROVEDORES, comMaiuscula } from "../../../fluxo/provedores";
 import { useRequisicao } from "../../../api/useRequisicao";
@@ -54,6 +54,19 @@ const SITE_DO_ASAAS: Record<Pagamentos["modoAceito"], string> = {
 };
 const PAINEL_DA_STRIPE = "https://dashboard.stripe.com/";
 const DOCUMENTACAO_DA_INFINITEPAY = "https://www.infinitepay.io/checkout-documentacao";
+
+// As ajudas abrem numa folha, a partir de uma linha (redesenho das
+// Configurações, PR 9): o título e, embaixo, o que tem lá dentro.
+const AJUDA_DO_GUIA: Record<ProvedorDePagamento, { titulo: string; resumo: string }> = {
+  asaas: { titulo: "Como pegar a chave no Asaas", resumo: "3 passos, com os links do Asaas" },
+  stripe: { titulo: "Como pegar a chave na Stripe", resumo: "3 passos, com as permissões da chave restrita" },
+  infinitepay: { titulo: "Como pegar a chave na InfinitePay", resumo: "3 passos, com o link da documentação" },
+};
+const AJUDA_DA_INFINITEPAY = {
+  titulo: "Como funciona na InfinitePay",
+  // O que pesa fica à vista mesmo com a folha fechada: ela não renova.
+  resumo: "Não renova sozinha: um link por mensalidade, 3 dias antes do vencimento.",
+};
 
 const OPCOES_DE_PROVEDOR: { valor: ProvedorDePagamento; rotulo: string }[] = [
   { valor: "asaas", rotulo: PROVEDORES.asaas.nome },
@@ -111,6 +124,8 @@ function ContasDeQuemVende() {
   const [mudadas, setMudadas] = useState<{ casa?: ProvedorDaConta; minha?: ProvedorDaConta }>({});
   // O provedor das contas que ainda não conectaram.
   const [escolhido, setEscolhido] = useState<ProvedorDePagamento>("asaas");
+  // A ajuda aberta na folha.
+  const [ajudaAberta, setAjudaAberta] = useState<"guia" | "infinitepay" | null>(null);
 
   const foraDoCompleto = planos.erro?.codigo === "recurso_do_plano";
   const erro = minha.erro ?? daCasa.erro ?? (foraDoCompleto ? undefined : planos.erro);
@@ -157,30 +172,61 @@ function ContasDeQuemVende() {
           efeito={PROVEDORES[escolhido].efeito}
         />
       ) : null}
-      <div className={estilos.contas}>
-        {ehDono && daCasa.dados ? (
-          <ContaOnline
-            inicial={daCasa.dados}
-            titulo="Conta da casa"
-            descricao="Recebe as mensalidades dos planos da casa."
-            escolhido={escolhido}
-            podeConectar={!foraDoCompleto}
-            aoMudar={(provedor) => setMudadas((antes) => ({ ...antes, casa: provedor }))}
-          />
-        ) : null}
-        {mostraMinha ? (
-          <ContaOnline
-            inicial={minha.dados}
-            titulo="Sua conta"
-            descricao="Recebe as mensalidades dos planos que você vende."
-            escolhido={escolhido}
-            podeConectar={!foraDoCompleto && vendeOProprio}
-            aoMudar={(provedor) => setMudadas((antes) => ({ ...antes, minha: provedor }))}
-          />
-        ) : null}
-        {mostraGuia ? <Guia provedor={escolhido} modo={minha.dados.modoAceito} /> : null}
-        {naInfinitePay ? <ComoFuncionaNaInfinitePay /> : null}
-      </div>
+      {/* As contas num cartão só (redesenho, PR 9), uma embaixo da outra
+          no celular e lado a lado no computador. */}
+      {(ehDono && daCasa.dados) || mostraMinha ? (
+        <div className={estilos.contas}>
+          {ehDono && daCasa.dados ? (
+            <ContaOnline
+              inicial={daCasa.dados}
+              titulo="Conta da casa"
+              descricao="Recebe as mensalidades dos planos da casa."
+              escolhido={escolhido}
+              podeConectar={!foraDoCompleto}
+              aoMudar={(provedor) => setMudadas((antes) => ({ ...antes, casa: provedor }))}
+            />
+          ) : null}
+          {mostraMinha ? (
+            <ContaOnline
+              inicial={minha.dados}
+              titulo="Sua conta"
+              descricao="Recebe as mensalidades dos planos que você vende."
+              escolhido={escolhido}
+              podeConectar={!foraDoCompleto && vendeOProprio}
+              aoMudar={(provedor) => setMudadas((antes) => ({ ...antes, minha: provedor }))}
+            />
+          ) : null}
+        </div>
+      ) : null}
+      {mostraGuia || naInfinitePay ? (
+        <section className={estilos.ajuda} aria-labelledby="pagamentos-ajuda">
+          <h2 id="pagamentos-ajuda" className={estilos.tituloDaAjuda}>
+            Ajuda
+          </h2>
+          <ul className={estilos.ajudas}>
+            {mostraGuia ? (
+              <li>
+                <LinhaDeAjuda {...AJUDA_DO_GUIA[escolhido]} aoAbrir={() => setAjudaAberta("guia")} />
+              </li>
+            ) : null}
+            {naInfinitePay ? (
+              <li>
+                <LinhaDeAjuda {...AJUDA_DA_INFINITEPAY} aoAbrir={() => setAjudaAberta("infinitepay")} />
+              </li>
+            ) : null}
+          </ul>
+        </section>
+      ) : null}
+      {ajudaAberta === "guia" && mostraGuia ? (
+        <FolhaDeAjuda titulo={AJUDA_DO_GUIA[escolhido].titulo} aoFechar={() => setAjudaAberta(null)}>
+          <Guia provedor={escolhido} modo={minha.dados.modoAceito} />
+        </FolhaDeAjuda>
+      ) : null}
+      {ajudaAberta === "infinitepay" && naInfinitePay ? (
+        <FolhaDeAjuda titulo={AJUDA_DA_INFINITEPAY.titulo} aoFechar={() => setAjudaAberta(null)}>
+          <ComoFuncionaNaInfinitePay />
+        </FolhaDeAjuda>
+      ) : null}
       {!ehDono && !mostraMinha ? (
         <p>
           Quem vende planos conecta aqui a própria conta do Asaas, da Stripe ou da InfinitePay. O dono libera a venda de
@@ -188,6 +234,34 @@ function ContasDeQuemVende() {
         </p>
       ) : null}
     </div>
+  );
+}
+
+// Uma linha que abre a folha da ajuda: o título é o nome do botão, e o
+// resumo, a descrição.
+function LinhaDeAjuda({ titulo, resumo, aoAbrir }: { titulo: string; resumo: string; aoAbrir: () => void }) {
+  const id = useId();
+  return (
+    <button
+      type="button"
+      className={estilos.linhaDeAjuda}
+      aria-haspopup="dialog"
+      aria-labelledby={`${id}-titulo`}
+      aria-describedby={`${id}-resumo`}
+      onClick={aoAbrir}
+    >
+      <span className={estilos.textoDaAjuda}>
+        <span id={`${id}-titulo`} className={estilos.nomeDaAjuda}>
+          {titulo}
+        </span>
+        <span id={`${id}-resumo`} className={estilos.apoio}>
+          {resumo}
+        </span>
+      </span>
+      <svg className={estilos.seta} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </button>
   );
 }
 
@@ -204,33 +278,29 @@ function GuiaDoAsaas({ modo }: { modo: Pagamentos["modoAceito"] }) {
   const site = SITE_DO_ASAAS[modo];
   const prefixo = modo === "teste" ? "$aact_hmlg_" : "$aact_prod_";
   return (
-    <div className={estilos.guia}>
-      <Secao titulo="Como pegar a chave no Asaas">
-        <ol className={estilos.passos}>
-          <li>
-            <strong>Crie a conta {modo === "teste" ? "no sandbox do Asaas" : "no Asaas"}.</strong>{" "}
-            {modo === "teste"
-              ? "É uma conta de teste, separada da de verdade, e não pede documentos."
-              : "Com o CPF ou CNPJ de quem recebe. O Asaas pede documentos pra aprovar a conta, e o dinheiro só vai pro seu banco depois da aprovação."}{" "}
-            <a href={site} target="_blank" rel="noreferrer">
-              Criar a conta
-            </a>
-          </li>
-          <li>
-            <strong>Gere a chave.</strong> No computador (o aplicativo do Asaas não gera), entre como administrador e vá
-            em Integrações › Chaves de API. Dê o nome BarChop e deixe sem data pra expirar.{" "}
-            <a href={`${site}customerApiAccessToken/index`} target="_blank" rel="noreferrer">
-              Abrir as chaves de API no Asaas
-            </a>
-          </li>
-          <li>
-            <strong>Copie e cole aqui.</strong> O Asaas mostra a chave uma vez só: copie antes de fechar a janela. Ela
-            começa com <code>{prefixo}</code>. O BarChop guarda a chave cifrada, mostra só o final e avisa o Asaas
-            sozinho pra onde mandar os pagamentos.
-          </li>
-        </ol>
-      </Secao>
-    </div>
+    <ol className={estilos.passos}>
+      <li>
+        <strong>Crie a conta {modo === "teste" ? "no sandbox do Asaas" : "no Asaas"}.</strong>{" "}
+        {modo === "teste"
+          ? "É uma conta de teste, separada da de verdade, e não pede documentos."
+          : "Com o CPF ou CNPJ de quem recebe. O Asaas pede documentos pra aprovar a conta, e o dinheiro só vai pro seu banco depois da aprovação."}{" "}
+        <a href={site} target="_blank" rel="noreferrer">
+          Criar a conta
+        </a>
+      </li>
+      <li>
+        <strong>Gere a chave.</strong> No computador (o aplicativo do Asaas não gera), entre como administrador e vá
+        em Integrações › Chaves de API. Dê o nome BarChop e deixe sem data pra expirar.{" "}
+        <a href={`${site}customerApiAccessToken/index`} target="_blank" rel="noreferrer">
+          Abrir as chaves de API no Asaas
+        </a>
+      </li>
+      <li>
+        <strong>Copie e cole aqui.</strong> O Asaas mostra a chave uma vez só: copie antes de fechar a janela. Ela
+        começa com <code>{prefixo}</code>. O BarChop guarda a chave cifrada, mostra só o final e avisa o Asaas
+        sozinho pra onde mandar os pagamentos.
+      </li>
+    </ol>
   );
 }
 
@@ -241,35 +311,31 @@ function GuiaDoAsaas({ modo }: { modo: Pagamentos["modoAceito"] }) {
 function GuiaDaStripe({ modo }: { modo: Pagamentos["modoAceito"] }) {
   const chaves = `${PAINEL_DA_STRIPE}${modo === "teste" ? "test/" : ""}apikeys`;
   return (
-    <div className={estilos.guia}>
-      <Secao titulo="Como pegar a chave na Stripe">
-        <ol className={estilos.passos}>
-          <li>
-            <strong>Crie a conta na Stripe.</strong>{" "}
-            {modo === "teste"
-              ? "No modo de teste, a Stripe não pede documentos e nada é cobrado de verdade."
-              : "Com os dados de quem recebe. A Stripe pede documentos pra ativar a conta, e o dinheiro só vai pro seu banco depois da ativação."}{" "}
-            <a href={`${PAINEL_DA_STRIPE}register`} target="_blank" rel="noreferrer">
-              Criar a conta
-            </a>
-          </li>
-          <li>
-            <strong>Crie a chave restrita.</strong> No painel da Stripe
-            {modo === "teste" ? ", no modo de teste," : ""} vá em Desenvolvedores › Chaves de API e crie uma chave
-            restrita com o nome BarChop. Dê escrita em Customers, Products, Prices, Subscriptions e Webhook Endpoints, e
-            leitura em Invoices, Invoice Payments e PaymentIntents. O resto fica sem acesso.{" "}
-            <a href={chaves} target="_blank" rel="noreferrer">
-              Abrir as chaves de API na Stripe
-            </a>
-          </li>
-          <li>
-            <strong>Copie e cole aqui.</strong> Copie a chave assim que a Stripe mostrar: ela pode não aparecer de novo.
-            Ela começa com <code>{PROVEDORES.stripe.prefixo[modo]}</code>. O BarChop guarda a chave cifrada, mostra só o
-            final e avisa a Stripe sozinho pra onde mandar os pagamentos.
-          </li>
-        </ol>
-      </Secao>
-    </div>
+    <ol className={estilos.passos}>
+      <li>
+        <strong>Crie a conta na Stripe.</strong>{" "}
+        {modo === "teste"
+          ? "No modo de teste, a Stripe não pede documentos e nada é cobrado de verdade."
+          : "Com os dados de quem recebe. A Stripe pede documentos pra ativar a conta, e o dinheiro só vai pro seu banco depois da ativação."}{" "}
+        <a href={`${PAINEL_DA_STRIPE}register`} target="_blank" rel="noreferrer">
+          Criar a conta
+        </a>
+      </li>
+      <li>
+        <strong>Crie a chave restrita.</strong> No painel da Stripe
+        {modo === "teste" ? ", no modo de teste," : ""} vá em Desenvolvedores › Chaves de API e crie uma chave
+        restrita com o nome BarChop. Dê escrita em Customers, Products, Prices, Subscriptions e Webhook Endpoints, e
+        leitura em Invoices, Invoice Payments e PaymentIntents. O resto fica sem acesso.{" "}
+        <a href={chaves} target="_blank" rel="noreferrer">
+          Abrir as chaves de API na Stripe
+        </a>
+      </li>
+      <li>
+        <strong>Copie e cole aqui.</strong> Copie a chave assim que a Stripe mostrar: ela pode não aparecer de novo.
+        Ela começa com <code>{PROVEDORES.stripe.prefixo[modo]}</code>. O BarChop guarda a chave cifrada, mostra só o
+        final e avisa a Stripe sozinho pra onde mandar os pagamentos.
+      </li>
+    </ol>
   );
 }
 
@@ -278,28 +344,24 @@ function GuiaDaStripe({ modo }: { modo: Pagamentos["modoAceito"] }) {
 // aparece uma vez só; e a InfiniteTag diz de qual conta é a chave.
 function GuiaDaInfinitePay() {
   return (
-    <div className={estilos.guia}>
-      <Secao titulo="Como pegar a chave na InfinitePay">
-        <ol className={estilos.passos}>
-          <li>
-            <strong>Ligue o checkout integrado.</strong> Nas configurações da sua conta na InfinitePay, ligue o checkout
-            integrado. Sem ele, a InfinitePay não cria os links de pagamento.
-          </li>
-          <li>
-            <strong>Crie a chave de API.</strong> Nas mesmas configurações, crie uma chave de API. A InfinitePay deixa até
-            5 por conta.{" "}
-            <a href={DOCUMENTACAO_DA_INFINITEPAY} target="_blank" rel="noreferrer">
-              Ver a documentação da InfinitePay
-            </a>
-          </li>
-          <li>
-            <strong>Cole aqui a InfiniteTag e a chave.</strong> A InfiniteTag é o seu nome de usuário na InfinitePay, com
-            ou sem o $. A chave começa com <code>{PROVEDORES.infinitepay.prefixo.real}</code> e aparece uma vez só: copie
-            antes de fechar. O BarChop guarda a chave cifrada e mostra só o final.
-          </li>
-        </ol>
-      </Secao>
-    </div>
+    <ol className={estilos.passos}>
+      <li>
+        <strong>Ligue o checkout integrado.</strong> Nas configurações da sua conta na InfinitePay, ligue o checkout
+        integrado. Sem ele, a InfinitePay não cria os links de pagamento.
+      </li>
+      <li>
+        <strong>Crie a chave de API.</strong> Nas mesmas configurações, crie uma chave de API. A InfinitePay deixa até
+        5 por conta.{" "}
+        <a href={DOCUMENTACAO_DA_INFINITEPAY} target="_blank" rel="noreferrer">
+          Ver a documentação da InfinitePay
+        </a>
+      </li>
+      <li>
+        <strong>Cole aqui a InfiniteTag e a chave.</strong> A InfiniteTag é o seu nome de usuário na InfinitePay, com
+        ou sem o $. A chave começa com <code>{PROVEDORES.infinitepay.prefixo.real}</code> e aparece uma vez só: copie
+        antes de fechar. O BarChop guarda a chave cifrada e mostra só o final.
+      </li>
+    </ol>
   );
 }
 
@@ -307,31 +369,27 @@ function GuiaDaInfinitePay() {
 // diária, PR 5 do plano).
 function ComoFuncionaNaInfinitePay() {
   return (
-    <div className={estilos.guia}>
-      <Secao titulo="Como funciona na InfinitePay">
-        <ul className={estilos.passos}>
-          <li>
-            <strong>Não renova sozinha.</strong> A InfinitePay não tem cobrança automática: o BarChop manda um link de
-            pagamento a cada mensalidade, por Pix ou cartão.
-          </li>
-          <li>
-            <strong>O link sai 3 dias antes do vencimento,</strong> por e-mail para quem assina. No painel, a assinatura
-            tem o botão de mandar o mesmo link pelo WhatsApp.
-          </li>
-          <li>
-            <strong>Vencido sem pagar, fica Em atraso,</strong> e o link vai de novo.
-          </li>
-          <li>
-            <strong>Passados os dias sem pagamento que você escolher na conta,</strong> a assinatura é cancelada, e você e
-            quem assina recebem o aviso. Sem mudar, são {DIAS_PARA_CANCELAR.padrao} dias.
-          </li>
-          <li>
-            <strong>Não há conta de teste:</strong> todo pagamento é de verdade, a partir de R$ 1,00. Estorno, só no app da
-            InfinitePay.
-          </li>
-        </ul>
-      </Secao>
-    </div>
+    <ul className={estilos.passos}>
+      <li>
+        <strong>Não renova sozinha.</strong> A InfinitePay não tem cobrança automática: o BarChop manda um link de
+        pagamento a cada mensalidade, por Pix ou cartão.
+      </li>
+      <li>
+        <strong>O link sai 3 dias antes do vencimento,</strong> por e-mail para quem assina. No painel, a assinatura
+        tem o botão de mandar o mesmo link pelo WhatsApp.
+      </li>
+      <li>
+        <strong>Vencido sem pagar, fica Em atraso,</strong> e o link vai de novo.
+      </li>
+      <li>
+        <strong>Passados os dias sem pagamento que você escolher na conta,</strong> a assinatura é cancelada, e você e
+        quem assina recebem o aviso. Sem mudar, são {DIAS_PARA_CANCELAR.padrao} dias.
+      </li>
+      <li>
+        <strong>Não há conta de teste:</strong> todo pagamento é de verdade, a partir de R$ 1,00. Estorno, só no app da
+        InfinitePay.
+      </li>
+    </ul>
   );
 }
 
@@ -353,6 +411,7 @@ function ContaOnline({
 }) {
   const api = useApiDoPainel();
   const { perfil } = usePainel();
+  const idDoTitulo = useId();
   const [dados, setDados] = useState(inicial);
   const [chave, setChave] = useState("");
   const [tag, setTag] = useState("");
@@ -550,8 +609,26 @@ function ContaOnline({
     ) : null;
 
   return (
-    <Secao titulo={titulo} descricao={descricao}>
-      <div className={estilos.conta}>
+    <section className={estilos.conta} aria-labelledby={idDoTitulo}>
+      <div className={estilos.topoDaConta}>
+        <span className={estilos.textoDaConta}>
+          <h2 id={idDoTitulo} className={estilos.nomeDaConta}>
+            {titulo}
+          </h2>
+          <span className={estilos.apoio}>{descricao}</span>
+        </span>
+        {/* Fora do título: o nome da região segue só "Conta da casa". */}
+        {conta ? (
+          <Chip tom="ok" tamanho="pequeno">
+            Conectada
+          </Chip>
+        ) : (
+          <Chip tom="neutro" tamanho="pequeno">
+            Não conectada
+          </Chip>
+        )}
+      </div>
+      <div className={estilos.corpoDaConta}>
         {conta ? (
           <>
             <p className={estilos.linha}>
@@ -638,6 +715,6 @@ function ContaOnline({
           </p>
         ) : null}
       </div>
-    </Secao>
+    </section>
   );
 }

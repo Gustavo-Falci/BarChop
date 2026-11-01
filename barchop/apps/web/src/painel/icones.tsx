@@ -435,3 +435,12 @@ export function IconeCopiar(props: Props) {
     </Base>
   );
 }
+
+// Setas pra cima e pra baixo: o "Mudar ordem" de Serviços e Equipe.
+export function IconeOrdem(props: Props) {
+  return (
+    <Base {...props}>
+      <path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4" />
+    </Base>
+  );
+}

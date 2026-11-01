@@ -33,9 +33,3 @@ tr:hover .abrir {
   color: var(--cor-ink);
 }
 
-/* "Mudar ordem" e "+ Convidar membro" no canto do cabeçalho. */
-.acoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-sm);
-}

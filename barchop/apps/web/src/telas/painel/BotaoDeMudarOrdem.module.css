@@ -1,0 +1,15 @@
+/* À direita, acima da lista. A margem negativa encosta o botão na
+   lista: o vão da página (`--espaco-lg`) o deixava solto entre os
+   filtros e a tabela, sem dizer a quem pertence. */
+.lugar {
+  display: flex;
+  justify-content: flex-end;
+  margin-block: calc(var(--espaco-sm) - var(--espaco-lg)) calc(var(--espaco-xs) - var(--espaco-lg));
+}
+
+/* Ícone e texto lado a lado; o `.botao` da casa já dá a altura de toque. */
+.lugar > button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+}

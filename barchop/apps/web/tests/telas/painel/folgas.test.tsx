@@ -146,3 +146,21 @@ describe("folgas: a lista", () => {
     expect(within(almoco).getByText(/12:00 às 13:00/)).toBeInTheDocument();
   });
 });
+
+// Redesenho do celular, PR 5: a lista vazia era uma linha solta
+// ("Ninguém fora da agenda…"). Agora é o estado vazio da casa: o que
+// é, pra que serve e onde se faz.
+describe("folgas: sem nenhuma", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/folgas" });
+  });
+
+  it("diz que não há e orienta pro Bloquear", async () => {
+    montarPainel(<FolgasEBloqueios agora={AGORA} />, comAna());
+
+    expect(await screen.findByText("Nenhuma folga ou bloqueio nos próximos 90 dias.")).toBeInTheDocument();
+    expect(screen.getByText(/pra tirar alguém da agenda/i)).toHaveTextContent(/\+ bloquear/i);
+  });
+});
+

@@ -43,9 +43,3 @@ tr:hover .abrir {
   color: var(--cor-ink);
 }
 
-/* "Mudar ordem" e "+ Novo serviço" no canto do cabeçalho. */
-.acoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-sm);
-}

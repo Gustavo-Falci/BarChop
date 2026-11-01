@@ -119,12 +119,16 @@
   flex: none;
   width: 22px;
   height: 22px;
-  border: 2px solid var(--cor-line-strong);
+  /* O aro precisa de 3:1 pra se ver como controle: a linha forte some
+     no creme do claro. */
+  border: 2px solid var(--cor-muted);
   border-radius: 50%;
 }
 
+/* O marcado no acento como texto: o ouro puro dá ~1,6:1 no creme do
+   claro; no escuro, o token já é o ouro. */
 .radio:checked ~ .marca {
-  border-color: var(--cor-accent);
+  border-color: var(--cor-accent-text);
 }
 
 .radio:checked ~ .marca::after {
@@ -132,7 +136,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--cor-accent);
+  background: var(--cor-accent-text);
 }
 
 .radio:checked ~ .rotulo {
@@ -149,7 +153,7 @@
 }
 
 .opcao:hover .radio:checked ~ .marca {
-  border-color: var(--cor-accent);
+  border-color: var(--cor-accent-text);
 }
 
 .efeito {

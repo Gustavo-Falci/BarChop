@@ -4,7 +4,24 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-01 — pendentes do redesenho no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-01 tarde — redesenho das Configurações concluído) — vale mais que as seções abaixo
+
+**Estado:**
+- **Redesenho das Configurações no celular concluído:** plano `.claude/plans/redesenho-configuracoes.plan.md`, 9 PRs, #269 a #277, todos mesclados (`main` = merge do #277). Desenho aprovado antes no canvas do Claude Design (página "Configurações", 11 pranchas nos dois temas).
+  - #269 peças comuns; #270 Índice; #271 Horários; #272 Regras; #273 Dados; #274 Aparência; #275 Comunicação, Notificações e Seu perfil; #276 Divisão; #277 Pagamentos online.
+  - Peças novas, reaproveitáveis: `Interruptor` (`role="switch"`), `FolhaDeEscolha` (rádios + "Usar esta"), `FolhaDeAjuda` (folha só de leitura, mesmo CSS), `BarraDeMudancas` com `podeSalvar`, `SeletorEmPilulas preencher`.
+  - Conferido a cada PR em 360, 390 e 1280px, nos dois temas.
+- **A semente de conferência** (`apps/api/scripts/conferencia-visual.ts`) agora tem a conta da casa conectada no Asaas (modo teste, final 9876, sem chave de verdade: só pra ver a tela) e o "Corte mensal" só no balcão. Não usar o assinar online com ela.
+- **Deploy das Configurações novas: com o dono, não conferido.** A última produção conferida continua sendo o #267 (seção abaixo).
+- As branches `redesenho-config-pr1` a `redesenho-config-pr9-pagamentos` seguem existindo (local e remota) até o dono apagar.
+
+**Ao retomar:**
+1. **Conferir o deploy** quando o dono disser que subiu (código publicado da web: `FolhaDeAjuda`, selo "Não conectada", lista da Divisão).
+2. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
+3. **A primeira conta real da InfinitePay:** olhar o log do conector (seção de 31/10 à noite, abaixo).
+4. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. Em 24/11, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+## RETOMAR AQUI (2026-11-01 — pendentes do redesenho no ar) — histórico
 
 **Estado:**
 - **Pendentes do redesenho resolvidos.** Primeiro foram desenhados no canvas do Claude Design (https://claude.ai/artifact/LpMm9AAYAVzsQXsZB1w7Xb, fileira "Pendentes (01/11)", nos dois temas), depois implementados. Regra do dono: redesenho passa primeiro pelo canvas.
@@ -16,6 +33,7 @@
 - Só a `main` existe (local e remota); nenhum PR de código aberto.
 
 **Ao retomar:**
+0. (Feito depois, na mesma tarde: redesenho das Configurações, #269–#277, seção acima.)
 1. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
 2. **A primeira conta real da InfinitePay:** olhar o log do conector (seção de 31/10 à noite, abaixo).
 3. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. Em 24/11, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.

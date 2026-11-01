@@ -64,6 +64,12 @@
 ### PR 9 — Pagamentos online
 - As duas contas num cartão; a conectada resumida (decisão 3); ajudas em linhas que abrem.
 
+## Resultado (01/11)
+Concluído: os 9 PRs mesclados, #269 a #277, na ordem acima.
+- Desvios registrados nos PRs: o selo do índice é "Configurado"/"Faltando" e a consequência fica cinza (#270); o botão segue "Trocar a chave" (canvas: "Trocar chave"); "Como funciona na InfinitePay" fica atrás de uma linha, com "Não renova sozinha" à vista (#277).
+- Peças novas: `Interruptor` (#271), `FolhaDeEscolha` (#272), `FolhaDeAjuda` (#277), `BarraDeMudancas` com `podeSalvar` (#276).
+- Fora do escopo, sem PR: "Mostrar a chave" e o "$" no campo da InfiniteTag (Pagamentos).
+
 ## Conferência visual
 - Semente `apps/api/scripts/conferencia-visual.ts` (API em :3333 já semeada no banco de teste), `next dev`, token em `sessao.barbeiro`.
 - A cada PR: 360, 390 e 1280px, nos dois temas. Estender a semente com o que a tela pedir (horários, datas especiais, divisão), sem chave real nem id real.

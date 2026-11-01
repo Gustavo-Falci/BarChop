@@ -87,16 +87,37 @@ describe("índice das configurações", () => {
     // Publicada, a Aparência diz o tema e o modo.
     expect(screen.getByRole("link", { name: /^Aparência/ })).toHaveTextContent("BarChop · segue o celular do cliente");
     expect(screen.getByText("6 de 6 decididas")).toBeInTheDocument();
-    expect(screen.queryByText(/configurar/i)).not.toBeInTheDocument();
+    // Redesenho (01/11): o selo da subtela, e nenhum "Faltando".
+    expect(screen.getByRole("link", { name: /^Horários/ })).toHaveTextContent("Configurado");
+    expect(screen.queryByText("Faltando")).not.toBeInTheDocument();
+    expect(screen.getByText("tudo decidido")).toBeInTheDocument();
   });
 
-  it("área não decidida mostra a consequência e o configurar", async () => {
+  // Redesenho das Configurações (01/11): o "Configurar →" de cada linha
+  // virou o selo "Faltando", o mesmo da subtela; a linha toda já é o link.
+  it("área não decidida mostra a consequência e o selo Faltando", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ areasDecididas: ["horarios"] }));
 
     const comunicacao = await screen.findByRole("link", { name: /^Comunicação/ });
     expect(comunicacao).toHaveTextContent(/sem whatsapp/i);
-    expect(comunicacao).toHaveTextContent(/configurar/i);
-    expect(screen.getByRole("link", { name: /^Horários/ })).not.toHaveTextContent(/configurar/i);
+    expect(comunicacao).toHaveTextContent("Faltando");
+    expect(screen.getByRole("link", { name: /^Horários/ })).not.toHaveTextContent("Faltando");
+    expect(screen.queryByText(/configurar/i)).not.toBeInTheDocument();
+  });
+
+  // A contagem saiu do lado do título, onde a frase de apoio passava por
+  // cima dela no celular: agora é um cartão embaixo, com quantas faltam
+  // e a frase dentro.
+  it("a contagem diz quantas faltam e explica o selo", async () => {
+    montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ areasDecididas: ["horarios", "comunicacao"] }));
+
+    const progresso = await screen.findByRole("region", { name: "Áreas decididas" });
+    expect(progresso).toHaveTextContent("2 de 6 decididas");
+    expect(progresso).toHaveTextContent("faltam 4");
+    expect(progresso).toHaveTextContent(/faltando/i);
+    expect(screen.getByRole("heading", { level: 1, name: "Configurações" }).closest("header")).not.toHaveTextContent(
+      /decididas/
+    );
   });
 
   it("Aparência nunca publicada: a página está com as cores padrão", async () => {
@@ -104,7 +125,7 @@ describe("índice das configurações", () => {
 
     const aparencia = await screen.findByRole("link", { name: /^Aparência/ });
     expect(aparencia).toHaveTextContent(/cores padrão/i);
-    expect(aparencia).toHaveTextContent(/configurar/i);
+    expect(aparencia).toHaveTextContent("Faltando");
   });
 
   it("barbearia que nunca salvou as regras vê que vale o padrão", async () => {
@@ -112,15 +133,15 @@ describe("índice das configurações", () => {
 
     const regras = await screen.findByRole("link", { name: /^Regras de agendamento/ });
     expect(regras).toHaveTextContent(/vale o padrão/i);
-    expect(regras).toHaveTextContent(/configurar/i);
+    expect(regras).toHaveTextContent("Faltando");
     expect(screen.getByText("1 de 6 decididas")).toBeInTheDocument();
   });
 
-  it("o perfil é de cada pessoa: não entra na contagem nem pede configurar", async () => {
+  it("o perfil é de cada pessoa: não entra na contagem nem leva selo", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso());
 
     const perfil = await screen.findByRole("link", { name: /^Seu perfil/ });
-    expect(perfil).not.toHaveTextContent(/configurar/i);
+    expect(perfil).not.toHaveTextContent(/faltando|configurado/i);
     expect(screen.getByText("0 de 6 decididas")).toBeInTheDocument();
   });
 

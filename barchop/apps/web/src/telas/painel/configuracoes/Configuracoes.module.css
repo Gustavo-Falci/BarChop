@@ -131,18 +131,42 @@
 
 /* ── Índice ─────────────────────────────────────────────────────────── */
 
+/* A contagem num cartão embaixo do título (redesenho, 01/11): ao lado
+   dele, no celular, a frase de apoio passava por cima da barra. */
 .progresso {
   display: grid;
-  gap: var(--espaco-xs);
-  min-width: 180px;
-  justify-items: end;
+  gap: var(--espaco-sm);
+  max-width: 40rem;
+  padding: var(--espaco-md);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
 }
 
 .contagem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espaco-xs) var(--espaco-md);
   margin: 0;
+}
+
+.contagem strong {
   font-family: var(--fonte-display), system-ui, sans-serif;
   font-size: var(--texto-md);
   font-variant-numeric: tabular-nums;
+}
+
+.contagem span {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.apoioDoProgresso {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
 }
 
 .barra {
@@ -178,12 +202,12 @@
   border-block-start: var(--borda-hairline) solid var(--cor-line);
 }
 
-/* A linha inteira é o link: nome, o que vale hoje (ou a consequência) e
-   a ação na ponta. Três colunas fixas pra o texto de cada área começar
-   na mesma vertical. */
+/* A linha inteira é o link: nome com o selo, o que vale hoje (ou a
+   consequência) e a seta na ponta. Três colunas fixas pra o texto de cada
+   área começar na mesma vertical. */
 .linha {
   display: grid;
-  grid-template-columns: 12rem minmax(0, 1fr) auto;
+  grid-template-columns: 18rem minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--espaco-md);
   min-height: 56px;
@@ -199,6 +223,14 @@
   outline-offset: -4px;
 }
 
+.titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-xs) var(--espaco-sm);
+  min-width: 0;
+}
+
 .nomeDaArea {
   font-weight: 700;
 }
@@ -206,23 +238,6 @@
 .valor {
   color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
-}
-
-/* Ainda não decidida: a frase da consequência no cinza de apoio e o
-   "Configurar" num selo âmbar. Antes a linha inteira era âmbar, e com
-   quatro de seis faltando o índice virava um bloco laranja de texto. */
-.faltando .valor {
-  color: var(--cor-ink-soft);
-}
-
-.configurar {
-  padding: 2px var(--espaco-sm);
-  border-radius: var(--raio-pill);
-  background: var(--cor-atencao-fundo);
-  color: var(--cor-atencao);
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .seta {
@@ -237,10 +252,16 @@
     padding-inline: var(--espaco-md);
   }
 
-  /* No celular o texto desce pra baixo do nome, ocupando a largura. */
+  /* No celular o texto desce pra baixo do nome, e a seta fica na ponta,
+     no meio das duas linhas. */
   .valor {
     grid-row: 2;
-    grid-column: 1 / -1;
+    grid-column: 1;
+  }
+
+  .seta {
+    grid-row: 1 / span 2;
+    grid-column: 2;
   }
 }
 

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { HorarioSerializado } from "@barchop/types";
 import {
   aplicarRotina,
-  difereDaRotina,
   fraseDaRotina,
   rotinaDaSemana,
 } from "../../src/telas/painel/configuracoes/rotina";
@@ -47,23 +46,6 @@ describe("rotina da semana", () => {
     });
 
     expect(resultado).toEqual(semana(SEG_A_SEX));
-  });
-
-  it("dia aberto com horário diferente da rotina é diferente; fechado fora da rotina não é", () => {
-    const rotina = { dias: [1, 2, 3, 4, 5], abre: "09:00", fecha: "18:00" };
-    const salva = semana({ ...SEG_A_SEX, 5: ["09:00", "20:00"] });
-
-    expect(difereDaRotina(salva[5]!, rotina)).toBe(true);
-    expect(difereDaRotina(salva[1]!, rotina)).toBe(false);
-    expect(difereDaRotina(salva[0]!, rotina)).toBe(false);
-  });
-
-  it("dia fechado que a rotina abre, ou aberto que ela fecha, é diferente", () => {
-    const rotina = { dias: [1, 2, 3, 4, 5], abre: "09:00", fecha: "18:00" };
-    const salva = semana({ 1: ["09:00", "18:00"], 6: ["09:00", "18:00"] });
-
-    expect(difereDaRotina(salva[2]!, rotina)).toBe(true);
-    expect(difereDaRotina(salva[6]!, rotina)).toBe(true);
   });
 
   it.each([

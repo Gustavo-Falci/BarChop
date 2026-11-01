@@ -4,9 +4,9 @@ import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { HorarioSerializado } from "@barchop/types";
 import { Aviso } from "../../../componentes/Aviso";
-import { Botao } from "../../../componentes/Botao";
+import { BarraDeMudancas } from "../../../componentes/BarraDeMudancas";
 import { Campo } from "../../../componentes/Campo";
-import { Chip } from "../../../componentes/Chip";
+import { Interruptor } from "../../../componentes/Interruptor";
 import { Secao } from "../../../componentes/Secao";
 import { useRequisicao } from "../../../api/useRequisicao";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
@@ -14,30 +14,56 @@ import { usePainel } from "../../../painel/SessaoDoPainel";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import { ExcecoesDeHorario } from "./ExcecoesDeHorario";
 import { PausasDaEquipe } from "./PausasDaEquipe";
-import {
-  aplicarRotina,
-  difereDaRotina,
-  fraseDaRotina,
-  ORDEM_DA_SEMANA,
-  rotinaDaSemana,
-  SIGLA_DO_DIA,
-  type Rotina,
-} from "./rotina";
+import { aplicarRotina, ORDEM_DA_SEMANA, rotinaDaSemana, type Rotina } from "./rotina";
 import estilos from "./Configuracoes.module.css";
 import { Carregando } from "../../../componentes/Carregando";
 
 const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
-// Os três jeitos mais comuns de uma barbearia abrir, a um clique.
+// "na segunda", "no sábado": o nome acessível dos campos de cada dia.
+function noDia(diaSemana: number): string {
+  const dia = DIAS[diaSemana]!;
+  return diaSemana === 0 || diaSemana === 6 ? `no ${dia}` : `na ${dia}`;
+}
+
+function comMaiuscula(texto: string): string {
+  return `${texto.charAt(0).toUpperCase()}${texto.slice(1)}`;
+}
+
+function horarioDoDia(dia: HorarioSerializado): string {
+  return dia.fechado ? "fechado" : `${dia.horaAbertura ?? ""}–${dia.horaFechamento ?? ""}`;
+}
+
+// O que a barra diz que mudou: "Sábado: 09:00–18:00 → fechado".
+function oQueMudou(salva: HorarioSerializado[], editada: HorarioSerializado[]): string[] {
+  return ORDEM_DA_SEMANA.flatMap((diaSemana) => {
+    const antes = salva.find((dia) => dia.diaSemana === diaSemana);
+    const depois = editada.find((dia) => dia.diaSemana === diaSemana);
+    if (!antes || !depois || horarioDoDia(antes) === horarioDoDia(depois)) return [];
+    return [`${comMaiuscula(DIAS[diaSemana]!)}: ${horarioDoDia(antes)} → ${horarioDoDia(depois)}`];
+  });
+}
+
+// O primeiro dia aberto que fecha antes de abrir (ou sem hora), na ordem
+// da semana. "HH:mm" com zero à esquerda compara na ordem do relógio.
+function diaInvertido(semana: HorarioSerializado[]): HorarioSerializado | undefined {
+  return ORDEM_DA_SEMANA.map((diaSemana) => semana.find((dia) => dia.diaSemana === diaSemana)).find(
+    (dia) =>
+      !!dia && !dia.fechado && (!dia.horaAbertura || !dia.horaFechamento || dia.horaAbertura >= dia.horaFechamento)
+  );
+}
+
+// Os três jeitos mais comuns de uma barbearia abrir, a um toque.
 const ATALHOS: { rotulo: string; rotina: Rotina }[] = [
   { rotulo: "Seg a sex · 9–18", rotina: { dias: [1, 2, 3, 4, 5], abre: "09:00", fecha: "18:00" } },
   { rotulo: "Seg a sáb · 9–19", rotina: { dias: [1, 2, 3, 4, 5, 6], abre: "09:00", fecha: "19:00" } },
   { rotulo: "Todos os dias · 9–18", rotina: { dias: [0, 1, 2, 3, 4, 5, 6], abre: "09:00", fecha: "18:00" } },
 ];
 
-// Horários de funcionamento (painel v2, marco 2): a rotina da semana —
-// dias que abre e um horário, aplicados de uma vez — e a semana dia a
-// dia, onde um dia pode ficar diferente da rotina.
+// Horários de funcionamento. Redesenho das Configurações (01/11, decisão
+// do dono): saiu o cartão "A rotina da semana", que repetia a lista dos
+// dias. Os atalhos preenchem a semana direto, cada dia liga e desliga no
+// interruptor, e o salvar é a barra de mudanças, como em Regras e Dados.
 export function HorariosDaBarbearia() {
   const { perfil } = usePainel();
   if (perfil.papel !== "dono") return <SoODono area="horarios" />;
@@ -50,45 +76,44 @@ function Horarios() {
   const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
   const { decididas, marcar } = useAreasDecididas(barbearia.dados?.areasDecididas);
   const [semana, setSemana] = useState<HorarioSerializado[]>([]);
-  const [rotina, setRotina] = useState<Rotina>({ dias: [], abre: "09:00", fecha: "18:00" });
-  const [erroDaRotina, setErroDaRotina] = useState<string | undefined>();
   const [aviso, setAviso] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
 
   // Sincronizar depois do commit (via efeito) deixaria uma janela em que
   // o formulário já mostra os dias mas `semana` ainda é `[]`. A
   // comparação de referência também faz `horariosSalvos.recarregar()`
-  // (depois de salvar) sincronizar de novo, uma vez só. A rotina nasce
-  // da semana salva.
+  // (depois de salvar) sincronizar de novo, uma vez só.
   const [semanaSincronizada, setSemanaSincronizada] = useState<typeof horariosSalvos.dados>(null);
   if (horariosSalvos.dados && horariosSalvos.dados !== semanaSincronizada) {
     setSemanaSincronizada(horariosSalvos.dados);
     setSemana(horariosSalvos.dados);
-    setRotina(rotinaDaSemana(horariosSalvos.dados));
   }
 
-  function trocarRotina(mudanca: Partial<Rotina>) {
-    setErroDaRotina(undefined);
-    setRotina((atual) => ({ ...atual, ...mudanca }));
+  function trocarDia(diaSemana: number, mudanca: Partial<HorarioSerializado>) {
+    setAviso(undefined);
+    setSemana((atual) => atual.map((dia) => (dia.diaSemana === diaSemana ? { ...dia, ...mudanca } : dia)));
   }
 
-  function alternarDia(dia: number) {
-    trocarRotina({
-      dias: rotina.dias.includes(dia) ? rotina.dias.filter((d) => d !== dia) : [...rotina.dias, dia].sort((a, b) => a - b),
-    });
-  }
-
-  function aplicar() {
-    // "HH:mm" com zero à esquerda compara na mesma ordem que o relógio.
-    if (rotina.dias.length > 0 && (!rotina.abre || !rotina.fecha || rotina.abre >= rotina.fecha)) {
-      setErroDaRotina("A rotina precisa fechar depois de abrir");
-      return;
-    }
-    setSemana((atual) => aplicarRotina(atual, rotina));
+  function ligarDia(diaSemana: number, aberto: boolean) {
+    // Fechar limpa as horas: a hora antiga junto de fechado guardaria um
+    // estado que a API não usa. Reabrir usa o horário mais comum da
+    // semana (09:00–18:00 se está tudo fechado).
+    const { abre, fecha } = rotinaDaSemana(semana);
+    trocarDia(
+      diaSemana,
+      aberto
+        ? { fechado: false, horaAbertura: abre, horaFechamento: fecha }
+        : { fechado: true, horaAbertura: null, horaFechamento: null }
+    );
   }
 
   async function salvar() {
     setAviso(undefined);
+    const invertido = diaInvertido(semana);
+    if (invertido) {
+      setAviso(`${comMaiuscula(DIAS[invertido.diaSemana]!)}: a barbearia precisa fechar depois de abrir.`);
+      return;
+    }
     setSalvando(true);
     try {
       // A semana inteira, sempre: dia ausente do corpo vira fechado na
@@ -104,16 +129,13 @@ function Horarios() {
     }
   }
 
-  function trocarDia(diaSemana: number, mudanca: Partial<HorarioSerializado>) {
-    setSemana((atual) => atual.map((dia) => (dia.diaSemana === diaSemana ? { ...dia, ...mudanca } : dia)));
-  }
-
   const erro = barbearia.erro ?? horariosSalvos.erro;
   if (erro) return <Aviso>{erro.mensagem || "Não foi possível carregar os horários agora."}</Aviso>;
-  // Sem esta trava, "Salvar horários" clicado antes da resposta chegar
-  // mandaria `semana` vazio — e sete dias ausentes do corpo fecham a
-  // semana inteira na API.
+  // Sem esta trava, o Salvar tocado antes da resposta chegar mandaria
+  // `semana` vazio — e sete dias ausentes do corpo fecham a semana
+  // inteira na API.
   if (!barbearia.dados || !horariosSalvos.dados) return <Carregando />;
+  const salvos = horariosSalvos.dados;
 
   // A semana na ordem do dono: segunda primeiro.
   const semanaNaOrdem = ORDEM_DA_SEMANA.map((dia) => semana.find((h) => h.diaSemana === dia)).filter(
@@ -121,138 +143,88 @@ function Horarios() {
   );
 
   return (
-    <MolduraDaArea area="horarios" decididas={decididas} aviso={aviso}>
-      {/* Em duas colunas: a tela usa a largura em vez de virar uma coluna
-          comprida (pedido do dono). No celular, empilham. */}
+    <MolduraDaArea area="horarios" decididas={decididas}>
+      {/* Em duas colunas no desktop: a semana à esquerda, datas e pausas
+          à direita. No celular, empilham. */}
       <div className={estilos.gradeDosHorarios}>
         <Secao
-          titulo="A rotina da semana"
-          descricao="Os dias em que abre e o horário de sempre. Aplicar preenche a semana aqui embaixo — os dias fora da rotina ficam fechados."
-          acao={
-            <Botao variante="contorno" onClick={aplicar}>
-              Aplicar à semana
-            </Botao>
-          }
+          titulo="A semana"
+          descricao="Ligue o dia em que abre e acerte o horário. Os atalhos preenchem a semana de uma vez."
         >
-          <div className={estilos.atalhos} role="group" aria-label="Atalhos de rotina">
+          <div className={estilos.atalhos} role="group" aria-label="Preencher a semana com">
             {ATALHOS.map((atalho) => (
               <button
                 key={atalho.rotulo}
                 type="button"
                 className={estilos.atalho}
-                onClick={() => trocarRotina(atalho.rotina)}
+                onClick={() => {
+                  setAviso(undefined);
+                  setSemana((atual) => aplicarRotina(atual, atalho.rotina));
+                }}
               >
                 {atalho.rotulo}
               </button>
             ))}
           </div>
 
-          <fieldset className={estilos.diasDaRotina}>
-            <legend className={estilos.rotulo}>Dias em que abre</legend>
-            {ORDEM_DA_SEMANA.map((dia) => (
-              <label key={dia} className={estilos.diaDaRotina}>
-                <input
-                  type="checkbox"
-                  className={estilos.marcaEscondida}
-                  checked={rotina.dias.includes(dia)}
-                  onChange={() => alternarDia(dia)}
-                />
-                <span>{SIGLA_DO_DIA[dia]}</span>
-              </label>
+          <ul className={estilos.listaDosDias}>
+            {semanaNaOrdem.map((dia) => (
+              <li key={dia.diaSemana} className={estilos.dia}>
+                <span className={estilos.nomeDoDia}>{comMaiuscula(DIAS[dia.diaSemana]!)}</span>
+                {/* Aberto e fechado ocupam a mesma área da grade: a linha
+                    não pula quando o dia liga ou desliga. */}
+                <div className={estilos.horas}>
+                  {dia.fechado ? (
+                    <span className={estilos.fechado}>Fechado</span>
+                  ) : (
+                    <>
+                      <Campo
+                        // Rótulo curto no olho, nome inteiro pra quem ouve.
+                        rotulo="Abre"
+                        type="time"
+                        aria-label={`Abre ${noDia(dia.diaSemana)}`}
+                        valor={dia.horaAbertura ?? ""}
+                        onChange={(valor) => trocarDia(dia.diaSemana, { horaAbertura: valor })}
+                      />
+                      <Campo
+                        rotulo="Fecha"
+                        type="time"
+                        aria-label={`Fecha ${noDia(dia.diaSemana)}`}
+                        valor={dia.horaFechamento ?? ""}
+                        onChange={(valor) => trocarDia(dia.diaSemana, { horaFechamento: valor })}
+                      />
+                    </>
+                  )}
+                </div>
+                <span className={estilos.chaveDoDia}>
+                  <Interruptor
+                    rotulo={`Aberto ${noDia(dia.diaSemana)}`}
+                    rotuloOculto
+                    ligado={!dia.fechado}
+                    aoTrocar={(aberto) => ligarDia(dia.diaSemana, aberto)}
+                  />
+                </span>
+              </li>
             ))}
-          </fieldset>
-
-          <div className={estilos.horas}>
-            <Campo
-              rotulo="Abre"
-              type="time"
-              aria-label="Rotina: abre"
-              valor={rotina.abre}
-              onChange={(valor) => trocarRotina({ abre: valor })}
-            />
-            <Campo
-              rotulo="Fecha"
-              type="time"
-              aria-label="Rotina: fecha"
-              valor={rotina.fecha}
-              onChange={(valor) => trocarRotina({ fecha: valor })}
-              erro={erroDaRotina}
-            />
-          </div>
-
-          <p className={estilos.resultado} aria-live="polite">
-            {`Resultado: ${fraseDaRotina(rotina)}`}
-          </p>
-        </Secao>
-
-        <Secao
-          titulo="A semana"
-          descricao="O que vale em cada dia. Um dia pode ter horário próprio — ele fica marcado como diferente da rotina."
-          acao={
-            <Botao onClick={salvar} carregando={salvando}>
-              Salvar horários
-            </Botao>
-          }
-        >
-          {semanaNaOrdem.map((dia) => (
-            <div key={dia.diaSemana} className={estilos.dia}>
-              <span className={estilos.nomeDoDia}>
-                {DIAS[dia.diaSemana]}
-                {difereDaRotina(dia, rotina) ? (
-                  <Chip tom="neutro" tamanho="pequeno">
-                    Diferente da rotina
-                  </Chip>
-                ) : null}
-              </span>
-              <label>
-                <input
-                  type="checkbox"
-                  aria-label={`Fechado na ${DIAS[dia.diaSemana]}`}
-                  checked={dia.fechado}
-                  onChange={(evento) =>
-                    // Fechar limpa as horas: a hora antiga junto de
-                    // fechado guardaria um estado que a API não usa.
-                    trocarDia(
-                      dia.diaSemana,
-                      evento.target.checked
-                        ? { fechado: true, horaAbertura: null, horaFechamento: null }
-                        : { fechado: false, horaAbertura: rotina.abre, horaFechamento: rotina.fecha }
-                    )
-                  }
-                />
-                fechado
-              </label>
-              {/* Os dois campos embrulhados: aberto e fechado têm o mesmo
-                  número de filhos e as colunas seguem alinhadas. */}
-              <div className={estilos.horas}>
-                {dia.fechado ? null : (
-                  <>
-                    <Campo
-                      // Rótulo curto no olho, nome inteiro pra quem ouve.
-                      rotulo="Abre"
-                      type="time"
-                      aria-label={`Abre na ${DIAS[dia.diaSemana]}`}
-                      valor={dia.horaAbertura ?? ""}
-                      onChange={(valor) => trocarDia(dia.diaSemana, { horaAbertura: valor })}
-                    />
-                    <Campo
-                      rotulo="Fecha"
-                      type="time"
-                      aria-label={`Fecha na ${DIAS[dia.diaSemana]}`}
-                      valor={dia.horaFechamento ?? ""}
-                      onChange={(valor) => trocarDia(dia.diaSemana, { horaFechamento: valor })}
-                    />
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
+          </ul>
         </Secao>
 
         <ExcecoesDeHorario aoDecidir={() => marcar("horarios")} />
 
         <PausasDaEquipe />
       </div>
+
+      <BarraDeMudancas
+        mudancas={oQueMudou(salvos, semana)}
+        pendente={!decididas.includes("horarios")}
+        aviso={aviso}
+        salvando={salvando}
+        aoSalvar={salvar}
+        aoDescartar={() => {
+          setAviso(undefined);
+          setSemana(salvos);
+        }}
+      />
     </MolduraDaArea>
   );
 }

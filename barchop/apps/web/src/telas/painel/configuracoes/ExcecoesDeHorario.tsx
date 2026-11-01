@@ -40,6 +40,14 @@ export function ExcecoesDeHorario({ aoDecidir }: { aoDecidir: () => void }) {
   const [erro, setErro] = useState<string | undefined>();
   const [aviso, setAviso] = useState<{ tom: "sucesso" | "atencao"; texto: string } | undefined>();
   const [salvando, setSalvando] = useState(false);
+  const [formularioAberto, setFormularioAberto] = useState(false);
+
+  function fecharFormulario() {
+    setFormularioAberto(false);
+    setErro(undefined);
+    setData("");
+    setMotivo("");
+  }
 
   async function adicionar() {
     setErro(undefined);
@@ -64,8 +72,7 @@ export function ExcecoesDeHorario({ aoDecidir }: { aoDecidir: () => void }) {
       const { foraDoHorario } = await api.barbeiro.salvarExcecaoDeHorario(data, edicao);
       aoDecidir();
       salvas.recarregar();
-      setData("");
-      setMotivo("");
+      fecharFormulario();
       setAviso(
         foraDoHorario > 0
           ? { tom: "atencao", texto: avisoDosMarcados(foraDoHorario) }
@@ -115,25 +122,39 @@ export function ExcecoesDeHorario({ aoDecidir }: { aoDecidir: () => void }) {
         </ul>
       ) : null}
 
-      <div className={estilos.novaData}>
-        <Campo rotulo="Data" type="date" valor={data} onChange={setData} />
-        <label className={estilos.marcaDaData}>
-          <input type="checkbox" checked={fechado} onChange={(evento) => setFechado(evento.target.checked)} />
-          Fechado o dia todo
-        </label>
-        {fechado ? null : (
-          <div className={estilos.horas}>
-            <Campo rotulo="Abre" type="time" aria-label="Abre na data" valor={abre} onChange={setAbre} />
-            <Campo rotulo="Fecha" type="time" aria-label="Fecha na data" valor={fecha} onChange={setFecha} />
+      {/* O formulário fica fechado atrás de "Nova data" (redesenho,
+          01/11): aberto sempre, eram cinco campos empilhados no celular
+          pra uma coisa que se faz poucas vezes no ano. */}
+      {formularioAberto ? (
+        <div className={estilos.novaData}>
+          <Campo rotulo="Data" type="date" valor={data} onChange={setData} />
+          <label className={estilos.marcaDaData}>
+            <input type="checkbox" checked={fechado} onChange={(evento) => setFechado(evento.target.checked)} />
+            Fechado o dia todo
+          </label>
+          {fechado ? null : (
+            <div className={estilos.horas}>
+              <Campo rotulo="Abre" type="time" aria-label="Abre na data" valor={abre} onChange={setAbre} />
+              <Campo rotulo="Fecha" type="time" aria-label="Fecha na data" valor={fecha} onChange={setFecha} />
+            </div>
+          )}
+          <Campo rotulo="Motivo (opcional)" valor={motivo} onChange={setMotivo} maxLength={120} />
+          <div className={estilos.acoesDaData}>
+            <Botao onClick={adicionar} carregando={salvando}>
+              Adicionar data
+            </Botao>
+            <Botao variante="fantasma" onClick={fecharFormulario} disabled={salvando}>
+              Cancelar
+            </Botao>
           </div>
-        )}
-        <Campo rotulo="Motivo (opcional)" valor={motivo} onChange={setMotivo} maxLength={120} />
+        </div>
+      ) : (
         <div>
-          <Botao variante="contorno" onClick={adicionar} carregando={salvando}>
-            Adicionar data
+          <Botao variante="contorno" onClick={() => setFormularioAberto(true)}>
+            Nova data
           </Botao>
         </div>
-      </div>
+      )}
 
       {erro ? <Aviso>{erro}</Aviso> : null}
       {aviso ? <Aviso tom={aviso.tom}>{aviso.texto}</Aviso> : null}

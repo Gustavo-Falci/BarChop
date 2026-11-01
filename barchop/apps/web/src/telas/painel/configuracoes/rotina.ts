@@ -49,14 +49,6 @@ export function aplicarRotina(semana: HorarioSerializado[], rotina: Rotina): Hor
   );
 }
 
-// O dia não é o que a rotina faria com ele: aberto fora dela, fechado
-// num dia dela, ou aberto em outro horário.
-export function difereDaRotina(dia: HorarioSerializado, rotina: Rotina): boolean {
-  const naRotina = rotina.dias.includes(dia.diaSemana);
-  if (dia.fechado) return naRotina;
-  return !naRotina || dia.horaAbertura !== rotina.abre || dia.horaFechamento !== rotina.fecha;
-}
-
 // "Seg a sex, 09:00–18:00" — os dias em trechos seguidos na ordem da
 // semana (três ou mais viram "x a y"), unidos por vírgula e "e".
 export function fraseDaRotina(rotina: Rotina): string {

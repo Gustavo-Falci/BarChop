@@ -51,4 +51,28 @@ describe("Configurações no celular: peças comuns", () => {
     expect(trilho).toMatch(/grid-template-columns:\s*repeat\(var\(--colunas\), minmax\(0, 1fr\)\)/);
     expect(regra(celular, "  .opcoes[data-preencher] .pilula")).toMatch(/min-height:\s*44px/);
   });
+
+  it("a barra de salvar no celular corta o resumo em duas linhas", () => {
+    // "1 mudança · Segunda: fechado → 09:00–18:00" ao lado de Descartar e
+    // Salvar virava quatro linhas e a barra cobria meia tela.
+    const celular = blocoDaMedia(lerCss("componentes/BarraDeMudancas.module.css"), "@media (max-width: 640px)");
+    expect(regra(celular, "  .resumo")).toMatch(/-webkit-line-clamp:\s*2/);
+    // A lista do que mudou sai da vista, mas não do leitor de tela.
+    expect(regra(celular, "  .detalhes")).toMatch(/clip-path:\s*inset\(50%\)/);
+  });
+
+  it("o texto de apoio solto não vai pra segunda linha da seção", () => {
+    // A regra do celular que desce o resumo do índice pra baixo do nome
+    // valia pra todo `.valor`, e "Nenhuma data especial" caía embaixo do
+    // botão "Nova data".
+    const css = lerCss("telas/painel/configuracoes/Configuracoes.module.css");
+    const celular = blocoDaMedia(css, "@media (max-width: 720px)");
+    expect(regra(celular, "  .valor")).toBe("");
+    expect(regra(celular, "  .linha .valor")).toMatch(/grid-row:\s*2/);
+  });
+
+  it("dia fechado no celular fica numa linha só: nome, Fechado e o interruptor", () => {
+    const celular = blocoDaMedia(lerCss("telas/painel/configuracoes/Configuracoes.module.css"), "@media (max-width: 560px)");
+    expect(regra(celular, "  .dia:has(.fechado)")).toMatch(/grid-template-areas:\s*"nome horas chave"/);
+  });
 });

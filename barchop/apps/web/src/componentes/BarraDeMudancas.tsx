@@ -36,10 +36,18 @@ export function BarraDeMudancas({
   aoDescartar: () => void;
 }) {
   const visivel = mudancas.length > 0 || pendente || Boolean(aviso);
+  // No celular a lista do que mudou sai da vista (fica pro leitor de
+  // tela) e sobra a contagem: ao lado de Descartar e Salvar, a 360px, o
+  // resumo inteiro virava "1 muda…".
   const resumo =
-    mudancas.length === 0
-      ? "Ainda não decidido: salve pra manter assim."
-      : `${mudancas.length} ${mudancas.length === 1 ? "mudança" : "mudanças"} · ${mudancas.join(" · ")}`;
+    mudancas.length === 0 ? (
+      "Ainda não decidido: salve pra manter assim."
+    ) : (
+      <>
+        {`${mudancas.length} ${mudancas.length === 1 ? "mudança" : "mudanças"}`}
+        <span className={estilos.detalhes}>{` · ${mudancas.join(" · ")}`}</span>
+      </>
+    );
 
   // `initial={false}`: a barra que já nasce na tela (área pendente) não
   // anima no carregamento, e o HTML do servidor sai no lugar final.

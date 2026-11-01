@@ -49,7 +49,34 @@
    a barra, em duas linhas, cobria o conteúdo. Com base 0 o resumo encolhe
    e quebra o próprio texto; o aviso de erro (base 100%) segue embaixo. */
 @media (max-width: 640px) {
+  /* Duas linhas no máximo: com Descartar ao lado, "Segunda: fechado →
+     09:00–18:00" virava quatro linhas e a barra cobria meia tela. O
+     texto inteiro continua no aria-live. */
   .resumo {
     flex-basis: 0;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  /* Botões mais justos: com 24px de cada lado, "Descartar" tinha 127px e
+     sobravam 57 pro resumo. */
+  .barra {
+    column-gap: var(--espaco-sm);
+  }
+
+  .botoes > button {
+    padding-inline: var(--espaco-sm);
+  }
+
+  .detalhes {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

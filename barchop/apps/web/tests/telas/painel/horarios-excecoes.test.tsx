@@ -15,9 +15,12 @@ function datas() {
   return screen.getByRole("region", { name: "Datas especiais" });
 }
 
+// Redesenho (01/11): o formulário da data nova fica fechado atrás de
+// "Nova data" — aberto sempre, eram cinco campos empilhados no celular.
 async function abrir(falso = criarApiClientFalso()) {
   montarPainel(<HorariosDaBarbearia />, falso);
   await screen.findByRole("region", { name: "Datas especiais" });
+  await userEvent.click(within(datas()).getByRole("button", { name: "Nova data" }));
   return falso;
 }
 
@@ -121,5 +124,29 @@ describe("datas especiais em Horários", () => {
 
     await waitFor(() => expect(apagar).toHaveBeenCalledWith("2037-12-25"));
     expect(await within(datas()).findByText(/nenhuma data especial/i)).toBeInTheDocument();
+  });
+
+  it("o formulário da data nova abre por Nova data e fecha ao salvar", async () => {
+    montarPainel(<HorariosDaBarbearia />, criarApiClientFalso());
+    await screen.findByRole("region", { name: "Datas especiais" });
+
+    expect(within(datas()).queryByLabelText("Data")).not.toBeInTheDocument();
+    await userEvent.click(within(datas()).getByRole("button", { name: "Nova data" }));
+    fireEvent.change(within(datas()).getByLabelText("Data"), { target: { value: "2037-12-25" } });
+    await userEvent.click(within(datas()).getByRole("button", { name: "Adicionar data" }));
+
+    expect(await within(datas()).findByText(/25 de dezembro/)).toBeInTheDocument();
+    expect(within(datas()).queryByLabelText("Data")).not.toBeInTheDocument();
+  });
+
+  it("cancelar fecha o formulário sem salvar", async () => {
+    const falso = criarApiClientFalso();
+    const salvar = vi.spyOn(falso.barbeiro, "salvarExcecaoDeHorario");
+    await abrir(falso);
+
+    await userEvent.click(within(datas()).getByRole("button", { name: "Cancelar" }));
+
+    expect(within(datas()).queryByLabelText("Data")).not.toBeInTheDocument();
+    expect(salvar).not.toHaveBeenCalled();
   });
 });

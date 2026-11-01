@@ -88,7 +88,7 @@ describe("moldura das subtelas", () => {
     montarPainel(<HorariosDaBarbearia />, criarApiClientFalso({ papel: "profissional" }));
 
     expect(await screen.findByText(/só o dono/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /salvar horários/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /salvar/i })).not.toBeInTheDocument();
   });
 });
 
@@ -394,7 +394,7 @@ describe("horários", () => {
 
     montarPainel(<HorariosDaBarbearia />, falso);
 
-    await userEvent.click(await screen.findByRole("button", { name: /salvar horários/i }));
+    await userEvent.click(await within(await screen.findByRole("region", { name: "Mudanças" })).findByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
     expect(salvar.mock.calls[0][0]).toHaveLength(7);
@@ -408,8 +408,9 @@ describe("horários", () => {
 
     montarPainel(<HorariosDaBarbearia />, falso);
 
-    await userEvent.click(await screen.findByRole("checkbox", { name: /fechado na segunda/i }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar horários/i }));
+    // Redesenho (01/11): a caixinha "fechado" virou o interruptor "Aberto".
+    await userEvent.click(await screen.findByRole("switch", { name: "Aberto na segunda" }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
     const segunda = salvar.mock.calls[0][0].find((h) => h.diaSemana === 1);
@@ -417,7 +418,7 @@ describe("horários", () => {
   });
 
   // Antes de GET /barbearias/me/horarios responder, `semana` é `[]`. Um
-  // clique em "Salvar horários" nessa janela mandaria um array vazio, e
+  // clique em "Salvar" nessa janela mandaria um array vazio, e
   // a API fecha os sete dias quando um dia falta no corpo.
   it("não manda horários vazios enquanto a semana ainda está carregando", async () => {
     const falso = criarApiClientFalso();
@@ -438,14 +439,14 @@ describe("horários", () => {
     montarPainel(<HorariosDaBarbearia />, falso);
 
     await screen.findByText(/carregando/i);
-    const botao = screen.queryByRole("button", { name: /salvar horários/i });
+    const botao = screen.queryByRole("button", { name: "Salvar" });
     if (botao) await userEvent.click(botao);
 
     expect(salvar).not.toHaveBeenCalled();
 
     liberar();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /salvar horários/i })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "Salvar" })).toBeInTheDocument()
     );
   });
 });

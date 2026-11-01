@@ -34,10 +34,11 @@
 - "Fechar o dia" embaixo, depois dos valores; a confirmação continua só com pendência.
 
 ### PR 5 — Planos, Folgas, Serviços, Equipe
-- Equipe estoura a 360px (página com 372px): "Mudar ordem" + "Convidar membro" no cabeçalho somam 356px onde cabem 328. Tirar o "Mudar ordem" do cabeçalho resolve; conferir de novo com a varredura das rotas a 360px. As outras telas do painel ficaram em 360px (31/10).
+- Equipe estoura a 360px (página com 372px): "Mudar ordem" + "Convidar membro" no cabeçalho somam 356px onde cabem 328. Tirar o "Mudar ordem" do cabeçalho resolve; conferir de novo com a varredura das rotas a 360px. As outras telas do painel ficaram em 360px (31/10). Folgas mora em `/painel/bloqueios`. Depois do PR 5, todas em 360px.
 - "Mudar ordem" sai do cabeçalho (era secundário acima do principal); um lugar só nas duas telas.
 - Folgas: estado vazio com ícone e orientação.
 - Planos: explicação do "Mostrar na página" junto do switch; o selo "Desativado" fica (`plano.ativo` falso).
+  - Já estava feito: a frase do efeito fica logo abaixo do switch, nos dois estados, com `aria-describedby`. Sem mudança no PR 5.
 
 ### PR 6 (a decidir) — Linhas de lista sem rótulo
 - Cada tela daria o conteúdo da linha no celular (nome, detalhe, valor à direita), no lugar do "Rótulo: valor". Precisa de prop nova na `Tabela`; só com o conteúdo por tela não se perde informação.

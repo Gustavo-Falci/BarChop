@@ -17,6 +17,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { agruparPorCategoria, resumoDoGrupo } from "../../painel/listas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
+import { BotaoDeMudarOrdem } from "./BotaoDeMudarOrdem";
 import estilos from "./ListaDeServicos.module.css";
 import { OrdemDosServicos } from "./MudarOrdem";
 import { Carregando } from "../../componentes/Carregando";
@@ -142,20 +143,7 @@ export function ListaDeServicos() {
           // recolhida — só ícones, sem rótulo — o título da página era
           // a única pista, e ela fica do outro lado da tela. Mesmo
           // conserto que ListaDeClientes já tinha.
-          // "Mudar ordem" só com serviço no agendamento: é a ordem da
-          // página, e sem nenhum ativo não há o que ordenar.
-          ehDono ? (
-            <div className={estilos.acoes}>
-              {!ordenando && todos.some((servico) => servico.ativo) ? (
-                <Botao variante="contorno" onClick={() => setOrdenando(true)}>
-                  Mudar ordem
-                </Botao>
-              ) : null}
-              <Botao onClick={() => router.push("/painel/servicos/novo")}>
-                + Novo serviço
-              </Botao>
-            </div>
-          ) : undefined
+          ehDono ? <Botao onClick={() => router.push("/painel/servicos/novo")}>+ Novo serviço</Botao> : undefined
         }
       />
 
@@ -199,6 +187,12 @@ export function ListaDeServicos() {
                 ]}
               />
             </div>
+          ) : null}
+
+          {/* "Mudar ordem" só com serviço no agendamento: é a ordem da
+              página, e sem nenhum ativo não há o que ordenar. */}
+          {ehDono && todos.some((servico) => servico.ativo) ? (
+            <BotaoDeMudarOrdem onClick={() => setOrdenando(true)} />
           ) : null}
 
           <Tabela

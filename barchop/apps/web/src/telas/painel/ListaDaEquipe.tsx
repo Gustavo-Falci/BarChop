@@ -12,6 +12,7 @@ import { Tabela } from "../../componentes/Tabela";
 import { useRequisicao } from "../../api/useRequisicao";
 import { situacaoDoMembro, type SituacaoDoMembro } from "../../painel/listas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { BotaoDeMudarOrdem } from "./BotaoDeMudarOrdem";
 import estilos from "./ListaDaEquipe.module.css";
 import { OrdemDaEquipe } from "./MudarOrdem";
 import { Carregando } from "../../componentes/Carregando";
@@ -107,17 +108,7 @@ export function ListaDaEquipe() {
             ? `${todos.length} ${todos.length === 1 ? "pessoa" : "pessoas"} · ${atendem} ${atendem === 1 ? "atende" : "atendem"}`
             : "Quem trabalha na barbearia e o que cada um pode fazer no painel."
         }
-        acao={
-          <div className={estilos.acoes}>
-            {/* Só com alguém na página: é a ordem dela que muda. */}
-            {!ordenando && todos.some((membro) => membro.ativo && membro.atende) ? (
-              <Botao variante="contorno" onClick={() => setOrdenando(true)}>
-                Mudar ordem
-              </Botao>
-            ) : null}
-            <Botao onClick={convidar}>+ Convidar membro</Botao>
-          </div>
-        }
+        acao={<Botao onClick={convidar}>+ Convidar membro</Botao>}
       />
 
       {/* Mesma guarda de ListaDeServicos: sem ela a tabela pintaria o
@@ -146,6 +137,11 @@ export function ListaDaEquipe() {
               { valor: "inativos", rotulo: "Inativos", contagem: contar("inativos") },
             ]}
           />
+
+          {/* Só com alguém na página: é a ordem dela que muda. */}
+          {todos.some((membro) => membro.ativo && membro.atende) ? (
+            <BotaoDeMudarOrdem onClick={() => setOrdenando(true)} />
+          ) : null}
 
           {/* A coluna Telefone só quando alguém tem: com "—" em todas as
               linhas ela era largura gasta com nada (análise de 17/10). */}

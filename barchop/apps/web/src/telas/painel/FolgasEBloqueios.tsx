@@ -6,10 +6,12 @@ import type { ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
+import { Vazio } from "../../componentes/Vazio";
 import { useRequisicao } from "../../api/useRequisicao";
 import { formatarPeriodo, hojeIso, somarDias } from "../../formato/datas";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { entradaDoItem, usePrimeiraCarga } from "../../movimento/lista";
+import { IconeBloqueio } from "../../painel/icones";
 import { useAgora } from "../../painel/useAgora";
 import { JanelaDeBloqueio } from "./agenda/JanelaDeBloqueio";
 import estilos from "./FolgasEBloqueios.module.css";
@@ -80,9 +82,14 @@ export function FolgasEBloqueios({ agora: agoraFixo }: { agora?: Date } = {}) {
           ) : carregando ? (
             <p className={estilos.vazio}>Carregando…</p>
           ) : bloqueios.dados!.length === 0 ? (
-            <p className={estilos.vazio}>
-              Ninguém fora da agenda nos próximos {DIAS_A_FRENTE} dias.
-            </p>
+            // O estado vazio da casa, e não uma linha solta: o que é, pra
+            // que serve e onde se faz (redesenho do celular, PR 5).
+            <Vazio
+              icone={<IconeBloqueio />}
+              mensagem={`Nenhuma folga ou bloqueio nos próximos ${DIAS_A_FRENTE} dias.`}
+              // Espaço que não quebra: o "+" e o "Bloquear" são o nome do botão.
+              dica={"Pra tirar alguém da agenda, use o +\u00A0Bloquear, lá em cima."}
+            />
           ) : (
             // Removeu, a linha sai e as de baixo sobem pro buraco
             // (`layout`); bloqueou, a nova entra (motion PR 4).

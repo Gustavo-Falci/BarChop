@@ -160,7 +160,7 @@ describe("folgas: sem nenhuma", () => {
     montarPainel(<FolgasEBloqueios agora={AGORA} />, comAna());
 
     expect(await screen.findByText("Nenhuma folga ou bloqueio nos próximos 90 dias.")).toBeInTheDocument();
-    expect(screen.getByText(/férias, almoço, consulta/i)).toHaveTextContent(/\+ bloquear/i);
+    expect(screen.getByText(/pra tirar alguém da agenda/i)).toHaveTextContent(/\+ bloquear/i);
   });
 });
 

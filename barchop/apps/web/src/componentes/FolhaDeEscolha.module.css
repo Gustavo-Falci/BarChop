@@ -1,0 +1,195 @@
+/* No celular, presa embaixo na largura da tela, como a folha do
+   calendário da Agenda. Com muitas opções (os sete prazos) rola por
+   dentro em vez de passar do topo. O espaço de dentro fica no .corpo: o
+   toque no fundo fecha a folha, e um toque no padding da própria
+   <dialog> contaria como fundo. */
+.folha {
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: calc(100dvh - var(--espaco-xl));
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 0;
+  border-radius: var(--raio-lg) var(--raio-lg) 0 0;
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  box-shadow: var(--sombra-2);
+}
+
+.folha::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.corpo {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-sm) var(--espaco-lg) calc(var(--espaco-lg) + env(safe-area-inset-bottom));
+}
+
+/* A alça diz "isto sobe de baixo"; não arrasta. */
+.alca {
+  justify-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-line-strong);
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+.titulo {
+  flex: 1;
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.fechar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-inline-end: calc(-1 * var(--espaco-sm));
+  padding: 0;
+  border: 0;
+  border-radius: var(--raio-pill);
+  background: transparent;
+  color: var(--cor-ink-soft);
+  cursor: pointer;
+}
+
+.fechar:hover {
+  background: var(--cor-paper-soft);
+}
+
+.opcoes {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.legenda {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Uma opção por linha, com o alvo da linha inteira. */
+.opcao {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-height: 52px;
+  padding: var(--espaco-xs) var(--espaco-xs);
+  cursor: pointer;
+}
+
+.opcao + .opcao {
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* O rádio sai da vista, mas fica no teclado e no leitor de tela: quem
+   desenha é a marca ao lado. */
+.radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.marca {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  /* O aro precisa de 3:1 pra se ver como controle: a linha forte some
+     no creme do claro. */
+  border: 2px solid var(--cor-muted);
+  border-radius: 50%;
+}
+
+/* O marcado no acento como texto: o ouro puro dá ~1,6:1 no creme do
+   claro; no escuro, o token já é o ouro. */
+.radio:checked ~ .marca {
+  border-color: var(--cor-accent-text);
+}
+
+.radio:checked ~ .marca::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cor-accent-text);
+}
+
+.radio:checked ~ .rotulo {
+  font-weight: 600;
+}
+
+.radio:focus-visible ~ .marca {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+.opcao:hover .marca {
+  border-color: var(--cor-ink-soft);
+}
+
+.opcao:hover .radio:checked ~ .marca {
+  border-color: var(--cor-accent-text);
+}
+
+.efeito {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+.usar {
+  display: grid;
+  margin-block-start: var(--espaco-xs);
+}
+
+.usar > button {
+  width: 100%;
+  min-height: 48px;
+}
+
+/* Acima do corte do celular, uma faixa de 1280px seria demais: a folha
+   fica no meio, na largura das outras janelas do painel. */
+@media (min-width: 721px) {
+  .folha {
+    inset: 0;
+    width: min(28rem, calc(100vw - 2 * var(--espaco-md)));
+    max-height: calc(100dvh - 2 * var(--espaco-xl));
+    margin: auto;
+    border: var(--borda-padrao) solid var(--cor-line-strong);
+    border-radius: var(--raio-lg);
+  }
+
+  .alca {
+    display: none;
+  }
+
+  .corpo {
+    padding: var(--espaco-md) var(--espaco-lg) var(--espaco-lg);
+  }
+}

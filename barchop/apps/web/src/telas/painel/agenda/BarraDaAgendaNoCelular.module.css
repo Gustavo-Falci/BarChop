@@ -55,6 +55,11 @@
   text-overflow: ellipsis;
 }
 
+/* O mês abreviado só aparece na tela estreita (media abaixo). */
+.curto {
+  display: none;
+}
+
 .acoes {
   display: flex;
   align-items: center;
@@ -103,9 +108,22 @@
 
 /* No celular estreito (360px) sobram ~92px pro título, com Hoje e
    Bloquear rotulados: a 20px "Outubro" virava "Outu…". Um passo abaixo,
-   o mês cabe inteiro. */
+   o título respira. */
 @media (max-width: 374px) {
   .titulo {
     font-size: var(--texto-md);
+  }
+}
+
+/* Abaixo de 400px o mês sai abreviado ("Set"), sempre inteiro. Medido
+   em 01/11: a 390px "Novembro" pedia 98px onde cabiam 94, e a 360px
+   setembro, novembro, dezembro e fevereiro cortavam com "…". */
+@media (max-width: 399px) {
+  .longo {
+    display: none;
+  }
+
+  .curto {
+    display: inline;
   }
 }

@@ -84,6 +84,14 @@ function nomeDoMes(data: string): string {
   return nome.charAt(0).toUpperCase() + nome.slice(1);
 }
 
+// "Set", "Nov": o mês do título na tela estreita.
+function mesCurto(data: string): string {
+  const nome = new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" })
+    .format(new Date(`${data}T12:00:00Z`))
+    .replace(".", "");
+  return nome.charAt(0).toUpperCase() + nome.slice(1);
+}
+
 function diaCurto(data: string): string {
   const mes = new Intl.DateTimeFormat("pt-BR", { month: "short", timeZone: "UTC" })
     .format(new Date(`${data}T12:00:00Z`))
@@ -369,6 +377,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
         {celular ? (
           <BarraDaAgendaNoCelular
             titulo={tituloNoCelular}
+            tituloCurto={vista === "dia" ? undefined : mesCurto(data)}
             diaDeHoje={Number(hoje.slice(8))}
             aoAbrirMenu={() => setComMenu(true)}
             aoAbrirCalendario={() => setEscolhendoData(true)}

@@ -74,6 +74,17 @@ describe("agenda no celular: barra e menu", () => {
     expect(screen.queryByRole("group", { name: "Filtrar por profissional" })).not.toBeInTheDocument();
   });
 
+  // Pendente do redesenho (01/11): a 360px "Setembro" virava "Setem…".
+  // A barra leva o mês inteiro e o abreviado; o CSS escolhe qual se vê
+  // (agenda-largura-no-celular). O nome do botão segue o mês inteiro.
+  it("o título leva o mês inteiro e o abreviado, e o nome do botão é o inteiro", async () => {
+    montarPainel(<Agenda agora={AGORA} />, semear());
+
+    const titulo = await screen.findByRole("button", { name: "Setembro, escolher data" });
+    expect(within(titulo).getByText("Setembro")).toBeInTheDocument();
+    expect(within(titulo).getByText("Set")).toBeInTheDocument();
+  });
+
   it("na vista de dia, o título é o dia curto", async () => {
     irPara({ vista: "dia", data: "2026-09-08" });
     montarPainel(<Agenda agora={AGORA} />, semear());

@@ -40,8 +40,11 @@
 - Planos: explicação do "Mostrar na página" junto do switch; o selo "Desativado" fica (`plano.ativo` falso).
   - Já estava feito: a frase do efeito fica logo abaixo do switch, nos dois estados, com `aria-describedby`. Sem mudança no PR 5.
 
-### PR 6 (a decidir) — Linhas de lista sem rótulo
+### PR 6 — Linhas de lista sem rótulo
 - Cada tela daria o conteúdo da linha no celular (nome, detalhe, valor à direita), no lugar do "Rótulo: valor". Precisa de prop nova na `Tabela`; só com o conteúdo por tela não se perde informação.
+- Feito: `Linha.noCelular` ({ detalhe, valor, acoes }); com ele em todas as linhas, até 640px a `Tabela` vira lista (troca em JS, `useMidia`). Entre 641 e 900px, a tabela larga de sempre; sem `noCelular` (Assinantes), segue o cartão.
+- Serviços, Equipe, Planos e Clientes dizem o conteúdo. O detalhe é uma lista de partes que não quebram no meio (telefone, data). Em Planos, o "por mês" desce pra baixo do valor.
+- Conferido a 360/640/641px, nos dois temas: todas as rotas na largura da tela.
 
 ## Conferência visual
 - Semente: `pnpm --filter @barchop/api exec tsx scripts/conferencia-visual.ts` (sobe a API em :3333 já semeada), `next dev`, login `gustavo@exemplo.com` / `senha-forte-123` (token em `sessao.barbeiro`).

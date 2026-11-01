@@ -10,6 +10,7 @@ import type {
 } from "@barchop/types";
 import { Aviso } from "../../../componentes/Aviso";
 import { CabecalhoDaPagina } from "../../../componentes/CabecalhoDaPagina";
+import { Chip } from "../../../componentes/Chip";
 import { SecaoNumerada } from "../../../componentes/SecaoNumerada";
 import { useRequisicao } from "../../../api/useRequisicao";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
@@ -84,22 +85,24 @@ function LinhaDaArea({
   barbearia: BarbeariaDoPainel;
   horarios: HorarioSerializado[];
 }) {
+  // O selo é o mesmo da subtela (MolduraDaArea). A consequência fica no
+  // cinza de apoio: com a linha inteira em âmbar, quatro de seis faltando
+  // viravam um bloco laranja de texto; quem sinaliza é o selo.
   return (
     <li>
-      <Link href={descricao.rota} className={decidida ? estilos.linha : `${estilos.linha} ${estilos.faltando}`}>
-        <strong className={estilos.nomeDaArea}>{descricao.titulo}</strong>
+      <Link href={descricao.rota} className={estilos.linha}>
+        <span className={estilos.titulo}>
+          <strong className={estilos.nomeDaArea}>{descricao.titulo}</strong>
+          <Chip tom={decidida ? "ok" : "atencao"} tamanho="pequeno">
+            {decidida ? "Configurado" : "Faltando"}
+          </Chip>
+        </span>
         <span className={estilos.valor}>
           {decidida ? resumoDaArea(descricao.area, barbearia, horarios) : descricao.consequencia}
         </span>
-        {decidida ? (
-          <span className={estilos.seta} aria-hidden="true">
-            ›
-          </span>
-        ) : (
-          <span className={estilos.configurar}>
-            Configurar <span aria-hidden="true">→</span>
-          </span>
-        )}
+        <span className={estilos.seta} aria-hidden="true">
+          ›
+        </span>
       </Link>
     </li>
   );
@@ -158,30 +161,35 @@ function IndiceDoDono() {
 
   const decididas = barbearia.dados.areasDecididas;
   const total = AREAS.length;
+  const faltam = total - decididas.length;
 
+  // A contagem num cartão embaixo do título, e não ao lado dele: no
+  // celular, a frase de apoio do cabeçalho passava por cima da barra.
   return (
     <div className={estilos.pagina}>
-      <CabecalhoDaPagina
-        titulo="Configurações"
-        apoio="Cada linha mostra o que vale hoje. As em âmbar ainda não foram salvas — o texto diz o que acontece se ficar assim."
-        acao={
-          <div className={estilos.progresso}>
-            <p className={estilos.contagem}>
-              {decididas.length} de {total} decididas
-            </p>
-            <div
-              role="progressbar"
-              aria-label="Áreas decididas"
-              aria-valuemin={0}
-              aria-valuemax={total}
-              aria-valuenow={decididas.length}
-              className={estilos.barra}
-            >
-              <span style={{ width: `${(decididas.length / total) * 100}%` }} />
-            </div>
-          </div>
-        }
-      />
+      <CabecalhoDaPagina titulo="Configurações" />
+      <section className={estilos.progresso} aria-label="Áreas decididas">
+        <p className={estilos.contagem}>
+          <strong>
+            {decididas.length} de {total} decididas
+          </strong>
+          <span>{faltam > 0 ? `faltam ${faltam}` : "tudo decidido"}</span>
+        </p>
+        <div
+          role="progressbar"
+          aria-label="Áreas decididas"
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={decididas.length}
+          className={estilos.barra}
+        >
+          <span style={{ width: `${(decididas.length / total) * 100}%` }} />
+        </div>
+        <p className={estilos.apoioDoProgresso}>
+          Cada linha mostra o que vale hoje. As com “Faltando” ainda não foram salvas, e o texto diz o que
+          acontece se ficar assim.
+        </p>
+      </section>
 
       {GRUPOS.map((grupo) => {
         const faltando = grupo.areas.filter((area) => !decididas.includes(area)).length;

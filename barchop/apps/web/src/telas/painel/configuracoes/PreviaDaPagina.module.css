@@ -5,6 +5,29 @@
   gap: var(--espaco-sm);
 }
 
+/* A prévia recolhida (celular e tablet, PR 6): um botão largo que abre a
+   janela ampliada. */
+.verPrevia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaco-sm);
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.verPrevia:hover {
+  background: var(--cor-paper-soft);
+}
+
 .topo {
   display: flex;
   align-items: center;

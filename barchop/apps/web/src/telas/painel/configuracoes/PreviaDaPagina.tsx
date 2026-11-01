@@ -29,12 +29,37 @@ export function PreviaDaPagina({
   slug,
   aparencia,
   pendente,
+  recolhida = false,
 }: {
   slug: string;
   aparencia: Aparencia;
   pendente: boolean;
+  // Recolhida (redesenho das Configurações, PR 6): só o botão, que abre a
+  // prévia ampliada. No celular e no tablet ela ficava embaixo de tudo,
+  // com ~900px, e o iframe carregava a página inteira sem ninguém ver.
+  recolhida?: boolean;
 }) {
   const [ampliada, setAmpliada] = useState(false);
+
+  if (recolhida) {
+    return (
+      <>
+        <button
+          type="button"
+          className={estilos.verPrevia}
+          aria-haspopup="dialog"
+          onClick={() => setAmpliada(true)}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="7" y="2" width="10" height="20" rx="2" />
+            <path d="M11 18h2" />
+          </svg>
+          Ver a prévia da página
+        </button>
+        {ampliada ? <JanelaAmpliada slug={slug} aparencia={aparencia} aoFechar={() => setAmpliada(false)} /> : null}
+      </>
+    );
+  }
 
   return (
     <section className={estilos.previa} aria-label="Prévia da sua página">

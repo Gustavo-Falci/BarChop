@@ -37,6 +37,25 @@
   background: var(--cor-accent);
 }
 
+/* No celular, uma fileira que rola de lado (redesenho das Configurações,
+   PR 6): quebrando linha, "Ajuste fino" da Aparência descia sozinho a
+   360px. A aba cortada na ponta mostra que tem mais. Sem a margem
+   negativa: o rolar corta o que passa da caixa, e o traço perderia 1px. */
+@media (max-width: 560px) {
+  .abas {
+    flex-wrap: nowrap;
+    gap: var(--espaco-md);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .aba {
+    flex: none;
+    margin-block-end: 0;
+    white-space: nowrap;
+  }
+}
+
 /* O fade a cada troca: o painel que volta a aparecer (hidden sai) parte
    do @starting-style de novo, sem remontar nada. */
 .painel:not([hidden]) {

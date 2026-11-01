@@ -76,6 +76,16 @@ describe("Configurações no celular: peças comuns", () => {
     expect(regra(celular, "  .dia:has(.fechado)")).toMatch(/grid-template-areas:\s*"nome horas chave"/);
   });
 
+  it("no celular, as abas rolam de lado numa fileira, sem quebrar linha", () => {
+    // PR 6 (Aparência): a 360px, "Ajuste fino" descia sozinho pra uma
+    // segunda linha de abas.
+    const celular = blocoDaMedia(lerCss("componentes/Abas.module.css"), "@media (max-width: 560px)");
+    const abas = regra(celular, "  .abas");
+    expect(abas).toMatch(/flex-wrap:\s*nowrap/);
+    expect(abas).toMatch(/overflow-x:\s*auto/);
+    expect(regra(celular, "  .aba")).toMatch(/white-space:\s*nowrap/);
+  });
+
   it("a folha de escolha sobe de baixo no celular e fica no meio no computador", () => {
     // PR 4 (Regras). Presa embaixo, na largura da tela; com muitas opções
     // (os sete prazos) rola por dentro em vez de passar do topo. O espaço

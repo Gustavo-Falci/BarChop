@@ -8,6 +8,7 @@ import { ListaDeServicos } from "../../../src/telas/painel/ListaDeServicos";
 import { descerUm, medirLinhas } from "../../ajudantes/arrastar";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
+import { comTelaDeCelular } from "../../ajudantes/tela";
 import { montarPainelComSonda } from "../../ajudantes/sondaDeCorrida";
 
 function semear() {
@@ -739,3 +740,29 @@ describe("mudar a ordem dos serviços", () => {
     expect(screen.getByRole("list", { name: "Serviços sem categoria" })).toBeInTheDocument();
   });
 });
+
+// Redesenho do celular, PR 6: no celular a linha vira item de lista —
+// o nome (o botão que abre), o detalhe embaixo e o valor à direita — no
+// lugar do cartão "Rótulo: valor". Nada da linha do desktop se perde.
+describe("serviços no celular", () => {
+  let desfazer: () => void;
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos" });
+    desfazer = comTelaDeCelular();
+  });
+  afterEach(() => desfazer());
+
+  it("cada serviço é um item: nome, duração e onde aparece embaixo, preço à direita", async () => {
+    montarPainel(<ListaDeServicos />, semear());
+
+    const corte = (await screen.findAllByRole("listitem")).find((item) => item.textContent?.includes("Corte"))!;
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(within(corte).getByRole("button", { name: /corte/i })).not.toHaveTextContent("30 min");
+    expect(corte).toHaveTextContent("30 min · site e painel");
+    expect(corte).toHaveTextContent(/R\$\s?40,00/);
+    const barba = screen.getAllByRole("listitem").find((item) => item.textContent?.includes("Barba"))!;
+    expect(barba).toHaveTextContent("20 min · fora do agendamento");
+  });
+});
+

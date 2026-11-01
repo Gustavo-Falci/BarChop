@@ -1,12 +1,13 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { CadastroDeCliente } from "../../../src/telas/painel/CadastroDeCliente";
 import { DetalheDoCliente } from "../../../src/telas/painel/DetalheDoCliente";
 import { ListaDeClientes } from "../../../src/telas/painel/ListaDeClientes";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
+import { comTelaDeCelular } from "../../ajudantes/tela";
 import { montarPainelComSonda } from "../../ajudantes/sondaDeCorrida";
 
 // Instante fixo: a lista corta a coluna e as faixas em 30 e 90 dias
@@ -979,3 +980,33 @@ describe("clientes no painel: páginas", () => {
   // mexer no ajudante — vale, mas é mudança de infraestrutura de teste,
   // não deste arquivo.
 });
+
+// Redesenho do celular, PR 6: no celular a linha vira item de lista —
+// o nome (o botão que abre), o detalhe embaixo e o valor à direita — no
+// lugar do cartão "Rótulo: valor". Nada da linha do desktop se perde.
+describe("clientes no celular", () => {
+  let desfazer: () => void;
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/clientes" });
+    desfazer = comTelaDeCelular();
+  });
+  afterEach(() => desfazer());
+
+  it("cada cliente é um item: telefone e último atendimento embaixo, WhatsApp e Agendar no item", async () => {
+    montarPainel(<ListaDeClientes agora={AGORA} />, semear());
+
+    const joao = (await screen.findAllByRole("listitem")).find((item) => item.textContent?.includes("João Silva"))!;
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(within(joao).getByRole("button", { name: "João Silva" })).toBeInTheDocument();
+    expect(joao).toHaveTextContent("(11) 99999-0001 · ");
+    expect(within(joao).getByRole("link", { name: "Conversar com João Silva no WhatsApp" })).toBeInTheDocument();
+
+    await userEvent.click(within(joao).getByRole("button", { name: "Agendar para João Silva" }));
+
+    // Agendar leva ao novo agendamento, e não abre o cliente junto.
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/agendamentos/novo?cliente=c1");
+    expect(navegacaoFalsa.push).not.toHaveBeenCalledWith("/painel/clientes/c1");
+  });
+});
+

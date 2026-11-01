@@ -17,6 +17,7 @@ import { ListaDeServicos } from "../../../src/telas/painel/ListaDeServicos";
 import { descerUm, medirLinhas } from "../../ajudantes/arrastar";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
+import { comTelaDeCelular } from "../../ajudantes/tela";
 
 // Onda 1, A5: as telas da equipe e o que cada papel enxerga no painel.
 // Esconder é conforto: quem barra é a API (auth-papeis.test.ts). Mas a
@@ -498,3 +499,26 @@ describe("mudar a ordem da equipe", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 });
+
+// Redesenho do celular, PR 6: no celular a linha vira item de lista —
+// o nome (o botão que abre), o detalhe embaixo e o valor à direita — no
+// lugar do cartão "Rótulo: valor". Nada da linha do desktop se perde.
+describe("equipe no celular", () => {
+  let desfazer: () => void;
+  beforeEach(() => {
+    desfazer = comTelaDeCelular();
+  });
+  afterEach(() => desfazer());
+
+  it("cada pessoa é um item: papel e se atende embaixo, a situação à direita", async () => {
+    montarPainel(<ListaDaEquipe />, comEquipe());
+
+    await screen.findAllByRole("listitem");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    const ana = screen.getAllByRole("listitem").find((item) => item.textContent?.includes("Ana"))!;
+    expect(within(ana).getByRole("button", { name: /ana/i })).not.toHaveTextContent("Profissional");
+    expect(ana).toHaveTextContent("Profissional · atende");
+    expect(ana).toHaveTextContent(/convite pendente/i);
+  });
+});
+

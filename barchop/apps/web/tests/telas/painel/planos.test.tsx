@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
 import type { MembroDaEquipe, PlanoDoPainel } from "@barchop/types";
 
@@ -10,6 +10,7 @@ import { CadastroDePlano } from "../../../src/telas/painel/CadastroDePlano";
 import { ListaDePlanos } from "../../../src/telas/painel/ListaDePlanos";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
+import { comTelaDeCelular } from "../../ajudantes/tela";
 
 // Os planos no painel (Onda 2, marco 3, PR 7a do plano
 // planos-de-assinatura): a lista agrupada por quem vende, a vitrine, o
@@ -368,3 +369,28 @@ describe("o membro e os planos", () => {
     expect(await within(situacao).findByText(/reativar devolve/i)).toBeInTheDocument();
   });
 });
+
+// Redesenho do celular, PR 6: no celular a linha vira item de lista —
+// o nome (o botão que abre), o detalhe embaixo e o valor à direita — no
+// lugar do cartão "Rótulo: valor". Nada da linha do desktop se perde.
+describe("planos no celular", () => {
+  let desfazer: () => void;
+  beforeEach(() => {
+    desfazer = comTelaDeCelular();
+  });
+  afterEach(() => desfazer());
+
+  it("cada plano é um item: serviços e assinantes embaixo, o preço do ciclo à direita", async () => {
+    montarPainel(<ListaDePlanos />, comPlanos());
+
+    expect(await screen.findByRole("list", { name: "Da casa" })).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    const corte = screen.getAllByRole("listitem").find((item) => item.textContent?.includes("Corte ilimitado"))!;
+    expect(corte).toHaveTextContent("8 assinantes");
+    expect(corte).toHaveTextContent(/R\$\s?120,00 por mês/);
+    const doGustavo = screen.getAllByRole("listitem").find((item) => item.textContent?.includes("2 cortes"))!;
+    expect(doGustavo).toHaveTextContent("Desativado");
+    expect(doGustavo).toHaveTextContent("2× Corte, 1× Barba");
+  });
+});
+

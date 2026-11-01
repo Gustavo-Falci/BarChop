@@ -159,11 +159,27 @@ export function ListaDaEquipe() {
             aoAbrir={(id) => router.push(`/painel/equipe/${id}`)}
             linhas={listados.map((membro) => {
               const selo = SELO_DA_SITUACAO[situacaoDoMembro(membro)];
+              const situacao = (
+                <Chip key="situacao" tom={selo.tom} tamanho="pequeno">
+                  {selo.rotulo}
+                </Chip>
+              );
               return {
                 id: membro.id,
                 // Inativo atenua a linha inteira, como o serviço
                 // desativado: não entra mais no painel nem na agenda.
                 atenuada: !membro.ativo,
+                // No celular (redesenho, PR 6): papel, se atende (em
+                // palavra, que "Sim" sozinho não diz a quê) e o telefone
+                // de quem tem; a situação à direita.
+                noCelular: {
+                  detalhe: [
+                    ROTULO_DO_PAPEL[membro.papel],
+                    membro.atende ? "atende" : "não atende",
+                    ...(membro.telefone ? [membro.telefone] : []),
+                  ].join(" · "),
+                  valor: situacao,
+                },
                 celulas: [
                   // Nome e e-mail juntos, dentro do botão da linha: o
                   // e-mail é como o membro entra, e é o que distingue
@@ -175,9 +191,7 @@ export function ListaDaEquipe() {
                   ROTULO_DO_PAPEL[membro.papel],
                   ...(comTelefone ? [membro.telefone ?? "—"] : []),
                   membro.atende ? "Sim" : "Não",
-                  <Chip key="situacao" tom={selo.tom} tamanho="pequeno">
-                    {selo.rotulo}
-                  </Chip>,
+                  situacao,
                   <span className={estilos.abrir} key="abrir">
                     <IconeAbrir />
                   </span>,

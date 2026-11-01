@@ -431,6 +431,7 @@ function TelaDaAparencia() {
                 <div className={estilos.duasColunas}>
                   <SeletorEmPilulas<ModoDeCor>
                     nome="modo-padrao"
+                    preencher
                     legenda="Modo padrão"
                     opcoes={[
                       { valor: "claro", rotulo: "Claro" },

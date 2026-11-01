@@ -280,8 +280,11 @@
     transition: none;
   }
 
+  /* `1fr` no conteúdo: com `auto auto`, a sobra da altura mínima (100vh)
+     se repartia entre as duas linhas, e em tela curta (Seu perfil) o
+     topo ganhava ~72px vazios acima do título. */
   .coluna {
-    grid-template-rows: auto auto;
+    grid-template-rows: auto 1fr;
   }
 
   /* O espaço da barra inferior no pé do conteúdo: sem ele, a última linha

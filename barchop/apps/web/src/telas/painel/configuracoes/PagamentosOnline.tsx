@@ -149,6 +149,7 @@ function ContasDeQuemVende() {
       {mostraGuia ? (
         <SeletorEmPilulas
           nome="provedor"
+          preencher
           legenda="Onde você recebe"
           opcoes={OPCOES_DE_PROVEDOR}
           valor={escolhido}

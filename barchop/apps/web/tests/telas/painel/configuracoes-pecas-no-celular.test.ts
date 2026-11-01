@@ -75,4 +75,21 @@ describe("Configurações no celular: peças comuns", () => {
     const celular = blocoDaMedia(lerCss("telas/painel/configuracoes/Configuracoes.module.css"), "@media (max-width: 560px)");
     expect(regra(celular, "  .dia:has(.fechado)")).toMatch(/grid-template-areas:\s*"nome horas chave"/);
   });
+
+  it("a folha de escolha sobe de baixo no celular e fica no meio no computador", () => {
+    // PR 4 (Regras). Presa embaixo, na largura da tela; com muitas opções
+    // (os sete prazos) rola por dentro em vez de passar do topo. O espaço
+    // de dentro fica num filho: o toque no fundo fecha a folha, e um toque
+    // no próprio padding da <dialog> contaria como fundo.
+    const css = lerCss("componentes/FolhaDeEscolha.module.css");
+    const folha = regra(css, ".folha");
+    expect(folha).toMatch(/inset:\s*auto 0 0 0/);
+    expect(folha).toMatch(/max-height:/);
+    expect(folha).toMatch(/overflow-y:\s*auto/);
+    expect(folha).toMatch(/padding:\s*0/);
+    // Acima do corte do celular, uma faixa de 1280px seria demais.
+    const largo = blocoDaMedia(css, "@media (min-width: 721px)");
+    expect(regra(largo, "  .folha")).toMatch(/inset:\s*0/);
+    expect(regra(largo, "  .folha")).toMatch(/width:\s*min\(28rem/);
+  });
 });

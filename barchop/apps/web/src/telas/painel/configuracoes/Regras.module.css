@@ -1,0 +1,82 @@
+/* Regras de agendamento (redesenho das Configurações, PR 4): cada regra é
+   uma linha da seção, com o nome e o efeito à esquerda e o valor (ou o
+   interruptor) na ponta. Classes só desta tela: as do índice (.linha,
+   .valor) têm regras próprias de grade que vazariam pra cá. */
+.regras {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.regras li + li {
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* A linha inteira é o alvo. A seção já dá o recuo lateral; a linha se
+   estica até a borda dele, e o hover ganha um respiro por dentro. */
+.regra {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  width: 100%;
+  min-height: 64px;
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-xs);
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--cor-ink);
+  font: inherit;
+  text-align: start;
+}
+
+button.regra {
+  cursor: pointer;
+}
+
+button.regra:hover {
+  background: var(--cor-paper-soft);
+}
+
+button.regra:focus-visible {
+  outline-offset: -3px;
+}
+
+.texto {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nome {
+  font-weight: 600;
+}
+
+.efeito {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+/* "Até começar" e "Sem limite" numa linha só: o efeito ao lado é que
+   quebra. */
+.valor {
+  flex: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.seta {
+  flex: none;
+  margin-inline-start: calc(-1 * var(--espaco-xs));
+  color: var(--cor-muted);
+}
+
+/* No celular a seção já come 24px de cada lado: com o vão de 16px,
+   "Intervalo entre horários" quebrava em duas linhas a 360px. */
+@media (max-width: 560px) {
+  .regra {
+    gap: var(--espaco-sm);
+  }
+}

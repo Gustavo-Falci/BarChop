@@ -6,12 +6,13 @@ import { dividirPagamento } from "@barchop/formato";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { DivisaoDoDinheiro as Divisao, MembroDaDivisao } from "@barchop/types";
 import { Aviso } from "../../../componentes/Aviso";
-import { Botao } from "../../../componentes/Botao";
+import { BarraDeMudancas } from "../../../componentes/BarraDeMudancas";
 import { CabecalhoDaPagina } from "../../../componentes/CabecalhoDaPagina";
 import { useRequisicao } from "../../../api/useRequisicao";
-import { fraseDaDivisao, reais } from "../../../painel/caixa";
+import { fraseDaDivisao } from "../../../painel/caixa";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
+import { useMidia } from "../../../painel/useTelaDeCelular";
 import estilos from "./DivisaoDoDinheiro.module.css";
 import { Carregando } from "../../../componentes/Carregando";
 
@@ -27,6 +28,10 @@ const APOIO = "Quanto de cada atendimento fica com a casa e com o profissional d
 
 // Um exemplo redondo: R$ 100,00, sem desconto nem gorjeta.
 const EXEMPLO = 10_000;
+
+// No celular, a tabela vira lista (redesenho das Configurações, PR 8,
+// decisão 2): o corte do celular das Configurações.
+const CONSULTA_DA_LISTA = "(max-width: 720px)";
 
 type Valores = Record<string, string>;
 
@@ -83,8 +88,9 @@ function exemplo(membros: MembroDaDivisao[], casa: Record<string, number>, matri
     motivo: parte.motivo,
     valorCentavos: parte.valorCentavos,
   }));
+  // O valor do exemplo já está no título do bloco ("Num corte de R$ 100").
   const deQuem = donoDoCliente === atendente ? "dele" : `de ${nome(donoDoCliente)}`;
-  return `Exemplo: ${nome(atendente)} atende um cliente ${deQuem} por ${reais(EXEMPLO)}. ${fraseDaDivisao(partes)}`;
+  return `${nome(atendente)} atende um cliente ${deQuem}. ${fraseDaDivisao(partes)}`;
 }
 
 export function DivisaoDoDinheiro() {
@@ -106,8 +112,8 @@ function DivisaoDoDono() {
   const [casa, setCasa] = useState<Valores>({});
   const [matriz, setMatriz] = useState<Valores>({});
   const [salvando, setSalvando] = useState(false);
-  const [salvo, setSalvo] = useState(false);
   const [aviso, setAviso] = useState<string | undefined>();
+  const emLista = useMidia(CONSULTA_DA_LISTA);
 
   // Sincronizado na renderização, como nas outras subtelas: a resposta
   // fresca (ao abrir e depois de salvar) repõe os campos.
@@ -140,11 +146,29 @@ function DivisaoDoDono() {
   const matrizNumeros = Object.fromEntries(Object.entries(matriz).map(([par, v]) => [par, paraPercentual(v)]));
   const valido = [...Object.values(casaNumeros), ...Object.values(matrizNumeros)].every((v) => v !== null);
   const original = { casa: valoresDaCasa(atual), matriz: valoresDaMatriz(atual) };
-  const mudou =
-    membros.some((m) => paraPercentual(casa[m.id] ?? "") !== paraPercentual(original.casa[m.id])) ||
-    Object.keys(original.matriz).some((par) => paraPercentual(matriz[par] ?? "") !== paraPercentual(original.matriz[par]));
+  const nome = (id: string) => membros.find((m) => m.id === id)?.nome ?? "";
+  // O "o que mudou" da barra, no jeito das Regras: "nome: antes → depois".
+  // O inválido entra como foi digitado; o campo diz o que corrigir.
+  const comoFicou = (digitado: string) => {
+    const numero = paraPercentual(digitado);
+    return numero === null ? digitado.trim() : `${numero}%`;
+  };
+  const mudancas = [
+    ...membros
+      .filter((m) => paraPercentual(casa[m.id] ?? "") !== paraPercentual(original.casa[m.id]))
+      .map((m) => `Parte da casa de ${m.nome}: ${comoFicou(original.casa[m.id])} → ${comoFicou(casa[m.id] ?? "")}`),
+    ...Object.keys(original.matriz)
+      .filter((par) => paraPercentual(matriz[par] ?? "") !== paraPercentual(original.matriz[par]))
+      .map((par) => {
+        const [dono, atendente] = par.split(":");
+        const antes = comoFicou(original.matriz[par]);
+        const depois = comoFicou(matriz[par] ?? "");
+        return `${nome(atendente)} atende cliente de ${nome(dono)}: ${antes} → ${depois}`;
+      }),
+  ];
 
   async function salvar() {
+    if (salvando || !valido) return;
     setAviso(undefined);
     setSalvando(true);
     try {
@@ -160,7 +184,6 @@ function DivisaoDoDono() {
             }))
         ),
       });
-      setSalvo(true);
       divisao.recarregar();
     } catch (causa) {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
@@ -179,28 +202,7 @@ function DivisaoDoDono() {
 
   return (
     <div className={estilos.pagina}>
-      <CabecalhoDaPagina
-        titulo={TITULO}
-        apoio={APOIO}
-        voltar={VOLTAR}
-        acao={
-          mudou ? (
-            <div className={estilos.botoes}>
-              <Botao variante="fantasma" onClick={descartar} disabled={salvando}>
-                Descartar
-              </Botao>
-              <Botao onClick={salvar} carregando={salvando} disabled={!valido}>
-                Salvar
-              </Botao>
-            </div>
-          ) : salvo ? (
-            <span className={estilos.salvo} role="status">
-              ✓ Salvo
-            </span>
-          ) : null
-        }
-      />
-      {aviso ? <Aviso>{aviso}</Aviso> : null}
+      <CabecalhoDaPagina titulo={TITULO} apoio={APOIO} voltar={VOLTAR} />
 
       {/* Lado a lado no desktop: a parte da casa (uma coluna estreita) e a
           grade entre os profissionais, com o exemplo embaixo dela. */}
@@ -221,10 +223,7 @@ function DivisaoDoDono() {
                     inputMode="numeric"
                     aria-invalid={erro || undefined}
                     value={casa[membro.id] ?? ""}
-                    onChange={(evento) => {
-                      setCasa((atuais) => ({ ...atuais, [membro.id]: evento.target.value }));
-                      setSalvo(false);
-                    }}
+                    onChange={(evento) => setCasa((atuais) => ({ ...atuais, [membro.id]: evento.target.value }))}
                   />
                   %
                 </span>
@@ -249,66 +248,117 @@ function DivisaoDoDono() {
                 Quando alguém atende o cliente de outro, quanto vai pro profissional de quem o cliente é — do que sobra
                 depois da parte da casa. A gorjeta é sempre de quem atendeu.
               </p>
-              <div className={estilos.rolagem}>
-                <table className={estilos.tabela}>
-                  <thead>
-                    <tr>
-                      <th scope="col" className={estilos.canto}>
-                        Cliente de ↓ · atendeu →
-                      </th>
-                      {membros.map((atendente) => (
-                        <th key={atendente.id} scope="col">
-                          {atendente.nome}
+              {emLista ? (
+                // Uma linha por par, como no canvas: quem atende, de quem é o
+                // cliente e pra quem vai o percentual. O campo tem o mesmo
+                // nome acessível da célula da tabela.
+                <ul className={estilos.pares} aria-labelledby="divisao-grade">
+                  {membros.flatMap((dono) =>
+                    membros
+                      .filter((atendente) => atendente.id !== dono.id)
+                      .map((atendente) => {
+                        const par = chave(dono.id, atendente.id);
+                        const erro = matrizNumeros[par] === null;
+                        return (
+                          <li key={par} className={estilos.par}>
+                            <span className={estilos.textoDoPar}>
+                              <span className={estilos.nomeDoPar}>
+                                {atendente.nome} atende cliente de {dono.nome}
+                              </span>
+                              <span className={estilos.apoio}>vai pra {dono.nome}</span>
+                            </span>
+                            <span className={estilos.percentual}>
+                              <input
+                                className={estilos.entrada}
+                                inputMode="numeric"
+                                aria-label={`Cliente de ${dono.nome} atendido por ${atendente.nome}`}
+                                aria-invalid={erro || undefined}
+                                value={matriz[par] ?? ""}
+                                onChange={(evento) => setMatriz((atuais) => ({ ...atuais, [par]: evento.target.value }))}
+                              />
+                              %
+                            </span>
+                            {erro ? <span className={estilos.erro}>De 0 a 100</span> : null}
+                          </li>
+                        );
+                      })
+                  )}
+                </ul>
+              ) : (
+                <div className={estilos.rolagem}>
+                  <table className={estilos.tabela}>
+                    <thead>
+                      <tr>
+                        <th scope="col" className={estilos.canto}>
+                          Cliente de ↓ · atendeu →
                         </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {membros.map((dono) => (
-                      <tr key={dono.id}>
-                        <th scope="row">{dono.nome}</th>
-                        {membros.map((atendente) => {
-                          if (dono.id === atendente.id) {
+                        {membros.map((atendente) => (
+                          <th key={atendente.id} scope="col">
+                            {atendente.nome}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {membros.map((dono) => (
+                        <tr key={dono.id}>
+                          <th scope="row">{dono.nome}</th>
+                          {membros.map((atendente) => {
+                            if (dono.id === atendente.id) {
+                              return (
+                                <td key={atendente.id} className={estilos.diagonal} title="Com o próprio cliente, quem atende fica com tudo">
+                                  —
+                                </td>
+                              );
+                            }
+                            const par = chave(dono.id, atendente.id);
+                            const erro = matrizNumeros[par] === null;
                             return (
-                              <td key={atendente.id} className={estilos.diagonal} title="Com o próprio cliente, quem atende fica com tudo">
-                                —
+                              <td key={atendente.id}>
+                                <span className={estilos.percentual}>
+                                  <input
+                                    className={estilos.entrada}
+                                    inputMode="numeric"
+                                    aria-label={`Cliente de ${dono.nome} atendido por ${atendente.nome}`}
+                                    aria-invalid={erro || undefined}
+                                    value={matriz[par] ?? ""}
+                                    onChange={(evento) => setMatriz((atuais) => ({ ...atuais, [par]: evento.target.value }))}
+                                  />
+                                  %
+                                </span>
+                                {erro ? <span className={estilos.erro}>De 0 a 100</span> : null}
                               </td>
                             );
-                          }
-                          const par = chave(dono.id, atendente.id);
-                          const erro = matrizNumeros[par] === null;
-                          return (
-                            <td key={atendente.id}>
-                              <span className={estilos.percentual}>
-                                <input
-                                  className={estilos.entrada}
-                                  inputMode="numeric"
-                                  aria-label={`Cliente de ${dono.nome} atendido por ${atendente.nome}`}
-                                  aria-invalid={erro || undefined}
-                                  value={matriz[par] ?? ""}
-                                  onChange={(evento) => {
-                                    setMatriz((atuais) => ({ ...atuais, [par]: evento.target.value }));
-                                    setSalvo(false);
-                                  }}
-                                />
-                                %
-                              </span>
-                              {erro ? <span className={estilos.erro}>De 0 a 100</span> : null}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </>
           )}
-          <p className={estilos.exemplo} aria-live="polite">
-            {exemplo(membros, casaValida, matrizValida)}
-          </p>
         </section>
       </div>
+
+      {/* O exemplo fecha a página (redesenho, PR 8), com a conta da API. */}
+      <section className={estilos.exemplo} aria-labelledby="divisao-exemplo">
+        <h2 id="divisao-exemplo" className={estilos.tituloDoExemplo}>
+          Num corte de R$ 100
+        </h2>
+        <p aria-live="polite">{exemplo(membros, casaValida, matrizValida)}</p>
+      </section>
+
+      {/* Um Salvar só, na barra do pé, como nas outras áreas. A divisão
+          não é área: sem mudança, a barra não aparece. */}
+      <BarraDeMudancas
+        mudancas={mudancas}
+        aviso={aviso}
+        salvando={salvando}
+        podeSalvar={valido}
+        aoSalvar={() => void salvar()}
+        aoDescartar={descartar}
+      />
     </div>
   );
 }

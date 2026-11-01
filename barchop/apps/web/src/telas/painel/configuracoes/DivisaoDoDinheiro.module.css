@@ -121,24 +121,65 @@
   text-align: center;
 }
 
+/* O exemplo fecha a página (redesenho, PR 8): um bloco só, com o
+   título em versalete e a conta embaixo. */
 .exemplo {
-  margin: 0;
-  padding: var(--espaco-sm) var(--espaco-md);
+  display: grid;
+  gap: var(--espaco-xs);
+  max-width: 1240px;
+  padding: var(--espaco-md);
   border-left: 4px solid var(--cor-accent);
   border-radius: var(--raio-sm);
   background: var(--cor-surface);
+}
+
+.tituloDoExemplo {
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cor-accent-text);
+}
+
+.exemplo p {
+  margin: 0;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
 }
 
-.botoes {
-  display: flex;
-  gap: var(--espaco-sm);
+/* No celular, "cliente de outro profissional" em lista (decisão 2): uma
+   linha por par, o texto à esquerda e o campo na ponta. */
+.pares {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.salvo {
-  font-weight: 700;
-  color: var(--cor-ok);
+.par {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaco-xs) var(--espaco-md);
+  min-height: 64px;
+  padding: var(--espaco-sm) 0;
+}
+
+.par + .par {
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+.textoDoPar {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nomeDoPar {
+  font-weight: 600;
+  text-wrap: pretty;
 }
 
 .convite {

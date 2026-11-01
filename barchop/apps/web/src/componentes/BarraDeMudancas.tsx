@@ -23,6 +23,7 @@ export function BarraDeMudancas({
   pendente = false,
   aviso,
   salvando = false,
+  podeSalvar = true,
   aoSalvar,
   aoDescartar,
 }: {
@@ -32,6 +33,9 @@ export function BarraDeMudancas({
   // e um aviso no topo da página ficaria fora da vista.
   aviso?: string;
   salvando?: boolean;
+  // Falso com um campo inválido na tela (o campo diz o que corrigir), como
+  // o percentual fora de 0 a 100 da Divisão do dinheiro.
+  podeSalvar?: boolean;
   aoSalvar: () => void;
   aoDescartar: () => void;
 }) {
@@ -76,7 +80,7 @@ export function BarraDeMudancas({
                 Descartar
               </Botao>
             ) : null}
-            <Botao onClick={aoSalvar} carregando={salvando}>
+            <Botao onClick={aoSalvar} carregando={salvando} disabled={!podeSalvar}>
               Salvar
             </Botao>
           </div>

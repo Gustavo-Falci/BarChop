@@ -1,11 +1,17 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, type SementeFalsa } from "@barchop/api-client";
 import type { MembroDaEquipe, SalvarDivisao } from "@barchop/types";
 import { DivisaoDoDinheiro } from "../../../src/telas/painel/configuracoes/DivisaoDoDinheiro";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
+import { comTelaDeCelular } from "../../ajudantes/tela";
+
+// O Salvar mora na barra do pé (redesenho das Configurações, PR 8).
+function barra() {
+  return screen.getByRole("region", { name: "Mudanças" });
+}
 
 // A divisão do dinheiro (Onda 2, marco 2, PR 8 do plano caixa-do-dia):
 // a parte da casa de cada um e a grade "cliente de ↓ × atendeu →", com
@@ -34,6 +40,13 @@ function semear(extra: SementeFalsa = {}) {
     ...extra,
   });
 }
+
+let desfazerTela: (() => void) | undefined;
+
+afterEach(() => {
+  desfazerTela?.();
+  desfazerTela = undefined;
+});
 
 describe("divisão do dinheiro", () => {
   beforeEach(() => {
@@ -68,7 +81,7 @@ describe("divisão do dinheiro", () => {
     expect(screen.getByText(/Gustavo fica com R\$\s45,00, Rafael com R\$\s45,00 e a casa com R\$\s10,00/)).toBeInTheDocument();
   });
 
-  it("Salvar só aparece quando muda, e grava a grade inteira", async () => {
+  it("Salvar só aparece quando muda, na barra do pé, e grava a grade inteira", async () => {
     const falso = semear();
     const original = falso.barbeiro.salvarDivisao;
     const salvar = vi.fn(async (divisao: SalvarDivisao) => original(divisao));
@@ -76,11 +89,12 @@ describe("divisão do dinheiro", () => {
     montarPainel(<DivisaoDoDinheiro />, falso);
 
     const casa = await screen.findByRole("group", { name: /parte da casa/i });
-    expect(screen.queryByRole("button", { name: /^salvar$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
 
     await userEvent.clear(within(casa).getByLabelText("Gustavo"));
     await userEvent.type(within(casa).getByLabelText("Gustavo"), "20");
-    await userEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+    expect(barra()).toHaveTextContent("Parte da casa de Gustavo: 10% → 20%");
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(salvar).toHaveBeenCalledWith({
@@ -94,7 +108,7 @@ describe("divisão do dinheiro", () => {
         ],
       })
     );
-    await waitFor(() => expect(screen.queryByRole("button", { name: /^salvar$/i })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument());
     expect((await falso.barbeiro.divisao()).membros.find((m) => m.id === "bb0")?.parteDaCasa).toBe(20);
   });
 
@@ -104,7 +118,8 @@ describe("divisão do dinheiro", () => {
     const celula = await screen.findByLabelText("Cliente de Rafael atendido por Gustavo");
     await userEvent.clear(celula);
     await userEvent.type(celula, "30");
-    await userEvent.click(screen.getByRole("button", { name: /descartar/i }));
+    expect(barra()).toHaveTextContent("Gustavo atende cliente de Rafael: 60% → 30%");
+    await userEvent.click(within(barra()).getByRole("button", { name: "Descartar" }));
 
     expect(celula).toHaveValue("60");
   });
@@ -117,7 +132,41 @@ describe("divisão do dinheiro", () => {
     await userEvent.type(celula, "150");
 
     expect(screen.getByText(/de 0 a 100/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^salvar$/i })).toBeDisabled();
+    expect(within(barra()).getByRole("button", { name: "Salvar" })).toBeDisabled();
+  });
+
+  // Redesenho, PR 8: o exemplo sai de baixo da grade e fecha a página,
+  // com o título do canvas.
+  it("o exemplo fecha a página: num corte de R$ 100", async () => {
+    montarPainel(<DivisaoDoDinheiro />, semear());
+
+    const exemplo = await screen.findByRole("region", { name: "Num corte de R$ 100" });
+    expect(exemplo).toHaveTextContent(/Gustavo atende um cliente de Rafael\./);
+    expect(exemplo).toHaveTextContent(/Gustavo fica com R\$\s36,00/);
+  });
+
+  // Decisão 2 do plano: no celular a tabela vira lista, uma linha por par
+  // ("Gustavo atende cliente de Rafael"), com o mesmo campo.
+  it("no celular, cliente de outro profissional vira lista", async () => {
+    desfazerTela = comTelaDeCelular();
+    montarPainel(<DivisaoDoDinheiro />, semear());
+
+    const campo = await screen.findByLabelText("Cliente de Rafael atendido por Gustavo");
+    expect(campo).toHaveValue("60");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    const lista = screen.getByRole("list", { name: "Cliente de outro profissional" });
+    const itens = within(lista).getAllByRole("listitem");
+    expect(itens).toHaveLength(2);
+    expect(itens[0]).toHaveTextContent("Gustavo atende cliente de Rafael");
+    expect(itens[0]).toHaveTextContent("vai pra Rafael");
+  });
+
+  it("no computador, cliente de outro profissional segue em tabela", async () => {
+    montarPainel(<DivisaoDoDinheiro />, semear());
+
+    await screen.findByLabelText("Cliente de Rafael atendido por Gustavo");
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Cliente de outro profissional" })).not.toBeInTheDocument();
   });
 
   it("com uma pessoa só, não há grade entre profissionais", async () => {

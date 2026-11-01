@@ -22,6 +22,7 @@ import {
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { useAgora } from "../../painel/useAgora";
+import { useTelaDeCelular } from "../../painel/useTelaDeCelular";
 import estilos from "./CaixaDoDia.module.css";
 import { Carregando } from "../../componentes/Carregando";
 import { depoisDaSaida } from "../../movimento/depoisDaSaida";
@@ -59,6 +60,9 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
   const api = useApiDoPainel();
   const { perfil } = usePainel();
   const dono = perfil.papel === "dono";
+  // No celular, o "Fechar o dia" sai do cabeçalho e vem depois dos
+  // valores: a ação vinha antes do que ela fecha (redesenho, PR 4).
+  const celular = useTelaDeCelular();
 
   const hoje = hojeIso(agora);
   const data = query.get("data") ?? hoje;
@@ -133,7 +137,7 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
 
   return (
     <div className={estilos.pagina}>
-      <CabecalhoDaPagina titulo="Caixa" apoio={apoio} acao={acaoDoDono} />
+      <CabecalhoDaPagina titulo="Caixa" apoio={apoio} acao={celular ? undefined : acaoDoDono} />
 
       {confirmandoFechar ? (
         <JanelaDeFechamento
@@ -233,6 +237,8 @@ export function CaixaDoDia({ agora: agoraFixo }: { agora?: Date }) {
               </dl>
             </section>
           </div>
+
+          {celular && acaoDoDono ? <div className={estilos.fechamento}>{acaoDoDono}</div> : null}
 
           <div className={estilos.listas}>
             {/* Pagamentos e mensalidades numa coluna só: os dois são o

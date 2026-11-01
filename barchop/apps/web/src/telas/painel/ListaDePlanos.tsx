@@ -128,6 +128,9 @@ export function ListaDePlanos({ agora }: { agora?: Date } = {}) {
     linhas: grupo.planos.map((plano) => ({
       id: plano.id,
       atenuada: !plano.ativo,
+      // No celular (redesenho, PR 6): os selos e os serviços seguem no
+      // nome; quantos assinam embaixo e o preço do ciclo à direita.
+      noCelular: { detalhe: quantosAssinam(plano.assinantes), valor: precoDoCiclo(plano) },
       celulas: [
         <span className={estilos.nome} key="nome">
           <span className={estilos.titulo}>

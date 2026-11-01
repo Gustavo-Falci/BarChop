@@ -35,4 +35,18 @@ describe("Agenda dentro da largura da tela", () => {
 
     expect(bloco).toMatch(/\.titulo\s*\{[^}]*font-size:\s*var\(--texto-md\)/);
   });
+
+  // Pendente do redesenho (01/11): setembro, novembro, dezembro e
+  // fevereiro cortavam com "…" a 360px; medido a 390px, novembro (98px
+  // pedidos, 94 de espaço) e dezembro também. Abaixo de 400px o mês sai
+  // abreviado ("Set"); de 400px pra cima, inteiro.
+  it("abaixo de 400px o mês sai abreviado, e acima, inteiro", () => {
+    const barra = lerCss("telas/painel/agenda/BarraDaAgendaNoCelular.module.css");
+    const inicio = barra.indexOf("@media (max-width: 399px)");
+    const bloco = inicio < 0 ? "" : barra.slice(inicio, barra.indexOf("\n}\n", inicio) + 2);
+
+    expect(regra(barra, ".curto")).toMatch(/display:\s*none/);
+    expect(bloco).toMatch(/\.longo\s*\{[^}]*display:\s*none/);
+    expect(bloco).toMatch(/\.curto\s*\{[^}]*display:\s*inline/);
+  });
 });

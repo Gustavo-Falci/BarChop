@@ -46,6 +46,11 @@
 - Serviços, Equipe, Planos e Clientes dizem o conteúdo. O detalhe é uma lista de partes que não quebram no meio (telefone, data). Em Planos, o "por mês" desce pra baixo do valor.
 - Conferido a 360/640/641px, nos dois temas: todas as rotas na largura da tela.
 
+### Pendentes (01/11) — desenhados no canvas, fileira "Pendentes (01/11)"
+- **Assinantes** (#266, mesclado): a aba vira a lista do PR 6. O nome fica em cima; embaixo, "Plano · de quem" e "Forma · ciclo"; à direita, a situação e o Recebi. No celular, a primeira célula traz só o nome.
+- **Mês da Agenda** (branch `redesenho-pendentes-agenda-mes`): abaixo de 400px o título mostra o mês abreviado ("Set"); de 400px pra cima, o mês inteiro. Em 01/11, a 390px, "Novembro" pedia 98px e cabiam 94; o corte em 375px aprovado antes não bastava, e o dono escolheu 400px. O `aria-label` continua com o mês inteiro.
+- **Corte da lista em 640px:** fica (decisão do dono em 01/11). De 641 a 900px a barra de baixo já aparece, mas sobra largura para as colunas da tabela.
+
 ## Conferência visual
 - Semente: `pnpm --filter @barchop/api exec tsx scripts/conferencia-visual.ts` (sobe a API em :3333 já semeada), `next dev`, login `gustavo@exemplo.com` / `senha-forte-123` (token em `sessao.barbeiro`).
 - A olhar num PR seguinte: vão de ~60px acima do título no celular junto da faixa "Teste grátis" (bloco de 150px antes do `main`).

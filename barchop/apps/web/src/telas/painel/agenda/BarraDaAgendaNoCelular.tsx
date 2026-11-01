@@ -10,6 +10,7 @@ import estilos from "./BarraDaAgendaNoCelular.module.css";
 // mesmo botão nas duas.
 export function BarraDaAgendaNoCelular({
   titulo,
+  tituloCurto,
   diaDeHoje,
   aoAbrirMenu,
   aoAbrirCalendario,
@@ -18,6 +19,10 @@ export function BarraDaAgendaNoCelular({
   aoBloquear,
 }: {
   titulo: string;
+  // O mês abreviado ("Set"), pra tela estreita: a 360px e a 390px os
+  // meses longos cortavam com "…" (pendente do redesenho, 01/11). Ausente (no dia,
+  // que já é curto), o título vale em toda largura.
+  tituloCurto?: string;
   // O número de hoje, desenhado no botão "Hoje" como no Google Agenda.
   diaDeHoje: number;
   aoAbrirMenu: () => void;
@@ -48,7 +53,12 @@ export function BarraDaAgendaNoCelular({
         aria-haspopup="dialog"
         onClick={aoAbrirCalendario}
       >
-        <span className={estilos.textoDoTitulo}>{titulo}</span>
+        {/* Os dois vão no HTML e o CSS escolhe qual se vê: o curto só
+            abaixo de 400px. O nome do botão é o `aria-label`, inteiro. */}
+        <span className={estilos.textoDoTitulo}>
+          <span className={tituloCurto ? estilos.longo : undefined}>{titulo}</span>
+          {tituloCurto ? <span className={estilos.curto}>{tituloCurto}</span> : null}
+        </span>
         <IconeDescer width="16" height="16" />
       </button>
 

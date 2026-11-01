@@ -136,3 +136,24 @@
   font-size: var(--texto-xs);
   font-weight: 700;
 }
+
+/* `preencher` (Configurações, 01/11): no celular, as opções em colunas
+   iguais, do tamanho do trilho, em vez de quebrar com uma opção sozinha
+   embaixo ("24 h antes / 12 h antes", e "2 h antes" na outra linha). O
+   número de colunas vem do componente (--colunas). */
+@media (max-width: 640px) {
+  .opcoes[data-preencher] {
+    display: grid;
+    grid-template-columns: repeat(var(--colunas), minmax(0, 1fr));
+    justify-self: stretch;
+  }
+
+  .opcoes[data-preencher] .pilula {
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding-inline: var(--espaco-xs);
+    text-align: center;
+  }
+}

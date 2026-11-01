@@ -95,6 +95,7 @@ function Notificacoes() {
             <div className={estilos.campoLongo}>
               <SeletorEmPilulas
                 nome="antecedencia"
+                preencher
                 legenda="Quando o lembrete sai"
                 opcoes={ANTECEDENCIAS.map((horas) => ({ valor: String(horas), rotulo: `${horas} h antes` }))}
                 valor={String(antecedencia)}

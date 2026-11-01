@@ -43,3 +43,13 @@
   gap: var(--espaco-xs);
 }
 
+
+/* No celular, resumo e botões numa linha só: com a base de 240px o resumo
+   não cabia ao lado de Descartar e Salvar em 358px, os botões desciam e
+   a barra, em duas linhas, cobria o conteúdo. Com base 0 o resumo encolhe
+   e quebra o próprio texto; o aviso de erro (base 100%) segue embaixo. */
+@media (max-width: 640px) {
+  .resumo {
+    flex-basis: 0;
+  }
+}

@@ -1,5 +1,9 @@
+/* A coluna explícita com mínimo zero: sem ela, a coluna `auto` crescia
+   com o conteúdo mais largo (o .ladoALado dos Dados do negócio), e no
+   celular a página passava de 390 pra 656px. */
 .pagina {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--espaco-lg);
   align-content: start;
 }

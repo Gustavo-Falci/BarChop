@@ -52,4 +52,30 @@ describe("SeletorEmPilulas", () => {
     const efeito = screen.getByText("Seus clientes vão ver: 9:00, 9:30, 10:00…");
     expect(efeito).toHaveAttribute("aria-live", "polite");
   });
+  // Redesenho das Configurações (01/11): no celular, "24 h antes / 12 h
+  // antes" numa linha e "2 h antes" sozinha embaixo. Com `preencher`, as
+  // opções viram colunas iguais (o CSS só vale no celular); a conta das
+  // colunas evita uma opção sozinha na última linha.
+  it.each([
+    [2, "2"],
+    [3, "3"],
+    [4, "2"],
+    [5, "3"],
+    [6, "3"],
+  ])("com preencher e %i opções, %s colunas", (quantas, colunas) => {
+    const opcoes = Array.from({ length: quantas }, (_, i) => ({ valor: String(i), rotulo: `Opção ${i}` }));
+    render(<SeletorEmPilulas nome="x" legenda="X" opcoes={opcoes} valor="0" aoTrocar={() => {}} preencher />);
+
+    const trilho = screen.getByRole("radio", { name: "Opção 0" }).closest("label")!.parentElement!;
+    expect(trilho.style.getPropertyValue("--colunas")).toBe(colunas);
+    expect(trilho).toHaveAttribute("data-preencher");
+  });
+
+  it("sem preencher, o trilho segue como era", () => {
+    render(<SeletorEmPilulas nome="intervalo" legenda="Intervalo" opcoes={INTERVALOS} valor="30" aoTrocar={() => {}} />);
+
+    const trilho = screen.getByRole("radio", { name: "15 min" }).closest("label")!.parentElement!;
+    expect(trilho).not.toHaveAttribute("data-preencher");
+    expect(trilho.style.getPropertyValue("--colunas")).toBe("");
+  });
 });

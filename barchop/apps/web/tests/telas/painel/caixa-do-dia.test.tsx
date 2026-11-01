@@ -1,11 +1,14 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, type SementeFalsa } from "@barchop/api-client";
 import type { MembroDaEquipe } from "@barchop/types";
 import { CaixaDoDia } from "../../../src/telas/painel/CaixaDoDia";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
+import { comTelaDeCelular } from "../../ajudantes/tela";
 
 // A tela do Caixa (Onda 2, marco 2, PR 7 do plano caixa-do-dia): o que
 // entrou no dia, quem tem de repassar quanto a quem, o que ainda falta
@@ -190,5 +193,71 @@ describe("tela do Caixa", () => {
 
     expect(await screen.findByText(/o caixa do dia é dos planos essencial e completo/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /ver os planos/i })).toHaveAttribute("href", "/painel/faturas");
+  });
+});
+
+// Redesenho do celular, PR 4. No celular, "Fechar o dia" ficava no
+// topo, antes de qualquer número: a ação vinha antes do que ela fecha.
+// Agora vem depois dos valores (o acerto e o que entrou), fora do
+// cabeçalho. No desktop segue no cabeçalho.
+describe("Caixa no celular", () => {
+  let desfazer: () => void;
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/caixa", query: { data: DIA } });
+    desfazer = comTelaDeCelular();
+  });
+  afterEach(() => desfazer());
+
+  function depois(a: Element, b: Element) {
+    return Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+  }
+
+  it("Fechar o dia vem depois dos valores, fora do cabeçalho", async () => {
+    montarPainel(<CaixaDoDia />, await semear());
+
+    const botao = await screen.findByRole("button", { name: /fechar o dia/i });
+    const entrou = screen.getByRole("region", { name: /entrou no dia/i });
+    const pagamentos = screen.getByRole("region", { name: /pagamentos/i });
+
+    expect(botao.closest("header")).toBeNull();
+    expect(depois(entrou, botao)).toBe(true);
+    expect(depois(botao, pagamentos)).toBe(true);
+  });
+
+  it("fechado, o Reabrir fica no mesmo lugar", async () => {
+    const falso = await semear();
+    await falso.barbeiro.atualizarAgendamento("a3", { status: "cancelado" });
+    montarPainel(<CaixaDoDia />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: /fechar o dia/i }));
+    const reabrir = await screen.findByRole("button", { name: /reabrir o dia/i });
+
+    expect(reabrir.closest("header")).toBeNull();
+    expect(depois(screen.getByRole("region", { name: /entrou no dia/i }), reabrir)).toBe(true);
+  });
+
+  it("anterior, hoje e próximo numa linha só, sem quebrar", () => {
+    const css = readFileSync(join(__dirname, "../../../src/telas/painel/CaixaDoDia.module.css"), "utf8").replace(
+      /\r\n/g,
+      "\n"
+    );
+    const inicio = css.indexOf("@media (max-width: 30rem)");
+    const celular = inicio < 0 ? "" : css.slice(inicio, css.indexOf("\n}\n", inicio) + 2);
+
+    expect(celular).toMatch(/\.dias\s*\{[^}]*grid-template-columns:\s*1fr auto 1fr/);
+  });
+});
+
+describe("Caixa no desktop", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/caixa", query: { data: DIA } });
+  });
+
+  it("Fechar o dia segue no cabeçalho", async () => {
+    montarPainel(<CaixaDoDia />, await semear());
+
+    expect((await screen.findByRole("button", { name: /fechar o dia/i })).closest("header")).not.toBeNull();
   });
 });

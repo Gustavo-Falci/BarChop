@@ -4,7 +4,23 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (fim de 2026-10-31 — redesenho do celular concluído) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-01 — pendentes do redesenho no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **Pendentes do redesenho resolvidos.** Primeiro foram desenhados no canvas do Claude Design (https://claude.ai/artifact/LpMm9AAYAVzsQXsZB1w7Xb, fileira "Pendentes (01/11)", nos dois temas), depois implementados. Regra do dono: redesenho passa primeiro pelo canvas.
+  - #266: a aba Assinantes vira a lista do celular. Nome em cima; "Plano · de quem" e "Forma · ciclo" embaixo; situação e Recebi à direita.
+  - #267: o título da Agenda mostra o mês abreviado ("Set") abaixo de 400px e o mês inteiro a partir de 400px. Medido a 390px, "Novembro" cortava. O `aria-label` continua com o mês inteiro.
+  - O corte da lista do celular em 640px fica (decisão do dono). Os três estão registrados em `.claude/plans/redesenho-celular.plan.md`.
+- **Produção = #267** (deploy do dono em 01/11), conferida por curl: `api.barchop.com.br/health` 200. O código publicado de `barchop.com.br` tem a regra `@media (max-width:399px)` do mês, o `linhasNoCelular` da lista de Assinantes, "Menu da agenda" e `listaNoCelular`. Isso cobre todo o redesenho, do #259 ao #267.
+- A semente `apps/api/scripts/conferencia-visual.ts` ganhou o plano ativo "Corte mensal" com dois assinantes no balcão: um em atraso, outro em dia.
+- Só a `main` existe (local e remota); nenhum PR de código aberto.
+
+**Ao retomar:**
+1. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
+2. **A primeira conta real da InfinitePay:** olhar o log do conector (seção de 31/10 à noite, abaixo).
+3. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. Em 24/11, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+## RETOMAR AQUI (fim de 2026-10-31 — redesenho do celular concluído) — histórico
 
 **Estado:**
 - **Redesenho do painel no celular concluído:** plano `.claude/plans/redesenho-celular.plan.md`, 6 PRs, #259 a #264, todos mesclados (`main` = merge do #264). Guia de UI/UX em `barchop/docs/UI_UX_DESIGN_GUIDELINES.md` (#258); toda tela segue ele.
@@ -15,11 +31,11 @@
 - O resto do estado de 31/10 (InfinitePay, Stripe, ambiente) segue valendo na seção abaixo.
 
 **Ao retomar:**
-1. **Pendentes do redesenho**, mostrar ao dono e perguntar o que fazer:
+1. **Pendentes do redesenho** (feito em 01/11: #266, #267, seção acima). Eram:
    - a lista de Assinantes (`ListaDeAssinantes`) continua no cartão "Rótulo: valor";
    - a 360px, o título da Agenda corta com "…" os meses longos (setembro, novembro, dezembro, fevereiro);
    - a lista do celular troca em 640px; de 641 a 900px (barra de baixo já visível), as quatro listas seguem na tabela larga.
-2. **Conferir o deploy** das telas novas quando o dono disser que subiu (código publicado da web).
+2. **Conferir o deploy** das telas novas (feito em 01/11: produção = #267).
 3. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
 4. **A primeira conta real da InfinitePay:** olhar o log do conector (seção abaixo).
 

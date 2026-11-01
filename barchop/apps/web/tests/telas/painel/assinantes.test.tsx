@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
 import type { AssinaturaDoPainel, MembroDaEquipe, PlanoDoPainel } from "@barchop/types";
 
@@ -8,6 +8,7 @@ import { DetalheDoCliente } from "../../../src/telas/painel/DetalheDoCliente";
 import { ListaDePlanos } from "../../../src/telas/painel/ListaDePlanos";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
+import { comTelaDeCelular } from "../../ajudantes/tela";
 
 // O assinante no balcão (Onda 2, marco 3, PR 7b do plano
 // planos-de-assinatura): a aba Assinantes na tela dos planos e, no
@@ -202,6 +203,56 @@ describe("a aba Assinantes", () => {
     montarPainel(<ListaDePlanos agora={AGORA} />, semCompleto(semear({ assinaturas: [] })));
     expect(await screen.findByText(/planos de assinatura são do plano completo/i)).toBeInTheDocument();
     expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+  });
+});
+
+// Pendente do redesenho do celular (01/11): a aba deixa o cartão
+// "Rótulo: valor" e vira a lista das outras telas (canvas, prancha
+// Assinantes). Nada do desktop se perde: plano, de quem, forma, ciclo,
+// situação e o Recebi.
+describe("a aba Assinantes no celular", () => {
+  let desfazer: () => void = () => {};
+  afterEach(() => desfazer());
+
+  function itemDe(nome: string): HTMLElement {
+    return screen.getByRole("button", { name: nome }).closest("li")!;
+  }
+
+  it("vira lista, sem rótulo, com tudo o que a tabela mostra", async () => {
+    desfazer = comTelaDeCelular();
+    montarPainel(<ListaDePlanos agora={AGORA} />, semear());
+    await abrirAssinantes();
+
+    await screen.findByRole("button", { name: "Carlos Mendes" });
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(document.querySelector("[data-rotulo]")).toBeNull();
+
+    const carlosNaLista = itemDe("Carlos Mendes");
+    expect(within(carlosNaLista).getByText("Corte ilimitado · Da casa")).toBeInTheDocument();
+    expect(within(carlosNaLista).getByText(/no balcão · venceu em 20\/10 · atende como avulso/i)).toBeInTheDocument();
+    expect(within(carlosNaLista).getByText("Em atraso")).toBeInTheDocument();
+    expect(within(carlosNaLista).getByRole("button", { name: /recebi/i })).toBeInTheDocument();
+
+    const joaoNaLista = itemDe("João Silva");
+    expect(within(joaoNaLista).getByText("2 cortes · De Gustavo")).toBeInTheDocument();
+    expect(within(joaoNaLista).getByText(/no balcão · renova em 10\/11/i)).toBeInTheDocument();
+    expect(within(joaoNaLista).getByText("Ativa")).toBeInTheDocument();
+    expect(within(joaoNaLista).queryByRole("button", { name: /recebi/i })).not.toBeInTheDocument();
+  });
+
+  it("o item abre o cliente, e o Recebi abre a janela sem abrir o cliente", async () => {
+    desfazer = comTelaDeCelular();
+    montarPainel(<ListaDePlanos agora={AGORA} />, semear());
+    await abrirAssinantes();
+
+    await screen.findByRole("button", { name: "João Silva" });
+    await userEvent.click(within(itemDe("João Silva")).getByText("2 cortes · De Gustavo"));
+    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/clientes/c1");
+    navegacaoFalsa.push.mockClear();
+
+    await userEvent.click(within(itemDe("Carlos Mendes")).getByRole("button", { name: /recebi/i }));
+    expect(await screen.findByRole("dialog", { name: /recebi a mensalidade/i })).toBeInTheDocument();
+    expect(navegacaoFalsa.push).not.toHaveBeenCalled();
   });
 });
 

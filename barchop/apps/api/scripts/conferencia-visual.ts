@@ -45,7 +45,7 @@ async function main() {
   const { comCodigo } = await import("../tests/helpers/barbearia");
   const { gerarHashSenha } = await import("../src/lib/senha");
   const { normalizarTelefoneObrigatorio } = await import("../src/lib/telefone");
-  const { agoraNaBarbearia, dataParaDate, horaParaDate, somarMinutos } = await import("../src/lib/horas");
+  const { agoraNaBarbearia, dataParaDate, horaParaDate, somarDias, somarMinutos } = await import("../src/lib/horas");
 
   await limparBanco();
   const app = buildApp({ logger: false });
@@ -146,6 +146,42 @@ async function main() {
         ativo: false,
         ordem,
         servicos: { create: { servicoId: corte.id, usosPorCiclo: usos } },
+      },
+    });
+  }
+
+  // Um plano ativo com dois assinantes no balcão, pra aba Assinantes
+  // (pendente do redesenho, 01/11): um em atraso, com o Recebi, e um em
+  // dia, sem ele.
+  const mensal = await prisma.planoDeAssinatura.create({
+    data: {
+      barbeariaId: barbearia.id,
+      vendedorId: null,
+      fixoPorAtendimentoCentavos: 1500,
+      nome: "Corte mensal",
+      ciclo: "mensal",
+      precoCentavos: 8000,
+      ativo: true,
+      ordem: planos.length,
+      servicos: { create: { servicoId: corte.id, usosPorCiclo: null } },
+    },
+  });
+  const ciclos: [number, string, number][] = [
+    [0, "em_atraso", -40],
+    [1, "ativa", -10],
+  ];
+  for (const [cliente, situacao, comecaHaDias] of ciclos) {
+    await prisma.assinaturaDoCliente.create({
+      data: {
+        barbeariaId: barbearia.id,
+        planoId: mensal.id,
+        clienteId: clientes[cliente]!.id,
+        situacao,
+        forma: "no_balcao",
+        precoCentavos: 8000,
+        ciclo: "mensal",
+        cicloComecaEm: dataParaDate(somarDias(hoje, comecaHaDias)),
+        cicloTerminaEm: dataParaDate(somarDias(hoje, comecaHaDias + 30)),
       },
     });
   }

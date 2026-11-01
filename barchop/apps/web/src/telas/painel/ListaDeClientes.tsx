@@ -346,17 +346,14 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
             )
           }
           aoAbrir={(id) => router.push(`/painel/clientes/${id}`)}
-          linhas={listados.map((cliente) => ({
-            id: cliente.id,
-            celulas: [
-              cliente.nome,
-              cliente.telefone,
-              ultimoDe(cliente.ultimoAgendamento),
-              // Chamar no zap e marcar horário são as duas coisas que se
-              // faz com um cliente na tela — e as duas custavam abrir o
-              // detalhe e voltar. `stopPropagation` em ambas: a linha
-              // inteira abre o detalhe, e uma ação que também abrisse
-              // seria a ação errada acontecendo junto.
+          linhas={listados.map((cliente) => {
+            const ultimo = ultimoDe(cliente.ultimoAgendamento);
+            // Chamar no zap e marcar horário são as duas coisas que se
+            // faz com um cliente na tela — e as duas custavam abrir o
+            // detalhe e voltar. `stopPropagation` em ambas: a linha
+            // inteira abre o detalhe, e uma ação que também abrisse
+            // seria a ação errada acontecendo junto.
+            const acoes = (
               <span className={estilos.acoes} key="acoes">
                 <a
                   className={estilos.acao}
@@ -381,9 +378,21 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
                 >
                   <IconeCalendario />
                 </button>
-              </span>,
-            ],
-          }))}
+              </span>
+            );
+            return {
+              id: cliente.id,
+              // No celular (redesenho, PR 6): telefone e último
+              // agendamento embaixo do nome; as ações no item, fora do
+              // botão do nome. A data ganha o rótulo em palavra: solta,
+              // não dizia de quê.
+              noCelular: {
+                detalhe: `${cliente.telefone} · ${ultimo === SEM_REGISTRO ? ultimo : `último agendamento: ${ultimo}`}`,
+                acoes,
+              },
+              celulas: [cliente.nome, cliente.telefone, ultimo, acoes],
+            };
+          })}
           />
 
           {/* O botão só aparece quando há página por vir. Fica fora da

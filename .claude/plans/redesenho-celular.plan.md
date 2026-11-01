@@ -34,6 +34,7 @@
 - "Fechar o dia" embaixo, depois dos valores; a confirmação continua só com pendência.
 
 ### PR 5 — Planos, Folgas, Serviços, Equipe
+- Equipe estoura a 360px (página com 372px): "Mudar ordem" + "Convidar membro" no cabeçalho somam 356px onde cabem 328. Tirar o "Mudar ordem" do cabeçalho resolve; conferir de novo com a varredura das rotas a 360px. As outras telas do painel ficaram em 360px (31/10).
 - "Mudar ordem" sai do cabeçalho (era secundário acima do principal); um lugar só nas duas telas.
 - Folgas: estado vazio com ícone e orientação.
 - Planos: explicação do "Mostrar na página" junto do switch; o selo "Desativado" fica (`plano.ativo` falso).

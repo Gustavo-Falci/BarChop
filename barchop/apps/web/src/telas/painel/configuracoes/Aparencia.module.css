@@ -44,24 +44,23 @@
   font-weight: 600;
 }
 
-/* 1 · logo e capa: duas linhas finas, sem caixa. */
-/* As duas imagens lado a lado, numa linha: a loja não pode empurrar as
-   abas pra baixo da dobra. Empilham quando não cabem. */
-.imagens {
+/* 1 · logo e capa numa linha só, num cartão (redesenho, PR 6): a
+   miniatura, o resumo do que falta e o caminho pra tela de envio. */
+.loja {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--espaco-sm) var(--espaco-lg);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-height: 56px;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
 }
 
-.imagem {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  align-items: center;
-  gap: var(--espaco-sm);
-  padding: var(--espaco-xs) 0;
+.falta {
+  color: var(--cor-atencao);
+  font-size: var(--texto-sm);
 }
 
 .miniatura {
@@ -82,13 +81,10 @@
   gap: 2px;
 }
 
-.imagemTexto strong {
+.imagemAcao {
   display: inline-flex;
   align-items: center;
-  gap: var(--espaco-sm);
-}
-
-.imagemAcao {
+  min-height: 44px;
   color: var(--cor-ink);
   font-weight: 700;
   text-decoration: underline;
@@ -520,4 +516,23 @@
 .layout[aria-pressed="true"] {
   border-color: var(--cor-ink);
   box-shadow: var(--sombra-1);
+}
+
+/* Sim ou não num interruptor (redesenho, PR 6): o nome e o efeito à
+   esquerda, a chave na ponta. */
+.linhaDaChave {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+}
+
+.textoDaChave {
+  display: grid;
+  gap: var(--espaco-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.nomeDaChave {
+  font-weight: 600;
 }

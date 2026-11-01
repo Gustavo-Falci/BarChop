@@ -1,17 +1,25 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { APARENCIA_PADRAO } from "@barchop/formato";
 import { AparenciaDaBarbearia } from "../../../src/telas/painel/configuracoes/AparenciaDaBarbearia";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
 import { montarPainel } from "../../ajudantes/painel";
+import { comTelaDeCelular } from "../../ajudantes/tela";
 
 // A tela Aparência (marco D): o visual da página pública. Cada mudança
 // vira rascunho guardado no servidor (sobrevive a fechar a aba); a
 // página do cliente só muda quando o dono publica.
 
 const MARCA = "/painel/configuracoes/dados-do-negocio?aba=marca";
+
+let desfazerTela: (() => void) | undefined;
+
+afterEach(() => {
+  desfazerTela?.();
+  desfazerTela = undefined;
+});
 
 beforeEach(() => {
   localStorage.clear();
@@ -47,16 +55,29 @@ describe("aparência", () => {
     expect(screen.queryByRole("button", { name: "Publicar" })).not.toBeInTheDocument();
     expect(screen.getByRole("banner")).toHaveTextContent("Faltando");
     expect(grupo(/modo padrão/i).getByRole("radio", { name: "Automático" })).toBeChecked();
-    expect(grupo(/deixar o cliente trocar/i).getByRole("radio", { name: "Não" })).toBeChecked();
+    expect(screen.getByRole("switch", { name: /deixar o cliente trocar/i })).not.toBeChecked();
   });
 
-  it("logo e capa: diz o que falta e leva pra aba Marca", async () => {
+  // Redesenho, PR 6 (01/11): logo e capa resumidas numa linha só, que
+  // leva pra aba Marca de Dados do negócio.
+  it("logo e capa: uma linha diz o que falta e leva pra aba Marca", async () => {
     await abrir();
 
-    const links = screen.getAllByRole("link", { name: /enviar (logo|capa)/i });
-    expect(links).toHaveLength(2);
-    for (const link of links) expect(link).toHaveAttribute("href", MARCA);
-    expect(screen.getAllByText("falta")).toHaveLength(2);
+    const links = screen.getAllByRole("link", { name: /logo e capa/i });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName("Enviar logo e capa");
+    expect(links[0]).toHaveAttribute("href", MARCA);
+    expect(screen.getByText(/sem logo e capa: a página abre com as iniciais/i)).toBeInTheDocument();
+  });
+
+  it("com a capa e sem a logo, a linha pede só a logo", async () => {
+    const falso = criarApiClientFalso();
+    // A assinatura do PNG: o falso confere o tipo pelos primeiros bytes.
+    await falso.barbeiro.enviarCapa(new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])]));
+    await abrir(falso);
+
+    expect(screen.getByText(/capa enviada · falta a logo/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Enviar logo" })).toHaveAttribute("href", MARCA);
   });
 
   // A loja numa linha (17/10, OK do dono): as medidas e os tipos de
@@ -198,7 +219,7 @@ describe("aparência", () => {
     const falso = await abrir();
 
     await userEvent.click(grupo(/modo padrão/i).getByRole("radio", { name: "Claro" }));
-    await userEvent.click(grupo(/deixar o cliente trocar/i).getByRole("radio", { name: "Sim" }));
+    await userEvent.click(screen.getByRole("switch", { name: /deixar o cliente trocar/i }));
 
     await waitFor(async () =>
       expect(await rascunho(falso)).toMatchObject({ modoPadrao: "claro", clienteTrocaModo: true })
@@ -387,5 +408,26 @@ describe("aparência", () => {
 
     expect(await screen.findByText(/só o dono da barbearia muda esta área/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Oceano" })).not.toBeInTheDocument();
+  });
+
+  // Redesenho, PR 6: abaixo de 1200px a prévia não fica embaixo de tudo
+  // (eram ~900px de página); abre por um botão, na janela ampliada.
+  it("no celular, a prévia abre por um botão", async () => {
+    desfazerTela = comTelaDeCelular();
+    await abrir();
+
+    expect(screen.queryByTitle("Prévia da sua página")).not.toBeInTheDocument();
+    const botao = screen.getByRole("button", { name: "Ver a prévia da página" });
+    expect(botao).toHaveAttribute("aria-haspopup", "dialog");
+
+    await userEvent.click(botao);
+    expect(within(screen.getByRole("dialog", { name: "Prévia da sua página" })).getByTitle("Prévia ampliada da sua página")).toBeInTheDocument();
+  });
+
+  it("no computador, a prévia segue ao lado, sem o botão", async () => {
+    await abrir();
+
+    expect(screen.getByTitle("Prévia da sua página")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ver a prévia da página" })).not.toBeInTheDocument();
   });
 });

@@ -29,13 +29,14 @@ import {
   type TamanhoDoTexto,
 } from "@barchop/formato";
 import { Botao } from "../../../componentes/Botao";
-import { Chip } from "../../../componentes/Chip";
+import { Interruptor } from "../../../componentes/Interruptor";
 import { SecaoNumerada } from "../../../componentes/SecaoNumerada";
 import { SeletorEmPilulas } from "../../../componentes/SeletorEmPilulas";
 import { useRequisicao } from "../../../api/useRequisicao";
 import { Aviso } from "../../../componentes/Aviso";
 import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
+import { useMidia } from "../../../painel/useTelaDeCelular";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import { PreviaDaPagina } from "./PreviaDaPagina";
 import { Abas } from "../../../componentes/Abas";
@@ -194,6 +195,10 @@ function TelaDaAparencia() {
   const [modoDoFundo, setModoDoFundo] = useState<Modo>("claro");
   const [ajusteAberto, setAjusteAberto] = useState(false);
   const [modoDasNove, setModoDasNove] = useState<Modo>("claro");
+  // Abaixo de duas colunas (a prévia ao lado vem a 1200px), a prévia
+  // recolhe num botão (redesenho, PR 6).
+  const previaRecolhida = useMidia("(max-width: 1199px)");
+  const idDoEfeitoDaTroca = useId();
 
   // Sincronizado na renderização, como nas outras áreas (ver
   // DadosDoNegocio). O rascunho guardado, se houver, é o que a tela abre.
@@ -332,29 +337,10 @@ function TelaDaAparencia() {
     <MolduraDaArea area="aparencia" decididas={decididas} aviso={aviso}>
       <div className={estilos.comPrevia}>
         <div className={estilos.tela}>
-          <SecaoNumerada
-            titulo="A cara da sua loja"
-            lado="Salva na hora"
-            apoio="Logo e capa ficam em Dados do negócio › Marca e entram no ar assim que você envia."
-          >
-            <ul className={estilos.imagens}>
-              <LinhaDaImagem
-                titulo="Logo"
-                url={dados.logoUrl}
-                acao={dados.logoUrl ? "Trocar logo" : "Enviar logo"}
-              />
-              <LinhaDaImagem
-                titulo="Capa"
-                url={dados.capaUrl}
-                acao={dados.capaUrl ? "Trocar capa" : "Enviar capa"}
-              />
-            </ul>
-            {!dados.logoUrl && !dados.capaUrl ? (
-              <p className={estilos.efeito}>
-                Sem logo e capa, sua página abre só com as iniciais do nome sobre um fundo escuro.
-              </p>
-            ) : null}
-          </SecaoNumerada>
+          {/* Logo e capa numa linha só (redesenho, PR 6): moram em Dados
+              do negócio › Marca e entram no ar na hora; aqui só se diz o
+              que falta e se leva pra lá. */}
+          <LinhaDaLoja logoUrl={dados.logoUrl} capaUrl={dados.capaUrl} />
 
           {/* Abas no lugar das seções empilhadas (análise de 17/10): a tela
               tinha cinco vezes a altura da janela, e pra chegar no layout
@@ -442,21 +428,26 @@ function TelaDaAparencia() {
                     aoTrocar={(modoPadrao) => mudar({ ...rascunho, modoPadrao })}
                     efeito={EFEITO_DO_MODO[rascunho.modoPadrao]}
                   />
-                  <SeletorEmPilulas<"sim" | "nao">
-                    nome="cliente-troca-modo"
-                    legenda="Deixar o cliente trocar entre claro e escuro"
-                    opcoes={[
-                      { valor: "sim", rotulo: "Sim" },
-                      { valor: "nao", rotulo: "Não" },
-                    ]}
-                    valor={rascunho.clienteTrocaModo ? "sim" : "nao"}
-                    aoTrocar={(valor) => mudar({ ...rascunho, clienteTrocaModo: valor === "sim" })}
-                    efeito={
-                      rascunho.clienteTrocaModo
-                        ? "Aparece o botão de lua e sol na sua página; a escolha fica guardada no aparelho do cliente."
-                        : "Sua página fica sempre no modo padrão, sem o botão de lua e sol."
-                    }
-                  />
+                  {/* Sim ou não: o interruptor, como nas Regras (PR 4). */}
+                  <div className={estilos.linhaDaChave}>
+                    <span className={estilos.textoDaChave}>
+                      <span className={estilos.nomeDaChave} aria-hidden="true">
+                        Deixar o cliente trocar entre claro e escuro
+                      </span>
+                      <span id={idDoEfeitoDaTroca} className={estilos.efeito} aria-live="polite">
+                        {rascunho.clienteTrocaModo
+                          ? "Aparece o botão de lua e sol na sua página; a escolha fica guardada no aparelho do cliente."
+                          : "Sua página fica sempre no modo padrão, sem o botão de lua e sol."}
+                      </span>
+                    </span>
+                    <Interruptor
+                      rotulo="Deixar o cliente trocar entre claro e escuro"
+                      rotuloOculto
+                      ligado={rascunho.clienteTrocaModo}
+                      aoTrocar={(clienteTrocaModo) => mudar({ ...rascunho, clienteTrocaModo })}
+                      descritoPor={idDoEfeitoDaTroca}
+                    />
+                  </div>
                 </div>
               </SecaoNumerada>
               ),
@@ -694,7 +685,7 @@ function TelaDaAparencia() {
         </div>
         {/* A prévia ao vivo (marco E): o rascunho na página de verdade. */}
         <aside className={estilos.lateral}>
-          <PreviaDaPagina slug={dados.slug} aparencia={rascunho} pendente={pendente} />
+          <PreviaDaPagina slug={dados.slug} aparencia={rascunho} pendente={pendente} recolhida={previaRecolhida} />
         </aside>
       </div>
     </MolduraDaArea>
@@ -739,34 +730,34 @@ function EscolhaDeFonte({
   );
 }
 
-// Uma das duas imagens da loja, numa linha curta: a miniatura, o nome
-// (com "falta" se não tem) e o caminho pra tela de envio. As medidas e
-// os tipos de arquivo moram lá, onde o arquivo é escolhido (17/10).
-function LinhaDaImagem({
-  titulo,
-  url,
-  acao,
-}: {
-  titulo: string;
-  url: string | null;
-  acao: string;
-}) {
+// Logo e capa numa linha (redesenho, PR 6): a miniatura do que já foi
+// enviado, o resumo do que falta e o caminho pra tela de envio. As medidas
+// e os tipos de arquivo moram lá, onde o arquivo é escolhido (17/10).
+function LinhaDaLoja({ logoUrl, capaUrl }: { logoUrl: string | null; capaUrl: string | null }) {
+  const miniatura = logoUrl ?? capaUrl;
+  const [resumo, acao, nomeDaAcao] =
+    logoUrl && capaUrl
+      ? ["Logo e capa enviadas.", "Trocar", "Trocar logo e capa"]
+      : logoUrl
+        ? ["Logo enviada · falta a capa.", "Enviar capa", "Enviar capa"]
+        : capaUrl
+          ? ["Capa enviada · falta a logo.", "Enviar logo", "Enviar logo"]
+          : ["Sem logo e capa: a página abre com as iniciais.", "Enviar", "Enviar logo e capa"];
   return (
-    <li className={estilos.imagem}>
-      {url ? (
-        <img src={url} alt="" className={estilos.miniatura} />
+    <div className={estilos.loja}>
+      {miniatura ? (
+        <img src={miniatura} alt="" className={estilos.miniatura} />
       ) : (
         <span className={`${estilos.miniatura} ${estilos.semImagem}`} aria-hidden="true" />
       )}
       <span className={estilos.imagemTexto}>
-        <strong>
-          {titulo} {url ? null : <Chip tom="atencao" tamanho="pequeno">falta</Chip>}
-        </strong>
+        <strong>Logo e capa</strong>
+        <span className={logoUrl && capaUrl ? estilos.efeito : estilos.falta}>{resumo}</span>
       </span>
-      <Link href={MARCA} className={estilos.imagemAcao}>
+      <Link href={MARCA} className={estilos.imagemAcao} aria-label={nomeDaAcao === acao ? undefined : nomeDaAcao}>
         {acao}
       </Link>
-    </li>
+    </div>
   );
 }
 

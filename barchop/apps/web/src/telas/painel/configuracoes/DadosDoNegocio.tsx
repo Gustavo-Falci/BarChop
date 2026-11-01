@@ -35,6 +35,7 @@ import {
   IconeWifi,
   IconeXicara,
 } from "../../../painel/icones";
+import { copiarLink, linkDaBarbearia } from "../../../painel/compartilhar";
 import { enderecoDaBarbearia } from "../../../tenant/endereco";
 import { CampoDaLogo } from "./CampoDaLogo";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
@@ -164,6 +165,9 @@ function Dados() {
   // suporte troca.
   const [novoLink, setNovoLink] = useState("");
   const [motivo, setMotivo] = useState("");
+  // O formulário do pedido fica atrás de "Pedir outro link" (PR 5).
+  const [pedindoLink, setPedindoLink] = useState(false);
+  const [avisoDoLink, setAvisoDoLink] = useState("");
   const [erro, setErro] = useState<Record<string, string | undefined>>({});
   const [aviso, setAviso] = useState<string | undefined>();
   const [avisoDoSalvar, setAvisoDoSalvar] = useState<string | undefined>();
@@ -277,6 +281,7 @@ function Dados() {
       setPedidoNovo(await api.barbeiro.pedirTrocaDeLink(novoLink, motivo.trim() || undefined));
       setNovoLink("");
       setMotivo("");
+      setPedindoLink(false);
     } catch (causa) {
       const erroDaApi = causa as ErroDaApi;
       // O nome é de outra barbearia, atual ou antigo: o link é único pra
@@ -312,6 +317,10 @@ function Dados() {
     }
   }
 
+  async function copiar(link: string) {
+    setAvisoDoLink((await copiarLink(link)) ? "Link copiado." : `Não deu pra copiar daqui. Seu link: ${link}`);
+  }
+
   // A capa salva sozinha, na hora do envio — e enviar é decidir a Marca.
   async function enviarCapa(arquivo: Blob) {
     const url = await api.barbeiro.enviarCapa(arquivo);
@@ -323,6 +332,10 @@ function Dados() {
     return <Aviso>{barbearia.erro.mensagem || "Não foi possível carregar a barbearia agora."}</Aviso>;
   }
   if (!barbearia.dados) return <Carregando />;
+  // O endereço inteiro, como no cartão do Hoje: no desenvolvimento, sem o
+  // site configurado, o caminho /<slug> ganha o host atual. Só chega aqui
+  // com os dados lidos, então já no navegador.
+  const linkVisivel = linkDaBarbearia(barbearia.dados.slug, process.env.NEXT_PUBLIC_URL_DO_SITE, window.location.origin);
 
   return (
     <MolduraDaArea area="dados_do_negocio" decididas={decididas} aviso={aviso}>
@@ -394,13 +407,36 @@ function Dados() {
                 deixariam o campo ambíguo pra quem procura pelo rótulo. */}
             <Secao titulo="Endereço da sua página" descricao="O endereço que seus clientes usam pra marcar horário.">
 
-              <Campo
-                rotulo="Link da barbearia"
-                name="link"
-                readOnly
-                apoio="O link é fixo: muda só com um pedido ao suporte. O endereço antigo continua levando à sua barbearia."
-                valor={enderecoDaBarbearia(barbearia.dados.slug, process.env.NEXT_PUBLIC_URL_DO_SITE)}
-              />
+              {/* O link como texto, e não num campo só de leitura: não se
+                  edita aqui (redesenho, PR 5). Copiar e pedir outro ficam
+                  logo embaixo. */}
+              <div className={estilos.seuLink}>
+                <span className={estilos.apoio}>Seu link</span>
+                <strong className={estilos.enderecoDoLink}>{linkVisivel}</strong>
+              </div>
+              <div className={estilos.acoesDoLink}>
+                <Botao variante="contorno" onClick={() => void copiar(linkVisivel)}>
+                  Copiar link
+                </Botao>
+                {pedido?.status === "pendente" ? null : (
+                  <Botao
+                    variante="contorno"
+                    aria-expanded={pedindoLink}
+                    aria-controls={`${id}-pedido`}
+                    onClick={() => setPedindoLink((aberto) => !aberto)}
+                  >
+                    Pedir outro link
+                  </Botao>
+                )}
+              </div>
+              {/* Montado desde o início, vazio: região viva que nasce junto
+                  com o texto não é anunciada por todo leitor de tela. */}
+              <p role="status" className={estilos.avisoDoLink}>
+                {avisoDoLink}
+              </p>
+              <p className={estilos.apoio}>
+                O link muda só com pedido ao suporte; o antigo continua levando à sua barbearia.
+              </p>
               {pedidoLido.carregando && pedido === null ? null : pedido?.status === "pendente" ? (
                 <div className={estilos.pedido}>
                   <p>
@@ -423,20 +459,24 @@ function Dados() {
                       {pedido.resposta ? <p className={estilos.apoio}>{pedido.resposta}</p> : null}
                     </div>
                   ) : null}
-                  <Campo
-                    rotulo="Novo link"
-                    name="novo-link"
-                    autoComplete="off"
-                    apoio="Como vai aparecer no endereço. Exemplo: barbearia-do-centro"
-                    valor={novoLink}
-                    onChange={(valor) => setNovoLink(valor.toLowerCase())}
-                    erro={erro.novoLink}
-                    maxLength={80}
-                  />
-                  <Campo rotulo="Motivo (opcional)" name="motivo" valor={motivo} onChange={setMotivo} maxLength={500} />
-                  <Botao variante="contorno" onClick={pedirTroca} carregando={salvando}>
-                    Pedir troca
-                  </Botao>
+                  {pedindoLink ? (
+                    <div id={`${id}-pedido`} className={estilos.formularioDoPedido}>
+                    <Campo
+                      rotulo="Novo link"
+                      name="novo-link"
+                      autoComplete="off"
+                      apoio="Como vai aparecer no endereço. Exemplo: barbearia-do-centro"
+                      valor={novoLink}
+                      onChange={(valor) => setNovoLink(valor.toLowerCase())}
+                      erro={erro.novoLink}
+                      maxLength={80}
+                    />
+                    <Campo rotulo="Motivo (opcional)" name="motivo" valor={motivo} onChange={setMotivo} maxLength={500} />
+                    <Botao variante="contorno" onClick={pedirTroca} carregando={salvando}>
+                      Pedir troca
+                    </Botao>
+                    </div>
+                  ) : null}
                 </>
               )}
             </Secao>

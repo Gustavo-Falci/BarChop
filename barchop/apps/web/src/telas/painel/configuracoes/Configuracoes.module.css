@@ -532,6 +532,52 @@
   overflow-wrap: anywhere;
 }
 
+/* O link da página como texto (redesenho, PR 5): o rótulo em cima e o
+   endereço embaixo, quebrando onde precisar num celular estreito. */
+.seuLink {
+  display: grid;
+  gap: 2px;
+}
+
+.enderecoDoLink {
+  overflow-wrap: anywhere;
+}
+
+/* Copiar e pedir outro lado a lado, em colunas iguais, até no celular de
+   360px: com o recuo e o texto do Botao, "Pedir outro link" pedia 164px
+   e os dois desciam um embaixo do outro. */
+.acoesDoLink {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr));
+  gap: var(--espaco-sm);
+}
+
+.acoesDoLink > button {
+  min-height: 44px;
+  padding-inline: var(--espaco-sm);
+  font-size: var(--texto-sm);
+}
+
+.avisoDoLink {
+  margin: 0;
+  font-size: var(--texto-sm);
+  overflow-wrap: anywhere;
+}
+
+.avisoDoLink:empty {
+  display: none;
+}
+
+.formularioDoPedido {
+  display: grid;
+  gap: var(--espaco-md);
+  justify-items: start;
+}
+
+.formularioDoPedido > :not(button) {
+  justify-self: stretch;
+}
+
 /* A chave do lembrete: caixa e texto na mesma linha, com o alvo do
    clique no texto inteiro. */
 .chave {

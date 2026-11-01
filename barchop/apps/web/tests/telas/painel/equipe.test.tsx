@@ -477,6 +477,18 @@ describe("mudar a ordem da equipe", () => {
     await waitFor(() => expect(salvar).toHaveBeenCalledWith(["m2", "bb1", "m3"]));
   });
 
+  // Redesenho do celular, PR 5: com "Mudar ordem" e "Convidar membro"
+  // no cabeçalho, a 360px a página ficava com 372px e o celular a
+  // encolhia. O "Mudar ordem" vai pra cima da lista, como em Serviços.
+  it("Mudar ordem fica acima da lista que ordena, fora do cabeçalho", async () => {
+    montarPainel(<ListaDaEquipe />, comEquipe());
+
+    const botao = await screen.findByRole("button", { name: "Mudar ordem" });
+
+    expect(botao.closest("header")).toBeNull();
+    expect(botao.compareDocumentPosition(screen.getByRole("table")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("Pronto volta pra tabela", async () => {
     montarPainel(<ListaDaEquipe />, comEquipe());
 

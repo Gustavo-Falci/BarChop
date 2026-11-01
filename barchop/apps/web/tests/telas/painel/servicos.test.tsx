@@ -678,6 +678,19 @@ describe("mudar a ordem dos serviços", () => {
     });
   }
 
+  // Redesenho do celular, PR 5: "Mudar ordem" saiu do cabeçalho. Era um
+  // segundo botão ao lado do principal, e na Equipe os dois juntos não
+  // cabiam em 360px. Agora fica logo acima da lista que ele ordena, no
+  // mesmo lugar nas duas telas.
+  it("Mudar ordem fica acima da lista que ordena, fora do cabeçalho", async () => {
+    montarPainel(<ListaDeServicos />, comCategorias());
+
+    const botao = await screen.findByRole("button", { name: "Mudar ordem" });
+
+    expect(botao.closest("header")).toBeNull();
+    expect(botao.compareDocumentPosition(screen.getByRole("table")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("só o dono vê o botão de mudar a ordem", async () => {
     montarPainel(<ListaDeServicos />, comCategorias("recepcao"));
 

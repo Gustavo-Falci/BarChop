@@ -186,6 +186,23 @@ async function main() {
     });
   }
 
+  // A conta da casa conectada (redesenho das Configurações, PR 9: a
+  // conectada resumida). Sem chave de verdade: a tela só lê o provedor, o
+  // modo e o final; a chave "cifrada" é texto de mentira, nunca decifrado
+  // aqui, e o hash do webhook não confere com token nenhum.
+  await prisma.conexaoDePagamento.create({
+    data: {
+      barbeariaId: barbearia.id,
+      barbeiroId: barbeiro.id,
+      daCasa: true,
+      provedor: "asaas",
+      modo: "teste",
+      chaveCifrada: Buffer.from("conferencia-visual-sem-chave"),
+      chaveFinal: "9876",
+      webhookTokenHash: "conferencia-visual",
+    },
+  });
+
   await app.listen({ port: 3333, host: "0.0.0.0" });
   console.log(`API de conferência em http://localhost:3333 (banco ${banco})`);
   console.log(`slug: ${barbearia.slug}`);

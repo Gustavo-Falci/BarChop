@@ -71,6 +71,23 @@ const VIVA: AssinaturaDoPainel = {
   plano: { id: "pl1", nome: "Corte ilimitado", daCasa: true, vendedor: null },
 };
 
+// As ajudas abrem numa folha, a partir de uma linha (redesenho das
+// Configurações, PR 9): o guia e o "como funciona" moram lá dentro.
+async function abrirAjuda(titulo: string) {
+  await userEvent.click(await screen.findByRole("button", { name: titulo }));
+  return screen.getByRole("dialog", { name: titulo });
+}
+
+async function fecharAjuda(folha: HTMLElement) {
+  await userEvent.click(within(folha).getByRole("button", { name: "Fechar" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+}
+
+// A linha da ajuda, sem abrir.
+function ajuda(titulo: string) {
+  return screen.queryByRole("button", { name: titulo });
+}
+
 function semear(extra: SementeFalsa = {}) {
   return criarApiClientFalso({ equipe: [RAFAEL], ...extra });
 }
@@ -167,7 +184,7 @@ describe("pagamentos online", () => {
   it("sem conta, o guia diz como pegar a chave de produção no Asaas", async () => {
     montarPainel(<PagamentosOnline />, semear({ modoAceito: "real" }));
 
-    const guia = await screen.findByRole("region", { name: "Como pegar a chave no Asaas" });
+    const guia = await abrirAjuda("Como pegar a chave no Asaas");
     const passos = within(guia).getAllByRole("listitem");
     expect(passos).toHaveLength(3);
     expect(passos[0]).toHaveTextContent(/crie a conta/i);
@@ -184,7 +201,7 @@ describe("pagamentos online", () => {
   it("no sandbox, o guia aponta pro sandbox do Asaas", async () => {
     montarPainel(<PagamentosOnline />, semear());
 
-    const guia = await screen.findByRole("region", { name: "Como pegar a chave no Asaas" });
+    const guia = await abrirAjuda("Como pegar a chave no Asaas");
     expect(within(guia).getByText("$aact_hmlg_", { exact: false })).toBeInTheDocument();
     expect(within(guia).getByRole("link", { name: /chaves de api no asaas/i })).toHaveAttribute(
       "href",
@@ -196,13 +213,13 @@ describe("pagamentos online", () => {
     // O dono que não atende só tem a conta da casa pra conectar.
     montarPainel(<PagamentosOnline />, semear({ equipe: [{ ...RAFAEL, atende: false }] }));
     const casa = await screen.findByRole("region", { name: "Conta da casa" });
-    expect(screen.getByRole("region", { name: "Como pegar a chave no Asaas" })).toBeInTheDocument();
+    expect(ajuda("Como pegar a chave no Asaas")).toBeInTheDocument();
 
     await userEvent.type(within(casa).getByLabelText("Chave de API do Asaas"), "$aact_hmlg_chave-9876");
     await userEvent.click(within(casa).getByRole("button", { name: "Conectar" }));
 
     await within(casa).findByText(/chave terminando em 9876/i);
-    expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
+    expect(ajuda("Como pegar a chave no Asaas")).not.toBeInTheDocument();
   });
 
   it("com a conta conectada, não há guia", async () => {
@@ -211,14 +228,14 @@ describe("pagamentos online", () => {
       semear({ equipe: [{ ...RAFAEL, atende: false }], contasOnline: { casa: CONTA } })
     );
     await screen.findByRole("region", { name: "Conta da casa" });
-    expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
+    expect(ajuda("Como pegar a chave no Asaas")).not.toBeInTheDocument();
   });
 
   it("o profissional sem a liberação não vê o guia", async () => {
     const gustavo: MembroDaEquipe = { ...RAFAEL, id: "bb1", nome: "Gustavo", papel: "profissional" };
     montarPainel(<PagamentosOnline />, semear({ papel: "profissional", equipe: [gustavo, { ...RAFAEL, id: "bb9" }] }));
     await screen.findByText(/o dono libera a venda de planos/i);
-    expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
+    expect(ajuda("Como pegar a chave no Asaas")).not.toBeInTheDocument();
   });
 
   it("escolher a Stripe troca o guia e o campo, e conecta na Stripe", async () => {
@@ -231,8 +248,8 @@ describe("pagamentos online", () => {
     await userEvent.click(screen.getByRole("radio", { name: "Stripe" }));
 
     expect(screen.getByText(/só cartão, e não pede o cpf/i)).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Como pegar a chave no Asaas" })).not.toBeInTheDocument();
-    const guia = screen.getByRole("region", { name: "Como pegar a chave na Stripe" });
+    expect(ajuda("Como pegar a chave no Asaas")).not.toBeInTheDocument();
+    const guia = await abrirAjuda("Como pegar a chave na Stripe");
     const passos = within(guia).getAllByRole("listitem");
     expect(passos).toHaveLength(3);
     expect(passos[1]).toHaveTextContent(/desenvolvedores › chaves de api/i);
@@ -254,6 +271,7 @@ describe("pagamentos online", () => {
       "href",
       "https://dashboard.stripe.com/test/apikeys"
     );
+    await fecharAjuda(guia);
 
     const campo = within(casa).getByLabelText("Chave restrita da Stripe");
     expect(campo).toHaveAttribute("type", "password");
@@ -266,14 +284,14 @@ describe("pagamentos online", () => {
     expect(falso.estado.contasOnline!.casa).toMatchObject({ provedor: "stripe", chaveFinal: "9876" });
     // Conectada, a escolha e o guia somem.
     expect(screen.queryByRole("radio", { name: "Stripe" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Como pegar a chave na Stripe" })).not.toBeInTheDocument();
+    expect(ajuda("Como pegar a chave na Stripe")).not.toBeInTheDocument();
   });
 
   it("no modo real, o guia da Stripe aponta pras chaves de produção", async () => {
     montarPainel(<PagamentosOnline />, semear({ modoAceito: "real" }));
     await userEvent.click(await screen.findByRole("radio", { name: "Stripe" }));
 
-    const guia = screen.getByRole("region", { name: "Como pegar a chave na Stripe" });
+    const guia = await abrirAjuda("Como pegar a chave na Stripe");
     expect(within(guia).getByText("rk_live_", { exact: false })).toBeInTheDocument();
     expect(within(guia).getByRole("link", { name: /chaves de api na stripe/i })).toHaveAttribute(
       "href",
@@ -303,6 +321,31 @@ describe("pagamentos online", () => {
 
     await userEvent.click(within(casa).getByRole("button", { name: "Desconectar" }));
     expect(within(casa).getByText(/a stripe para de avisar o barchop/i)).toBeInTheDocument();
+  });
+
+  // Redesenho, PR 9: as contas num cartão só, cada uma com o selo do que
+  // ela é agora; a conectada fica resumida (decisão 3).
+  it("cada conta diz se está conectada", async () => {
+    montarPainel(<PagamentosOnline />, semear({ contasOnline: { casa: CONTA } }));
+
+    const casa = await screen.findByRole("region", { name: "Conta da casa" });
+    expect(within(casa).getByText("Conectada")).toBeInTheDocument();
+    expect(within(casa).queryByLabelText("Chave de API do Asaas")).not.toBeInTheDocument();
+    const minha = screen.getByRole("region", { name: "Sua conta" });
+    expect(within(minha).getByText("Não conectada")).toBeInTheDocument();
+    expect(within(minha).getByLabelText("Chave de API do Asaas")).toBeInTheDocument();
+  });
+
+  it("a ajuda abre numa folha e fecha pelo Fechar", async () => {
+    montarPainel(<PagamentosOnline />, semear());
+
+    const linha = await screen.findByRole("button", { name: "Como pegar a chave no Asaas" });
+    expect(linha).toHaveAttribute("aria-haspopup", "dialog");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    const folha = await abrirAjuda("Como pegar a chave no Asaas");
+    expect(within(folha).getAllByRole("listitem")).toHaveLength(3);
+    await fecharAjuda(folha);
   });
 
   it("no índice do dono, a linha diz a conta da casa", async () => {
@@ -342,17 +385,21 @@ describe("a InfinitePay", () => {
     await userEvent.click(screen.getByRole("radio", { name: "InfinitePay" }));
 
     expect(screen.getByText(/por um link a cada mensalidade/i)).toBeInTheDocument();
-    const guia = screen.getByRole("region", { name: "Como pegar a chave na InfinitePay" });
+    const guia = await abrirAjuda("Como pegar a chave na InfinitePay");
     const passos = within(guia).getAllByRole("listitem");
     expect(passos).toHaveLength(3);
     expect(passos[0]).toHaveTextContent(/checkout integrado/i);
     expect(passos[2]).toHaveTextContent("inchk_");
-    const comoFunciona = screen.getByRole("region", { name: "Como funciona na InfinitePay" });
+    await fecharAjuda(guia);
+    // O fato que pesa fica à vista, na própria linha.
+    expect(ajuda("Como funciona na InfinitePay")).toHaveAccessibleDescription(/não renova sozinha/i);
+    const comoFunciona = await abrirAjuda("Como funciona na InfinitePay");
     expect(comoFunciona).toHaveTextContent(/não renova sozinh/i);
     expect(comoFunciona).toHaveTextContent(/3 dias antes/i);
     expect(comoFunciona).toHaveTextContent(/whatsapp/i);
     expect(comoFunciona).toHaveTextContent(/em atraso/i);
     expect(comoFunciona).toHaveTextContent(/cancelada/i);
+    await fecharAjuda(comoFunciona);
 
     await userEvent.type(within(casa).getByLabelText("InfiniteTag"), "$loja-exemplo");
     const campo = within(casa).getByLabelText("Chave de API da InfinitePay");
@@ -365,8 +412,8 @@ describe("a InfinitePay", () => {
     expect(falso.estado.contasOnline!.casa).toMatchObject({ provedor: "infinitepay", infiniteTag: "loja-exemplo" });
     expect(within(casa).getByLabelText("Dias sem pagamento até cancelar")).toHaveValue(10);
     // Conectada, o guia sai; como funciona fica, porque segue valendo.
-    expect(screen.queryByRole("region", { name: "Como pegar a chave na InfinitePay" })).not.toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Como funciona na InfinitePay" })).toBeInTheDocument();
+    expect(ajuda("Como pegar a chave na InfinitePay")).not.toBeInTheDocument();
+    expect(ajuda("Como funciona na InfinitePay")).toBeInTheDocument();
   });
 
   it("sem a tag, o erro fica no campo da tag", async () => {
@@ -397,7 +444,7 @@ describe("a InfinitePay", () => {
       semear({ equipe: SO_A_CASA, modoAceito: "real", contasOnline: { casa: CONTA_DA_INFINITEPAY } })
     );
     const casa = await screen.findByRole("region", { name: "Conta da casa" });
-    expect(screen.getByRole("region", { name: "Como funciona na InfinitePay" })).toBeInTheDocument();
+    expect(ajuda("Como funciona na InfinitePay")).toBeInTheDocument();
 
     const dias = within(casa).getByLabelText("Dias sem pagamento até cancelar");
     await userEvent.clear(dias);

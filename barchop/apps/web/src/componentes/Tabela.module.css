@@ -315,6 +315,12 @@
   cursor: pointer;
 }
 
+/* No toque não há hover: o item responde ao dedo com o mesmo realce
+   da linha da tabela. */
+.item.clicavel:active {
+  background: var(--cor-paper-soft);
+}
+
 /* Atenuada pela cor, e não por `opacity` — o mesmo motivo da linha da
    tabela, lá em cima. */
 .item[data-atenuada] {

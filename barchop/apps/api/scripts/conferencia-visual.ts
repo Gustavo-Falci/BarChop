@@ -161,6 +161,11 @@ async function main() {
       nome: "Corte mensal",
       ciclo: "mensal",
       precoCentavos: 8000,
+      // Só no balcão, como os dois assinantes: com a conta da casa da
+      // semente (que não tem chave de verdade), um "Assinar" online na
+      // página daria erro ao decifrar a chave.
+      aceitaOnline: false,
+      aceitaNoBalcao: true,
       ativo: true,
       ordem: planos.length,
       servicos: { create: { servicoId: corte.id, usosPorCiclo: null } },

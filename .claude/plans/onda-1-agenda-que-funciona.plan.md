@@ -4,7 +4,26 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (noite de 2026-10-31 — InfinitePay nos planos no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (fim de 2026-10-31 — redesenho do celular concluído) — vale mais que as seções abaixo
+
+**Estado:**
+- **Redesenho do painel no celular concluído:** plano `.claude/plans/redesenho-celular.plan.md`, 6 PRs, #259 a #264, todos mesclados (`main` = merge do #264). Guia de UI/UX em `barchop/docs/UI_UX_DESIGN_GUIDELINES.md` (#258); toda tela segue ele.
+  - #259 peças comuns; #260 Hoje; #261 Agenda; #262 Caixa; #263 Serviços, Equipe e Folgas; #264 listas sem "Rótulo: valor" (`Linha.noCelular` na `Tabela`, lista até 640px).
+  - Conferido no navegador: a 360px todas as rotas do painel cabem na largura da tela.
+- **Deploy das telas novas: com o dono, não conferido.** A última produção conferida continua sendo o #256 (seção abaixo).
+- Só a `main` existe (local e remota), sem PR de código aberto.
+- O resto do estado de 31/10 (InfinitePay, Stripe, ambiente) segue valendo na seção abaixo.
+
+**Ao retomar:**
+1. **Pendentes do redesenho**, mostrar ao dono e perguntar o que fazer:
+   - a lista de Assinantes (`ListaDeAssinantes`) continua no cartão "Rótulo: valor";
+   - a 360px, o título da Agenda corta com "…" os meses longos (setembro, novembro, dezembro, fevereiro);
+   - a lista do celular troca em 640px; de 641 a 900px (barra de baixo já visível), as quatro listas seguem na tabela larga.
+2. **Conferir o deploy** das telas novas quando o dono disser que subiu (código publicado da web).
+3. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
+4. **A primeira conta real da InfinitePay:** olhar o log do conector (seção abaixo).
+
+## RETOMAR AQUI (noite de 2026-10-31 — InfinitePay nos planos no ar) — histórico
 
 **Estado:**
 - **Produção = o #256** (`2204eac`), deploy do dono em 31/10, com a migração `20261102120000_infinitepay_nos_planos` (API e web). Conferido por curl:
@@ -22,7 +41,7 @@
 - **Continua de 30/10:** marco 4 e o aviso da chave do Asaas parada em standby; G3 adiado; `barbearia-teste` fica no Completo à mão.
 
 **Ao retomar:**
-1. **Pendentes do redesenho:** levantar quais são e mostrar ao dono.
+1. **Pendentes do redesenho:** feito na seção acima.
 2. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
 3. **A primeira conta real da InfinitePay:** quando alguém conectar, olhar o log do conector e confirmar que a resposta do criar link bate.
 

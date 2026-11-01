@@ -236,6 +236,12 @@ export function ListaDeServicos() {
                 // desativado, e anunciá-la só num chip no fim da linha a
                 // deixava a meia tabela do nome que ela qualifica.
                 atenuada: !servico.ativo,
+                // No celular, o que as colunas diziam numa linha só, sem
+                // rótulo (redesenho, PR 6); a seta sai, o item todo abre.
+                noCelular: {
+                  detalhe: [`${servico.duracaoMinutos} min`, servico.ativo ? "site e painel" : "fora do agendamento"],
+                  valor: formatarPreco(servico.preco),
+                },
                 celulas: [
                   // O chip entra na primeira célula, ou seja, dentro do
                   // botão que abre a linha: o nome acessível passa a ser

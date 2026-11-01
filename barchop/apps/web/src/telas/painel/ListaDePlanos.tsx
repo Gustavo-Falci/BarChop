@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
+import { formatarReais } from "@barchop/formato";
 import type { PlanoDoPainel } from "@barchop/types";
 import { Abas } from "../../componentes/Abas";
 import { Aviso } from "../../componentes/Aviso";
@@ -14,7 +15,7 @@ import { Chip } from "../../componentes/Chip";
 import { Tabela, type Grupo } from "../../componentes/Tabela";
 import { useRequisicao } from "../../api/useRequisicao";
 import { hojeIso } from "../../formato/datas";
-import { precoDoCiclo, quantosAssinam, resumoDosServicos } from "../../painel/planos";
+import { porCiclo, precoDoCiclo, quantosAssinam, resumoDosServicos } from "../../painel/planos";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { ListaDeAssinantes } from "./ListaDeAssinantes";
@@ -128,6 +129,18 @@ export function ListaDePlanos({ agora }: { agora?: Date } = {}) {
     linhas: grupo.planos.map((plano) => ({
       id: plano.id,
       atenuada: !plano.ativo,
+      // No celular (redesenho, PR 6): os selos e os serviços seguem no
+      // nome; quantos assinam embaixo e o preço do ciclo à direita, com o
+      // "por mês" embaixo do valor — numa linha só, ele espremia o nome.
+      noCelular: {
+        detalhe: quantosAssinam(plano.assinantes),
+        valor: (
+          <span className={estilos.precoNoCelular}>
+            <span>{formatarReais(plano.precoCentavos)}</span>{" "}
+            <span className={estilos.ciclo}>{porCiclo(plano.ciclo)}</span>
+          </span>
+        ),
+      },
       celulas: [
         <span className={estilos.nome} key="nome">
           <span className={estilos.titulo}>

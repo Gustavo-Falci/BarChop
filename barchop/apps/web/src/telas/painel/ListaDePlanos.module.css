@@ -63,3 +63,16 @@
 .principal {
   composes: principal from "./CaixaDoDia.module.css";
 }
+
+/* O preço do plano na lista do celular: o valor em cima, o ciclo
+   embaixo, menor. */
+.precoNoCelular {
+  display: grid;
+  justify-items: end;
+}
+
+.ciclo {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-xs);
+  font-weight: 400;
+}

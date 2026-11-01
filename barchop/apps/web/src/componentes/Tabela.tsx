@@ -3,6 +3,7 @@
 import { m } from "motion/react";
 import type { ReactNode } from "react";
 import { entradaDoItem, usePrimeiraCarga } from "../movimento/lista";
+import { useMidia } from "../painel/useTelaDeCelular";
 import { Vazio } from "./Vazio";
 import estilos from "./Tabela.module.css";
 
@@ -15,7 +16,24 @@ export interface Linha {
   // na última coluna anuncia isso a meia tabela de distância do nome
   // que qualifica.
   atenuada?: boolean;
+  // A linha no celular (redesenho, PR 6), dita pela tela: o nome continua
+  // sendo `celulas[0]` (o botão que abre); o `detalhe` vai embaixo dele,
+  // o `valor` à direita e as `acoes` no item, fora do botão. Com isto em
+  // TODAS as linhas, a tabela vira lista até 640px, no lugar do cartão
+  // "Rótulo: valor". A tela é que garante que nada do desktop se perde.
+  noCelular?: {
+    // Uma lista vira partes separadas por " · ", e cada parte só quebra
+    // por dentro quando não cabe sozinha numa linha: o telefone não se
+    // parte no hífen, nem "último agendamento" no meio.
+    detalhe?: ReactNode | ReactNode[];
+    valor?: ReactNode;
+    acoes?: ReactNode;
+  };
 }
+
+// O mesmo corte em que a tabela vira cartão (Tabela.module.css): entre
+// 641 e 900px nada muda, a tabela larga continua.
+export const CONSULTA_DA_LISTA_NO_CELULAR = "(max-width: 640px)";
 
 // Um bloco de linhas com título — a categoria, na lista de serviços.
 // O `resumo` é a linha de apoio ao lado do título ("2 serviços · R$ 40
@@ -74,6 +92,7 @@ export function Tabela({
   // Depois, a linha que aparece num filtro não anima, e nenhuma usa
   // `layout`: com cem clientes, medir cada linha a cada mudança pesaria.
   const primeiraCarga = usePrimeiraCarga();
+  const celular = useMidia(CONSULTA_DA_LISTA_NO_CELULAR);
   const blocos: (Partial<Grupo> & { linhas: Linha[] })[] = grupos
     ? grupos.filter((grupo) => grupo.linhas.length > 0)
     : [{ linhas: linhas ?? [] }];
@@ -85,6 +104,76 @@ export function Tabela({
   // O índice corre pela tabela inteira, atravessando os grupos: o
   // escalonamento é de cima pra baixo, não recomeça a cada categoria.
   let indiceDaLinha = 0;
+
+  if (celular && blocos.every((bloco) => bloco.linhas.every((linha) => linha.noCelular))) {
+    return (
+      <div className={estilos.listaNoCelular}>
+        {blocos.map((bloco, indice) => (
+          <div key={bloco.id ?? indice} className={estilos.blocoNoCelular}>
+            {bloco.titulo ? (
+              <h2 className={estilos.tituloDoBloco}>
+                {bloco.titulo}
+                {bloco.resumo ? <span className={estilos.resumo}>{bloco.resumo}</span> : null}
+              </h2>
+            ) : null}
+            <ul className={estilos.itens} aria-label={bloco.titulo}>
+              {bloco.linhas.map((linha) => {
+                const { detalhe, valor, acoes } = linha.noCelular!;
+                return (
+                  // O item inteiro abre, como a linha da tabela; o botão
+                  // do nome é o que dá foco, Enter e nome acessível. O
+                  // nome acessível é só o nome: o detalhe fica fora dele.
+                  <m.li
+                    key={linha.id}
+                    {...entradaDoItem(indiceDaLinha++, { primeiraCarga })}
+                    className={`${estilos.item}${aoAbrir ? ` ${estilos.clicavel}` : ""}`}
+                    data-atenuada={linha.atenuada ? "" : undefined}
+                    onClick={aoAbrir ? () => aoAbrir(linha.id) : undefined}
+                  >
+                    <div className={estilos.principal}>
+                      {aoAbrir ? (
+                        <button
+                          type="button"
+                          className={estilos.nomeDoItem}
+                          onClick={(evento) => {
+                            evento.stopPropagation();
+                            aoAbrir(linha.id);
+                          }}
+                        >
+                          {linha.celulas[0]}
+                        </button>
+                      ) : (
+                        <span className={estilos.nomeDoItem}>{linha.celulas[0]}</span>
+                      )}
+                      {detalhe ? (
+                        <span className={estilos.detalheDoItem}>
+                          {Array.isArray(detalhe)
+                            ? detalhe.map((parte, indice) => (
+                                <span key={indice}>
+                                  {indice > 0 ? " · " : null}
+                                  <span className={estilos.parteDoDetalhe}>{parte}</span>
+                                </span>
+                              ))
+                            : detalhe}
+                        </span>
+                      ) : null}
+                    </div>
+                    {valor || acoes ? (
+                      <div className={estilos.lateral}>
+                        {valor ? <span className={estilos.valorDoItem}>{valor}</span> : null}
+                        {acoes}
+                      </div>
+                    ) : null}
+                  </m.li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function desenharLinha(linha: Linha) {
     const indice = indiceDaLinha++;
     return (

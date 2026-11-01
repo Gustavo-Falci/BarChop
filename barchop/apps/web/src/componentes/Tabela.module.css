@@ -267,3 +267,121 @@
     padding-block-start: var(--espaco-xs);
   }
 }
+
+/* ---------- A lista do celular (redesenho, PR 6) ----------
+   Só quando a tela diz o conteúdo de cada linha (`noCelular`): o nome,
+   o detalhe embaixo e o valor à direita, no lugar do cartão "Rótulo:
+   valor", que gastava uma linha por coluna. Quem não diz segue no
+   cartão acima. */
+.listaNoCelular {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.blocoNoCelular {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+/* O título do grupo é título de seção, como o do cartão (PR 1). */
+.tituloDoBloco {
+  padding: 0 var(--espaco-xs);
+  font-family: var(--fonte-corpo), system-ui, sans-serif;
+  font-size: var(--texto-md);
+  font-weight: 700;
+}
+
+.itens {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-height: 56px;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-surface);
+}
+
+.item.clicavel {
+  cursor: pointer;
+}
+
+/* No toque não há hover: o item responde ao dedo com o mesmo realce
+   da linha da tabela. */
+.item.clicavel:active {
+  background: var(--cor-paper-soft);
+}
+
+/* Atenuada pela cor, e não por `opacity` — o mesmo motivo da linha da
+   tabela, lá em cima. */
+.item[data-atenuada] {
+  color: var(--cor-ink-soft);
+}
+
+.principal {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nomeDoItem {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--texto-md);
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+.item[data-atenuada] .nomeDoItem {
+  font-weight: 500;
+}
+
+span.nomeDoItem {
+  cursor: inherit;
+}
+
+.nomeDoItem:focus-visible {
+  outline-offset: 2px;
+}
+
+.detalheDoItem {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  overflow-wrap: anywhere;
+}
+
+/* Inteira na linha quando cabe; quebrando por dentro só quando sozinha
+   já não cabe (um e-mail comprido). */
+.parteDoDetalhe {
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* O valor e as ações à direita, um embaixo do outro. */
+.lateral {
+  display: grid;
+  justify-items: end;
+  gap: var(--espaco-xs);
+  max-width: 50vw;
+}
+
+.valorDoItem {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}

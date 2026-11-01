@@ -22,7 +22,10 @@ export interface Linha {
   // TODAS as linhas, a tabela vira lista até 640px, no lugar do cartão
   // "Rótulo: valor". A tela é que garante que nada do desktop se perde.
   noCelular?: {
-    detalhe?: ReactNode;
+    // Uma lista vira partes separadas por " · ", e cada parte só quebra
+    // por dentro quando não cabe sozinha numa linha: o telefone não se
+    // parte no hífen, nem "último agendamento" no meio.
+    detalhe?: ReactNode | ReactNode[];
     valor?: ReactNode;
     acoes?: ReactNode;
   };
@@ -142,7 +145,18 @@ export function Tabela({
                       ) : (
                         <span className={estilos.nomeDoItem}>{linha.celulas[0]}</span>
                       )}
-                      {detalhe ? <span className={estilos.detalheDoItem}>{detalhe}</span> : null}
+                      {detalhe ? (
+                        <span className={estilos.detalheDoItem}>
+                          {Array.isArray(detalhe)
+                            ? detalhe.map((parte, indice) => (
+                                <span key={indice}>
+                                  {indice > 0 ? " · " : null}
+                                  <span className={estilos.parteDoDetalhe}>{parte}</span>
+                                </span>
+                              ))
+                            : detalhe}
+                        </span>
+                      ) : null}
                     </div>
                     {valor || acoes ? (
                       <div className={estilos.lateral}>

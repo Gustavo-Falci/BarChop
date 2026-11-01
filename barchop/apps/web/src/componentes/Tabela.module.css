@@ -358,6 +358,13 @@ span.nomeDoItem {
   overflow-wrap: anywhere;
 }
 
+/* Inteira na linha quando cabe; quebrando por dentro só quando sozinha
+   já não cabe (um e-mail comprido). */
+.parteDoDetalhe {
+  display: inline-block;
+  max-width: 100%;
+}
+
 /* O valor e as ações à direita, um embaixo do outro. */
 .lateral {
   display: grid;

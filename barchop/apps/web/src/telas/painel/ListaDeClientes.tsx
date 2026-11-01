@@ -384,10 +384,10 @@ export function ListaDeClientes({ agora = new Date() }: { agora?: Date }) {
               id: cliente.id,
               // No celular (redesenho, PR 6): telefone e último
               // agendamento embaixo do nome; as ações no item, fora do
-              // botão do nome. A data ganha o rótulo em palavra: solta,
+              // botão do nome. A data ganha "último:" na frente: solta,
               // não dizia de quê.
               noCelular: {
-                detalhe: `${cliente.telefone} · ${ultimo === SEM_REGISTRO ? ultimo : `último agendamento: ${ultimo}`}`,
+                detalhe: [cliente.telefone, ultimo === SEM_REGISTRO ? ultimo : `último: ${ultimo}`],
                 acoes,
               },
               celulas: [cliente.nome, cliente.telefone, ultimo, acoes],

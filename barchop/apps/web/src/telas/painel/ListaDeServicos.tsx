@@ -239,7 +239,7 @@ export function ListaDeServicos() {
                 // No celular, o que as colunas diziam numa linha só, sem
                 // rótulo (redesenho, PR 6); a seta sai, o item todo abre.
                 noCelular: {
-                  detalhe: `${servico.duracaoMinutos} min · ${servico.ativo ? "site e painel" : "fora do agendamento"}`,
+                  detalhe: [`${servico.duracaoMinutos} min`, servico.ativo ? "site e painel" : "fora do agendamento"],
                   valor: formatarPreco(servico.preco),
                 },
                 celulas: [

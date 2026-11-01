@@ -177,7 +177,7 @@ export function ListaDaEquipe() {
                     ROTULO_DO_PAPEL[membro.papel],
                     membro.atende ? "atende" : "não atende",
                     ...(membro.telefone ? [membro.telefone] : []),
-                  ].join(" · "),
+                  ],
                   valor: situacao,
                 },
                 celulas: [

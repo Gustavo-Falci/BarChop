@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import { PADRAO_INSTAGRAM, TelefoneInvalido } from "@barchop/formato";
 import { Aviso } from "../../../componentes/Aviso";
-import { Botao } from "../../../componentes/Botao";
+import { BarraDeMudancas } from "../../../componentes/BarraDeMudancas";
 import { Campo } from "../../../componentes/Campo";
 import { Secao } from "../../../componentes/Secao";
 import { useRequisicao } from "../../../api/useRequisicao";
@@ -23,6 +23,15 @@ export function ComunicacaoDaBarbearia() {
   return <Comunicacao />;
 }
 
+type Contatos = { telefone: string; whatsapp: string; instagram: string };
+
+// O nome de cada campo no "o que mudou" da barra.
+const ROTULO: Record<keyof Contatos, string> = {
+  whatsapp: "WhatsApp",
+  telefone: "Telefone da barbearia",
+  instagram: "Instagram",
+};
+
 function Comunicacao() {
   const api = useApiDoPainel();
   const barbearia = useRequisicao(() => api.barbeiro.minhaBarbearia(), []);
@@ -30,6 +39,7 @@ function Comunicacao() {
   const [telefone, setTelefone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
+  const [original, setOriginal] = useState<Contatos | null>(null);
   const [erro, setErro] = useState<Record<string, string | undefined>>({});
   const [aviso, setAviso] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
@@ -39,12 +49,31 @@ function Comunicacao() {
   const [sincronizada, setSincronizada] = useState<typeof barbearia.dados>(null);
   if (barbearia.dados && barbearia.dados !== sincronizada) {
     setSincronizada(barbearia.dados);
-    setTelefone(barbearia.dados.telefone ?? "");
-    setWhatsapp(barbearia.dados.whatsapp ?? "");
-    setInstagram(barbearia.dados.instagram ?? "");
+    const lidos: Contatos = {
+      telefone: barbearia.dados.telefone ?? "",
+      whatsapp: barbearia.dados.whatsapp ?? "",
+      instagram: barbearia.dados.instagram ?? "",
+    };
+    setOriginal(lidos);
+    voltarPara(lidos);
   }
 
+  function voltarPara(contatos: Contatos) {
+    setTelefone(contatos.telefone);
+    setWhatsapp(contatos.whatsapp);
+    setInstagram(contatos.instagram);
+    setErro({});
+  }
+
+  const atuais: Contatos = { telefone, whatsapp, instagram };
+  const mudancas = original
+    ? (Object.keys(ROTULO) as (keyof Contatos)[])
+        .filter((campo) => atuais[campo] !== original[campo])
+        .map((campo) => ROTULO[campo])
+    : [];
+
   async function salvar() {
+    if (salvando) return;
     setAviso(undefined);
     setErro({});
     // O @ que a pessoa digita por hábito sai aqui; uma URL inteira não é
@@ -78,6 +107,15 @@ function Comunicacao() {
     setSalvando(true);
     try {
       await api.barbeiro.atualizarMinhaBarbearia({ ...telefones, instagram: arroba || null });
+      // O que ficou gravado, no formato da API: a barra some e o campo
+      // mostra o número como o cliente vai ver.
+      const gravados: Contatos = {
+        telefone: telefones.telefone ?? "",
+        whatsapp: telefones.whatsapp ?? "",
+        instagram: arroba,
+      };
+      setOriginal(gravados);
+      voltarPara(gravados);
       marcar("comunicacao");
     } catch (causa) {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
@@ -92,18 +130,13 @@ function Comunicacao() {
   if (!barbearia.dados) return <Carregando />;
 
   return (
-    <MolduraDaArea area="comunicacao" decididas={decididas} aviso={aviso}>
+    <MolduraDaArea area="comunicacao" decididas={decididas}>
       {/* A seção na largura toda, com os três campos lado a lado (as
           telas usam a largura — pedido do dono). */}
       <div className={estilos.ladoALado}>
         <Secao
           titulo="Como o cliente fala com você"
           descricao="Aparece na sua página pública, no bloco de contato. Deixe em branco o que não quiser mostrar."
-          acao={
-            <Botao onClick={salvar} carregando={salvando}>
-              Salvar comunicação
-            </Botao>
-          }
         >
           <div className={estilos.camposLadoALado}>
             <Campo
@@ -131,6 +164,17 @@ function Comunicacao() {
           </div>
         </Secao>
       </div>
+
+      {/* Um Salvar só, na barra do pé (redesenho, PR 7), como nas outras
+          áreas. */}
+      <BarraDeMudancas
+        mudancas={mudancas}
+        pendente={!decididas.includes("comunicacao")}
+        aviso={aviso}
+        salvando={salvando}
+        aoSalvar={() => void salvar()}
+        aoDescartar={() => original && voltarPara(original)}
+      />
     </MolduraDaArea>
   );
 }

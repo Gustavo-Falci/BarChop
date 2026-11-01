@@ -205,7 +205,7 @@ describe("página da barbearia nas configurações", () => {
 
     await userEvent.type(await screen.findByLabelText(/^whatsapp/i), "11988887777");
     await userEvent.type(screen.getByLabelText(/^instagram/i), "@gr.barber");
-    await userEvent.click(screen.getByRole("button", { name: /salvar comunicação/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(atualizar).toHaveBeenCalledWith({
@@ -256,7 +256,7 @@ describe("página da barbearia nas configurações", () => {
     montarPainel(<ComunicacaoDaBarbearia />, falso);
 
     await userEvent.type(await screen.findByLabelText(/^instagram/i), "https://instagram.com/gr");
-    await userEvent.click(screen.getByRole("button", { name: /salvar comunicação/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     expect(await screen.findByText(/sem o link: algo como/i)).toBeInTheDocument();
     expect(atualizar).not.toHaveBeenCalled();

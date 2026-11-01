@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { AntecedenciaDoLembrete } from "@barchop/types";
-import { Botao } from "../../../componentes/Botao";
+import { BarraDeMudancas } from "../../../componentes/BarraDeMudancas";
+import { Interruptor } from "../../../componentes/Interruptor";
 import { Secao } from "../../../componentes/Secao";
 import { SeletorEmPilulas } from "../../../componentes/SeletorEmPilulas";
 import { useRequisicao } from "../../../api/useRequisicao";
@@ -12,10 +13,29 @@ import { useApiDoPainel } from "../../../painel/ProvedorDoPainel";
 import { usePainel } from "../../../painel/SessaoDoPainel";
 import { MolduraDaArea, SoODono, useAreasDecididas } from "./MolduraDaArea";
 import estilos from "./Configuracoes.module.css";
+import estilosDasRegras from "./Regras.module.css";
 import { Carregando } from "../../../componentes/Carregando";
 
 // As antecedências que a API aceita, da maior pra menor.
 const ANTECEDENCIAS: AntecedenciaDoLembrete[] = [24, 12, 2];
+
+type Lembrete = { lembreteAtivo: boolean; lembreteAntecedenciaHoras: AntecedenciaDoLembrete };
+
+// O "o que mudou" da barra, no jeito das Regras: "nome: antes → depois".
+function oQueMudou(original: Lembrete | null, atual: Lembrete): string[] {
+  if (!original) return [];
+  const mudancas: string[] = [];
+  const ligado = (ativo: boolean) => (ativo ? "ligado" : "desligado");
+  if (original.lembreteAtivo !== atual.lembreteAtivo) {
+    mudancas.push(`Lembrete por e-mail: ${ligado(original.lembreteAtivo)} → ${ligado(atual.lembreteAtivo)}`);
+  }
+  if (original.lembreteAntecedenciaHoras !== atual.lembreteAntecedenciaHoras) {
+    mudancas.push(
+      `Quando o lembrete sai: ${original.lembreteAntecedenciaHoras} h antes → ${atual.lembreteAntecedenciaHoras} h antes`
+    );
+  }
+  return mudancas;
+}
 
 // Notificações: hoje, o lembrete por e-mail que o cliente recebe antes
 // do horário (G2c). Ligado/desligado e a antecedência.
@@ -31,6 +51,8 @@ function Notificacoes() {
   const { decididas, marcar } = useAreasDecididas(barbearia.dados?.areasDecididas);
   const [antecedencia, setAntecedencia] = useState<AntecedenciaDoLembrete>(24);
   const [lembreteAtivo, setLembreteAtivo] = useState(true);
+  const [original, setOriginal] = useState<Lembrete | null>(null);
+  const idDoApoio = useId();
   const [aviso, setAviso] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
 
@@ -41,13 +63,21 @@ function Notificacoes() {
     setSincronizada(barbearia.dados);
     setAntecedencia(barbearia.dados.lembreteAntecedenciaHoras);
     setLembreteAtivo(barbearia.dados.lembreteAtivo);
+    setOriginal({
+      lembreteAtivo: barbearia.dados.lembreteAtivo,
+      lembreteAntecedenciaHoras: barbearia.dados.lembreteAntecedenciaHoras,
+    });
   }
 
+  const atual: Lembrete = { lembreteAtivo, lembreteAntecedenciaHoras: antecedencia };
+
   async function salvar() {
+    if (salvando) return;
     setAviso(undefined);
     setSalvando(true);
     try {
-      await api.barbeiro.atualizarMinhaBarbearia({ lembreteAtivo, lembreteAntecedenciaHoras: antecedencia });
+      await api.barbeiro.atualizarMinhaBarbearia(atual);
+      setOriginal(atual);
       marcar("notificacoes");
     } catch (causa) {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
@@ -62,35 +92,34 @@ function Notificacoes() {
   if (!barbearia.dados) return <Carregando />;
 
   return (
-    <MolduraDaArea area="notificacoes" decididas={decididas} aviso={aviso}>
+    <MolduraDaArea area="notificacoes" decididas={decididas}>
       <div className={estilos.ladoALado}>
         <Secao
           titulo="Lembrete"
           descricao="O cliente com e-mail recebe um lembrete antes do horário, com um link pra confirmar a presença ou cancelar."
-          acao={
-            <Botao onClick={salvar} carregando={salvando}>
-              Salvar lembrete
-            </Botao>
-          }
         >
-          {/* O interruptor à esquerda, a antecedência à direita: a seção
-              usa a largura (pedido do dono). */}
-          <div className={estilos.ladoALado}>
-            <div className={estilos.campoLongo}>
-              {/* O interruptor (G2c). Ligar enfileira na API os agendamentos
-                  futuros que ainda não têm lembrete. */}
-              <label className={estilos.chave}>
-                <input
-                  type="checkbox"
-                  aria-describedby="lembrete-ativo-apoio"
-                  checked={lembreteAtivo}
-                  onChange={(evento) => setLembreteAtivo(evento.target.checked)}
-                />
-                Enviar lembrete por e-mail
-              </label>
-              <span className={estilos.apoio} id="lembrete-ativo-apoio">
-                Ao ligar, os agendamentos já marcados também recebem o lembrete.
+          {/* Num cartão só, de cima pra baixo (redesenho, PR 7): o
+              interruptor e, embaixo, quando o lembrete sai. */}
+          <div className={estilos.lembrete}>
+            {/* O interruptor (G2c), como as regras de sim ou não (PR 4).
+                Ligar enfileira na API os agendamentos futuros que ainda
+                não têm lembrete. */}
+            <div className={estilosDasRegras.regra}>
+              <span className={estilosDasRegras.texto}>
+                <span className={estilosDasRegras.nome} aria-hidden="true">
+                  Enviar lembrete por e-mail
+                </span>
+                <span id={idDoApoio} className={estilosDasRegras.efeito}>
+                  Ao ligar, os agendamentos já marcados também recebem o lembrete.
+                </span>
               </span>
+              <Interruptor
+                rotulo="Enviar lembrete por e-mail"
+                rotuloOculto
+                ligado={lembreteAtivo}
+                aoTrocar={setLembreteAtivo}
+                descritoPor={idDoApoio}
+              />
             </div>
             <div className={estilos.campoLongo}>
               <SeletorEmPilulas
@@ -116,6 +145,20 @@ function Notificacoes() {
           </div>
         </Secao>
       </div>
+
+      {/* Um Salvar só, na barra do pé (redesenho, PR 7). */}
+      <BarraDeMudancas
+        mudancas={oQueMudou(original, atual)}
+        pendente={!decididas.includes("notificacoes")}
+        aviso={aviso}
+        salvando={salvando}
+        aoSalvar={() => void salvar()}
+        aoDescartar={() => {
+          if (!original) return;
+          setLembreteAtivo(original.lembreteAtivo);
+          setAntecedencia(original.lembreteAntecedenciaHoras);
+        }}
+      />
     </MolduraDaArea>
   );
 }

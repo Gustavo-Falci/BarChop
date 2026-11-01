@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
@@ -87,7 +87,7 @@ describe("antecedência do lembrete nas configurações", () => {
     expect(await screen.findByRole("radio", { name: "24 h antes" })).toBeChecked();
 
     await userEvent.click(screen.getByRole("radio", { name: "2 h antes" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar lembrete/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(atualizar).toHaveBeenCalledWith({ lembreteAtivo: true, lembreteAntecedenciaHoras: 2 })

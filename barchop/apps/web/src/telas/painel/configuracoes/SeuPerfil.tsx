@@ -3,8 +3,7 @@
 import { useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
 import { TelefoneInvalido } from "@barchop/formato";
-import { Aviso } from "../../../componentes/Aviso";
-import { Botao } from "../../../componentes/Botao";
+import { BarraDeMudancas } from "../../../componentes/BarraDeMudancas";
 import { CabecalhoDaPagina } from "../../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../../componentes/Campo";
 import { Secao } from "../../../componentes/Secao";
@@ -25,13 +24,26 @@ export function SeuPerfil({ comVoltar = true }: { comVoltar?: boolean }) {
   const [erro, setErro] = useState<string | undefined>();
   const [aviso, setAviso] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
+  const [original, setOriginal] = useState({ nome: perfil.nome, telefone: perfil.telefone ?? "" });
+
+  const mudancas = [
+    ...(nome !== original.nome ? ["Seu nome"] : []),
+    ...(telefone !== original.telefone ? ["Seu telefone"] : []),
+  ];
 
   async function salvar() {
+    if (salvando) return;
     setAviso(undefined);
     setErro(undefined);
     setSalvando(true);
     try {
-      await api.barbeiro.atualizarMeuPerfil({ nome: nome.trim(), telefone: telefoneOuNulo(telefone) });
+      const gravado = { nome: nome.trim(), telefone: telefoneOuNulo(telefone) };
+      await api.barbeiro.atualizarMeuPerfil(gravado);
+      // O que ficou gravado, no formato da API: a barra some.
+      const lido = { nome: gravado.nome, telefone: gravado.telefone ?? "" };
+      setOriginal(lido);
+      setNome(lido.nome);
+      setTelefone(lido.telefone);
     } catch (causa) {
       if (causa instanceof TelefoneInvalido) {
         setErro(MENSAGEM_DO_TELEFONE);
@@ -52,22 +64,28 @@ export function SeuPerfil({ comVoltar = true }: { comVoltar?: boolean }) {
         apoio="Seus dados na equipe, separados dos dados da barbearia."
         voltar={comVoltar ? { href: "/painel/configuracoes", rotulo: "Configurações" } : undefined}
       />
-      {aviso ? <Aviso>{aviso}</Aviso> : null}
       <div className={estilos.ladoALado}>
-        <Secao
-          titulo="Seus dados"
-          acao={
-            <Botao onClick={salvar} carregando={salvando}>
-              Salvar perfil
-            </Botao>
-          }
-        >
+        <Secao titulo="Seus dados">
           <div className={estilos.camposLadoALado}>
             <Campo rotulo="Seu nome" valor={nome} onChange={setNome} />
             <Campo rotulo="Seu telefone" formato="telefone" valor={telefone} onChange={setTelefone} erro={erro} />
           </div>
         </Secao>
       </div>
+
+      {/* Um Salvar só, na barra do pé (redesenho, PR 7). O perfil não é
+          área: sem mudança, não há o que decidir, e a barra não aparece. */}
+      <BarraDeMudancas
+        mudancas={mudancas}
+        aviso={aviso}
+        salvando={salvando}
+        aoSalvar={() => void salvar()}
+        aoDescartar={() => {
+          setNome(original.nome);
+          setTelefone(original.telefone);
+          setErro(undefined);
+        }}
+      />
     </div>
   );
 }

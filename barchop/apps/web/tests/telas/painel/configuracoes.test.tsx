@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { criarApiClientFalso } from "@barchop/api-client";
+import { ErroDaApi, criarApiClientFalso } from "@barchop/api-client";
 import type { HorarioSerializado } from "@barchop/types";
 import { ComunicacaoDaBarbearia } from "../../../src/telas/painel/configuracoes/ComunicacaoDaBarbearia";
 import { DadosDoNegocio } from "../../../src/telas/painel/configuracoes/DadosDoNegocio";
@@ -54,7 +54,7 @@ describe("moldura das subtelas", () => {
     const cabecalho = await screen.findByRole("banner");
     expect(cabecalho).toHaveTextContent("Faltando");
 
-    await userEvent.click(screen.getByRole("button", { name: /salvar comunicação/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(screen.getByRole("banner")).toHaveTextContent("Configurado"));
   });
@@ -85,7 +85,7 @@ describe("moldura das subtelas", () => {
       })
     );
 
-    await screen.findByRole("button", { name: /salvar comunicação/i });
+    await screen.findByLabelText(/^whatsapp/i);
     expect(screen.queryByRole("link", { name: /próxima área faltando/i })).not.toBeInTheDocument();
   });
 
@@ -391,16 +391,74 @@ describe("dados do negócio · identidade", () => {
   });
 });
 
+// Redesenho das Configurações, PR 7: Comunicação, Notificações e Seu
+// perfil salvam pela barra do pé, como as outras áreas.
+describe("comunicação · salvar pela barra", () => {
+  it("mudar um campo põe na barra o que mudou; Descartar volta", async () => {
+    montarPainel(<ComunicacaoDaBarbearia />, criarApiClientFalso({ areasDecididas: ["comunicacao"] }));
+
+    const whatsapp = await screen.findByLabelText(/^whatsapp/i);
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+
+    await userEvent.type(whatsapp, "11988887777");
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent("1 mudança");
+    expect(barra).toHaveTextContent("WhatsApp");
+
+    await userEvent.click(within(barra).getByRole("button", { name: "Descartar" }));
+    expect(whatsapp).toHaveValue("");
+  });
+
+  it("salvo, a barra some e o número fica no formato gravado", async () => {
+    const falso = criarApiClientFalso({ areasDecididas: ["comunicacao"] });
+    montarPainel(<ComunicacaoDaBarbearia />, falso);
+
+    const whatsapp = await screen.findByLabelText(/^whatsapp/i);
+    await userEvent.type(whatsapp, "11988887777");
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument());
+    expect(whatsapp).toHaveValue("(11) 98888-7777");
+  });
+
+  it("o erro do salvar aparece na barra", async () => {
+    const falso = criarApiClientFalso({ areasDecididas: ["comunicacao"] });
+    falso.barbeiro.atualizarMinhaBarbearia = async () => {
+      throw new ErroDaApi(500, "erro", "O servidor caiu.");
+    };
+    montarPainel(<ComunicacaoDaBarbearia />, falso);
+
+    await userEvent.type(await screen.findByLabelText(/^instagram/i), "gr.barber");
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    await userEvent.click(within(barra).getByRole("button", { name: "Salvar" }));
+
+    expect(await within(barra).findByRole("alert")).toHaveTextContent("O servidor caiu.");
+  });
+});
+
 describe("notificações", () => {
+  it("o lembrete é um interruptor; a barra diz o que mudou", async () => {
+    montarPainel(<NotificacoesDaBarbearia />, criarApiClientFalso({ areasDecididas: ["notificacoes"] }));
+
+    const chave = await screen.findByRole("switch", { name: /enviar lembrete por e-mail/i });
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    await userEvent.click(chave);
+    await userEvent.click(screen.getByRole("radio", { name: "12 h antes" }));
+
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent("Lembrete por e-mail: ligado → desligado");
+    expect(barra).toHaveTextContent("Quando o lembrete sai: 24 h antes → 12 h antes");
+  });
+
   // G2c: o interruptor do lembrete, por barbearia.
   it("mostra o lembrete ligado e desliga ao salvar", async () => {
     const falso = criarApiClientFalso();
     montarPainel(<NotificacoesDaBarbearia />, falso);
 
-    const chave = await screen.findByRole("checkbox", { name: /enviar lembrete por e-mail/i });
+    const chave = await screen.findByRole("switch", { name: /enviar lembrete por e-mail/i });
     expect(chave).toBeChecked();
     await userEvent.click(chave);
-    await userEvent.click(screen.getByRole("button", { name: /salvar lembrete/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(falso.estado.lembreteAtivo).toBe(false));
   });
@@ -409,11 +467,11 @@ describe("notificações", () => {
     const falso = criarApiClientFalso({ lembreteAtivo: false });
     montarPainel(<NotificacoesDaBarbearia />, falso);
 
-    const chave = await screen.findByRole("checkbox", { name: /enviar lembrete por e-mail/i });
+    const chave = await screen.findByRole("switch", { name: /enviar lembrete por e-mail/i });
     expect(chave).not.toBeChecked();
     expect(chave).toHaveAccessibleDescription(/já marcados/i);
     await userEvent.click(chave);
-    await userEvent.click(screen.getByRole("button", { name: /salvar lembrete/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(falso.estado.lembreteAtivo).toBe(true));
   });
@@ -501,11 +559,30 @@ describe("horários", () => {
 });
 
 describe("seu perfil", () => {
+  it("sem mudança, sem barra; mudar o nome mostra a barra e salva", async () => {
+    const falso = criarApiClientFalso();
+    const atualizar = vi.fn(falso.barbeiro.atualizarMeuPerfil);
+    falso.barbeiro.atualizarMeuPerfil = atualizar;
+    montarPainel(<SeuPerfil />, falso);
+
+    const nome = await screen.findByLabelText(/seu nome/i);
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /salvar/i })).not.toBeInTheDocument();
+
+    await userEvent.type(nome, " Jr.");
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent("Seu nome");
+    await userEvent.click(within(barra).getByRole("button", { name: "Salvar" }));
+
+    await waitFor(() => expect(atualizar).toHaveBeenCalledWith(expect.objectContaining({ nome: expect.stringMatching(/ Jr\.$/) })));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument());
+  });
+
   it("telefone do perfil sem DDD para no campo", async () => {
     montarPainel(<SeuPerfil />, criarApiClientFalso());
 
     await userEvent.type(await screen.findByLabelText(/seu telefone/i), "988887777");
-    await userEvent.click(screen.getByRole("button", { name: /salvar perfil/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     expect(await screen.findByText(/informe o DDD/i)).toBeInTheDocument();
   });

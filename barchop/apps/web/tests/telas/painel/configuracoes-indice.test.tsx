@@ -189,7 +189,7 @@ describe("índice das configurações", () => {
   it("a recepção vê só o próprio perfil, sem o índice", async () => {
     montarPainel(<IndiceDeConfiguracoes />, criarApiClientFalso({ papel: "recepcao" }));
 
-    expect(await screen.findByRole("button", { name: /salvar perfil/i })).toBeInTheDocument();
+    expect(await screen.findByLabelText(/seu nome/i)).toBeInTheDocument();
     expect(screen.queryByText(/decididas/)).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^Horários/ })).not.toBeInTheDocument();
   });

@@ -580,14 +580,6 @@
 
 /* A chave do lembrete: caixa e texto na mesma linha, com o alvo do
    clique no texto inteiro. */
-.chave {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-sm);
-  font-weight: 600;
-  cursor: pointer;
-}
-
 /* ── Horários: a rotina da semana ───────────────────────────────────── */
 
 .atalhos {
@@ -663,4 +655,22 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--espaco-sm);
+}
+
+/* ── Notificações (redesenho, PR 7): o interruptor do lembrete em cima e,
+   separado por um fio, quando ele sai. ─────────────────────────────── */
+.lembrete {
+  display: grid;
+  gap: var(--espaco-md);
+}
+
+.lembrete > * + * {
+  padding-block-start: var(--espaco-md);
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* A linha do interruptor vem das Regras, com um respiro lateral pro
+   hover da lista; aqui ela alinha com "Quando o lembrete sai". */
+.lembrete > :first-child {
+  padding-inline: 0;
 }

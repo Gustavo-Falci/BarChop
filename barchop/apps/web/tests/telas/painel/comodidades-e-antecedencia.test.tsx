@@ -81,7 +81,7 @@ describe("antecedência do lembrete em pílulas", () => {
   it("com o lembrete desligado, a consequência diz que nada sai", async () => {
     montarPainel(<NotificacoesDaBarbearia />, criarApiClientFalso());
 
-    await userEvent.click(await screen.findByRole("checkbox", { name: /enviar lembrete por e-mail/i }));
+    await userEvent.click(await screen.findByRole("switch", { name: /enviar lembrete por e-mail/i }));
 
     expect(screen.getByText(/lembrete desligado/i)).toBeInTheDocument();
     expect(screen.queryByText(/o cliente recebe o lembrete/i)).not.toBeInTheDocument();
@@ -94,7 +94,7 @@ describe("antecedência do lembrete em pílulas", () => {
     montarPainel(<NotificacoesDaBarbearia />, falso);
 
     await userEvent.click(await screen.findByRole("radio", { name: "12 h antes" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar lembrete/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(atualizar).toHaveBeenCalledWith({ lembreteAtivo: true, lembreteAntecedenciaHoras: 12 })

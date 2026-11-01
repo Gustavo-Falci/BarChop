@@ -28,6 +28,11 @@ const PEDIDO = {
   decididoEm: null,
 };
 
+// O formulário do novo link fica atrás do botão (redesenho, PR 5).
+async function abrirPedido() {
+  await userEvent.click(await screen.findByRole("button", { name: "Pedir outro link" }));
+}
+
 beforeEach(() => {
   localStorage.clear();
   navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes" });
@@ -132,19 +137,56 @@ describe("dados do negócio · identidade", () => {
 
   // F4 (decisão do dono, 2026-10-04): o link é único pra sempre e só o
   // suporte troca. A identidade mostra o link e pede a troca.
-  it("mostra o link no host da barbearia, só pra leitura", async () => {
+  //
+  // Redesenho, PR 5 (01/11): o link fica à vista como texto, com "Copiar
+  // link"; o formulário do pedido fica atrás de "Pedir outro link".
+  it("mostra o link no host da barbearia, sem campo pra editar", async () => {
     vi.stubEnv("NEXT_PUBLIC_URL_DO_SITE", "https://barchop.com.br");
     try {
       montarPainel(<DadosDoNegocio />, criarApiClientFalso());
 
-      const campo = await screen.findByLabelText(/link da barbearia/i);
-      expect(campo).toHaveValue("https://gr-barber.barchop.com.br");
-      expect(campo).toHaveAttribute("readonly");
-      expect(campo).toHaveAccessibleDescription(/suporte/i);
-      expect(screen.queryByRole("button", { name: /trocar link/i })).not.toBeInTheDocument();
+      const secao = await screen.findByRole("region", { name: /endereço da sua página/i });
+      expect(within(secao).getByText("https://gr-barber.barchop.com.br")).toBeInTheDocument();
+      expect(within(secao).getByText(/só com pedido ao suporte/i)).toBeInTheDocument();
+      expect(within(secao).queryByRole("textbox")).not.toBeInTheDocument();
+      expect(within(secao).getByRole("button", { name: "Pedir outro link" })).toHaveAttribute("aria-expanded", "false");
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+
+  it("copiar põe o link inteiro na área de transferência e avisa", async () => {
+    montarPainel(<DadosDoNegocio />, criarApiClientFalso());
+    const usuario = userEvent.setup();
+
+    await usuario.click(await screen.findByRole("button", { name: "Copiar link" }));
+
+    expect(await navigator.clipboard.readText()).toBe(`${window.location.origin}/gr-barber`);
+    expect(await screen.findByRole("status")).toHaveTextContent(/link copiado/i);
+  });
+
+  it("sem área de transferência, o aviso mostra o link pra copiar à mão", async () => {
+    montarPainel(<DadosDoNegocio />, criarApiClientFalso());
+    const usuario = userEvent.setup();
+    vi.spyOn(navigator.clipboard, "writeText").mockRejectedValueOnce(new Error("negado"));
+
+    await usuario.click(await screen.findByRole("button", { name: "Copiar link" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(/não deu pra copiar/i);
+  });
+
+  it("o pedido de outro link abre e fecha pelo botão", async () => {
+    montarPainel(<DadosDoNegocio />, criarApiClientFalso());
+
+    expect(await screen.findByRole("button", { name: "Pedir outro link" })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/novo link/i)).not.toBeInTheDocument();
+
+    await abrirPedido();
+    expect(screen.getByRole("button", { name: "Pedir outro link" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText(/novo link/i)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Pedir outro link" }));
+    expect(screen.queryByLabelText(/novo link/i)).not.toBeInTheDocument();
   });
 
   it("pede a troca do link com o motivo, e o link não muda até o suporte aprovar", async () => {
@@ -152,7 +194,8 @@ describe("dados do negócio · identidade", () => {
     sessaoDaBarbearia.gravar("gr-barber");
     montarPainel(<DadosDoNegocio />, falso);
 
-    await userEvent.type(await screen.findByLabelText(/novo link/i), "GR-Barber-Centro");
+    await abrirPedido();
+    await userEvent.type(screen.getByLabelText(/novo link/i), "GR-Barber-Centro");
     await userEvent.type(screen.getByLabelText(/motivo/i), "mudamos de endereço");
     await userEvent.click(screen.getByRole("button", { name: /pedir troca/i }));
 
@@ -164,6 +207,8 @@ describe("dados do negócio · identidade", () => {
     expect(falso.estado.perfil.slug).toBe("gr-barber");
     expect(sessaoDaBarbearia.ler()).toBe("gr-barber");
     expect(screen.queryByLabelText(/novo link/i)).not.toBeInTheDocument();
+    // Com o pedido no suporte, não se pede outro.
+    expect(screen.queryByRole("button", { name: "Pedir outro link" })).not.toBeInTheDocument();
   });
 
   it("pedir a troca não apaga o que foi digitado e ainda não salvo", async () => {
@@ -172,6 +217,7 @@ describe("dados do negócio · identidade", () => {
     const nome = await screen.findByLabelText(/nome da barbearia/i);
     await userEvent.clear(nome);
     await userEvent.type(nome, "GR Barber Centro");
+    await abrirPedido();
     await userEvent.type(screen.getByLabelText(/novo link/i), "gr-barber-centro");
     await userEvent.click(screen.getByRole("button", { name: /pedir troca/i }));
 
@@ -192,7 +238,8 @@ describe("dados do negócio · identidade", () => {
 
     montarPainel(<DadosDoNegocio />, falso);
 
-    await userEvent.type(await screen.findByLabelText(/novo link/i), digitado);
+    await abrirPedido();
+    await userEvent.type(screen.getByLabelText(/novo link/i), digitado);
     await userEvent.click(screen.getByRole("button", { name: /pedir troca/i }));
 
     expect(await screen.findByText(mensagem)).toBeInTheDocument();
@@ -202,7 +249,8 @@ describe("dados do negócio · identidade", () => {
   it("link de outra barbearia fica no campo", async () => {
     montarPainel(<DadosDoNegocio />, criarApiClientFalso({ slugsEmUso: ["navalha"] }));
 
-    await userEvent.type(await screen.findByLabelText(/novo link/i), "navalha");
+    await abrirPedido();
+    await userEvent.type(screen.getByLabelText(/novo link/i), "navalha");
     await userEvent.click(screen.getByRole("button", { name: /pedir troca/i }));
 
     expect(await screen.findByText(/já está em uso/i)).toBeInTheDocument();
@@ -218,7 +266,7 @@ describe("dados do negócio · identidade", () => {
     expect(screen.getByText(/gr-barber-centro/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /cancelar pedido/i }));
 
-    expect(await screen.findByLabelText(/novo link/i)).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Pedir outro link" })).toBeInTheDocument();
     expect(falso.estado.solicitacoesDeLink![0].status).toBe("cancelada");
   });
 
@@ -238,6 +286,7 @@ describe("dados do negócio · identidade", () => {
 
     expect(await screen.findByText(/recusado/i)).toBeInTheDocument();
     expect(screen.getByText("Esse nome é de uma marca registrada.")).toBeInTheDocument();
+    await abrirPedido();
     expect(screen.getByLabelText(/novo link/i)).toBeInTheDocument();
   });
 

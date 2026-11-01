@@ -8,7 +8,8 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao, BotaoLink } from "../../componentes/Botao";
 import { Chip } from "../../componentes/Chip";
 import { PilulasDeFiltro, type OpcaoDeFiltro } from "../../componentes/PilulasDeFiltro";
-import { Tabela } from "../../componentes/Tabela";
+import { CONSULTA_DA_LISTA_NO_CELULAR, Tabela } from "../../componentes/Tabela";
+import { useMidia } from "../../painel/useTelaDeCelular";
 import {
   ROTULO_DA_SITUACAO,
   TOM_DA_SITUACAO,
@@ -53,6 +54,7 @@ export function ListaDeAssinantes({
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [recebendo, setRecebendo] = useState<AssinaturaDoPainel | null>(null);
   const [recebido, setRecebido] = useState<string | undefined>();
+  const celular = useMidia(CONSULTA_DA_LISTA_NO_CELULAR);
 
   const opcoes: OpcaoDeFiltro<Filtro>[] = [
     { valor: "todas", rotulo: "Todas", contagem: assinantes.filter((a) => noFiltro(a, "todas")).length },
@@ -77,30 +79,60 @@ export function ListaDeAssinantes({
       <Tabela
         cabecalho={["Cliente", "Plano", "Situação", "Ciclo", ""]}
         larguras={["26%", "24%", "14%", "24%", "12%"]}
-        linhas={visiveis.map((assinatura) => ({
-          id: assinatura.id,
-          atenuada: assinatura.situacao === "cancelada",
-          celulas: [
-            <span className={estilos.duasLinhas} key="cliente">
-              <span className={estilos.nome}>{assinatura.cliente.nome}</span>
-              <span className={estilos.apoio}>{assinatura.forma === "online" ? "Online" : "No balcão"}</span>
-            </span>,
-            <span className={estilos.duasLinhas} key="plano">
-              <span>{assinatura.plano.nome}</span>
-              <span className={estilos.apoio}>{deQuemEOPlano(assinatura.plano)}</span>
-            </span>,
+        linhas={visiveis.map((assinatura) => {
+          const situacao = (
             <Chip key="situacao" tom={TOM_DA_SITUACAO[assinatura.situacao]} tamanho="pequeno">
               {ROTULO_DA_SITUACAO[assinatura.situacao]}
-            </Chip>,
-            fraseDoCiclo(assinatura),
-            podeReceber(assinatura, hoje) ? (
-              // Sem isto, o clique no botão também abriria o cliente.
-              <span key="acao" className={estilos.acao} onClick={(evento) => evento.stopPropagation()}>
-                <Botao onClick={() => setRecebendo(assinatura)}>Recebi</Botao>
-              </span>
-            ) : null,
-          ],
-        }))}
+            </Chip>
+          );
+          const recebi = podeReceber(assinatura, hoje) ? (
+            // Sem isto, o clique no botão também abriria o cliente.
+            <span key="acao" className={estilos.acao} onClick={(evento) => evento.stopPropagation()}>
+              <Botao onClick={() => setRecebendo(assinatura)}>Recebi</Botao>
+            </span>
+          ) : null;
+          const forma = assinatura.forma === "online" ? "Online" : "No balcão";
+          return {
+            id: assinatura.id,
+            atenuada: assinatura.situacao === "cancelada",
+            // No celular (pendente do redesenho, 01/11): o plano e de quem
+            // ele é numa linha, a forma e o ciclo na outra; a situação e o
+            // Recebi à direita, como na prancha Assinantes do canvas.
+            noCelular: {
+              detalhe: (
+                <span className={estilos.linhasNoCelular}>
+                  <span>
+                    {assinatura.plano.nome} · {deQuemEOPlano(assinatura.plano)}
+                  </span>
+                  <span>
+                    {forma} · {fraseDoCiclo(assinatura)}
+                  </span>
+                </span>
+              ),
+              valor: situacao,
+              acoes: recebi,
+            },
+            celulas: [
+              // No celular a primeira célula é o botão do item: só o nome,
+              // porque a forma já vai no detalhe.
+              celular ? (
+                assinatura.cliente.nome
+              ) : (
+                <span className={estilos.duasLinhas} key="cliente">
+                  <span className={estilos.nome}>{assinatura.cliente.nome}</span>
+                  <span className={estilos.apoio}>{forma}</span>
+                </span>
+              ),
+              <span className={estilos.duasLinhas} key="plano">
+                <span>{assinatura.plano.nome}</span>
+                <span className={estilos.apoio}>{deQuemEOPlano(assinatura.plano)}</span>
+              </span>,
+              situacao,
+              fraseDoCiclo(assinatura),
+              recebi,
+            ],
+          };
+        })}
         vazio={assinantes.length === 0 ? "Nenhum assinante ainda." : "Nenhuma assinatura nesta situação."}
         dicaVazio={
           assinantes.length === 0 ? "Pra assinar no balcão, abra o cliente e use o Assinar plano." : undefined

@@ -42,7 +42,10 @@
 .faixa {
   --tom: var(--cor-ink-soft);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  /* 20rem: o andamento, um passo por coluna, precisa de largura pros três
+     nomes; sem ela, no computador, as ações tomavam a linha e os nomes se
+     sobrepunham. */
+  grid-template-columns: minmax(20rem, 1fr) auto;
   align-items: center;
   gap: var(--espaco-md) var(--espaco-lg);
   padding: var(--espaco-md) var(--espaco-lg);
@@ -77,32 +80,40 @@
 }
 
 /* Pendente → Confirmado → Concluído: o caminho do atendimento, com o
-   passo atual em destaque e os feitos marcados. */
+   passo atual em destaque e os feitos marcados. Um passo por coluna, o
+   nome embaixo da bolinha (redesenho dos detalhes, PR 1): lado a lado,
+   os três pediam 381px e quebravam em duas linhas em qualquer celular. */
 .caminho {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espaco-sm);
-  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 var(--espaco-xs);
   padding: 0;
   list-style: none;
 }
 
 .etapa {
-  display: inline-flex;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: var(--espaco-xs);
+  min-width: 0;
   font-size: var(--texto-sm);
   font-weight: 700;
+  text-align: center;
   color: var(--cor-ink-soft);
 }
 
-/* O traço entre etapas, desenhado antes de cada uma menos a primeira. */
+/* O traço entre etapas: sai do meio da bolinha anterior e chega no meio
+   desta, atrás das duas. */
 .etapa + .etapa::before {
   content: "";
-  width: 2rem;
+  position: absolute;
+  z-index: 0;
+  top: calc(0.625rem - 1px);
+  right: 50%;
+  width: 100%;
   height: 2px;
-  margin-right: var(--espaco-xs);
   border-radius: var(--raio-pill);
   background: var(--cor-line);
 }
@@ -116,12 +127,15 @@
 }
 
 .marca {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 1.25rem;
   height: 1.25rem;
   border: var(--borda-padrao) solid var(--cor-line);
   border-radius: var(--raio-pill);
+  background: var(--cor-surface);
 }
 
 .etapa[data-estado="feito"] .marca {
@@ -138,6 +152,7 @@
 
 .frase {
   margin: 0;
+  text-align: center;
   font-size: var(--texto-lg);
   font-weight: 700;
   text-wrap: balance;
@@ -175,6 +190,8 @@
 
 /* O próximo passo: o amarelo da casa, com a sombra offset. */
 .principal {
+  /* O próximo passo vem primeiro, antes do "Mudar horário". */
+  order: -1;
   background: var(--cor-accent);
   color: var(--cor-dark);
   box-shadow: var(--sombra-botao);
@@ -291,15 +308,14 @@
   gap: var(--espaco-sm);
 }
 
-/* Rótulo miúdo no lugar do título de bloco: organiza sem pesar. */
+/* Título de seção como nas Configurações (redesenho dos detalhes, PR 1,
+   decisão 5), no lugar do rótulo miúdo em caixa alta. */
 .rotuloDoGrupo {
   margin: 0;
-  font-family: inherit;
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--cor-ink-soft);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 600;
+  color: var(--cor-ink);
 }
 
 .servicos {
@@ -452,12 +468,55 @@
 /* No celular a ação do dia fica presa no pé, logo acima da barra de
    navegação (--recuo-inferior vem do shell), ao alcance do polegar. O
    "Cancelar agendamento" desce pro fim da lista, longe dela: dividir a
-   mesma linha com o principal era pedir o toque errado. */
+   mesma linha com o principal era pedir o toque errado. As outras ações
+   viram linhas do cartão, de ponta a ponta (redesenho dos detalhes, PR 1);
+   o espaço do botão preso fica no fim da página, e não no meio do cartão
+   (eram 88px de vão entre "Cancelar agendamento" e "Mudar horário"). */
 @media (max-width: 900px) {
+  .pagina:has(.principal) {
+    padding-block-end: 72px;
+  }
+
   .acoes:has(.principal) {
     flex-direction: column;
     align-items: stretch;
-    padding-block-end: 72px;
+    gap: 0;
+    margin-inline: calc(-1 * var(--espaco-lg));
+    margin-block-end: calc(-1 * var(--espaco-md));
+  }
+
+  .acoes:has(.principal) > :not(.principal) {
+    justify-content: space-between;
+    min-height: 56px;
+    padding: var(--espaco-sm) var(--espaco-lg);
+    border: 0;
+    border-top: var(--borda-hairline) solid var(--cor-line);
+    border-radius: 0;
+    background: transparent;
+    font-size: var(--texto-md);
+    text-decoration: none;
+    text-align: start;
+    white-space: normal;
+  }
+
+  /* A seta de "abre": um traço em ângulo, na cor apagada. */
+  .acoes:has(.principal) > :not(.principal)::after {
+    content: "";
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-inline: var(--espaco-sm) 2px;
+    border-top: 2px solid var(--cor-muted);
+    border-right: 2px solid var(--cor-muted);
+    transform: rotate(45deg);
+  }
+
+  .acoes:has(.principal) > :not(.principal):hover:not(:disabled) {
+    background: var(--cor-paper-soft);
+  }
+
+  .acoes:has(.principal) > :not(.principal):focus-visible {
+    outline-offset: -3px;
   }
 
   .acoes .principal {
@@ -472,8 +531,6 @@
 
   .acoes .discretaPerigo {
     order: 1;
-    align-self: flex-start;
-    margin-block-start: var(--espaco-md);
   }
 }
 

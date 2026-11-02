@@ -1,8 +1,13 @@
-/* O pagamento dentro da faixa do próximo passo: ocupa a largura toda,
-   separado do resto da faixa por um fio, como a nota de remarcar. Sem
-   caixa própria — a faixa já é a moldura. */
+/* O formulário mora numa folha (redesenho dos detalhes, PR 2): uma
+   coluna só, em qualquer tela. A folha é que muda de lugar. */
+.formulario {
+  display: grid;
+  gap: var(--espaco-md);
+}
 
-.formulario,
+/* O resumo fica na faixa do próximo passo: ocupa a largura toda,
+   separado do resto da faixa por um fio. Sem caixa própria — a faixa já
+   é a moldura. */
 .resumo {
   grid-column: 1 / -1;
   display: grid;
@@ -11,13 +16,11 @@
   border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
-/* O "Usar o plano" em cima dos valores, nas mesmas duas colunas: a
-   escolha à esquerda, o que ela faz com cada serviço à direita. */
+/* O "Usar o plano" em cima dos valores: a escolha e, embaixo, o que ela
+   faz com cada serviço. */
 .plano {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
-  gap: var(--espaco-lg) var(--espaco-xl);
-  align-items: start;
+  gap: var(--espaco-md);
 }
 
 .usarOPlano {
@@ -109,19 +112,25 @@
   font-weight: 600;
 }
 
-/* Desktop: valores à esquerda, forma e quem recebeu à direita. */
 .campos {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
-  gap: var(--espaco-lg) var(--espaco-xl);
-  align-items: start;
+  gap: var(--espaco-md);
 }
 
+/* Os três valores lado a lado até no celular de 360 (decisão do canvas):
+   rótulos curtos, a ajuda numa linha só embaixo. */
 .valores {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--espaco-md);
+  gap: var(--espaco-sm);
   align-items: start;
+}
+
+.ajuda {
+  margin: calc(-1 * var(--espaco-xs)) 0 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
 }
 
 .escolhas {
@@ -129,12 +138,20 @@
   gap: var(--espaco-md);
 }
 
+/* Preso no pé da folha, que rola por dentro. O fundo é o da folha: o
+   que rola passa por baixo do botão, e não através dele. */
 .rodape {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: var(--espaco-sm);
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  margin-inline: calc(-1 * var(--espaco-lg));
+  padding: var(--espaco-sm) var(--espaco-lg);
+  background: var(--cor-surface);
+}
+
+.rodape > button {
+  width: 100%;
+  min-height: 48px;
 }
 
 .resumo {
@@ -205,23 +222,13 @@
   composes: discretaPerigo from "./DetalheDoAgendamento.module.css";
 }
 
-/* Tela média: forma e quem recebeu descem pra baixo dos valores. */
-@media (max-width: 60rem) {
-  .plano,
-  .campos {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* Celular: tudo numa coluna. */
+/* Celular: o resumo numa coluna, as ações dele à esquerda. */
 @media (max-width: 30rem) {
-  .valores,
   .resumo {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .acoes,
-  .rodape {
+  .acoes {
     justify-content: flex-start;
   }
 }

@@ -8,6 +8,7 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Chip } from "../../componentes/Chip";
+import { Folha } from "../../componentes/Folha";
 import { formatarPreco } from "../../componentes/ItemDeServico";
 import { useRequisicao } from "../../api/useRequisicao";
 import { ehPassado, formatarDataComSemana } from "../../formato/datas";
@@ -120,8 +121,10 @@ export function DetalheDoAgendamento() {
   const router = useRouter();
   // "Mudar horário" (arrastar e reordenar, PR 6).
   const [mudandoHorario, setMudandoHorario] = useState(false);
-  // O formulário do pagamento aberto: registrando (null) ou editando.
-  const [pagando, setPagando] = useState(false);
+  // A folha do pagamento aberta, pelo título dela. Guardado na hora de
+  // abrir: depois de registrar, o recarregar traz o pagamento, e o título
+  // calculado viraria "Editar pagamento" no meio da saída da folha.
+  const [pagando, setPagando] = useState<string | null>(null);
   // Reabrir um atendimento pago apaga o pagamento: pede um segundo clique.
   const [confirmandoReabrir, setConfirmandoReabrir] = useState(false);
 
@@ -195,8 +198,8 @@ export function DetalheDoAgendamento() {
     }
   }
 
+  // Quem desmonta a folha é o `aoFechar` dela, depois da saída.
   function pagamentoRegistrado() {
-    setPagando(false);
     agendamento.recarregar();
     caixa.recarregar();
   }
@@ -272,7 +275,7 @@ export function DetalheDoAgendamento() {
         </div>
 
         <div className={estilos.acoes}>
-          {pagando ? null : confirmandoReabrir ? (
+          {confirmandoReabrir ? (
             <div className={estilos.confirmar} role="group" aria-label="Confirmar reabertura">
               <span>Reabrir? O pagamento registrado sai do caixa.</span>
               <button
@@ -335,7 +338,9 @@ export function DetalheDoAgendamento() {
                   disabled={salvando !== null}
                   onClick={() =>
                     acao.pagar
-                      ? setPagando(true)
+                      ? setPagando(
+                          atual.status === "concluido" ? "Registrar pagamento" : "Concluir e registrar pagamento"
+                        )
                       : acao.para === "cancelado"
                         ? setConfirmandoCancelar(true)
                         : atual.status === "concluido" && pago
@@ -349,26 +354,44 @@ export function DetalheDoAgendamento() {
             </>
           )}
         </div>
+        {/* O formulário do pagamento numa folha (redesenho dos detalhes,
+            PR 2, decisão 3 do canvas). O resumo fica na faixa por trás:
+            abrir e fechar a folha não mexe na página. */}
         {pagando ? (
-          <FormularioDoPagamento
-            agendamentoId={id}
-            servicos={atual.servicos.map((s) => ({
-              servicoId: s.servicoId,
-              nome: s.nome,
-              precoCentavos: Math.round(Number(s.precoNoMomento) * 100),
-            }))}
-            assinaturas={caixa.dados?.assinaturas}
-            atendenteId={atual.barbeiro.id}
-            membros={membros}
-            atual={pago}
-            aoRegistrar={pagamentoRegistrado}
-            aoCancelar={() => setPagando(false)}
-          />
-        ) : pago ? (
+          <Folha
+            titulo={pagando}
+            apoio={`${atual.barbeiro.nome} · ${atual.servicos.map((s) => s.nome).join(", ")}`}
+            larga
+            aoFechar={() => setPagando(null)}
+          >
+            {(fechar) => (
+              <FormularioDoPagamento
+                agendamentoId={id}
+                servicos={atual.servicos.map((s) => ({
+                  servicoId: s.servicoId,
+                  nome: s.nome,
+                  precoCentavos: Math.round(Number(s.precoNoMomento) * 100),
+                }))}
+                assinaturas={caixa.dados?.assinaturas}
+                atendenteId={atual.barbeiro.id}
+                membros={membros}
+                atual={pago}
+                aoRegistrar={() => {
+                  // Recarrega já, durante a saída da folha: fechar no
+                  // meio do salvar também chega aqui, e a tela por trás
+                  // não pode ficar com o status velho.
+                  pagamentoRegistrado();
+                  fechar();
+                }}
+              />
+            )}
+          </Folha>
+        ) : null}
+        {pago ? (
           <ResumoDoPagamento
             pagamento={pago}
             diaFechado={diaFechado}
-            aoEditar={() => setPagando(true)}
+            aoEditar={() => setPagando("Editar pagamento")}
             aoRemover={removerPagamento}
           />
         ) : null}

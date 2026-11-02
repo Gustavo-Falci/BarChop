@@ -194,7 +194,7 @@ describe("usar o plano no pagamento do atendimento", () => {
     const linhas = within(formulario).getByRole("list", { name: /serviços do atendimento/i });
     expect(within(linhas).getByText("Pelo plano · sem limite no ciclo")).toBeInTheDocument();
     expect(within(linhas).getByText("Fora do plano · avulso")).toBeInTheDocument();
-    expect(within(formulario).getByLabelText(/valor dos serviços/i)).toHaveValue("30,00");
+    expect(within(formulario).getByLabelText(/^serviços$/i)).toHaveValue("30,00");
 
     await userEvent.click(within(formulario).getByRole("radio", { name: "Pix" }));
     await userEvent.click(within(formulario).getByRole("button", { name: /^Registrar R\$\s30,00$/ }));
@@ -227,7 +227,7 @@ describe("usar o plano no pagamento do atendimento", () => {
 
     const formulario = await abrirOPagamento();
     await userEvent.click(within(formulario).getByRole("radio", { name: /não usar/i }));
-    expect(within(formulario).getByLabelText(/valor dos serviços/i)).toHaveValue("75,00");
+    expect(within(formulario).getByLabelText(/^serviços$/i)).toHaveValue("75,00");
     expect(within(formulario).queryByRole("list", { name: /serviços do atendimento/i })).not.toBeInTheDocument();
 
     await userEvent.click(within(formulario).getByRole("radio", { name: "Dinheiro" }));
@@ -249,7 +249,7 @@ describe("usar o plano no pagamento do atendimento", () => {
     montarPainel(<DetalheDoAgendamento />, falso);
 
     const formulario = await abrirOPagamento();
-    expect(within(formulario).getByLabelText(/valor dos serviços/i)).toHaveValue("");
+    expect(within(formulario).getByLabelText(/^serviços$/i)).toHaveValue("");
     expect(within(formulario).queryByRole("radio", { name: "Pix" })).not.toBeInTheDocument();
     expect(within(formulario).getByText(/nada a cobrar/i)).toBeInTheDocument();
 
@@ -286,7 +286,7 @@ describe("usar o plano no pagamento do atendimento", () => {
         'O plano "2 cortes" é de Gustavo e vale só nos atendimentos de Gustavo. Este atendimento é avulso.'
       )
     ).toBeInTheDocument();
-    expect(within(formulario).getByLabelText(/valor dos serviços/i)).toHaveValue("45,00");
+    expect(within(formulario).getByLabelText(/^serviços$/i)).toHaveValue("45,00");
   });
 
   it("usos do ciclo acabados: diz por quê; com uso sobrando, conta qual é", async () => {
@@ -331,7 +331,7 @@ describe("usar o plano no pagamento do atendimento", () => {
     await userEvent.click(await screen.findByRole("button", { name: /editar pagamento/i }));
     const formulario = screen.getByRole("form", { name: /editar pagamento/i });
     expect(within(formulario).getByRole("radio", { name: /Corte ilimitado/ })).toBeChecked();
-    expect(within(formulario).getByLabelText(/valor dos serviços/i)).toHaveValue("30,00");
+    expect(within(formulario).getByLabelText(/^serviços$/i)).toHaveValue("30,00");
 
     await userEvent.click(within(formulario).getByRole("button", { name: /^Salvar R\$\s30,00$/ }));
     await waitFor(() =>

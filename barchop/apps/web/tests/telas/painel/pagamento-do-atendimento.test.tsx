@@ -91,8 +91,16 @@ describe("registrar o pagamento no detalhe do agendamento", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: /concluir e registrar pagamento/i }));
 
-    const valor = screen.getByLabelText(/valor dos serviços/i);
+    // O formulário abre numa folha (redesenho dos detalhes, PR 2), com
+    // quem atendeu e o quê embaixo do título.
+    const folha = screen.getByRole("dialog", { name: "Concluir e registrar pagamento" });
+    expect(within(folha).getByText(/^Rafael · /)).toBeInTheDocument();
+    // Sem "Cancelar": o X fecha.
+    expect(within(folha).queryByRole("button", { name: /^cancelar$/i })).not.toBeInTheDocument();
+    const valor = within(folha).getByLabelText(/^serviços$/i);
     expect(valor).toHaveValue("40,00");
+    // Uma linha de ajuda só, pros três valores.
+    expect(valor).toHaveAccessibleDescription(/desconto é opcional\. a gorjeta fica com quem atendeu/i);
     // Sem forma escolhida, não registra: a forma errada estraga o caixa.
     expect(screen.getByRole("button", { name: /registrar r\$/i })).toBeDisabled();
 
@@ -110,7 +118,8 @@ describe("registrar o pagamento no detalhe do agendamento", () => {
         recebidoPorId: "bb1",
       })
     );
-    // O resumo fica no lugar do formulário, com a frase da divisão.
+    // A folha fecha e o resumo aparece na faixa, com a frase da divisão.
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     const resumo = await screen.findByRole("region", { name: /pagamento/i });
     expect(within(resumo).getByText(/R\$ 45,00 em dinheiro/)).toBeInTheDocument();
     expect(within(resumo).getByText("Rafael fica com R$ 45,00.")).toBeInTheDocument();
@@ -153,7 +162,9 @@ describe("registrar o pagamento no detalhe do agendamento", () => {
   it("atendimento concluído sem pagamento oferece registrar", async () => {
     montarPainel(<DetalheDoAgendamento />, semear({}, "concluido"));
 
-    expect(await screen.findByRole("button", { name: /^registrar pagamento$/i })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: /^registrar pagamento$/i }));
+    // Já concluído, a folha não diz "concluir".
+    expect(screen.getByRole("dialog", { name: "Registrar pagamento" })).toBeInTheDocument();
   });
 
   it("com o pagamento feito: resumo com a divisão, editar e remover", async () => {
@@ -165,11 +176,15 @@ describe("registrar o pagamento no detalhe do agendamento", () => {
     expect(within(resumo).getByText(/recebido por Rafael/)).toBeInTheDocument();
     expect(within(resumo).getByText("Rafael fica com R$ 16,00 e Gustavo com R$ 24,00.")).toBeInTheDocument();
 
-    // Editar abre o formulário com o que está gravado.
+    // Editar abre a folha com o que está gravado; o X fecha sem salvar,
+    // e o resumo segue na faixa o tempo todo.
     await userEvent.click(within(resumo).getByRole("button", { name: /editar pagamento/i }));
-    expect(screen.getByRole("radio", { name: "Pix" })).toBeChecked();
-    expect(screen.getByLabelText(/valor dos serviços/i)).toHaveValue("40,00");
-    await userEvent.click(screen.getByRole("button", { name: /^cancelar$/i }));
+    const folha = screen.getByRole("dialog", { name: "Editar pagamento" });
+    expect(within(folha).getByRole("radio", { name: "Pix" })).toBeChecked();
+    expect(within(folha).getByLabelText(/^serviços$/i)).toHaveValue("40,00");
+    expect(resumo).toBeInTheDocument();
+    await userEvent.click(within(folha).getByRole("button", { name: "Fechar" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     // Remover pede um segundo clique.
     await userEvent.click(screen.getByRole("button", { name: /remover pagamento/i }));

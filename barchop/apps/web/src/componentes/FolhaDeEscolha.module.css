@@ -68,6 +68,14 @@
   background: var(--cor-paper-soft);
 }
 
+/* De quê é a folha, embaixo do título (Folha). */
+.apoio {
+  margin: calc(-1 * var(--espaco-xs)) 0 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
 .opcoes {
   display: grid;
   margin: 0;
@@ -183,6 +191,12 @@
     margin: auto;
     border: var(--borda-padrao) solid var(--cor-line-strong);
     border-radius: var(--raio-lg);
+  }
+
+  /* Um formulário (o pagamento do atendimento): três valores lado a
+     lado pedem mais que a largura de uma escolha. */
+  .folha.larga {
+    width: min(34rem, calc(100vw - 2 * var(--espaco-md)));
   }
 
   .alca {

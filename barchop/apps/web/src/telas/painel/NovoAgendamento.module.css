@@ -43,10 +43,14 @@
   border-block-start: var(--borda-hairline) solid var(--cor-line);
 }
 
+/* O título em cima e, recolhido com escolha feita, a escolha embaixo
+   dele, com o "Trocar" à direita da linha inteira (redesenho dos
+   detalhes, PR 3). Era uma pílula ao lado do título que quebrava o
+   telefone do cliente no meio ("90000-/0001"). */
 .linha {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-md);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* O cabeçalho inteiro é o botão que abre e fecha — alvo grande, e não
@@ -55,7 +59,9 @@
   display: flex;
   align-items: center;
   gap: var(--espaco-md);
-  padding-block: var(--espaco-sm);
+  /* Sem o padding de lado do navegador: o título alinha com a escolha
+     e com o corpo do passo, todos a 30px + o vão do número. */
+  padding: var(--espaco-sm) 0;
   border: none;
   background: none;
   color: inherit;
@@ -77,6 +83,11 @@
   transform: rotate(180deg);
 }
 
+/* Com a escolha à vista, quem diz "abre" é o "Trocar", não a seta. */
+.linha:has(.valor) .cabecalho::after {
+  display: none;
+}
+
 .numero {
   display: flex;
   align-items: center;
@@ -92,8 +103,9 @@
   font-size: var(--texto-sm);
 }
 
-/* Passo resolvido acende o número. Não é só cor: ganha também a sombra
-   deslocada da casa, então continua distinguível em escala de cinza. */
+/* Passo resolvido acende o número e troca pelo check. Não é só cor:
+   ganha também a sombra deslocada da casa e o desenho do check, então
+   continua distinguível em escala de cinza. */
 .passo[data-feito="true"] .numero {
   background: var(--cor-accent);
   box-shadow: var(--sombra-botao);
@@ -107,34 +119,63 @@
   font-size: var(--texto-md);
 }
 
-/* O resumo da escolha, ao lado do título do passo recolhido: é o que
+/* O resumo da escolha, embaixo do título do passo recolhido: é o que
    deixa o quadro responder "o que já está decidido" com tudo fechado.
    Também é botão, e reabre o passo — é nele que a mão vai quando a
-   intenção é rever o que ficou. */
+   intenção é rever o que ficou. Recuado na coluna do título; o espaço
+   da direita é do "Trocar". */
 .valor {
-  margin-inline-start: auto;
-  overflow: hidden;
-  max-width: 60%;
-  padding: var(--espaco-xs) var(--espaco-md);
-  border: var(--borda-hairline) solid var(--cor-line);
-  border-radius: var(--raio-pill);
-  background: var(--cor-paper-soft);
-  color: var(--cor-ink);
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  display: flex;
+  min-width: 0;
+  margin-block-start: calc(-1 * var(--espaco-sm));
+  padding: 0 4.5rem var(--espaco-xs) calc(30px + var(--espaco-md));
+  border: none;
+  background: none;
+  color: var(--cor-ink-soft);
+  font: inherit;
   font-size: var(--texto-sm);
-  font-weight: 600;
+  text-align: start;
   cursor: pointer;
 }
 
-.valor:hover {
-  border-color: var(--cor-ink);
-  background: var(--cor-accent);
-  color: var(--cor-dark);
+/* Corta com reticências: o telefone não pode quebrar no meio. */
+.textoDoValor {
+  overflow: hidden;
+  min-width: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.valor::first-letter {
+.textoDoValor::first-letter {
   text-transform: uppercase;
+}
+
+/* No meio da linha inteira (título e escolha), à direita. Fica dentro do
+   botão do resumo: o toque nele reabre o passo. */
+.trocar {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: calc(-1 * var(--espaco-sm));
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  padding-inline: var(--espaco-sm);
+  border-radius: var(--raio-md);
+  color: var(--cor-accent-text);
+  font-weight: 600;
+}
+
+.valor:hover .trocar {
+  background: var(--cor-paper-soft);
+}
+
+.valor:focus-visible {
+  outline: none;
+}
+
+.valor:focus-visible .trocar {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: -3px;
 }
 
 /* Alinhado ao título, não ao número: o corpo é conteúdo da seção, e
@@ -159,6 +200,10 @@
   background: var(--cor-pale-yellow);
   font-size: var(--texto-sm);
   cursor: pointer;
+}
+
+.agendar {
+  display: grid;
 }
 
 /* O fecho: tempo, preço, dia e hora empilhados sobre o botão, que ocupa
@@ -216,36 +261,96 @@
   font-size: var(--texto-sm);
 }
 
-/* Empilhado, o fecho volta para baixo do quadro: 400px ao lado de uma
-   coluna de passos não cabem juntos numa janela estreita. O limite subiu
-   junto com a largura do fecho — em 900px, com 400 do fecho e o vão, a
-   coluna dos passos ficava com 476px, e é nela que mora o calendário de
-   sete colunas. */
+/* Abaixo de 980px não cabem 400px de fecho ao lado de uma coluna de
+   passos (em 900px, a dos passos ficava com 476px, e é nela que mora o
+   calendário de sete colunas). Antes o fecho descia pra baixo do quadro,
+   longe da vista; agora fica preso no pé, acima da barra de navegação
+   (--recuo-inferior vem do shell), como a ação do detalhe do agendamento
+   (redesenho dos detalhes, PR 3): o total e o "Agendar" sempre à vista.
+   Linhas opcionais em cima (data no passado, aviso); embaixo, o total à
+   esquerda e o botão à direita. */
 @media (max-width: 980px) {
   .colunas {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* Empilhado não há coluna ao lado para acompanhar, e a margem medida
-     viraria um vão entre o quadro e o fecho. */
+  /* O espaço da barra fica no fim da página, senão ela cobre o último
+     passo aberto. Mais alto com a caixa do passado. */
+  .pagina {
+    padding-block-end: 96px;
+  }
+
+  .pagina:has(.passado) {
+    padding-block-end: 160px;
+  }
+
+  /* Sem coluna ao lado para acompanhar: a margem medida sai. */
   .fecho {
-    position: static;
+    position: fixed;
+    z-index: 20;
+    inset-inline: var(--espaco-md);
+    /* O `top: 0` do sticky do computador esticaria a barra na tela toda. */
+    inset-block-start: auto;
+    inset-block-end: calc(var(--recuo-inferior, 0px) + var(--espaco-sm));
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--espaco-xs) var(--espaco-md);
     margin-block-start: 0;
+    padding: var(--espaco-sm) var(--espaco-sm) var(--espaco-sm) var(--espaco-md);
+    border: var(--borda-hairline) solid var(--cor-line);
+    border-radius: var(--raio-md);
+    background: var(--cor-surface);
+    box-shadow: var(--sombra-2);
+    transition: none;
+  }
+
+  .passado,
+  .aviso {
+    grid-column: 1 / -1;
+  }
+
+  .passado {
+    order: -2;
+  }
+
+  .aviso {
+    order: -1;
+  }
+
+  .resumo,
+  .falta {
+    grid-column: 1;
+  }
+
+  .agendar {
+    grid-column: 2;
+  }
+
+  /* Com o que falta, o botão ocupa as duas linhas da esquerda. */
+  .fecho:has(.falta) .agendar {
+    grid-row: span 2;
+  }
+
+  .total {
+    font-family: inherit;
+    font-size: var(--texto-md);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Uma linha de apoio só: o que falta, ou, pronto, o dia e a hora. */
+  .fecho:has(.falta) .quando {
+    display: none;
+  }
+
+  /* No celular, o teclado sobe com a barra presa por cima dos campos da
+     busca e do cadastro do cliente: enquanto se digita, ela sai. */
+  .colunas:has(.quadro input:not([type="checkbox"], [type="radio"]):focus) .fecho {
+    display: none;
   }
 }
 
-/* Numa janela estreita o resumo do passo não cabe na mesma linha do
-   título — vai para baixo em vez de espremer os dois. */
+/* Numa janela estreita o corpo do passo usa a largura toda. */
 @media (max-width: 620px) {
-  .linha {
-    flex-wrap: wrap;
-  }
-
-  .valor {
-    margin-inline-start: calc(30px + var(--espaco-md));
-    white-space: normal;
-  }
-
   .corpo {
     padding-inline-start: 0;
   }

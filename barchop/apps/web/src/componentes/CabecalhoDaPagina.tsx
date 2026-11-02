@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import Link from "next/link";
 import estilos from "./CabecalhoDaPagina.module.css";
 
@@ -26,7 +26,9 @@ export function CabecalhoDaPagina({
   selo?: ReactNode;
   // A tela de cima, pras subtelas (Horários volta pra Configurações).
   // Sem ele, o único caminho de volta era a barra lateral.
-  voltar?: { href: string; rotulo: string };
+  // `aoClicar` pra quem volta no histórico (Novo agendamento abre de
+  // quatro telas); o `href` fica de reserva, pra nova aba e sem histórico.
+  voltar?: { href: string; rotulo: string; aoClicar?: (evento: MouseEvent<HTMLAnchorElement>) => void };
   // A ação some onde a barra de baixo do painel aparece: lá o "Novo"
   // dela já faz o mesmo, e dois botões iguais disputavam o topo da tela
   // (redesenho do celular, PR 2). Some o invólucro inteiro, sem deixar
@@ -37,7 +39,7 @@ export function CabecalhoDaPagina({
     <header className={estilos.cabecalho}>
       <div className={estilos.textos}>
         {voltar ? (
-          <Link href={voltar.href} className={estilos.voltar}>
+          <Link href={voltar.href} className={estilos.voltar} onClick={voltar.aoClicar}>
             <span aria-hidden="true">← </span>
             {voltar.rotulo}
           </Link>

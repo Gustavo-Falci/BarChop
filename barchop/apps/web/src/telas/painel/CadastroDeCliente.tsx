@@ -154,14 +154,12 @@ export function CadastroDeCliente() {
 
   return (
     <div className={estilos.pagina}>
-      {/* Sem `acao`: o Cancelar saiu do cabeçalho e foi pro rodapé do
-          formulário, ao lado do Cadastrar. Aquele canto é onde Clientes
-          e Serviços põem o "+ Novo" — a ação PRINCIPAL da tela —, e
-          usar a mesma posição pra desistir dava sentidos opostos ao
-          mesmo lugar. No celular era pior: o cabeçalho empilha e o
-          Cancelar virava o primeiro controle abaixo do título, acima de
-          todos os campos. */}
-      <CabecalhoDaPagina titulo="Novo cliente" />
+      {/* Sem `acao`: aquele canto é onde Clientes e Serviços põem o
+          "+ Novo" — a ação PRINCIPAL da tela. Desistir é o "← Clientes"
+          (redesenho dos detalhes, PR 4): o Cancelar do rodapé, que
+          levava pro mesmo lugar, saiu, e a tela de criar fica com um
+          botão só. */}
+      <CabecalhoDaPagina titulo="Novo cliente" voltar={{ href: "/painel/clientes", rotulo: "Clientes" }} />
 
       {/* <form> e não um <div> com onClick no botão: sem ele o Enter não
           envia, e este é um formulário de três campos que o barbeiro
@@ -178,66 +176,69 @@ export function CadastroDeCliente() {
           void cadastrar();
         }}
       >
-        {/* Os três campos numa linha: as telas usam a largura (pedido do dono). */}
-        <CamposLadoALado>
-          <Campo
-            rotulo="Nome"
-            placeholder="Nome e sobrenome"
-            autoComplete="name"
-            maxLength={NOME_MAX}
-            // O foco começa aqui porque a tela existe pra uma coisa só:
-            // quem chegou pelo "+ Novo cliente" já quer digitar.
-            autoFocus
-            valor={nome}
-            onChange={(proximo) => {
-              setNome(proximo);
-              setErroNome(undefined);
-              limparRespostaDoServidor();
-            }}
-            onBlur={() => setErroNome(aoSair(nome, validarNomeDeCliente))}
-            erro={erroNome}
-          />
-          {/* `inputMode="tel"` e não `type="tel"`: o teclado do celular
-              abre numérico do mesmo jeito, e o campo continua uma string
-              comum — que é o que o formatarTelefoneParcial do Campo
-              reescreve a cada tecla.
-
-              A regra de formato vai no `apoio`, que fica, e não só no
-              placeholder, que some na primeira tecla — bem quando a
-              pessoa quer conferir o que digitou contra o exemplo. */}
-          <Campo
-            rotulo="Telefone"
-            apoio="Com DDD, do jeito que for — a gente formata."
-            formato="telefone"
-            inputMode="tel"
-            autoComplete="tel"
-            placeholder="(11) 99999-8888"
-            valor={telefone}
-            onChange={(proximo) => {
-              setTelefone(proximo);
-              setErroTelefone(undefined);
-              limparRespostaDoServidor();
-            }}
-            onBlur={() => setErroTelefone(aoSair(telefone, validarTelefone))}
-            erro={erroTelefone}
-          />
-          <Campo
-            rotulo="E-mail (opcional)"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="ana@exemplo.com"
-            maxLength={EMAIL_MAX}
-            valor={email}
-            onChange={(proximo) => {
-              setEmail(proximo);
-              setErroEmail(undefined);
-              limparRespostaDoServidor();
-            }}
-            onBlur={() => setErroEmail(aoSair(email, validarEmailDeCliente))}
-            erro={erroEmail}
-          />
+        {/* Os três campos numa linha: as telas usam a largura (pedido do
+            dono). Num cartão, como as seções dos detalhes. */}
+        <div className={estilos.cartao}>
+          <CamposLadoALado>
+            <Campo
+              rotulo="Nome"
+              placeholder="Nome e sobrenome"
+              autoComplete="name"
+              maxLength={NOME_MAX}
+              // O foco começa aqui porque a tela existe pra uma coisa só:
+              // quem chegou pelo "+ Novo cliente" já quer digitar.
+              autoFocus
+              valor={nome}
+              onChange={(proximo) => {
+                setNome(proximo);
+                setErroNome(undefined);
+                limparRespostaDoServidor();
+              }}
+              onBlur={() => setErroNome(aoSair(nome, validarNomeDeCliente))}
+              erro={erroNome}
+            />
+            {/* `inputMode="tel"` e não `type="tel"`: o teclado do celular
+                abre numérico do mesmo jeito, e o campo continua uma string
+                comum — que é o que o formatarTelefoneParcial do Campo
+                reescreve a cada tecla.
+  
+                A regra de formato vai no `apoio`, que fica, e não só no
+                placeholder, que some na primeira tecla — bem quando a
+                pessoa quer conferir o que digitou contra o exemplo. */}
+            <Campo
+              rotulo="Telefone"
+              apoio="Com DDD, do jeito que for — a gente formata."
+              formato="telefone"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="(11) 99999-8888"
+              valor={telefone}
+              onChange={(proximo) => {
+                setTelefone(proximo);
+                setErroTelefone(undefined);
+                limparRespostaDoServidor();
+              }}
+              onBlur={() => setErroTelefone(aoSair(telefone, validarTelefone))}
+              erro={erroTelefone}
+            />
+            <Campo
+              rotulo="E-mail (opcional)"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="ana@exemplo.com"
+              maxLength={EMAIL_MAX}
+              valor={email}
+              onChange={(proximo) => {
+                setEmail(proximo);
+                setErroEmail(undefined);
+                limparRespostaDoServidor();
+              }}
+              onBlur={() => setErroEmail(aoSair(email, validarEmailDeCliente))}
+              erro={erroEmail}
+            />
           </CamposLadoALado>
+        </div>
 
         {/* O 409 é o único erro desta tela que tem conserto de um
             clique: o cadastro procurado existe, só não é este. O link
@@ -260,21 +261,11 @@ export function CadastroDeCliente() {
 
         {aviso ? <Aviso>{aviso}</Aviso> : null}
 
-        {/* As duas saídas do formulário juntas, e o Cancelar depois: no
-            desktop elas ficavam a uns 400px uma da outra, com a de
-            desistir por cima. `type="button"` no Cancelar porque agora
-            ele está DENTRO do form, e um <button> sem type é submit —
-            cancelar cadastraria o cliente. */}
+        {/* Um botão só no fim (decisão 2 do canvas): no celular, da
+            largura da tela; no computador, do tamanho do texto. */}
         <div className={estilos.acoes}>
           <Botao type="submit" carregando={salvando}>
             Cadastrar
-          </Botao>
-          <Botao
-            type="button"
-            variante="contorno"
-            onClick={() => router.push("/painel/clientes")}
-          >
-            Cancelar
           </Botao>
         </div>
       </form>

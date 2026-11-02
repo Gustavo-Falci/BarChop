@@ -13,6 +13,7 @@ export function CabecalhoDaPagina({
   selo,
   voltar,
   acaoSoNoDesktop = false,
+  acaoLargaNoCelular = false,
 }: {
   titulo: string;
   // Uma linha de contexto sob o título — a data por extenso na agenda,
@@ -34,6 +35,10 @@ export function CabecalhoDaPagina({
   // (redesenho do celular, PR 2). Some o invólucro inteiro, sem deixar
   // um item vazio ocupando o vão do flex.
   acaoSoNoDesktop?: boolean;
+  // No celular a ação desce pra uma linha só dela, de ponta a ponta (o
+  // WhatsApp e o Agendar do cliente, metade cada; redesenho dos detalhes,
+  // PR 4).
+  acaoLargaNoCelular?: boolean;
 }) {
   return (
     <header className={estilos.cabecalho}>
@@ -51,7 +56,11 @@ export function CabecalhoDaPagina({
         {apoio ? <p className={estilos.apoio}>{apoio}</p> : null}
       </div>
       {acao ? (
-        <div className={estilos.acao} data-so-no-desktop={acaoSoNoDesktop ? "" : undefined}>
+        <div
+          className={estilos.acao}
+          data-so-no-desktop={acaoSoNoDesktop ? "" : undefined}
+          data-larga-no-celular={acaoLargaNoCelular ? "" : undefined}
+        >
           {acao}
         </div>
       ) : null}

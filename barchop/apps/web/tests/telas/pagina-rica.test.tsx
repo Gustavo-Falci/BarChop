@@ -268,11 +268,24 @@ describe("categoria no cadastro de serviço", () => {
     localStorage.clear();
   });
 
+  // A categoria numa linha que abre a folha (redesenho dos detalhes,
+  // PR 7): as sete pílulas quebravam em três linhas.
+  async function abrirCategoria() {
+    await userEvent.click(await screen.findByRole("button", { name: /^categoria/i }));
+    return within(screen.getByRole("dialog"));
+  }
+
+  async function usar() {
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Usar esta" }));
+  }
+
   it("a categoria é escolhida da lista, sem campo de texto", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
     montarPainel(<CadastroDeServico />, criarApiClientFalso());
 
-    const grupo = await screen.findByRole("group", { name: /categoria/i });
+    expect(await screen.findByRole("button", { name: /^categoria/i })).toHaveTextContent("Sem categoria");
+    const folha = await abrirCategoria();
+    const grupo = folha.getByRole("group", { name: "Categoria" });
     expect(within(grupo).getAllByRole("radio").map((r) => r.closest("label")?.textContent)).toEqual([
       "Sem categoria",
       "Cabelo",
@@ -296,15 +309,31 @@ describe("categoria no cadastro de serviço", () => {
     await userEvent.type(await screen.findByLabelText(/^nome/i), "Pigmentação");
     await userEvent.type(screen.getByLabelText(/duração/i), "30");
     await userEvent.type(screen.getByLabelText(/preço/i), "50,00");
-    await userEvent.click(screen.getByRole("radio", { name: "Química e tratamentos" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+    const folha = await abrirCategoria();
+    await userEvent.click(folha.getByRole("radio", { name: "Química e tratamentos" }));
+    await usar();
+    expect(screen.getByRole("button", { name: /^categoria/i })).toHaveTextContent(
+      "Na sua página, aparece em “Química e tratamentos”."
+    );
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     await waitFor(() =>
       expect(criar).toHaveBeenCalledWith(expect.objectContaining({ categoria: "quimica" }))
     );
   });
 
-  it("na edição, \"Sem categoria\" manda null", async () => {
+  it("fechar a folha sem usar deixa a categoria como estava", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
+    montarPainel(<CadastroDeServico />, criarApiClientFalso());
+
+    const folha = await abrirCategoria();
+    await userEvent.click(folha.getByRole("radio", { name: "Barba" }));
+    await userEvent.click(folha.getByRole("button", { name: "Fechar" }));
+
+    expect(screen.getByRole("button", { name: /^categoria/i })).toHaveTextContent("Sem categoria");
+  });
+
+  it("na edição, \"Sem categoria\" manda null, e a barra diz o antes e o depois", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
     const falso = criarApiClientFalso({
       servicos: [
@@ -315,9 +344,16 @@ describe("categoria no cadastro de serviço", () => {
     falso.barbeiro.atualizarServico = atualizar;
     montarPainel(<CadastroDeServico />, falso);
 
-    await waitFor(() => expect(screen.getByRole("radio", { name: "Cabelo" })).toBeChecked());
-    await userEvent.click(screen.getByRole("radio", { name: "Sem categoria" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^categoria/i })).toHaveTextContent("Cabelo")
+    );
+    const folha = await abrirCategoria();
+    expect(folha.getByRole("radio", { name: "Cabelo" })).toBeChecked();
+    await userEvent.click(folha.getByRole("radio", { name: "Sem categoria" }));
+    await usar();
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent("Categoria: Cabelo → Sem categoria");
+    await userEvent.click(within(barra).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(atualizar).toHaveBeenCalledWith("s1", expect.objectContaining({ categoria: null }))
@@ -325,8 +361,9 @@ describe("categoria no cadastro de serviço", () => {
   });
 
   it("na edição, categoria fora da lista abre como \"Sem categoria\" e salva null", async () => {
-    // Senão nenhuma pílula fica marcada e o salvar devolveria o valor
-    // velho, que a API recusa com 400.
+    // Senão nenhuma opção fica marcada e o salvar devolveria o valor
+    // velho, que a API recusa com 400. Abrir assim não é mudança: a barra
+    // aparece pelo nome, e o salvar leva o null junto.
     navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
     const falso = criarApiClientFalso({
       servicos: [
@@ -338,8 +375,11 @@ describe("categoria no cadastro de serviço", () => {
     montarPainel(<CadastroDeServico />, falso);
 
     await screen.findByDisplayValue("Corte");
-    expect(screen.getByRole("radio", { name: "Sem categoria" })).toBeChecked();
-    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+    expect(screen.getByRole("button", { name: /^categoria/i })).toHaveTextContent("Sem categoria");
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/^nome$/i), " social");
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    await userEvent.click(within(barra).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() =>
       expect(atualizar).toHaveBeenCalledWith("s1", expect.objectContaining({ categoria: null }))

@@ -6,13 +6,17 @@ import type { ErroDaApi } from "@barchop/api-client";
 import type { ServicoSerializado } from "@barchop/types";
 import { CATEGORIAS_DE_SERVICO, type CategoriaDeServico } from "@barchop/formato";
 import { Aviso } from "../../componentes/Aviso";
+import { BarraDeMudancas } from "../../componentes/BarraDeMudancas";
 import { Botao } from "../../componentes/Botao";
+import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
-import { CamposLadoALado } from "../../componentes/Colunas";
 import { CampoDeImagem } from "../../componentes/CampoDeImagem";
 import { CartaoDeServico } from "../../componentes/CartaoDeServico";
-import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
+import { Chip } from "../../componentes/Chip";
+import { FolhaDeEscolha } from "../../componentes/FolhaDeEscolha";
+import { formatarPreco } from "../../componentes/ItemDeServico";
 import { categoriaConhecida, ROTULO_DA_CATEGORIA } from "../../formato/pagina";
+import { IconeSeta } from "../../painel/icones";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./CadastroDeServico.module.css";
@@ -41,6 +45,18 @@ const OPCOES_DE_CATEGORIA: { valor: CategoriaDeServico | ""; rotulo: string }[] 
   { valor: "", rotulo: "Sem categoria" },
   ...CATEGORIAS_DE_SERVICO.map((valor) => ({ valor, rotulo: ROTULO_DA_CATEGORIA[valor] })),
 ];
+
+function rotuloDaCategoria(categoria: CategoriaDeServico | "") {
+  return categoria ? ROTULO_DA_CATEGORIA[categoria] : "Sem categoria";
+}
+
+// Onde o serviço aparece na página pública: a mesma frase na linha da
+// categoria e na folha que escolhe.
+function efeitoDaCategoria(categoria: CategoriaDeServico | "") {
+  return categoria
+    ? `Na sua página, aparece em “${ROTULO_DA_CATEGORIA[categoria]}”.`
+    : "Sem categoria, aparece no fim da sua página.";
+}
 // O mesmo teto da coluna `servico.descricao` e do schema da API. Cortar
 // na digitação evita o 400 depois do texto escrito.
 const DESCRICAO_MAX = 300;
@@ -103,6 +119,7 @@ export function CadastroDeServico() {
   const [preco, setPreco] = useState("");
   const [categoria, setCategoria] = useState<CategoriaDeServico | "">("");
   const [descricao, setDescricao] = useState("");
+  const [escolhendoCategoria, setEscolhendoCategoria] = useState(false);
   // A foto que a prévia mostra depois de trocar ou remover aqui. Não se
   // recarrega a lista pra isso: a sincronização abaixo refaria os campos
   // e apagaria o que o dono digitou e ainda não salvou.
@@ -111,7 +128,11 @@ export function CadastroDeServico() {
   const [erroDuracao, setErroDuracao] = useState<string | undefined>();
   const [erroPreco, setErroPreco] = useState<string | undefined>();
   const [aviso, setAviso] = useState<string | undefined>();
+  const [avisoDaSituacao, setAvisoDaSituacao] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
+  // Separado do `salvando`: desativar não é salvar o formulário, e o
+  // Salvar da barra não pode girar por causa dele (nem o contrário).
+  const [mexendo, setMexendo] = useState(false);
 
   // Sincronizado durante a renderização, e não num `useEffect`: mesmo
   // mecanismo do fix em ConfiguracoesDaBarbearia (181514d) — um efeito
@@ -143,15 +164,19 @@ export function CadastroDeServico() {
   const [atualSincronizado, setAtualSincronizado] = useState<typeof atual>(undefined);
   if (atual && atual !== atualSincronizado) {
     setAtualSincronizado(atual);
-    setNome(atual.nome);
-    setDuracao(String(atual.duracaoMinutos));
+    preencherCom(atual);
+  }
+
+  function preencherCom(servico: ServicoSerializado) {
+    setNome(servico.nome);
+    setDuracao(String(servico.duracaoMinutos));
     // Com vírgula, como o dono digita e como a lista mostra ("50,00");
     // o paraDecimal aceita os dois.
-    setPreco(atual.preco.replace(".", ","));
-    // Fora da lista abre como "Sem categoria": nenhuma pílula marcada e
+    setPreco(servico.preco.replace(".", ","));
+    // Fora da lista abre como "Sem categoria": nenhuma opção marcada e
     // o valor velho voltaria no salvar, que a API recusa.
-    setCategoria(categoriaConhecida(atual.categoria) ?? "");
-    setDescricao(atual.descricao ?? "");
+    setCategoria(categoriaConhecida(servico.categoria) ?? "");
+    setDescricao(servico.descricao ?? "");
   }
 
   // Sem isto, uma falha em servicos() deixava dados null pra sempre: o
@@ -163,6 +188,38 @@ export function CadastroDeServico() {
 
   if (id && servicos.dados && !atual) {
     return <Aviso>Serviço não encontrado.</Aviso>;
+  }
+
+  // Na edição, o que difere do gravado, pra barra de mudanças (redesenho
+  // dos detalhes, PR 7). Duração e preço comparam o valor, e não o que
+  // foi digitado: "40" por cima de "40,00" não é mudança.
+  const mudancas: string[] = [];
+  if (atual) {
+    if (nome.trim() !== atual.nome) mudancas.push("Nome");
+    const minutos = paraMinutos(duracao);
+    if (!("valor" in minutos)) mudancas.push("Duração");
+    else if (minutos.valor !== atual.duracaoMinutos) {
+      mudancas.push(`Duração: ${atual.duracaoMinutos} min → ${minutos.valor} min`);
+    }
+    const decimal = paraDecimal(preco);
+    if (!("valor" in decimal)) mudancas.push("Preço");
+    else if (decimal.valor !== atual.preco) {
+      mudancas.push(`Preço: ${formatarPreco(atual.preco)} → ${formatarPreco(decimal.valor)}`);
+    }
+    const gravada = categoriaConhecida(atual.categoria) ?? "";
+    if (categoria !== gravada) {
+      mudancas.push(`Categoria: ${rotuloDaCategoria(gravada)} → ${rotuloDaCategoria(categoria)}`);
+    }
+    if (descricao.trim() !== (atual.descricao ?? "")) mudancas.push("Descrição");
+  }
+
+  function descartar() {
+    if (!atual) return;
+    preencherCom(atual);
+    setErroNome(undefined);
+    setErroDuracao(undefined);
+    setErroPreco(undefined);
+    setAviso(undefined);
   }
 
   async function salvar() {
@@ -207,7 +264,8 @@ export function CadastroDeServico() {
 
   async function alternarAtivo() {
     if (!id || !atual) return;
-    setSalvando(true);
+    setAvisoDaSituacao(undefined);
+    setMexendo(true);
     try {
       // Soft delete: some da lista pública e o histórico de quem já foi
       // atendido sobrevive.
@@ -215,9 +273,9 @@ export function CadastroDeServico() {
       else await api.barbeiro.atualizarServico(id, { ativo: true });
       servicos.recarregar();
     } catch (causa) {
-      setAviso((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
+      setAvisoDaSituacao((causa as ErroDaApi).mensagem || "Não foi possível salvar agora.");
     }
-    setSalvando(false);
+    setMexendo(false);
   }
 
   // O cartão da prévia com o que está digitado agora. Campo ainda vazio ou
@@ -236,14 +294,41 @@ export function CadastroDeServico() {
     fotoUrl: fotoDaPrevia !== undefined ? fotoDaPrevia : (atual?.fotoUrl ?? null),
   };
 
+  // O resumo do que está gravado, embaixo do nome (como no membro):
+  // muda só depois de salvar, e não a cada tecla.
+  const categoriaGravada = atual ? categoriaConhecida(atual.categoria) : undefined;
+  const resumo = atual
+    ? [
+        categoriaGravada ? ROTULO_DA_CATEGORIA[categoriaGravada] : null,
+        `${atual.duracaoMinutos} min`,
+        formatarPreco(atual.preco),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : undefined;
+
   return (
     <div className={estilos.pagina}>
-      <h1>{id ? "Editar serviço" : "Novo serviço"}</h1>
+      {/* O caminho de volta e o nome do serviço no topo (redesenho dos
+          detalhes, PR 7; era "Editar serviço", sem volta). Enquanto a
+          lista não chega, "Serviço": o formulário já está montado (ver a
+          sincronização acima), e "Novo serviço" numa edição enganaria. */}
+      <CabecalhoDaPagina
+        voltar={{ href: "/painel/servicos", rotulo: "Serviços" }}
+        titulo={atual ? atual.nome : id ? "Serviço" : "Novo serviço"}
+        selo={
+          atual && !atual.ativo ? (
+            <Chip tom="neutro" tamanho="pequeno">
+              Inativo
+            </Chip>
+          ) : undefined
+        }
+        apoio={resumo}
+      />
 
       <div className={estilos.corpo}>
-        <div className={estilos.formulario}>
-          {/* Nome, duração e preço numa linha: as telas usam a largura (pedido do dono). */}
-          <CamposLadoALado>
+        <div className={estilos.principal}>
+          <div className={`${estilos.cartao} ${estilos.recheio}`}>
             <Campo
               rotulo="Nome"
               placeholder="Corte"
@@ -260,42 +345,49 @@ export function CadastroDeServico() {
                 traria as setinhas, a roda do mouse mudando o valor sem querer
                 e um `value` que o navegador esvazia sozinho quando a
                 digitação é inválida. */}
-            <Campo
-              rotulo="Duração em minutos"
-              inputMode="numeric"
-              placeholder="30"
-              valor={duracao}
-              onChange={(proximo) => {
-                setDuracao(proximo);
-                setErroDuracao(undefined);
-              }}
-              erro={erroDuracao}
-            />
-            <Campo
-              rotulo="Preço"
-              inputMode="decimal"
-              placeholder="40,00"
-              valor={preco}
-              onChange={(proximo) => {
-                setPreco(proximo);
-                setErroPreco(undefined);
-              }}
-              erro={erroPreco}
-            />
-          </CamposLadoALado>
+            <div className={estilos.dupla}>
+              <Campo
+                rotulo="Duração em minutos"
+                inputMode="numeric"
+                placeholder="30"
+                valor={duracao}
+                onChange={(proximo) => {
+                  setDuracao(proximo);
+                  setErroDuracao(undefined);
+                }}
+                erro={erroDuracao}
+              />
+              <Campo
+                rotulo="Preço"
+                inputMode="decimal"
+                placeholder="40,00"
+                valor={preco}
+                onChange={(proximo) => {
+                  setPreco(proximo);
+                  setErroPreco(undefined);
+                }}
+                erro={erroPreco}
+              />
+            </div>
+          </div>
 
-          <SeletorEmPilulas
-            nome="categoria"
-            legenda="Categoria (opcional)"
-            opcoes={OPCOES_DE_CATEGORIA}
-            valor={categoria}
-            aoTrocar={setCategoria}
-            efeito={
-              categoria
-                ? `Na sua página, aparece em “${ROTULO_DA_CATEGORIA[categoria]}”.`
-                : "Sem categoria, aparece no fim da sua página."
-            }
-          />
+          {/* A categoria numa linha que abre a folha (decisão 4 do canvas):
+              as sete pílulas quebravam em três linhas. */}
+          <div className={estilos.cartao}>
+            <button
+              type="button"
+              className={estilos.linha}
+              aria-haspopup="dialog"
+              onClick={() => setEscolhendoCategoria(true)}
+            >
+              <span className={estilos.texto}>
+                <span className={estilos.nome}>Categoria (opcional)</span>
+                <span className={estilos.efeitoDaLinha}>{efeitoDaCategoria(categoria)}</span>
+              </span>
+              <span className={estilos.valor}>{rotuloDaCategoria(categoria)}</span>
+              <IconeSeta className={estilos.seta} width={18} height={18} aria-hidden="true" />
+            </button>
+          </div>
 
           {/* <textarea> à mão, e não o Campo (que é um <input>): mesmo
               desenho do "Sobre a barbearia" em ConfiguracoesDaBarbearia. */}
@@ -320,100 +412,114 @@ export function CadastroDeServico() {
               {descricao.length} de {DESCRICAO_MAX}
             </span>
           </div>
+
+          {/* O criar tem um botão só, sem Cancelar (decisão 2): volta pelo
+              "← Serviços". */}
+          {!id ? (
+            <>
+              {aviso ? <Aviso>{aviso}</Aviso> : null}
+              <div className={estilos.acoes}>
+                <Botao type="button" carregando={salvando} onClick={salvar}>
+                  Cadastrar
+                </Botao>
+              </div>
+            </>
+          ) : null}
         </div>
 
-        {/* A coluna da direita: o cartão como o cliente vê na hora de
-            agendar, e a foto dele logo abaixo. */}
         <div className={estilos.lateral}>
-          <div className={estilos.previa}>
-            <p className={estilos.rotulo}>Como o cliente vê</p>
-            {/* Decorativa: o formulário ao lado já diz tudo pra quem usa
-                leitor de tela, e o checkbox do cartão não faz nada aqui
-                (`inert` tira do teclado e do clique). */}
-            <ul className={estilos.cartao} aria-hidden="true" inert>
-              <CartaoDeServico
-                servico={servicoDaPrevia}
-                marcado={false}
-                aoAlternar={() => {}}
-                proximos={[]}
-                agora={new Date()}
-              />
-            </ul>
+          {/* O cartão como o cliente vê na hora de agendar e, embaixo, a
+              foto dele. Sem região nomeada: o rótulo "Foto" é do campo. */}
+          <div className={estilos.secao}>
+            <h2 className={estilos.titulo}>Como o cliente vê</h2>
+            <div className={estilos.cartao}>
+              {/* Decorativa: o formulário ao lado já diz tudo pra quem usa
+                  leitor de tela, e o checkbox do cartão não faz nada aqui
+                  (`inert` tira do teclado e do clique). */}
+              <ul className={estilos.previa} aria-hidden="true" inert>
+                <CartaoDeServico
+                  servico={servicoDaPrevia}
+                  marcado={false}
+                  aoAlternar={() => {}}
+                  proximos={[]}
+                  agora={new Date()}
+                />
+              </ul>
+              {/* Só na edição: a foto precisa de um serviço que já exista,
+                  como a do membro. Salva sozinha, sem passar pela barra. */}
+              <div className={estilos.foto}>
+                {atual ? (
+                  <CampoDeImagem
+                    rotulo="Foto"
+                    rotuloOculto
+                    alt={`Foto de ${atual.nome}`}
+                    urlAtual={atual.fotoUrl}
+                    formato="quadrado"
+                    enviar={async (arquivo) => {
+                      const url = await api.barbeiro.enviarFotoDoServico(atual.id, arquivo);
+                      setFotoDaPrevia(url);
+                      return url;
+                    }}
+                    remover={async () => {
+                      await api.barbeiro.removerFotoDoServico(atual.id);
+                      setFotoDaPrevia(null);
+                    }}
+                  />
+                ) : (
+                  <p className={estilos.apoio}>Depois de salvar, dá pra pôr a foto.</p>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Só na edição: a foto precisa de um serviço que já exista, como
-              a do membro. Salva sozinha, sem passar pelo Salvar. */}
+          {/* Por último e longe do Salvar: mudar o estado do serviço não é
+              editar os dados. A frase diz o efeito antes do botão. */}
           {atual ? (
-            <CampoDeImagem
-              rotulo="Foto"
-              alt={`Foto de ${atual.nome}`}
-              urlAtual={atual.fotoUrl}
-              formato="quadrado"
-              enviar={async (arquivo) => {
-                const url = await api.barbeiro.enviarFotoDoServico(atual.id, arquivo);
-                setFotoDaPrevia(url);
-                return url;
-              }}
-              remover={async () => {
-                await api.barbeiro.removerFotoDoServico(atual.id);
-                setFotoDaPrevia(null);
-              }}
-            />
-          ) : (
-            <p className={estilos.apoio}>Depois de salvar, dá pra pôr a foto.</p>
-          )}
+            <section className={estilos.secao} aria-labelledby="servico-situacao">
+              <h2 id="servico-situacao" className={estilos.titulo}>
+                Situação
+              </h2>
+              <div className={`${estilos.cartao} ${estilos.recheio}`}>
+                <p className={estilos.efeito}>
+                  {atual.ativo
+                    ? "Sai da sua página e do agendamento. Dá pra reativar depois."
+                    : "Fora do agendamento. Reativar volta o serviço pra sua página."}
+                </p>
+                {avisoDaSituacao ? <Aviso>{avisoDaSituacao}</Aviso> : null}
+                <div className={estilos.acaoDoEstado} data-perigo={atual.ativo || undefined}>
+                  <Botao type="button" variante="contorno" carregando={mexendo} onClick={alternarAtivo}>
+                    {atual.ativo ? "Desativar" : "Reativar"}
+                  </Botao>
+                </div>
+              </div>
+            </section>
+          ) : null}
         </div>
       </div>
 
-      {aviso ? <Aviso>{aviso}</Aviso> : null}
+      {escolhendoCategoria ? (
+        <FolhaDeEscolha
+          titulo="Categoria"
+          nome="categoria"
+          opcoes={OPCOES_DE_CATEGORIA}
+          valor={categoria}
+          efeito={efeitoDaCategoria}
+          aoUsar={setCategoria}
+          aoFechar={() => setEscolhendoCategoria(false)}
+        />
+      ) : null}
 
-      {/* As duas saídas do formulário na mesma linha: sem o Cancelar, a
-          única forma de desistir era a barra lateral, que leva pra
-          outro lugar qualquer do painel em vez de voltar pra lista de
-          onde a pessoa veio.
-
-          `type="button"` porque esta tela ainda não tem <form>, e vai
-          ter: no dia em que tiver, um <button> sem type é submit, e
-          "Cancelar" salvaria o serviço. */}
-      <div className={estilos.rodape}>
-        <div className={estilos.acoes}>
-          <Botao type="button" carregando={salvando} onClick={salvar}>
-            Salvar
-          </Botao>
-          {/* Sem `carregando`: desistir tem que funcionar inclusive
-              enquanto o salvamento pendura. */}
-          <Botao
-            type="button"
-            variante="contorno"
-            onClick={() => router.push("/painel/servicos")}
-          >
-            Cancelar
-          </Botao>
-        </div>
-
-        {/* Fora do grupo acima de propósito: desativar não é uma saída do
-            formulário, é uma mudança de estado do serviço — fica na outra
-            ponta da linha, longe do Cancelar, e diz o que faz. */}
-        {atual ? (
-          // Zona de perigo enquanto ativo (17/10): desativar tira o
-          // serviço da página, e não pode ter o mesmo peso do Salvar.
-          <div className={estilos.acaoDoEstado} data-perigo={atual.ativo || undefined}>
-            <p className={estilos.apoio}>
-              {atual.ativo
-                ? "Sai da sua página e do agendamento. Dá pra reativar depois."
-                : "Fora do agendamento. Reativar volta o serviço pra sua página."}
-            </p>
-            <Botao
-              type="button"
-              variante="contorno"
-              carregando={salvando}
-              onClick={alternarAtivo}
-            >
-              {atual.ativo ? "Desativar" : "Reativar"}
-            </Botao>
-          </div>
-        ) : null}
-      </div>
+      {/* Na edição, um Salvar só, na barra do pé (decisão 2), filha
+          direta da página pra ficar presa no pé. */}
+      {atual ? (
+        <BarraDeMudancas
+          mudancas={mudancas}
+          aviso={aviso}
+          salvando={salvando}
+          aoSalvar={() => void salvar()}
+          aoDescartar={descartar}
+        />
+      ) : null}
     </div>
   );
 }

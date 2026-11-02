@@ -4,9 +4,9 @@
   align-content: start;
 }
 
-/* Formulário à esquerda, prévia e foto à direita: a tela usa a largura
-   (pedido do dono) e a coluna da direita deixa de ser um vão vazio. No
-   celular, uma coluna só, com a prévia depois dos campos. */
+/* Os dados à esquerda, a prévia e a situação à direita (redesenho dos
+   detalhes, PR 7), como o membro e o cliente. No celular, uma coluna
+   só, na ordem do código. */
 .corpo {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -20,64 +20,176 @@
   }
 }
 
-.formulario,
+.principal,
 .lateral {
   display: grid;
-  gap: var(--espaco-lg);
+  gap: var(--espaco-xl);
   align-content: start;
   min-width: 0;
 }
 
-.previa {
+/* Seções com título e o conteúdo num cartão: o mesmo título e o mesmo
+   cartão do detalhe do cliente e do membro. */
+.secao {
   display: grid;
-  gap: var(--espaco-xs);
+  gap: var(--espaco-sm);
+  min-width: 0;
 }
 
-/* Sem a margem padrão do <p>: o título da prévia alinha com o "Nome" da
-   coluna ao lado, e as frases de apoio ficam coladas no que explicam. */
-.previa p,
-.lateral > p,
-.acaoDoEstado p {
-  margin: 0;
+.titulo {
+  composes: rotuloDoGrupo from "./DetalheDoCliente.module.css";
 }
 
-/* O <ul> em volta do cartão (ele é um <li>): sem marcador nem recuo. */
 .cartao {
+  composes: cartao from "./DetalheDoCliente.module.css";
+}
+
+/* O cartão com campos ou texto dentro (o da linha não tem recheio). */
+.recheio {
+  gap: var(--espaco-md);
+  padding: var(--espaco-md) var(--espaco-lg);
+}
+
+@media (max-width: 640px) {
+  .recheio {
+    padding: var(--espaco-md);
+  }
+}
+
+/* Duração e preço lado a lado, também no celular: são curtos. Abaixo
+   de 380px o "Duração em minutos" quebrava em duas linhas e desalinhava
+   os campos: um embaixo do outro. */
+.dupla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espaco-md);
+  align-items: start;
+}
+
+@media (max-width: 380px) {
+  .dupla {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* A linha da categoria: o nome e o efeito à esquerda, a categoria e a
+   seta na ponta. A linha inteira abre a folha. */
+.linha {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  width: 100%;
+  min-height: 64px;
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md) var(--espaco-sm) var(--espaco-lg);
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.linha:hover {
+  background: var(--cor-paper-soft);
+}
+
+.linha:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: -3px;
+}
+
+.texto {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nome {
+  font-weight: 600;
+}
+
+/* `--cor-ink-soft` e não `--cor-muted`: é texto que se lê, e o muted
+   reprova contraste no tema claro. */
+.efeitoDaLinha {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+/* "Química e tratamentos" é longo: no celular quebra em duas linhas em
+   vez de espremer o nome e o efeito. */
+.valor {
+  flex: none;
+  max-width: 40%;
+  font-weight: 600;
+  text-align: end;
+  text-wrap: balance;
+}
+
+.seta {
+  flex: none;
+  color: var(--cor-muted);
+}
+
+@media (max-width: 560px) {
+  .linha {
+    gap: var(--espaco-sm);
+    padding-inline-start: var(--espaco-md);
+  }
+}
+
+/* Celular estreito: o efeito embaixo do nome já diz a categoria
+   ("aparece em “Cabelo”"), e o valor na ponta espremia os dois. */
+@media (max-width: 480px) {
+  .valor {
+    display: none;
+  }
+}
+
+/* O <ul> em volta do cartão da prévia (ele é um <li>): sem marcador nem
+   recuo. */
+.previa {
   margin: 0;
   padding: 0;
   list-style: none;
+  /* O cartão do serviço já mora dentro do cartão da seção: sem a borda
+     e a sombra dele, pra não virar caixa dentro de caixa. */
+  --cartao-borda: transparent;
+  --cartao-sombra: none;
+  --cartao-sombra-hover: none;
 }
 
-/* Salvar e Cancelar numa ponta, o Desativar na outra, separados por uma
-   linha fina: o fim do formulário fica marcado sem virar caixa. No
-   celular, um embaixo do outro. */
-.rodape {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--espaco-md);
-  padding-top: var(--espaco-lg);
+/* A foto embaixo da prévia, separada por um fio. */
+.foto {
+  padding: var(--espaco-md) var(--espaco-lg);
   border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
-/* Os botões ficam do tamanho do texto: soltos num grid eles herdariam o
-   `stretch` e o Desativar viraria o botão mais largo da tela — peso de
-   ação principal numa ação que não é. */
-.acoes,
-.acaoDoEstado {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-sm);
+.foto p,
+.efeito {
+  margin: 0;
 }
 
-/* Desativar como zona de perigo: separado do formulário por um fio e
-   num quadro de contorno avermelhado, com o botão na cor do erro. */
-.acaoDoEstado[data-perigo] {
-  margin-block-start: var(--espaco-lg);
-  padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-hairline) solid color-mix(in srgb, var(--cor-erro) 35%, var(--cor-line));
-  border-radius: var(--raio-md);
+.efeito {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+/* O Cadastrar: do tamanho do texto no computador, da largura da tela
+   no celular, como o do novo cliente. */
+.acoes {
+  display: flex;
+}
+
+/* Desativar com o peso de perigo (17/10): não pode ter o mesmo peso do
+   Salvar. */
+.acaoDoEstado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaco-sm);
 }
 
 .acaoDoEstado[data-perigo] button {
@@ -85,31 +197,10 @@
   color: var(--cor-erro);
 }
 
-.acaoDoEstado .apoio {
-  max-width: 34ch;
-  text-align: right;
-  text-wrap: pretty;
-}
-
-/* Onde a coluna já é estreita, o alvo largo vale mais que a proporção. */
 @media (max-width: 560px) {
-  .acoes,
-  .acaoDoEstado {
-    width: 100%;
-  }
-
   .acoes button,
   .acaoDoEstado button {
     flex: 1;
-  }
-
-  .acaoDoEstado {
-    flex-wrap: wrap;
-  }
-
-  .acaoDoEstado .apoio {
-    max-width: none;
-    text-align: left;
   }
 }
 

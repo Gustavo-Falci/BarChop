@@ -49,7 +49,7 @@ describe("descrição no cadastro do serviço", () => {
     await userEvent.type(screen.getByLabelText(/descrição/i), "Cobre falhas da barba");
 
     expect(screen.getByText("21 de 300")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     await waitFor(() =>
       expect(criar).toHaveBeenCalledWith(

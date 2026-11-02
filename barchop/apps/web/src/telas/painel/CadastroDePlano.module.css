@@ -1,5 +1,5 @@
-/* O mesmo esqueleto do cadastro de serviço: formulário à esquerda, a
-   coluna do efeito à direita, o rodapé com Salvar e o Desativar. */
+/* O esqueleto do cadastro de serviço: formulário à esquerda, a coluna
+   do efeito à direita, o rodapé com Salvar e o Desativar. */
 .pagina {
   composes: pagina from "./CadastroDeServico.module.css";
 }
@@ -8,28 +8,80 @@
   composes: corpo from "./CadastroDeServico.module.css";
 }
 
-.formulario {
-  composes: formulario from "./CadastroDeServico.module.css";
-}
-
+/* O formulário e o rodapé eram compostos do cadastro de serviço, que
+   saiu deles no redesenho dos detalhes (PR 7). Ficam aqui até o plano
+   passar pelo mesmo redesenho (PR 8). */
+.formulario,
 .lateral {
-  composes: lateral from "./CadastroDeServico.module.css";
+  display: grid;
+  gap: var(--espaco-lg);
+  align-content: start;
+  min-width: 0;
 }
 
+/* Salvar e Cancelar numa ponta, o Desativar na outra, separados por uma
+   linha fina. No celular, um embaixo do outro. */
 .rodape {
-  composes: rodape from "./CadastroDeServico.module.css";
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  padding-top: var(--espaco-lg);
+  border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
-.acoes {
-  composes: acoes from "./CadastroDeServico.module.css";
-}
-
+/* Os botões ficam do tamanho do texto. */
+.acoes,
 .acaoDoEstado {
-  composes: acaoDoEstado from "./CadastroDeServico.module.css";
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+}
+
+/* Desativar como zona de perigo: separado do formulário por um fio e
+   num quadro de contorno avermelhado, com o botão na cor do erro. */
+.acaoDoEstado[data-perigo] {
+  margin-block-start: var(--espaco-lg);
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-hairline) solid color-mix(in srgb, var(--cor-erro) 35%, var(--cor-line));
+  border-radius: var(--raio-md);
+}
+
+.acaoDoEstado[data-perigo] button {
+  border-color: color-mix(in srgb, var(--cor-erro) 45%, var(--cor-line));
+  color: var(--cor-erro);
+}
+
+.acaoDoEstado .apoio {
+  max-width: 34ch;
+  text-align: right;
+  text-wrap: pretty;
 }
 
 .acaoDoEstado p {
   margin: 0;
+}
+
+@media (max-width: 560px) {
+  .acoes,
+  .acaoDoEstado {
+    width: 100%;
+  }
+
+  .acoes button,
+  .acaoDoEstado button {
+    flex: 1;
+  }
+
+  .acaoDoEstado {
+    flex-wrap: wrap;
+  }
+
+  .acaoDoEstado .apoio {
+    max-width: none;
+    text-align: left;
+  }
 }
 
 .campoLongo {

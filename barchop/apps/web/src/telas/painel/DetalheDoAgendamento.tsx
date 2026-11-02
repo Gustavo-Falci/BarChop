@@ -305,32 +305,48 @@ export function DetalheDoAgendamento() {
               </button>
             </div>
           ) : (
-            acoes.map((acao) => (
-              <button
-                key={acao.pagar ? "pagar" : acao.para}
-                type="button"
-                className={
-                  acao.peso === "principal"
-                    ? estilos.principal
-                    : acao.peso === "perigo"
-                      ? estilos.discretaPerigo
-                      : estilos.secundaria
-                }
-                aria-busy={(!acao.pagar && salvando === acao.para) || undefined}
-                disabled={salvando !== null}
-                onClick={() =>
-                  acao.pagar
-                    ? setPagando(true)
-                    : acao.para === "cancelado"
-                      ? setConfirmandoCancelar(true)
-                      : atual.status === "concluido" && pago
-                        ? setConfirmandoReabrir(true)
-                        : void aplicar({ status: acao.para }, acao.para)
-                }
-              >
-                {!acao.pagar && salvando === acao.para ? "Salvando…" : acao.rotulo}
-              </button>
-            ))
+            <>
+              {/* Remarcar cria outro agendamento (com outro id): deu certo,
+                  a tela vai pra ele. Só o que ainda não passou muda de
+                  horário — a API recusa o resto. Fica com as outras
+                  ações, numa lista só (redesenho dos detalhes, PR 1). */}
+              {lembravel && !ehPassado(atual.data) ? (
+                <button
+                  type="button"
+                  className={estilos.secundaria}
+                  disabled={salvando !== null}
+                  onClick={() => setMudandoHorario(true)}
+                >
+                  Mudar horário
+                </button>
+              ) : null}
+              {acoes.map((acao) => (
+                <button
+                  key={acao.pagar ? "pagar" : acao.para}
+                  type="button"
+                  className={
+                    acao.peso === "principal"
+                      ? estilos.principal
+                      : acao.peso === "perigo"
+                        ? estilos.discretaPerigo
+                        : estilos.secundaria
+                  }
+                  aria-busy={(!acao.pagar && salvando === acao.para) || undefined}
+                  disabled={salvando !== null}
+                  onClick={() =>
+                    acao.pagar
+                      ? setPagando(true)
+                      : acao.para === "cancelado"
+                        ? setConfirmandoCancelar(true)
+                        : atual.status === "concluido" && pago
+                          ? setConfirmandoReabrir(true)
+                          : void aplicar({ status: acao.para }, acao.para)
+                  }
+                >
+                  {!acao.pagar && salvando === acao.para ? "Salvando…" : acao.rotulo}
+                </button>
+              ))}
+            </>
           )}
         </div>
         {pagando ? (
@@ -365,14 +381,6 @@ export function DetalheDoAgendamento() {
               </Link>
             ) : null}
           </p>
-        ) : null}
-        {/* Remarcar cria outro agendamento (com outro id): deu certo, a
-            tela vai pra ele. Só o que ainda não passou muda de horário —
-            a API recusa o resto. */}
-        {lembravel && !ehPassado(atual.data) ? (
-          <Botao variante="contorno" onClick={() => setMudandoHorario(true)}>
-            Mudar horário
-          </Botao>
         ) : null}
         {mudandoHorario ? (
           <JanelaDeRemarcar

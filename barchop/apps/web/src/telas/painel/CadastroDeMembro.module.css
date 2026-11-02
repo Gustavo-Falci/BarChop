@@ -31,6 +31,7 @@
 
 .formulario {
   display: grid;
+  gap: var(--espaco-xl);
   min-width: 0;
 }
 
@@ -50,35 +51,77 @@
   color: var(--cor-ink-soft);
 }
 
-/* Controle, rótulo e, embaixo do rótulo, a descrição. O controle ocupa
-   a primeira coluna nas duas linhas pra a descrição alinhar com o
-   texto, não com a bolinha. `--cor-ink-soft` na descrição, e não
-   `--cor-muted`: é texto que se lê, e o muted reprova contraste no
-   tema claro. */
-.opcao {
+/* Seções com título e o conteúdo num cartão (redesenho dos detalhes,
+   PR 5): o mesmo título e o mesmo cartão do detalhe do cliente. */
+.secao {
   display: grid;
-  grid-template-columns: auto 1fr;
-  column-gap: var(--espaco-sm);
+  gap: var(--espaco-sm);
+  min-width: 0;
+}
+
+.titulo {
+  composes: rotuloDoGrupo from "./DetalheDoCliente.module.css";
+}
+
+.cartao {
+  composes: cartao from "./DetalheDoCliente.module.css";
+}
+
+/* O cartão com campos ou texto dentro (o das linhas não tem recheio). */
+.recheio {
+  gap: var(--espaco-md);
+  padding: var(--espaco-md) var(--espaco-lg);
+}
+
+@media (max-width: 640px) {
+  .recheio {
+    padding: var(--espaco-md);
+  }
+}
+
+/* Uma linha de interruptor: o nome e o efeito à esquerda, o
+   interruptor na ponta, separadas por um fio. */
+.linha {
+  display: flex;
   align-items: center;
-  align-content: start;
+  gap: var(--espaco-md);
+  min-height: 64px;
+  padding: var(--espaco-sm) var(--espaco-md) var(--espaco-sm) var(--espaco-lg);
 }
 
-.opcao input {
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  accent-color: var(--cor-ink);
+.linha + .linha {
+  border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
-.opcao label {
+.texto {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nome {
   font-weight: 600;
-  cursor: pointer;
 }
 
+/* `--cor-ink-soft`, e não `--cor-muted`: é texto que se lê, e o muted
+   reprova contraste no tema claro. */
 .descricao {
-  grid-column: 2;
   color: var(--cor-ink-soft);
   font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+/* O Enviar convite: do tamanho do texto no computador, da largura da
+   tela no celular, como o Cadastrar do novo cliente. */
+.acoes {
+  display: flex;
+}
+
+@media (max-width: 560px) {
+  .acoes button {
+    flex: 1;
+  }
 }
 
 .efeito {

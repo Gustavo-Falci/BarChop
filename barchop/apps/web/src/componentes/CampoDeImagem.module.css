@@ -63,6 +63,12 @@
   white-space: nowrap;
 }
 
+/* O rótulo só pro leitor de tela (`rotuloOculto`): escondido como o
+   <input>. */
+.oculto {
+  composes: arquivo;
+}
+
 /* O <label> com cara de botão: um pouco menor que o Salvar da tela,
    que é a ação principal. */
 .escolher {

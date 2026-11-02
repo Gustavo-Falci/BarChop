@@ -11,7 +11,8 @@ import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
 import { Chip } from "../../componentes/Chip";
 import { CamposLadoALado } from "../../componentes/Colunas";
-import { Grupo } from "../../componentes/Grupo";
+import { BarraDeMudancas } from "../../componentes/BarraDeMudancas";
+import { Interruptor } from "../../componentes/Interruptor";
 import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { situacaoDoMembro } from "../../painel/listas";
@@ -90,6 +91,9 @@ export function CadastroDeMembro() {
   // `assinaturas_ativas`: a frase do efeito, e o segundo botão confirma.
   const [cancelarAssinaturas, setCancelarAssinaturas] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
+  // O Reenviar e o Desativar giram sozinhos: com o Salvar na barra, os
+  // dois ficam na tela juntos, e um `salvando` só girava os três.
+  const [mexendo, setMexendo] = useState(false);
 
   // Sincronizado durante a renderização, como em CadastroDeServico (o
   // comentário longo de lá explica por que não `useEffect` nem booleano).
@@ -110,16 +114,25 @@ export function CadastroDeMembro() {
   if (id && !equipe.dados) return <Carregando />;
   if (id && !atual) return <Aviso>Membro não encontrado.</Aviso>;
 
-  // Na edição, Salvar e Descartar só aparecem quando os dados diferem do
-  // que está gravado (o combinado das telas sem caixas). No convite, o
-  // Enviar fica sempre à vista: não há o que comparar.
-  const mudou =
-    !atual ||
-    nome !== atual.nome ||
-    telefone !== (atual.telefone ?? "") ||
-    papel !== atual.papel ||
-    atende !== atual.atende ||
-    podeVender !== atual.podeVenderPlanos;
+  // Na edição, o que difere do gravado, pra barra de mudanças
+  // (redesenho dos detalhes, PR 5): os campos de texto pelo nome, as
+  // escolhas com o antes e o depois. No convite não há barra: não há o
+  // que comparar, e o Enviar fica sempre à vista.
+  const ligado = (valor: boolean) => (valor ? "ligado" : "desligado");
+  const mudancas: string[] = [];
+  if (atual) {
+    if (nome !== atual.nome) mudancas.push("Nome");
+    if (telefone !== (atual.telefone ?? "")) mudancas.push("Telefone");
+    if (papel !== atual.papel) {
+      mudancas.push(`Papel: ${ROTULO_DO_PAPEL[atual.papel]} → ${ROTULO_DO_PAPEL[papel]}`);
+    }
+    if (atende !== atual.atende) {
+      mudancas.push(`Atende clientes: ${ligado(atual.atende)} → ${ligado(atende)}`);
+    }
+    if (podeVender !== atual.podeVenderPlanos) {
+      mudancas.push(`Pode vender planos: ${ligado(atual.podeVenderPlanos)} → ${ligado(podeVender)}`);
+    }
+  }
 
   function descartar() {
     if (!atual) return;
@@ -224,7 +237,7 @@ export function CadastroDeMembro() {
     setAvisoDaSituacao(undefined);
     setConfirmacao(undefined);
     setCancelarAssinaturas(undefined);
-    setSalvando(true);
+    setMexendo(true);
     try {
       await api.barbeiro.atualizarMembro(
         id,
@@ -253,7 +266,7 @@ export function CadastroDeMembro() {
           : falha.mensagem || "Não foi possível salvar agora."
       );
     } finally {
-      setSalvando(false);
+      setMexendo(false);
     }
   }
 
@@ -261,20 +274,22 @@ export function CadastroDeMembro() {
     if (!id || !atual) return;
     setAvisoDaSituacao(undefined);
     setConfirmacao(undefined);
-    setSalvando(true);
+    setMexendo(true);
     try {
       await api.barbeiro.reenviarConvite(id);
       setConfirmacao(`Convite reenviado para ${atual.email}. O código anterior deixou de valer.`);
     } catch (causa) {
       setAvisoDaSituacao((causa as ErroDaApi).mensagem || "Não foi possível reenviar agora.");
     } finally {
-      setSalvando(false);
+      setMexendo(false);
     }
   }
 
   const selo = atual ? SELO_DA_SITUACAO[situacaoDoMembro(atual)] : undefined;
 
   // Os dados do membro: o formulário do convite e a aba Dados da edição.
+  // Seções com título e o conteúdo num cartão (redesenho dos detalhes,
+  // PR 5), como o detalhe do cliente.
   const formulario = (
     <form
       className={estilos.formulario}
@@ -284,136 +299,143 @@ export function CadastroDeMembro() {
         void salvar();
       }}
     >
-      <Grupo
-        titulo="Dados"
-        acao={
-          mudou ? (
-            <>
-              <Botao type="submit" carregando={salvando}>
-                {id ? "Salvar" : "Enviar convite"}
-              </Botao>
-              {/* Sem `carregando`: desistir funciona mesmo com o envio
-                  pendurado. `type="button"` porque está dentro do <form>. */}
-              {id ? (
-                <Botao type="button" variante="contorno" onClick={descartar}>
-                  Descartar
-                </Botao>
-              ) : (
-                <Botao
-                  type="button"
-                  variante="contorno"
-                  onClick={() => router.push("/painel/equipe")}
-                >
-                  Cancelar
-                </Botao>
-              )}
-            </>
-          ) : undefined
-        }
-      >
-        {/* Nome, e-mail e telefone numa linha: as telas usam a largura (pedido do dono). */}
-        <CamposLadoALado>
-          <Campo
-            rotulo="Nome"
-            name="nome"
-            autoComplete="off"
-            maxLength={NOME_MAX}
-            valor={nome}
-            onChange={(proximo) => {
-              setNome(proximo);
-              setErro((anterior) => ({ ...anterior, nome: undefined }));
-            }}
-            erro={erro.nome}
-          />
-
-          {atual ? null : (
+      <section className={estilos.secao} aria-labelledby={`${idDoGrupo}-dados`}>
+        <h2 id={`${idDoGrupo}-dados`} className={estilos.titulo}>
+          Dados
+        </h2>
+        <div className={`${estilos.cartao} ${estilos.recheio}`}>
+          {/* Nome, e-mail e telefone numa linha: as telas usam a largura (pedido do dono). */}
+          <CamposLadoALado>
             <Campo
-              rotulo="E-mail"
-              type="email"
-              name="email"
+              rotulo="Nome"
+              name="nome"
               autoComplete="off"
-              maxLength={EMAIL_MAX}
-              valor={email}
+              maxLength={NOME_MAX}
+              valor={nome}
               onChange={(proximo) => {
-                setEmail(proximo);
-                setErro((anterior) => ({ ...anterior, email: undefined }));
+                setNome(proximo);
+                setErro((anterior) => ({ ...anterior, nome: undefined }));
               }}
-              erro={erro.email}
+              erro={erro.nome}
             />
-          )}
 
-          <Campo
-            rotulo="Telefone (opcional)"
-            formato="telefone"
-            name="telefone"
-            valor={telefone}
-            onChange={(proximo) => {
-              setTelefone(proximo);
-              setErro((anterior) => ({ ...anterior, telefone: undefined }));
-            }}
-            erro={erro.telefone}
+            {atual ? null : (
+              <Campo
+                rotulo="E-mail"
+                type="email"
+                name="email"
+                autoComplete="off"
+                maxLength={EMAIL_MAX}
+                valor={email}
+                onChange={(proximo) => {
+                  setEmail(proximo);
+                  setErro((anterior) => ({ ...anterior, email: undefined }));
+                }}
+                erro={erro.email}
+              />
+            )}
+
+            <Campo
+              rotulo="Telefone (opcional)"
+              formato="telefone"
+              name="telefone"
+              valor={telefone}
+              onChange={(proximo) => {
+                setTelefone(proximo);
+                setErro((anterior) => ({ ...anterior, telefone: undefined }));
+              }}
+              erro={erro.telefone}
+            />
+          </CamposLadoALado>
+
+          {/* Na edição o e-mail é só leitura, embaixo dos campos: é a
+              chave do login, e a API não deixa trocá-lo por aqui. Sem
+              <label>, porque não é campo. */}
+          {atual ? (
+            <p className={estilos.email}>
+              <span className={estilos.rotulo}>E-mail de acesso</span>
+              <span>{atual.email}</span>
+            </p>
+          ) : null}
+
+          {/* O papel num segmentado, com a descrição só da escolhida
+              embaixo (análise de 17/10): as três descrições soltas,
+              com o rádio nativo, eram texto demais pra uma escolha. */}
+          <SeletorEmPilulas
+            nome={`${idDoGrupo}-papel`}
+            legenda="Papel"
+            preencher
+            opcoes={PAPEIS.map(({ valor }) => ({ valor, rotulo: ROTULO_DO_PAPEL[valor] }))}
+            valor={papel}
+            aoTrocar={escolherPapel}
+            efeito={PAPEIS.find((opcao) => opcao.valor === papel)?.descricao}
           />
-        </CamposLadoALado>
-
-        {/* Na edição o e-mail é só leitura, embaixo dos campos: é a
-            chave do login, e a API não deixa trocá-lo por aqui. Sem
-            <label>, porque não é campo. */}
-        {atual ? (
-          <p className={estilos.email}>
-            <span className={estilos.rotulo}>E-mail de acesso</span>
-            <span>{atual.email}</span>
-          </p>
-        ) : null}
-
-        {/* O papel num segmentado, com a descrição só da escolhida
-            embaixo (análise de 17/10): as três descrições soltas,
-            com o rádio nativo, eram texto demais pra uma escolha. */}
-        <SeletorEmPilulas
-          nome={`${idDoGrupo}-papel`}
-          legenda="Papel"
-          opcoes={PAPEIS.map(({ valor }) => ({ valor, rotulo: ROTULO_DO_PAPEL[valor] }))}
-          valor={papel}
-          aoTrocar={escolherPapel}
-          efeito={PAPEIS.find((opcao) => opcao.valor === papel)?.descricao}
-        />
-
-        {/* Logo abaixo do papel, que decide o padrão dele. */}
-        <div className={estilos.opcao}>
-          <input
-            type="checkbox"
-            id={`${idDoGrupo}-atende`}
-            checked={atende}
-            onChange={(evento) => {
-              setAtende(evento.target.checked);
-              setAtendeTocado(true);
-            }}
-            aria-describedby={`${idDoGrupo}-atende-descricao`}
-          />
-          <label htmlFor={`${idDoGrupo}-atende`}>Atende clientes</label>
-          <span id={`${idDoGrupo}-atende-descricao`} className={estilos.descricao}>
-            Aparece na agenda e pode receber agendamentos.
-          </span>
         </div>
+      </section>
 
-        {/* A liberação dos planos, só na edição do profissional. */}
-        {atual && papel === "profissional" ? (
-          <div className={estilos.opcao}>
-            <input
-              type="checkbox"
-              id={`${idDoGrupo}-vende`}
-              checked={podeVender}
-              onChange={(evento) => setPodeVender(evento.target.checked)}
-              aria-describedby={`${idDoGrupo}-vende-descricao`}
-            />
-            <label htmlFor={`${idDoGrupo}-vende`}>Pode vender planos</label>
-            <span id={`${idDoGrupo}-vende-descricao`} className={estilos.descricao}>
-              Cria planos próprios: valem só com quem vende, e a mensalidade fica com quem vende.
+      {/* O que liga e desliga no dia a dia, no Interruptor (decisão 1 do
+          canvas), logo abaixo do papel, que decide o padrão do "atende". */}
+      <section className={estilos.secao} aria-labelledby={`${idDoGrupo}-dia`}>
+        <h2 id={`${idDoGrupo}-dia`} className={estilos.titulo}>
+          No dia a dia
+        </h2>
+        <div className={estilos.cartao}>
+          <div className={estilos.linha}>
+            <span className={estilos.texto}>
+              <span className={estilos.nome} aria-hidden="true">
+                Atende clientes
+              </span>
+              <span id={`${idDoGrupo}-atende-descricao`} className={estilos.descricao}>
+                Aparece na agenda e pode receber agendamentos.
+              </span>
             </span>
+            <Interruptor
+              rotulo="Atende clientes"
+              rotuloOculto
+              ligado={atende}
+              aoTrocar={(proximo) => {
+                setAtende(proximo);
+                setAtendeTocado(true);
+              }}
+              descritoPor={`${idDoGrupo}-atende-descricao`}
+            />
           </div>
-        ) : null}
 
-        {aviso ? <Aviso>{aviso}</Aviso> : null}
-      </Grupo>
+          {/* A liberação dos planos, só na edição do profissional. */}
+          {atual && papel === "profissional" ? (
+            <div className={estilos.linha}>
+              <span className={estilos.texto}>
+                <span className={estilos.nome} aria-hidden="true">
+                  Pode vender planos
+                </span>
+                <span id={`${idDoGrupo}-vende-descricao`} className={estilos.descricao}>
+                  Cria planos próprios: valem só com quem vende, e a mensalidade fica com quem vende.
+                </span>
+              </span>
+              <Interruptor
+                rotulo="Pode vender planos"
+                rotuloOculto
+                ligado={podeVender}
+                aoTrocar={setPodeVender}
+                descritoPor={`${idDoGrupo}-vende-descricao`}
+              />
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      {/* O convite: um botão só no fim (decisão 2 do canvas). Desistir é o
+          "← Equipe" do topo. Na edição, quem salva é a barra. */}
+      {atual ? null : (
+        <>
+          {aviso ? <Aviso>{aviso}</Aviso> : null}
+          <div className={estilos.acoes}>
+            <Botao type="submit" carregando={salvando}>
+              Enviar convite
+            </Botao>
+          </div>
+        </>
+      )}
     </form>
   );
 
@@ -451,66 +473,92 @@ export function CadastroDeMembro() {
           aoTrocar={setAba}
           paineis={{
             dados: (
-            <div className={estilos.corpo}>
-              <div className={estilos.principal}>{formulario}</div>
-              <div className={estilos.lateral}>
-                {/* A foto que a página pública mostra na equipe. Salva sozinha,
-                    como a jornada e os serviços. */}
-                <CampoDeImagem
-                  rotulo="Foto"
-                  alt={`Foto de ${atual.nome}`}
-                  urlAtual={atual.fotoUrl}
-                  formato="retrato"
-                  enviar={(arquivo) => api.barbeiro.enviarFotoDoMembro(atual.id, arquivo)}
-                  remover={() => api.barbeiro.removerFotoDoMembro(atual.id)}
-                />
-                {/* Por último e longe do Salvar: mudar o estado do membro não é
-                    editar os dados. A frase diz o efeito antes do botão. */}
-                <Grupo titulo="Situação">
-                  {atual.convitePendente && atual.ativo ? (
-                    <p className={estilos.efeito}>
-                      Ainda não aceitou o convite. Reenviar manda um código novo, e o anterior
-                      deixa de valer.
-                    </p>
-                  ) : null}
-                  <p className={estilos.efeito}>
-                    {atual.ativo
-                      ? "Desativar: para de receber agendamentos e perde o acesso ao painel. Dá pra reativar depois."
-                      : "Não recebe agendamentos nem entra no painel. Reativar devolve os dois."}
-                  </p>
-                  {avisoDaSituacao ? <Aviso>{avisoDaSituacao}</Aviso> : null}
-                  {cancelarAssinaturas ? (
-                    <Aviso tom="atencao">
-                      <p className={estilos.efeito}>{cancelarAssinaturas}</p>
+              <div className={estilos.corpo}>
+                <div className={estilos.principal}>{formulario}</div>
+                <div className={estilos.lateral}>
+                  {/* A foto que a página pública mostra na equipe. Salva
+                      sozinha, como a jornada e os serviços. Sem região
+                      nomeada: o rótulo "Foto" é do campo, e o título só
+                      o mostra. */}
+                  <div className={estilos.secao}>
+                    <h2 className={estilos.titulo} aria-hidden="true">
+                      Foto
+                    </h2>
+                    <div className={`${estilos.cartao} ${estilos.recheio}`}>
+                      <CampoDeImagem
+                        rotulo="Foto"
+                        rotuloOculto
+                        alt={`Foto de ${atual.nome}`}
+                        urlAtual={atual.fotoUrl}
+                        formato="retrato"
+                        enviar={(arquivo) => api.barbeiro.enviarFotoDoMembro(atual.id, arquivo)}
+                        remover={() => api.barbeiro.removerFotoDoMembro(atual.id)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Por último e longe do Salvar: mudar o estado do
+                      membro não é editar os dados. A frase diz o efeito
+                      antes do botão. */}
+                  <section className={estilos.secao} aria-labelledby={`${idDoGrupo}-situacao`}>
+                    <h2 id={`${idDoGrupo}-situacao`} className={estilos.titulo}>
+                      Situação
+                    </h2>
+                    <div className={`${estilos.cartao} ${estilos.recheio}`}>
+                      {atual.convitePendente && atual.ativo ? (
+                        <p className={estilos.efeito}>
+                          Ainda não aceitou o convite. Reenviar manda um código novo, e o anterior
+                          deixa de valer.
+                        </p>
+                      ) : null}
+                      <p className={estilos.efeito}>
+                        {atual.ativo
+                          ? "Desativar: para de receber agendamentos e perde o acesso ao painel. Dá pra reativar depois."
+                          : "Não recebe agendamentos nem entra no painel. Reativar devolve os dois."}
+                      </p>
+                      {avisoDaSituacao ? <Aviso>{avisoDaSituacao}</Aviso> : null}
+                      {cancelarAssinaturas ? (
+                        <Aviso tom="atencao">
+                          <p className={estilos.efeito}>{cancelarAssinaturas}</p>
+                          <div className={estilos.acaoDoEstado}>
+                            <Botao
+                              type="button"
+                              variante="contorno"
+                              carregando={mexendo}
+                              onClick={() => alternarAtivo(true)}
+                            >
+                              Desativar e cancelar as assinaturas
+                            </Botao>
+                            <Botao
+                              type="button"
+                              variante="contorno"
+                              onClick={() => setCancelarAssinaturas(undefined)}
+                            >
+                              Manter ativo
+                            </Botao>
+                          </div>
+                        </Aviso>
+                      ) : null}
+                      {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
                       <div className={estilos.acaoDoEstado}>
+                        {atual.convitePendente && atual.ativo ? (
+                          <Botao type="button" variante="contorno" carregando={mexendo} onClick={reenviar}>
+                            Reenviar convite
+                          </Botao>
+                        ) : null}
                         <Botao
                           type="button"
                           variante="contorno"
-                          carregando={salvando}
-                          onClick={() => alternarAtivo(true)}
+                          carregando={mexendo}
+                          onClick={() => alternarAtivo()}
                         >
-                          Desativar e cancelar as assinaturas
-                        </Botao>
-                        <Botao type="button" variante="contorno" onClick={() => setCancelarAssinaturas(undefined)}>
-                          Manter ativo
+                          {atual.ativo ? "Desativar" : "Reativar"}
                         </Botao>
                       </div>
-                    </Aviso>
-                  ) : null}
-                  {confirmacao ? <Aviso tom="sucesso">{confirmacao}</Aviso> : null}
-                  <div className={estilos.acaoDoEstado}>
-                    {atual.convitePendente && atual.ativo ? (
-                      <Botao type="button" variante="contorno" carregando={salvando} onClick={reenviar}>
-                        Reenviar convite
-                      </Botao>
-                    ) : null}
-                    <Botao type="button" variante="contorno" carregando={salvando} onClick={() => alternarAtivo()}>
-                      {atual.ativo ? "Desativar" : "Reativar"}
-                    </Botao>
-                  </div>
-                </Grupo>
+                    </div>
+                  </section>
+                </div>
               </div>
-            </div>
             ),
             jornada: <JornadaDoMembro membroId={atual.id} />,
             servicos: <ServicosDoMembro membroId={atual.id} />,
@@ -519,6 +567,20 @@ export function CadastroDeMembro() {
       ) : (
         formulario
       )}
+
+      {/* Um Salvar só pros dados, na barra do pé (decisão 2 do canvas),
+          filha direta da página pra ficar presa no pé. Só na aba Dados:
+          a jornada e os serviços salvam por conta própria. O que mudou e
+          não foi salvo continua guardado ao trocar de aba. */}
+      {atual && aba === "dados" ? (
+        <BarraDeMudancas
+          mudancas={mudancas}
+          aviso={aviso}
+          salvando={salvando}
+          aoSalvar={() => void salvar()}
+          aoDescartar={descartar}
+        />
+      ) : null}
     </div>
   );
 }

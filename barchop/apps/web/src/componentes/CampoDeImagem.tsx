@@ -14,6 +14,7 @@ import estilos from "./CampoDeImagem.module.css";
 // passar pelo "Salvar" do formulário em volta.
 export function CampoDeImagem({
   rotulo,
+  rotuloOculto = false,
   alt,
   urlAtual,
   enviar,
@@ -22,6 +23,10 @@ export function CampoDeImagem({
   apoio = "JPG, PNG, WebP. A gente ajusta o tamanho.",
 }: {
   rotulo: string;
+  // O rótulo só pro leitor de tela, quando a tela já mostra um título
+  // com o mesmo nome em cima do campo (a foto do membro, redesenho dos
+  // detalhes, PR 5).
+  rotuloOculto?: boolean;
   // O texto alternativo da prévia: "Capa da barbearia", "Foto de Ana".
   alt: string;
   urlAtual: string | null;
@@ -80,7 +85,7 @@ export function CampoDeImagem({
 
   return (
     <div className={estilos.campo}>
-      <label className={estilos.rotulo} htmlFor={id}>
+      <label className={rotuloOculto ? estilos.oculto : estilos.rotulo} htmlFor={id}>
         {rotulo}
       </label>
       <div className={estilos.linha}>

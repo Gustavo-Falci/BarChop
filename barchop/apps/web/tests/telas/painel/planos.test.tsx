@@ -343,7 +343,7 @@ describe("o membro e os planos", () => {
     const atualizar = vi.spyOn(falso.barbeiro, "atualizarMembro");
     montarPainel(<CadastroDeMembro />, falso);
 
-    const vende = await screen.findByRole("checkbox", { name: /pode vender planos/i });
+    const vende = await screen.findByRole("switch", { name: /pode vender planos/i });
     expect(vende).toBeChecked();
     await userEvent.click(vende);
     await userEvent.click(screen.getByRole("button", { name: /^salvar$/i }));

@@ -9,6 +9,22 @@
   gap: var(--espaco-lg);
 }
 
+/* Os campos num cartão, como as seções dos detalhes (redesenho dos
+   detalhes, PR 4). */
+.cartao {
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: var(--sombra-1);
+}
+
+@media (max-width: 640px) {
+  .cartao {
+    padding: var(--espaco-md);
+  }
+}
+
 /* O botão fica do tamanho do texto: solto no grid da página ele herdaria
    o `stretch` e ocuparia os 560px inteiros — largura que nenhuma outra
    ação do painel tem. */

@@ -26,7 +26,7 @@ import {
 import { formatarDataLonga, hojeIso } from "../../formato/datas";
 import { TOM_DO_STATUS, rotuloDoStatus } from "../../formato/status";
 import { IconeSeta } from "../../painel/icones";
-import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
+import { FolhaDeEscolha } from "../../componentes/FolhaDeEscolha";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { linkDoZap } from "../../painel/whatsapp";
@@ -56,7 +56,9 @@ function resumoDoHistorico(agendamentos: AgendamentoSerializado[], hoje: string)
 
 // De quem o cliente "é" no caixa (Onda 2, marco 2): quem o atendeu
 // primeiro, e só o dono troca. Pesa na divisão do dinheiro quando outro
-// profissional o atende.
+// profissional o atende. Uma linha dos Dados que, pro dono, abre a
+// escolha numa folha (redesenho dos detalhes, PR 4; era um "Trocar"
+// solto, sem dizer o quê).
 function ProfissionalDoCliente({
   clienteId,
   profissional,
@@ -72,10 +74,9 @@ function ProfissionalDoCliente({
   // Quem pode ser o profissional do cliente: membro ativo que atende. Só
   // o dono precisa da lista.
   const equipe = useRequisicao(() => (dono ? api.barbeiro.equipe() : Promise.resolve([])), [dono]);
-  const [trocando, setTrocando] = useState(false);
-  const [escolhido, setEscolhido] = useState(profissional?.id ?? "");
-  const [salvando, setSalvando] = useState(false);
+  const [escolhendo, setEscolhendo] = useState(false);
   const [aviso, setAviso] = useState<string | undefined>();
+  const atual = profissional?.id ?? "";
 
   const opcoes = [
     ...(equipe.dados ?? [])
@@ -84,60 +85,64 @@ function ProfissionalDoCliente({
     { valor: "", rotulo: "Ninguém" },
   ];
 
-  async function salvar() {
+  // A folha já fechou quando isto roda: o erro aparece na linha.
+  async function usar(escolhido: string) {
+    if (escolhido === atual) return;
     setAviso(undefined);
-    setSalvando(true);
     try {
       await api.barbeiro.atualizarCliente(clienteId, { profissionalId: escolhido || null });
-      setTrocando(false);
       aoTrocar();
     } catch (causa) {
       setAviso((causa as ErroDaApi).mensagem || "Não foi possível trocar agora.");
     }
-    setSalvando(false);
   }
 
+  const texto = (
+    <span className={estilos.textoDaLinha}>
+      <span className={estilos.tituloDaLinha}>De quem é este cliente</span>
+      <span className={estilos.apoioDaLinha}>
+        {profissional
+          ? `Cliente de ${profissional.nome}`
+          : "Ainda não é cliente de ninguém: passa a ser de quem atender primeiro."}
+      </span>
+    </span>
+  );
+
   return (
-    <div className={estilos.profissional}>
-      <p className={estilos.deQuem}>
-        {profissional ? (
-          `Cliente de ${profissional.nome}`
-        ) : (
-          <>Ainda não é cliente de ninguém: passa a ser de quem atender primeiro.</>
-        )}
-      </p>
-      {dono && !trocando ? (
-        <Botao
-          variante="fantasma"
-          onClick={() => {
-            setEscolhido(profissional?.id ?? "");
-            setTrocando(true);
-          }}
+    <>
+      {/* Pro dono, sempre botão (trocar de elemento quando a equipe chega
+          remontaria a linha); desligado até a equipe chegar, senão a
+          folha abriria com "Ninguém" sozinho. */}
+      {dono ? (
+        <button
+          type="button"
+          className={`${estilos.linhaDosDados} ${estilos.linhaQueAbre}`}
+          disabled={!equipe.dados}
+          onClick={() => setEscolhendo(true)}
         >
-          Trocar
-        </Botao>
-      ) : null}
-      {trocando ? (
-        <div className={estilos.troca}>
-          <SeletorEmPilulas
-            nome={`profissional-${clienteId}`}
-            legenda="De quem é este cliente"
-            opcoes={opcoes}
-            valor={escolhido}
-            aoTrocar={setEscolhido}
-          />
-          {aviso ? <Aviso>{aviso}</Aviso> : null}
-          <div className={estilos.botoesDosDados}>
-            <Botao variante="fantasma" onClick={() => setTrocando(false)} disabled={salvando}>
-              Cancelar
-            </Botao>
-            <Botao onClick={salvar} carregando={salvando}>
-              Salvar troca
-            </Botao>
-          </div>
+          {texto}
+          <IconeSeta className={estilos.seta} width={18} height={18} aria-hidden="true" />
+        </button>
+      ) : (
+        <div className={estilos.linhaDosDados}>{texto}</div>
+      )}
+      {aviso ? (
+        <div className={estilos.avisoDaLinha}>
+          <Aviso>{aviso}</Aviso>
         </div>
       ) : null}
-    </div>
+      {escolhendo ? (
+        <FolhaDeEscolha
+          titulo="De quem é este cliente"
+          nome={`profissional-${clienteId}`}
+          opcoes={opcoes}
+          valor={atual}
+          efeito={() => "Pesa na divisão do dinheiro quando outra pessoa atende este cliente."}
+          aoUsar={(escolhido) => void usar(escolhido)}
+          aoFechar={() => setEscolhendo(false)}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -151,19 +156,27 @@ function totalDe(agendamento: AgendamentoSerializado): string {
   return formatarPreco((centavos / 100).toFixed(2));
 }
 
-// Um grupo do histórico ("Próximos", "Anteriores"): título pequeno e as
-// linhas, sem caixa em volta. Cada linha é um link pro agendamento.
+// Um grupo do histórico ("Próximos", "Anteriores"): título de seção e as
+// linhas num cartão (redesenho dos detalhes, PR 4). Cada linha é um link
+// pro agendamento: quando em cima, o quê embaixo, o valor à direita.
 function GrupoDoHistorico({
   titulo,
   agendamentos,
+  className,
+  semSeloDe,
 }: {
   titulo: string;
   agendamentos: AgendamentoSerializado[];
+  // O lugar no grid da página (ver .proximos e .anteriores).
+  className: string;
+  // O status que não precisa de selo: nos Próximos, todo confirmado é o
+  // normal, e o selo repetido em cada linha só fazia ruído.
+  semSeloDe?: string;
 }) {
   const id = useId();
   if (agendamentos.length === 0) return null;
   return (
-    <section className={estilos.grupo} aria-labelledby={id}>
+    <section className={`${estilos.grupo} ${className}`} aria-labelledby={id}>
       <h2 id={id} className={estilos.rotuloDoGrupo}>
         {titulo}
       </h2>
@@ -174,21 +187,22 @@ function GrupoDoHistorico({
               className={`${estilos.linha} ${NAO_ACONTECE.has(agendamento.status) ? estilos.naoAconteceu : ""}`}
               href={`/painel/agendamentos/${agendamento.id}`}
             >
-              <span className={estilos.quando}>
-                <strong>{formatarDataLonga(agendamento.data)}</strong>
-                <span className={estilos.secundario}>{agendamento.horaInicio}</span>
+              <span className={estilos.textoDaLinha}>
+                <span className={estilos.quando}>
+                  {formatarDataLonga(agendamento.data)} · {agendamento.horaInicio}
+                </span>
+                <span className={estilos.oque}>
+                  {agendamento.servicos.map((s) => s.nome).join(" + ")}
+                  {agendamento.barbeiro?.nome ? ` com ${agendamento.barbeiro.nome}` : null}
+                </span>
               </span>
-              <span className={estilos.oque}>
-                {agendamento.servicos.map((s) => s.nome).join(" + ")}
-                {agendamento.barbeiro?.nome ? (
-                  <span className={estilos.secundario}> com {agendamento.barbeiro.nome}</span>
-                ) : null}
-              </span>
-              <span className={estilos.valor}>{totalDe(agendamento)}</span>
-              <span className={estilos.status}>
-                <Chip tom={TOM_DO_STATUS[agendamento.status] ?? "neutro"} tamanho="pequeno">
-                  {rotuloDoStatus(agendamento.status)}
-                </Chip>
+              <span className={estilos.ladoDaLinha}>
+                <span className={estilos.valor}>{totalDe(agendamento)}</span>
+                {agendamento.status === semSeloDe ? null : (
+                  <Chip tom={TOM_DO_STATUS[agendamento.status] ?? "neutro"} tamanho="pequeno">
+                    {rotuloDoStatus(agendamento.status)}
+                  </Chip>
+                )}
               </span>
               <IconeSeta className={estilos.seta} width={18} height={18} aria-hidden="true" />
             </Link>
@@ -341,6 +355,7 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
         voltar={{ href: "/painel/clientes", rotulo: "Clientes" }}
         titulo={dados.nome}
         apoio={resumoDoHistorico(dados.agendamentos, hoje)}
+        acaoLargaNoCelular
         acao={
           <div className={estilos.acoesDoTopo}>
             <BotaoLink href={linkDoZap(dados.telefone)} variante="contorno" externo>
@@ -357,127 +372,134 @@ export function DetalheDoCliente({ agora }: { agora?: Date } = {}) {
         </Aviso>
       ) : null}
 
-      {/* Sem as caixas "Dados" e "Histórico" (pedido do dono): o
-          histórico, que é o que se olha, à esquerda e largo; os dados à
-          direita, editáveis ali mesmo. No celular, um embaixo do outro. */}
+      {/* O histórico, que é o que se olha, à esquerda e largo; os planos
+          e os dados à direita. No celular, na ordem do canvas (redesenho
+          dos detalhes, PR 4): Próximos, Planos, Dados e, por último, os
+          Anteriores. A ordem do DOM é a do celular, e o grid do
+          computador põe a coluna da direita ao lado — a ordem de leitura
+          e a do Tab continuam a mesma da tela. */}
       <div className={estilos.corpo}>
-        <div className={estilos.historico}>
-          {dados.agendamentos.length === 0 ? (
-            <p className={estilos.vazio}>
-              Esse cliente ainda não tem agendamento. Use o Agendar lá em cima pra marcar o
-              primeiro.
-            </p>
-          ) : (
-            <>
-              <GrupoDoHistorico titulo="Próximos" agendamentos={proximos} />
-              <GrupoDoHistorico titulo="Anteriores" agendamentos={anteriores} />
-            </>
-          )}
-        </div>
+        {dados.agendamentos.length === 0 ? (
+          <p className={`${estilos.vazio} ${estilos.proximos}`}>
+            Esse cliente ainda não tem agendamento. Use o Agendar lá em cima pra marcar o
+            primeiro.
+          </p>
+        ) : (
+          <GrupoDoHistorico
+            titulo="Próximos"
+            agendamentos={proximos}
+            className={estilos.proximos}
+            semSeloDe="confirmado"
+          />
+        )}
 
-        {/* Os dados e, embaixo, os planos que o cliente assina. */}
+        {/* Os planos que o cliente assina e os dados. */}
         <div className={estilos.lateral}>
-          <section className={estilos.dados} aria-labelledby="dados-do-cliente">
-            <h2 id="dados-do-cliente" className={estilos.rotuloDoGrupo}>
-              Dados
-            </h2>
-            <ProfissionalDoCliente
-              clienteId={dados.id}
-              profissional={dados.profissional}
-              aoTrocar={() => cliente.recarregar()}
-            />
-            {/* Em leitura (17/10): sempre em modo de edição, a tela parecia
-                um formulário. "Editar" abre os campos; Salvar e Descartar
-                voltam pra leitura. */}
-            {editando ? (
-              <>
-                <Campo
-                  rotulo="Nome"
-                  maxLength={NOME_MAX}
-                  valor={nome}
-                  onChange={(proximo) => {
-                    setNome(proximo);
-                    setErroNome(undefined);
-                  }}
-                  erro={erroNome}
-                />
-                <Campo
-                  rotulo="Telefone"
-                  apoio="Com DDD, do jeito que for — a gente formata."
-                  formato="telefone"
-                  inputMode="tel"
-                  valor={telefone}
-                  onChange={(proximo) => {
-                    setTelefone(proximo);
-                    setErroTelefone(undefined);
-                    setTelefoneEmConflito(undefined);
-                  }}
-                  erro={erroTelefone}
-                />
-                <Campo
-                  rotulo="E-mail (opcional)"
-                  type="email"
-                  inputMode="email"
-                  maxLength={EMAIL_MAX}
-                  valor={email}
-                  onChange={(proximo) => {
-                    setEmail(proximo);
-                    setErroEmail(undefined);
-                  }}
-                  erro={erroEmail}
-                />
-
-                {telefoneEmConflito ? (
-                  <Aviso>
-                    Esse telefone já é de outro cliente.{" "}
-                    <Link
-                      href={`/painel/clientes?busca=${encodeURIComponent(
-                        apenasDigitos(telefoneEmConflito)
-                      )}`}
-                    >
-                      Abrir o cadastro existente
-                    </Link>
-                  </Aviso>
-                ) : null}
-
-                {aviso ? <Aviso>{aviso}</Aviso> : null}
-
-                {/* Mesmo jeito das observações no detalhe do agendamento: os
-                    botões só aparecem quando há o que salvar — um Salvar sempre
-                    aceso não diz se algo mudou. */}
-                {mudou ? (
-                  <div className={estilos.botoesDosDados}>
-                    <Botao variante="fantasma" onClick={descartar} disabled={salvando}>
-                      Descartar
-                    </Botao>
-                    <Botao carregando={salvando} onClick={salvar}>
-                      Salvar
-                    </Botao>
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <>
+          <PlanosDoCliente clienteId={dados.id} hoje={hoje} />
+          <section className={estilos.grupo} aria-labelledby="dados-do-cliente">
+            <div className={estilos.topoDoGrupo}>
+              <h2 id="dados-do-cliente" className={estilos.rotuloDoGrupo}>
+                Dados
+              </h2>
+              {/* Em leitura (17/10): sempre em modo de edição, a tela
+                  parecia um formulário. "Editar" abre os campos; Salvar e
+                  Descartar voltam pra leitura. */}
+              {editando ? null : (
+                <Botao variante="fantasma" onClick={() => setEditando(true)}>
+                  Editar
+                </Botao>
+              )}
+            </div>
+            <div className={estilos.cartao}>
+              {editando ? (
+                <div className={estilos.edicao}>
+                  <Campo
+                    rotulo="Nome"
+                    maxLength={NOME_MAX}
+                    valor={nome}
+                    onChange={(proximo) => {
+                      setNome(proximo);
+                      setErroNome(undefined);
+                    }}
+                    erro={erroNome}
+                  />
+                  <Campo
+                    rotulo="Telefone"
+                    apoio="Com DDD, do jeito que for — a gente formata."
+                    formato="telefone"
+                    inputMode="tel"
+                    valor={telefone}
+                    onChange={(proximo) => {
+                      setTelefone(proximo);
+                      setErroTelefone(undefined);
+                      setTelefoneEmConflito(undefined);
+                    }}
+                    erro={erroTelefone}
+                  />
+                  <Campo
+                    rotulo="E-mail (opcional)"
+                    type="email"
+                    inputMode="email"
+                    maxLength={EMAIL_MAX}
+                    valor={email}
+                    onChange={(proximo) => {
+                      setEmail(proximo);
+                      setErroEmail(undefined);
+                    }}
+                    erro={erroEmail}
+                  />
+  
+                  {telefoneEmConflito ? (
+                    <Aviso>
+                      Esse telefone já é de outro cliente.{" "}
+                      <Link
+                        href={`/painel/clientes?busca=${encodeURIComponent(
+                          apenasDigitos(telefoneEmConflito)
+                        )}`}
+                      >
+                        Abrir o cadastro existente
+                      </Link>
+                    </Aviso>
+                  ) : null}
+  
+                  {aviso ? <Aviso>{aviso}</Aviso> : null}
+  
+                  {/* Mesmo jeito das observações no detalhe do agendamento: os
+                      botões só aparecem quando há o que salvar — um Salvar sempre
+                      aceso não diz se algo mudou. */}
+                  {mudou ? (
+                    <div className={estilos.botoesDosDados}>
+                      <Botao variante="fantasma" onClick={descartar} disabled={salvando}>
+                        Descartar
+                      </Botao>
+                      <Botao carregando={salvando} onClick={salvar}>
+                        Salvar
+                      </Botao>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
                 <dl className={estilos.leitura}>
-                  <div>
-                    <dt>Telefone</dt>
-                    <dd>{dados.telefone}</dd>
+                  <div className={estilos.linhaDosDados}>
+                    <dt className={estilos.tituloDaLinha}>Telefone</dt>
+                    <dd className={estilos.apoioDaLinha}>{dados.telefone}</dd>
                   </div>
-                  <div>
-                    <dt>E-mail</dt>
-                    <dd>{dados.email ?? "—"}</dd>
+                  <div className={estilos.linhaDosDados}>
+                    <dt className={estilos.tituloDaLinha}>E-mail</dt>
+                    <dd className={estilos.apoioDaLinha}>{dados.email ?? "Não informado"}</dd>
                   </div>
                 </dl>
-                <div className={estilos.botoesDosDados}>
-                  <Botao variante="contorno" onClick={() => setEditando(true)}>
-                    Editar
-                  </Botao>
-                </div>
-              </>
-            )}
+              )}
+              <ProfissionalDoCliente
+                clienteId={dados.id}
+                profissional={dados.profissional}
+                aoTrocar={() => cliente.recarregar()}
+              />
+            </div>
           </section>
-          <PlanosDoCliente clienteId={dados.id} hoje={hoje} />
         </div>
+
+        <GrupoDoHistorico titulo="Anteriores" agendamentos={anteriores} className={estilos.anteriores} />
       </div>
     </div>
   );

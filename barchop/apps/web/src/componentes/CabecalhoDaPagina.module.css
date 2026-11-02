@@ -67,6 +67,10 @@
   .textos {
     flex: 1 1 160px;
   }
+
+  .acao[data-larga-no-celular] {
+    flex: 1 1 100%;
+  }
 }
 
 /* A ação que só vale com a barra lateral: abaixo de 900px a barra de

@@ -175,16 +175,35 @@ describe("o profissional do cliente", () => {
     montarPainel(<DetalheDoCliente agora={AGORA} />, falso);
 
     expect(await screen.findByText("Cliente de Gustavo")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /trocar/i }));
-    const escolha = screen.getByRole("group", { name: /de quem é este cliente/i });
+    // Uma linha dos Dados que abre a escolha numa folha (redesenho dos
+    // detalhes, PR 4), no lugar do "Trocar" solto.
+    await userEvent.click(await screen.findByRole("button", { name: /de quem é este cliente/i }));
+    const folha = screen.getByRole("dialog", { name: "De quem é este cliente" });
+    const escolha = within(folha).getByRole("group", { name: /de quem é este cliente/i });
     expect(within(escolha).getByRole("radio", { name: "Gustavo" })).toBeChecked();
     expect(within(escolha).getByRole("radio", { name: "Ninguém" })).toBeInTheDocument();
 
     await userEvent.click(within(escolha).getByRole("radio", { name: "Rafael" }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar troca/i }));
+    await userEvent.click(within(folha).getByRole("button", { name: "Usar esta" }));
 
     await waitFor(() => expect(atualizar).toHaveBeenCalledWith("c1", { profissionalId: "bb1" }));
     expect(await screen.findByText("Cliente de Rafael")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("usar a mesma pessoa, ou fechar a folha, não salva nada", async () => {
+    const falso = semearComEquipe("dono");
+    const atualizar = vi.spyOn(falso.barbeiro, "atualizarCliente");
+    montarPainel(<DetalheDoCliente agora={AGORA} />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: /de quem é este cliente/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Usar esta" }));
+    await userEvent.click(await screen.findByRole("button", { name: /de quem é este cliente/i }));
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("radio", { name: "Rafael" }));
+    await userEvent.click(screen.getByRole("button", { name: "Fechar" }));
+
+    expect(atualizar).not.toHaveBeenCalled();
+    expect(screen.getByText("Cliente de Gustavo")).toBeInTheDocument();
   });
 
   it("sem dono, diz que passa a ser de quem atender primeiro", async () => {
@@ -197,6 +216,8 @@ describe("o profissional do cliente", () => {
     montarPainel(<DetalheDoCliente agora={AGORA} />, semearComEquipe("profissional"));
 
     expect(await screen.findByText("Cliente de Gustavo")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /trocar/i })).not.toBeInTheDocument();
+    // A linha é só texto: não é botão e não abre folha.
+    expect(screen.queryByRole("button", { name: /de quem é este cliente/i })).not.toBeInTheDocument();
+    expect(screen.getByText("De quem é este cliente")).toBeInTheDocument();
   });
 });

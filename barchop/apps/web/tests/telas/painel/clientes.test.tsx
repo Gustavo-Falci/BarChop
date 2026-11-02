@@ -654,23 +654,15 @@ describe("clientes no painel", () => {
     expect(screen.queryByText(/cliente cadastrado/i)).not.toBeInTheDocument();
   });
 
-  it("Cancelar volta pra lista sem cadastrar nada", async () => {
+  it("desistir é o ← Clientes do topo; o formulário tem um botão só", async () => {
+    // O Cancelar do rodapé saiu (redesenho dos detalhes, PR 4): levava
+    // pro mesmo lugar que o "← Clientes".
     navegacaoFalsa.redefinir({ pathname: "/painel/clientes/novo" });
-    const falso = criarApiClientFalso({ clientes: [] });
-    let chamou = false;
-    falso.barbeiro.criarCliente = async () => {
-      chamou = true;
-      throw new ErroDaApi(400, "requisicao_invalida", "");
-    };
-    montarPainel(<CadastroDeCliente />, falso);
+    montarPainel(<CadastroDeCliente />, criarApiClientFalso({ clientes: [] }));
 
-    await userEvent.type(await screen.findByLabelText(/nome/i), "Ana Souza");
-    await userEvent.click(await screen.findByRole("button", { name: /cancelar/i }));
-
-    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/clientes");
-    // O botão vive fora do <form> justamente pra isto: dentro dele um
-    // <button> sem `type` é submit, e "Cancelar" cadastraria o cliente.
-    expect(chamou).toBe(false);
+    expect(await screen.findByRole("link", { name: /clientes/i })).toHaveAttribute("href", "/painel/clientes");
+    expect(screen.queryByRole("button", { name: /cancelar/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^cadastrar$/i })).toBeInTheDocument();
   });
 
   it("cliente inexistente vira aviso, não tela em branco", async () => {

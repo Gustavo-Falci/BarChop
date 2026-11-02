@@ -1,7 +1,8 @@
-/* Na coluna dos dados, embaixo deles, com o mesmo título pequeno. */
+/* Na coluna da direita, em cima dos dados, com o mesmo título de seção
+   (redesenho dos detalhes, PR 4). */
 .planos {
   display: grid;
-  gap: var(--espaco-md);
+  gap: var(--espaco-sm);
   min-width: 0;
 }
 
@@ -9,18 +10,16 @@
   composes: rotuloDoGrupo from "./DetalheDoCliente.module.css";
 }
 
+/* As assinaturas num cartão, como o histórico e os dados. */
 .lista {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  composes: cartao from "./DetalheDoCliente.module.css";
 }
 
 /* Uma assinatura por bloco, separadas por um fio, como o histórico. */
 .assinatura {
   display: grid;
   gap: var(--espaco-xs);
-  padding-block: var(--espaco-sm);
+  padding: var(--espaco-md) var(--espaco-lg);
 }
 
 .assinatura + .assinatura {

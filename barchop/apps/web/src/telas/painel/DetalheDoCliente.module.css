@@ -10,9 +10,22 @@
   gap: var(--espaco-sm);
 }
 
-/* Histórico largo à esquerda, dados à direita; no celular, um embaixo do
-   outro, com o histórico primeiro. Sem caixas em volta (pedido do dono):
-   o que separa as duas colunas é o espaço. */
+/* No celular (redesenho dos detalhes, PR 4): WhatsApp e Agendar lado a
+   lado, cada um com metade da largura. O mesmo corte do cabeçalho, que
+   abaixo dele dá a linha toda à ação (acaoLargaNoCelular). */
+@media (max-width: 560px) {
+  .acoesDoTopo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* No celular, uma coluna na ordem do DOM: Próximos, Planos e Dados,
+   Anteriores. No computador, o histórico largo à esquerda (Próximos em
+   cima, Anteriores embaixo) e a coluna dos planos e dados à direita,
+   ocupando as duas linhas. A segunda linha é `1fr`: uma coluna da
+   direita alta cresce ela, e os Anteriores ficam logo embaixo dos
+   Próximos. */
 .corpo {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -23,52 +36,83 @@
 @media (min-width: 1000px) {
   .corpo {
     grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-rows: auto 1fr;
   }
-}
 
-.historico {
-  display: grid;
-  gap: var(--espaco-xl);
-  min-width: 0;
+  .proximos {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .anteriores {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  /* Sem Próximos, os Anteriores sobem pra primeira linha. */
+  .corpo:not(:has(.proximos)) .anteriores {
+    grid-row: 1;
+  }
+
+  .lateral {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
 }
 
 .grupo {
   display: grid;
-  gap: var(--espaco-xs);
+  gap: var(--espaco-sm);
+  min-width: 0;
 }
 
-/* O título de grupo pequeno, em caixa alta: o mesmo do detalhe do
-   agendamento. */
+/* O título da seção e uma ação dele ("Editar") na mesma linha. */
+.topoDoGrupo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  min-height: 44px;
+}
+
+/* Título de seção como nas Configurações (redesenho dos detalhes, PR 4),
+   no lugar do rótulo miúdo em caixa alta. Os Planos do cliente usam o
+   mesmo (composes). */
 .rotuloDoGrupo {
   margin: 0;
-  font-family: inherit;
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--cor-ink-soft);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 600;
+  color: var(--cor-ink);
 }
 
+/* O cartão das seções, como as listas das Configurações. */
+.cartao,
 .linhas {
+  display: grid;
   margin: 0;
   padding: 0;
   list-style: none;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: var(--sombra-1);
+  overflow: hidden;
 }
 
 .linhas li + li {
   border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
-/* A linha inteira é o link pro agendamento. No desktop, as colunas
-   alinham de uma linha pra outra (quando · o quê · valor · status). */
+/* A linha inteira é o link pro agendamento: quando em cima, o quê
+   embaixo; o valor (e o selo, se houver) à direita; a seta na ponta. */
 .linha {
   display: grid;
-  grid-template-columns: 12.5rem minmax(0, 1fr) auto 8.5rem auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--espaco-md);
-  padding: var(--espaco-sm) var(--espaco-sm);
-  margin: 0 calc(-1 * var(--espaco-sm));
-  border-radius: var(--raio-sm);
+  min-height: 56px;
+  padding: var(--espaco-sm) var(--espaco-md) var(--espaco-sm) var(--espaco-lg);
   color: var(--cor-ink);
   text-decoration: none;
   transition-property: background-color;
@@ -84,12 +128,62 @@
   outline-offset: -3px;
 }
 
+.textoDaLinha {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
 .quando {
-  display: flex;
-  align-items: baseline;
-  gap: var(--espaco-sm);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+}
+
+.quando::first-letter {
+  text-transform: uppercase;
+}
+
+.oque {
+  min-width: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+.ladoDaLinha {
+  display: grid;
+  justify-items: end;
+  gap: var(--espaco-xs);
+}
+
+/* Celular estreito: com o valor ao lado, "2 de novembro · 09:00" quebrava
+   a hora pra outra linha. O valor (e o selo) desce pra baixo do texto, e
+   a seta fica na ponta, no meio da linha. */
+@media (max-width: 480px) {
+  .linha {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "texto seta"
+      "lado seta";
+    row-gap: var(--espaco-xs);
+  }
+
+  .linha .textoDaLinha {
+    grid-area: texto;
+  }
+
+  .ladoDaLinha {
+    grid-area: lado;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-items: start;
+    gap: var(--espaco-sm);
+  }
+
+  .linha .seta {
+    grid-area: seta;
+  }
 }
 
 /* Cancelado e não compareceu ficam na lista, mas apagados: o olho acha
@@ -100,46 +194,14 @@
   opacity: 0.55;
 }
 
-.oque {
-  min-width: 0;
-  text-wrap: pretty;
-}
-
-.secundario {
-  color: var(--cor-ink-soft);
-  font-size: var(--texto-sm);
-}
-
 .valor {
   font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.status {
-  display: flex;
-  justify-content: flex-end;
+  white-space: nowrap;
 }
 
 .seta {
-  color: var(--cor-ink-soft);
-}
-
-/* No celular: quando e status na primeira linha, o quê e o valor na
-   segunda. A seta sai: a linha inteira já é toque. */
-@media (max-width: 640px) {
-  .linha {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "quando status"
-      "oque valor";
-    row-gap: var(--espaco-xs);
-  }
-
-  .quando { grid-area: quando; }
-  .status { grid-area: status; }
-  .oque { grid-area: oque; }
-  .valor { grid-area: valor; }
-  .seta { display: none; }
+  flex: none;
+  color: var(--cor-muted);
 }
 
 .vazio {
@@ -147,61 +209,97 @@
   color: var(--cor-ink-soft);
 }
 
-/* A coluna da direita: os dados e os planos do cliente. */
+/* A coluna dos planos e dos dados. */
 .lateral {
   display: grid;
   gap: var(--espaco-xl);
   min-width: 0;
 }
 
-.dados {
+/* Os dados em leitura: uma linha por dado, título em cima e o valor
+   embaixo, separadas por um fio. */
+.leitura {
+  display: grid;
+  margin: 0;
+}
+
+.linhaDosDados {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md) var(--espaco-sm) var(--espaco-lg);
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  text-align: start;
+}
+
+.leitura > .linhaDosDados + .linhaDosDados,
+.cartao > .linhaDosDados,
+.cartao > .avisoDaLinha {
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.linhaDosDados > .textoDaLinha {
+  flex: 1;
+}
+
+/* Telefone e e-mail: o nome do dado em cima, o valor embaixo. */
+.leitura > .linhaDosDados {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+}
+
+.tituloDaLinha {
+  font-weight: 600;
+}
+
+.apoioDaLinha {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
+}
+
+/* "De quem é este cliente", pro dono: a linha abre a folha. */
+.linhaQueAbre {
+  cursor: pointer;
+}
+
+.linhaQueAbre:hover:not(:disabled) {
+  background: var(--cor-paper-soft);
+}
+
+/* Esperando a equipe: o texto já vale, a folha ainda não. */
+.linhaQueAbre:disabled {
+  cursor: progress;
+}
+
+.linhaQueAbre:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: -3px;
+}
+
+.avisoDaLinha {
+  padding: var(--espaco-sm) var(--espaco-lg);
+}
+
+/* Editando: os campos dentro do cartão. */
+.edicao {
   display: grid;
   gap: var(--espaco-md);
-  min-width: 0;
+  padding: var(--espaco-md) var(--espaco-lg);
 }
 
 .botoesDosDados {
   display: flex;
   justify-content: flex-end;
   gap: var(--espaco-sm);
-}
-
-/* De quem é o cliente: uma linha com o Trocar ao lado; trocando, as
-   pílulas embaixo, ocupando a coluna. */
-.profissional {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--espaco-sm);
-  padding-bottom: var(--espaco-sm);
-  border-bottom: var(--borda-hairline) solid var(--cor-line);
-}
-
-.deQuem {
-  margin: 0;
-  font-weight: 700;
-}
-
-.troca {
-  display: grid;
-  flex-basis: 100%;
-  gap: var(--espaco-sm);
-}
-
-/* Os dados em leitura: rótulo pequeno em cima, valor embaixo. */
-.leitura {
-  display: grid;
-  gap: var(--espaco-sm);
-  margin: 0;
-}
-
-.leitura dt {
-  color: var(--cor-muted);
-  font-size: var(--texto-sm);
-}
-
-.leitura dd {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
 }

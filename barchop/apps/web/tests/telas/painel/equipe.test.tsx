@@ -191,6 +191,15 @@ describe("lista da equipe", () => {
 describe("convidar um membro", () => {
   beforeEach(() => navegacaoFalsa.redefinir({ pathname: "/painel/equipe/novo" }));
 
+  it("um botão só no fim, sem Cancelar e sem barra: desistir é o ← Equipe", async () => {
+    montarPainel(<CadastroDeMembro />, criarApiClientFalso());
+
+    expect(await screen.findByRole("button", { name: /enviar convite/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /cancelar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Equipe" })).toHaveAttribute("href", "/painel/equipe");
+  });
+
   it("manda nome, e-mail e papel; a recepção sai sem atender, sem ninguém mexer", async () => {
     const falso = criarApiClientFalso();
     const convidar = vi.spyOn(falso.barbeiro, "convidarMembro");
@@ -199,7 +208,7 @@ describe("convidar um membro", () => {
     await userEvent.type(await screen.findByLabelText(/^nome/i), "Bia Lima");
     await userEvent.type(screen.getByLabelText(/e-mail/i), "bia@gr.com");
     await userEvent.click(screen.getByRole("radio", { name: /recepção/i }));
-    expect(screen.getByRole("checkbox", { name: /atende clientes/i })).not.toBeChecked();
+    expect(screen.getByRole("switch", { name: /atende clientes/i })).not.toBeChecked();
     await userEvent.click(screen.getByRole("button", { name: /enviar convite/i }));
 
     await waitFor(() =>
@@ -296,6 +305,25 @@ describe("editar um membro", () => {
     await userEvent.click(screen.getByRole("button", { name: "Descartar" }));
     expect(screen.getByLabelText(/^nome/i)).toHaveValue("Ana");
     expect(screen.queryByRole("button", { name: /^salvar$/i })).not.toBeInTheDocument();
+  });
+
+  // Salvar pela barra (redesenho dos detalhes, PR 5): ela diz o que
+  // mudou, só existe na aba Dados e o que não foi salvo sobrevive à troca
+  // de aba.
+  it("a barra diz o que mudou e guarda a mudança ao trocar de aba", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/equipe/m2", params: { id: "m2" } });
+    montarPainel(<CadastroDeMembro />, comEquipe());
+
+    await userEvent.click(await screen.findByRole("switch", { name: /atende clientes/i }));
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent("Atende clientes: ligado → desligado");
+
+    await userEvent.click(screen.getByRole("tab", { name: "Jornada" }));
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole("tab", { name: "Dados" }));
+    expect(await screen.findByRole("switch", { name: /atende clientes/i })).not.toBeChecked();
+    expect(screen.getByRole("region", { name: "Mudanças" })).toHaveTextContent("Atende clientes: ligado → desligado");
   });
 
   it("a situação diz o efeito antes do Desativar e do Reativar", async () => {

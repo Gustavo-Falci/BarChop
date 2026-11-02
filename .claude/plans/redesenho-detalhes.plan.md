@@ -28,6 +28,9 @@ Primeira de quatro ondas do pedido do dono de 01/11 ("todas as outras telas que 
 - **Categoria do serviço**: 7 pílulas em três linhas.
 - **Cliente**: "Trocar" solto, sem dizer o quê; "E-mail —".
 
+## Andamento (02/11): onda A concluída
+Os 8 PRs mesclados: #280 (PR 1), #281 (PR 2), #282 (PR 3), #283 (PR 4), #284 (PR 5), #285 (PR 6), #286 (PR 7), #287 (PR 8). `main` = `bc3514c`. As notas de "feito, só local" em cada PR abaixo são de quando foram escritas; o corpo de cada PR no GitHub tem o que entrou e o que ficou fora do canvas.
+
 ## PRs
 ### PR 1 — Detalhe do agendamento (feito em 01/11: branch local `redesenho-detalhes-pr1-agendamento`, `dfaa390`, sem PR ainda)
 - Andamento numa linha (um passo por coluna, nome embaixo da bolinha).

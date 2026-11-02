@@ -1,30 +1,82 @@
-/* A mesma grade da semana de Configurações: nome do dia, o modo e as
-   horas, com altura mínima pra a linha não pular quando as horas somem. */
-.dia {
+/* A aba: a Jornada, a Pausa e, por último, a barra de salvar. */
+.jornada {
   display: grid;
-  grid-template-columns: 6rem auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--espaco-md);
-  min-height: 68px;
-  padding-block: var(--espaco-xs);
-  border-block-end: var(--borda-hairline) solid var(--cor-line);
-}
-
-.dia:last-child {
-  border-block-end: none;
-}
-
-/* O segmentado do dia (Folga, Horário da barbearia, Horário próprio). */
-.modo {
+  gap: var(--espaco-xl);
   min-width: 0;
 }
 
-.horas {
-  display: grid;
-  gap: var(--espaco-sm);
-  justify-items: start;
+/* Os dias num cartão, um por linha (redesenho dos detalhes, PR 6): o
+   mesmo cartão do detalhe do cliente. */
+.cartao {
+  composes: cartao from "./DetalheDoCliente.module.css";
 }
 
+.cartao li + li {
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* A linha inteira abre a folha: o dia em cima, o resumo embaixo e a
+   seta na ponta. */
+.linha {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md) var(--espaco-sm) var(--espaco-lg);
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.linha:hover {
+  background: var(--cor-paper-soft);
+}
+
+.linha:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: -3px;
+}
+
+.texto {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nome {
+  font-weight: 600;
+}
+
+/* `--cor-ink-soft` e não `--cor-muted`: é texto que se lê, e o muted
+   reprova contraste no tema claro. */
+.apoio {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-variant-numeric: tabular-nums;
+  text-wrap: pretty;
+}
+
+.seta {
+  flex: none;
+  color: var(--cor-muted);
+}
+
+/* Na folha do dia: as horas da barbearia embaixo do nome da opção. */
+.horasDaOpcao {
+  display: block;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* As horas (do próprio ou da pausa) numa faixa, alinhadas pelo pé. */
 .faixa {
   display: flex;
   flex-wrap: wrap;
@@ -32,19 +84,6 @@
   gap: var(--espaco-md);
 }
 
-/* O atalho da pausa acima da semana, separado dela pela mesma régua
-   fina das linhas dos dias. */
-.pausaDeSempre {
+.adicionar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--espaco-md);
-  padding-block-end: var(--espaco-md);
-  border-block-end: var(--borda-hairline) solid var(--cor-line);
-}
-
-@media (max-width: 560px) {
-  .dia {
-    grid-template-columns: 1fr;
-  }
 }

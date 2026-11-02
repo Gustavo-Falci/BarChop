@@ -1,10 +1,11 @@
 import { useId, type ReactNode } from "react";
 import estilos from "./Grupo.module.css";
 
-// A Secao sem moldura, pras telas "sem caixas" (pedido do dono): título
-// pequeno em caixa alta, a frase do que o grupo faz e, no fim, a ação
-// que salva só aquilo. Quem separa um grupo do outro é o espaço, não a
-// borda. A Secao continua nas Configurações, que ainda são caixas.
+// A Secao sem moldura: o título de seção, a frase do que o grupo faz e,
+// no fim, a ação que salva só aquilo. A moldura não é dele: quem usa
+// põe o próprio cartão dentro (as linhas da Jornada, a lista dos
+// Serviços), e a barra de salvar fica de fora (redesenho dos detalhes,
+// PR 6).
 export function Grupo({
   titulo,
   descricao,

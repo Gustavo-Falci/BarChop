@@ -69,7 +69,7 @@ describe("serviços no painel", () => {
     await userEvent.type(await screen.findByLabelText(/nome/i), "Sobrancelha");
     await userEvent.type(screen.getByLabelText(/duração/i), "15");
     await userEvent.type(screen.getByLabelText(/preço/i), "20,00");
-    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     await waitFor(() =>
       expect(criar).toHaveBeenCalledWith({
@@ -122,85 +122,86 @@ describe("serviços no painel", () => {
     expect(within(linhaDoAtivo as HTMLElement).queryByText(/inativo/i)).not.toBeInTheDocument();
   });
 
+  // O Cancelar saiu (redesenho dos detalhes, PR 7): desistir é o
+  // "← Serviços" do topo, nas duas rotas; na edição, o Descartar da barra.
+  it("o caminho de volta leva pra lista, e não há Cancelar", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
+    montarPainel(<CadastroDeServico />, semear());
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Novo serviço" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /serviços/i })).toHaveAttribute("href", "/painel/servicos");
+    expect(screen.queryByRole("button", { name: /cancelar/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+  });
+
+  it("na edição, o título é o nome do serviço, com o resumo do que está gravado", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
+    montarPainel(<CadastroDeServico />, semear());
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Corte" })).toBeInTheDocument();
+    expect(screen.getByText("30 min · R$ 40,00")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /serviços/i })).toHaveAttribute("href", "/painel/servicos");
+    expect(screen.queryByRole("button", { name: /cancelar/i })).not.toBeInTheDocument();
+  });
+
+  it("na edição, a barra só aparece depois de mudar, e diz o antes e o depois", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
+    montarPainel(<CadastroDeServico />, semear());
+
+    await screen.findByDisplayValue("Corte");
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+
+    // "40" por cima de "40,00" é o mesmo preço: não é mudança.
+    const preco = screen.getByLabelText(/preço/i);
+    await userEvent.clear(preco);
+    await userEvent.type(preco, "40");
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+
+    await userEvent.clear(preco);
+    await userEvent.type(preco, "45");
+    await userEvent.clear(screen.getByLabelText(/duração/i));
+    await userEvent.type(screen.getByLabelText(/duração/i), "35");
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent("Duração: 30 min → 35 min");
+    expect(barra).toHaveTextContent("Preço: R$ 40,00 → R$ 45,00");
+  });
+
+  it("Descartar volta os campos como estavam, sem chamar a API", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
+    const falso = semear();
+    const atualizar = vi.spyOn(falso.barbeiro, "atualizarServico");
+    montarPainel(<CadastroDeServico />, falso);
+
+    const nome = await screen.findByDisplayValue("Corte");
+    await userEvent.type(nome, " curto");
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent("Nome");
+    await userEvent.click(within(barra).getByRole("button", { name: "Descartar" }));
+
+    expect(screen.getByLabelText(/^nome$/i)).toHaveValue("Corte");
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+    expect(atualizar).not.toHaveBeenCalled();
+  });
+
+  it("Desativar não gira o Salvar da barra, nem salva o que foi digitado", async () => {
+    // Os dois na mesma tela: o Desativar muda o estado do serviço, e o
+    // que está digitado só vai pelo Salvar.
+    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/s1", params: { id: "s1" } });
+    const falso = semear();
+    const atualizar = vi.spyOn(falso.barbeiro, "atualizarServico");
+    const desativar = vi.spyOn(falso.barbeiro, "desativarServico");
+    montarPainel(<CadastroDeServico />, falso);
+
+    await userEvent.type(await screen.findByDisplayValue("Corte"), " curto");
+    await userEvent.click(screen.getByRole("button", { name: /desativar/i }));
+
+    await waitFor(() => expect(desativar).toHaveBeenCalledWith("s1"));
+    expect(atualizar).not.toHaveBeenCalled();
+  });
+
   // Adicional: "20,00" não distingue trocar vírgula por ponto de
   // normalizar pra duas casas — os dois caminhos produzem "20.00" pra
   // essa entrada. "20,5" separa os dois: o normalizado vira "20.50", um
-  it("Cancelar volta pra lista sem salvar nada", async () => {
-    // Sem ele, a única forma de desistir era a barra lateral — que leva
-    // pra outro lugar qualquer do painel, não de volta pra lista de
-    // onde a pessoa veio.
-    navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
-    const falso = semear();
-    let chamou = false;
-    falso.barbeiro.criarServico = async () => {
-      chamou = true;
-      throw new ErroDaApi(400, "requisicao_invalida", "");
-    };
-
-    montarPainel(<CadastroDeServico />, falso);
-
-    // Com o formulário preenchido: desistir de um rascunho em branco não
-    // prova nada — o que não pode é o clique salvar o que foi digitado.
-    await userEvent.type(await screen.findByLabelText(/nome/i), "Sobrancelha");
-    await userEvent.type(screen.getByLabelText(/duração/i), "15");
-    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
-
-    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/servicos");
-    expect(chamou).toBe(false);
-  });
-
-  it("na edição o Cancelar também volta pra lista", async () => {
-    navegacaoFalsa.redefinir({
-      pathname: "/painel/servicos/s1",
-      params: { id: "s1" },
-    });
-    const falso = semear();
-    let chamou = false;
-    falso.barbeiro.atualizarServico = async () => {
-      chamou = true;
-      throw new ErroDaApi(400, "requisicao_invalida", "");
-    };
-
-    montarPainel(<CadastroDeServico />, falso);
-
-    // Espera o formulário sincronizar com o serviço carregado: clicar
-    // antes disso testaria uma tela que ainda não é a de edição.
-    await screen.findByDisplayValue("Corte");
-    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
-
-    expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/servicos");
-    expect(chamou).toBe(false);
-  });
-
-  it("Cancelar e Desativar não se confundem na edição", async () => {
-    // Os dois são `contorno` e vizinhos na tela. O Cancelar sai sem
-    // tocar no serviço; o Desativar muda o estado dele. Um clique no
-    // primeiro não pode fazer o segundo.
-    navegacaoFalsa.redefinir({
-      pathname: "/painel/servicos/s1",
-      params: { id: "s1" },
-    });
-    const falso = semear();
-    let desativou = false;
-    // Delega pro original em vez de devolver void: `desativarServico`
-    // responde o serviço serializado, e um dublê com a assinatura errada
-    // passaria nos testes e só quebraria no `tsc`.
-    const original = falso.barbeiro.desativarServico;
-    falso.barbeiro.desativarServico = async (servicoId: string) => {
-      desativou = true;
-      return original(servicoId);
-    };
-
-    montarPainel(<CadastroDeServico />, falso);
-
-    await screen.findByDisplayValue("Corte");
-    expect(screen.getByRole("button", { name: /desativar/i })).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
-
-    expect(desativou).toBe(false);
-  });
-
   // replace sem o toFixed(2) ficaria em "20.5".
   it("preço com uma casa decimal ainda vira duas ao salvar", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/servicos/novo" });
@@ -217,7 +218,7 @@ describe("serviços no painel", () => {
     await userEvent.type(await screen.findByLabelText(/nome/i), "Luzes");
     await userEvent.type(screen.getByLabelText(/duração/i), "40");
     await userEvent.type(screen.getByLabelText(/preço/i), "20,5");
-    await userEvent.click(screen.getByRole("button", { name: /salvar/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     await waitFor(() =>
       expect(criar).toHaveBeenCalledWith({
@@ -408,7 +409,7 @@ describe("serviços no painel", () => {
     await userEvent.type(await screen.findByLabelText(/nome/i), "Sobrancelha");
     await userEvent.type(screen.getByLabelText(/preço/i), "40,00");
     await userEvent.type(screen.getByLabelText(/duração/i), "abc");
-    await userEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     expect(await screen.findByText(/use um número inteiro de minutos/i)).toBeInTheDocument();
     expect(criar).not.toHaveBeenCalled();
@@ -576,7 +577,7 @@ describe("serviços no painel", () => {
     await userEvent.type(screen.getByLabelText(/preço/i), "40,00");
     // 32 passa num `/^\d+$/` e é recusado pelo `multipleOf: 5` da API.
     await userEvent.type(screen.getByLabelText(/duração/i), "32");
-    await userEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     expect(await screen.findByText(/múltiplos de 5/i)).toBeInTheDocument();
     expect(criar).not.toHaveBeenCalled();
@@ -595,7 +596,7 @@ describe("serviços no painel", () => {
     // Múltiplo de 5, mas acima do `maximum: 480` — separa a guarda de
     // faixa da guarda de passo.
     await userEvent.type(screen.getByLabelText(/duração/i), "600");
-    await userEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     expect(await screen.findByText(/entre 5 e 480 minutos/i)).toBeInTheDocument();
     expect(criar).not.toHaveBeenCalled();
@@ -612,7 +613,7 @@ describe("serviços no painel", () => {
     // Nome deixado em branco de propósito; os outros dois, válidos.
     await userEvent.type(await screen.findByLabelText(/duração/i), "30");
     await userEvent.type(screen.getByLabelText(/preço/i), "40,00");
-    await userEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     expect(await screen.findByText(/escreva o nome do serviço/i)).toBeInTheDocument();
     expect(criar).not.toHaveBeenCalled();
@@ -630,7 +631,7 @@ describe("serviços no painel", () => {
     await userEvent.type(screen.getByLabelText(/duração/i), "30");
     // Nove dígitos: PADRAO_PRECO para em oito.
     await userEvent.type(screen.getByLabelText(/preço/i), "123456789");
-    await userEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     expect(await screen.findByText(/8 dígitos antes da vírgula/i)).toBeInTheDocument();
     expect(criar).not.toHaveBeenCalled();
@@ -646,7 +647,7 @@ describe("serviços no painel", () => {
     await userEvent.type(await screen.findByLabelText(/nome/i), "C");
     await userEvent.type(screen.getByLabelText(/duração/i), "7");
     await userEvent.type(screen.getByLabelText(/preço/i), "abc");
-    await userEvent.click(screen.getByRole("button", { name: /^salvar$/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     expect(await screen.findByText(/escreva o nome do serviço/i)).toBeInTheDocument();
     expect(screen.getByText(/múltiplos de 5/i)).toBeInTheDocument();

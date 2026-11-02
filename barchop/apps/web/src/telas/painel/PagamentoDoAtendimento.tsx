@@ -20,12 +20,13 @@ import { planosDoAtendimento, somaAvulsa, type LinhaDoAtendimento } from "../../
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./PagamentoDoAtendimento.module.css";
 
-// O pagamento de um atendimento, na faixa do próximo passo do detalhe
-// do agendamento (Onda 2, marco 2, PR 6 do plano caixa-do-dia). Dois
-// estados: o formulário (registrar ou editar) e o resumo do que ficou
-// gravado, com a frase de como o dinheiro se dividiu. Com o cliente
-// assinante (PR 7c do plano planos-de-assinatura), "Usar o plano" diz o
-// que vai pelo plano e o que é cobrado à parte.
+// O pagamento de um atendimento, no detalhe do agendamento (Onda 2,
+// marco 2, PR 6 do plano caixa-do-dia). Duas peças: o formulário
+// (registrar ou editar), que abre numa folha (redesenho dos detalhes,
+// PR 2), e o resumo do que ficou gravado, na faixa do próximo passo, com
+// a frase de como o dinheiro se dividiu. Com o cliente assinante (PR 7c
+// do plano planos-de-assinatura), "Usar o plano" diz o que vai pelo
+// plano e o que é cobrado à parte.
 
 const OPCOES_DE_FORMA = FORMAS_DE_PAGAMENTO.map((valor) => ({ valor, rotulo: ROTULO_DA_FORMA[valor] }));
 
@@ -37,7 +38,6 @@ export function FormularioDoPagamento({
   membros,
   atual,
   aoRegistrar,
-  aoCancelar,
 }: {
   agendamentoId: string;
   // As linhas do atendimento, com o `precoNoMomento`: a soma é o valor
@@ -50,8 +50,8 @@ export function FormularioDoPagamento({
   membros: MembroDoCaixa[];
   // Editando, o que está gravado; registrando, null.
   atual: PagamentoDoAgendamento | null;
+  // Sem "Cancelar": o X da folha faz isso.
   aoRegistrar: () => void;
-  aoCancelar: () => void;
 }) {
   const api = useApiDoPainel();
   const id = useId();
@@ -175,35 +175,42 @@ export function FormularioDoPagamento({
         </div>
       ) : null}
       {notas ? <p className={estilos.nota}>{notas}</p> : null}
-      {/* Desktop: os valores numa coluna, forma e quem recebeu na outra;
-          no celular, um embaixo do outro. */}
+      {/* Na folha, um embaixo do outro; os três valores lado a lado, com
+          uma linha de ajuda só (três apoios em colunas de ~100px
+          desalinhavam os campos no celular). */}
       <div className={estilos.campos}>
         <div className={estilos.valores}>
           <Campo
-            rotulo="Valor dos serviços"
-            apoio={plano ? "O que ficou fora do plano" : "Soma dos serviços"}
+            rotulo="Serviços"
             inputMode="decimal"
             valor={valor}
             onChange={setValor}
             erro={servicosCentavos === null ? "Use um valor como 40,00" : undefined}
+            {...(servicosCentavos === null ? {} : { "aria-describedby": `${id}-ajuda` })}
           />
           <Campo
             rotulo="Desconto"
-            apoio="Opcional"
             inputMode="decimal"
             valor={desconto}
             onChange={setDesconto}
             erro={erroDoDesconto}
+            {...(erroDoDesconto ? {} : { "aria-describedby": `${id}-ajuda` })}
           />
           <Campo
             rotulo="Gorjeta"
-            apoio="Fica com quem atendeu"
             inputMode="decimal"
             valor={gorjeta}
             onChange={setGorjeta}
             erro={gorjetaCentavos === null ? "Use um valor como 5,00" : undefined}
+            {...(gorjetaCentavos === null ? {} : { "aria-describedby": `${id}-ajuda` })}
           />
         </div>
+        {/* Com erro, o Campo aponta pro próprio erro: o aria-describedby
+            daqui só entra quando o campo está certo. */}
+        <p className={estilos.ajuda} id={`${id}-ajuda`}>
+          {plano ? "Serviços: o que ficou fora do plano. " : ""}
+          Desconto é opcional. A gorjeta fica com quem atendeu.
+        </p>
         {nadaCobrado ? (
           <p className={estilos.nadaACobrar}>Nada a cobrar: o caixa registra o atendimento como pago pelo plano.</p>
         ) : (
@@ -214,6 +221,7 @@ export function FormularioDoPagamento({
               opcoes={OPCOES_DE_FORMA}
               valor={forma}
               aoTrocar={setForma}
+              preencher
               efeito={
                 forma !== ""
                   ? undefined
@@ -234,10 +242,9 @@ export function FormularioDoPagamento({
           </div>
         )}
       </div>
+      {/* Preso no pé da folha: com o plano e um erro, o formulário passa
+          da altura do celular, e o botão não pode sumir rolando. */}
       <div className={estilos.rodape}>
-        <button type="button" className={estilos.discreta} onClick={aoCancelar} disabled={salvando}>
-          Cancelar
-        </button>
         <button
           type="submit"
           className={estilos.principal}

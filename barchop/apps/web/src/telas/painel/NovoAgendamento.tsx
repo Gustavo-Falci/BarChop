@@ -7,6 +7,7 @@ import type { ErroDaApi } from "@barchop/api-client";
 import type { ClienteSerializado } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
+import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Calendario } from "../../componentes/Calendario";
 import { Vazio } from "../../componentes/Vazio";
 import { formatarPreco, ItemDeServico } from "../../componentes/ItemDeServico";
@@ -16,6 +17,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { ehPassado, formatarDataLonga, hojeIso } from "../../formato/datas";
 import { deslocamentoDoFecho } from "./fecho";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
+import { IconeCheck } from "../../painel/icones";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { BuscaDeCliente } from "./BuscaDeCliente";
 import estilos from "./NovoAgendamento.module.css";
@@ -224,7 +226,7 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
 
   // `replace`, e não `push`: trocar o dia ou a hora ajusta o pedido, não
   // abre uma tela nova. Com `push`, cada escolha virava uma entrada no
-  // histórico e o Cancelar (que volta um passo) cairia nesta mesma tela.
+  // histórico e o "Voltar" (que volta um passo) cairia nesta mesma tela.
   function trocarQuery(proximos: Record<string, string | null>) {
     const atual = new URLSearchParams(query.toString());
     // Quem pode atender valia pra hora que veio da agenda: trocou a hora
@@ -275,7 +277,24 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
 
   return (
     <div className={estilos.pagina}>
-      <h1>Novo agendamento</h1>
+      {/* "Voltar" no topo no lugar do Cancelar do fecho (redesenho dos
+          detalhes, PR 3). Volta no histórico, e não pra um destino fixo:
+          a tela abre da agenda, do Hoje, da lista e do detalhe do
+          cliente — por isso "Voltar", e não o "← Agenda" do canvas. Sem
+          histórico (link aberto direto), o href leva pra agenda do dia. */}
+      <CabecalhoDaPagina
+        titulo="Novo agendamento"
+        voltar={{
+          href: `/painel/agenda?vista=dia&data=${data}`,
+          rotulo: "Voltar",
+          aoClicar: (evento) => {
+            if (window.history.length > 1) {
+              evento.preventDefault();
+              router.back();
+            }
+          },
+        }}
+      />
 
       {/* Chips à vista no lugar do <select> nativo, que abria com o azul
           do sistema. Só com a equipe em mãos: antes dela não há o que
@@ -311,6 +330,7 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
           aberto={aberto === "cliente"}
           aoAlternar={() => alternar("cliente")}
           resumo={cliente ? `${cliente.nome} · ${cliente.telefone}` : undefined}
+          idDoResumo="resumo-cliente"
         >
           <BuscaDeCliente
             escolhido={cliente}
@@ -445,7 +465,10 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
 
       {/* O fecho: tudo que vai ser criado, empilhado sobre o botão. O
           resumo estava solto dentro de Serviços, sem rótulo, e o botão
-          desabilitava calado. */}
+          desabilitava calado. No celular, o fecho inteiro fica preso no
+          pé (redesenho dos detalhes, PR 3): a confirmação do passado e o
+          aviso do horário ocupado moram junto do botão, senão ele ficaria
+          desligado sem motivo à vista. */}
       <div
         className={estilos.fecho}
         data-testid="fecho"
@@ -480,23 +503,24 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
 
         {/* Junto do botão que o causou: numa coluna à parte, o aviso
             ficaria longe dele — e, com a página rolada, fora da vista. */}
-        {aviso ? <Aviso>{aviso}</Aviso> : null}
+        {aviso ? (
+          <div className={estilos.aviso}>
+            <Aviso>{aviso}</Aviso>
+          </div>
+        ) : null}
 
-        <Botao disabled={!pronto} carregando={enviando} onClick={agendar}>
-          Agendar
-        </Botao>
+        {/* Num invólucro: o Botao espalha as props depois da própria
+            classe, e um `className` aqui apagaria a dele. */}
+        <div className={estilos.agendar}>
+          <Botao disabled={!pronto} carregando={enviando} onClick={agendar}>
+            Agendar
+          </Botao>
+        </div>
         {/* O motivo logo embaixo do botão desligado: é ali que o olho vai
             quando o clique não faz nada. */}
         {aEscolher.length === 0 ? null : (
           <p className={estilos.falta}>Falta escolher: {emLista(aEscolher)}</p>
         )}
-        {/* Volta no histórico, e não pra um destino fixo: a tela abre da
-            agenda, do Hoje, da lista e do detalhe do cliente. Sem
-            `carregando`: desistir tem que funcionar inclusive enquanto o
-            envio pendura. */}
-        <Botao type="button" variante="contorno" onClick={() => router.back()}>
-          Cancelar
-        </Botao>
       </div>
       </div>
     </div>
@@ -510,9 +534,10 @@ type Etapa = "cliente" | "servicos" | "data" | "horario";
 // duas ocorrências ligaria o botão sem a confirmação.
 const CONFIRMAR_PASSADO = "confirmar o registro retroativo";
 
-// Um passo do quadro. Recolhido, o cabeçalho é o botão que abre e o
-// chip ao lado mostra a escolha — e também reabre, porque é nele que a
-// mão vai quando a intenção é rever o que ficou decidido.
+// Um passo do quadro. O cabeçalho é o botão que abre e fecha; recolhido
+// com escolha feita, a escolha vem numa linha embaixo do título, com
+// "Trocar" (redesenho dos detalhes, PR 3) — e a linha também reabre,
+// porque é nela que a mão vai quando a intenção é rever o que ficou.
 function Passo({
   etapa,
   numero,
@@ -557,9 +582,10 @@ function Passo({
             onClick={aoAlternar}
           >
             {/* `aria-hidden` no número: quem nomeia o botão é o título,
-                e o "1" lido antes dele só atrapalharia. */}
+                e o "1" lido antes dele só atrapalharia. Feito, o número
+                vira o check. */}
             <span className={estilos.numero} aria-hidden="true">
-              {numero}
+              {feito ? <IconeCheck width={14} height={14} /> : numero}
             </span>
             {titulo}
           </button>
@@ -567,7 +593,10 @@ function Passo({
 
         {/* Só recolhido: aberto, a escolha já está à vista no corpo, e
             dois elementos marcados como atuais confundiriam tanto a
-            leitura quanto a busca por papel. */}
+            leitura quanto a busca por papel. O texto num span próprio:
+            corta com reticências em vez de quebrar o telefone no meio.
+            O "Trocar" faz parte do nome do botão (o que se vê é o que se
+            fala), separado por um espaço. */}
         {!aberto && resumo ? (
           <button
             type="button"
@@ -576,7 +605,8 @@ function Passo({
             aria-current="true"
             onClick={aoAlternar}
           >
-            {resumo}
+            <span className={estilos.textoDoValor}>{resumo}</span>{" "}
+            <span className={estilos.trocar}>Trocar</span>
           </button>
         ) : null}
       </div>

@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
@@ -33,7 +33,23 @@ describe("novo agendamento no painel", () => {
   it("chega preenchido pela URL que a agenda montou", async () => {
     montarPainel(<NovoAgendamento agora={AGORA} />, semear());
 
-    expect(await screen.findByRole("button", { name: "11:00", current: true })).toBeInTheDocument();
+    // O resumo do passo recolhido diz a escolha e "Trocar" (redesenho dos
+    // detalhes, PR 3): o nome do botão começa pela escolha.
+    expect(await screen.findByRole("button", { name: /^11:00/, current: true })).toBeInTheDocument();
+  });
+
+  it("passo feito mostra a escolha com Trocar, e Trocar reabre o passo", async () => {
+    montarPainel(<NovoAgendamento agora={AGORA} />, semear());
+
+    await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
+
+    const resumo = screen.getByTestId("resumo-cliente");
+    expect(resumo).toHaveAccessibleName("João Silva · (11) 99999-0001 Trocar");
+    // O título do passo segue sendo só o título: é ele que abre e fecha.
+    expect(screen.getByRole("button", { name: "Cliente" })).toHaveAttribute("aria-expanded", "false");
+
+    await userEvent.click(within(resumo).getByText("Trocar"));
+    expect(screen.getByLabelText(/buscar cliente/i)).toBeInTheDocument();
   });
 
   it("com ?cliente= na URL, chega com o cliente já escolhido", async () => {
@@ -206,7 +222,7 @@ describe("novo agendamento no painel", () => {
     await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
     await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
 
-    expect(await screen.findByRole("button", { name: "11:00", current: true })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /^11:00/, current: true })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^agendar$/i })).toBeEnabled();
 
     await userEvent.click(screen.getByRole("checkbox", { name: /Barba/ }));
@@ -242,23 +258,35 @@ describe("novo agendamento no painel", () => {
     expect(ultimaChamada?.[0]).not.toContain("hora=");
   });
 
-  describe("cancelar", () => {
-    it("Cancelar volta pra tela anterior sem criar nada", async () => {
+  describe("voltar", () => {
+    it("o Voltar do topo volta pra tela anterior sem criar nada", async () => {
       // A tela abre da agenda, do Hoje, da lista e do detalhe do
       // cliente: um destino fixo erraria em quase todos. Voltar no
-      // histórico leva pra onde a pessoa estava.
+      // histórico leva pra onde a pessoa estava. Ele faz o papel do
+      // Cancelar, que saiu do fecho (redesenho dos detalhes, PR 3).
+      window.history.pushState({}, "", "/painel/agenda");
+      window.history.pushState({}, "", "/painel/agendamentos/novo");
       const falso = semear();
       const criar = vi.fn(falso.barbeiro.criarAgendamento);
       falso.barbeiro.criarAgendamento = criar;
       montarPainel(<NovoAgendamento agora={AGORA} />, falso);
 
-      await userEvent.click(await screen.findByRole("button", { name: /^cancelar$/i }));
+      await userEvent.click(await screen.findByRole("link", { name: /voltar/i }));
 
       expect(navegacaoFalsa.back).toHaveBeenCalledTimes(1);
       expect(criar).not.toHaveBeenCalled();
     });
 
-    it("escolher dia e horário não empilha histórico, senão o Cancelar voltaria pra esta mesma tela", async () => {
+    it("sem histórico, o Voltar leva pra agenda do dia", async () => {
+      montarPainel(<NovoAgendamento agora={AGORA} />, semear());
+
+      expect(await screen.findByRole("link", { name: /voltar/i })).toHaveAttribute(
+        "href",
+        "/painel/agenda?vista=dia&data=2026-09-09"
+      );
+    });
+
+    it("escolher dia e horário não empilha histórico, senão o Voltar cairia nesta mesma tela", async () => {
       const falso = semear();
       falso.estado.diasComVaga = { "2026-09-10": true };
       montarPainel(<NovoAgendamento agora={AGORA} />, falso);
@@ -275,11 +303,12 @@ describe("novo agendamento no painel", () => {
       expect(navegacaoFalsa.replace).toHaveBeenCalledTimes(2);
     });
 
-    it("Cancelar fica junto do Agendar, no fecho", async () => {
+    it("o fecho não tem mais Cancelar: o Voltar do topo faz isso", async () => {
       montarPainel(<NovoAgendamento agora={AGORA} />, semear());
 
       const fecho = await screen.findByTestId("fecho");
-      expect(fecho).toContainElement(screen.getByRole("button", { name: /^cancelar$/i }));
+      expect(within(fecho).getByRole("button", { name: /^agendar$/i })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^cancelar$/i })).not.toBeInTheDocument();
     });
   });
 

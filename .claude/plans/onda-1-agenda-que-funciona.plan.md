@@ -4,7 +4,28 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-01 tarde — redesenho das Configurações concluído) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-01 noite — redesenho das telas restantes, onda A em andamento) — vale mais que as seções abaixo
+
+**Estado:**
+- **Produção = #278**, conferida (seção de 01/11 tarde, abaixo). Configurações redesenhadas e no ar.
+- **Pedido do dono (01/11 noite): redesenhar todas as telas que ainda não passaram pelo redesenho**, em 4 ondas, cada uma pelo canvas primeiro:
+  - **A** detalhes e cadastros do painel (agendamento, novo agendamento, cliente, novo cliente, membro, serviço, plano) → **em andamento**;
+  - **B** o que o cliente vê (página da barbearia, agendar em 6 passos, entrar, minha conta, planos, lembrete; segue o tema da Aparência);
+  - **C** o resto do painel (faturas, cancelado, ajuda, cartaz, entrar, cadastro, convite, suporte ×3);
+  - **D** o site de divulgação (início, preços, grátis, termos, privacidade).
+- **Onda A desenhada e aprovada**: canvas https://claude.ai/artifact/LpMm9AAYAVzsQXsZB1w7Xb, página "Detalhes e cadastros" (11 pranchas × 2 temas, prefixo `Det-`, versão `1793577405-cf1e`). O dono aprovou com as cinco recomendações. Plano: `.claude/plans/redesenho-detalhes.plan.md` (8 PRs, decisões e achados).
+- **PR 1 (Detalhe do agendamento) feito, só local**: branch `redesenho-detalhes-pr1-agendamento`, commit `dfaa390`, **sem push e sem PR**. Andamento numa linha (grid de 3 colunas), "Mudar horário" na lista de ações, ações secundárias em linhas no celular, sem o vão de 88px, títulos de seção como nas Configurações. 1651 testes verdes; conferido a 390 escuro, 360 claro e 1280 escuro. O commit também traz este plano e o RETOMAR AQUI antigo, que entraram na `main` por este PR de docs: ao retomar, rebasear a branch na `main` (os dois `.md` ficam com a versão da `main`).
+- Fora do PR 1, de propósito: o cliente numa linha só com seta (hoje são dois links, nome e telefone) e o valor ao lado do botão preso no pé.
+
+**Ao retomar:**
+1. **PR 1 da onda A**: rebasear `redesenho-detalhes-pr1-agendamento` na `main`, rodar a suíte e perguntar ao dono "posso subir a branch e abrir o PR?". A branch só existe no computador onde foi feita.
+2. **PRs 2 a 8 da onda A**, um por vez (plano): concluir em folha, novo agendamento, cliente, membro (dados), jornada, serviço, plano.
+3. **Ondas B, C e D**: conferência da tela atual → pranchas no canvas (nova página) → "aprovado" → plano → PRs.
+4. **G3** (GR Barber em produção com `lembrete_ativo = false`): adiado até o dono pedir.
+5. **A primeira conta real da InfinitePay**: olhar o log do conector (seção de 31/10 à noite).
+6. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. Em 24/11, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+## RETOMAR AQUI (2026-11-01 tarde — redesenho das Configurações concluído) — histórico
 
 **Estado:**
 - **Redesenho das Configurações no celular concluído:** plano `.claude/plans/redesenho-configuracoes.plan.md`, 9 PRs, #269 a #277, todos mesclados (`main` = merge do #277). Desenho aprovado antes no canvas do Claude Design (página "Configurações", 11 pranchas nos dois temas).
@@ -12,11 +33,11 @@
   - Peças novas, reaproveitáveis: `Interruptor` (`role="switch"`), `FolhaDeEscolha` (rádios + "Usar esta"), `FolhaDeAjuda` (folha só de leitura, mesmo CSS), `BarraDeMudancas` com `podeSalvar`, `SeletorEmPilulas preencher`.
   - Conferido a cada PR em 360, 390 e 1280px, nos dois temas.
 - **A semente de conferência** (`apps/api/scripts/conferencia-visual.ts`) agora tem a conta da casa conectada no Asaas (modo teste, final 9876, sem chave de verdade: só pra ver a tela) e o "Corte mensal" só no balcão. Não usar o assinar online com ela.
-- **Deploy das Configurações novas: com o dono, não conferido.** A última produção conferida continua sendo o #267 (seção abaixo).
-- As branches `redesenho-config-pr1` a `redesenho-config-pr9-pagamentos` seguem existindo (local e remota) até o dono apagar.
+- **Produção = #278** (deploy do dono em 01/11), conferida: `api.barchop.com.br/health` 200 e, no código publicado de cada rota das Configurações, os textos novos ("Como funciona na InfinitePay", "Não conectada", "Num corte de R$ 100", "Usar esta", "Pedir outro link", "Preencher a semana"). O painel mora em `painel.barchop.com.br` (`barchop.com.br/painel/...` dá 308 pra lá).
+- Branches do redesenho apagadas (autorização do dono): só a `main`.
 
 **Ao retomar:**
-1. **Conferir o deploy** quando o dono disser que subiu (código publicado da web: `FolhaDeAjuda`, selo "Não conectada", lista da Divisão).
+1. **Redesenho das telas restantes**, em 4 ondas (pedido do dono, 01/11 noite): A detalhes e cadastros do painel (plano `.claude/plans/redesenho-detalhes.plan.md`) → B o que o cliente vê → C o resto do painel → D o site de divulgação. Cada onda passa primeiro pelo canvas.
 2. **G3** (a GR Barber em produção, com `lembrete_ativo = false`): segue adiado até o dono pedir.
 3. **A primeira conta real da InfinitePay:** olhar o log do conector (seção de 31/10 à noite, abaixo).
 4. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. Em 24/11, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.

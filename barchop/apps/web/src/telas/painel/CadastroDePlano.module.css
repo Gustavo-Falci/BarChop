@@ -1,5 +1,6 @@
-/* O esqueleto do cadastro de serviço: formulário à esquerda, a coluna
-   do efeito à direita, o rodapé com Salvar e o Desativar. */
+/* O esqueleto do cadastro de serviço (redesenho dos detalhes, PR 8): os
+   dados à esquerda, pra onde vai o dinheiro e a situação à direita, as
+   seções com título e o conteúdo em cartão. */
 .pagina {
   composes: pagina from "./CadastroDeServico.module.css";
 }
@@ -8,80 +9,40 @@
   composes: corpo from "./CadastroDeServico.module.css";
 }
 
-/* O formulário e o rodapé eram compostos do cadastro de serviço, que
-   saiu deles no redesenho dos detalhes (PR 7). Ficam aqui até o plano
-   passar pelo mesmo redesenho (PR 8). */
-.formulario,
+.principal {
+  composes: principal from "./CadastroDeServico.module.css";
+}
+
 .lateral {
-  display: grid;
-  gap: var(--espaco-lg);
-  align-content: start;
-  min-width: 0;
+  composes: lateral from "./CadastroDeServico.module.css";
 }
 
-/* Salvar e Cancelar numa ponta, o Desativar na outra, separados por uma
-   linha fina. No celular, um embaixo do outro. */
-.rodape {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--espaco-md);
-  padding-top: var(--espaco-lg);
-  border-top: var(--borda-hairline) solid var(--cor-line);
+.secao {
+  composes: secao from "./CadastroDeServico.module.css";
 }
 
-/* Os botões ficam do tamanho do texto. */
-.acoes,
+.titulo {
+  composes: titulo from "./CadastroDeServico.module.css";
+}
+
+.cartao {
+  composes: cartao from "./CadastroDeServico.module.css";
+}
+
+.recheio {
+  composes: recheio from "./CadastroDeServico.module.css";
+}
+
+.dupla {
+  composes: dupla from "./CadastroDeServico.module.css";
+}
+
+.acoes {
+  composes: acoes from "./CadastroDeServico.module.css";
+}
+
 .acaoDoEstado {
-  display: flex;
-  align-items: center;
-  gap: var(--espaco-sm);
-}
-
-/* Desativar como zona de perigo: separado do formulário por um fio e
-   num quadro de contorno avermelhado, com o botão na cor do erro. */
-.acaoDoEstado[data-perigo] {
-  margin-block-start: var(--espaco-lg);
-  padding: var(--espaco-sm) var(--espaco-md);
-  border: var(--borda-hairline) solid color-mix(in srgb, var(--cor-erro) 35%, var(--cor-line));
-  border-radius: var(--raio-md);
-}
-
-.acaoDoEstado[data-perigo] button {
-  border-color: color-mix(in srgb, var(--cor-erro) 45%, var(--cor-line));
-  color: var(--cor-erro);
-}
-
-.acaoDoEstado .apoio {
-  max-width: 34ch;
-  text-align: right;
-  text-wrap: pretty;
-}
-
-.acaoDoEstado p {
-  margin: 0;
-}
-
-@media (max-width: 560px) {
-  .acoes,
-  .acaoDoEstado {
-    width: 100%;
-  }
-
-  .acoes button,
-  .acaoDoEstado button {
-    flex: 1;
-  }
-
-  .acaoDoEstado {
-    flex-wrap: wrap;
-  }
-
-  .acaoDoEstado .apoio {
-    max-width: none;
-    text-align: left;
-  }
+  composes: acaoDoEstado from "./CadastroDeServico.module.css";
 }
 
 .campoLongo {
@@ -96,51 +57,55 @@
   composes: apoio from "./CadastroDeServico.module.css";
 }
 
-/* O online marcado sem a conta de quem vende: a cor de atenção, a mesma
-   do selo da lista. */
-.indisponivel {
-  composes: apoio from "./CadastroDeServico.module.css";
-  color: var(--cor-atencao);
-}
-
 .area {
   composes: area from "./CadastroDeServico.module.css";
 }
 
-/* Os grupos de marcar sem a moldura do <fieldset>: o combinado das
-   telas sem caixas. */
-.grupo {
-  display: grid;
-  gap: var(--espaco-xs);
+/* Os serviços incluídos e as formas de pagar são <fieldset>/<section>
+   com título de seção: sem a moldura e o recuo do <fieldset>. */
+fieldset.secao {
   margin: 0;
   padding: 0;
   border: 0;
   min-width: 0;
 }
 
-.grupo legend {
+fieldset.secao > legend {
+  float: left;
+  width: 100%;
   padding: 0;
-  margin-bottom: var(--espaco-xs);
 }
 
+fieldset.secao > legend + * {
+  clear: both;
+}
+
+.apoioDaSecao {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+/* Os serviços no cartão: o serviço numa ponta e os usos na outra,
+   separados por um fio. No celular, os usos descem pra baixo do nome. */
 .servicos {
-  display: grid;
-  margin: var(--espaco-xs) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* O serviço numa ponta e os usos na outra, separados por um fio. No
-   celular, os usos descem pra baixo do nome. */
 .servico {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--espaco-xs) var(--espaco-md);
-  min-height: 48px;
-  padding-block: var(--espaco-xs);
-  border-bottom: var(--borda-hairline) solid var(--cor-line);
+  min-height: 56px;
+  padding: var(--espaco-xs) var(--espaco-md) var(--espaco-xs) var(--espaco-lg);
+}
+
+.servico + .servico {
+  border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
 .marca {
@@ -173,6 +138,73 @@
   color: var(--cor-ink);
   font: inherit;
   font-variant-numeric: tabular-nums;
+}
+
+/* Uma linha de interruptor: o nome e o efeito à esquerda, o interruptor
+   na ponta, separadas por um fio (o desenho do membro). */
+.linha {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-height: 64px;
+  padding: var(--espaco-sm) var(--espaco-md) var(--espaco-sm) var(--espaco-lg);
+}
+
+.linha + .linha {
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+@media (max-width: 640px) {
+  .servico,
+  .linha {
+    padding-inline-start: var(--espaco-md);
+  }
+}
+
+.texto {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.nome {
+  font-weight: 600;
+}
+
+/* `--cor-ink-soft`, e não `--cor-muted`: é texto que se lê, e o muted
+   reprova contraste no tema claro. */
+.descricao {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+/* O link pra Pagamentos online, sublinhado: na cor do texto ao redor,
+   sem o fio ele não parecia link. */
+.descricao a {
+  color: var(--cor-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Embaixo de preço e dias, colado neles. */
+.apoioDosDias {
+  margin-block-start: calc(-1 * var(--espaco-sm));
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
+}
+
+/* O online marcado sem a conta de quem vende: a cor de atenção, a mesma
+   do selo da lista. */
+.indisponivel {
+  margin-block-start: var(--espaco-xs);
+  color: var(--cor-atencao);
+  font-size: var(--texto-sm);
+  text-wrap: pretty;
 }
 
 .erro {

@@ -189,7 +189,7 @@ describe("o cadastro do plano", () => {
     await userEvent.type(screen.getByLabelText(/quem atende ganha/i), "15,00");
     expect(screen.getByText(/cada mensalidade de r\$\s?80,00 fica com a casa/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /salvar plano/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     await waitFor(() =>
       expect(criar).toHaveBeenCalledWith({
@@ -212,22 +212,22 @@ describe("o cadastro do plano", () => {
     const falso = comPlanos();
     const criar = vi.spyOn(falso.barbeiro, "criarPlano");
     montarPainel(<CadastroDePlano />, falso);
-    const online = await screen.findByRole("checkbox", { name: /online, na página/i });
+    const online = await screen.findByRole("switch", { name: /online, na página/i });
     // O novo nasce só no balcão.
-    expect(online).not.toBeChecked();
-    expect(screen.getByRole("checkbox", { name: /no balcão/i })).toBeChecked();
+    expect(online).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("switch", { name: /no balcão/i })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("link", { name: "Pagamentos online" })).toHaveAttribute(
       "href",
       "/painel/configuracoes/pagamentos-online"
     );
 
     await userEvent.click(online);
-    await userEvent.click(screen.getByRole("checkbox", { name: /no balcão/i }));
+    await userEvent.click(screen.getByRole("switch", { name: /no balcão/i }));
     await userEvent.type(screen.getByLabelText("Nome"), "Online");
     await userEvent.type(screen.getByLabelText(/preço/i), "50,00");
     await userEvent.type(screen.getByLabelText(/quem atende ganha/i), "0,00");
     await userEvent.click(screen.getAllByRole("checkbox").find((c) => c.closest("li"))!);
-    await userEvent.click(screen.getByRole("button", { name: /salvar plano/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     await waitFor(() =>
       expect(criar).toHaveBeenCalledWith(expect.objectContaining({ aceitaOnline: true, aceitaNoBalcao: false }))
@@ -239,7 +239,7 @@ describe("o cadastro do plano", () => {
     const criar = vi.spyOn(falso.barbeiro, "criarPlano");
     montarPainel(<CadastroDePlano />, falso);
     await userEvent.type(await screen.findByLabelText("Nome"), "Vazio");
-    await userEvent.click(screen.getByRole("button", { name: /salvar plano/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
     expect(await screen.findByText(/use um valor como 120,00/i)).toBeInTheDocument();
     expect(screen.getByText(/escolha pelo menos um serviço/i)).toBeInTheDocument();
     expect(criar).not.toHaveBeenCalled();
@@ -256,7 +256,7 @@ describe("o cadastro do plano", () => {
     expect(screen.queryByLabelText(/quem atende ganha/i)).not.toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("Preço"), "90");
     await userEvent.click(screen.getByRole("checkbox", { name: /corte/i }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar plano/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
 
     await waitFor(() =>
       expect(criar).toHaveBeenCalledWith(
@@ -283,7 +283,7 @@ describe("o cadastro do plano", () => {
     expect(screen.queryByRole("radio", { name: "Da casa" })).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /ilimitado/i })).toBeChecked();
     await userEvent.click(screen.getByRole("checkbox", { name: /barba/i }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar plano/i }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Mudanças" })).getByRole("button", { name: "Salvar" }));
     await waitFor(() =>
       expect(editar).toHaveBeenCalledWith(
         "pl1",
@@ -300,6 +300,67 @@ describe("o cadastro do plano", () => {
     await waitFor(() => expect(editar).toHaveBeenLastCalledWith("pl1", { ativo: false }));
   });
 
+  // Redesenho dos detalhes, PR 8: a edição salva pela barra, que diz o
+  // antes e o depois; o Cancelar saiu (volta pelo "← Planos").
+  it("na edição, a barra só aparece depois de mudar, e diz o antes e o depois", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/planos/pl1", params: { id: "pl1" } });
+    montarPainel(<CadastroDePlano />, comPlanos());
+
+    const preco = await screen.findByLabelText("Preço");
+    await waitFor(() => expect(screen.getByLabelText("Nome")).toHaveValue("Corte ilimitado"));
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /cancelar/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /planos/i })).toHaveAttribute("href", "/painel/planos");
+
+    // "120" por cima de "120,00" é o mesmo preço: não é mudança.
+    await userEvent.clear(preco);
+    await userEvent.type(preco, "120");
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+
+    await userEvent.clear(preco);
+    await userEvent.type(preco, "130");
+    await userEvent.click(screen.getByRole("switch", { name: /online, na página/i }));
+    await userEvent.click(screen.getByRole("radio", { name: "Trimestre" }));
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent(/Preço: R\$\s?120,00 → R\$\s?130,00/);
+    expect(barra).toHaveTextContent("Online: desligado → ligado");
+    expect(barra).toHaveTextContent("Cobra a cada: Mês → Trimestre");
+  });
+
+  it("Descartar volta o plano como estava, sem chamar a API", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/planos/pl1", params: { id: "pl1" } });
+    const falso = comPlanos();
+    const editar = vi.spyOn(falso.barbeiro, "editarPlano");
+    montarPainel(<CadastroDePlano />, falso);
+
+    await waitFor(() => expect(screen.getByLabelText("Nome")).toHaveValue("Corte ilimitado"));
+    await userEvent.click(screen.getByRole("switch", { name: /no balcão/i }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /barba/i }));
+    const barra = screen.getByRole("region", { name: "Mudanças" });
+    expect(barra).toHaveTextContent("No balcão: ligado → desligado");
+    expect(barra).toHaveTextContent("Serviços incluídos");
+    await userEvent.click(within(barra).getByRole("button", { name: "Descartar" }));
+
+    expect(screen.getByRole("switch", { name: /no balcão/i })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("checkbox", { name: /barba/i })).not.toBeChecked();
+    expect(screen.queryByRole("region", { name: "Mudanças" })).not.toBeInTheDocument();
+    expect(editar).not.toHaveBeenCalled();
+  });
+
+  it("Desativar não salva o que foi digitado", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/planos/pl1", params: { id: "pl1" } });
+    const falso = comPlanos();
+    const editar = vi.spyOn(falso.barbeiro, "editarPlano");
+    montarPainel(<CadastroDePlano />, falso);
+
+    await waitFor(() => expect(screen.getByLabelText("Nome")).toHaveValue("Corte ilimitado"));
+    await userEvent.type(screen.getByLabelText("Nome"), " do mês");
+    await userEvent.click(screen.getByRole("button", { name: "Desativar" }));
+
+    await waitFor(() => expect(editar).toHaveBeenCalledWith("pl1", { ativo: false }));
+    expect(editar).toHaveBeenCalledTimes(1);
+  });
+
   it("o erro da API marca o campo certo", async () => {
     const falso = comPlanos();
     vi.spyOn(falso.barbeiro, "criarPlano").mockRejectedValueOnce(
@@ -310,7 +371,7 @@ describe("o cadastro do plano", () => {
     await userEvent.click(screen.getByRole("radio", { name: /meu/i }));
     await userEvent.type(screen.getByLabelText("Preço"), "90");
     await userEvent.click(screen.getByRole("checkbox", { name: /corte/i }));
-    await userEvent.click(screen.getByRole("button", { name: /salvar plano/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^cadastrar$/i }));
     expect(await screen.findByText(/só serviços que você faz/i)).toBeInTheDocument();
   });
 });
@@ -324,8 +385,8 @@ describe("o mínimo da InfinitePay no cadastro", () => {
     montarPainel(<CadastroDePlano />, comPlanos());
 
     await userEvent.type(await screen.findByLabelText("Preço"), "0,99");
-    const online = screen.getByRole("checkbox", { name: /online, na página/i });
-    if (!(online as HTMLInputElement).checked) await userEvent.click(online);
+    const online = screen.getByRole("switch", { name: /online, na página/i });
+    if (online.getAttribute("aria-checked") !== "true") await userEvent.click(online);
 
     expect(screen.getByText(/na infinitepay, o mínimo é r\$\s?1,00/i)).toBeInTheDocument();
 

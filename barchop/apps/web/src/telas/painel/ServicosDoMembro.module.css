@@ -1,18 +1,26 @@
+/* Os serviços num cartão, um por linha (redesenho dos detalhes, PR 6),
+   como a Jornada ao lado. A caixinha fica: é escolha de itens, não
+   liga e desliga (decisão 1 do canvas). */
 .lista {
-  display: grid;
-  gap: var(--espaco-xs);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  composes: cartao from "./DetalheDoCliente.module.css";
 }
 
-/* Alvo de 44px: a linha inteira marca, não só a caixinha. */
+.lista li + li {
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+/* Alvo de 52px: a linha inteira marca, não só a caixinha. */
 .opcao {
   display: flex;
   align-items: center;
-  gap: var(--espaco-sm);
-  min-height: 44px;
+  gap: var(--espaco-md);
+  min-height: 52px;
+  padding: var(--espaco-xs) var(--espaco-lg);
   cursor: pointer;
+}
+
+.opcao:hover {
+  background: var(--cor-paper-soft);
 }
 
 .opcao input {

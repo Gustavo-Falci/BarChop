@@ -206,6 +206,20 @@ describe("o profissional do cliente", () => {
     expect(screen.getByText("Cliente de Gustavo")).toBeInTheDocument();
   });
 
+  it("se a equipe não carrega, a linha vira texto em vez de ficar desligada", async () => {
+    const falso = semearComEquipe("dono");
+    falso.barbeiro.equipe = async () => {
+      throw new Error("rede caída");
+    };
+    montarPainel(<DetalheDoCliente agora={AGORA} />, falso);
+
+    await screen.findByText("De quem é este cliente");
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /de quem é este cliente/i })).not.toBeInTheDocument()
+    );
+    expect(screen.getByText("Cliente de Gustavo")).toBeInTheDocument();
+  });
+
   it("sem dono, diz que passa a ser de quem atender primeiro", async () => {
     montarPainel(<DetalheDoCliente agora={AGORA} />, semearComEquipe("dono", {}));
 

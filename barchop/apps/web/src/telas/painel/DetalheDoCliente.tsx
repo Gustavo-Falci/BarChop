@@ -112,8 +112,10 @@ function ProfissionalDoCliente({
     <>
       {/* Pro dono, sempre botão (trocar de elemento quando a equipe chega
           remontaria a linha); desligado até a equipe chegar, senão a
-          folha abriria com "Ninguém" sozinho. */}
-      {dono ? (
+          folha abriria com "Ninguém" sozinho. Se a equipe não carregar,
+          a linha vira texto, como a do profissional, em vez de ficar
+          desligada pra sempre. */}
+      {dono && !equipe.erro ? (
         <button
           type="button"
           className={`${estilos.linhaDosDados} ${estilos.linhaQueAbre}`}

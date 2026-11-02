@@ -481,9 +481,7 @@ export function CadastroDeMembro() {
                       nomeada: o rótulo "Foto" é do campo, e o título só
                       o mostra. */}
                   <div className={estilos.secao}>
-                    <h2 className={estilos.titulo} aria-hidden="true">
-                      Foto
-                    </h2>
+                    <h2 className={estilos.titulo}>Foto</h2>
                     <div className={`${estilos.cartao} ${estilos.recheio}`}>
                       <CampoDeImagem
                         rotulo="Foto"

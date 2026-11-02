@@ -4,7 +4,28 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-01 noite — redesenho das telas restantes, onda A em andamento) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-02 — onda A do redesenho concluída) — vale mais que as seções abaixo
+
+**Estado:**
+- **Onda A concluída**: os 8 PRs do plano `.claude/plans/redesenho-detalhes.plan.md`, #280 a #287, todos mesclados (`main` = merge do #287, `bc3514c`).
+  - #280 detalhe do agendamento; #281 concluir e registrar pagamento em folha; #282 novo agendamento; #283 cliente e novo cliente; #284 membro (dados) e convidar; #285 jornada do membro; #286 serviço e novo serviço; #287 plano e novo plano.
+  - As cinco decisões do canvas valem em todas: `Interruptor` no que liga e desliga, caixinha na escolha de itens; editar salva pela `BarraDeMudancas` (com o antes e o depois) e criar tem um botão só ("Cadastrar"), sem Cancelar; concluir em folha; categoria e dias da jornada em linha que abre folha; títulos de seção em h2.
+  - Fora do canvas, aceito pelo dono nos PRs: selo "Inativo" no serviço e no plano; o valor da categoria some na linha abaixo de 480px; "Voltar" (histórico) no novo agendamento no lugar do "← Agenda"; link "Pagamentos online" sublinhado; textos novos da jornada.
+  - Peças novas, reaproveitáveis: `Folha` (casca da folha de baixo, com `focoInicial`), `CampoDeImagem rotuloOculto`, `CabecalhoDaPagina acaoLargaNoCelular`. O `CadastroDePlano.module.css` compõe as classes do `CadastroDeServico.module.css`.
+  - Conferido a cada PR em 390 escuro, 360 claro e 1280 escuro, com um salvar de verdade no banco de teste. Suíte web: 1665 testes.
+- **Produção conferida = #278.** O deploy da onda A é do dono e ainda não foi conferido.
+- **Branches da onda A não apagadas** (só com autorização do dono): `docs-retomar-onda-a`, `redesenho-detalhes-pr1-agendamento` a `redesenho-detalhes-pr8-plano`, locais e remotas.
+- **Mudança de fluxo (02/11, pedido do dono):** a partir da onda B, o desenho é feito pelo próprio Claude Design, pelo fluxo do tipo Design (tela a tela, com o Design System do BarChop), e não mais por script gerador de pranchas.
+
+**Ao retomar:**
+1. **Conferir o deploy da onda A** quando o dono subir: `api.barchop.com.br/health` e, no código publicado das rotas, textos novos como "Como o cliente paga", "Cadastrar" e "Usar esta".
+2. **Design System do BarChop**: criar como artefato do tipo Design System, a partir de `packages/design-tokens`, das fontes e dos componentes de `apps/web/src/componentes`, e instalar no canvas.
+3. **Onda B** (o que o cliente vê: página da barbearia, agendar em 6 passos, entrar, minha conta, planos, lembrete; segue o tema da Aparência): conferência da tela atual → desenho no Claude Design → "aprovado" → plano → um PR por vez. Depois, ondas C e D.
+4. **G3** (GR Barber em produção com `lembrete_ativo = false`): adiado até o dono pedir.
+5. **A primeira conta real da InfinitePay**: olhar o log do conector (seção de 31/10 à noite).
+6. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. Em 24/11, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+## RETOMAR AQUI (2026-11-01 noite — redesenho das telas restantes, onda A em andamento) — histórico
 
 **Estado:**
 - **Produção = #278**, conferida (seção de 01/11 tarde, abaixo). Configurações redesenhadas e no ar.

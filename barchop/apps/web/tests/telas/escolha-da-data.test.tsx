@@ -49,6 +49,46 @@ describe("escolha do dia e do horário", () => {
     expect(faixa().getByRole("button", { name: /10 de setembro/ })).toBeEnabled();
   });
 
+  it("título curto, resumo do pedido e o dia escolhido como título dos horários (onda B)", async () => {
+    montar({ "2026-09-10": true });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Dia e horário" })).toBeInTheDocument();
+    const resumo = await screen.findByLabelText("Sua escolha");
+    expect(resumo).toHaveTextContent("Corte");
+    expect(resumo).toHaveTextContent("30 min");
+    expect(await screen.findByRole("heading", { level: 2, name: "quinta, 10 de setembro" })).toBeInTheDocument();
+  });
+
+  it("com uma pessoa só na equipe, volta direto pros serviços (o passo do profissional pula)", async () => {
+    montar({ "2026-09-10": true });
+
+    expect(await screen.findByRole("link", { name: /serviços/i })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar?servicos=s1"
+    );
+  });
+
+  it("com mais de uma pessoa, volta pro profissional sem perder os serviços", async () => {
+    const cliente = criarApiClientFalso({ diasComVaga: { "2026-09-10": true }, horariosLivres: ["15:00"] });
+    cliente.estado.perfil = {
+      ...cliente.estado.perfil,
+      barbeiros: [
+        { id: "bb1", nome: "Rafael", servicoIds: ["s1"], fotoUrl: null },
+        { id: "bb2", nome: "Ana", servicoIds: ["s1"], fotoUrl: null },
+      ],
+    };
+    render(
+      <ProvedorDaApi valor={cliente}>
+        <EscolhaDaData agora={MANHA} />
+      </ProvedorDaApi>
+    );
+
+    expect(await screen.findByRole("link", { name: /com quem/i })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar/profissional?servicos=s1"
+    );
+  });
+
   it("sem data na URL, já mostra os horários do primeiro dia com vaga", async () => {
     // Um toque a menos: quem só quer "o quanto antes" não precisa
     // escolher o dia pra ver se tem horário.

@@ -44,6 +44,35 @@
 
 .titulo { margin: 0; }
 
+/* O voltar do passo (onda B), igual ao do passo do profissional. */
+.passoAnterior {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  min-height: 44px;
+  margin-block: calc(-1 * var(--espaco-sm));
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.passoAnterior:hover {
+  color: var(--cor-ink);
+}
+
+/* A seta é a das ações que avançam; aqui ela volta. */
+.setaDeVolta {
+  transform: scaleX(-1);
+}
+
+/* O dia escolhido, por extenso, como título dos horários. */
+.diaEscolhido {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
 /* No celular os dois blocos não são caixa: os filhos seguem em fila no
    grid da página, como antes do desktop existir. */
 .escolhaDoDia,
@@ -69,7 +98,9 @@
     align-items: start;
   }
 
-  .titulo { grid-column: 1 / -1; }
+  .titulo,
+  .passoAnterior,
+  .resumoDoPedido { grid-column: 1 / -1; }
 
   .escolhaDoDia {
     display: grid;

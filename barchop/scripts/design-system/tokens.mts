@@ -185,4 +185,47 @@ for (const g of [USO_ESPACO, USO_RAIO, USO_BORDA]) for (const [k, v] of Object.e
 const saida = join(SAIDA, "tokens.json");
 mkdirSync(dirname(saida), { recursive: true });
 writeFileSync(saida, JSON.stringify(tokens, null, 2) + "\n");
+writeFileSync(join(SAIDA, "tokens.css"), compilarCss());
 console.log("ok", corTokens.length, "cores", sombraTokens.length, "sombras");
+
+// O tokens.css que a página do Design System compila de tokens.json ao salvar, no mesmo
+// formato ("tokens.css as compiled"). A página só escreve o seu quando alguém salva uma
+// edição; até lá (e no canvas, que leva uma cópia) vale este. A primeira linha é a que a
+// página reconhece como dela: depois de um salvamento lá, ela assume o arquivo.
+function compilarCss(): string {
+  const [primeiro, ...outros] = tokens.color.themes.map((tema) => tema.id) as ("light" | "dark")[];
+  const porTema = [...tokens.color.tokens, ...tokens.shadow.tokens];
+  const declarar = (pares: [string, string][]) => pares.map(([nome, valor]) => `  --${nome}: ${valor};`).join("\n");
+
+  const blocos = [
+    `/* ${tokens.name} — generated from tokens.json */`,
+    `:root, [data-theme="${primeiro}"] {\n${declarar(porTema.map((tk) => [tk.name, tk.value[primeiro]]))}\n}`,
+    ...outros.map(
+      (tema) =>
+        `[data-theme="${tema}"] {\n${declarar(porTema.filter((tk) => tk.value[tema] !== tk.value[primeiro]).map((tk) => [tk.name, tk.value[tema]]))}\n}`,
+    ),
+    `:root {\n${declarar([
+      ...[tokens.spacing, tokens.radius, tokens.texto, tokens.borda].flatMap((familia) =>
+        familia.tokens.map((tk): [string, string] => [tk.name, tk.value]),
+      ),
+      ...Object.entries(tokens.type.families).map(([chave, pilha]): [string, string] => [`font-${chave}`, pilha]),
+    ])}\n}`,
+    ...tokens.type.groups.flatMap((grupo) =>
+      grupo.styles.map((estilo) => {
+        const regras = [
+          `font-family: var(--font-${grupo.family})`,
+          `font-size: ${estilo.fontSize}`,
+          `line-height: ${estilo.lineHeight}`,
+          `font-weight: ${estilo.fontWeight}`,
+          ...("letterSpacing" in estilo ? [`letter-spacing: ${estilo.letterSpacing}`] : []),
+        ];
+        return `.${estilo.name} { ${regras.join("; ")}; }`;
+      }),
+    ),
+    ...tokens.type.fonts.map(
+      (fonte) =>
+        `@font-face { font-family: "${fonte.family}"; src: url("${fonte.file}") format("woff2"); font-weight: ${fonte.weight}; font-style: ${fonte.style}; font-display: swap; }`,
+    ),
+  ];
+  return blocos.join("\n\n") + "\n";
+}

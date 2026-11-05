@@ -3,6 +3,7 @@
 Gera os arquivos do artefato **Design System** do BarChop no Claude, que alimenta o canvas do Claude Design. Os redesenhos de tela passam por esse canvas antes do código. A fonte é este repositório:
 
 - **Tokens:** `tokens.json` sai de `packages/design-tokens`. Os nomes são as custom properties que `apps/web/app/tokens-css.ts` emite (`cor-*`, `raio-*`, `espaco-*`, `texto-*`, `sombra-*`, `borda-*`), com valor claro (`light`) e escuro (`dark`).
+  - `tokens.css` sai do mesmo `tokens.json`, no formato que a página do sistema compila. A página só escreve o dela quando alguém salva uma edição lá; até isso acontecer, vale este.
 - **Componentes:** `components/bundle.js` e `bundle.css` são compilados com esbuild dos componentes reais de `apps/web/src/componentes`, os que estão em `caminhos.mts`.
   - O pacote é um IIFE que lê `window.React`/`window.ReactDOM` (React 18, dado pela página) e expõe `window.BarChop`.
   - `react/jsx-runtime` e `next/link` viram shims.
@@ -26,10 +27,10 @@ Sai tudo em `scripts/design-system/saida/project/` (fora do git). Roda com o `ts
 
 A publicação é pelo Claude Code, com as ferramentas de artefato. O índice `project/design-system.json` mora no artefato: não sai daqui e é editado lá, por último.
 
-1. **Mandar só o que mudou.** Na lista de arquivos do artefato do Design System, compare os `sha256` com os de `saida/project/`. Publique os diferentes num envio só. O `tokens.json` vai sempre inteiro.
+1. **Mandar só o que mudou.** Na lista de arquivos do artefato do Design System, compare os `sha256` com os de `saida/project/`. Publique os diferentes num envio só. O `tokens.json` vai sempre inteiro. Se alguém já salvou uma edição na página, o `tokens.css` de lá é o que vale: não mande o daqui por cima.
 2. **Atualizar o índice.** No `design-system.json`, troque o `lastChange` (quem, quando, de qual commit, o que mudou). Mexa em `libraries` só se o React mudar.
 3. **Reinstalar no canvas.** O canvas guarda uma cópia, que não se atualiza sozinha:
-   - copie para `project/ds/barchop/` os arquivos que mudaram (`tokens.json`, `README.md`, `components/bundle.js`, `bundle.css`, `index.d.ts` e, quando a página do sistema tiver gerado, `tokens.css`);
+   - copie para `project/ds/barchop/` os arquivos que mudaram (`tokens.json`, `tokens.css`, `README.md`, `components/bundle.js`, `bundle.css`, `index.d.ts`);
    - atualize a `version` do registro `barchop` em `designSystems` no `canvas.json`.
 
 ## Mudar

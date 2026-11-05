@@ -66,16 +66,19 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
   - Ficou fora: o resumo dos planos em cartão amarelo da prancha (o dono não listou; o de hoje já tem "Conhecer os planos") e o rótulo "PRÓXIMOS:" em caixa alta.
   - 1665 testes verdes; conferido 390 escuro, 360 claro, 1280 escuro.
 
-### PR 2 — Passo 1: Serviços
-- Título da categoria igual ao do perfil.
-- "← voltar" pra página da barbearia, como nos outros passos.
-- Resumo preso embaixo como está.
+### ~~PR 2 — Passo 1: Serviços~~ (saiu, 05/11)
+- Conferido com a semente: o passo 1 já bate com a prancha (categoria em h2 com ícone e contagem, resumo preso embaixo). O "← voltar" que estava aqui não vinha da prancha, e a barra de cima já leva ao perfil. Nada a mudar.
 
-### PR 3 — Passo 2: Profissional
+### PR 2 (era o 3) — Passo 2: Profissional
 - Voltar "← Serviços".
 - Resumo dos serviços (nomes, duração, total).
 - Iniciais em cada linha; "Qualquer um" no topo com o apoio "mais opções".
 - O toque segue avançando.
+- **Feito (05/11, só local):**
+  - voltar, resumo (`Resumo`, região "Sua escolha") e foto ou iniciais;
+  - seta à direita dizendo que o toque já segue;
+  - `Resumo` deixa o primeiro item crescer e quebrar linha, com os outros inteiros (antes "50 min" quebrava), e canto `--raio-lg`.
+  - 1666 testes verdes; conferido 390 escuro, 360 claro, 1280 escuro.
 
 ### PR 4 — Passo 3: Dia e horário
 - Voltar "← Com quem".

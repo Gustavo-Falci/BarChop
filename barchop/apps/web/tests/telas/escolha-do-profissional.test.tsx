@@ -72,6 +72,22 @@ describe("escolher o profissional", () => {
     );
   });
 
+  it("volta pros serviços sem perder a escolha e mostra o resumo dela (onda B)", async () => {
+    navegacaoFalsa.redefinir({ query: { servicos: "s1" } });
+    montar(<EscolhaDoProfissional />);
+
+    expect(await screen.findByRole("link", { name: /serviços/i })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar?servicos=s1"
+    );
+    const resumo = await screen.findByLabelText("Sua escolha");
+    expect(resumo).toHaveTextContent("Corte");
+    expect(resumo).toHaveTextContent("30 min");
+    expect(resumo).toHaveTextContent(/R\$\s40,00/);
+    // As iniciais são enfeite: o nome do botão continua só o nome.
+    expect(screen.getByRole("button", { name: "Ana" })).toBeInTheDocument();
+  });
+
   it("qualquer um segue pro dia sem profissional na URL", async () => {
     montar(<EscolhaDoProfissional />);
 

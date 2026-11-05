@@ -93,7 +93,7 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
   - no desktop o voltar e o resumo ocupam as duas colunas.
   - 1669 testes verdes; conferido 390 escuro, 360 claro, 1280 escuro.
 
-### PR 5 — Passo 4: Confirmar e Confirmado (`Confirmacao`)
+### PR 4 (era o 5) — Passo 4: Confirmar e Confirmado (`Confirmacao`)
 - **Confirmar:**
   - resumo em lista com "Mudar" por linha (`aria-label` dizendo o quê). Cada link leva `servicoIds`, `data`, `hora`, `profissional` e `remarcar` por `caminhoDoPasso`. No remarcar, "Mudar" serviços só aparece se o remarcar deixar trocar serviço (conferir antes);
   - Total destacado;
@@ -103,6 +103,12 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
   - "Onde" com "Mapa";
   - "Adicionar à agenda" principal, "Voltar ao início" em contorno;
   - "Ver meus agendamentos" com a condição de hoje.
+- **Feito (05/11, só local):**
+  - "Mudar" em cada linha (`aria-label` "Mudar os serviços" / "o dia e o horário" / "o profissional"), levando o resto da escolha; o do profissional só quando o passo dele existe (mais de uma pessoa faz tudo, fora do remarcar). O remarcar aceita trocar serviços (`api.cliente.remarcar` recebe `servicoIds`), então "Mudar" serviços fica nele também;
+  - Total sem linha embaixo, maior, com a fonte de título;
+  - todo valor do resumo alinhado à direita, inclusive quando quebra;
+  - Confirmado: frase "Te esperamos no sábado, 7 de novembro, às 14:30." ("no" sábado/domingo, "na" nos outros) e "Mapa" sublinhado ao lado do endereço, com o mesmo link do "Ver no mapa" do perfil. "Adicionar à agenda" principal e "Voltar ao início" em contorno já eram assim.
+  - 1672 testes verdes; conferido 390 escuro, 360 claro (confirmado), 1280 escuro (confirmar).
 
 ### PR 6 — Entrar
 - Título "Entrar" com apoio.

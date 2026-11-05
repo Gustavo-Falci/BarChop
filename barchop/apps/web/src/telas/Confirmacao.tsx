@@ -19,6 +19,7 @@ import {
   type DadosDoCliente,
 } from "../fluxo/dadosDoCliente";
 import { gerarIcs } from "../fluxo/ics";
+import { profissionaisQueFazem } from "../fluxo/profissionais";
 import { useContaDoCliente, validarDados } from "../fluxo/identificacao";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
 import {
@@ -95,6 +96,11 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
   const nomeDoProfissional = profissional
     ? perfil.dados?.barbeiros.find((barbeiro) => barbeiro.id === profissional)?.nome
     : undefined;
+  // "Mudar" o profissional só quando o passo dele existe (onda B): com
+  // uma pessoa só ele pula pro dia, e o remarcar mantém quem atendeu.
+  const temPassoDoProfissional =
+    !remarcar &&
+    Boolean(perfil.dados && profissionaisQueFazem(perfil.dados.barbeiros, servicoIds).length > 1);
 
   if (!pronto || !data || !hora) return null;
 
@@ -269,6 +275,15 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
         >
           Agendamento confirmado
         </m.h1>
+        {/* O dia numa frase (onda B), pra ler de relance antes da lista.
+            "No" sábado e domingo, "na" nos outros dias. */}
+        <p className={estilos.frase}>
+          {(() => {
+            const dia = formatarDataComSemana(criado.data);
+            const artigo = /^(sábado|domingo)/.test(dia) ? "no" : "na";
+            return `Te esperamos ${artigo} ${dia}, às ${criado.horaInicio}.`;
+          })()}
+        </p>
         <div className={estilos.linha}>
           <span>Quando</span>
           <b>
@@ -291,7 +306,18 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
         {endereco ? (
           <div className={estilos.linha}>
             <span>Onde</span>
-            <b>{endereco}</b>
+            <b className={estilos.onde}>
+              <span>{endereco}</span>
+              {/* O mesmo link do "Ver no mapa" do perfil (onda B). */}
+              <a
+                className={estilos.mapa}
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Mapa
+              </a>
+            </b>
           </div>
         ) : null}
 
@@ -320,18 +346,35 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
 
       {/* O que vai ser agendado. No desktop é a coluna da esquerda, ao
           lado de quem vai ser atendido; no celular vem em cima. */}
+      {/* Cada linha com o seu "Mudar" (onda B): volta ao passo dela sem
+          perder o resto da escolha. O nome do link diz o quê, pro leitor
+          de tela não ouvir três "Mudar" iguais. */}
       <div className={estilos.resumo}>
-        <div className={estilos.linha}>
+        <div className={`${estilos.linha} ${estilos.comMudar}`}>
           <span>Serviços</span>
           <b>{escolhidos.map((s) => s.nome).join(", ")}</b>
+          <Link
+            className={estilos.mudar}
+            aria-label="Mudar os serviços"
+            href={noHost(caminhoDoPasso(slug, "servicos", { servicoIds, remarcar, profissional }))}
+          >
+            Mudar
+          </Link>
         </div>
-        <div className={estilos.linha}>
+        <div className={`${estilos.linha} ${estilos.comMudar}`}>
           <span>Quando</span>
           <b>
             <span>{hora}</span> · <span>{formatarDataLonga(data)}</span>
           </b>
+          <Link
+            className={estilos.mudar}
+            aria-label="Mudar o dia e o horário"
+            href={noHost(caminhoDoPasso(slug, "data", { servicoIds, data, remarcar, profissional }))}
+          >
+            Mudar
+          </Link>
         </div>
-        <div className={estilos.linha}>
+        <div className={`${estilos.linha} ${estilos.comMudar}`}>
           <span>Profissional</span>
           {/* Com profissional escolhido e o perfil ainda chegando, nada
               de "quem estiver livre": seria falso por um instante. */}
@@ -346,8 +389,17 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
                   ? "Com o mesmo profissional"
                   : "…"}
           </b>
+          {temPassoDoProfissional ? (
+            <Link
+              className={estilos.mudar}
+              aria-label="Mudar o profissional"
+              href={noHost(caminhoDoPasso(slug, "profissional", { servicoIds }))}
+            >
+              Mudar
+            </Link>
+          ) : null}
         </div>
-        <div className={estilos.linha}>
+        <div className={`${estilos.linha} ${estilos.total}`}>
           <span>Total</span>
           <b>{formatarPreco((totalEmCentavos / 100).toFixed(2))}</b>
         </div>

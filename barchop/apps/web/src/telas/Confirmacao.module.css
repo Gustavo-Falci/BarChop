@@ -10,6 +10,60 @@
 }
 .linha { display: flex; justify-content: space-between; gap: var(--espaco-md); padding: var(--espaco-sm) 0; border-bottom: var(--borda-hairline) solid var(--cor-line); }
 
+/* Linha do resumo com "Mudar" no fim (onda B): o valor encosta no link,
+   alinhado à direita como nas linhas sem ele. */
+.comMudar { align-items: baseline; }
+.linha > b { text-align: right; }
+.comMudar > b { margin-left: auto; }
+
+.mudar {
+  flex-shrink: 0;
+  /* Alvo de toque de 44px sem engordar a linha. */
+  padding: var(--espaco-sm) 0;
+  margin-block: calc(-1 * var(--espaco-sm));
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.mudar:hover { color: var(--cor-ink); }
+
+.mudar:focus-visible,
+.mapa:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
+/* O total destacado (onda B): é o número que se confere antes de
+   confirmar. */
+.total { border-bottom: 0; font-size: var(--texto-lg); }
+.total > b { font-family: var(--fonte-display), system-ui, sans-serif; }
+
+/* A frase do dia no confirmado (onda B). */
+.frase {
+  margin: 0;
+  font-size: var(--texto-lg);
+  font-weight: 600;
+  color: var(--cor-ink);
+}
+
+/* Endereço e "Mapa" na mesma célula, o link embaixo quando não cabe. */
+.onde {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  column-gap: var(--espaco-sm);
+  text-align: right;
+}
+
+.mapa {
+  color: var(--cor-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 /* Identificação e botão juntos, com um respiro a mais que as linhas do
    resumo acima: o resumo é o que se confere, o formulário é o que se
    faz. */

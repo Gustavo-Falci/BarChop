@@ -58,7 +58,7 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
   - categoria como título normal, com a contagem ("Cabelo · 2 serviços");
   - "Equipe" com o mesmo título das outras seções;
   - conferir o resto contra a prancha (horário com o "hoje" em destaque, Planos em cartão).
-- **Feito (05/11, só local):**
+- **Feito (05/11, #291):**
   - semente com horário seg–sáb 09:00–23:30 (domingo fechado), endereço, WhatsApp, Instagram, comodidades, formas de pagamento, "Barba completa" e `vitrineDePlanos` ligada;
   - categoria em h3 normal (`--texto-lg`), com a contagem fora do h3 (o nome da região continua só a categoria);
   - todo h2 do perfil em `--texto-xl` no celular; a lateral menor só a partir de 900px, onde é coluna (decisão de antes, mantida);
@@ -74,7 +74,7 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
 - Resumo dos serviços (nomes, duração, total).
 - Iniciais em cada linha; "Qualquer um" no topo com o apoio "mais opções".
 - O toque segue avançando.
-- **Feito (05/11, só local):**
+- **Feito (05/11, #292):**
   - voltar, resumo (`Resumo`, região "Sua escolha") e foto ou iniciais;
   - seta à direita dizendo que o toque já segue;
   - `Resumo` deixa o primeiro item crescer e quebrar linha, com os outros inteiros (antes "50 min" quebrava), e canto `--raio-lg`.
@@ -86,7 +86,7 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
 - Resumo do pedido acima da faixa.
 - O dia escolhido por extenso ("Amanhã, 6 de novembro") acima dos horários.
 - O toque no horário segue avançando.
-- **Feito (05/11, só local):**
+- **Feito (05/11, #293):**
   - "← Com quem" só quando o passo do profissional existe (mais de uma pessoa faz tudo); senão, e no remarcar, "← Serviços" (voltar pro profissional com uma pessoa só pularia pra frente de novo);
   - o resumo do pedido virou o hook `fluxo/useResumoDaEscolha`, usado também no passo 2;
   - o dia escolhido é h2 (`formatarDataComSemana`, sem o "Amanhã" da prancha);
@@ -103,30 +103,31 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
   - "Onde" com "Mapa";
   - "Adicionar à agenda" principal, "Voltar ao início" em contorno;
   - "Ver meus agendamentos" com a condição de hoje.
-- **Feito (05/11, só local):**
+- **Feito (05/11, #294):**
   - "Mudar" em cada linha (`aria-label` "Mudar os serviços" / "o dia e o horário" / "o profissional"), levando o resto da escolha; o do profissional só quando o passo dele existe (mais de uma pessoa faz tudo, fora do remarcar). O remarcar aceita trocar serviços (`api.cliente.remarcar` recebe `servicoIds`), então "Mudar" serviços fica nele também;
   - Total sem linha embaixo, maior, com a fonte de título;
   - todo valor do resumo alinhado à direita, inclusive quando quebra;
   - Confirmado: frase "Te esperamos no sábado, 7 de novembro, às 14:30." ("no" sábado/domingo, "na" nos outros) e "Mapa" sublinhado ao lado do endereço, com o mesmo link do "Ver no mapa" do perfil. "Adicionar à agenda" principal e "Voltar ao início" em contorno já eram assim.
   - 1672 testes verdes; conferido 390 escuro, 360 claro (confirmado), 1280 escuro (confirmar).
 
-### PR 6 — Entrar
+### PR 5 (era o 6) — Entrar
+- **Parado (05/11): só quando o dono liberar.**
 - Título "Entrar" com apoio.
 - "Primeira vez aqui, ou esqueceu a senha?" com o link do código abaixo do formulário.
 - Linha "Pra agendar não precisa de conta".
 - O modo código com "← Entrar com senha".
 
-### PR 7 — Minha conta
+### PR 6 (era o 7) — Minha conta
 - Títulos h2 (Horários marcados, Meu plano, Histórico).
 - Horário em cartão com o bloco da data e o selo de situação.
 - Remarcar e Cancelar lado a lado.
 - Histórico em linhas com selo.
 
-### PR 8 — Planos
+### PR 7 (era o 8) — Planos
 - Cartões com nome, com quem vale, preço grande, "Inclui a cada mês" com check, forma de pagar e Assinar.
 - "Como funciona" com o texto de hoje, em passos numerados.
 
-### PR 9 — Lembrete
+### PR 8 (era o 9) — Lembrete
 - Cartão do horário com o bloco da data e o selo (Presença confirmada / Cancelado).
 - Ações por estado.
 - "Marcar outro horário" depois de cancelar.

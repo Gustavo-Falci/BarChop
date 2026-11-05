@@ -18,6 +18,8 @@ export default tseslint.config(
       "**/next-env.d.ts",
       "**/expo-env.d.ts",
       "**/*.tsbuildinfo",
+      // Saída do gerador do Design System: pacote minificado e tipos gerados.
+      "scripts/design-system/saida/**",
     ],
   },
   js.configs.recommended,

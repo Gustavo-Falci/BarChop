@@ -80,12 +80,18 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
   - `Resumo` deixa o primeiro item crescer e quebrar linha, com os outros inteiros (antes "50 min" quebrava), e canto `--raio-lg`.
   - 1666 testes verdes; conferido 390 escuro, 360 claro, 1280 escuro.
 
-### PR 4 — Passo 3: Dia e horário
+### PR 3 (era o 4) — Passo 3: Dia e horário
 - Voltar "← Com quem".
 - Título "Dia e horário".
 - Resumo do pedido acima da faixa.
 - O dia escolhido por extenso ("Amanhã, 6 de novembro") acima dos horários.
 - O toque no horário segue avançando.
+- **Feito (05/11, só local):**
+  - "← Com quem" só quando o passo do profissional existe (mais de uma pessoa faz tudo); senão, e no remarcar, "← Serviços" (voltar pro profissional com uma pessoa só pularia pra frente de novo);
+  - o resumo do pedido virou o hook `fluxo/useResumoDaEscolha`, usado também no passo 2;
+  - o dia escolhido é h2 (`formatarDataComSemana`, sem o "Amanhã" da prancha);
+  - no desktop o voltar e o resumo ocupam as duas colunas.
+  - 1669 testes verdes; conferido 390 escuro, 360 claro, 1280 escuro.
 
 ### PR 5 — Passo 4: Confirmar e Confirmado (`Confirmacao`)
 - **Confirmar:**

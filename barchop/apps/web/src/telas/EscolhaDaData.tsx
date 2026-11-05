@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
@@ -13,6 +14,8 @@ import { Resumo } from "../componentes/Resumo";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { profissionaisQueFazem } from "../fluxo/profissionais";
 import { usePassoDoFluxo } from "../fluxo/usePassoDoFluxo";
+import { useResumoDaEscolha } from "../fluxo/useResumoDaEscolha";
+import { IconeSeta } from "../painel/icones";
 import {
   ehPassado,
   formatarDataComSemana,
@@ -69,6 +72,14 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
     async () => (pronto ? api.publico.perfilDaBarbearia(slug) : null),
     [slug, pronto]
   );
+  const resumo = useResumoDaEscolha(slug, servicoIds, pronto);
+  // O passo anterior (onda B): o do profissional só existe com mais de
+  // uma pessoa que faça tudo — com uma só ele pula pra cá, e voltar pra
+  // ele jogaria a pessoa pra frente de novo. O remarcar não passa por
+  // ele: vem dos serviços direto pro dia.
+  const voltaProProfissional =
+    !remarcar &&
+    Boolean(perfil.dados && profissionaisQueFazem(perfil.dados.barbeiros, servicoIds).length > 1);
   // Sem profissional na URL é "qualquer um": a API junta a agenda de
   // quem faz os serviços.
   const barbeiroId = profissional;
@@ -210,8 +221,24 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
 
   return (
     <m.main className={`${estilos.pagina} ${estilos.duasColunas}`} {...deslize}>
+      <Link
+        className={estilos.passoAnterior}
+        href={noHost(
+          voltaProProfissional
+            ? caminhoDoPasso(slug, "profissional", { servicoIds })
+            : caminhoDoPasso(slug, "servicos", { servicoIds, remarcar, profissional })
+        )}
+      >
+        <IconeSeta width="16" height="16" className={estilos.setaDeVolta} />
+        {voltaProProfissional ? "Com quem" : "Serviços"}
+      </Link>
       <IndicadorDePasso atual={3} />
-      <h1 className={estilos.titulo}>Escolha o dia e o horário</h1>
+      <h1 className={estilos.titulo}>Dia e horário</h1>
+      {resumo ? (
+        <section className={estilos.resumoDoPedido} aria-label="Sua escolha">
+          <Resumo itens={resumo} />
+        </section>
+      ) : null}
 
       {/* Dois blocos que só existem como caixa a partir de 900px: o dia à
           esquerda, os horários à direita. No celular são `display:
@@ -276,7 +303,9 @@ export function EscolhaDaData({ agora = new Date() }: { agora?: Date }) {
           <p>Nenhum horário livre nos próximos 14 dias. Veja outra data no calendário.</p>
         ) : (
           <div className={estilos.horarios}>
-            <Resumo itens={[formatarDataComSemana(dataEfetiva)]} />
+            {/* O dia por extenso como título dos horários (onda B): era um
+                Resumo, e o resumo agora é o do pedido, lá em cima. */}
+            <h2 className={estilos.diaEscolhido}>{formatarDataComSemana(dataEfetiva)}</h2>
 
             {horarios.erro ? (
               // Sem isto, um 500 na busca do dia deixava "Carregando

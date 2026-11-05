@@ -12,8 +12,8 @@ import estilos from "./EscolhaDoProfissional.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { Carregando } from "../componentes/Carregando";
 import { IndicadorDePasso } from "../componentes/IndicadorDePasso";
-import { formatarPreco } from "../componentes/ItemDeServico";
 import { Resumo } from "../componentes/Resumo";
+import { useResumoDaEscolha } from "../fluxo/useResumoDaEscolha";
 import { iniciais } from "../formato/iniciais";
 import { IconeSeta } from "../painel/icones";
 import { m } from "motion/react";
@@ -37,25 +37,8 @@ export function EscolhaDoProfissional() {
     ? profissionaisQueFazem(perfil.dados.barbeiros, servicoIds)
     : null;
   const sozinho = elegiveis?.length === 1;
-  // O resumo do que já foi escolhido (onda B): quem escolhe com quem
-  // ainda vê o que vai fazer. Se a lista falhar, o passo segue sem ele.
-  const servicos = useRequisicao(
-    async () => (pronto ? api.publico.servicos(slug) : null),
-    [slug, pronto]
-  );
-  const escolhidos = (servicos.dados ?? []).filter((servico) => servicoIds.includes(servico.id));
-  const resumo =
-    escolhidos.length > 0
-      ? [
-          escolhidos.map((servico) => servico.nome).join(", "),
-          `${escolhidos.reduce((soma, servico) => soma + servico.duracaoMinutos, 0)} min`,
-          formatarPreco(
-            (
-              escolhidos.reduce((soma, servico) => soma + Math.round(Number(servico.preco) * 100), 0) / 100
-            ).toFixed(2)
-          ),
-        ]
-      : null;
+  // Quem escolhe com quem ainda vê o que vai fazer (onda B).
+  const resumo = useResumoDaEscolha(slug, servicoIds, pronto);
 
   useEffect(() => {
     // `replace`: o passo pulado não merece entrada no histórico, senão o

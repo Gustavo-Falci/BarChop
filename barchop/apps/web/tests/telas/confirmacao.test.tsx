@@ -48,6 +48,41 @@ describe("confirmação", () => {
     expect(screen.getByText("R$ 65,00")).toBeInTheDocument();
   });
 
+  it("cada linha do resumo tem o seu 'Mudar', que volta ao passo sem perder o resto (onda B)", async () => {
+    navegacaoFalsa.redefinir({
+      query: { servicos: "s1,s2", data: "2026-09-10", hora: "09:00", profissional: "bb1" },
+    });
+    const falso = criarApiClientFalso();
+    falso.estado.perfil = {
+      ...falso.estado.perfil,
+      barbeiros: [
+        { id: "bb1", nome: "Rafael", servicoIds: ["s1", "s2"], fotoUrl: null },
+        { id: "bb2", nome: "Ana", servicoIds: ["s1", "s2"], fotoUrl: null },
+      ],
+    };
+    montar(falso);
+
+    expect(await screen.findByRole("link", { name: "Mudar os serviços" })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar?servicos=s1%2Cs2&profissional=bb1"
+    );
+    expect(screen.getByRole("link", { name: "Mudar o dia e o horário" })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar/data?servicos=s1%2Cs2&data=2026-09-10&profissional=bb1"
+    );
+    expect(await screen.findByRole("link", { name: "Mudar o profissional" })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar/profissional?servicos=s1%2Cs2"
+    );
+  });
+
+  it("sem o passo do profissional (uma pessoa só), não oferece mudar quem atende", async () => {
+    montar();
+
+    await screen.findByRole("link", { name: "Mudar os serviços" });
+    expect(screen.queryByRole("link", { name: "Mudar o profissional" })).not.toBeInTheDocument();
+  });
+
   describe("sem conta", () => {
     it("pede nome e telefone na própria tela, sem passo antes", async () => {
       montar();
@@ -232,6 +267,16 @@ describe("confirmação", () => {
       expect(screen.getByText("09:00 · quinta, 10 de setembro")).toBeInTheDocument();
       expect(screen.getByText("R$ 65,00")).toBeInTheDocument();
       expect(screen.getByText("Rua das Tesouras, 123")).toBeInTheDocument();
+    });
+
+    it("diz o dia numa frase e leva o endereço ao mapa (onda B)", async () => {
+      await confirmarComRascunho();
+
+      expect(screen.getByText("Te esperamos na quinta, 10 de setembro, às 09:00.")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /mapa/i })).toHaveAttribute(
+        "href",
+        "https://www.google.com/maps/search/?api=1&query=Rua%20das%20Tesouras%2C%20123"
+      );
     });
 
     it("oferece pôr o horário no calendário do celular", async () => {

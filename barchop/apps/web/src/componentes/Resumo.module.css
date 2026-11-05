@@ -1,2 +1,6 @@
-.resumo { display: flex; gap: var(--espaco-md); padding: var(--espaco-sm) var(--espaco-md); border: var(--borda-padrao) solid var(--cor-line-strong); border-radius: var(--raio-pill); background: var(--cor-paper-soft); font-size: var(--texto-sm); font-weight: 600; }
-.valor { margin-left: auto; }
+/* O primeiro item cresce e quebra linha (a lista de serviços pode ser
+   comprida); os outros (duração, total) ficam inteiros, à direita. Com
+   o primeiro em duas linhas a pílula viraria um ovo: canto de cartão. */
+.resumo { display: flex; align-items: baseline; gap: var(--espaco-md); padding: var(--espaco-sm) var(--espaco-md); border: var(--borda-padrao) solid var(--cor-line-strong); border-radius: var(--raio-lg); background: var(--cor-paper-soft); font-size: var(--texto-sm); font-weight: 600; }
+.resumo > :first-child { flex: 1; min-width: 0; }
+.valor { white-space: nowrap; }

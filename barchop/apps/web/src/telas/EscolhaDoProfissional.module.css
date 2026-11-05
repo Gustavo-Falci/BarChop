@@ -16,11 +16,37 @@
   list-style: none;
 }
 
+/* O voltar do passo (onda B), como o "Voltar pra barbearia" dos Planos:
+   apagado, acima do indicador. 44px de alvo. */
+.passoAnterior {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  min-height: 44px;
+  margin-block: calc(-1 * var(--espaco-sm));
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.passoAnterior:hover {
+  color: var(--cor-ink);
+}
+
+/* A seta é a das ações que avançam; aqui ela volta. */
+.setaDeVolta {
+  transform: scaleX(-1);
+}
+
 /* Cada opção é um cartão inteiro clicável, com o alvo bem acima dos
-   44px: no celular é um polegar escolhendo entre nomes. */
+   44px: no celular é um polegar escolhendo entre nomes. A seta à
+   direita diz que o toque já segue. */
 .opcao {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
   width: 100%;
   min-height: 56px;
   padding: var(--espaco-md);
@@ -40,6 +66,39 @@
 .opcao:focus-visible {
   outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
+}
+
+.texto {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+/* Foto ou iniciais, como na Equipe do perfil. */
+.foto {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  background: var(--cor-pale-blue);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+}
+
+/* "Qualquer um": a moldura tracejada de quem ainda não tem rosto. */
+.qualquer {
+  border: var(--borda-padrao) dashed var(--cor-muted);
+  background: transparent;
+}
+
+.seta {
+  flex: none;
+  color: var(--cor-muted);
 }
 
 /* `--cor-ink-soft`: texto que se lê. */

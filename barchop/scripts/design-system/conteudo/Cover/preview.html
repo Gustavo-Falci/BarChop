@@ -1,0 +1,59 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; }
+  body { background: var(--cor-paper); }
+  .capa { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--cor-paper); }
+  .capa svg { position: absolute; left: 480px; top: 0; }
+  .ouro { fill: var(--cor-accent); }
+  .tinta { fill: var(--cor-ink); }
+  .claro { fill: var(--cor-pale-yellow); }
+  .vaga { fill: var(--cor-paper-soft); stroke: var(--cor-line-strong); stroke-width: var(--borda-padrao); }
+  .bloco { rx: var(--raio-lg); }
+  .slot { rx: var(--raio-sm); }
+  .texto { position: absolute; left: 48px; bottom: 40px; max-width: 440px; }
+  .nome { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 96px; line-height: .95; letter-spacing: -0.02em; color: var(--cor-ink); }
+  .lema { margin: var(--espaco-sm) 0 0; font-family: var(--font-corpo); font-size: 14px; color: var(--cor-muted); }
+</style>
+</head>
+<body>
+<div class="capa">
+  <!--
+    blocos: cor-accent 176x144 (raio-lg), cor-pale-yellow 176x80 (raio-lg), cor-ink 80x288 sangrando à direita; vagas cor-paper-soft com fio cor-line-strong
+    arranjo: ouro e tinta clara empilhados à esquerda da caixa, uma laje de tinta saindo pela borda direita, a grade da agenda entre os dois
+    padrão: a grade de horários da agenda (literal: o bloco da agenda é onde o ouro mais aparece no produto), vagas e atendimentos de duas e três linhas em ouro
+    escalas: vaga 48x32, passo espaco-sm (8), margem espaco-lg (24), raios raio-sm e raio-lg, fio borda-padrao
+  -->
+  <svg width="480" height="288" viewBox="0 0 480 288" aria-hidden="true">
+    <rect class="ouro bloco" x="24" y="24" width="176" height="144"/>
+    <rect class="claro bloco" x="24" y="184" width="176" height="80"/>
+    <rect class="tinta" x="400" y="0" width="80" height="288"/>
+
+    <!-- coluna 1 -->
+    <rect class="vaga slot" x="216" y="24" width="48" height="32"/>
+    <rect class="ouro slot" x="216" y="64" width="48" height="72"/>
+    <rect class="vaga slot" x="216" y="144" width="48" height="32"/>
+    <rect class="vaga slot" x="216" y="184" width="48" height="32"/>
+    <rect class="claro slot" x="216" y="224" width="48" height="32"/>
+    <!-- coluna 2 -->
+    <rect class="ouro slot" x="272" y="24" width="48" height="32"/>
+    <rect class="vaga slot" x="272" y="64" width="48" height="32"/>
+    <rect class="vaga slot" x="272" y="104" width="48" height="32"/>
+    <rect class="ouro slot" x="272" y="144" width="48" height="112"/>
+    <!-- coluna 3 -->
+    <rect class="vaga slot" x="328" y="24" width="48" height="32"/>
+    <rect class="claro slot" x="328" y="64" width="48" height="32"/>
+    <rect class="ouro slot" x="328" y="104" width="48" height="72"/>
+    <rect class="vaga slot" x="328" y="184" width="48" height="32"/>
+    <rect class="vaga slot" x="328" y="224" width="48" height="32"/>
+  </svg>
+  <div class="texto">
+    <h1 class="nome">BarChop</h1>
+    <p class="lema">Agenda cheia e menos faltas.</p>
+  </div>
+</div>
+</body>
+</html>

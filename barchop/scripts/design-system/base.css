@@ -1,0 +1,48 @@
+/* Base dos componentes do BarChop: o que app/globals.css e app/tokens-css.ts dão a toda página
+   e que os tokens do sistema não declaram. Cores, raios, espaços, sombras, bordas e tamanhos de
+   texto vêm de tokens.css. */
+:root {
+  /* Os componentes leem --fonte-*; o sistema compila as famílias como --font-*. */
+  --fonte-display: var(--font-display);
+  --fonte-inter: var(--font-corpo);
+  --fonte-corpo: var(--font-corpo);
+  /* Movimento (apps/web/src/movimento/tokens.ts): nada acima de 280ms. */
+  --curva-entrada: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --curva-saida: cubic-bezier(0.4, 0, 1, 1);
+  --duracao-instante: 100ms;
+  --duracao-curta: 160ms;
+  --duracao-media: 200ms;
+  --duracao-longa: 280ms;
+  --escala-janela: 0.98;
+  --escala-aperto: 0.97;
+  --deslize-curto: 4px;
+  --deslize-normal: 8px;
+}
+
+* { box-sizing: border-box; }
+
+/* Link sem o azul e o sublinhado do navegador; quem é link de corpo de texto devolve por componente. */
+a { color: inherit; text-decoration: none; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--cor-accent);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+:focus-visible { outline: 3px solid var(--cor-foco); outline-offset: 2px; }
+
+a, button, summary, [role="button"], [role="tab"], [role="menuitem"] {
+  transition: background-color var(--duracao-curta) ease, border-color var(--duracao-curta) ease, color var(--duracao-curta) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

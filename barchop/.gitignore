@@ -19,3 +19,6 @@ web-build/
 /apps/web/next-env.d.ts
 # Imagens enviadas em desenvolvimento (armazenamento local da API, bloco E2).
 /apps/api/.arquivos/
+
+# Saída do gerador do Design System (scripts/design-system/gerar.mts).
+/scripts/design-system/saida/

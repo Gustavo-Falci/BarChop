@@ -1,6 +1,7 @@
 // Sobe a API no banco de TESTE com uma barbearia de exemplo (equipe,
 // serviços, clientes, planos e agendamentos de hoje), pra
-// conferir as telas do painel no navegador (redesenho do celular).
+// conferir as telas do painel no navegador (redesenho do celular) e a
+// página pública em localhost:3000/barbearia-teste.
 //
 // Uso (de barchop/):
 //   pnpm --filter @barchop/api exec tsx scripts/conferencia-visual.ts
@@ -96,6 +97,41 @@ async function main() {
   // pior caso do número na coluna estreita do celular.
   const noivo = await prisma.servico.create({
     data: { barbeariaId: barbearia.id, nome: "Dia do noivo", duracaoMinutos: 30, preco: 450, categoria: "cabelo" },
+  });
+
+  // A página pública (onda B do redesenho, 05/11): sem horário de
+  // funcionamento a agenda não tem vaga nenhuma, e sem endereço e
+  // contatos o perfil esconde essas partes. Fecha tarde pra caber os
+  // agendamentos da noite do Hoje; domingo fechado, pra faixa de dias
+  // ter um dia sem vaga. Número e @ de mentira.
+  await prisma.barbearia.update({
+    where: { id: barbearia.id },
+    data: {
+      endereco: "Rua Exemplo, 120 · Centro",
+      whatsapp: normalizarTelefoneObrigatorio("(11) 90000-0009"),
+      instagram: "barbeariateste",
+      comodidades: ["wifi", "ar_condicionado", "cafe"],
+      formasDePagamento: ["pix", "dinheiro", "debito", "credito"],
+      // Sem ela a página não mostra o "Corte mensal" nem abre /planos.
+      vitrineDePlanos: true,
+    },
+  });
+  for (const diaSemana of [0, 1, 2, 3, 4, 5, 6]) {
+    await prisma.horarioFuncionamento.create({
+      data:
+        diaSemana === 0
+          ? { barbeariaId: barbearia.id, diaSemana, fechado: true }
+          : {
+              barbeariaId: barbearia.id,
+              diaSemana,
+              horaAbertura: horaParaDate("09:00"),
+              horaFechamento: horaParaDate("23:30"),
+            },
+    });
+  }
+  // Uma segunda categoria, pra página ter mais de uma seção de serviços.
+  await prisma.servico.create({
+    data: { barbeariaId: barbearia.id, nome: "Barba completa", duracaoMinutos: 20, preco: 25, categoria: "barba" },
   });
 
   // Agendamentos de hoje, no fuso da barbearia (o mesmo "hoje" da API):

@@ -111,6 +111,10 @@ describe("página da barbearia rica", () => {
     const cabelo = screen.getByRole("region", { name: "Cabelo" });
     expect(within(cabelo).getByText("Corte")).toBeInTheDocument();
     expect(within(cabelo).getByText("Degradê")).toBeInTheDocument();
+    // A contagem vem ao lado do título (onda B), fora do h3: o nome da
+    // seção continua sendo só a categoria.
+    expect(within(cabelo).getByText("2 serviços")).toBeInTheDocument();
+    expect(within(screen.getByRole("region", { name: "Barba" })).getByText("1 serviço")).toBeInTheDocument();
   });
 
   it("categoria fora da lista vai pra \"Outros serviços\", não some", async () => {

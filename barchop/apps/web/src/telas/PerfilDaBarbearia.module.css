@@ -306,31 +306,36 @@
   gap: var(--espaco-md);
 }
 
+/* No celular as seções vêm numa fila só, e todo título de seção tem o
+   tamanho de "Serviços" (onda B): "Equipe" menor parecia de outra
+   hierarquia. A lateral só encolhe a partir de 900px, onde é coluna. */
 .titulo {
   margin: 0;
-  font-size: var(--texto-lg);
-  word-spacing: 0.08em;
-}
-
-.principal .titulo {
   font-size: var(--texto-xl);
-}
-
-/* Na lateral, título de apoio: menor que os da coluna principal, pra
-   coluna não disputar com Serviços. */
-.lateral .titulo {
-  font-size: var(--texto-md);
+  word-spacing: 0.08em;
 }
 
 .grupo { display: grid; gap: var(--espaco-sm); }
 .grupo + .grupo { margin-top: var(--espaco-md); }
+
+/* A categoria como título normal, não em caixa alta (onda B): o passo 1
+   do agendamento usa o mesmo nome em h2, e as duas telas falavam de
+   jeitos diferentes. A contagem vai ao lado, mais apagada. */
+.cabecaDoGrupo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaco-xs);
+}
+
 .subtitulo {
   margin: 0;
-  font-size: var(--texto-sm);
+  font-size: var(--texto-lg);
   font-weight: 700;
-  color: var(--cor-ink-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+}
+
+.contagem {
+  font-size: var(--texto-sm);
+  color: var(--cor-muted);
 }
 
 /* Os serviços numa lista só, como cardápio: uma moldura e linhas
@@ -619,6 +624,12 @@
     gap: var(--espaco-lg);
     position: sticky;
     top: var(--espaco-lg);
+  }
+
+  /* Título de apoio na coluna: menor que os da principal, pra coluna não
+     disputar com Serviços. */
+  .lateral .titulo {
+    font-size: var(--texto-md);
   }
 
   .lateral > .secao {

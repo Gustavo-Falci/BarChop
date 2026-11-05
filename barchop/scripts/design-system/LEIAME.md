@@ -39,5 +39,5 @@ A publicação é pelo Claude Code, com as ferramentas de artefato. O índice `p
   2. Escreva o cartão em `cartoes.mts`: grupo, altura, a prévia com dados no formato real das props e o README tirado dos comentários do código. Sem cartão, o gerador para.
   3. Inclua os tipos no `index.d.ts`, dentro de `cartoes.mts`.
   4. Se o componente importar algo do Next além de `next/link`, `next/image` e `next/navigation`, crie o shim em `pacote.mts`.
-- **Token novo:** entra em `packages/design-tokens`. A nota de uso vai no mapa `USO` de `tokens.mts`, e o gerador para se faltar alguma.
+- **Token novo:** entra em `packages/design-tokens`. A nota de uso vai em `tokens.mts`: cor no mapa `USO` (o gerador para se faltar), o resto nos mapas `USO_*` da família.
 - **Guia da marca:** edite `conteudo/README.md`. Siga o formato do tipo Design System: sem título, regras que nomeiam tokens, e a seção "Não sincronizado" no fim.

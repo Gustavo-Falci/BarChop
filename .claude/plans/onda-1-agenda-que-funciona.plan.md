@@ -4,7 +4,31 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-02 — onda A do redesenho concluída) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-05 — onda B do redesenho pela metade) — vale mais que as seções abaixo
+
+**Estado:**
+- **Produção conferida = #287** (05/11): `api.barchop.com.br/health` 200 e, no código publicado das rotas do painel (`painel.barchop.com.br/painel/<rota>`), os textos novos da onda A ("Cadastrar", "De quem é este cliente", "Pausa de sempre", "Como o cliente vê", "Como o cliente paga"). Branches da onda A apagadas, com autorização do dono.
+- **Design System do BarChop** criado no Claude Design (tokens, Inter, os 15 componentes da página pública compilados de `apps/web/src/componentes`) e instalado no canvas. O gerador mora em `barchop/scripts/design-system/` (#289), e escreve também o `tokens.css` (#290). A Clash Grotesk fica só citada: a licença proíbe subir o arquivo em ferramenta de terceiros.
+- **Onda B (o que o cliente vê) desenhada e aprovada** (05/11, "Aprovado"): canvas https://claude.ai/artifact/LpMm9AAYAVzsQXsZB1w7Xb, página "Página pública" (10 pranchas × 2 temas, prefixo `Pub-`, versão `1793889414-5555`). Plano: `.claude/plans/redesenho-publico.plan.md`.
+- **PRs 1 a 4 da onda B mesclados** (`main` = merge do #294, `d181ab3`):
+  - #291 perfil (categoria em título normal com a contagem, títulos de seção do mesmo tamanho) e semente pública;
+  - #292 passo do profissional (voltar, resumo da escolha, foto ou iniciais);
+  - #293 passo do dia e horário (voltar que só volta ao profissional se esse passo existe, título "Dia e horário", resumo do pedido, o dia escolhido em h2);
+  - #294 confirmar ("Mudar" em cada linha, total destacado) e confirmado (o dia numa frase, "Mapa" ao lado do endereço).
+  - O passo dos serviços já batia com a prancha e saiu do plano. O toque segue avançando nos passos 2 e 3, sem o "Continuar" da prancha.
+  - Suíte web: 1672 testes. Conferido a cada PR em 390 escuro, 360 claro e 1280 escuro.
+- **A semente de conferência** (`apps/api/scripts/conferencia-visual.ts`) agora deixa a página pública inteira conferível: horário seg–sáb 09:00–23:30, endereço, WhatsApp, Instagram, comodidades, formas de pagamento, "Barba completa" e a vitrine de planos ligada.
+- Branches da onda B apagadas (autorização do dono): só a `main`.
+
+**Ao retomar:**
+1. **PR 5 da onda B (Entrar): só quando o dono liberar** (05/11: "ainda não prossiga com o PR 5"). Depois, um por vez: PR 6 Minha conta, PR 7 Planos, PR 8 Lembrete.
+2. **Conferir o deploy da onda B** quando o dono subir: na página pública, textos como "Sua escolha", "Dia e horário", "Mudar o profissional" e "Te esperamos".
+3. **Ondas C e D**, depois da B: conferência da tela atual → desenho no Claude Design → "aprovado" → plano → um PR por vez.
+4. **G3** (GR Barber em produção com `lembrete_ativo = false`): adiado até o dono pedir.
+5. **A primeira conta real da InfinitePay**: olhar o log do conector (seção de 31/10 à noite).
+6. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. **Em 24/11**, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+## RETOMAR AQUI (2026-11-02 — onda A do redesenho concluída) — histórico
 
 **Estado:**
 - **Onda A concluída**: os 8 PRs do plano `.claude/plans/redesenho-detalhes.plan.md`, #280 a #287, todos mesclados (`main` = merge do #287, `bc3514c`).

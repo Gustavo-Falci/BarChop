@@ -349,7 +349,14 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                 return grupos.map((grupo) =>
                   grupo.titulo ? (
                     <section key={grupo.titulo} className={estilos.grupo} aria-label={grupo.titulo}>
-                      <h3 className={estilos.subtitulo}>{grupo.titulo}</h3>
+                      {/* A contagem fica fora do h3: o nome da seção, pro
+                          leitor de tela e pra região, é só a categoria. */}
+                      <div className={estilos.cabecaDoGrupo}>
+                        <h3 className={estilos.subtitulo}>{grupo.titulo}</h3>
+                        <span className={estilos.contagem}>
+                          {grupo.servicos.length === 1 ? "1 serviço" : `${grupo.servicos.length} serviços`}
+                        </span>
+                      </div>
                       {listaDe(grupo)}
                     </section>
                   ) : (

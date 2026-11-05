@@ -312,7 +312,7 @@
 
 .tituloNaPagina {
   margin: 0;
-  font-size: var(--texto-lg);
+  font-size: var(--texto-xl);
   word-spacing: 0.08em;
 }
 

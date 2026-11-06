@@ -4,7 +4,31 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-06 — onda B do redesenho concluída) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-06, fim — onda C do redesenho concluída) — vale mais que as seções abaixo
+
+**Estado:**
+- **Onda C ("Conta, ajuda e suporte") inteira mesclada e no ar** (deploy do dono em 06/11; `main` = merge do #308, `8cf5aba`). Desenho aprovado no canvas https://claude.ai/artifact/LpMm9AAYAVzsQXsZB1w7Xb, página "Conta, ajuda e suporte" (prefixo `Cnt-`). Plano: `.claude/plans/redesenho-conta.plan.md`, com uma nota "Feito" em cada PR (desvios da prancha registrados lá e no corpo de cada PR).
+  - #301 entradas: o formato único `TelaDeEntrada` (barra "BarChop" no topo, título em cima, formulário embaixo; no computador, a metade escura com a marca) em Entrar, Recuperar a senha, Convite e Entrar no suporte;
+  - #302 cadastro do dono no mesmo formato, com o endereço do link escrito sem o "https://" (`enderecoSemProtocolo`);
+  - #303 Faturas para assinar: a trilha Plano → Pagamento → Acesso liberado em 3 colunas, sem selo no título (o apoio diz até quando vai o teste ou que a barbearia está no Grátis), títulos sem caixa alta, "Continuar com o X" sem o preço. "Assinar o X · R$ 0,00 hoje" fica com o preço, por decisão do dono. Dentro de Faturas, a faixa da assinatura mantém o recado e tira o link;
+  - #304 Faturas com plano: o selo Em dia / Pagamento pendente no cartão do plano, "Atualizar o cartão" em atraso (o mesmo Portal), as cobranças em lista no lugar da tabela; o retorno do Checkout cancelado virou "Pagamento não concluído", com "Tentar de novo";
+  - #305 Central de ajuda: assuntos em título normal, cada pergunta um botão com `aria-expanded`;
+  - #306 cartaz: barra "← Voltar ao painel" / "Sai numa folha A4" (some na impressão), o endereço sem https quebrando no ponto e nunca no hífen do nome, a folha A4 com o cartão ocupando a página;
+  - #307 suporte: a casca `CascaDoSuporte` (barra "BarChop · Suporte" com Sair e abas Pedidos / Avisos), o pedido com o link de hoje e o pedido num bloco, Motivo com rótulo, Aprovar / Recusar lado a lado; nos avisos, "X de Y leram" num selo;
+  - #308 ajustes: o `Botao` com altura mínima de 44px (todos os botões) e as abas do suporte alinhadas ao título no computador.
+  - Suíte web: 1705 testes. Conferido a cada PR em 390 escuro, 360 claro e 1280 escuro.
+- **A semente de conferência** (`apps/api/scripts/conferencia-visual.ts`), com a variável `SENHA_DO_SUPORTE`, cria o operador `suporte@exemplo.com`, um pedido de troca de link e um aviso publicado. A senha fica só na variável: nunca no repo, e a semente não a imprime.
+- **Deploy da onda B conferido** em 06/11 (textos novos no código publicado da página pública).
+- Branches das ondas B e C apagadas (autorização do dono): só a `main`.
+
+**Ao retomar:**
+1. **Conferir em produção** o que só passou por teste com dados de mentira: Faturas de uma barbearia com plano pago (o selo Em dia, a lista de cobranças), "Pagamento não concluído" (desistir no Checkout da Stripe) e o cartaz num Ctrl+P de verdade (a folha A4 foi conferida só por simulação).
+2. **Onda D** (marketing: início, preços, grátis, termos, privacidade): conferência da tela atual → desenho no Claude Design → "aprovado" → plano → um PR por vez. Só quando o dono pedir.
+3. **G3** (GR Barber em produção com `lembrete_ativo = false`): adiado até o dono pedir.
+4. **A primeira conta real da InfinitePay**: olhar o log do conector (seção de 31/10 à noite).
+5. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. **Em 24/11**, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+## RETOMAR AQUI (2026-11-06 — onda B do redesenho concluída) — histórico
 
 **Estado:**
 - **Onda B (o que o cliente vê) inteira mesclada** (`main` = merge do #299, `7a767c7`). Plano: `.claude/plans/redesenho-publico.plan.md`, com uma nota "Feito" em cada PR (desvios da prancha registrados lá e no corpo de cada PR).

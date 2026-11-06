@@ -41,7 +41,7 @@ Terceira de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do p
 - **A barra do painel e a navegação de baixo nas pranchas são só contexto.** Não mudam: continuam com o slug, o menu "…" e o resto de hoje.
 - **Preço nos botões de Faturas.**
   - "Continuar com o Essencial" fica sem o preço, como o dono aprovou. O valor continua no resumo "Seu pedido".
-  - **Pergunta aberta, perguntar ao dono antes do PR 3:** a prancha também tira o preço de "Assinar o Essencial · R$ 0,00 hoje", mas isso não foi citado no relatório da aprovação.
+  - "Assinar o Essencial · R$ 0,00 hoje" **fica com o preço** (dono, 06/11, perguntado antes do PR 3), ao contrário da prancha.
 - **O que o código já decide e a prancha não mostrou** (fica como está):
   - o bloco "Recomendado pelo seu uso no teste";
   - a escolha mensal/anual com o selo "2 meses grátis";
@@ -104,6 +104,15 @@ Terceira de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do p
   - **teste**: hoje R$ 0,00, cobrança no fim do teste;
   - **Grátis/cancelada**: preço cheio hoje, "renova a cada mês", "Nada foi apagado".
 - A faixa do teste sem "Escolher plano" dentro de `/painel/faturas`. É a única mudança no shell; teste próprio.
+- **Feito (06/11):**
+  - trilha em grade de 3 colunas (até 560px): número em círculo de 32px em cima, nome embaixo; a atual no `--cor-accent`, a feita no `--cor-ok-fundo` com ✓;
+  - sem selo no título quando não há plano pago (com plano, o selo fica até o PR 4). No lugar, o apoio diz em que pé está: "Escolha o plano da X. O teste grátis vai até 20/11." no teste; "A X está no Grátis[: só N aparece no link]. Escolha um plano pra voltar com a equipe toda." no Grátis/cancelada/teste acabado;
+  - "Recomendado pelo seu uso no teste", "Vem no…", "Seu pedido" e "Seu plano" sem caixa alta (`--texto-sm`, 600);
+  - "Continuar com o Essencial" sem o preço; "Assinar o Essencial · R$ 0,00 hoje" fica com ele (decisão do dono);
+  - `FaixaDaAssinatura`: dentro de `/painel/faturas` o recado fica e o link some (vale pra "Escolher plano", "Resolver" e "Ver plano", que levam todos à mesma tela);
+  - o "Toque em um para ver o preço…" no legend herdava a fonte de título: agora usa a do corpo;
+  - fora deste PR (não estava na lista aprovada): o "← Mudar plano" no topo e as formas de pagamento em lista, como na prancha. Ficam como hoje;
+  - testes antes do código; 1697 testes passando; conferido 390 escuro (plano), 360 claro (pagamento), 1280 escuro (plano). O Grátis não roda com a semente (ela é de teste): coberto pelos testes.
 
 ### PR 4 — Faturas com plano e Pagamento não concluído
 - Cartão do plano:

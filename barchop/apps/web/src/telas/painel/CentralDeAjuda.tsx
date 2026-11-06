@@ -1,9 +1,10 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useId, useState } from "react";
 import Link from "next/link";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { CampoDeBusca } from "../../componentes/CampoDeBusca";
+import { IconeDescer } from "../../painel/icones";
 import estilos from "./CentralDeAjuda.module.css";
 
 // A resposta em pedaços: texto solto e links pra tela onde a coisa se
@@ -226,6 +227,20 @@ function textoDe({ pergunta, resposta }: Pergunta): string {
 
 export function CentralDeAjuda() {
   const [busca, setBusca] = useState("");
+  // As perguntas abertas, pelo texto (único na lista). Várias podem
+  // ficar abertas: quem compara duas respostas não perde a primeira.
+  const [abertas, setAbertas] = useState<ReadonlySet<string>>(new Set());
+  const prefixo = useId();
+
+  function alternar(pergunta: string) {
+    setAbertas((atual) => {
+      const proximas = new Set(atual);
+      if (proximas.has(pergunta)) proximas.delete(pergunta);
+      else proximas.add(pergunta);
+      return proximas;
+    });
+  }
+
   const termo = semAcento(busca.trim());
   const temas = TEMAS.map(({ tema, perguntas }) => ({
     tema,
@@ -249,27 +264,46 @@ export function CentralDeAjuda() {
         <p className={estilos.vazio}>Nenhuma pergunta com “{busca.trim()}”. Tente outra palavra.</p>
       ) : (
         <div className={estilos.temas}>
-          {temas.map(({ tema, perguntas }) => (
-            <section key={tema} className={estilos.tema} aria-labelledby={`tema-${tema}`}>
-              <h2 id={`tema-${tema}`} className={estilos.nomeDoTema}>
+          {temas.map(({ tema, perguntas }, indiceDoTema) => (
+            <section key={tema} className={estilos.tema} aria-labelledby={`${prefixo}-tema-${indiceDoTema}`}>
+              <h2 id={`${prefixo}-tema-${indiceDoTema}`} className={estilos.nomeDoTema}>
                 {tema}
               </h2>
-              {perguntas.map(({ pergunta, resposta }) => (
-                <details key={pergunta} className={estilos.pergunta}>
-                  <summary className={estilos.resumo}>{pergunta}</summary>
-                  <p className={estilos.resposta}>
-                    {resposta.map((trecho, indice) =>
-                      typeof trecho === "string" ? (
-                        <Fragment key={indice}>{trecho}</Fragment>
-                      ) : (
-                        <Link key={indice} href={trecho.href}>
-                          {trecho.rotulo}
-                        </Link>
-                      )
-                    )}
-                  </p>
-                </details>
-              ))}
+              {/* Botão com aria-expanded (onda C), no lugar do <details>: o
+                  leitor de tela anuncia aberto/fechado do mesmo jeito em
+                  todo navegador. A resposta fica no DOM com `hidden`, pra
+                  busca do navegador e o teste lerem o mesmo texto. */}
+              {perguntas.map(({ pergunta, resposta }, indice) => {
+                const aberta = abertas.has(pergunta);
+                const id = `${prefixo}-resposta-${indiceDoTema}-${indice}`;
+                return (
+                  <div key={pergunta} className={estilos.pergunta}>
+                    <h3 className={estilos.tituloDaPergunta}>
+                      <button
+                        type="button"
+                        className={estilos.resumo}
+                        aria-expanded={aberta}
+                        aria-controls={id}
+                        onClick={() => alternar(pergunta)}
+                      >
+                        <span>{pergunta}</span>
+                        <IconeDescer width={20} height={20} className={estilos.seta} />
+                      </button>
+                    </h3>
+                    <p id={id} className={estilos.resposta} hidden={!aberta}>
+                      {resposta.map((trecho, indiceDoTrecho) =>
+                        typeof trecho === "string" ? (
+                          <Fragment key={indiceDoTrecho}>{trecho}</Fragment>
+                        ) : (
+                          <Link key={indiceDoTrecho} href={trecho.href}>
+                            {trecho.rotulo}
+                          </Link>
+                        )
+                      )}
+                    </p>
+                  </div>
+                );
+              })}
             </section>
           ))}
         </div>

@@ -134,6 +134,12 @@ Terceira de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do p
 ### PR 5 — Central de ajuda
 - Grupos com título normal e perguntas que abrem e fecham (botão com `aria-expanded`).
 - Respostas e links de hoje.
+- **Feito (06/11):**
+  - assuntos em `h2` normal (`--texto-lg`, fonte de título), sem caixa alta;
+  - cada pergunta é um `h3 > button` com `aria-expanded` e `aria-controls`, seta pra baixo que gira aberta (sem giro com `prefers-reduced-motion`), linha de 56px; várias podem ficar abertas;
+  - a resposta fica no DOM com `hidden` quando fechada: a busca da tela continua lendo o mesmo texto;
+  - no desktop, os assuntos seguem em duas colunas, como antes;
+  - testes antes do código; 1699 testes passando; conferido 390 escuro (uma aberta) e 1280 claro.
 
 ### PR 6 — Cartaz
 - Barra com "← Voltar ao painel" e "Sai numa folha A4".

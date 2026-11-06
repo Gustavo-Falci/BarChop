@@ -23,22 +23,22 @@
   min-width: 0;
 }
 
+/* O assunto em título normal (onda C), não em rótulo de caixa alta. */
 .nomeDoTema {
   margin: 0 0 var(--espaco-xs);
-  color: var(--cor-ink-soft);
-  font-size: var(--texto-xs);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 /* Linhas finas, sem caixa: cada pergunta é uma linha que abre. */
 .pergunta {
-  border-block-start: var(--borda-hairline) solid var(--cor-line);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
 }
 
-.pergunta:last-child {
-  border-block-end: var(--borda-hairline) solid var(--cor-line);
+.tituloDaPergunta {
+  margin: 0;
+  font: inherit;
 }
 
 .resumo {
@@ -46,38 +46,44 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--espaco-sm);
-  min-height: 48px;
-  padding-block: var(--espaco-sm);
-  font-weight: 700;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
   cursor: pointer;
-  list-style: none;
-}
-
-.resumo::-webkit-details-marker {
-  display: none;
-}
-
-/* O "+" vira "−" aberto: diz que a linha abre sem um ícone a mais. */
-.resumo::after {
-  flex: none;
-  color: var(--cor-ink-soft);
-  font-size: var(--texto-lg);
-  font-weight: 400;
-  content: "+";
-}
-
-.pergunta[open] .resumo::after {
-  content: "−";
 }
 
 .resumo:focus-visible {
   outline: 3px solid var(--cor-foco);
   outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
+/* A seta pra baixo vira pra cima aberta. */
+.seta {
+  flex: none;
+  color: var(--cor-ink-soft);
+  transition: transform 150ms ease;
+}
+
+.resumo[aria-expanded="true"] .seta {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seta {
+    transition: none;
+  }
 }
 
 .resposta {
   margin: 0;
-  padding-block-end: var(--espaco-md);
+  padding-block-end: 14px;
   color: var(--cor-ink-soft);
   text-wrap: pretty;
 }

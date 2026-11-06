@@ -13,13 +13,71 @@
 .formulario { display: grid; gap: var(--espaco-md); }
 .acoes { display: grid; gap: var(--espaco-sm); }
 
-.explicacao { color: var(--cor-ink-soft); }
+/* Título e apoio colados, como nos passos do agendamento (onda B). */
+.cabecalho { display: grid; gap: 6px; }
+.cabecalho h1 { margin: 0; }
+.apoio { margin: 0; color: var(--cor-ink-soft); }
+
+/* O outro caminho (código no e-mail) separado do login por uma linha:
+   é outra coisa, e não mais um campo do formulário. */
+.outroCaminho {
+  display: grid;
+  gap: var(--espaco-xs);
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-padrao) solid var(--cor-line);
+}
+.pergunta {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+/* --cor-ink-soft e não o --cor-muted da prancha: o muted reprova
+   contraste no claro com texto deste tamanho (ver Confirmacao). */
+.semConta {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+.semConta a {
+  color: var(--cor-accent-text);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* O mesmo voltar dos passos do agendamento (EscolhaDoProfissional),
+   aqui num <button>: trocar de modo não muda a URL. */
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  min-height: 44px;
+  margin-block: calc(-1 * var(--espaco-sm));
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.voltar:hover { color: var(--cor-ink); }
+.voltar:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+/* A seta é a das ações que avançam; aqui ela volta. */
+.setaDeVolta { transform: scaleX(-1); }
 
 /* Link de texto, e não Botao: troca de modo e reenvio não são a ação da
    tela, e um segundo bloco do mesmo peso se leria como outra forma de
    enviar. O mesmo desenho do "Já tenho conta" do passo de dados. */
 .link {
   justify-self: start;
+  min-height: 44px;
   padding: var(--espaco-xs) 0;
   border: 0;
   background: none;

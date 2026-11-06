@@ -152,7 +152,7 @@ Terceira de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do p
   - endereço sem `https://`, em pedaços inline-block antes de cada ponto ou barra (no lugar do `<wbr>`: com ele o navegador ainda quebrava no hífen do nome). Um pedaço maior que o cartão quebra por dentro (`overflow-wrap: anywhere`);
   - Imprimir em `--cor-accent`, 52px, pílula; QR 220px no celular, 320px a partir de 600px;
   - impressão: `@page A4` com 12mm, barra e botão somem, o cartão ocupa a altura da folha, com fontes maiores (52/24/22px);
-  - testes antes do código; 1701 testes passando; conferido 360 com slug longo (quebra no ponto). A impressão não foi conferida no navegador: só o CSS.
+  - testes antes do código; 1701 testes passando; conferido 360 com slug longo (quebra no ponto). impressão conferida por simulação (as regras `@media print` aplicadas numa janela de 703×1032, a área útil do A4 com 12mm): cabe numa folha, cartão de 1017px de altura, sem a barra e o botão.
 
 ### PR 7 — Suporte: fila e avisos
 - Barra "BarChop · Suporte" com Sair.

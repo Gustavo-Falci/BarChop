@@ -4,6 +4,8 @@
 
 Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do painel (feita, #280–#287) → **B o que o cliente vê** → C o resto do painel → D o site de divulgação.
 
+**Estado (06/11): concluída.** Os 8 PRs mesclados: #291, #292, #293, #294 (05/11) e #296, #297, #298, #299 (06/11). Cada PR abaixo tem a sua nota "Feito". Falta só conferir o deploy, que é do dono.
+
 ## Telas da onda B (10 telas, 11 rotas)
 - `/[slug]` → `PerfilDaBarbearia`
 - `/[slug]/agendar` (passo 1) → `EscolhaDeServicos`

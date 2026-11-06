@@ -4,7 +4,28 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-05 — onda B do redesenho pela metade) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-06 — onda B do redesenho concluída) — vale mais que as seções abaixo
+
+**Estado:**
+- **Onda B (o que o cliente vê) inteira mesclada** (`main` = merge do #299, `7a767c7`). Plano: `.claude/plans/redesenho-publico.plan.md`, com uma nota "Feito" em cada PR (desvios da prancha registrados lá e no corpo de cada PR).
+  - #291 perfil e semente pública; #292 profissional; #293 dia e horário; #294 confirmar e confirmado (ver o RETOMAR AQUI de 05/11, abaixo);
+  - #296 Entrar: título "Entrar" com apoio, "Primeira vez aqui, ou esqueceu a senha?" com "Receber um código no e-mail", "Pra agendar não precisa de conta" (volta ao passo de onde a pessoa veio; some no remarcar), "← Entrar com senha" no topo do modo código;
+  - #297 Minha conta: títulos de seção em h2, bloco do dia (semana curta, número, mês) no amarelo claro, serviços em destaque com "Com Fulano · até HH:MM", Remarcar e Cancelar lado a lado no celular;
+  - #298 Planos (só CSS): "Inclui a cada mês" em texto normal, a linha no pé do cartão, os números do "Como funciona" em círculo;
+  - #299 Lembrete: cartão com o bloco do dia, a data por extenso e o selo do estado, a pergunta antes do Confirmar, a caixa "Cancelar o horário?", "Marcar outro horário" depois de cancelar, WhatsApp no rodapé. O bloco do dia virou o componente `BlocoDoDia` (também na Minha conta).
+  - Suíte web: 1684 testes. Conferido a cada PR em 390 escuro, 360 claro e 1280 escuro.
+- **Ficou fora da onda** (pede API ou é recurso novo): o "Onde" no Lembrete (o lembrete não traz endereço) e o "Sair" na Minha conta.
+- **A semente de conferência** (`apps/api/scripts/conferencia-visual.ts`) agora também tem um cliente que entra (`cliente@exemplo.com` / `senha-forte-123`, plano em dia, um horário marcado daqui a 2 dias e dois no histórico) e imprime um link de lembrete (24 h) desse horário.
+- Branches da onda B apagadas (autorização do dono): só a `main`.
+
+**Ao retomar:**
+1. **Conferir o deploy da onda B** quando o dono subir: no código publicado da página pública, textos como "Sua escolha", "Mudar o profissional", "Te esperamos", "Receber um código no e-mail", "Pra agendar não precisa de conta", "Vai conseguir vir?" e "Marcar outro horário".
+2. **Ondas C e D**: conferência da tela atual → desenho no Claude Design → "aprovado" → plano → um PR por vez. C é o resto do painel (faturas, cancelado, ajuda, cartaz, entrar, cadastro, convite, suporte); D é o marketing (início, preços, grátis, termos, privacidade).
+3. **G3** (GR Barber em produção com `lembrete_ativo = false`): adiado até o dono pedir.
+4. **A primeira conta real da InfinitePay**: olhar o log do conector (seção de 31/10 à noite).
+5. Standby desde 30/10: marco 4 (relatórios) e o aviso da chave do Asaas parada. **Em 24/11**, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+## RETOMAR AQUI (2026-11-05 — onda B do redesenho pela metade) — histórico
 
 **Estado:**
 - **Produção conferida = #287** (05/11): `api.barchop.com.br/health` 200 e, no código publicado das rotas do painel (`painel.barchop.com.br/painel/<rota>`), os textos novos da onda A ("Cadastrar", "De quem é este cliente", "Pausa de sempre", "Como o cliente vê", "Como o cliente paga"). Branches da onda A apagadas, com autorização do dono.

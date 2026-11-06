@@ -541,10 +541,28 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
 
       await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
 
+      // O link do horário (06/11): o mesmo do lembrete, entregue na tela
+      // de sucesso a quem acabou de marcar. Sem ele, quem agenda sem
+      // conta e sem e-mail não tinha como cancelar sozinho. Vai só pra
+      // quem criou: esta rota nunca devolve um agendamento que já
+      // existia. Sem endereço configurado, null, e a tela segue sem o
+      // cartão.
+      const link = criarLinkDoLembrete(app, enderecoDasBarbearias(process.env));
+      const linkDoHorario =
+        link?.({
+          agendamentoId: agendamento.id,
+          slug: request.params.slug,
+          inicio: instanteNaBarbearia(
+            dateParaData(agendamento.data),
+            dateParaHora(agendamento.horaInicio)
+          ),
+        }) ?? null;
+
       // Só o agendamento recém-criado, sem o cliente e sem histórico:
       // quem sabe o telefone de alguém não pode puxar a agenda dessa
-      // pessoa por aqui.
-      return reply.code(201).send(serializarAgendamento(agendamento));
+      // pessoa por aqui. Cache nenhum: o link cancela de verdade.
+      reply.header("cache-control", "no-store");
+      return reply.code(201).send({ ...serializarAgendamento(agendamento), linkDoHorario });
     }
   );
 }

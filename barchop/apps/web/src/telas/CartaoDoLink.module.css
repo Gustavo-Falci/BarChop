@@ -1,0 +1,101 @@
+/* O cartão do link do horário (06/11): a moldura da casa, como o
+   cartão de quem está logado na confirmação. */
+.cartao {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
+  border-radius: var(--raio-cartao, var(--raio-lg));
+  background: var(--cor-surface);
+  box-shadow: var(--sombra-1);
+}
+
+.cabeca {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.titulo {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* --cor-ink-soft e não --cor-muted: o muted reprova contraste no claro. */
+.apoio {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+/* Lista numerada de verdade (<ol>), com o número num círculo: a ordem
+   é a do que a pessoa faz. */
+.instrucoes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+  display: grid;
+  gap: var(--espaco-sm);
+  font-size: var(--texto-sm);
+  line-height: 1.45;
+}
+
+/* Número na primeira coluna, o texto na segunda. O texto vem num
+   <span> só: em grid, cada pedaço solto de texto viraria uma célula. */
+.instrucoes > li {
+  counter-increment: passo;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: var(--espaco-sm);
+}
+
+.instrucoes > li::before {
+  content: counter(passo);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--cor-pale-yellow);
+  color: var(--cor-accent-text);
+  display: grid;
+  place-items: center;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.instrucoes a {
+  color: var(--cor-ink);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.acoes {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+/* Reserva a linha do aviso: aparecer não empurra o Concluir. */
+.status {
+  margin: 0;
+  min-height: 1.5em;
+  text-align: center;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink);
+}
+
+.fim {
+  display: grid;
+  gap: var(--espaco-xs);
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.dica {
+  margin: 0;
+  text-align: center;
+  font-size: var(--texto-xs);
+  color: var(--cor-ink-soft);
+}

@@ -1,6 +1,6 @@
 import type {
+  AgendamentoCriado,
   AgendamentoDoLembrete,
-  AgendamentoSerializado,
   Disponibilidade,
   DisponibilidadeDoMes,
   NovoAgendamentoPublicoInput,
@@ -102,7 +102,7 @@ export function criarApiPublica(requisicao: Requisicao) {
     agendar(
       slug: string,
       novo: NovoAgendamentoPublicoInput
-    ): Promise<AgendamentoSerializado> {
+    ): Promise<AgendamentoCriado> {
       return requisicao(`/barbearias/${slug}/agendamentos`, {
         metodo: "POST",
         corpo: novo,

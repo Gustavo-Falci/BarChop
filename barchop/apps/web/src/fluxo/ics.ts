@@ -9,6 +9,9 @@ export interface EventoDoCalendario {
   horaInicio: string; // "HH:mm"
   horaFim: string;
   local: string | null;
+  // O link do horário (06/11), pra quem só adiciona à agenda também
+  // ficar com o link de confirmar ou cancelar. Ausente = sem descrição.
+  descricao?: string | null;
 }
 
 // O formato exige vírgula, ponto e vírgula, barra e quebra de linha
@@ -20,6 +23,33 @@ function escapar(texto: string): string {
     .replace(/;/g, "\\;")
     .replace(/,/g, "\\,")
     .replace(/\r?\n/g, "\\n");
+}
+
+// O formato pede linha de no máximo 75 bytes: a longa continua na
+// seguinte, começando com um espaço (RFC 5545, 3.1). O link do horário
+// passa disso fácil. Conta em bytes UTF-8, e corta só entre caracteres:
+// dobrar no meio de um "é" quebraria o acento.
+const BYTES_POR_LINHA = 75;
+const codificador = new TextEncoder();
+
+function dobrar(linha: string): string {
+  const pedacos: string[] = [];
+  let atual = "";
+  let bytes = 0;
+  for (const caractere of linha) {
+    const tamanho = codificador.encode(caractere).length;
+    // A continuação gasta um byte com o espaço da frente.
+    const limite = pedacos.length === 0 ? BYTES_POR_LINHA : BYTES_POR_LINHA - 1;
+    if (bytes + tamanho > limite) {
+      pedacos.push(atual);
+      atual = "";
+      bytes = 0;
+    }
+    atual += caractere;
+    bytes += tamanho;
+  }
+  pedacos.push(atual);
+  return pedacos.join("\r\n ");
 }
 
 // Sem fuso de propósito ("hora flutuante" no formato): o agendamento é
@@ -47,9 +77,10 @@ export function gerarIcs(evento: EventoDoCalendario, agora: Date = new Date()): 
     `DTEND:${horaLocal(evento.data, evento.horaFim)}`,
     `SUMMARY:${escapar(evento.titulo)}`,
     ...(evento.local ? [`LOCATION:${escapar(evento.local)}`] : []),
+    ...(evento.descricao ? [`DESCRIPTION:${escapar(evento.descricao)}`] : []),
     "END:VEVENT",
     "END:VCALENDAR",
   ];
   // CRLF, e não \n: é a quebra de linha que o formato (RFC 5545) define.
-  return linhas.map((linha) => `${linha}\r\n`).join("");
+  return linhas.map((linha) => `${dobrar(linha)}\r\n`).join("");
 }

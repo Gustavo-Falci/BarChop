@@ -218,6 +218,9 @@ export interface EstadoFalso {
   // do agendamento. Qualquer outro é 401, como na API; os vencidos, 410.
   lembretes?: Record<string, string>;
   lembretesVencidos?: string[];
+  // A API sem endereço configurado devolve o agendamento sem o link do
+  // horário (06/11). Ausente = com link.
+  semLinkDoHorario?: boolean;
   // A trilha do dono: quais passos já estão feitos. Sem semente, nenhum
   // — derivar do resto do estado é trabalho da API, não do dublê.
   onboarding?: Partial<Record<PassoDoOnboarding, boolean>>;
@@ -1366,7 +1369,13 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         if (email !== undefined && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
           throw new ErroDaApi(400, "requisicao_invalida", "e-mail inválido");
         }
-        return novoAgendamento({ ...novo, origem: "cliente" });
+        const criado = novoAgendamento({ ...novo, origem: "cliente" });
+        // O link do horário abre o lembrete do próprio dublê: a tela
+        // pode seguir dele até a página de confirmar ou cancelar.
+        if (estado.semLinkDoHorario) return { ...criado, linkDoHorario: null };
+        const token = `lembrete-${criado.id}`;
+        estado.lembretes![token] = criado.id;
+        return { ...criado, linkDoHorario: `https://${slug}.barchop.com.br/lembrete/${token}` };
       },
       async proximosHorarios(slug: string) {
         exigirSlug(slug);

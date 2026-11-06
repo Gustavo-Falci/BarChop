@@ -301,6 +301,14 @@ export interface AgendamentoSerializado {
   presencaConfirmadaEm: string | null;
 }
 
+// POST /barbearias/:slug/agendamentos (06/11): o agendamento recém-criado
+// e o link do horário — o mesmo do lembrete, pra quem agendou sem conta
+// confirmar ou cancelar depois. null quando a API não tem endereço
+// configurado. Só esta rota devolve: o link cancela de verdade.
+export interface AgendamentoCriado extends AgendamentoSerializado {
+  linkDoHorario: string | null;
+}
+
 // GET /clientes/me/agendamentos: a Minha conta marca o que o plano vai
 // cobrir em cada horário marcado ("Corte pelo plano"). Previsão: quem
 // decide é o balcão, no pagamento. Um id de serviço por linha coberta;

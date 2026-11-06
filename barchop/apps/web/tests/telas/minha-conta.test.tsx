@@ -2,7 +2,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { ProvedorDaApi } from "../../src/api/ProvedorDaApi";
 import { MinhaConta } from "../../src/telas/MinhaConta";
@@ -76,11 +76,36 @@ describe("minha conta", () => {
     }
   });
 
+  // Cancelar pede um "tem certeza?" antes (06/11), como a página do link
+  // e o plano: um toque sem querer não pode apagar o horário.
+  async function cancelarDeVez() {
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    await userEvent.click(screen.getByRole("button", { name: "Sim, cancelar" }));
+  }
+
+  it("Cancelar pergunta antes; Manter volta sem cancelar nada", async () => {
+    const falso = await comUmAgendamento();
+    const cancelar = vi.spyOn(falso.cliente, "cancelar");
+    montar(falso);
+    await waitFor(() => screen.getByText("20 de setembro"));
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(screen.getByText("Cancelar este horário? Ele fica livre pra outra pessoa.")).toBeInTheDocument();
+    expect(cancelar).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Manter" }));
+
+    expect(screen.queryByRole("button", { name: "Sim, cancelar" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument();
+    expect(cancelar).not.toHaveBeenCalled();
+  });
+
   it("cancela e atualiza a lista", async () => {
     montar(await comUmAgendamento());
     await waitFor(() => screen.getByText("20 de setembro"));
 
-    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
+    await cancelarDeVez();
 
     await waitFor(() =>
       expect(screen.getByText(/cancelado/i)).toBeInTheDocument()
@@ -98,7 +123,7 @@ describe("minha conta", () => {
     montar(falso);
     await waitFor(() => screen.getByText("20 de setembro"));
 
-    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
+    await cancelarDeVez();
 
     await waitFor(() =>
       expect(screen.getByText(/esse agendamento já passou/i)).toBeInTheDocument()
@@ -209,7 +234,7 @@ describe("minha conta", () => {
     // Depois de cancelado o próprio agendamento sai do estado
     // "alterável": nem cancelar de novo, nem remarcar pra outro dia
     // fazem sentido pra uma linha que já chegou no destino.
-    await userEvent.click(screen.getByRole("button", { name: /cancelar/i }));
+    await cancelarDeVez();
     await waitFor(() => screen.getByText(/cancelado/i));
 
     expect(

@@ -242,6 +242,9 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
 // Cancelar e remarcar de um agendamento ativo. Passado o prazo de um
 // deles, o botão some e entra o aviso com o contato da casa; passados os
 // dois, só o aviso.
+//
+// Cancelar pergunta antes (06/11), como a página do link e o plano aqui
+// do lado: um toque sem querer apagava o horário de vez.
 function AcoesDoAgendamento({
   podeCancelar,
   podeRemarcar,
@@ -254,9 +257,41 @@ function AcoesDoAgendamento({
   podeRemarcar: boolean;
   whatsapp: string | null;
   telefone: string | null;
-  aoCancelar: () => void;
+  aoCancelar: () => Promise<void>;
   aoRemarcar: () => void;
 }) {
+  const [confirmando, setConfirmando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+
+  async function cancelarDeVez() {
+    setEnviando(true);
+    try {
+      await aoCancelar();
+    } finally {
+      // Deu certo: a lista recarrega e o horário sai dos marcados. Deu
+      // errado: o aviso da API aparece no topo, e a pergunta fecha.
+      setEnviando(false);
+      setConfirmando(false);
+    }
+  }
+
+  if (confirmando) {
+    return (
+      <div className={estilos.confirmacao}>
+        <p>Cancelar este horário? Ele fica livre pra outra pessoa.</p>
+        {/* Na ordem da página do link: o "sim" primeiro, a volta embaixo. */}
+        <div className={estilos.decisao}>
+          <Botao onClick={cancelarDeVez} carregando={enviando}>
+            Sim, cancelar
+          </Botao>
+          <Botao variante="fantasma" onClick={() => setConfirmando(false)} disabled={enviando}>
+            Manter
+          </Botao>
+        </div>
+      </div>
+    );
+  }
+
   const acaoVencida =
     !podeCancelar && !podeRemarcar ? "alterar" : !podeCancelar ? "cancelar" : !podeRemarcar ? "remarcar" : null;
   return (
@@ -269,7 +304,7 @@ function AcoesDoAgendamento({
             </Botao>
           ) : null}
           {podeCancelar ? (
-            <Botao variante="fantasma" onClick={aoCancelar}>
+            <Botao variante="fantasma" onClick={() => setConfirmando(true)}>
               Cancelar
             </Botao>
           ) : null}

@@ -128,7 +128,7 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
 - Horário em cartão com o bloco da data e o selo de situação.
 - Remarcar e Cancelar lado a lado.
 - Histórico em linhas com selo.
-- **Feito (06/11):**
+- **Feito (06/11, #297):**
   - Horários marcados, Meu plano e Histórico em h2 de título (`--texto-lg`), no lugar do rótulo pequeno em caixa alta. O "Neste ciclo" dentro do cartão do plano continua rótulo;
   - bloco do dia como na prancha: semana curta ("dom"), número e mês, em `--cor-pale-yellow` com `--cor-accent-text`, 56px (o "domingo" por extenso apertava);
   - no cartão, os serviços numa linha em negrito e "Com Fulano · até HH:MM" no apoio (antes "Corte com Fulano" numa linha só);

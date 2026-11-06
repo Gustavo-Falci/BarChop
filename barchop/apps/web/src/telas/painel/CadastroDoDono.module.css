@@ -1,24 +1,27 @@
-/* Fora do shell do painel, como o /painel/entrar: o centramento e a
-   largura são da própria tela. Uma coluna no celular — título e
-   promessa curta em cima, formulário logo abaixo —, duas no desktop. */
+/* Fora do shell do painel, como o /painel/entrar. No celular, o formato
+   das entradas (onda C): a barra do BarChop (BarraDaEntrada) em cima e o
+   título no topo, numa coluna. No computador, duas colunas — a promessa
+   ao lado do formulário — centradas na janela, como antes. */
 .pagina {
   display: grid;
-  gap: var(--espaco-xl);
-  /* `safe center`: centra quando cabe, alinha no topo quando não —
-     sem empurrar o título pra cima da borda (ver EntrarNoPainel). */
-  align-content: safe center;
-  min-height: 100dvh;
+  flex: 1;
+  gap: var(--espaco-lg);
+  align-content: start;
   width: 100%;
   max-width: 1040px;
   margin-inline: auto;
-  padding: var(--espaco-xxl) var(--espaco-lg);
+  padding: var(--espaco-xl) var(--espaco-md) var(--espaco-xxl);
 }
 
-@media (min-width: 880px) {
+@media (min-width: 900px) {
   .pagina {
     grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
     align-items: center;
+    /* `safe center`: centra quando cabe, alinha no topo quando não —
+       sem empurrar o título pra cima da borda. */
+    align-content: safe center;
     gap: var(--espaco-xxl);
+    padding: var(--espaco-xxl) var(--espaco-lg);
   }
 }
 
@@ -28,7 +31,17 @@
   align-content: start;
 }
 
+/* No código, o celular mostra só o código: a promessa já foi lida e
+   empurraria o campo pra baixo da dobra. */
+@media (max-width: 899px) {
+  .pagina[data-etapa="codigo"] .promessa {
+    display: none;
+  }
+}
+
+/* A marca em texto só no computador: no celular ela já está na barra. */
 .marca {
+  display: none;
   margin: 0;
   font-family: var(--fonte-display), system-ui, sans-serif;
   font-weight: 700;
@@ -36,6 +49,12 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--cor-ink-soft);
+}
+
+@media (min-width: 900px) {
+  .marca {
+    display: block;
+  }
 }
 
 .titulo {
@@ -60,8 +79,6 @@
   list-style: none;
 }
 
-/* O marcador é desenho, não texto: o leitor de tela já anuncia a lista
-   e os itens, e um "✓" lido em cada um só seria ruído. */
 .ganhos li {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -69,14 +86,12 @@
   align-items: start;
 }
 
-.ganhos li::before {
-  content: "";
-  width: 1.1em;
-  height: 1.1em;
-  margin-top: 0.15em;
-  border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-sm);
-  background: var(--cor-accent);
+/* O check é desenho, não texto (o ícone já vem com aria-hidden): o
+   leitor de tela anuncia a lista e os itens, e um "✓" lido em cada um
+   só seria ruído. */
+.marcaDoGanho {
+  margin-top: 0.2em;
+  color: var(--cor-accent-text);
 }
 
 /* O mini-painel ocupa a dobra inteira no celular e empurraria o
@@ -85,7 +100,7 @@
   display: none;
 }
 
-@media (min-width: 880px) {
+@media (min-width: 900px) {
   .mini {
     display: grid;
     gap: var(--espaco-sm);
@@ -148,12 +163,12 @@
 
 .formulario {
   display: grid;
-  gap: var(--espaco-lg);
+  gap: var(--espaco-md);
 }
 
 .troca {
   margin: 0;
-  text-align: center;
+  text-align: start;
   font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
 }
@@ -200,3 +215,52 @@ button.link {
   color: var(--cor-ink);
   overflow-wrap: anywhere;
 }
+
+/* "A barbearia" e "Você": dois grupos no formulário (onda C), em título
+   normal, não em rótulo de caixa alta. O espaço a mais em cima separa o
+   segundo grupo do primeiro. */
+.grupo {
+  margin-top: var(--espaco-sm);
+  font-size: var(--texto-lg);
+}
+
+.grupo:first-child {
+  margin-top: 0;
+}
+
+/* O título do passo do código, com o "Enviamos…" de apoio. */
+.cabecalho {
+  display: grid;
+  gap: 6px;
+}
+
+.cabecalho h1 {
+  font-size: var(--texto-xl);
+}
+
+/* O caminho de volta no topo do código: o mesmo desenho do voltar das
+   outras entradas (EntrarNoPainel.module.css). */
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  min-height: 44px;
+  margin-block: calc(-1 * var(--espaco-sm));
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.voltar:hover { color: var(--cor-ink); }
+.voltar:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+/* A seta é a das ações que avançam; aqui ela volta. */
+.setaDeVolta { transform: scaleX(-1); }

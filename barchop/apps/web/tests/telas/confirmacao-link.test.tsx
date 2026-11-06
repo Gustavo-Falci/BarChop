@@ -61,6 +61,26 @@ describe("confirmação: link do horário", () => {
     expect(itens[4]).toHaveTextContent("Não repasse o link.");
   });
 
+  // No computador (06/11, prancha Pub-ConfirmadoLinkDesktop): resumo e
+  // "Adicionar à agenda" numa coluna, o cartão do link na outra. O CSS
+  // põe lado a lado a partir de 900px; aqui confere que são colunas
+  // separadas, e o resumo antes do cartão (ordem de leitura no celular).
+  it("o resumo e o cartão ficam em colunas separadas, o resumo primeiro", async () => {
+    await agendarSemConta(criarApiClientFalso());
+
+    const adicionar = screen.getByRole("button", { name: "Adicionar à agenda" });
+    const colunaDoResumo = adicionar.parentElement!;
+    const colunaDoCartao = cartao().parentElement!;
+
+    expect(colunaDoResumo).not.toBe(colunaDoCartao);
+    expect(colunaDoResumo.parentElement).toBe(colunaDoCartao.parentElement);
+    expect(within(colunaDoResumo).getByText("Quando")).toBeInTheDocument();
+    expect(within(colunaDoResumo).getByRole("heading", { name: "Agendamento confirmado" })).toBeInTheDocument();
+    expect(
+      colunaDoResumo.compareDocumentPosition(colunaDoCartao) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   it("com prazo 0, diz que dá até o horário começar; com 1, no singular", async () => {
     const falso = criarApiClientFalso();
     falso.estado.perfil = { ...falso.estado.perfil, prazoCancelarHoras: 0 };
@@ -139,6 +159,80 @@ describe("confirmação: link do horário", () => {
 
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber");
     expect(sessionStorage.getItem("agendamento.confirmado")).toBeNull();
+  });
+
+  // A contagem só começa quando o Concluir aparece na tela (06/11). Antes
+  // ela começava ao abrir a tela; com o botão abaixo da dobra, quem rolava
+  // até ele já o encontrava liberado, e os 5 s de leitura não existiam.
+  describe("contagem só com o Concluir à vista", () => {
+    type Ouvinte = (entradas: { isIntersecting: boolean }[]) => void;
+    let ouvintes: Ouvinte[] = [];
+    let desligados = 0;
+
+    class ObservadorFalso {
+      constructor(ouvinte: Ouvinte) {
+        ouvintes.push(ouvinte);
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {
+        desligados++;
+      }
+    }
+
+    beforeEach(() => {
+      ouvintes = [];
+      desligados = 0;
+      vi.stubGlobal("IntersectionObserver", ObservadorFalso);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    function aparecer(visivel: boolean) {
+      act(() => {
+        for (const ouvinte of ouvintes) ouvinte([{ isIntersecting: visivel }]);
+      });
+    }
+
+    it("fora da tela, o Concluir espera travado em 5 s", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await agendarSemConta(criarApiClientFalso(), usuario);
+
+      aparecer(false);
+      act(() => {
+        vi.advanceTimersByTime(10_000);
+      });
+
+      expect(within(cartao()).getByRole("button", { name: "Concluir em 5 s" })).toBeDisabled();
+    });
+
+    it("quando aparece, conta os 5 s dali; sair da tela depois não para", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await agendarSemConta(criarApiClientFalso(), usuario);
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+
+      aparecer(true);
+      expect(desligados).toBeGreaterThan(0);
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(within(cartao()).getByRole("button", { name: "Concluir em 4 s" })).toBeDisabled();
+
+      aparecer(false);
+      for (let segundo = 3; segundo >= 0; segundo--) {
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+      }
+
+      expect(within(cartao()).getByRole("button", { name: "Concluir" })).toBeEnabled();
+    });
   });
 
   it("recarregar a página traz o cartão de volta, sem agendar de novo", async () => {

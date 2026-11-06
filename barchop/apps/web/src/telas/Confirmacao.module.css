@@ -187,3 +187,34 @@
      a lado, ele só desalinharia o topo das duas colunas. */
   .formulario { margin-top: 0; }
 }
+
+/* Sem conta, com o link do horário (06/11, prancha
+   Pub-ConfirmadoLinkDesktop). No celular as duas colunas não existem:
+   os filhos delas entram no grid da página, na ordem de sempre. */
+.colunaDoResumo,
+.colunaDoCartao {
+  display: contents;
+}
+
+/* 900px: o corte das larguras do fluxo (layout.module.css). O resumo
+   à esquerda, num cartão; o cartão do link à direita, parado enquanto a
+   página rola, pra instruções e Concluir ficarem à vista juntos. */
+@media (min-width: 900px) {
+  .comLink {
+    max-width: var(--fluxo-largura);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+    column-gap: var(--espaco-xxl);
+    align-items: start;
+  }
+
+  .colunaDoResumo {
+    display: grid;
+    gap: var(--espaco-md);
+  }
+
+  .colunaDoCartao {
+    display: block;
+    position: sticky;
+    top: var(--espaco-lg);
+  }
+}

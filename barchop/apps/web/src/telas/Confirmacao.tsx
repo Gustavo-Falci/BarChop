@@ -286,12 +286,8 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     }
 
-    // Tudo o que a pessoa precisa pra aparecer na hora certa, no lugar
-    // certo. Antes era só "Quando": quem voltava pra esta tela depois
-    // (print, aba esquecida) não sabia o que tinha marcado nem pra onde
-    // ir.
-    return (
-      <main className={estilos.pagina}>
+    const cabecalho = (
+      <>
         <MarcaDeConfirmado />
         {/* O texto entra logo depois do ✓ começar (motion PR 5). */}
         <m.h1
@@ -309,6 +305,11 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
             return `Te esperamos ${artigo} ${dia}, às ${criado.horaInicio}.`;
           })()}
         </p>
+      </>
+    );
+
+    const linhas = (
+      <>
         <div className={estilos.linha}>
           <span>Quando</span>
           <b>
@@ -345,14 +346,29 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
             </b>
           </div>
         ) : null}
+      </>
+    );
 
-        {linkDoHorario && telefoneDoCartao ? (
-          <>
-            {/* Sem conta (06/11): o Concluir do cartão fecha a tela, e
-                fica como o único botão cheio. */}
+    // Sem conta, com o link (06/11): duas colunas a partir de 900px
+    // (prancha Pub-ConfirmadoLinkDesktop). O resumo e o "Adicionar à
+    // agenda" à esquerda; o cartão do link à direita, parado na tela, com
+    // instruções e Concluir à vista sem rolar. No celular as colunas não
+    // existem (display: contents) e a ordem é a de sempre.
+    if (linkDoHorario && telefoneDoCartao) {
+      return (
+        <main className={`${estilos.pagina} ${estilos.comLink}`}>
+          <div className={estilos.colunaDoResumo}>
+            {cabecalho}
+            <div className={estilos.resumo}>
+              {linhas}
+            </div>
+            {/* O Concluir do cartão fecha a tela, e fica como o único
+                botão cheio. */}
             <Botao variante="contorno" onClick={() => adicionarAAgenda(criado)}>
               Adicionar à agenda
             </Botao>
+          </div>
+          <div className={estilos.colunaDoCartao}>
             <CartaoDoLink
               link={linkDoHorario}
               telefone={telefoneDoCartao}
@@ -367,25 +383,33 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
                 router.push(noHost(`/${slug}`));
               }}
             />
-          </>
-        ) : (
-          <>
-            <Botao onClick={() => adicionarAAgenda(criado)}>Adicionar à agenda</Botao>
+          </div>
+        </main>
+      );
+    }
 
-            {/* Só pra quem tem conta: sem ela, "meus agendamentos" abriria
-                uma tela de login no lugar da lista. Quem remarcou está
-                logado por definição. */}
-            {conta || remarcar ? (
-              <Link className={estilos.linkDeTexto} href={noHost(`/${slug}/minha-conta`)}>
-                Ver meus agendamentos
-              </Link>
-            ) : null}
+    // Tudo o que a pessoa precisa pra aparecer na hora certa, no lugar
+    // certo. Antes era só "Quando": quem voltava pra esta tela depois
+    // (print, aba esquecida) não sabia o que tinha marcado nem pra onde
+    // ir.
+    return (
+      <main className={estilos.pagina}>
+        {cabecalho}
+        {linhas}
+        <Botao onClick={() => adicionarAAgenda(criado)}>Adicionar à agenda</Botao>
 
-            <Botao variante="contorno" onClick={() => router.push(noHost(`/${slug}`))}>
-              Voltar ao início
-            </Botao>
-          </>
-        )}
+        {/* Só pra quem tem conta: sem ela, "meus agendamentos" abriria
+            uma tela de login no lugar da lista. Quem remarcou está
+            logado por definição. */}
+        {conta || remarcar ? (
+          <Link className={estilos.linkDeTexto} href={noHost(`/${slug}/minha-conta`)}>
+            Ver meus agendamentos
+          </Link>
+        ) : null}
+
+        <Botao variante="contorno" onClick={() => router.push(noHost(`/${slug}`))}>
+          Voltar ao início
+        </Botao>
       </main>
     );
   }

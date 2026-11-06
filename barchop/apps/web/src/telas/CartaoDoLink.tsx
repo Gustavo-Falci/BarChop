@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Botao, BotaoLink } from "../componentes/Botao";
 import { formatarDataComSemana } from "../formato/datas";
 import { linkDoWhatsApp } from "./AvisoDoPrazo";
@@ -51,14 +51,40 @@ export function CartaoDoLink({
 }) {
   const [faltam, setFaltam] = useState(SEGUNDOS_PARA_CONCLUIR);
   const [copia, setCopia] = useState<"nada" | "copiado" | "falhou">("nada");
+  const fim = useRef<HTMLDivElement>(null);
+  const [aVista, setAVista] = useState(false);
+
+  // A contagem só começa quando o Concluir aparece na tela (06/11).
+  // Começando ao abrir, quem rolava até o botão (no celular ele fica
+  // abaixo da dobra) já o encontrava liberado. Depois de começar, segue
+  // mesmo se a pessoa rolar pra cima: travar de novo só irritaria.
+  // Sem IntersectionObserver (navegador antigo), começa na hora.
+  useEffect(() => {
+    const el = fim.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setAVista(true);
+      return;
+    }
+    const observador = new IntersectionObserver(
+      (entradas) => {
+        if (!entradas.some((entrada) => entrada.isIntersecting)) return;
+        observador.disconnect();
+        setAVista(true);
+      },
+      // A maior parte do botão à vista, não só a beirada dele.
+      { threshold: 0.6 }
+    );
+    observador.observe(el);
+    return () => observador.disconnect();
+  }, []);
 
   // Um segundo por vez, e não um intervalo: cada passo agenda o
   // próximo, e desmontar no meio não deixa relógio rodando.
   useEffect(() => {
-    if (faltam <= 0) return;
+    if (!aVista || faltam <= 0) return;
     const relogio = setTimeout(() => setFaltam((antes) => antes - 1), 1000);
     return () => clearTimeout(relogio);
-  }, [faltam]);
+  }, [aVista, faltam]);
 
   async function copiar() {
     try {
@@ -143,7 +169,7 @@ export function CartaoDoLink({
         </p>
       </div>
 
-      <div className={estilos.fim}>
+      <div ref={fim} className={estilos.fim}>
         <Botao type="button" disabled={travado} onClick={aoConcluir}>
           {travado ? `Concluir em ${faltam} s` : "Concluir"}
         </Botao>

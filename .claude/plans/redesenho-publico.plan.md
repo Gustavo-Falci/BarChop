@@ -128,6 +128,15 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
 - Horário em cartão com o bloco da data e o selo de situação.
 - Remarcar e Cancelar lado a lado.
 - Histórico em linhas com selo.
+- **Feito (06/11, #297):**
+  - Horários marcados, Meu plano e Histórico em h2 de título (`--texto-lg`), no lugar do rótulo pequeno em caixa alta. O "Neste ciclo" dentro do cartão do plano continua rótulo;
+  - bloco do dia como na prancha: semana curta ("dom"), número e mês, em `--cor-pale-yellow` com `--cor-accent-text`, 56px (o "domingo" por extenso apertava);
+  - no cartão, os serviços numa linha em negrito e "Com Fulano · até HH:MM" no apoio (antes "Corte com Fulano" numa linha só);
+  - Remarcar e Cancelar lado a lado na mesma largura no celular (um botão só ocupa a linha); no desktop, ao lado do resumo, cada um na largura do texto;
+  - histórico e cartão do plano já batiam (linhas com selo; plano mais completo que a prancha), sem mudança;
+  - fora: o preço no cartão (com o plano cobrindo parte, o valor enganaria) e o "Sair" (já fora da onda);
+  - semente: o cliente "Teste" entra com `cliente@exemplo.com` / `senha-forte-123`, com um horário daqui a 2 dias (Corte + Barba) e dois no histórico (concluído e cancelado);
+  - 1679 testes passando; conferido 390 escuro, 360 claro, 1280 escuro.
 
 ### PR 7 (era o 8) — Planos
 - Cartões com nome, com quem vale, preço grande, "Inclui a cada mês" com check, forma de pagar e Assinar.

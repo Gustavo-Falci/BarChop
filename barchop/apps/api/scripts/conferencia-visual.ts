@@ -130,7 +130,7 @@ async function main() {
     });
   }
   // Uma segunda categoria, pra página ter mais de uma seção de serviços.
-  await prisma.servico.create({
+  const barba = await prisma.servico.create({
     data: { barbeariaId: barbearia.id, nome: "Barba completa", duracaoMinutos: 20, preco: 25, categoria: "barba" },
   });
 
@@ -223,6 +223,40 @@ async function main() {
         ciclo: "mensal",
         cicloComecaEm: dataParaDate(somarDias(hoje, comecaHaDias)),
         cicloTerminaEm: dataParaDate(somarDias(hoje, comecaHaDias + 30)),
+      },
+    });
+  }
+
+  // A Minha conta da página pública (onda B, PR 6): o cliente "Teste"
+  // (o da assinatura em dia) entra com e-mail e senha, e tem um horário
+  // marcado daqui a dois dias e dois no histórico. E-mail de mentira.
+  await prisma.cliente.update({
+    where: { id: clientes[1]!.id },
+    data: { email: "cliente@exemplo.com", senhaHash: await gerarHashSenha("senha-forte-123") },
+  });
+  const daConta: [number, string, (typeof corte)[], "confirmado" | "concluido" | "cancelado"][] = [
+    [2, "14:30", [corte, barba], "confirmado"],
+    [-14, "10:00", [corte], "concluido"],
+    [-28, "11:00", [barba], "cancelado"],
+  ];
+  for (const [dias, hora, servicos, status] of daConta) {
+    const duracao = servicos.reduce((total, s) => total + s.duracaoMinutos, 0);
+    await prisma.agendamento.create({
+      data: {
+        barbeariaId: barbearia.id,
+        barbeiroId: barbeiro.id,
+        clienteId: clientes[1]!.id,
+        data: dataParaDate(somarDias(hoje, dias)),
+        horaInicio: horaParaDate(hora),
+        horaFim: horaParaDate(somarMinutos(hora, duracao)),
+        status,
+        servicos: {
+          create: servicos.map((s) => ({
+            servicoId: s.id,
+            precoNoMomento: s.preco,
+            duracaoNoMomento: s.duracaoMinutos,
+          })),
+        },
       },
     });
   }

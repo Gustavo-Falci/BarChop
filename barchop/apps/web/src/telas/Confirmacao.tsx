@@ -8,7 +8,7 @@ import type { AgendamentoSerializado } from "@barchop/types";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
 import { Aviso } from "../componentes/Aviso";
-import { Botao } from "../componentes/Botao";
+import { Botao, BotaoLink } from "../componentes/Botao";
 import { Campo } from "../componentes/Campo";
 import { formatarPreco } from "../componentes/ItemDeServico";
 import { caminhoDoLogin, caminhoDoPasso } from "../fluxo/passos";
@@ -200,7 +200,10 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
 
     try {
       // Só a criação devolve o link do horário; o remarcar, não.
-      const agendamento: AgendamentoSerializado & { linkDoHorario?: string | null } = cliente
+      const agendamento: AgendamentoSerializado & {
+        linkDoHorario?: string | null;
+        tokenDaConta?: string;
+      } = cliente
         ? await api.publico.agendar(slug, {
             // Ausente é "qualquer um": a API escolhe e devolve quem.
             barbeiroId: profissional,
@@ -223,7 +226,17 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
 
       const link = agendamento.linkDoHorario ?? null;
       if (link && cliente && !conta) {
-        gravarHorarioConfirmado({ slug, agendamento, linkDoHorario: link, telefone: cliente.telefone });
+        gravarHorarioConfirmado({
+          slug,
+          agendamento,
+          linkDoHorario: link,
+          telefone: cliente.telefone,
+          // Pro "Criar conta" logo abaixo: o formulário já vem preenchido,
+          // e o token prova pra API que foi esta pessoa quem marcou.
+          nome: cliente.nome,
+          email: email.trim() || null,
+          tokenDaConta: agendamento.tokenDaConta ?? null,
+        });
         setTelefoneDoCartao(cliente.telefone);
       }
       setLinkDoHorario(link);
@@ -367,6 +380,19 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
             <Botao variante="contorno" onClick={() => adicionarAAgenda(criado)}>
               Adicionar à agenda
             </Botao>
+            {/* A alternativa ao link (06/11): com a conta, a pessoa vê,
+                remarca e cancela sem guardar nada. Leva o que ela já
+                digitou, e a API junta este horário à conta. */}
+            <section className={estilos.criarConta} aria-labelledby="criar-conta">
+              <h2 id="criar-conta">Prefere não guardar link?</h2>
+              <p>
+                Crie sua conta com o que você já digitou: nome, telefone e e-mail vão
+                preenchidos. Este horário entra nela, e você vê, remarca e cancela por lá.
+              </p>
+              <BotaoLink href={noHost(`/${slug}/entrar?criar=1`)} variante="contorno">
+                Criar conta
+              </BotaoLink>
+            </section>
           </div>
           <div className={estilos.colunaDoCartao}>
             <CartaoDoLink

@@ -307,6 +307,10 @@ export interface AgendamentoSerializado {
 // configurado. Só esta rota devolve: o link cancela de verdade.
 export interface AgendamentoCriado extends AgendamentoSerializado {
   linkDoHorario: string | null;
+  // A prova, pro "Criar conta" da tela de sucesso, de que quem cria a
+  // conta é quem acabou de marcar. Vale 1 hora e não é link: a tela a
+  // guarda na aba e a manda no corpo de definirSenhaDoCliente.
+  tokenDaConta: string;
 }
 
 // GET /clientes/me/agendamentos: a Minha conta marca o que o plano vai

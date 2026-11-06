@@ -22,7 +22,7 @@
    é outra coisa, e não mais um campo do formulário. */
 .outroCaminho {
   display: grid;
-  gap: var(--espaco-xs);
+  gap: var(--espaco-sm);
   padding-top: var(--espaco-md);
   border-top: var(--borda-padrao) solid var(--cor-line);
 }
@@ -94,6 +94,101 @@
   border-radius: var(--raio-sm);
 }
 
+/* Criar conta (06/11). A conta pronta: a marca e o título centrados,
+   como na tela de agendamento confirmado. */
+.pronta {
+  display: grid;
+  justify-items: center;
+  gap: var(--espaco-md);
+  text-align: center;
+}
+
+/* Os horários que a API juntou à conta, num cartão só, uma linha cada. */
+.horarios {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-surface);
+  box-shadow: var(--sombra-1);
+  overflow: hidden;
+}
+.horarios > li {
+  display: grid;
+  gap: 2px;
+  padding: var(--espaco-sm) var(--espaco-md);
+}
+.horarios > li + li { border-top: var(--borda-padrao) solid var(--cor-line); }
+.quando { font-weight: 600; }
+.oQue { font-size: var(--texto-sm); color: var(--cor-ink-soft); }
+
+/* Os passos do telefone com histórico: os mesmos números do cartão do
+   link (CartaoDoLink). */
+.passos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+  display: grid;
+  gap: var(--espaco-sm);
+  font-size: var(--texto-sm);
+  line-height: 1.45;
+}
+.passos > li {
+  counter-increment: passo;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: var(--espaco-sm);
+}
+.passos > li::before {
+  content: counter(passo);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--cor-pale-yellow);
+  color: var(--cor-accent-text);
+  display: grid;
+  place-items: center;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.primeiraVez { margin: 0; font-weight: 600; }
+
+/* Um link de texto no meio da frase, num <button> (troca de modo). */
+.linkNoTexto {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-accent-text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* O "Esqueci minha senha" logo abaixo do campo da senha, à direita. */
+.esqueci {
+  justify-self: end;
+  margin-top: calc(-1 * var(--espaco-sm));
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-accent-text);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.esqueci:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
 /* Desktop: os campos dividem a linha, na largura do fluxo (as telas usam
    a largura — pedido do dono); explicação, botão e links na linha toda. */
 @media (min-width: 900px) {
@@ -108,6 +203,18 @@
 
   .formulario > :not(:has(input)) {
     grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  /* Embaixo do campo da senha, a segunda coluna do login. */
+  .formulario > .esqueci {
+    grid-column: 2 / 3;
+    justify-self: end;
+  }
+
+  /* Os botões fora do formulário na largura deles, como o Entrar. */
+  .outroCaminho > button,
+  .acoes > * {
     justify-self: start;
   }
 }

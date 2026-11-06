@@ -6,6 +6,7 @@ import {
   INCLUDE_AGENDAMENTO,
 } from "../lib/agendamento";
 import { garantirAlteravel, garantirFuturo } from "../lib/agendamento-alteravel";
+import { assinarTokenDaConta } from "../lib/conta-do-agendamento";
 import { diaEstaFechado, soltarPagamento } from "../lib/caixa";
 import { travarQualquerUm } from "../lib/disponibilidade";
 import { enderecoDasBarbearias } from "../lib/endereco";
@@ -562,7 +563,12 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
       // quem sabe o telefone de alguém não pode puxar a agenda dessa
       // pessoa por aqui. Cache nenhum: o link cancela de verdade.
       reply.header("cache-control", "no-store");
-      return reply.code(201).send({ ...serializarAgendamento(agendamento), linkDoHorario });
+      // A prova, pro "Criar conta" da tela de sucesso, de que quem cria
+      // a conta é quem acabou de marcar (lib/conta-do-agendamento.ts).
+      const tokenDaConta = assinarTokenDaConta(app, agendamento.id);
+      return reply
+        .code(201)
+        .send({ ...serializarAgendamento(agendamento), linkDoHorario, tokenDaConta });
     }
   );
 }

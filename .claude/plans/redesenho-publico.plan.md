@@ -141,7 +141,7 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
 ### PR 7 (era o 8) — Planos
 - Cartões com nome, com quem vale, preço grande, "Inclui a cada mês" com check, forma de pagar e Assinar.
 - "Como funciona" com o texto de hoje, em passos numerados.
-- **Feito (06/11), só CSS:**
+- **Feito (06/11, #298), só CSS:**
   - "Inclui a cada mês" em texto normal, em negrito (antes em caixa alta), e os serviços em `--texto-sm`;
   - a linha do cartão saiu de cima do "Inclui" e foi pro pé (acima da forma de pagar e da ação), como na prancha;
   - "Como funciona" sem a linha em cima, com o número num círculo `--cor-pale-yellow` / `--cor-accent-text`;

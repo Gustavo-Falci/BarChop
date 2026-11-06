@@ -165,6 +165,11 @@ Terceira de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do p
 - Avisos:
   - "Novo aviso" como h2;
   - publicados em linhas com "X de Y leram" num selo.
+- **Feito (06/11):**
+  - `CascaDoSuporte` (nova, em `src/suporte`): a `BarraDaEntrada` com `area="Suporte"`, Sair no fim e visível também no computador (props novas `acao` e `sempreVisivel`), e as abas Pedidos / Avisos com `aria-current="page"` pela rota. Saíram o botão "Avisos" da fila e o voltar dos avisos;
+  - pedido: nome e "Pedido em …" no topo; "Hoje" e "Pedido" num `dl` em bloco; "Motivo" com rótulo; Aprovar / Recusar meio a meio. Na recusa, o apoio "É o que ele lê em Configurações." é ligado ao campo (`aria-describedby`), e o Confirmar recusa ocupa o resto da linha ao lado do Voltar (meio a meio ele quebrava em duas linhas a 360);
+  - avisos: "Novo aviso" e "Publicados" em h2 normal; cada publicado em linha, com data · link à esquerda e "X de Y leram" num selo neutro à direita;
+  - testes antes do código; 1703 testes passando; conferido 390 escuro (fila), 360 claro (recusa) e 1280 escuro (avisos), logado na semente com o operador do suporte.
 
 ## Conferência visual
 - Ligar a semente `apps/api/scripts/conferencia-visual.ts` (de `barchop/`) e `pnpm --filter web dev`. O painel entra com o dono da semente.

@@ -34,15 +34,26 @@ export function TelaDeEntrada({ titulo, apoio, area, voltar, children }: Props) 
 }
 
 // A barra sozinha, pra tela de entrada que tem a própria página (o
-// cadastro, com a promessa ao lado do formulário no computador).
-export function BarraDaEntrada({ area }: { area?: string }) {
+// cadastro, com a promessa ao lado do formulário no computador). O
+// suporte também usa: com uma ação no fim (Sair) e visível no computador,
+// onde não há a metade escura das entradas.
+export function BarraDaEntrada({
+  area,
+  acao,
+  sempreVisivel = false,
+}: {
+  area?: string;
+  acao?: ReactNode;
+  sempreVisivel?: boolean;
+}) {
   return (
-    <header className={estilos.barra}>
+    <header className={sempreVisivel ? `${estilos.barra} ${estilos.sempreVisivel}` : estilos.barra}>
       <span className={estilos.marca} aria-hidden="true">
         B
       </span>
       <span className={estilos.nome}>BarChop</span>
       {area ? <span className={estilos.area}>· {area}</span> : null}
+      {acao ? <span className={estilos.acaoDaBarra}>{acao}</span> : null}
     </header>
   );
 }

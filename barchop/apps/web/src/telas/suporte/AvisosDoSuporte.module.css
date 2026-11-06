@@ -10,16 +10,22 @@
   width: 100%;
   max-width: 1240px;
   margin-inline: auto;
-  padding: var(--espaco-xl) var(--espaco-lg);
+  padding: var(--espaco-lg) var(--espaco-md) var(--espaco-xl);
 }
 
+@media (min-width: 700px) {
+  .pagina {
+    padding: var(--espaco-xl) var(--espaco-lg);
+  }
+}
+
+/* "Novo aviso" e "Publicados" em título normal (onda C), não em rótulo
+   de caixa alta. */
 .secao {
   margin: 0;
-  color: var(--cor-ink-soft);
-  font-size: var(--texto-xs);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 .formulario,
@@ -69,9 +75,9 @@
 
 .aviso {
   display: grid;
-  gap: 2px;
-  padding-block: var(--espaco-sm);
-  border-block-start: var(--borda-hairline) solid var(--cor-line);
+  gap: 4px;
+  padding-block: 12px;
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
 }
 
 .aviso p {
@@ -84,9 +90,17 @@
   overflow-wrap: anywhere;
 }
 
-.leitura {
-  font-size: var(--texto-sm);
-  font-weight: 700;
+.textoDoAviso {
+  color: var(--cor-ink-soft);
+}
+
+/* Quando e pra onde à esquerda, o selo de quantos leram à direita. */
+.rodapeDoAviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
 }
 
 .vazio {

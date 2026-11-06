@@ -93,28 +93,58 @@ describe("avisos do suporte", () => {
   });
 });
 
+// Onda C, PR 7: a barra "BarChop · Suporte" com Sair e as abas Pedidos /
+// Avisos, no lugar do botão "Avisos" e do voltar dos avisos.
 describe("caminho entre as telas do suporte", () => {
-  it("a fila de pedidos leva aos avisos, e os avisos voltam pra fila", async () => {
+  // A barra do topo, achada pelo Sair (o título da página também é um
+  // <header>, e o jsdom conta os dois como banner).
+  function barraComSair() {
+    return screen.getByRole("button", { name: "Sair" }).closest("header");
+  }
+
+  function abas() {
+    return screen.getByRole("navigation", { name: "Áreas do suporte" });
+  }
+
+  it("na fila, a aba Pedidos é a atual e a de Avisos leva aos avisos", async () => {
     localStorage.clear();
     navegacaoFalsa.redefinir({ pathname: "/painel/suporte" });
     sessaoDoSuporte.gravar("jwt-falso-suporte");
     const falso = criarApiClientFalso({});
-    const { unmount } = render(
+    render(
       <ProvedorDoSuporte valor={falso.suporte}>
         <FilaDoSuporte />
       </ProvedorDoSuporte>
     );
 
-    expect(await screen.findByRole("link", { name: "Avisos" })).toHaveAttribute(
-      "href",
-      "/painel/suporte/avisos"
-    );
-    unmount();
+    expect(await screen.findByRole("heading", { level: 1, name: "Pedidos de troca de link" })).toBeInTheDocument();
+    expect(barraComSair()).toHaveTextContent(/BarChop.*Suporte/);
+    expect(within(abas()).getByRole("link", { name: "Pedidos" })).toHaveAttribute("aria-current", "page");
+    const avisos = within(abas()).getByRole("link", { name: "Avisos" });
+    expect(avisos).toHaveAttribute("href", "/painel/suporte/avisos");
+    expect(avisos).not.toHaveAttribute("aria-current");
+  });
 
+  it("nos avisos, a aba Avisos é a atual e a de Pedidos volta pra fila", async () => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/suporte/avisos" });
+    sessaoDoSuporte.gravar("jwt-falso-suporte");
     montar();
-    expect(await screen.findByRole("link", { name: /Pedidos de troca de link/ })).toHaveAttribute(
-      "href",
-      "/painel/suporte"
-    );
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Avisos da plataforma" })).toBeInTheDocument();
+    expect(within(abas()).getByRole("link", { name: "Avisos" })).toHaveAttribute("aria-current", "page");
+    expect(within(abas()).getByRole("link", { name: "Pedidos" })).toHaveAttribute("href", "/painel/suporte");
+    expect(screen.queryByRole("link", { name: /Pedidos de troca de link/ })).not.toBeInTheDocument();
+    expect(barraComSair()).toHaveTextContent(/BarChop.*Suporte/);
+  });
+
+  it("\"Novo aviso\" e \"Publicados\" são títulos de seção", async () => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/suporte/avisos" });
+    sessaoDoSuporte.gravar("jwt-falso-suporte");
+    montar();
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Novo aviso" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Publicados" })).toBeInTheDocument();
   });
 });

@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { SolicitacaoNaFila } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
-import { Botao, BotaoLink } from "../../componentes/Botao";
+import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
+import { CascaDoSuporte } from "../../suporte/CascaDoSuporte";
 import { useApiDoSuporte, type ApiDoSuporte } from "../../suporte/ProvedorDoSuporte";
 import { sessaoDoSuporte } from "../../sessao/armazenamento";
 import estilos from "./FilaDoSuporte.module.css";
@@ -72,41 +73,31 @@ export function FilaDoSuporte() {
   }, []);
 
   return (
-    <main className={estilos.pagina}>
-      <CabecalhoDaPagina
-        titulo="Pedidos de troca de link"
-        apoio="Aprovar troca o link na hora; o antigo continua levando à barbearia. Recusar pede uma resposta, que o dono lê em Configurações."
-        acao={
-          <div className={estilos.acoes}>
-            {/* A outra tela do suporte: os avisos que caem no sino de
-                todas as barbearias. */}
-            <BotaoLink href="/painel/suporte/avisos" variante="contorno">
-              Avisos
-            </BotaoLink>
-            <Botao variante="fantasma" onClick={sair}>
-              Sair
-            </Botao>
-          </div>
-        }
-      />
-      {aviso ? <Aviso>{aviso}</Aviso> : null}
-      {fila === null ? null : fila.length === 0 ? (
-        <p>Nenhum pedido aguardando.</p>
-      ) : (
-        <ol className={estilos.lista}>
-          {fila.map((pedido) => (
-            <li key={pedido.id}>
-              <PedidoNaFila
-                pedido={pedido}
-                api={api}
-                aoSair={sair}
-                aoDecidir={tirarDaFila}
-              />
-            </li>
-          ))}
-        </ol>
-      )}
-    </main>
+    <CascaDoSuporte aoSair={sair}>
+      <main className={estilos.pagina}>
+        <CabecalhoDaPagina
+          titulo="Pedidos de troca de link"
+          apoio="Aprovar troca o link na hora; o antigo continua levando à barbearia. Recusar pede uma resposta, que o dono lê em Configurações."
+        />
+        {aviso ? <Aviso>{aviso}</Aviso> : null}
+        {fila === null ? null : fila.length === 0 ? (
+          <p>Nenhum pedido aguardando.</p>
+        ) : (
+          <ol className={estilos.lista}>
+            {fila.map((pedido) => (
+              <li key={pedido.id}>
+                <PedidoNaFila
+                  pedido={pedido}
+                  api={api}
+                  aoSair={sair}
+                  aoDecidir={tirarDaFila}
+                />
+              </li>
+            ))}
+          </ol>
+        )}
+      </main>
+    </CascaDoSuporte>
   );
 }
 
@@ -168,29 +159,41 @@ function PedidoNaFila({
 
   return (
     <article className={estilos.pedido} aria-label={`Pedido da ${pedido.barbearia.nome}`}>
-      <h2 className={estilos.titulo}>{pedido.barbearia.nome}</h2>
-      <p className={estilos.troca}>
-        <code>{pedido.barbearia.slug}</code>
-        <span aria-label="para"> → </span>
-        <code>{pedido.slugPedido}</code>
-      </p>
-      <p>{pedido.motivo ? `Motivo: ${pedido.motivo}` : "Sem motivo informado."}</p>
-      <p className={estilos.apoio}>Pedido em {FORMATADOR.format(new Date(pedido.criadoEm))}</p>
+      <div className={estilos.topo}>
+        <h2 className={estilos.titulo}>{pedido.barbearia.nome}</h2>
+        <p className={estilos.apoio}>Pedido em {FORMATADOR.format(new Date(pedido.criadoEm))}</p>
+      </div>
+      {/* O link de hoje e o pedido num bloco só, com rótulo (onda C). */}
+      <dl className={estilos.links}>
+        <dt>Hoje</dt>
+        <dd>{pedido.barbearia.slug}</dd>
+        <dt>Pedido</dt>
+        <dd className={estilos.pedidoNovo}>{pedido.slugPedido}</dd>
+      </dl>
+      <div className={estilos.motivo}>
+        <span className={estilos.rotulo}>Motivo</span>
+        <p>{pedido.motivo ?? "Sem motivo informado."}</p>
+      </div>
 
       {aviso ? <Aviso>{aviso}</Aviso> : null}
 
       {recusando ? (
         <div className={estilos.recusa}>
-          <label className={estilos.rotulo} htmlFor={idDaResposta}>
+          <label className={estilos.rotuloDaResposta} htmlFor={idDaResposta}>
             Resposta pro dono
           </label>
+          <span className={estilos.apoio} id={`${idDaResposta}-apoio`}>
+            É o que ele lê em Configurações.
+          </span>
           <textarea
             id={idDaResposta}
             className={estilos.area}
             rows={3}
             maxLength={RESPOSTA_MAX}
             aria-invalid={erroResposta ? "true" : undefined}
-            aria-describedby={erroResposta ? `${idDaResposta}-erro` : undefined}
+            aria-describedby={
+              erroResposta ? `${idDaResposta}-apoio ${idDaResposta}-erro` : `${idDaResposta}-apoio`
+            }
             value={resposta}
             onChange={(evento) => setResposta(evento.target.value)}
           />
@@ -199,7 +202,7 @@ function PedidoNaFila({
               {erroResposta}
             </span>
           ) : null}
-          <div className={estilos.acoes}>
+          <div className={`${estilos.decisao} ${estilos.decisaoDaRecusa}`}>
             <Botao onClick={recusar} carregando={enviando}>
               Confirmar recusa
             </Botao>
@@ -209,7 +212,7 @@ function PedidoNaFila({
           </div>
         </div>
       ) : (
-        <div className={estilos.acoes}>
+        <div className={estilos.decisao}>
           <Botao onClick={() => void decidir(() => api.aprovar(pedido.id))} carregando={enviando}>
             Aprovar
           </Botao>

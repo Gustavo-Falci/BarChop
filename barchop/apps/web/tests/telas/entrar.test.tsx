@@ -215,6 +215,48 @@ describe("entrar", () => {
     await waitFor(() => expect(navegacaoFalsa.push).toHaveBeenCalledWith("/gr-barber/planos"));
   });
 
+  it("se apresenta como Entrar, e não como Minha conta", () => {
+    // Onda B: "Minha conta" é a tela de depois de entrar.
+    montar();
+
+    expect(screen.getByRole("heading", { level: 1, name: "Entrar" })).toBeInTheDocument();
+    expect(screen.getByText(/primeira vez aqui, ou esqueceu a senha/i)).toBeInTheDocument();
+  });
+
+  it("diz que pra agendar não precisa de conta e leva pro passo 1", () => {
+    montar();
+
+    expect(screen.getByText(/pra agendar não precisa de conta/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "escolha um horário" })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar"
+    );
+  });
+
+  it("vindo do agendamento, o sem conta volta pro passo com o que foi escolhido", () => {
+    // Mandar pro passo 1 jogaria fora serviços, data e hora.
+    navegacaoFalsa.redefinir({
+      query: { voltar: "confirmar", servicos: "s1", data: "2026-09-10", hora: "09:00" },
+    });
+    montar();
+
+    expect(screen.queryByRole("link", { name: "escolha um horário" })).toBeNull();
+    expect(screen.getByRole("link", { name: "voltar ao agendamento" })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar/confirmar?servicos=s1&data=2026-09-10&hora=09%3A00"
+    );
+  });
+
+  it("no remarcar não diz que dispensa conta", () => {
+    // Remarcar é do cliente que tem conta: a frase seria falsa.
+    navegacaoFalsa.redefinir({
+      query: { voltar: "confirmar", servicos: "s1", remarcar: "ag1" },
+    });
+    montar();
+
+    expect(screen.queryByText(/não precisa de conta/i)).toBeNull();
+  });
+
   it("anuncia os tokens que o gerenciador de senhas do celular usa", async () => {
     // Este fluxo chega por link de WhatsApp, quase sempre no celular:
     // sem o par email/current-password ninguém preenche nem salva.
@@ -241,9 +283,7 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
   });
 
   async function abrirCodigo() {
-    await userEvent.click(
-      screen.getByRole("button", { name: /primeiro acesso ou esqueceu a senha/i })
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Receber um código no e-mail" }));
   }
 
   async function pedirCodigo(email = EMAIL) {
@@ -403,11 +443,26 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
   it("voltar leva de novo ao login", async () => {
     montar();
     await abrirCodigo();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Criar ou recuperar senha" })
+    ).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Voltar pra entrar" }));
+    await userEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
 
     expect(screen.getByLabelText(/^senha$/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+  });
+
+  it("o voltar continua lá depois de mandar o código", async () => {
+    // Quem errou o e-mail ou lembrou da senha com o código já enviado
+    // precisa de um caminho de volta sem recarregar a página.
+    montar();
+    await pedirCodigo();
+    await screen.findByText(/enviamos um código/i);
+
+    await userEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    expect(screen.getByLabelText(/^senha$/i)).toBeInTheDocument();
   });
 
   it("anuncia o código, o telefone e a senha nova pros recursos do celular", async () => {

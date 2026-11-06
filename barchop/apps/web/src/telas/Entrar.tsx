@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import {
@@ -15,6 +16,7 @@ import { Botao } from "../componentes/Botao";
 import { Campo } from "../componentes/Campo";
 import { caminhoDoPasso, lerEscolhas, passoDoVoltar } from "../fluxo/passos";
 import { caminhoDosPlanos, planoDaQuery, queryDaVolta, voltaDoPagamento } from "../fluxo/planos";
+import { IconeSeta } from "../painel/icones";
 import { sessaoDoCliente } from "../sessao/armazenamento";
 import estilos from "./Entrar.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
@@ -73,9 +75,10 @@ export function Entrar() {
   // outro navegador) entra e cai na Minha conta com o pagamento a
   // conferir (PR 7b do plano pagamentos-online-infinitepay).
   const voltar = passoDoVoltar(query.get("voltar"));
+  const escolhas = lerEscolhas(query);
   const volta = voltaDoPagamento(query);
   const destino = voltar
-    ? noHost(caminhoDoPasso(slug, voltar, lerEscolhas(query)))
+    ? noHost(caminhoDoPasso(slug, voltar, escolhas))
     : query.get("voltar") === "planos"
       ? noHost(caminhoDosPlanos(slug, planoDaQuery(query.get("plano"))))
       : volta
@@ -298,10 +301,35 @@ export function Entrar() {
     />
   );
 
+  // "Pra agendar não precisa de conta" (onda B): quem chegou aqui achando
+  // que precisava entrar pra marcar fica sabendo que não. Vindo de um
+  // passo do agendamento, o link volta pra ele com tudo o que já foi
+  // escolhido; mandar pro passo 1 jogaria isso fora. No remarcar não
+  // aparece: remarcar é do cliente que tem conta, e a frase seria falsa.
+  const semConta = escolhas.remarcar ? null : (
+    <p className={estilos.semConta}>
+      Pra agendar não precisa de conta:{" "}
+      {voltar ? (
+        <Link href={destino}>voltar ao agendamento</Link>
+      ) : (
+        <Link href={noHost(caminhoDoPasso(slug, "servicos", { servicoIds: [] }))}>
+          escolha um horário
+        </Link>
+      )}
+      .
+    </p>
+  );
+
   if (modo === "entrar") {
     return (
       <main className={estilos.pagina}>
-        <h1>Minha conta</h1>
+        {/* Sem o nome da barbearia no apoio (a prancha tinha): a barra
+            logo acima já diz de quem é a página, e o nome aqui custaria
+            mais uma busca do perfil só pra repetir. */}
+        <div className={estilos.cabecalho}>
+          <h1>Entrar</h1>
+          <p className={estilos.apoio}>Pra ver seus horários e seu plano.</p>
+        </div>
 
         {/* <form> e não um <div> com onClick: sem ele o Enter não envia,
             e o gerenciador de senhas do celular não reconhece o par
@@ -338,17 +366,41 @@ export function Entrar() {
 
         {/* Fora do form e como link de texto: não envia nada, e um
             segundo botão do mesmo peso se leria como outra forma de
-            entrar. */}
-        <button type="button" className={estilos.link} onClick={() => trocarModo("codigo")}>
-          Primeiro acesso ou esqueceu a senha?
-        </button>
+            entrar. A pergunta fica num texto à parte, e o botão diz o
+            que acontece ao tocar. */}
+        <div className={estilos.outroCaminho}>
+          <p className={estilos.pergunta}>Primeira vez aqui, ou esqueceu a senha?</p>
+          <button type="button" className={estilos.link} onClick={() => trocarModo("codigo")}>
+            Receber um código no e-mail
+          </button>
+        </div>
+
+        {semConta}
       </main>
     );
   }
 
   return (
     <main className={estilos.pagina}>
-      <h1>Criar ou recuperar senha</h1>
+      {/* No topo, como o voltar dos passos do agendamento: é o caminho
+          de volta, e não mais uma ação da tela. */}
+      <button type="button" className={estilos.voltar} onClick={() => trocarModo("entrar")}>
+        <IconeSeta width="16" height="16" className={estilos.setaDeVolta} />
+        Entrar com senha
+      </button>
+
+      <div className={estilos.cabecalho}>
+        <h1>Criar ou recuperar senha</h1>
+        <p className={estilos.apoio}>
+          {enviadoPara === null ? (
+            "Vamos mandar um código pro seu e-mail. Com ele você cria sua senha, ou troca, se esqueceu a sua."
+          ) : (
+            <>
+              Enviamos um código pra <b>{enviadoPara}</b>. Ele vale 10 minutos.
+            </>
+          )}
+        </p>
+      </div>
 
       {enviadoPara === null ? (
         <form
@@ -359,10 +411,6 @@ export function Entrar() {
             void pedirCodigo();
           }}
         >
-          <p className={estilos.explicacao}>
-            Vamos mandar um código pro seu e-mail. Com ele você cria sua
-            senha — ou troca, se esqueceu a sua.
-          </p>
           {campoEmail}
 
           {aviso ? <Aviso>{aviso}</Aviso> : null}
@@ -380,9 +428,6 @@ export function Entrar() {
             void definirSenha();
           }}
         >
-          <p className={estilos.explicacao}>
-            Enviamos um código pra <b>{enviadoPara}</b>. Ele vale 10 minutos.
-          </p>
           {/* `one-time-code` faz o teclado do celular sugerir o código
               que acabou de chegar; `numeric` abre o teclado de números. */}
           <Campo
@@ -437,10 +482,6 @@ export function Entrar() {
           </button>
         </form>
       )}
-
-      <button type="button" className={estilos.link} onClick={() => trocarModo("entrar")}>
-        Voltar pra entrar
-      </button>
     </main>
   );
 }

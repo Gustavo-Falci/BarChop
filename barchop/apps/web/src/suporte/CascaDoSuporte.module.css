@@ -28,6 +28,18 @@
   border-bottom: var(--borda-padrao) solid var(--cor-line);
 }
 
+/* No computador, o texto da aba (12px de padding no link) começa na
+   mesma linha do título: a borda da coluna de 1240px das páginas, com o
+   padding lg delas. Em janela estreita, o padding lg sozinho. */
+@media (min-width: 700px) {
+  .abas {
+    padding-inline: max(
+      calc(var(--espaco-lg) - 12px),
+      calc((100% - 1240px) / 2 + var(--espaco-lg) - 12px)
+    );
+  }
+}
+
 .aba {
   display: inline-flex;
   align-items: center;

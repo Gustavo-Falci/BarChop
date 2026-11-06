@@ -3,6 +3,9 @@
   align-items: center;
   justify-content: center;
   gap: var(--espaco-sm);
+  /* O alvo de toque de todo controle do painel: sem isto, padding mais
+     linha davam 42px. */
+  min-height: 44px;
   padding: var(--espaco-sm) var(--espaco-lg);
   border: var(--borda-padrao) solid var(--cor-line-strong);
   /* As variáveis com reserva são o ajuste fino da Aparência na página

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
@@ -35,5 +37,16 @@ describe("Botao", () => {
     expect(botao).toBeDisabled();
     await userEvent.click(botao);
     expect(aoClicar).not.toHaveBeenCalled();
+  });
+});
+
+// O jsdom não faz layout: o teste lê a regra do CSS. Sem a altura mínima,
+// o botão ficava com 42px (padding + linha), abaixo dos 44px de toque que
+// o painel usa em todo controle (o voltar, o Sair, as ações).
+describe("Botao no toque", () => {
+  it("tem pelo menos 44px de altura", () => {
+    const css = readFileSync(join(__dirname, "../../src/componentes/Botao.module.css"), "utf8").replace(/\r\n/g, "\n");
+    const botao = css.slice(css.indexOf(".botao {"), css.indexOf("\n}\n", css.indexOf(".botao {")));
+    expect(botao).toMatch(/min-height:\s*44px/);
   });
 });

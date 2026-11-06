@@ -4,7 +4,37 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-06, fim — onda C do redesenho concluída) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-06, fim do dia — conta do cliente e link do horário no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **Depois da onda C, quatro PRs mesclados e no ar** (deploy do dono em 06/11, conferido por curl no código publicado; `main` = merge deste PR de docs, antes `606bc9b`). Nada aberto; só a `main`.
+  - **#310** link do horário no Confirmado. O cliente sem conta vê o cartão "Pra cancelar ou confirmar depois", com 5 instruções, o botão de mandar o link pro próprio WhatsApp e o de copiar, e o Concluir travado 5 s. O cartão fica salvo na aba até o Concluir. O link também vai no .ics, e a API devolve `linkDoHorario`, que é null sem `URL_DAS_BARBEARIAS`/`URL_DO_PAINEL`. Plano: `.claude/plans/link-do-horario.plan.md`.
+  - **#311** a Minha conta pergunta antes de cancelar ("Cancelar este horário? Ele fica livre pra outra pessoa.").
+  - **#312** o Confirmado sem conta em duas colunas a partir de 900px, com o cartão do link fixo à direita. A contagem do Concluir só começa com o botão à vista. O dono testou em produção.
+  - **#313** criar conta do cliente e juntar os horários do telefone (A + B + C). Plano: `.claude/plans/criar-conta-do-cliente.plan.md`. Canvas: "Página pública", fileira "criar conta e juntar os horários do telefone".
+    - **Entrar:** "Esqueci minha senha" junto da senha, e "Primeira vez aqui?" com o botão Criar conta. Recuperar senha virou tela própria.
+    - **Tela nova CriarConta:** dados, depois código e senha, depois "Conta criada" ou "Esse telefone já tem histórico aqui".
+    - **Confirmado sem conta:** "Prefere não guardar link?" leva a `/entrar?criar=1`, já preenchido.
+    - **API:** a conta nova só fica com o cadastro do telefone com prova.
+      - A: todos os horários foram marcados pela página com o e-mail provado.
+      - B: o `tokenDaConta` (JWT `conta_do_agendamento`, 1 hora, só na aba, nunca o link do horário) e esse é o único horário do cadastro.
+      - Fora disso, `telefone_ja_cadastrado`.
+    - Conferido ponta a ponta contra a API local, nos casos A, B e C.
+- **Suítes:** API 1471, api-client 242, web 1737.
+- **Lição de deploy:** corpo de rota com `additionalProperties: false` e campo novo vindo da web → subir a API antes da web (ou junto). Dizer isso no PR.
+- **Limite conhecido, que já existia antes:** o telefone nunca é provado, então quem cria conta primeiro com um número fica com os próximos agendamentos dele. Isso some quando o código passar a sair pelo WhatsApp.
+- A conferência em produção da onda C (Faturas pagas, Pagamento não concluído, cartaz) foi encerrada: código publicado conferido por curl, e o dono dispensou a visual.
+
+**Ao retomar (só quando o dono pedir):**
+1. **Opcional, testes reais em produção** na `barbearia-teste`:
+   - agendar sem conta, abrir o link do horário e cancelar (prova que a API de produção gera o `linkDoHorario`);
+   - agendar sem conta com um e-mail real, tocar em Criar conta e ver "Conta criada" com o horário.
+2. **Onda D** (marketing: início, preços, grátis, termos, privacidade): conferência da tela atual → desenho no Claude Design → "aprovado" → plano → um PR por vez.
+3. **G3** (GR Barber em produção com `lembrete_ativo = false`): adiado até o dono pedir.
+4. **A primeira conta real da InfinitePay**: olhar o log do conector (seção de 31/10 à noite).
+5. **Standby desde 30/10**: marco 4 (relatórios) e o aviso da chave do Asaas parada. **Em 24/11**, olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+## RETOMAR AQUI (2026-11-06, fim — onda C do redesenho concluída) — histórico
 
 **Estado:**
 - **Onda C ("Conta, ajuda e suporte") inteira mesclada e no ar** (deploy do dono em 06/11; `main` = merge do #308, `8cf5aba`). Desenho aprovado no canvas https://claude.ai/artifact/LpMm9AAYAVzsQXsZB1w7Xb, página "Conta, ajuda e suporte" (prefixo `Cnt-`). Plano: `.claude/plans/redesenho-conta.plan.md`, com uma nota "Feito" em cada PR (desvios da prancha registrados lá e no corpo de cada PR).

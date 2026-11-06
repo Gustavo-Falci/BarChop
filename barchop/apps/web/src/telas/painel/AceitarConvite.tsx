@@ -8,6 +8,8 @@ import type { SessaoBarbeiro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { TelaDeEntrada } from "../../componentes/TelaDeEntrada";
+import { IconeSeta } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { sessaoDaBarbearia, sessaoDoBarbeiro } from "../../sessao/armazenamento";
 import estilos from "./EntrarNoPainel.module.css";
@@ -73,12 +75,17 @@ export function AceitarConvite() {
   }
 
   return (
-    <main className={estilos.pagina}>
-      <h1>Aceitar convite</h1>
-      <p>
-        Use o código que chegou no seu e-mail e crie a senha que você vai
-        usar pra entrar no painel.
-      </p>
+    <TelaDeEntrada
+      titulo="Aceitar convite"
+      apoio="Use o código que chegou no seu e-mail e crie a senha que você vai usar pra entrar no painel."
+      voltar={
+        // Link e não botão: volta pra outra tela, a de entrar.
+        <Link href="/painel/entrar" className={estilos.voltar}>
+          <IconeSeta width="16" height="16" className={estilos.setaDeVolta} />
+          Entrar com senha
+        </Link>
+      }
+    >
 
       <form
         className={estilos.formulario}
@@ -116,10 +123,11 @@ export function AceitarConvite() {
           erro={erro.codigo}
         />
         <Campo
-          rotulo="Senha"
+          rotulo="Crie uma senha"
           type="password"
           name="senha"
           autoComplete="new-password"
+          apoio={`Mínimo de ${SENHA_MIN} caracteres`}
           maxLength={SENHA_MAX}
           valor={senha}
           onChange={(proximo) => {
@@ -137,10 +145,13 @@ export function AceitarConvite() {
           </Botao>
         </div>
 
-        <p className={estilos.troca}>
-          Já tem senha? <Link href="/painel/entrar" className={estilos.link}>Entrar</Link>
-        </p>
       </form>
-    </main>
+
+      {/* Quem convida reenvia pela tela Equipe: é o caminho de quem não
+          recebeu o código, e esta tela não tem como pedir outro. */}
+      <p className={estilos.pergunta}>
+        O código não chegou? Peça pra quem te convidou mandar de novo, em Equipe.
+      </p>
+    </TelaDeEntrada>
   );
 }

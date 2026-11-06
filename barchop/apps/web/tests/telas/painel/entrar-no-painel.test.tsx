@@ -185,4 +185,38 @@ describe("entrar no painel", () => {
     );
     expect(screen.queryByLabelText(/nome da barbearia/i)).toBeNull();
   });
+
+  // Onda C, PR 1: o formato único das entradas.
+  it("mostra a barra do BarChop e o título no topo", () => {
+    montar();
+
+    expect(screen.getByRole("banner")).toHaveTextContent("BarChop");
+    expect(screen.getByRole("heading", { level: 1, name: "Entrar no painel" })).toBeInTheDocument();
+    expect(screen.getByText("A agenda, os clientes e o caixa da sua barbearia.")).toBeInTheDocument();
+  });
+
+  it("esqueci a senha: o voltar no topo devolve ao login com o e-mail digitado", async () => {
+    montar();
+
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
+    await userEvent.click(screen.getByRole("button", { name: /esqueci a senha/i }));
+    expect(screen.getByRole("heading", { level: 1, name: "Redefinir a senha" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /voltar pra entrar/i })).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: /entrar com senha/i }));
+
+    expect(screen.getByRole("heading", { level: 1, name: "Entrar no painel" })).toBeInTheDocument();
+  });
+
+  it("esqueci a senha: depois de enviar, anuncia o código e oferece reenviar", async () => {
+    montar();
+
+    await userEvent.click(screen.getByRole("button", { name: /esqueci a senha/i }));
+    await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
+    await userEvent.click(screen.getByRole("button", { name: /enviar código/i }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent(/rafael@gr\.com/);
+    expect(screen.getByRole("button", { name: /reenviar código/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /entrar com senha/i })).toBeInTheDocument();
+  });
 });

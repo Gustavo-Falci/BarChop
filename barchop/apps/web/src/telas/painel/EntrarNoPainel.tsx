@@ -8,6 +8,7 @@ import type { SessaoBarbeiro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { TelaDeEntrada } from "../../componentes/TelaDeEntrada";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import {
   sessaoDaBarbearia,
@@ -110,8 +111,10 @@ export function EntrarNoPainel() {
   }
 
   return (
-    <main className={estilos.pagina}>
-      <h1>Entrar no painel</h1>
+    <TelaDeEntrada
+      titulo="Entrar no painel"
+      apoio="A agenda, os clientes e o caixa da sua barbearia."
+    >
 
       {/* <form> e não um <div> com onClick no botão: sem ele o Enter não
           envia — num formulário de dois campos, é como quase todo mundo
@@ -150,38 +153,31 @@ export function EntrarNoPainel() {
           }}
           erro={erroEmail}
         />
-        <Campo
-          rotulo="Senha"
-          type="password"
-          name="senha"
-          autoComplete="current-password"
-          maxLength={SENHA_MAX}
-          valor={senha}
-          onChange={(proximo) => {
-            setSenha(proximo);
-            setErroSenha(undefined);
-          }}
-          erro={erroSenha}
-        />
-
-        {/* `type="button"`: dentro do <form>, sem type, ele enviaria o
-            login. */}
-        <p className={estilos.troca}>
+        {/* O "Esqueci a senha" fica colado no campo de que ele trata,
+            à direita, e não numa linha de links solta. `type="button"`:
+            dentro do <form>, sem type, ele enviaria o login. */}
+        <div className={estilos.campoComAjuda}>
+          <Campo
+            rotulo="Senha"
+            type="password"
+            name="senha"
+            autoComplete="current-password"
+            maxLength={SENHA_MAX}
+            valor={senha}
+            onChange={(proximo) => {
+              setSenha(proximo);
+              setErroSenha(undefined);
+            }}
+            erro={erroSenha}
+          />
           <button
             type="button"
-            className={estilos.link}
+            className={estilos.ajudaDoCampo}
             onClick={() => setRecuperando(true)}
           >
             Esqueci a senha
           </button>
-          {" · "}
-          {/* <Link> e não <button>: este sim navega, pra outra tela.
-              É a porta de quem recebeu o convite sem link — a API só
-              põe o link no e-mail quando tem URL_DO_PAINEL. */}
-          <Link href="/painel/convite" className={estilos.link}>
-            Recebi um convite
-          </Link>
-        </p>
+        </div>
 
         {aviso ? <Aviso>{aviso}</Aviso> : null}
 
@@ -190,16 +186,24 @@ export function EntrarNoPainel() {
             Entrar
           </Botao>
         </div>
-
-        {/* Frase com link, abaixo da ação principal: não é uma segunda
-            forma de enviar o formulário, é a porta pra outra tela. */}
-        <p className={estilos.troca}>
-          Ainda não tem uma barbearia aqui?{" "}
-          <Link href="/painel/cadastro" className={estilos.link}>
-            Criar barbearia
-          </Link>
-        </p>
       </form>
-    </main>
+
+      {/* A porta de quem recebeu o convite sem link — a API só põe o link
+          no e-mail quando tem URL_DO_PAINEL. Separada por uma linha: é
+          outro caminho, e não mais um campo do login. */}
+      <div className={estilos.outroCaminho}>
+        <p className={estilos.pergunta}>Alguém da barbearia te convidou pra equipe?</p>
+        <Link href="/painel/convite" className={estilos.link}>
+          Entrar com o código do convite
+        </Link>
+      </div>
+
+      <p className={estilos.pergunta}>
+        Ainda não tem uma barbearia aqui?{" "}
+        <Link href="/painel/cadastro" className={estilos.link}>
+          Criar barbearia
+        </Link>
+      </p>
+    </TelaDeEntrada>
   );
 }

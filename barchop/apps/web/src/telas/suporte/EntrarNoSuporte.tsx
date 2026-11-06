@@ -7,6 +7,7 @@ import type { SessaoSuporte } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { TelaDeEntrada } from "../../componentes/TelaDeEntrada";
 import { useApiDoSuporte } from "../../suporte/ProvedorDoSuporte";
 import { sessaoDoSuporte } from "../../sessao/armazenamento";
 // O mesmo molde do login do painel: uma coluna estreita, centrada.
@@ -67,8 +68,11 @@ export function EntrarNoSuporte() {
   }
 
   return (
-    <main className={estilos.pagina}>
-      <h1>Suporte do BarChop</h1>
+    <TelaDeEntrada
+      titulo="Entrar no suporte"
+      area="Suporte"
+      apoio="Área da equipe do BarChop: pedidos de troca de link e avisos da plataforma."
+    >
 
       <form
         className={estilos.formulario}
@@ -115,6 +119,6 @@ export function EntrarNoSuporte() {
           </Botao>
         </div>
       </form>
-    </main>
+    </TelaDeEntrada>
   );
 }

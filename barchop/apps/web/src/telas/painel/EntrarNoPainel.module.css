@@ -1,75 +1,13 @@
-/* Esta tela vive fora do shell do painel — /painel/entrar fica fora do
-   grupo (guardado), senão a guarda redirecionaria a tela pra ela mesma.
-   Então o centramento é dela, e não do container do shell. */
-.pagina {
-  display: grid;
-  gap: var(--espaco-lg);
-  /* Centrado na janela, e não colado no topo: a tela tem um assunto
-     só, e a 1440x900 o conteúdo do login ocupava 439px — metade da
-     dobra ficava vazia embaixo dele.
-
-     `safe center` e NÃO `center`: no modo criar barbearia o conteúdo
-     mede 763px, e numa janela de 640 de altura o center puro empurra
-     61px pra cima da borda — o h1 e o topo do primeiro campo ficam
-     inalcançáveis, porque não existe scroll acima do começo da página.
-     Com `safe`, o navegador desiste de centrar quando não cabe e
-     alinha no início. Medido em 2026-09-26, a 1440x640. */
-  align-content: safe center;
-  /* `dvh` e não `vh`: no celular a barra do navegador entra e sai, e
-     com `vh` a conta usa sempre a janela maior — o conteúdo centraria
-     contra uma altura que naquele momento não existe. */
-  min-height: 100dvh;
-  width: 100%;
-  max-width: 420px;
-  margin-inline: auto;
-  padding: var(--espaco-xxl) var(--espaco-lg);
-}
-
-/* Desktop: tela dividida (as telas usam a largura — pedido do dono). A
-   metade esquerda é um painel escuro com a marca, fixo e decorativo — o
-   texto gerado tem alternativa vazia (`/ ""`), o leitor de tela não o
-   lê —, e o formulário fica na metade direita, na largura de leitura. */
-@media (min-width: 900px) {
-  .pagina {
-    width: 50%;
-    max-width: none;
-    margin-inline: 50% 0;
-    justify-items: center;
-  }
-
-  .pagina > * {
-    width: 100%;
-    max-width: 420px;
-  }
-
-  .pagina::before {
-    content: "BarChop\A Agenda online para barbearias." / "";
-    position: fixed;
-    inset: 0 50% 0 0;
-    display: grid;
-    align-content: center;
-    padding: var(--espaco-xxl);
-    white-space: pre-line;
-    background-color: var(--cor-dark);
-    background-image: radial-gradient(
-      color-mix(in srgb, var(--cor-accent) 18%, transparent) 1px,
-      transparent 1.5px
-    );
-    background-size: 22px 22px;
-    color: var(--cor-accent);
-    font-family: var(--fonte-display), system-ui, sans-serif;
-    font-size: clamp(2rem, 3.5vw, 3.25rem);
-    font-weight: 800;
-    line-height: 1.1;
-  }
-}
+/* A casca (barra do BarChop, título no topo, tela dividida no
+   computador) é do componente TelaDeEntrada. Aqui fica só o miolo das
+   telas de entrada: Entrar, Recuperar, Convite e Entrar no suporte. */
 
 /* Repete o grid da página porque o <form> virou um item só dela: sem
    isto, os campos que eram filhos diretos de .pagina perderiam o gap e
    encostariam um no outro. */
 .formulario {
   display: grid;
-  gap: var(--espaco-lg);
+  gap: var(--espaco-md);
 }
 
 /* Nem .acoes nem .previa existiam aqui — a tela referenciava as duas e
@@ -80,14 +18,72 @@
   gap: var(--espaco-sm);
 }
 
-/* A troca de modo não é uma segunda submissão. Antes ela era um Botao
-   de contorno do mesmo tamanho do "Entrar" — dois blocos de 372x44
-   empilhados, mesma borda, mesma sombra —, e o olho lia os dois como
-   alternativas de envio. Aqui ela vira o que é: uma frase com um link,
-   abaixo da ação principal. */
-.troca {
+/* O caminho de volta, acima do título: o mesmo desenho do voltar da
+   página pública (telas/Entrar.module.css). */
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  min-height: 44px;
+  margin-block: calc(-1 * var(--espaco-sm));
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.voltar:hover { color: var(--cor-ink); }
+.voltar:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+/* A seta é a das ações que avançam; aqui ela volta. */
+.setaDeVolta { transform: scaleX(-1); }
+
+/* O campo de senha com o "Esqueci a senha" logo abaixo, à direita. */
+.campoComAjuda {
+  display: grid;
+  gap: 2px;
+}
+
+.ajudaDoCampo {
+  justify-self: end;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.ajudaDoCampo:hover { color: var(--cor-ink); }
+.ajudaDoCampo:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
+/* O outro caminho (o convite) separado do login por uma linha: é outra
+   porta, e não mais um campo do formulário. */
+.outroCaminho {
+  display: grid;
+  justify-items: start;
+  gap: var(--espaco-xs);
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-padrao) solid var(--cor-line);
+}
+
+/* Frase com link, abaixo da ação principal: não é uma segunda forma de
+   enviar o formulário, é a porta pra outra tela. */
+.pergunta {
   margin: 0;
-  text-align: center;
   font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
 }

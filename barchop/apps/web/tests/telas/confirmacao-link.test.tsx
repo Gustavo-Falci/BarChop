@@ -61,6 +61,26 @@ describe("confirmação: link do horário", () => {
     expect(itens[4]).toHaveTextContent("Não repasse o link.");
   });
 
+  // No computador (06/11, prancha Pub-ConfirmadoLinkDesktop): resumo e
+  // "Adicionar à agenda" numa coluna, o cartão do link na outra. O CSS
+  // põe lado a lado a partir de 900px; aqui confere que são colunas
+  // separadas, e o resumo antes do cartão (ordem de leitura no celular).
+  it("o resumo e o cartão ficam em colunas separadas, o resumo primeiro", async () => {
+    await agendarSemConta(criarApiClientFalso());
+
+    const adicionar = screen.getByRole("button", { name: "Adicionar à agenda" });
+    const colunaDoResumo = adicionar.parentElement!;
+    const colunaDoCartao = cartao().parentElement!;
+
+    expect(colunaDoResumo).not.toBe(colunaDoCartao);
+    expect(colunaDoResumo.parentElement).toBe(colunaDoCartao.parentElement);
+    expect(within(colunaDoResumo).getByText("Quando")).toBeInTheDocument();
+    expect(within(colunaDoResumo).getByRole("heading", { name: "Agendamento confirmado" })).toBeInTheDocument();
+    expect(
+      colunaDoResumo.compareDocumentPosition(colunaDoCartao) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   it("com prazo 0, diz que dá até o horário começar; com 1, no singular", async () => {
     const falso = criarApiClientFalso();
     falso.estado.perfil = { ...falso.estado.perfil, prazoCancelarHoras: 0 };

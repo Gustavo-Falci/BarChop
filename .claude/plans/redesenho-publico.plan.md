@@ -153,7 +153,7 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
 - Ações por estado.
 - "Marcar outro horário" depois de cancelar.
 - WhatsApp no rodapé quando a barbearia tem (o dado já vem).
-- **Feito (06/11):**
+- **Feito (06/11, #299):**
   - componente novo `BlocoDoDia` (semana curta, número, mês, no amarelo claro), usado aqui e na Minha conta (saiu o CSS repetido dela); `soVisual` tira o bloco do leitor de tela quando a data por extenso está ao lado (aqui);
   - cartão: bloco do dia, "Sábado, 10 de outubro às 10:00" com o selo (Presença confirmada / Cancelado) e linhas Serviços / Profissional / Barbearia. Sem o "Onde" da prancha (o lembrete não traz endereço); no lugar, a barbearia, que o token traz;
   - ações por estado: pendente pergunta "Vai conseguir vir?" antes do Confirmar; confirmado diz "Te esperamos!"; cancelar abre uma caixa "Cancelar o horário?" com Sim, cancelar / Voltar; cancelado oferece "Marcar outro horário" pelo slug do token;

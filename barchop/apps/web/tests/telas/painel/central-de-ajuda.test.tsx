@@ -3,29 +3,70 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { CentralDeAjuda } from "../../../src/telas/painel/CentralDeAjuda";
 
+// Onda C, PR 5: cada pergunta é um botão que abre e fecha a resposta
+// (`aria-expanded`), e os assuntos têm título normal, sem caixa alta.
+
+// As perguntas: os botões que abrem e fecham.
+function perguntas(): HTMLElement[] {
+  return screen.getAllByRole("button").filter((botao) => botao.hasAttribute("aria-expanded"));
+}
+
+function pergunta(texto: string): HTMLElement {
+  return screen.getByRole("button", { name: texto });
+}
+
+// A resposta que o botão controla (no DOM mesmo fechada, com `hidden`:
+// a busca lê o mesmo texto que aparece).
+function respostaDe(botao: HTMLElement): HTMLElement {
+  const id = botao.getAttribute("aria-controls");
+  const resposta = id ? document.getElementById(id) : null;
+  if (!resposta) throw new Error("pergunta sem resposta");
+  return resposta;
+}
+
+function linksDasPerguntas(): (string | null)[] {
+  return perguntas()
+    .flatMap((botao) => within(respostaDe(botao)).queryAllByRole("link", { hidden: true }))
+    .map((link) => link.getAttribute("href"));
+}
+
 describe("central de ajuda", () => {
   it("abre com o título e as perguntas fechadas, uma por linha", () => {
     render(<CentralDeAjuda />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Central de ajuda" })).toBeInTheDocument();
-    const perguntas = screen.getAllByRole("group");
-    expect(perguntas.length).toBeGreaterThanOrEqual(6);
-    for (const pergunta of perguntas) {
-      expect(pergunta).not.toHaveAttribute("open");
+    expect(perguntas().length).toBeGreaterThanOrEqual(6);
+    for (const botao of perguntas()) {
+      expect(botao).toHaveAttribute("aria-expanded", "false");
+      expect(respostaDe(botao)).not.toBeVisible();
     }
   });
 
-  it("abrir uma pergunta mostra a resposta com o caminho pra tela certa", async () => {
+  it("os assuntos são títulos de seção", () => {
     render(<CentralDeAjuda />);
 
-    await userEvent.click(screen.getByText("Como bloqueio um horário ou tiro folga?"));
+    for (const tema of ["Agenda", "Sua página", "Clientes", "Caixa", "Planos de assinatura"]) {
+      expect(screen.getByRole("heading", { level: 2, name: tema })).toBeInTheDocument();
+    }
+  });
 
-    const pergunta = screen.getByText("Como bloqueio um horário ou tiro folga?").closest("details")!;
-    expect(pergunta).toHaveAttribute("open");
-    expect(within(pergunta).getByRole("link", { name: "Folgas" })).toHaveAttribute(
+  it("abrir uma pergunta mostra a resposta com o caminho pra tela certa; tocar de novo fecha", async () => {
+    render(<CentralDeAjuda />);
+    const botao = pergunta("Como bloqueio um horário ou tiro folga?");
+
+    await userEvent.click(botao);
+
+    expect(botao).toHaveAttribute("aria-expanded", "true");
+    expect(respostaDe(botao)).toBeVisible();
+    expect(within(respostaDe(botao)).getByRole("link", { name: "Folgas" })).toHaveAttribute(
       "href",
       "/painel/bloqueios"
     );
+
+    await userEvent.click(botao);
+
+    expect(botao).toHaveAttribute("aria-expanded", "false");
+    expect(respostaDe(botao)).not.toBeVisible();
   });
 
   it("o caixa tem perguntas que levam ao Caixa e à divisão do dinheiro", async () => {
@@ -33,22 +74,15 @@ describe("central de ajuda", () => {
 
     await userEvent.type(screen.getByRole("searchbox", { name: "Buscar na ajuda" }), "caixa");
 
-    const perguntas = screen.getAllByRole("group");
-    const links = perguntas.flatMap((p) => within(p).queryAllByRole("link", { hidden: true }));
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(
-      expect.arrayContaining(["/painel/caixa", "/painel/configuracoes/divisao"])
-    );
+    expect(linksDasPerguntas()).toEqual(expect.arrayContaining(["/painel/caixa", "/painel/configuracoes/divisao"]));
   });
 
   it("os planos de assinatura levam aos Planos e aos Pagamentos online", async () => {
     render(<CentralDeAjuda />);
 
-    expect(screen.getByRole("heading", { level: 2, name: "Planos de assinatura" })).toBeInTheDocument();
     await userEvent.type(screen.getByRole("searchbox", { name: "Buscar na ajuda" }), "stripe");
 
-    const perguntas = screen.getAllByRole("group");
-    const links = perguntas.flatMap((p) => within(p).queryAllByRole("link", { hidden: true }));
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(
+    expect(linksDasPerguntas()).toEqual(
       expect.arrayContaining(["/painel/planos", "/painel/configuracoes/pagamentos-online"])
     );
   });
@@ -58,15 +92,16 @@ describe("central de ajuda", () => {
 
     await userEvent.type(screen.getByRole("searchbox", { name: "Buscar na ajuda" }), "lembrete");
 
-    expect(screen.getAllByRole("group").length).toBeGreaterThan(0);
-    for (const pergunta of screen.getAllByRole("group")) {
-      expect(pergunta.textContent?.toLowerCase()).toContain("lembrete");
+    expect(perguntas().length).toBeGreaterThan(0);
+    for (const botao of perguntas()) {
+      const texto = `${botao.textContent} ${respostaDe(botao).textContent}`.toLowerCase();
+      expect(texto).toContain("lembrete");
     }
 
     await userEvent.clear(screen.getByRole("searchbox", { name: "Buscar na ajuda" }));
     await userEvent.type(screen.getByRole("searchbox", { name: "Buscar na ajuda" }), "xyzzy");
 
-    expect(screen.queryAllByRole("group")).toHaveLength(0);
+    expect(screen.queryAllByRole("button").filter((b) => b.hasAttribute("aria-expanded"))).toHaveLength(0);
     expect(screen.getByText(/Nenhuma pergunta com/)).toBeInTheDocument();
   });
 });

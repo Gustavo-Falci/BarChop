@@ -103,6 +103,17 @@ describe("faixa da assinatura", () => {
     expect(within(regiao).getByRole("link", { name: "Escolher plano" })).toHaveAttribute("href", "/painel/faturas");
   });
 
+  // Onda C, PR 3: dentro de Faturas o link levaria pra mesma tela.
+  it("dentro de Faturas, o recado fica e o link some", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/faturas" });
+    montar({ assinatura: resumo() });
+
+    const regiao = await faixa();
+
+    expect(regiao).toHaveTextContent("Teste grátis: faltam 10 dias");
+    expect(within(regiao).queryByRole("link")).toBeNull();
+  });
+
   it("no último dia, fala no singular", async () => {
     montar({ assinatura: resumo({ diasDeTesteRestantes: 1 }) });
 

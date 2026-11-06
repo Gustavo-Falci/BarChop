@@ -182,12 +182,31 @@ export function Faturas({
     <div className={estilos.pagina}>
       <CabecalhoDaPagina
         titulo="Faturas"
-        apoio={nomeDaBarbearia ?? slug}
-        selo={resumo ? seloDaSituacao(resumo) : null}
+        apoio={apoioDaPagina(resumo, nomeDaBarbearia ?? slug)}
+        // Sem plano pago, sem selo (onda C): o teste já está na faixa e
+        // no apoio, e o Grátis no apoio.
+        selo={resumo && temPlanoPago(resumo) ? seloDaSituacao(resumo) : null}
       />
       {conteudo}
     </div>
   );
+}
+
+// O apoio do título. Sem plano pago, diz em que pé a barbearia está: o
+// teste até quando, ou o Grátis com o limite do link. Com plano, o nome.
+function apoioDaPagina(resumo: ResumoDaAssinatura | null, nome: string | null | undefined): string | undefined {
+  const barbearia = nome ?? undefined;
+  if (!resumo || temPlanoPago(resumo)) return barbearia;
+  const daBarbearia = barbearia ? `da ${barbearia}` : "da barbearia";
+  if (resumo.situacao === "teste" && resumo.diasDeTesteRestantes && resumo.testeTerminaEm) {
+    return `Escolha o plano ${daBarbearia}. O teste grátis vai até ${diaEMes(resumo.testeTerminaEm)}.`;
+  }
+  const quem = barbearia ? `A ${barbearia}` : "A barbearia";
+  const limite =
+    resumo.limiteDeProfissionais !== null
+      ? `: só ${profissionais(resumo.limiteDeProfissionais)} aparece no link`
+      : "";
+  return `${quem} está no Grátis${limite}. Escolha um plano pra voltar com a equipe toda.`;
 }
 
 function Trilha({ atual }: { atual: number }) {
@@ -521,7 +540,7 @@ function EscolhaDoPlano({
         </div>
 
         <Botao onClick={aoContinuar}>
-          Continuar com o {nome} · {formatarReais(total)}/{porCiclo(ciclo)}
+          Continuar com o {nome}
         </Botao>
       </section>
     </>

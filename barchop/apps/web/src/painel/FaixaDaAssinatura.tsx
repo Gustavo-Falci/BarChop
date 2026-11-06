@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ResumoDaAssinatura } from "@barchop/types";
 import { diaEMes, diasQueFaltam, emLista, nomeDoPlano, profissionais, temPlanoPago } from "./assinatura";
 import { faixaFechada, fecharFaixa } from "./faixa";
@@ -87,6 +88,9 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
 // resumo nem chega). Leva sempre pra tela do plano, que explica o resto.
 export function FaixaDaAssinatura() {
   const { resumo } = useAssinatura();
+  // Dentro de Faturas o link levaria pra mesma tela (onda C): o recado
+  // fica, a ação some.
+  const emFaturas = usePathname()?.startsWith("/painel/faturas") ?? false;
   const recado = resumo ? recadoDa(resumo) : null;
   // O que foi fechado mora no navegador; lido depois de montar, pra o
   // HTML do servidor e o primeiro quadro do cliente não discordarem.
@@ -107,9 +111,11 @@ export function FaixaDaAssinatura() {
     <section aria-label="Assinatura" className={`${estilos.faixa} ${estilos[recado.tom]}`}>
       <p className={estilos.texto}>{recado.texto}</p>
       <div className={estilos.acoes}>
-        <Link href="/painel/faturas" className={estilos.acao}>
-          {recado.acao}
-        </Link>
+        {emFaturas ? null : (
+          <Link href="/painel/faturas" className={estilos.acao}>
+            {recado.acao}
+          </Link>
+        )}
         {recado.fechavel ? (
           <button type="button" className={estilos.fechar} onClick={fechar} aria-label="Fechar aviso" title="Fechar por hoje">
             <IconeFechar width={16} height={16} />

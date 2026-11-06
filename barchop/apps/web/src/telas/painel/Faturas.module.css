@@ -4,58 +4,54 @@
   max-width: 1200px;
 }
 
-/* A trilha Plano → Pagamento → Acesso liberado, como no Barbeiro.app:
-   números em círculo ligados por um tracejado; a etapa feita vira ✓. */
+/* A trilha Plano → Pagamento → Acesso liberado (onda C): três colunas
+   fixas, o número num círculo em cima e o nome embaixo. A etapa atual
+   vai no amarelo; a feita, no verde com ✓. Em colunas fixas ela não
+   quebra torto no celular, como quebrava em linha corrida. */
 .trilha {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espaco-sm) var(--espaco-md);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--espaco-sm);
+  max-width: 560px;
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: var(--texto-sm);
+  font-weight: 600;
   color: var(--cor-ink-soft);
 }
 
 .passoDaTrilha {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--espaco-sm);
-}
-
-.passoDaTrilha + .passoDaTrilha::before {
-  content: "";
-  width: 32px;
-  border-block-start: var(--borda-padrao) dashed var(--cor-line);
-  margin-inline-end: var(--espaco-xs);
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
 }
 
 .passoDaTrilha[aria-current="step"] {
   color: var(--cor-ink);
-  font-weight: 700;
 }
 
 .numeroDaTrilha {
-  display: inline-grid;
+  display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
-  border: var(--borda-padrao) solid var(--cor-line);
+  width: 32px;
+  height: 32px;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
   border-radius: var(--raio-pill);
-  font-size: var(--texto-xs);
   font-weight: 700;
 }
 
 .passoDaTrilha[aria-current="step"] .numeroDaTrilha {
   border-color: var(--cor-accent);
-  color: var(--cor-ink);
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
 }
 
 .passoDaTrilha[data-feita] .numeroDaTrilha {
-  border-color: var(--cor-ink);
-  background: var(--cor-ink);
-  color: var(--cor-paper);
+  border-color: var(--cor-ok-fundo);
+  background: var(--cor-ok-fundo);
+  color: var(--cor-ok);
 }
 
 /* No celular, uma coluna na ordem do HTML: etapa, pedido, resto. No
@@ -121,8 +117,12 @@
 .apoio {
   margin: 0;
   color: var(--cor-ink-soft);
+  /* A fonte do corpo mesmo dentro de um título (o "Toque em um…" mora no
+     legend do Escolha o plano): sem isto ele herdava a de título. */
+  font-family: var(--fonte-corpo), system-ui, sans-serif;
   font-size: var(--texto-sm);
   font-weight: 400;
+  letter-spacing: normal;
 }
 
 /* Os dois planos pagos em cartões: o rádio fica escondido e o cartão
@@ -231,12 +231,11 @@
   border-block-end: var(--borda-hairline) solid var(--cor-line);
 }
 
+/* Título normal, sem caixa alta (onda C). */
 .tituloDaRecomendacao {
   margin: 0;
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--texto-sm);
+  font-weight: 600;
 }
 
 .uso {
@@ -389,13 +388,12 @@
   gap: var(--espaco-md) var(--espaco-xl);
 }
 
+/* Título normal, sem caixa alta (onda C): "Vem no Essencial", "Seu
+   pedido", "Seu plano". */
 .subtitulo {
   margin: 0 0 var(--espaco-sm);
-  color: var(--cor-ink-soft);
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--texto-sm);
+  font-weight: 600;
 }
 
 .lista {

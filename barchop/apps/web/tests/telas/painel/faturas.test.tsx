@@ -117,11 +117,14 @@ beforeEach(() => {
 });
 
 describe("Faturas sem plano pago: etapa Plano", () => {
-  it("em teste: título Faturas, os dias que faltam, e a trilha começa no Plano", async () => {
+  // Onda C, PR 3: sem selo do teste no título; o fim do teste vai no
+  // apoio, e os dias que faltam já estão na faixa do painel.
+  it("em teste: título Faturas, até quando vai o teste, e a trilha começa no Plano", async () => {
     montar(resumo());
 
     expect(await screen.findByRole("heading", { name: "Faturas" })).toBeInTheDocument();
-    expect(await screen.findByText("Teste grátis · faltam 10 dias")).toBeInTheDocument();
+    expect(await screen.findByText(/Escolha o plano da .+\. O teste grátis vai até 28\/10\./)).toBeInTheDocument();
+    expect(screen.queryByText("Teste grátis · faltam 10 dias")).toBeNull();
     expect(etapaAtual()).toMatch(/Plano/);
   });
 
@@ -208,6 +211,15 @@ describe("Faturas sem plano pago: etapa Plano", () => {
 
     expect(texto(within(pedido()).getByTestId("hoje"))).toBe("R$ 59,90");
     expect(screen.getByText(/Nada foi apagado/)).toBeInTheDocument();
+    expect(screen.getByText(/está no Grátis\. Escolha um plano pra voltar com a equipe toda\./)).toBeInTheDocument();
+  });
+
+  // Onda C, PR 3 (aprovado pelo dono): o preço sai do Continuar e fica no
+  // Seu pedido; o do Assinar continua no botão.
+  it("Continuar diz só o plano; o preço fica no Seu pedido", async () => {
+    montar(resumo());
+
+    expect(await screen.findByRole("button", { name: "Continuar com o Essencial" })).toBeInTheDocument();
   });
 
   it("o comparativo sai de planos.ts: limites e o preço por mês de cada plano", async () => {

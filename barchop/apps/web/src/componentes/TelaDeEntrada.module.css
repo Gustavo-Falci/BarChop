@@ -48,6 +48,11 @@
   font-weight: 600;
 }
 
+/* A ação no fim da barra (o Sair do suporte). */
+.acaoDaBarra {
+  margin-inline-start: auto;
+}
+
 .pagina {
   display: grid;
   align-content: start;
@@ -79,7 +84,7 @@
    lê —, e o formulário fica na metade direita, na largura de leitura.
    A barra some: a metade escura já é a marca. */
 @media (min-width: 900px) {
-  .barra {
+  .barra:not(.sempreVisivel) {
     display: none;
   }
 

@@ -7,7 +7,13 @@
   width: 100%;
   max-width: 1240px;
   margin-inline: auto;
-  padding: var(--espaco-xl) var(--espaco-lg);
+  padding: var(--espaco-lg) var(--espaco-md) var(--espaco-xl);
+}
+
+@media (min-width: 700px) {
+  .pagina {
+    padding: var(--espaco-xl) var(--espaco-lg);
+  }
 }
 
 .lista {
@@ -22,11 +28,17 @@
 
 .pedido {
   display: grid;
-  gap: var(--espaco-sm);
-  padding: var(--espaco-lg);
+  gap: 14px;
+  padding: 20px var(--espaco-md);
   border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-sm);
+  border-radius: var(--raio-lg);
   background: var(--cor-surface);
+  box-shadow: var(--sombra-1);
+}
+
+.topo {
+  display: grid;
+  gap: 2px;
 }
 
 .pedido p {
@@ -38,20 +50,68 @@
   font-size: var(--texto-lg);
 }
 
-/* Os slugs quebram em qualquer ponto: num celular, um link de 80
-   caracteres empurraria o cartão pra fora da tela. */
-.troca {
+/* O link de hoje e o pedido: rótulo à esquerda, link à direita. Os
+   links quebram em qualquer ponto: num celular, um de 80 caracteres
+   empurraria o cartão pra fora da tela. */
+.links {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  font-size: var(--texto-sm);
+}
+
+.links dt {
+  color: var(--cor-ink-soft);
+}
+
+.links dd {
+  margin: 0;
+  font-family: ui-monospace, monospace;
   overflow-wrap: anywhere;
 }
 
+.links .pedidoNovo {
+  font-weight: 600;
+}
+
+.motivo {
+  display: grid;
+  gap: 2px;
+}
+
 .apoio {
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--cor-ink-soft);
 }
 
 .recusa {
   display: grid;
-  gap: var(--espaco-xs);
+  gap: var(--espaco-sm);
+  padding-top: 12px;
+  border-top: var(--borda-hairline) solid var(--cor-line);
+}
+
+.rotuloDaResposta {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+/* Aprovar e Recusar (ou Confirmar e Voltar) lado a lado, meio a meio. */
+.decisao {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espaco-sm);
+}
+
+/* Na recusa, o Voltar (fantasma) fica na largura dele e o Confirmar
+   recusa ocupa o resto: meio a meio, ele quebrava em duas linhas num
+   celular de 360. */
+.decisaoDaRecusa {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .rotulo {
@@ -61,10 +121,10 @@
 }
 
 .area {
-  padding: var(--espaco-sm) var(--espaco-md);
+  padding: 12px;
   border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-sm);
-  background: var(--cor-surface);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
   color: var(--cor-ink);
   font-family: var(--fonte-corpo), system-ui, sans-serif;
   font-size: var(--texto-md);
@@ -78,10 +138,4 @@
 .erro {
   font-size: var(--texto-xs);
   color: var(--cor-erro);
-}
-
-.acoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaco-sm);
 }

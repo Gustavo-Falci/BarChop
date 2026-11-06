@@ -40,6 +40,12 @@ function montar(semente: SementeFalsa = { solicitacoesDeLink: [PEDIDO_DA_GR, PED
   return falso;
 }
 
+// O valor de um rótulo do bloco de links (<dt>Hoje</dt><dd>…</dd>).
+function texto(pedido: HTMLElement, rotulo: string): string | null | undefined {
+  const dt = [...pedido.querySelectorAll("dt")].find((item) => item.textContent === rotulo);
+  return dt?.nextElementSibling?.textContent;
+}
+
 function pedidoDa(barbearia: RegExp) {
   return screen.getByRole("article", { name: barbearia });
 }
@@ -71,9 +77,12 @@ describe("fila do suporte", () => {
       expect.stringMatching(/GR Barber/),
     ]);
     const daGr = pedidoDa(/GR Barber/);
-    expect(within(daGr).getByText("gr-barber")).toBeInTheDocument();
-    expect(within(daGr).getByText("gr-barber-centro")).toBeInTheDocument();
-    expect(within(daGr).getByText(/mudamos de endereço/)).toBeInTheDocument();
+    // Onda C, PR 7: o link de hoje e o pedido num bloco só, com rótulo;
+    // o motivo também com rótulo.
+    expect(texto(daGr, "Hoje")).toBe("gr-barber");
+    expect(texto(daGr, "Pedido")).toBe("gr-barber-centro");
+    expect(within(daGr).getByText("Motivo")).toBeInTheDocument();
+    expect(within(daGr).getByText("mudamos de endereço")).toBeInTheDocument();
   });
 
   it("sem pedido pendente, diz que a fila está vazia", async () => {
@@ -116,6 +125,10 @@ describe("fila do suporte", () => {
     await screen.findAllByRole("article");
     const daGr = pedidoDa(/GR Barber/);
     await userEvent.click(within(daGr).getByRole("button", { name: /^recusar/i }));
+    // O apoio da resposta diz onde o dono lê, e é anunciado com o campo.
+    expect(within(daGr).getByRole("textbox", { name: "Resposta pro dono" })).toHaveAccessibleDescription(
+      "É o que ele lê em Configurações."
+    );
     await userEvent.click(within(daGr).getByRole("button", { name: /confirmar recusa/i }));
     expect(await within(daGr).findByText(/escreva a resposta/i)).toBeInTheDocument();
 

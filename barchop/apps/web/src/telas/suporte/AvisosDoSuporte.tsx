@@ -8,7 +8,9 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
+import { Chip } from "../../componentes/Chip";
 import { LadoALado } from "../../componentes/Colunas";
+import { CascaDoSuporte } from "../../suporte/CascaDoSuporte";
 import { useApiDoSuporte } from "../../suporte/ProvedorDoSuporte";
 import { sessaoDoSuporte } from "../../sessao/armazenamento";
 import estilos from "./AvisosDoSuporte.module.css";
@@ -121,90 +123,92 @@ export function AvisosDoSuporte() {
   }
 
   return (
-    <main className={estilos.pagina}>
-      <CabecalhoDaPagina
-        titulo="Avisos da plataforma"
-        apoio="O que você publica aqui cai no sino de todos os membros ativos, de todas as barbearias, na aba Avisos."
-        voltar={{ href: "/painel/suporte", rotulo: "Pedidos de troca de link" }}
-        acao={
-          <Botao variante="fantasma" onClick={sair}>
-            Sair
-          </Botao>
-        }
-      />
-      {aviso ? <Aviso>{aviso}</Aviso> : null}
+    <CascaDoSuporte aoSair={sair}>
+      <main className={estilos.pagina}>
+        <CabecalhoDaPagina
+          titulo="Avisos da plataforma"
+          apoio="O que você publica aqui cai no sino de todos os membros ativos, de todas as barbearias, na aba Avisos."
+        />
+        {aviso ? <Aviso>{aviso}</Aviso> : null}
 
-      <LadoALado>
-        <form className={estilos.formulario} onSubmit={publicar} noValidate>
-          <h2 className={estilos.secao}>Novo aviso</h2>
-          <Campo
-            rotulo="Título"
-            valor={titulo}
-            onChange={setTitulo}
-            maxLength={TITULO_MAX}
-            erro={erros.titulo}
-          />
-          <div className={estilos.campoDeTexto}>
-            <label className={estilos.rotulo} htmlFor={idDoTexto}>
-              Texto
-            </label>
-            <textarea
-              id={idDoTexto}
-              className={estilos.area}
-              rows={4}
-              maxLength={TEXTO_MAX}
-              aria-invalid={erros.texto ? "true" : undefined}
-              aria-describedby={erros.texto ? `${idDoTexto}-erro` : undefined}
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
+        <LadoALado>
+          <form className={estilos.formulario} onSubmit={publicar} noValidate aria-labelledby="novo-aviso">
+            <h2 id="novo-aviso" className={estilos.secao}>
+              Novo aviso
+            </h2>
+            <Campo
+              rotulo="Título"
+              valor={titulo}
+              onChange={setTitulo}
+              maxLength={TITULO_MAX}
+              erro={erros.titulo}
             />
-            {erros.texto ? (
-              <span className={estilos.erro} id={`${idDoTexto}-erro`}>
-                {erros.texto}
-              </span>
-            ) : null}
-          </div>
-          <Campo
-            rotulo="Link (opcional)"
-            apoio="Um caminho do painel, como /painel/ajuda, ou um endereço https://."
-            valor={link}
-            onChange={setLink}
-            maxLength={300}
-            erro={erros.link}
-          />
-          <div>
-            <Botao type="submit" carregando={enviando}>
-              Publicar aviso
-            </Botao>
-          </div>
-          {publicado ? <Aviso tom="sucesso">{publicado}</Aviso> : null}
-        </form>
+            <div className={estilos.campoDeTexto}>
+              <label className={estilos.rotulo} htmlFor={idDoTexto}>
+                Texto
+              </label>
+              <textarea
+                id={idDoTexto}
+                className={estilos.area}
+                rows={4}
+                maxLength={TEXTO_MAX}
+                aria-invalid={erros.texto ? "true" : undefined}
+                aria-describedby={erros.texto ? `${idDoTexto}-erro` : undefined}
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+              />
+              {erros.texto ? (
+                <span className={estilos.erro} id={`${idDoTexto}-erro`}>
+                  {erros.texto}
+                </span>
+              ) : null}
+            </div>
+            <Campo
+              rotulo="Link (opcional)"
+              apoio="Um caminho do painel, como /painel/ajuda, ou um endereço https://."
+              valor={link}
+              onChange={setLink}
+              maxLength={300}
+              erro={erros.link}
+            />
+            <div>
+              <Botao type="submit" carregando={enviando}>
+                Publicar aviso
+              </Botao>
+            </div>
+            {publicado ? <Aviso tom="sucesso">{publicado}</Aviso> : null}
+          </form>
 
-        <section className={estilos.publicados} aria-labelledby="avisos-publicados">
-          <h2 id="avisos-publicados" className={estilos.secao}>
-            Publicados
-          </h2>
-          {publicados === null ? null : publicados.length === 0 ? (
-            <p className={estilos.vazio}>Nenhum aviso publicado ainda.</p>
-          ) : (
-            <ol className={estilos.lista}>
-              {publicados.map((item) => (
-                <li key={item.id}>
-                  <article className={estilos.aviso} aria-label={item.titulo}>
-                    <strong>{item.titulo}</strong>
-                    <p>{item.texto}</p>
-                    <p className={estilos.apoio}>
-                      {FORMATADOR.format(new Date(item.criadoEm))}
-                      {item.link ? ` · ${item.link}` : ""}
-                    </p>
-                    <p className={estilos.leitura}>{`${item.lidas} de ${item.destinatarios} leram`}</p>
-                  </article>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-      </LadoALado>
-    </main>
+          <section className={estilos.publicados} aria-labelledby="avisos-publicados">
+            <h2 id="avisos-publicados" className={estilos.secao}>
+              Publicados
+            </h2>
+            {publicados === null ? null : publicados.length === 0 ? (
+              <p className={estilos.vazio}>Nenhum aviso publicado ainda.</p>
+            ) : (
+              <ol className={estilos.lista}>
+                {publicados.map((item) => (
+                  <li key={item.id}>
+                    <article className={estilos.aviso} aria-label={item.titulo}>
+                      <strong>{item.titulo}</strong>
+                      <p className={estilos.textoDoAviso}>{item.texto}</p>
+                      {/* Quando e pra onde à esquerda; quantos leram num selo à
+                          direita (onda C). */}
+                      <div className={estilos.rodapeDoAviso}>
+                        <span className={estilos.apoio}>
+                          {FORMATADOR.format(new Date(item.criadoEm))}
+                          {item.link ? ` · ${item.link}` : ""}
+                        </span>
+                        <Chip tom="neutro" tamanho="pequeno">{`${item.lidas} de ${item.destinatarios} leram`}</Chip>
+                      </div>
+                    </article>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        </LadoALado>
+      </main>
+    </CascaDoSuporte>
   );
 }

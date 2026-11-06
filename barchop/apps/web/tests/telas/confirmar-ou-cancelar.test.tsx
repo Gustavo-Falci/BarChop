@@ -172,6 +172,9 @@ describe("confirmar ou cancelar pelo link do lembrete", () => {
     montar(semear(), "outro-token");
 
     expect(await screen.findByText(/link inválido/i)).toBeInTheDocument();
+    // O link também chega pelo WhatsApp ou copiado da tela de sucesso
+    // (06/11): o texto não supõe que veio por e-mail.
+    expect(screen.getByText("Confira se o link chegou inteiro, ou fale direto com a barbearia.")).toBeInTheDocument();
   });
 
   it("falha ao confirmar mostra o aviso e mantém as opções", async () => {

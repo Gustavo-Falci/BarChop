@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
@@ -236,6 +236,64 @@ describe("POST /barbearias/:slug/agendamentos", () => {
     });
 
     expect(resposta.statusCode).toBe(400);
+
+    await app.close();
+  });
+});
+
+// O link do horário (06/11): quem agenda sem conta e sem e-mail não tinha
+// como cancelar sozinho. A resposta da criação traz o mesmo link do
+// lembrete, e a tela de sucesso o entrega na hora.
+describe("POST /barbearias/:slug/agendamentos: link do horário", () => {
+  const painelAntes = process.env.URL_DO_PAINEL;
+  const barbeariasAntes = process.env.URL_DAS_BARBEARIAS;
+  afterEach(() => {
+    if (painelAntes === undefined) delete process.env.URL_DO_PAINEL;
+    else process.env.URL_DO_PAINEL = painelAntes;
+    if (barbeariasAntes === undefined) delete process.env.URL_DAS_BARBEARIAS;
+    else process.env.URL_DAS_BARBEARIAS = barbeariasAntes;
+  });
+
+  it("devolve o link do lembrete, que abre este horário, e não deixa a resposta em cache", async () => {
+    process.env.URL_DO_PAINEL = "http://localhost:3000";
+    process.env.URL_DAS_BARBEARIAS = "https://{slug}.barchop.com.br";
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/barbearias/barbearia-um/agendamentos",
+      payload: corpo(agenda),
+    });
+
+    expect(resposta.statusCode).toBe(201);
+    // O link cancela de verdade: cache nenhum guarda a resposta.
+    expect(resposta.headers["cache-control"]).toBe("no-store");
+    const { id, linkDoHorario } = resposta.json();
+    expect(linkDoHorario).toMatch(/^https:\/\/barbearia-um\.barchop\.com\.br\/lembrete\/[^/]+$/);
+
+    const token = (linkDoHorario as string).split("/lembrete/")[1];
+    const lido = await app.inject({ method: "GET", url: `/lembretes/${token}` });
+    expect(lido.statusCode).toBe(200);
+    expect(lido.json().agendamento.id).toBe(id);
+
+    await app.close();
+  });
+
+  it("sem endereço configurado, devolve null e a tela segue sem o cartão", async () => {
+    delete process.env.URL_DO_PAINEL;
+    delete process.env.URL_DAS_BARBEARIAS;
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/barbearias/barbearia-um/agendamentos",
+      payload: corpo(agenda),
+    });
+
+    expect(resposta.statusCode).toBe(201);
+    expect(resposta.json().linkDoHorario).toBeNull();
 
     await app.close();
   });

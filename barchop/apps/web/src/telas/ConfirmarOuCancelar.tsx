@@ -29,7 +29,8 @@ function diaPorExtenso(data: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-// O destino do link do e-mail de lembrete: confirmar presença ou
+// O destino do link do horário (e-mail de lembrete, tela de sucesso do
+// agendamento, WhatsApp do painel): confirmar presença ou
 // cancelar, sem login — quem autoriza é o token da URL.
 //
 // Só age no clique. Leitor de e-mail e antivírus abrem links sozinhos
@@ -69,7 +70,7 @@ export function ConfirmarOuCancelar({ agora = new Date() }: { agora?: Date } = {
     return (
       <div className={estilos.pagina}>
         <h1>{lido.erro.status === 401 ? "Link inválido" : "Não encontramos esse horário"}</h1>
-        <p>Confira se o link do e-mail chegou inteiro, ou fale direto com a barbearia.</p>
+        <p>Confira se o link chegou inteiro, ou fale direto com a barbearia.</p>
       </div>
     );
   }

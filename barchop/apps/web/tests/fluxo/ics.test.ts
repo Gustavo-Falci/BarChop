@@ -46,4 +46,35 @@ describe("arquivo de calendário", () => {
 
     expect(ics).not.toContain("LOCATION");
   });
+
+  // O link do horário (06/11): quem só adiciona à agenda também fica com
+  // o link de confirmar ou cancelar, na descrição do evento.
+  it("leva a descrição, quando há, e omite a linha quando não há", () => {
+    const comLink = gerarIcs({ ...EVENTO, descricao: "Pra confirmar ou cancelar: https://x.com/a" }, AGORA);
+    expect(comLink).toContain("DESCRIPTION:Pra confirmar ou cancelar: https://x.com/a\r\n");
+
+    expect(gerarIcs(EVENTO, AGORA)).not.toContain("DESCRIPTION");
+  });
+
+  it("dobra linha comprida em 75 bytes, como o formato pede, sem perder nada", () => {
+    // O token do link passa fácil de 75 caracteres; calendário estrito
+    // recusa ou corta a linha longa.
+    const link = `https://gr-barber.barchop.com.br/lembrete/${"a".repeat(160)}`;
+    const ics = gerarIcs({ ...EVENTO, descricao: `Link: ${link}` }, AGORA);
+
+    for (const linha of ics.split("\r\n")) {
+      expect(new TextEncoder().encode(linha).length).toBeLessThanOrEqual(75);
+    }
+    // Desdobrar (CRLF + espaço some) devolve o texto inteiro.
+    expect(ics.replace(/\r\n /g, "")).toContain(`DESCRIPTION:Link: ${link}\r\n`);
+  });
+
+  it("não dobra no meio de um caractere acentuado", () => {
+    const ics = gerarIcs({ ...EVENTO, descricao: "é".repeat(80) }, AGORA);
+
+    expect(ics.replace(/\r\n /g, "")).toContain(`DESCRIPTION:${"é".repeat(80)}\r\n`);
+    for (const linha of ics.split("\r\n")) {
+      expect(new TextEncoder().encode(linha).length).toBeLessThanOrEqual(75);
+    }
+  });
 });

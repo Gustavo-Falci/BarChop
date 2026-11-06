@@ -18,6 +18,11 @@ import {
   limparDadosDoCliente,
   type DadosDoCliente,
 } from "../fluxo/dadosDoCliente";
+import {
+  gravarHorarioConfirmado,
+  lerHorarioConfirmado,
+  limparHorarioConfirmado,
+} from "../fluxo/horarioConfirmado";
 import { gerarIcs } from "../fluxo/ics";
 import { profissionaisQueFazem } from "../fluxo/profissionais";
 import { useContaDoCliente, validarDados } from "../fluxo/identificacao";
@@ -36,6 +41,7 @@ import { m } from "motion/react";
 import { useDeslizeDoPasso } from "../movimento/passo";
 import { MarcaDeConfirmado } from "../componentes/MarcaDeConfirmado";
 import { DESLIZE, DURACAO } from "../movimento/tokens";
+import { CartaoDoLink } from "./CartaoDoLink";
 
 // O último passo, e também onde a pessoa diz quem é. Eram duas telas —
 // "Quem é você?" com dois botões, depois o resumo — e a pergunta
@@ -67,7 +73,16 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
   const api = useApi();
   const { conta, esquecer } = useContaDoCliente(slug);
 
-  const [criado, setCriado] = useState<AgendamentoSerializado | null>(null);
+  // O cartão do link do horário (06/11) volta depois de recarregar a
+  // página, até o Concluir: lido uma vez, na montagem, só se a URL é a
+  // do mesmo agendamento.
+  const [salvo] = useState(() => (remarcar ? null : lerHorarioConfirmado(slug, servicoIds, data, hora)));
+  const [criado, setCriado] = useState<AgendamentoSerializado | null>(salvo?.agendamento ?? null);
+  // O link do horário que a API devolveu (null sem endereço configurado)
+  // e o WhatsApp de quem agendou sem conta. Telefone null = sem cartão:
+  // quem tem conta ou remarcou cancela pela Minha conta.
+  const [linkDoHorario, setLinkDoHorario] = useState<string | null>(salvo?.linkDoHorario ?? null);
+  const [telefoneDoCartao, setTelefoneDoCartao] = useState<string | null>(salvo?.telefone ?? null);
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState<string | undefined>();
 
@@ -184,7 +199,8 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
     setAviso(undefined);
 
     try {
-      const agendamento = cliente
+      // Só a criação devolve o link do horário; o remarcar, não.
+      const agendamento: AgendamentoSerializado & { linkDoHorario?: string | null } = cliente
         ? await api.publico.agendar(slug, {
             // Ausente é "qualquer um": a API escolhe e devolve quem.
             barbeiroId: profissional,
@@ -204,6 +220,13 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
       // OUTRO agendamento em andamento, e apagar aqui destruiria nome e
       // telefone de algo que essa confirmação não tem nada a ver.
       if (!remarcar) limparDadosDoCliente();
+
+      const link = agendamento.linkDoHorario ?? null;
+      if (link && cliente && !conta) {
+        gravarHorarioConfirmado({ slug, agendamento, linkDoHorario: link, telefone: cliente.telefone });
+        setTelefoneDoCartao(cliente.telefone);
+      }
+      setLinkDoHorario(link);
       setCriado(agendamento);
     } catch (causa) {
       const erro = causa as ErroDaApi;
@@ -246,6 +269,8 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
         horaInicio: agendamento.horaInicio,
         horaFim: agendamento.horaFim,
         local: endereco,
+        // Quem só adiciona à agenda também fica com o link (06/11).
+        descricao: linkDoHorario ? `Pra confirmar ou cancelar: ${linkDoHorario}` : null,
       });
       // Arquivo baixado, e não link pra um serviço de calendário: o
       // .ics abre no calendário que a pessoa já usa, seja qual for.
@@ -321,20 +346,46 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
           </div>
         ) : null}
 
-        <Botao onClick={() => adicionarAAgenda(criado)}>Adicionar à agenda</Botao>
+        {linkDoHorario && telefoneDoCartao ? (
+          <>
+            {/* Sem conta (06/11): o Concluir do cartão fecha a tela, e
+                fica como o único botão cheio. */}
+            <Botao variante="contorno" onClick={() => adicionarAAgenda(criado)}>
+              Adicionar à agenda
+            </Botao>
+            <CartaoDoLink
+              link={linkDoHorario}
+              telefone={telefoneDoCartao}
+              data={criado.data}
+              horaInicio={criado.horaInicio}
+              nomeDaBarbearia={perfil.dados?.nome}
+              prazoCancelarHoras={perfil.dados?.prazoCancelarHoras}
+              whatsappDaBarbearia={perfil.dados?.whatsapp ?? null}
+              telefoneDaBarbearia={perfil.dados?.telefone ?? null}
+              aoConcluir={() => {
+                limparHorarioConfirmado();
+                router.push(noHost(`/${slug}`));
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <Botao onClick={() => adicionarAAgenda(criado)}>Adicionar à agenda</Botao>
 
-        {/* Só pra quem tem conta: sem ela, "meus agendamentos" abriria
-            uma tela de login no lugar da lista. Quem remarcou está
-            logado por definição. */}
-        {conta || remarcar ? (
-          <Link className={estilos.linkDeTexto} href={noHost(`/${slug}/minha-conta`)}>
-            Ver meus agendamentos
-          </Link>
-        ) : null}
+            {/* Só pra quem tem conta: sem ela, "meus agendamentos" abriria
+                uma tela de login no lugar da lista. Quem remarcou está
+                logado por definição. */}
+            {conta || remarcar ? (
+              <Link className={estilos.linkDeTexto} href={noHost(`/${slug}/minha-conta`)}>
+                Ver meus agendamentos
+              </Link>
+            ) : null}
 
-        <Botao variante="contorno" onClick={() => router.push(noHost(`/${slug}`))}>
-          Voltar ao início
-        </Botao>
+            <Botao variante="contorno" onClick={() => router.push(noHost(`/${slug}`))}>
+              Voltar ao início
+            </Botao>
+          </>
+        )}
       </main>
     );
   }

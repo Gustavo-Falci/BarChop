@@ -10,6 +10,13 @@ export function enderecoDaBarbearia(slug: string, urlDoSite: string | undefined)
   return `${protocol}//${slug}.${host}`;
 }
 
+// O endereço escrito na tela (onda C): sem o "https://", que não ajuda a
+// ler nem a digitar. Só pra mostrar: o QR, o copiar e o compartilhar
+// continuam com o link inteiro.
+export function enderecoSemProtocolo(endereco: string): string {
+  return endereco.replace(/^https?:\/\//, "");
+}
+
 // Uma página do site (termos, privacidade) linkada de outro host — o
 // cadastro mora no `painel.`. Com o site configurado, o endereço inteiro
 // no host do site; sem ele (desenvolvimento), o caminho, que abre ali.

@@ -88,6 +88,13 @@ Terceira de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do p
 - Mesmo formato das entradas, nas duas etapas (dados, código).
 - Apoio do link: "O link dos seus clientes: gr-barber.barchop.com.br. Escolha com calma: …".
 - Usa a função de exibição do endereço, sem `https://`.
+- **Feito (06/11):**
+  - `TelaDeEntrada` exporta a `BarraDaEntrada` (e a classe da casca); o Cadastro usa as duas com a página dele, porque no computador ele tem a promessa ao lado do formulário, e não a metade escura;
+  - celular: barra do BarChop, título no topo, ganhos com check (no lugar do quadrado amarelo), formulário em dois grupos h2 "A barbearia" e "Você", "Já tem conta? Entrar" alinhado à esquerda. A marca "BARCHOP" em texto só aparece no computador;
+  - passo do código: "← Trocar e-mail" no topo, h1 "Confirme seu e-mail" com o "Enviamos…" (`role="status"`) de apoio, "Não chegou? Reenviar código" embaixo. No celular a promessa some nesse passo; no computador fica ao lado, com o título dela como texto (um h1 por tela);
+  - `enderecoSemProtocolo` em `tenant/endereco.ts` (com teste): o apoio do link mostra `gr-barber.barchop.com.br`, sem `https://`. O Cartaz usa a mesma no PR 6;
+  - computador: as duas colunas passam a valer a partir de 900px (era 880), o mesmo corte das outras entradas;
+  - testes antes do código; 1695 testes passando; conferido 390 escuro (dados), 360 claro (código), 1280 escuro (dados).
 
 ### PR 3 — Faturas: assinar (teste e Grátis)
 - Trilha em 3 colunas fixas.

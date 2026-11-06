@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CODIGO_DO_CADASTRO_FALSO, criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { ProvedorDoPainel } from "../../../src/painel/ProvedorDoPainel";
 import { sessaoDaBarbearia, sessaoDoBarbeiro } from "../../../src/sessao/armazenamento";
@@ -307,5 +307,43 @@ describe("cadastro do dono", () => {
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/crie sua barbearia/i);
     expect(screen.getByText(/link próprio/i)).toBeInTheDocument();
+  });
+
+  // Onda C, PR 2: o formato das entradas.
+  it("tem a barra do BarChop e separa a barbearia de você", () => {
+    montar();
+
+    expect(screen.getByRole("banner")).toHaveTextContent("BarChop");
+    expect(screen.getByRole("heading", { level: 2, name: "A barbearia" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Você" })).toBeInTheDocument();
+  });
+
+  it("o endereço do link aparece sem o https://", async () => {
+    vi.stubEnv("NEXT_PUBLIC_URL_DO_SITE", "https://barchop.com.br");
+    try {
+      montar();
+      await userEvent.type(screen.getByLabelText(/nome da barbearia/i), "GR Barber");
+
+      expect(screen.getByLabelText(/endereço do link/i)).toHaveAccessibleDescription(
+        /o link dos seus clientes: gr-barber\.barchop\.com\.br\./i
+      );
+      expect(screen.getByLabelText(/endereço do link/i)).not.toHaveAccessibleDescription(/https:/);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("no código: título próprio, trocar e-mail no topo e reenviar embaixo", async () => {
+    montar();
+
+    await preencher();
+    await continuar();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Confirme seu e-mail" })).toBeInTheDocument();
+    const trocar = screen.getByRole("button", { name: /trocar e-mail/i });
+    const codigo = screen.getByLabelText(/código/i);
+    expect(trocar.compareDocumentPosition(codigo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const reenviar = screen.getByRole("button", { name: /reenviar código/i });
+    expect(codigo.compareDocumentPosition(reenviar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

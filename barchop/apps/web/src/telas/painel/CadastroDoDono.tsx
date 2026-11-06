@@ -9,9 +9,11 @@ import type { SessaoBarbeiro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { BarraDaEntrada, classeDaTelaDeEntrada } from "../../componentes/TelaDeEntrada";
+import { IconeCheck, IconeSeta } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { sessaoDaBarbearia, sessaoDoBarbeiro } from "../../sessao/armazenamento";
-import { enderecoDaBarbearia, enderecoNoSite } from "../../tenant/endereco";
+import { enderecoDaBarbearia, enderecoNoSite, enderecoSemProtocolo } from "../../tenant/endereco";
 import estilos from "./CadastroDoDono.module.css";
 
 // O mesmo pattern e a mesma lista de reservados que a API usa (vêm do
@@ -184,193 +186,226 @@ export function CadastroDoDono() {
     }
   }
 
+  const noCodigo = etapa === "codigo";
+
   return (
-    <main className={estilos.pagina}>
-      <section className={estilos.promessa}>
-        <p className={estilos.marca}>BarChop</p>
-        <h1 className={estilos.titulo}>Crie sua barbearia</h1>
-        <p className={estilos.subtitulo}>
-          Em dois minutos ela está no ar. Depois, o painel mostra os próximos passos.
-        </p>
-        <ul className={estilos.ganhos}>
-          {GANHOS.map((ganho) => (
-            <li key={ganho}>{ganho}</li>
-          ))}
-        </ul>
-        <MiniPainel />
-      </section>
+    <div className={classeDaTelaDeEntrada}>
+      {/* A barra do BarChop no celular (onda C); no computador ela some e
+          a marca volta ao topo da promessa, ao lado do formulário. */}
+      <BarraDaEntrada />
 
-      <section className={estilos.cadastro} aria-label="Seus dados">
-        {/* <form> pelo Enter e pelo gerenciador de senhas; `noValidate`
-            pras mensagens desta tela, e não a bolha do navegador. */}
-        <form
-          className={estilos.formulario}
-          noValidate
-          onSubmit={(evento) => {
-            evento.preventDefault();
-            void (etapa === "dados" ? submeterDados() : submeterCodigo());
-          }}
-        >
-          {/* Uma key por passo: sem ela o React reaproveita o input do link
-              como o do código, e o autoFocus (que só vale na montagem) não
-              leva o foco pra lá. */}
-          {etapa === "codigo" ? (
-            <Fragment key="codigo">
-              <p className={estilos.enviado} role="status">
-                Enviamos um código para <strong>{email.trim()}</strong>. Ele vale 10 minutos.
-              </p>
-              {/* "one-time-code": o celular oferece o código que chegou,
-                  sem a pessoa trocar de app pra copiar. */}
-              <Campo
-                rotulo="Código"
-                name="codigo"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                autoFocus
-                valor={codigo}
-                onChange={(proximo) => {
-                  setCodigo(proximo.replace(/\D/g, ""));
-                  setErroCodigo(undefined);
-                }}
-                erro={erroCodigo}
-              />
-              {reenviado ? (
-                <p className={estilos.troca} role="status">
-                  Código reenviado.
-                </p>
-              ) : null}
-              {aviso ? <Aviso>{aviso}</Aviso> : null}
-              <Botao type="submit" carregando={enviando}>
-                Criar e entrar
-              </Botao>
-              {/* `type="button"`: dentro do <form>, sem type, eles
-                  enviariam o código. */}
-              <p className={estilos.troca}>
-                <button type="button" className={estilos.link} onClick={() => void reenviar()}>
-                  Reenviar código
-                </button>
-                {" · "}
-                <button
-                  type="button"
-                  className={estilos.link}
-                  onClick={() => {
-                    limparErros();
-                    setEtapa("dados");
-                  }}
-                >
-                  Trocar e-mail
-                </button>
-              </p>
-            </Fragment>
+      <main className={estilos.pagina} data-etapa={etapa}>
+        {/* No passo do código, o celular mostra só o código: a promessa já
+            foi lida. No computador ela continua ao lado. */}
+        <section className={estilos.promessa}>
+          <p className={estilos.marca}>BarChop</p>
+          {/* Um h1 por tela: no código o título é "Confirme seu e-mail", e
+              o da promessa vira texto com a mesma cara. */}
+          {noCodigo ? (
+            <p className={estilos.titulo}>Crie sua barbearia</p>
           ) : (
-            <Fragment key="dados">
-              <Campo
-                rotulo="Nome da barbearia"
-                name="nomeDaBarbearia"
-                autoComplete="organization"
-                maxLength={NOME_MAX}
-                // A tela existe pra uma coisa só: quem chegou já quer digitar.
-                autoFocus
-                valor={nomeDaBarbearia}
-                onChange={mudarNomeDaBarbearia}
-              />
-              {/* A prévia no `apoio`: pertence ao campo e o leitor de tela a
-                  anuncia junto do rótulo. É este endereço que vai no WhatsApp. */}
-              <Campo
-                rotulo="Endereço do link"
-                apoio={`O link dos seus clientes: ${enderecoDaBarbearia(slug || "sua-barbearia", process.env.NEXT_PUBLIC_URL_DO_SITE)}. Escolha com calma: depois de criado, ele só muda com um pedido ao suporte.`}
-                name="slug"
-                autoComplete="off"
-                maxLength={SLUG_MAX}
-                valor={slug}
-                onChange={(proximo) => {
-                  setSlug(proximo);
-                  setSlugEditado(proximo !== "");
-                  setErroSlug(undefined);
-                }}
-                erro={erroSlug}
-              />
-              <Campo
-                rotulo="Seu nome"
-                name="nome"
-                autoComplete="name"
-                maxLength={NOME_MAX}
-                valor={nome}
-                onChange={setNome}
-              />
-              {/* "username" e "new-password": o par que faz o gerenciador de
-                  senhas oferecer uma senha forte e salvar a conta nova. */}
-              <Campo
-                rotulo="E-mail"
-                type="email"
-                name="email"
-                inputMode="email"
-                autoComplete="username"
-                maxLength={EMAIL_MAX}
-                valor={email}
-                onChange={(proximo) => {
-                  setEmail(proximo);
-                  setErroEmail(undefined);
-                }}
-                erro={erroEmail}
-              />
-              <Campo
-                rotulo="Senha"
-                type="password"
-                name="senha"
-                autoComplete="new-password"
-                apoio="Mínimo de 8 caracteres"
-                maxLength={SENHA_MAX}
-                valor={senha}
-                onChange={(proximo) => {
-                  setSenha(proximo);
-                  setErroSenha(undefined);
-                }}
-                erro={erroSenha}
-              />
-
-              {aviso ? <Aviso>{aviso}</Aviso> : null}
-
-              {/* O aceite (onda 1s-b): os documentos moram no site, e abrem
-                  em outra aba pra voltar aqui não apagar o que foi digitado. */}
-              <p className={estilos.aceite}>
-                Ao criar a barbearia, você concorda com os{" "}
-                <a
-                  href={enderecoNoSite("/termos", process.env.NEXT_PUBLIC_URL_DO_SITE)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={estilos.link}
-                >
-                  Termos de uso
-                </a>{" "}
-                e com a{" "}
-                <a
-                  href={enderecoNoSite("/privacidade", process.env.NEXT_PUBLIC_URL_DO_SITE)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={estilos.link}
-                >
-                  Política de privacidade
-                </a>
-                .
-              </p>
-
-              <Botao type="submit" carregando={enviando}>
-                Continuar
-              </Botao>
-            </Fragment>
+            <h1 className={estilos.titulo}>Crie sua barbearia</h1>
           )}
-        </form>
+          <p className={estilos.subtitulo}>
+            Em dois minutos ela está no ar. Depois, o painel mostra os próximos passos.
+          </p>
+          <ul className={estilos.ganhos}>
+            {GANHOS.map((ganho) => (
+              <li key={ganho}>
+                <IconeCheck width="18" height="18" className={estilos.marcaDoGanho} />
+                <span>{ganho}</span>
+              </li>
+            ))}
+          </ul>
+          <MiniPainel />
+        </section>
 
-        <p className={estilos.troca}>
-          Já tem conta?{" "}
-          <Link href="/painel/entrar" className={estilos.link}>
-            Entrar
-          </Link>
-        </p>
-      </section>
-    </main>
+        <section className={estilos.cadastro} aria-label="Seus dados">
+          {noCodigo ? (
+            <>
+              {/* No topo, como o voltar das outras entradas. */}
+              <button
+                type="button"
+                className={estilos.voltar}
+                onClick={() => {
+                  limparErros();
+                  setEtapa("dados");
+                }}
+              >
+                <IconeSeta width="16" height="16" className={estilos.setaDeVolta} />
+                Trocar e-mail
+              </button>
+              <div className={estilos.cabecalho}>
+                <h1>Confirme seu e-mail</h1>
+                <p className={estilos.enviado} role="status">
+                  Enviamos um código para <strong>{email.trim()}</strong>. Ele vale 10 minutos.
+                </p>
+              </div>
+            </>
+          ) : null}
+
+          {/* <form> pelo Enter e pelo gerenciador de senhas; `noValidate`
+              pras mensagens desta tela, e não a bolha do navegador. */}
+          <form
+            className={estilos.formulario}
+            noValidate
+            onSubmit={(evento) => {
+              evento.preventDefault();
+              void (noCodigo ? submeterCodigo() : submeterDados());
+            }}
+          >
+            {/* Uma key por passo: sem ela o React reaproveita o input do link
+                como o do código, e o autoFocus (que só vale na montagem) não
+                leva o foco pra lá. */}
+            {noCodigo ? (
+              <Fragment key="codigo">
+                {/* "one-time-code": o celular oferece o código que chegou,
+                    sem a pessoa trocar de app pra copiar. */}
+                <Campo
+                  rotulo="Código"
+                  name="codigo"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  autoFocus
+                  valor={codigo}
+                  onChange={(proximo) => {
+                    setCodigo(proximo.replace(/\D/g, ""));
+                    setErroCodigo(undefined);
+                  }}
+                  erro={erroCodigo}
+                />
+                {reenviado ? (
+                  <p className={estilos.troca} role="status">
+                    Código reenviado.
+                  </p>
+                ) : null}
+                {aviso ? <Aviso>{aviso}</Aviso> : null}
+                <Botao type="submit" carregando={enviando}>
+                  Criar e entrar
+                </Botao>
+              </Fragment>
+            ) : (
+              <Fragment key="dados">
+                <h2 className={estilos.grupo}>A barbearia</h2>
+                <Campo
+                  rotulo="Nome da barbearia"
+                  name="nomeDaBarbearia"
+                  autoComplete="organization"
+                  maxLength={NOME_MAX}
+                  // A tela existe pra uma coisa só: quem chegou já quer digitar.
+                  autoFocus
+                  valor={nomeDaBarbearia}
+                  onChange={mudarNomeDaBarbearia}
+                />
+                {/* A prévia no `apoio`: pertence ao campo e o leitor de tela a
+                    anuncia junto do rótulo. É este endereço que vai no WhatsApp;
+                    escrito sem o "https://", que não ajuda a ler. */}
+                <Campo
+                  rotulo="Endereço do link"
+                  apoio={`O link dos seus clientes: ${enderecoSemProtocolo(enderecoDaBarbearia(slug || "sua-barbearia", process.env.NEXT_PUBLIC_URL_DO_SITE))}. Escolha com calma: depois de criado, ele só muda com um pedido ao suporte.`}
+                  name="slug"
+                  autoComplete="off"
+                  maxLength={SLUG_MAX}
+                  valor={slug}
+                  onChange={(proximo) => {
+                    setSlug(proximo);
+                    setSlugEditado(proximo !== "");
+                    setErroSlug(undefined);
+                  }}
+                  erro={erroSlug}
+                />
+                <h2 className={estilos.grupo}>Você</h2>
+                <Campo
+                  rotulo="Seu nome"
+                  name="nome"
+                  autoComplete="name"
+                  maxLength={NOME_MAX}
+                  valor={nome}
+                  onChange={setNome}
+                />
+                {/* "username" e "new-password": o par que faz o gerenciador de
+                    senhas oferecer uma senha forte e salvar a conta nova. */}
+                <Campo
+                  rotulo="E-mail"
+                  type="email"
+                  name="email"
+                  inputMode="email"
+                  autoComplete="username"
+                  maxLength={EMAIL_MAX}
+                  valor={email}
+                  onChange={(proximo) => {
+                    setEmail(proximo);
+                    setErroEmail(undefined);
+                  }}
+                  erro={erroEmail}
+                />
+                <Campo
+                  rotulo="Senha"
+                  type="password"
+                  name="senha"
+                  autoComplete="new-password"
+                  apoio="Mínimo de 8 caracteres"
+                  maxLength={SENHA_MAX}
+                  valor={senha}
+                  onChange={(proximo) => {
+                    setSenha(proximo);
+                    setErroSenha(undefined);
+                  }}
+                  erro={erroSenha}
+                />
+
+                {aviso ? <Aviso>{aviso}</Aviso> : null}
+
+                {/* O aceite (onda 1s-b): os documentos moram no site, e abrem
+                    em outra aba pra voltar aqui não apagar o que foi digitado. */}
+                <p className={estilos.aceite}>
+                  Ao criar a barbearia, você concorda com os{" "}
+                  <a
+                    href={enderecoNoSite("/termos", process.env.NEXT_PUBLIC_URL_DO_SITE)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={estilos.link}
+                  >
+                    Termos de uso
+                  </a>{" "}
+                  e com a{" "}
+                  <a
+                    href={enderecoNoSite("/privacidade", process.env.NEXT_PUBLIC_URL_DO_SITE)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={estilos.link}
+                  >
+                    Política de privacidade
+                  </a>
+                  .
+                </p>
+
+                <Botao type="submit" carregando={enviando}>
+                  Continuar
+                </Botao>
+              </Fragment>
+            )}
+          </form>
+
+          {noCodigo ? (
+            <p className={estilos.troca}>
+              Não chegou?{" "}
+              <button type="button" className={estilos.link} onClick={() => void reenviar()}>
+                Reenviar código
+              </button>
+            </p>
+          ) : (
+            <p className={estilos.troca}>
+              Já tem conta?{" "}
+              <Link href="/painel/entrar" className={estilos.link}>
+                Entrar
+              </Link>
+            </p>
+          )}
+        </section>
+      </main>
+    </div>
   );
 }
 

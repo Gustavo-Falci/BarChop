@@ -3,6 +3,7 @@ import {
   destinoDoSlugAntigo,
   enderecoDaBarbearia,
   enderecoNoSite,
+  enderecoSemProtocolo,
   noHostDaBarbearia,
 } from "../../src/tenant/endereco";
 
@@ -108,5 +109,21 @@ describe("destinoDoSlugAntigo", () => {
         site,
       })
     ).toBe("https://novo.barchop.com.br/agendar");
+  });
+});
+
+// O endereço escrito na tela (onda C): sem o "https://", que não ajuda
+// ninguém a ler nem a digitar. O link de verdade continua inteiro.
+describe("enderecoSemProtocolo", () => {
+  it("tira o protocolo do host próprio", () => {
+    expect(enderecoSemProtocolo("https://gr-barber.barchop.com.br")).toBe("gr-barber.barchop.com.br");
+  });
+
+  it("tira o http do endereço de desenvolvimento", () => {
+    expect(enderecoSemProtocolo("http://localhost:3000/gr-barber")).toBe("localhost:3000/gr-barber");
+  });
+
+  it("deixa o caminho sem site como está", () => {
+    expect(enderecoSemProtocolo("/gr-barber")).toBe("/gr-barber");
   });
 });

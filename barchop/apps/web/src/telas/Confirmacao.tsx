@@ -76,7 +76,7 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
   // O cartão do link do horário (06/11) volta depois de recarregar a
   // página, até o Concluir: lido uma vez, na montagem, só se a URL é a
   // do mesmo agendamento.
-  const [salvo] = useState(() => (remarcar ? null : lerHorarioConfirmado(slug, data, hora)));
+  const [salvo] = useState(() => (remarcar ? null : lerHorarioConfirmado(slug, servicoIds, data, hora)));
   const [criado, setCriado] = useState<AgendamentoSerializado | null>(salvo?.agendamento ?? null);
   // O link do horário que a API devolveu (null sem endereço configurado)
   // e o WhatsApp de quem agendou sem conta. Telefone null = sem cartão:

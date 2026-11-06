@@ -164,6 +164,16 @@ describe("confirmação: link do horário", () => {
     expect(screen.queryByText(/agendamento confirmado/i)).toBeNull();
   });
 
+  it("outros serviços no mesmo horário também mostram o formulário", async () => {
+    const falso = await agendarSemConta();
+
+    cleanup();
+    navegacaoFalsa.redefinir({ query: { ...QUERY, servicos: "s1" } });
+    montar(falso);
+
+    expect(await screen.findByRole("button", { name: /confirmar agendamento/i })).toBeInTheDocument();
+  });
+
   it("o link vai junto no arquivo da agenda", async () => {
     const criarUrl = vi.fn((_blob: Blob) => "blob:agendamento");
     Object.assign(URL, { createObjectURL: criarUrl, revokeObjectURL: vi.fn() });

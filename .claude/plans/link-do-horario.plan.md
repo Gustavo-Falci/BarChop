@@ -64,6 +64,7 @@ Hoje só sobra a barbearia mandar o link à mão ("Lembrar pelo WhatsApp" no pai
 API e tela juntas: a tela depende do campo novo. A confirmação antes do "Cancelar" da Minha conta fica para o PR seguinte.
 
 ## Feito (06/11)
-- Branch `link-do-horario-no-confirmado`. Testes: API 62 (arquivos de agendamento), web 1719 + os novos de `confirmacao-link`, `ics` e `confirmar-ou-cancelar`; tsc e eslint limpos.
+- Branch `link-do-horario-no-confirmado`. Testes: API 1457 (suíte inteira), api-client 240, web 1719 + o novo caso de serviços; tsc e eslint limpos.
+- O cartão salvo volta só quando a URL é do mesmo agendamento: barbearia, serviços, dia e hora.
 - Conferido no navegador (semente + `URL_DO_PAINEL=http://localhost:3000`): 390 escuro e 360 claro; a contagem libera o Concluir em 5 s; recarregar traz o cartão de volta com a contagem do zero; o link abre o mesmo agendamento; "Link copiado"; o Concluir apaga o cartão e vai para `/barbearia-teste`.
 - Desvio da prancha: o `.ics` agora dobra linhas acima de 75 bytes (RFC 5545), porque o link do horário passa disso. Antes não dobrava.

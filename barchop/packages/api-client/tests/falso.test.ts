@@ -30,7 +30,7 @@ describe("criarApiClientFalso", () => {
   it("guarda o que foi agendado, pra tela seguinte enxergar", async () => {
     const falso = criarApiClientFalso();
 
-    const agendamento = await falso.publico.agendar("gr-barber", {
+    const { linkDoHorario, ...agendamento } = await falso.publico.agendar("gr-barber", {
       barbeiroId: "bb1",
       servicoIds: ["s1"],
       data: "2026-09-10",
@@ -39,6 +39,24 @@ describe("criarApiClientFalso", () => {
     });
 
     expect(falso.estado.agendamentos).toContainEqual(agendamento);
+    // O link do horário (06/11) abre o lembrete do próprio dublê.
+    const token = linkDoHorario!.split("/lembrete/")[1];
+    expect((await falso.publico.lembrete(token)).id).toBe(agendamento.id);
+  });
+
+  it("sem endereço configurado, agenda sem o link do horário", async () => {
+    const falso = criarApiClientFalso();
+    falso.estado.semLinkDoHorario = true;
+
+    const criado = await falso.publico.agendar("gr-barber", {
+      barbeiroId: "bb1",
+      servicoIds: ["s1"],
+      data: "2026-09-10",
+      horaInicio: "09:00",
+      cliente: { nome: "João", telefone: "(11) 99999-8888" },
+    });
+
+    expect(criado.linkDoHorario).toBeNull();
   });
 
   it("lança ErroDaApi, e não Error cru, quando o slug não existe", async () => {

@@ -15,10 +15,19 @@ export interface HorarioConfirmado {
 
 const CHAVE = "agendamento.confirmado";
 
-// Só volta o cartão do MESMO agendamento que a URL descreve. Quem
-// começa outro na mesma aba vê o formulário, não o cartão antigo.
+// Os serviços como conjunto: a ordem da URL não importa.
+function mesmosServicos(daUrl: string[], doAgendamento: { servicoId: string }[]): boolean {
+  const a = [...new Set(daUrl)].sort();
+  const b = [...new Set(doAgendamento.map((s) => s.servicoId))].sort();
+  return a.length === b.length && a.every((id, i) => id === b[i]);
+}
+
+// Só volta o cartão do MESMO agendamento que a URL descreve (barbearia,
+// serviços, dia e hora). Quem começa outro na mesma aba vê o
+// formulário, não o cartão antigo.
 export function lerHorarioConfirmado(
   slug: string,
+  servicoIds: string[],
   data: string | undefined,
   hora: string | undefined
 ): HorarioConfirmado | null {
@@ -36,7 +45,9 @@ export function lerHorarioConfirmado(
       typeof salvo.linkDoHorario !== "string" ||
       typeof salvo.telefone !== "string" ||
       salvo.agendamento?.data !== data ||
-      salvo.agendamento?.horaInicio !== hora
+      salvo.agendamento?.horaInicio !== hora ||
+      !Array.isArray(salvo.agendamento?.servicos) ||
+      !mesmosServicos(servicoIds, salvo.agendamento!.servicos)
     ) {
       return null;
     }

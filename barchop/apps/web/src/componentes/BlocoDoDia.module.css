@@ -1,0 +1,36 @@
+/* As duas cores vêm da Aparência da barbearia (CoresDaPagina). O par
+   --cor-accent-text sobre --cor-pale-yellow passa de 4,5:1 nos dois
+   modos (packages/design-tokens). */
+.dia {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  width: 56px;
+  padding: var(--espaco-xs) 0;
+  border-radius: var(--raio-md);
+  background: var(--cor-pale-yellow);
+  color: var(--cor-accent-text);
+  line-height: 1.1;
+}
+
+.pequeno {
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.numero {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

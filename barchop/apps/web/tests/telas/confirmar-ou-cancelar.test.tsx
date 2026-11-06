@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import { criarApiClientFalso } from "@barchop/api-client";
@@ -50,11 +50,44 @@ describe("confirmar ou cancelar pelo link do lembrete", () => {
   it("mostra o horário com a barbearia, o dia, a hora, com quem e o quê", async () => {
     montar(semear());
 
-    expect(await screen.findByText("GR Barber")).toBeInTheDocument();
-    expect(screen.getByText(/10 de outubro/)).toBeInTheDocument();
-    expect(screen.getByText(/10:00/)).toBeInTheDocument();
-    expect(screen.getByText(/Rafael/)).toBeInTheDocument();
-    expect(screen.getByText(/Corte/)).toBeInTheDocument();
+    const horario = await screen.findByRole("region", { name: "O horário" });
+    // 10/10/2026 é sábado. Onda B: o dia por extenso, com a semana.
+    expect(within(horario).getByText("Sábado, 10 de outubro às 10:00")).toBeInTheDocument();
+    expect(within(horario).getByText("GR Barber")).toBeInTheDocument();
+    expect(within(horario).getByText("Com Rafael")).toBeInTheDocument();
+    expect(within(horario).getByText("Corte")).toBeInTheDocument();
+  });
+
+  it("o bloco do dia mostra a semana curta, o número e o mês", async () => {
+    montar(semear());
+
+    const horario = await screen.findByRole("region", { name: "O horário" });
+    expect(within(horario).getByText("sáb")).toBeInTheDocument();
+    expect(within(horario).getByText("out")).toBeInTheDocument();
+  });
+
+  it("sem confirmar ainda, pergunta se a pessoa vem", async () => {
+    montar(semear());
+
+    expect(await screen.findByText(/vai conseguir vir\?/i)).toBeInTheDocument();
+  });
+
+  it("com WhatsApp, o rodapé diz com quem falar", async () => {
+    const falso = semear();
+    falso.estado.perfil = { ...falso.estado.perfil, whatsapp: "(11) 98888-7777" };
+    montar(falso);
+
+    expect(await screen.findByText(/algum problema\?/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/5511988887777");
+  });
+
+  it("sem WhatsApp, não há rodapé", async () => {
+    const falso = semear();
+    falso.estado.perfil = { ...falso.estado.perfil, whatsapp: null };
+    montar(falso);
+
+    await screen.findByRole("button", { name: /confirmar presença/i });
+    expect(screen.queryByText(/algum problema\?/i)).toBeNull();
   });
 
   it("abrir não confirma nada", async () => {
@@ -72,7 +105,10 @@ describe("confirmar ou cancelar pelo link do lembrete", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: /confirmar presença/i }));
 
-    expect(await screen.findByText(/presença confirmada/i)).toBeInTheDocument();
+    expect(await screen.findByText(/te esperamos/i)).toBeInTheDocument();
+    // O selo no cartão do horário.
+    const horario = screen.getByRole("region", { name: "O horário" });
+    expect(within(horario).getByText("Presença confirmada")).toBeInTheDocument();
     expect((await falso.barbeiro.agendamento("a1")).presencaConfirmadaEm).not.toBeNull();
   });
 
@@ -87,6 +123,17 @@ describe("confirmar ou cancelar pelo link do lembrete", () => {
 
     expect(await screen.findByText(/horário cancelado/i)).toBeInTheDocument();
     expect((await falso.barbeiro.agendamento("a1")).status).toBe("cancelado");
+    const horario = screen.getByRole("region", { name: "O horário" });
+    expect(within(horario).getByText("Cancelado")).toBeInTheDocument();
+  });
+
+  it("depois de cancelar, oferece marcar outro horário", async () => {
+    montar(semear("cancelado"));
+
+    expect(await screen.findByRole("link", { name: "Marcar outro horário" })).toHaveAttribute(
+      "href",
+      "/gr-barber/agendar"
+    );
   });
 
   it("desistir de cancelar volta pras duas opções", async () => {
@@ -101,7 +148,8 @@ describe("confirmar ou cancelar pelo link do lembrete", () => {
   it("já confirmado: diz isso e ainda deixa cancelar", async () => {
     montar(semear("confirmado", "2026-10-09T13:00:00.000Z"));
 
-    expect(await screen.findByText(/presença confirmada/i)).toBeInTheDocument();
+    expect(await screen.findByText(/te esperamos/i)).toBeInTheDocument();
+    expect(screen.queryByText(/vai conseguir vir\?/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /confirmar presença/i })).toBeNull();
     expect(screen.getByRole("button", { name: /cancelar horário/i })).toBeInTheDocument();
   });

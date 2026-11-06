@@ -12,7 +12,8 @@ import { Botao, BotaoLink } from "../componentes/Botao";
 import { Chip } from "../componentes/Chip";
 import { caminhoDoPasso } from "../fluxo/passos";
 import { queryDaVolta, voltaDoPagamento } from "../fluxo/planos";
-import { formatarDataComSemana, formatarDataLonga } from "../formato/datas";
+import { BlocoDoDia } from "../componentes/BlocoDoDia";
+import { formatarDataLonga } from "../formato/datas";
 import { prazoAcabou } from "../formato/prazos";
 import { TOM_DO_STATUS, rotuloDoStatus } from "../formato/status";
 import { emLista } from "../painel/assinatura";
@@ -29,8 +30,6 @@ import { Carregando } from "../componentes/Carregando";
 // recusa o que já passou com a mensagem dela.
 const MARCADO = new Set(["pendente", "confirmado"]);
 
-const MES_CURTO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-
 // "Corte e Barba".
 function oQue(agendamento: AgendamentoSerializado): string {
   const nomes = agendamento.servicos.map((s) => s.nome);
@@ -40,11 +39,6 @@ function oQue(agendamento: AgendamentoSerializado): string {
 // "Corte e Barba com Rafael": a linha do histórico.
 function oQueEComQuem(agendamento: AgendamentoSerializado): string {
   return `${oQue(agendamento)} com ${agendamento.barbeiro.nome}`;
-}
-
-// "sex", "sáb", "dom": as três primeiras letras do dia por extenso.
-function semanaCurta(data: string): string {
-  return formatarDataComSemana(data).split(",")[0].slice(0, 3);
 }
 
 // "Corte pelo plano": o que o plano vai cobrir no horário marcado (a
@@ -173,20 +167,7 @@ export function MinhaConta({ agora = new Date() }: { agora?: Date } = {}) {
           {marcados.map((agendamento) => (
             <article key={agendamento.id} className={estilos.horario}>
               <div className={estilos.resumo}>
-                {/* Como na prancha da onda B: a semana curta, o número e o
-                    mês. Curta porque "domingo" por extenso apertava o bloco. */}
-                <span className={estilos.dia}>
-                  <span aria-hidden="true" className={estilos.semana}>
-                    {semanaCurta(agendamento.data)}
-                  </span>
-                  <span aria-hidden="true" className={estilos.numero}>
-                    {Number(agendamento.data.slice(8, 10))}
-                  </span>
-                  <span aria-hidden="true" className={estilos.mes}>
-                    {MES_CURTO[Number(agendamento.data.slice(5, 7)) - 1]}
-                  </span>
-                  <span className={estilos.somenteLeitor}>{formatarDataLonga(agendamento.data)}</span>
-                </span>
+                <BlocoDoDia data={agendamento.data} />
                 <div className={estilos.detalhes}>
                   <div className={estilos.linha}>
                     <span className={estilos.hora}>{agendamento.horaInicio}</span>

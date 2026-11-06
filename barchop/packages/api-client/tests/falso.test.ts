@@ -30,7 +30,7 @@ describe("criarApiClientFalso", () => {
   it("guarda o que foi agendado, pra tela seguinte enxergar", async () => {
     const falso = criarApiClientFalso();
 
-    const { linkDoHorario, ...agendamento } = await falso.publico.agendar("gr-barber", {
+    const { linkDoHorario, tokenDaConta: _token, ...agendamento } = await falso.publico.agendar("gr-barber", {
       barbeiroId: "bb1",
       servicoIds: ["s1"],
       data: "2026-09-10",
@@ -267,6 +267,34 @@ describe("dublê — escopo do barbeiro", () => {
       nome: "Maria",
     });
     expect(sessao.cliente.temConta).toBe(true);
+  });
+
+  it("telefone com histórico na semente: recusa como a API, sem juntar", async () => {
+    const falso = criarApiClientFalso({ telefonesComHistorico: ["11988887777"] });
+
+    await expect(
+      falso.publico.definirSenhaDoCliente("gr-barber", {
+        telefone: "(11) 98888-7777",
+        email: "maria@exemplo.com",
+        codigo: CODIGO_DO_CLIENTE_FALSO,
+        senha: "segredo123",
+        nome: "Maria",
+      })
+    ).rejects.toMatchObject({ status: 422, codigo: "telefone_ja_cadastrado" });
+  });
+
+  it("o agendamento criado traz o token da conta", async () => {
+    const falso = criarApiClientFalso();
+    const [servico] = await falso.publico.servicos("gr-barber");
+
+    const criado = await falso.publico.agendar("gr-barber", {
+      servicoIds: [servico.id],
+      data: "2026-12-01",
+      horaInicio: "10:00",
+      cliente: { nome: "Maria", telefone: "(11) 98888-7777" },
+    });
+
+    expect(criado.tokenDaConta).toBe(`conta-${criado.id}`);
   });
 });
 

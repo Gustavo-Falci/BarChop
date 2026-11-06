@@ -1,6 +1,7 @@
-import { prisma } from "@barchop/database";
+import { type Prisma, prisma } from "@barchop/database";
 import { normalizarEmail } from "@barchop/formato";
 import { consumirCodigo, emitirCodigo } from "../lib/codigos";
+import { lerTokenDaConta } from "../lib/conta-do-agendamento";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_EMAIL, PADRAO_SLUG, PADRAO_TELEFONE } from "../lib/padroes";
@@ -51,6 +52,9 @@ const corpoSenha = {
     codigo: { type: "string", pattern: "^[0-9]{6}$" },
     senha: { type: "string", minLength: 8, maxLength: 200 },
     nome: { type: "string", minLength: 2, maxLength: 120 },
+    // O token que a criação do agendamento devolveu (06/11): com ele, a
+    // conta nova pode ficar com o cadastro que nasceu naquele horário.
+    tokenDaConta: { type: "string", minLength: 1, maxLength: 2000 },
   },
 } as const;
 
@@ -81,6 +85,53 @@ function ondeEstaOCliente(barbeariaId: string, quem: Identidade) {
   return quem.tipo === "email"
     ? { barbeariaId_email: { barbeariaId, email: quem.valor } }
     : { barbeariaId_telefone: { barbeariaId, telefone: quem.valor } };
+}
+
+// O cadastro do telefone pode virar a conta de quem provou o e-mail?
+// O telefone nunca é provado (o código só sai por e-mail), então juntar
+// pelo número sozinho entregaria o histórico de outra pessoa a quem
+// soubesse o número dela. Junta só um cadastro que é, por inteiro, de
+// quem marcou pela página (06/11):
+//   - sem senha e sem e-mail (ninguém entrou nele ainda);
+//   - sem assinatura (plano é coisa do balcão ou de quem tem conta);
+//   - com ao menos um horário — o "todos batem" de um conjunto vazio é
+//     verdade à toa, e cadastro sem horário é do balcão;
+//   - e uma das provas:
+//     A) todos os horários marcados pela página com o e-mail provado;
+//     B) o token da criação do agendamento, e o cadastro nasceu nele
+//        (é o único horário).
+// O painel remarcando grava origem "barbeiro" e derruba a A: na dúvida,
+// a barbearia junta.
+async function podeJuntar(
+  tx: Prisma.TransactionClient,
+  clienteId: string,
+  email: string,
+  agendamentoDoToken: string | null
+): Promise<boolean> {
+  const cadastro = await tx.cliente.findUnique({
+    where: { id: clienteId },
+    select: {
+      senhaHash: true,
+      email: true,
+      _count: { select: { assinaturas: true } },
+      agendamentos: { select: { id: true, origem: true, emailLembrete: true } },
+    },
+  });
+  if (!cadastro || cadastro.senhaHash || cadastro.email || cadastro._count.assinaturas > 0) {
+    return false;
+  }
+  const { agendamentos } = cadastro;
+  if (agendamentos.length === 0) return false;
+
+  const provaDoEmail = agendamentos.every(
+    (a) => a.origem === "cliente" && normalizarEmail(a.emailLembrete) === email
+  );
+  const provaDoToken =
+    agendamentoDoToken !== null &&
+    agendamentos.length === 1 &&
+    agendamentos[0].id === agendamentoDoToken &&
+    agendamentos[0].origem === "cliente";
+  return provaDoEmail || provaDoToken;
 }
 
 // Públicas: são as telas de criar conta e entrar, abertas pelo link do
@@ -185,6 +236,37 @@ export function registrarRotasAuthCliente(
           where: ondeEstaOCliente(barbearia.id, { tipo: "telefone", valor: telefone }),
           select: { id: true },
         });
+        // Juntar e recusar respondem igual pra qualquer motivo: dizer
+        // por que não juntou ensinaria a contornar. A conferência e a
+        // gravação na mesma transação: um horário que entre no meio
+        // não escapa da conferência.
+        const agendamentoDoToken = lerTokenDaConta(app, request.body.tokenDaConta);
+        // O hash antes: é lento de propósito, e não deve segurar a
+        // transação aberta.
+        const hashDaJuncao = outro ? await gerarHashSenha(senha) : null;
+        const juntado = outro && hashDaJuncao
+          ? await prisma.$transaction(async (tx) => {
+              if (!(await podeJuntar(tx, outro.id, provar.valor, agendamentoDoToken))) return null;
+              return tx.cliente.update({
+                where: { id: outro.id },
+                // O nome do cadastro fica, como em todo cadastro que já
+                // existe; o carimbo segue a regra da troca de senha.
+                data: {
+                  email: provar.valor,
+                  senhaHash: hashDaJuncao,
+                  senhaAlteradaEm: new Date(),
+                },
+              });
+            })
+          : null;
+        if (juntado) {
+          const token = app.jwt.sign({
+            tipo: "cliente",
+            clienteId: juntado.id,
+            barbeariaId: barbearia.id,
+          });
+          return reply.code(200).send({ token, cliente: serializarCliente(juntado) });
+        }
         if (outro) {
           throw new ErroDeNegocio(
             "este telefone já tem cadastro na barbearia; peça pra incluírem seu e-mail nele",

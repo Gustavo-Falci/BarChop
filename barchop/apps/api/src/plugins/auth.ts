@@ -34,6 +34,18 @@ export interface PayloadLembrete {
   exp: number;
 }
 
+// Também não é identidade: a prova de que quem cria a conta é quem
+// acabou de marcar UM agendamento pela página (06/11). Volta só na
+// resposta da criação, e a tela guarda na aba (sessionStorage), nunca
+// em link: diferente do link do horário, que vai pro WhatsApp e pra
+// agenda, este não é feito pra ser repassado. Os hooks abaixo não o
+// aceitam (exigem o tipo deles), e o lerToken do lembrete também não.
+export interface PayloadContaDoAgendamento {
+  tipo: "conta_do_agendamento";
+  agendamentoId: string;
+  exp: number;
+}
+
 // O suporte da plataforma (bloco F4). Não é membro de barbearia: sem
 // `barbeariaId`, e por isso nunca pode passar no `autenticar` do painel —
 // lá `where: { barbeariaId: undefined }` viraria "todas". O hook do
@@ -68,8 +80,13 @@ declare module "fastify" {
 declare module "@fastify/jwt" {
   interface FastifyJWT {
     // O que se assina pode ser qualquer uma das duas, ou o link do
-    // lembrete...
-    payload: PayloadBarbeiro | PayloadCliente | PayloadLembrete | PayloadSuporte;
+    // lembrete, ou a prova do "Criar conta" da tela de sucesso...
+    payload:
+      | PayloadBarbeiro
+      | PayloadCliente
+      | PayloadLembrete
+      | PayloadSuporte
+      | PayloadContaDoAgendamento;
     // ...mas `request.user` é lido só dentro do escopo protegido do
     // barbeiro, onde o hook abaixo já garantiu qual é. Declarar a união
     // aqui obrigaria narrowing em seis arquivos de rota que hoje leem

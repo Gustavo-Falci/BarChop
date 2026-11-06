@@ -4,51 +4,41 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
-import {
-  normalizarEmail,
-  normalizarTelefoneObrigatorio,
-  TelefoneInvalido,
-} from "@barchop/formato";
 import type { SessaoCliente } from "@barchop/types";
 import { useApi } from "../api/ProvedorDaApi";
 import { Aviso } from "../componentes/Aviso";
 import { Botao } from "../componentes/Botao";
 import { Campo } from "../componentes/Campo";
+import {
+  conferirEmail,
+  conferirTelefone,
+  EMAIL_MAX,
+  mensagemDoLimite,
+  NOME_MAX,
+  SENHA_MAX,
+  SENHA_MIN,
+  TELEFONE_MAX,
+} from "../fluxo/contaDoCliente";
 import { caminhoDoPasso, lerEscolhas, passoDoVoltar } from "../fluxo/passos";
 import { caminhoDosPlanos, planoDaQuery, queryDaVolta, voltaDoPagamento } from "../fluxo/planos";
 import { IconeSeta } from "../painel/icones";
 import { sessaoDoCliente } from "../sessao/armazenamento";
+import { CriarConta } from "./CriarConta";
 import estilos from "./Entrar.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 
-// Os mesmos limites dos schemas de apps/api/src/routers/auth-cliente.ts.
-// Cortar na digitação evita o 400 que voltaria sem dizer qual campo
-// passou do tamanho.
-const NOME_MAX = 120;
-const EMAIL_MAX = 160;
-const TELEFONE_MAX = 20;
-const SENHA_MAX = 200;
-const SENHA_MIN = 8;
-// O mesmo PADRAO_EMAIL da API (apps/api/src/lib/padroes.ts).
-const PARECE_EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-
-// "entrar" é o login. "codigo" é primeiro acesso E esqueci a senha, que
-// pro cliente são a mesma coisa: provar o e-mail com o código que chega
-// nele, e definir a senha. Quem escolhe é a pessoa — não existe rota
-// que responda se um e-mail já tem senha, e não deve existir.
+// "entrar" é o login. "recuperar" é o esqueci a senha: provar o e-mail
+// com o código que chega nele, e definir a senha. "criar" é a conta nova
+// (CriarConta.tsx, 06/11). Recuperar e criar usam a mesma rota da API —
+// quem escolhe é a pessoa, e não existe rota que responda se um e-mail
+// já tem senha, nem deve existir. Separados na tela porque, juntos atrás
+// de "Receber um código no e-mail", ninguém achava onde criar a conta.
 //
 // E-mail, e não telefone, desde o piloto da Onda 1: sem a verificação
 // da Meta não há WhatsApp, e o código só tem por onde chegar no e-mail.
 // O telefone segue no cadastro (é por ele que a barbearia reconhece o
 // cliente) e é pedido junto da senha nova.
-type Modo = "entrar" | "codigo";
-
-function mensagemDoLimite(erro: ErroDaApi): string {
-  // Dizer que foi o limite, e não "senha incorreta", é o que evita a
-  // pessoa certa duvidar de uma senha que estava certa. A mensagem da
-  // API já diz quanto esperar.
-  return erro.mensagem || "Muitas tentativas. Espere um pouco antes de tentar de novo.";
-}
+type Modo = "entrar" | "recuperar" | "criar";
 
 export function Entrar() {
   const { slug } = useParams<{ slug: string }>();
@@ -85,7 +75,8 @@ export function Entrar() {
         ? noHost(`/${slug}/minha-conta?${queryDaVolta(volta)}`)
         : noHost(`/${slug}/minha-conta`);
 
-  const [modo, setModo] = useState<Modo>("entrar");
+  // `?criar=1` é o "Criar conta" da tela de sucesso do agendamento.
+  const [modo, setModo] = useState<Modo>(() => (query.get("criar") ? "criar" : "entrar"));
   // O e-mail sobrevive à troca de modo: quem errou a senha e foi pro
   // "esqueceu a senha?" não precisa digitá-lo de novo.
   const [email, setEmail] = useState("");
@@ -133,26 +124,15 @@ export function Entrar() {
   // e que vira a chave do código. Barrar aqui evita a ida e volta que
   // voltaria 400 sem dizer o que fazer, e mantém o erro no campo certo.
   function emailValido(): string | null {
-    const normalizado = normalizarEmail(email);
-    if (!normalizado || !PARECE_EMAIL.test(normalizado)) {
-      setErroEmail("Informe um e-mail válido, como voce@exemplo.com");
-      return null;
-    }
-    return normalizado;
+    const conferido = conferirEmail(email);
+    if (conferido.erro) setErroEmail(conferido.erro);
+    return conferido.valor ?? null;
   }
 
-  // A mesma função que a API usa pra guardar o telefone.
   function telefoneValido(): string | null {
-    try {
-      return normalizarTelefoneObrigatorio(telefone);
-    } catch (causa) {
-      setErroTelefone(
-        causa instanceof TelefoneInvalido
-          ? "Informe o DDD e o número, como (11) 99999-8888"
-          : "Telefone inválido"
-      );
-      return null;
-    }
+    const conferido = conferirTelefone(telefone);
+    if (conferido.erro) setErroTelefone(conferido.erro);
+    return conferido.valor ?? null;
   }
 
   // Fora do try de quem chama: falha ao guardar o token não é recusa da
@@ -328,7 +308,7 @@ export function Entrar() {
             mais uma busca do perfil só pra repetir. */}
         <div className={estilos.cabecalho}>
           <h1>Entrar</h1>
-          <p className={estilos.apoio}>Pra ver seus horários e seu plano.</p>
+          <p className={estilos.apoio}>Pra ver, remarcar e cancelar seus horários.</p>
         </div>
 
         {/* <form> e não um <div> com onClick: sem ele o Enter não envia,
@@ -356,6 +336,10 @@ export function Entrar() {
             }}
             erro={erroSenha}
           />
+          {/* Colado no campo da senha: é dela que a pessoa esqueceu. */}
+          <button type="button" className={estilos.esqueci} onClick={() => trocarModo("recuperar")}>
+            Esqueci minha senha
+          </button>
 
           {aviso ? <Aviso>{aviso}</Aviso> : null}
 
@@ -364,20 +348,26 @@ export function Entrar() {
           </Botao>
         </form>
 
-        {/* Fora do form e como link de texto: não envia nada, e um
-            segundo botão do mesmo peso se leria como outra forma de
-            entrar. A pergunta fica num texto à parte, e o botão diz o
-            que acontece ao tocar. */}
+        {/* Criar conta à vista (06/11), separado do login por uma linha e
+            em contorno: o Entrar continua sendo o botão cheio da tela. */}
         <div className={estilos.outroCaminho}>
-          <p className={estilos.pergunta}>Primeira vez aqui, ou esqueceu a senha?</p>
-          <button type="button" className={estilos.link} onClick={() => trocarModo("codigo")}>
-            Receber um código no e-mail
-          </button>
+          <p className={estilos.primeiraVez}>Primeira vez aqui?</p>
+          <p className={estilos.pergunta}>
+            Crie sua conta com o telefone que você usa pra agendar. Os horários que já marcou com
+            ele vêm junto.
+          </p>
+          <Botao variante="contorno" onClick={() => trocarModo("criar")}>
+            Criar conta
+          </Botao>
         </div>
 
         {semConta}
       </main>
     );
+  }
+
+  if (modo === "criar") {
+    return <CriarConta slug={slug} destino={destino} aoEntrar={() => trocarModo("entrar")} />;
   }
 
   return (
@@ -390,10 +380,10 @@ export function Entrar() {
       </button>
 
       <div className={estilos.cabecalho}>
-        <h1>Criar ou recuperar senha</h1>
+        <h1>Recuperar senha</h1>
         <p className={estilos.apoio}>
           {enviadoPara === null ? (
-            "Vamos mandar um código pro seu e-mail. Com ele você cria sua senha, ou troca, se esqueceu a sua."
+            "Vamos mandar um código pro seu e-mail. Com ele você cria uma senha nova."
           ) : (
             <>
               Enviamos um código pra <b>{enviadoPara}</b>. Ele vale 10 minutos.
@@ -416,7 +406,7 @@ export function Entrar() {
           {aviso ? <Aviso>{aviso}</Aviso> : null}
 
           <Botao type="submit" carregando={enviando}>
-            Enviar código
+            Mandar o código
           </Botao>
         </form>
       ) : (
@@ -482,6 +472,13 @@ export function Entrar() {
           </button>
         </form>
       )}
+
+      <p className={estilos.semConta}>
+        Ainda não tem conta?{" "}
+        <button type="button" className={estilos.linkNoTexto} onClick={() => trocarModo("criar")}>
+          Criar conta
+        </button>
+      </p>
     </main>
   );
 }

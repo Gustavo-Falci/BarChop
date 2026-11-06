@@ -61,6 +61,27 @@ describe("confirmação: link do horário", () => {
     expect(itens[4]).toHaveTextContent("Não repasse o link.");
   });
 
+  // A chamada de criar conta (06/11, prancha Pub-ConfirmadoConta): leva
+  // pro Criar conta, e a aba guarda o que ele precisa pra chegar
+  // preenchido e provar que foi esta pessoa quem marcou.
+  it("a chamada de criar conta leva pro Criar conta com os dados e o token guardados", async () => {
+    await agendarSemConta(criarApiClientFalso());
+
+    const chamada = screen.getByRole("region", { name: "Prefere não guardar link?" });
+    expect(within(chamada).getByRole("link", { name: "Criar conta" })).toHaveAttribute(
+      "href",
+      "/gr-barber/entrar?criar=1"
+    );
+    const salvo = JSON.parse(sessionStorage.getItem("agendamento.confirmado")!);
+    expect(salvo.nome).toBe("João");
+    expect(salvo.email).toBeNull();
+    expect(salvo.tokenDaConta).toBe(`conta-${salvo.agendamento.id}`);
+    // Antes do cartão, que continua igual.
+    expect(
+      chamada.compareDocumentPosition(cartao()) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
   // No computador (06/11, prancha Pub-ConfirmadoLinkDesktop): resumo e
   // "Adicionar à agenda" numa coluna, o cartão do link na outra. O CSS
   // põe lado a lado a partir de 900px; aqui confere que são colunas

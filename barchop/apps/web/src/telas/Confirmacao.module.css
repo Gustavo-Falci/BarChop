@@ -218,3 +218,25 @@
     top: var(--espaco-lg);
   }
 }
+
+/* A chamada de criar conta (06/11): tracejada, e não um cartão cheio —
+   é uma alternativa ao cartão do link, não mais um passo da tela. */
+.criarConta {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) dashed var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+}
+.criarConta h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--texto-md);
+  line-height: 1.3;
+}
+.criarConta p {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}

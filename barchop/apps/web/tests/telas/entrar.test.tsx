@@ -220,7 +220,9 @@ describe("entrar", () => {
     montar();
 
     expect(screen.getByRole("heading", { level: 1, name: "Entrar" })).toBeInTheDocument();
-    expect(screen.getByText(/primeira vez aqui, ou esqueceu a senha/i)).toBeInTheDocument();
+    expect(screen.getByText("Primeira vez aqui?")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Criar conta" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Esqueci minha senha" })).toBeInTheDocument();
   });
 
   it("diz que pra agendar não precisa de conta e leva pro passo 1", () => {
@@ -276,20 +278,20 @@ describe("entrar", () => {
 // e-mail com o código e definir a senha. Antes, o primeiro acesso
 // definia a senha de qualquer cadastro sem senha, sem prova nenhuma — e
 // quem chegasse primeiro ficava com o histórico de outra pessoa.
-describe("entrar — primeiro acesso ou esqueci a senha", () => {
+describe("entrar — esqueci a senha", () => {
   beforeEach(() => {
     localStorage.clear();
     navegacaoFalsa.redefinir();
   });
 
   async function abrirCodigo() {
-    await userEvent.click(screen.getByRole("button", { name: "Receber um código no e-mail" }));
+    await userEvent.click(screen.getByRole("button", { name: "Esqueci minha senha" }));
   }
 
   async function pedirCodigo(email = EMAIL) {
     await abrirCodigo();
     await userEvent.type(screen.getByLabelText(/e-mail/i), email);
-    await userEvent.click(screen.getByRole("button", { name: "Enviar código" }));
+    await userEvent.click(screen.getByRole("button", { name: "Mandar o código" }));
   }
 
   async function preencherCodigo(
@@ -444,7 +446,7 @@ describe("entrar — primeiro acesso ou esqueci a senha", () => {
     montar();
     await abrirCodigo();
     expect(
-      screen.getByRole("heading", { level: 1, name: "Criar ou recuperar senha" })
+      screen.getByRole("heading", { level: 1, name: "Recuperar senha" })
     ).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));

@@ -53,6 +53,9 @@ export interface DefinicaoDeSenhaDoCliente {
   codigo: string;
   senha: string;
   nome: string;
+  // O `tokenDaConta` do agendamento recém-criado (06/11): a API junta a
+  // conta ao cadastro que nasceu naquele horário.
+  tokenDaConta?: string;
 }
 
 // Nenhuma destas manda token: são as telas abertas pelo link do

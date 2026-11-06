@@ -221,6 +221,9 @@ export interface EstadoFalso {
   // A API sem endereço configurado devolve o agendamento sem o link do
   // horário (06/11). Ausente = com link.
   semLinkDoHorario?: boolean;
+  // Telefones (só os dígitos) cujo cadastro a API não junta à conta
+  // nova: o definirSenhaDoCliente responde telefone_ja_cadastrado.
+  telefonesComHistorico?: string[];
   // A trilha do dono: quais passos já estão feitos. Sem semente, nenhum
   // — derivar do resto do estado é trabalho da API, não do dublê.
   onboarding?: Partial<Record<PassoDoOnboarding, boolean>>;
@@ -472,6 +475,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     areasDecididas: [...(semente.areasDecididas ?? [])],
     lembretes: { ...(semente.lembretes ?? {}) },
     lembretesVencidos: [...(semente.lembretesVencidos ?? [])],
+    telefonesComHistorico: [...(semente.telefonesComHistorico ?? [])],
     proximosHorarios: semente.proximosHorarios,
     onboarding: { ...(semente.onboarding ?? {}) },
     solicitacoesDeLink: (semente.solicitacoesDeLink ?? []).map((s) => ({
@@ -1372,10 +1376,15 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         const criado = novoAgendamento({ ...novo, origem: "cliente" });
         // O link do horário abre o lembrete do próprio dublê: a tela
         // pode seguir dele até a página de confirmar ou cancelar.
-        if (estado.semLinkDoHorario) return { ...criado, linkDoHorario: null };
+        const tokenDaConta = `conta-${criado.id}`;
+        if (estado.semLinkDoHorario) return { ...criado, linkDoHorario: null, tokenDaConta };
         const token = `lembrete-${criado.id}`;
         estado.lembretes![token] = criado.id;
-        return { ...criado, linkDoHorario: `https://${slug}.barchop.com.br/lembrete/${token}` };
+        return {
+          ...criado,
+          linkDoHorario: `https://${slug}.barchop.com.br/lembrete/${token}`,
+          tokenDaConta,
+        };
       },
       async proximosHorarios(slug: string) {
         exigirSlug(slug);
@@ -1417,6 +1426,14 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         exigirSlug(slug);
         if (definicao.codigo !== CODIGO_DO_CLIENTE_FALSO) {
           throw new ErroDaApi(422, "codigo_invalido", "código inválido ou vencido");
+        }
+        const digitos = definicao.telefone.replace(/\D/g, "");
+        if (estado.telefonesComHistorico?.includes(digitos)) {
+          throw new ErroDaApi(
+            422,
+            "telefone_ja_cadastrado",
+            "este telefone já tem cadastro na barbearia; peça pra incluírem seu e-mail nele"
+          );
         }
         estado.cliente = {
           ...estado.cliente,

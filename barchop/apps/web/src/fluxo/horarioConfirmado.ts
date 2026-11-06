@@ -11,6 +11,22 @@ export interface HorarioConfirmado {
   // O WhatsApp de quem agendou: é pra ele que o "Mandar pro meu
   // WhatsApp" abre a conversa.
   telefone: string;
+  // Pro "Criar conta" da tela de sucesso (06/11): o nome e o e-mail que
+  // a pessoa digitou ao agendar preenchem o formulário, e o token da
+  // criação prova pra API que foi ela quem marcou. Opcionais: um cartão
+  // gravado antes desta versão continua valendo pro link.
+  nome?: string;
+  email?: string | null;
+  tokenDaConta?: string | null;
+}
+
+// O que o "Criar conta" leva do agendamento recém-feito.
+export interface CadastroDoAgendamento {
+  nome: string;
+  telefone: string;
+  email: string;
+  tokenDaConta: string | null;
+  agendamento: AgendamentoSerializado;
 }
 
 const CHAVE = "agendamento.confirmado";
@@ -52,6 +68,31 @@ export function lerHorarioConfirmado(
       return null;
     }
     return salvo as HorarioConfirmado;
+  } catch {
+    return null;
+  }
+}
+
+// Pro "Criar conta": o agendamento recém-feito NESTA barbearia, venha
+// a pessoa de onde vier (a tela de entrar não tem a URL do agendamento).
+// Torto ou de outra barbearia conta como ausente: o formulário abre
+// vazio.
+export function lerCadastroDoAgendamento(slug: string): CadastroDoAgendamento | null {
+  if (typeof window === "undefined") return null;
+  const bruto = window.sessionStorage.getItem(CHAVE);
+  if (!bruto) return null;
+  try {
+    const salvo = JSON.parse(bruto) as Partial<HorarioConfirmado>;
+    if (salvo?.slug !== slug || typeof salvo.telefone !== "string" || !salvo.agendamento) {
+      return null;
+    }
+    return {
+      nome: typeof salvo.nome === "string" ? salvo.nome : "",
+      telefone: salvo.telefone,
+      email: typeof salvo.email === "string" ? salvo.email : "",
+      tokenDaConta: typeof salvo.tokenDaConta === "string" ? salvo.tokenDaConta : null,
+      agendamento: salvo.agendamento,
+    };
   } catch {
     return null;
   }

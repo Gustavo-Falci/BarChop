@@ -1,23 +1,72 @@
 /* Preto no branco de propósito, nos dois temas do painel: é papel. */
+.tela {
+  min-height: 100dvh;
+  background: #fff;
+  color: #111;
+}
+
+/* A barra de cima (onda C): o caminho de volta e o tamanho da folha.
+   Some na impressão. */
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
+  height: 56px;
+  padding: 0 var(--espaco-sm) 0 var(--espaco-xs);
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 var(--espaco-sm);
+  color: #111;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.voltar:hover {
+  color: #444;
+}
+
+.voltar:focus-visible,
+.imprimir:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
+/* A seta é a das ações que avançam; aqui ela volta. */
+.setaDeVolta {
+  transform: scaleX(-1);
+}
+
+.folha {
+  color: #555;
+  font-size: var(--texto-sm);
+}
+
 .pagina {
   display: grid;
   justify-items: center;
-  /* Sem isto a sobra do 100dvh estica as linhas, e o botão vira uma
+  /* Sem isto a sobra da altura estica as linhas, e o botão vira uma
      bola. */
   align-content: start;
-  gap: 24px;
-  min-height: 100dvh;
-  padding: 32px 16px;
-  background: #fff;
-  color: #111;
+  gap: 20px;
+  padding: 24px 16px 32px;
 }
 
 .cartaz {
   display: grid;
   justify-items: center;
-  gap: 16px;
+  gap: 14px;
+  box-sizing: border-box;
   width: min(100%, 560px);
-  padding: 40px 24px;
+  padding: 32px 20px;
   border: 4px solid #111;
   border-radius: 24px;
   text-align: center;
@@ -25,20 +74,29 @@
 
 .nome {
   margin: 0;
-  font-family: var(--fonte-display);
-  font-size: clamp(2rem, 6vw, 3rem);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: clamp(2.125rem, 6vw, 3rem);
   line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .chamada {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: var(--texto-lg);
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .qr {
-  width: min(100%, 360px);
+  width: min(100%, 220px);
+  margin-block: 8px;
   aspect-ratio: 1;
+}
+
+@media (min-width: 600px) {
+  .qr {
+    width: min(100%, 320px);
+  }
 }
 
 .qr svg {
@@ -49,29 +107,80 @@
 
 .link {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* Um pedaço do endereço ("gr-barber", ".barchop", ".com"): inteiro na
+   linha. Só se sozinho for maior que o cartão ele quebra por dentro
+   (o `anywhere` é a rede de segurança). */
+.pedaco {
+  display: inline-block;
+  max-width: 100%;
   overflow-wrap: anywhere;
 }
 
 .imprimir {
-  min-height: 44px;
-  padding: 0 24px;
-  border: 2px solid #111;
-  border-radius: 999px;
-  background: #ffd400;
-  color: #111;
-  font: inherit;
+  min-width: 200px;
+  min-height: 52px;
+  padding: 0 32px;
+  border: 0;
+  border-radius: var(--raio-pill);
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-md);
   font-weight: 700;
+  box-shadow: var(--sombra-botao);
   cursor: pointer;
 }
 
+/* Na folha: a barra e o botão somem, e o cartão ocupa a página A4. */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
 @media print {
-  .pagina {
+  .tela {
     min-height: 0;
+  }
+
+  .barra,
+  .imprimir {
+    display: none;
+  }
+
+  .pagina {
     padding: 0;
   }
 
-  .imprimir {
-    display: none;
+  .cartaz {
+    width: 100%;
+    /* A altura útil da folha, menos uma folga pro navegador não jogar
+       a borda de baixo pra uma segunda página. */
+    min-height: calc(100vh - 4mm);
+    align-content: center;
+    gap: 24px;
+    padding: 40px 32px;
+    border-radius: 28px;
+  }
+
+  .nome {
+    font-size: 52px;
+    line-height: 1.05;
+  }
+
+  .chamada {
+    font-size: 24px;
+  }
+
+  .qr {
+    width: 320px;
+    margin-block: 0;
+  }
+
+  .link {
+    font-size: 22px;
   }
 }

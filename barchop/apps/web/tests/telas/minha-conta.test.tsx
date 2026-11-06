@@ -312,7 +312,9 @@ describe("minha conta: a página", () => {
 
     const marcados = await screen.findByRole("region", { name: "Horários marcados" });
     expect(within(marcados).getByText("20 de setembro")).toBeInTheDocument();
-    expect(within(marcados).getByText("Corte com Rafael")).toBeInTheDocument();
+    // Onda B: o quê numa linha, com quem e até quando na de apoio.
+    expect(within(marcados).getByText("Corte")).toBeInTheDocument();
+    expect(within(marcados).getByText(/^Com Rafael · até/)).toBeInTheDocument();
     expect(within(marcados).getByRole("button", { name: "Remarcar" })).toBeInTheDocument();
 
     const historico = screen.getByRole("region", { name: "Histórico" });
@@ -324,6 +326,33 @@ describe("minha conta: a página", () => {
     ]);
     expect(within(linhas[0]).getByText("cancelado")).toBeInTheDocument();
     expect(within(historico).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("as partes têm títulos de seção, como o resto da página", async () => {
+    montar(
+      criarApiClientFalso({
+        agendamentos: [
+          agendamento("a1", "2026-09-10", "09:00", "cancelado"),
+          agendamento("a2", "2026-09-20", "10:00", "confirmado"),
+        ],
+      }),
+      TRES_HORAS_ANTES
+    );
+
+    expect(await screen.findByRole("heading", { level: 2, name: "Horários marcados" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Histórico" })).toBeInTheDocument();
+  });
+
+  it("o bloco do dia mostra a semana curta, o número e o mês", async () => {
+    montar(
+      criarApiClientFalso({ agendamentos: [agendamento("a2", "2026-09-20", "10:00", "confirmado")] }),
+      TRES_HORAS_ANTES
+    );
+
+    const marcados = await screen.findByRole("region", { name: "Horários marcados" });
+    // 20/09/2026 é domingo. O leitor de tela ouve a data por extenso.
+    expect(within(marcados).getByText("dom")).toBeInTheDocument();
+    expect(within(marcados).getByText("set")).toBeInTheDocument();
   });
 
   it("sem horário marcado, diz que não há, e o histórico segue", async () => {

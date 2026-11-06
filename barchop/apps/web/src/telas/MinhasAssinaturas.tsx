@@ -89,7 +89,7 @@ export function MinhasAssinaturas() {
 
   return (
     <section className={estilos.meuPlano} aria-labelledby="meu-plano">
-      <h2 id="meu-plano" className={estilos.rotulo}>
+      <h2 id="meu-plano" className={estilos.tituloDaSecao}>
         {vivas.length > 1 ? "Meus planos" : "Meu plano"}
       </h2>
       {conferencia ? (

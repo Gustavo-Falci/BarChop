@@ -60,8 +60,15 @@
   font-size: var(--texto-sm);
 }
 
-/* O nome de cada parte, pequeno e em caixa alta: as partes se separam
-   pelo espaço, sem caixa em volta. `--cor-muted` passa de 4,5:1. */
+/* O título de cada parte (Horários marcados, Meu plano, Histórico), no
+   padrão dos títulos de seção da página (onda B): a fonte de título, em
+   --texto-lg como na prancha. Antes era o .rotulo em caixa alta. */
+.tituloDaSecao {
+  font-size: var(--texto-lg);
+}
+
+/* Rótulo pequeno em caixa alta, dentro de um cartão ("Neste ciclo").
+   `--cor-muted` passa de 4,5:1. */
 .rotulo {
   margin: 0;
   color: var(--cor-muted);
@@ -125,24 +132,31 @@
   min-width: 0;
 }
 
-/* O dia num bloco: o mês, o número grande e o dia da semana. O leitor
-   de tela ouve a data por extenso (.somenteLeitor). */
+/* O dia num bloco, no amarelo claro da prancha (onda B): a semana curta,
+   o número grande e o mês, tudo no tom do destaque. O leitor de tela
+   ouve a data por extenso (.somenteLeitor). As duas cores vêm da
+   Aparência da barbearia (CoresDaPagina), como o resto. */
 .dia {
   flex: none;
   display: grid;
   justify-items: center;
-  width: 64px;
+  width: 56px;
   padding: var(--espaco-xs) 0;
   border-radius: var(--raio-md);
-  background: var(--cor-surface-2, var(--cor-paper-soft));
+  background: var(--cor-pale-yellow);
+  color: var(--cor-accent-text);
+  line-height: 1.1;
 }
 
+.semana,
 .mes {
-  color: var(--cor-accent-text);
   font-size: var(--texto-xs);
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+}
+
+/* O que foi marcado, em destaque; com quem e até quando, no apoio. */
+.servicosDoHorario {
+  font-weight: 600;
 }
 
 .numero {
@@ -157,11 +171,6 @@
 .peloPlano {
   color: var(--cor-accent-text);
   font-weight: 600;
-}
-
-.semana {
-  color: var(--cor-ink-soft);
-  font-size: var(--texto-xs);
 }
 
 .somenteLeitor {
@@ -199,9 +208,13 @@
   margin: 0;
 }
 
+/* Remarcar e Cancelar lado a lado, na mesma largura (prancha da onda
+   B); com um botão só, ele ocupa a linha. Vale também pro Manter / Sim,
+   cancelar do plano. */
 .acoes {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: var(--espaco-sm);
 }
 
@@ -423,6 +436,12 @@
   .horario {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
+  }
+
+  /* Ao lado do resumo, cada botão na largura do texto: iguais, eles
+     roubavam espaço e quebravam o "até 23:30". */
+  .horario .acoes {
+    grid-auto-columns: max-content;
   }
 
   /* O aviso do prazo vencido desce pra linha de baixo, na largura do

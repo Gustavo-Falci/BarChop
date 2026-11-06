@@ -397,9 +397,11 @@ describe("minhas assinaturas", () => {
       })
     );
 
-    const primeiro = (await screen.findByText("Corte masculino e Barba com Rafael")).closest("article") as HTMLElement;
+    const primeiro = (await screen.findByText("Corte masculino e Barba")).closest("article") as HTMLElement;
     expect(within(primeiro).getByText("Corte masculino pelo plano")).toBeInTheDocument();
-    const segundo = screen.getByText("Corte masculino com Rafael").closest("article") as HTMLElement;
+    // Só nos marcados: o "Neste ciclo" do plano também diz "Corte masculino".
+    const marcados = screen.getByRole("region", { name: "Horários marcados" });
+    const segundo = within(marcados).getByText("Corte masculino").closest("article") as HTMLElement;
     expect(within(segundo).queryByText(/pelo plano/)).not.toBeInTheDocument();
   });
 

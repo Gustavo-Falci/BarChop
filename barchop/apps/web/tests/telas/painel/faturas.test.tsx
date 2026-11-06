@@ -84,6 +84,20 @@ function montar(assinatura: ResumoDaAssinatura, semente: SementeFalsa = {}, inte
   return falso;
 }
 
+// Uma linha da lista de cobranças, pelo número da fatura.
+async function cobranca(numero: RegExp): Promise<HTMLElement> {
+  const lista = await screen.findByRole("list", { name: "Cobranças" });
+  const linha = within(lista)
+    .getAllByRole("listitem")
+    .find((item) => numero.test(item.textContent ?? ""));
+  if (!linha) throw new Error(`sem a cobrança ${numero}`);
+  return linha;
+}
+
+function plano(): HTMLElement {
+  return screen.getByRole("region", { name: /mensal|anual/ });
+}
+
 // O Intl separa o "R$" com espaço inquebrável.
 function texto(elemento: HTMLElement): string {
   return (elemento.textContent ?? "").replaceAll(String.fromCharCode(160), " ");
@@ -315,13 +329,12 @@ describe("Faturas com plano pago", () => {
 
     expect(await screen.findByText("Próxima cobrança em 28/11")).toBeInTheDocument();
     expect(screen.queryByRole("list", { name: "Etapas da assinatura" })).not.toBeInTheDocument();
-    const tabela = await screen.findByRole("table", { name: "Faturas" });
-    const paga = within(tabela).getByRole("row", { name: /BARCHOP-0001/ });
+    const paga = await cobranca(/BARCHOP-0001/);
     expect(texto(paga)).toContain("28/10");
     expect(texto(paga)).toContain("R$ 44,90");
     expect(paga).toHaveTextContent("Paga");
-    expect(within(paga).getByRole("link", { name: /PDF/ })).toHaveAttribute("href", "https://pay.stripe.test/in_1.pdf");
-    const falhou = within(tabela).getByRole("row", { name: /BARCHOP-0002/ });
+    expect(within(paga).getByRole("link", { name: "Recibo (PDF)" })).toHaveAttribute("href", "https://pay.stripe.test/in_1.pdf");
+    const falhou = await cobranca(/BARCHOP-0002/);
     expect(falhou).toHaveTextContent("Não paga");
     expect(within(falhou).queryByRole("link", { name: /PDF/ })).not.toBeInTheDocument();
   });
@@ -334,20 +347,18 @@ describe("Faturas com plano pago", () => {
       ],
     });
 
-    const tabela = await screen.findByRole("table", { name: "Faturas" });
-    const inteira = within(tabela).getByRole("row", { name: /BARCHOP-0001/ });
+    const inteira = await cobranca(/BARCHOP-0001/);
     expect(inteira).toHaveTextContent("Reembolsada");
     expect(inteira).not.toHaveTextContent("Paga");
     expect(within(inteira).getByRole("link", { name: /PDF/ })).toHaveAttribute("href", "https://pay.stripe.test/in_1.pdf");
-    const parte = within(tabela).getByRole("row", { name: /BARCHOP-0002/ });
+    const parte = await cobranca(/BARCHOP-0002/);
     expect(parte).toHaveTextContent("Reembolsada em parte");
   });
 
   it("a fatura de R$ 0 do teste diz que não houve cobrança", async () => {
     montar(resumo(PAGA), { faturas: [fatura({ valorCentavos: 0 })] });
 
-    const tabela = await screen.findByRole("table", { name: "Faturas" });
-    expect(within(tabela).getByRole("row", { name: /BARCHOP-0001/ })).toHaveTextContent("Sem cobrança (teste)");
+    expect(await cobranca(/BARCHOP-0001/)).toHaveTextContent("Sem cobrança (teste)");
   });
 
   it("sem fatura nenhuma ainda, diz quando vem a primeira", async () => {
@@ -406,6 +417,17 @@ describe("Faturas com plano pago", () => {
     montar(resumo({ ...PAGA, situacao: "em_atraso", plano: "completo", planoEfetivo: "completo" }));
 
     expect(await screen.findByText(/A Stripe não conseguiu cobrar/)).toBeInTheDocument();
+    // Onda C, PR 4: o botão diz o que resolver; abre o mesmo Portal.
+    expect(screen.getByRole("button", { name: "Atualizar o cartão" })).toBeInTheDocument();
+    expect(within(plano()).getByText("Pagamento pendente")).toBeInTheDocument();
+  });
+
+  // Onda C, PR 4: o selo sai do título e vai pro cartão do plano.
+  it("em dia: o selo no cartão do plano, e o apoio fala do plano e das cobranças", async () => {
+    montar(resumo(PAGA));
+
+    expect(await screen.findByText(/^O plano e as cobranças da .+\.$/)).toBeInTheDocument();
+    expect(within(plano()).getByText("Em dia")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Gerenciar assinatura" })).toBeInTheDocument();
   });
 });

@@ -19,7 +19,6 @@ import { Chip } from "../../componentes/Chip";
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import {
   diaEMes,
-  diasQueFaltam,
   fraseDaCobranca,
   nomeDoPlano,
   profissionais,
@@ -94,36 +93,25 @@ const GARANTIAS = [
   "Cancelou? Nada é apagado",
 ];
 
-function seloDaSituacao(resumo: ResumoDaAssinatura) {
-  switch (resumo.situacao) {
-    case "teste":
-      return resumo.diasDeTesteRestantes ? (
-        <Chip tamanho="pequeno">Teste grátis · {diasQueFaltam(resumo.diasDeTesteRestantes)}</Chip>
-      ) : (
-        <Chip tamanho="pequeno" tom="neutro">
-          Grátis
-        </Chip>
-      );
-    case "ativa":
-      return (
-        <Chip tamanho="pequeno" tom="ok">
-          {nomeDoPlano(resumo)}
-        </Chip>
-      );
-    case "em_atraso":
-      return (
-        <Chip tamanho="pequeno" tom="atencao">
-          Pagamento pendente
-        </Chip>
-      );
-    case "cancelada":
-    case "gratis":
-      return (
-        <Chip tamanho="pequeno" tom="neutro">
-          Grátis
-        </Chip>
-      );
+// O selo do cartão do plano (onda C: saiu do título). Só com plano pago:
+// em dia ou com o pagamento pendente. Cancelado no Portal não leva selo —
+// a frase da cobrança já diz até quando vale.
+function seloDoPlano(resumo: ResumoDaAssinatura) {
+  if (resumo.situacao === "em_atraso") {
+    return (
+      <Chip tamanho="pequeno" tom="atencao">
+        Pagamento pendente
+      </Chip>
+    );
   }
+  if (resumo.situacao === "ativa" && !resumo.cancelaEm) {
+    return (
+      <Chip tamanho="pequeno" tom="ok">
+        Em dia
+      </Chip>
+    );
+  }
+  return null;
 }
 
 function porCiclo(ciclo: Ciclo): string {
@@ -183,9 +171,6 @@ export function Faturas({
       <CabecalhoDaPagina
         titulo="Faturas"
         apoio={apoioDaPagina(resumo, nomeDaBarbearia ?? slug)}
-        // Sem plano pago, sem selo (onda C): o teste já está na faixa e
-        // no apoio, e o Grátis no apoio.
-        selo={resumo && temPlanoPago(resumo) ? seloDaSituacao(resumo) : null}
       />
       {conteudo}
     </div>
@@ -196,7 +181,10 @@ export function Faturas({
 // teste até quando, ou o Grátis com o limite do link. Com plano, o nome.
 function apoioDaPagina(resumo: ResumoDaAssinatura | null, nome: string | null | undefined): string | undefined {
   const barbearia = nome ?? undefined;
-  if (!resumo || temPlanoPago(resumo)) return barbearia;
+  if (!resumo) return barbearia;
+  if (temPlanoPago(resumo)) {
+    return barbearia ? `O plano e as cobranças da ${barbearia}.` : "O plano e as cobranças da barbearia.";
+  }
   const daBarbearia = barbearia ? `da ${barbearia}` : "da barbearia";
   if (resumo.situacao === "teste" && resumo.diasDeTesteRestantes && resumo.testeTerminaEm) {
     return `Escolha o plano ${daBarbearia}. O teste grátis vai até ${diaEMes(resumo.testeTerminaEm)}.`;
@@ -725,6 +713,18 @@ const ROTULO_DA_SITUACAO: Record<FaturaDaAssinatura["situacao"], string> = {
   reembolsada_em_parte: "Reembolsada em parte",
 };
 
+// A cor do selo de cada situação: paga no verde, não paga no de atenção,
+// o resto neutro.
+const TOM_DA_SITUACAO: Record<FaturaDaAssinatura["situacao"] | "teste", "ok" | "atencao" | "neutro"> = {
+  paga: "ok",
+  aberta: "atencao",
+  falhou: "atencao",
+  anulada: "neutro",
+  reembolsada: "neutro",
+  reembolsada_em_parte: "neutro",
+  teste: "neutro",
+};
+
 // Com recibo: a que foi paga, mesmo que o dinheiro tenha voltado depois.
 const COM_RECIBO: ReadonlySet<FaturaDaAssinatura["situacao"]> = new Set([
   "paga",
@@ -764,51 +764,43 @@ function ListaDeFaturas() {
       </section>
     );
   }
+  // Em linhas, e não em tabela (onda C): no celular a tabela rolava de
+  // lado; cada cobrança é um bloco com data e número, valor, situação e
+  // a ação (recibo ou pagar).
   return (
-    <section className={estilos.faturas}>
-      <div className={estilos.rolagemDaTabela}>
-        <table className={estilos.tabela}>
-          <caption className={estilos.legendaDaTabela}>Faturas</caption>
-          <thead>
-            <tr>
-              <th scope="col">Data</th>
-              <th scope="col">Número</th>
-              <th scope="col">Valor</th>
-              <th scope="col">Situação</th>
-              <th scope="col">
-                <span className={estilos.soLeitor}>Arquivo</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {faturas.map((fatura) => {
-              const doTeste = fatura.situacao === "paga" && fatura.valorCentavos === 0;
-              const pagar = (fatura.situacao === "aberta" || fatura.situacao === "falhou") && fatura.paginaUrl;
-              return (
-                <tr key={fatura.id}>
-                  <td>{diaEMes(fatura.emitidaEm)}</td>
-                  <td>{fatura.numero ?? "—"}</td>
-                  <td className={estilos.numero}>{formatarReais(fatura.valorCentavos)}</td>
-                  <td data-situacao={fatura.situacao}>
-                    {doTeste ? "Sem cobrança (teste)" : ROTULO_DA_SITUACAO[fatura.situacao]}
-                  </td>
-                  <td>
-                    {fatura.pdfUrl && COM_RECIBO.has(fatura.situacao) ? (
-                      <a href={fatura.pdfUrl} target="_blank" rel="noreferrer">
-                        PDF
-                      </a>
-                    ) : pagar ? (
-                      <a href={fatura.paginaUrl!} target="_blank" rel="noreferrer">
-                        Pagar
-                      </a>
-                    ) : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+    <section className={estilos.faturas} aria-labelledby="titulo-faturas">
+      <h2 id="titulo-faturas" className={estilos.legendaDaTabela}>
+        Cobranças
+      </h2>
+      <ul className={estilos.cobrancas} aria-labelledby="titulo-faturas">
+        {faturas.map((fatura) => {
+          const doTeste = fatura.situacao === "paga" && fatura.valorCentavos === 0;
+          const pagar = (fatura.situacao === "aberta" || fatura.situacao === "falhou") && fatura.paginaUrl;
+          return (
+            <li key={fatura.id} className={estilos.linhaDaCobranca}>
+              <span className={estilos.quando}>
+                {diaEMes(fatura.emitidaEm)}
+                {fatura.numero ? ` · ${fatura.numero}` : ""}
+              </span>
+              <span className={estilos.valorDaCobranca}>{formatarReais(fatura.valorCentavos)}</span>
+              <span>
+                <Chip tamanho="pequeno" tom={TOM_DA_SITUACAO[doTeste ? "teste" : fatura.situacao]}>
+                  {doTeste ? "Sem cobrança (teste)" : ROTULO_DA_SITUACAO[fatura.situacao]}
+                </Chip>
+              </span>
+              {fatura.pdfUrl && COM_RECIBO.has(fatura.situacao) ? (
+                <a className={estilos.acaoDaCobranca} href={fatura.pdfUrl} target="_blank" rel="noreferrer">
+                  Recibo (PDF)
+                </a>
+              ) : pagar ? (
+                <a className={estilos.acaoDaCobranca} href={fatura.paginaUrl!} target="_blank" rel="noreferrer">
+                  Pagar
+                </a>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }
@@ -818,11 +810,16 @@ function PlanoAtual({ resumo }: { resumo: ResumoDaAssinatura }) {
   const frase = fraseDaCobranca(resumo);
   return (
     <section className={estilos.pedido} aria-labelledby="plano-atual">
-      <p className={estilos.subtitulo}>Seu plano</p>
-      <h2 id="plano-atual" className={estilos.nomeDoPlano}>
-        {nomeDoPlano(resumo)} {resumo.ciclo === "anual" ? "anual" : "mensal"}
-      </h2>
-      <p className={estilos.apoio}>Equipe de {profissionais(resumo.profissionais)}</p>
+      <div className={estilos.topoDoPlano}>
+        <div>
+          <p className={estilos.subtitulo}>Seu plano</p>
+          <h2 id="plano-atual" className={estilos.nomeDoPlano}>
+            {nomeDoPlano(resumo)} {resumo.ciclo === "anual" ? "anual" : "mensal"}
+          </h2>
+          <p className={estilos.apoio}>Equipe de {profissionais(resumo.profissionais)}</p>
+        </div>
+        {seloDoPlano(resumo)}
+      </div>
       {frase ? <p className={estilos.cobranca}>{frase}</p> : null}
 
       {resumo.situacao === "em_atraso" ? (
@@ -832,7 +829,12 @@ function PlanoAtual({ resumo }: { resumo: ResumoDaAssinatura }) {
         </Aviso>
       ) : null}
 
-      <BotaoDoPortal />
+      {/* Em atraso, o botão diz o que resolver; abre o mesmo Portal. */}
+      {resumo.situacao === "em_atraso" ? (
+        <BotaoDoPortal texto="Atualizar o cartão" />
+      ) : (
+        <BotaoDoPortal texto="Gerenciar assinatura" variante="contorno" />
+      )}
       <p className={estilos.rodape}>
         Trocar de plano, trocar o cartão, ver as faturas antigas e cancelar: na página segura da Stripe.
       </p>
@@ -840,7 +842,7 @@ function PlanoAtual({ resumo }: { resumo: ResumoDaAssinatura }) {
   );
 }
 
-function BotaoDoPortal() {
+function BotaoDoPortal({ texto, variante }: { texto: string; variante?: "contorno" }) {
   const api = useApiDoPainel();
   const [abrindo, setAbrindo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -859,8 +861,8 @@ function BotaoDoPortal() {
   return (
     <>
       {erro ? <Aviso>{erro}</Aviso> : null}
-      <Botao onClick={abrir} carregando={abrindo}>
-        Gerenciar assinatura
+      <Botao onClick={abrir} carregando={abrindo} variante={variante}>
+        {texto}
       </Botao>
     </>
   );

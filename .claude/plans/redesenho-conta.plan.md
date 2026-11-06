@@ -123,6 +123,13 @@ Terceira de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do p
 - `CheckoutCancelado`:
   - título "Pagamento não concluído", sem falar do teste (a tela aparece também para quem não está em teste);
   - "Tentar de novo" no lugar de "Ver planos".
+- **Feito (06/11):**
+  - apoio do título com plano pago: "O plano e as cobranças da X."; o selo saiu do título e foi pro cartão do plano: "Em dia" (ok) ou "Pagamento pendente" (atenção). Cancelado no Portal fica sem selo: a frase já diz até quando vale;
+  - em atraso, o botão do Portal vira primário com "Atualizar o cartão"; em dia, "Gerenciar assinatura" em contorno, como na prancha;
+  - "Cobranças" em lista (`ul`), não tabela: data · número e valor em cima, selo da situação e ação ("Recibo (PDF)" / "Pagar") embaixo. No desktop (≥700px) cabe numa linha só, em colunas; a tabela saiu de vez (não precisava rolar de lado);
+  - cabeçalho do comparativo sem caixa alta;
+  - `CheckoutCancelado`: ícone ✕ em círculo, "Pagamento não concluído", texto da prancha, "Tentar de novo" (primário) e "Voltar ao painel" (fantasma), um por linha;
+  - testes antes do código; 1698 testes passando. Conferido Pagamento não concluído em 390 escuro e 1280 claro. Faturas com plano não roda com a semente (ela é de teste): coberto pelos testes.
 
 ### PR 5 — Central de ajuda
 - Grupos com título normal e perguntas que abrem e fecham (botão com `aria-expanded`).

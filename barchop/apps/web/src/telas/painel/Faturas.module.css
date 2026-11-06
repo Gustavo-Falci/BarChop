@@ -524,12 +524,11 @@
   white-space: nowrap;
 }
 
+/* Cabeçalho do comparativo sem caixa alta (onda C). */
 .tabela thead th {
   color: var(--cor-ink-soft);
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--texto-sm);
+  font-weight: 600;
 }
 
 .tabela tbody th {
@@ -549,27 +548,63 @@
   border-block-end: 0;
 }
 
-.numero {
+/* As cobranças em linhas (onda C), no lugar da tabela: data e número
+   com o valor à direita; embaixo, o selo da situação e a ação. No
+   computador cabe tudo numa linha só. */
+.cobrancas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linhaDaCobranca {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px var(--espaco-md);
+  padding-block: var(--espaco-sm);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+}
+
+.quando {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.valorDaCobranca {
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
+  text-align: end;
 }
 
-.tabela td[data-situacao="falhou"] {
-  color: var(--cor-erro);
-  font-weight: 700;
-}
-
-.tabela a {
+.acaoDaCobranca {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--cor-ink);
   font-weight: 700;
+  text-decoration: underline;
 }
 
-.soLeitor {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+@media (min-width: 700px) {
+  .linhaDaCobranca {
+    grid-template-columns: minmax(0, 1fr) 7rem 12rem 7rem;
+  }
+
+  .valorDaCobranca {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
+/* O cartão do plano: o nome à esquerda, o selo (Em dia / Pagamento
+   pendente) à direita. */
+.topoDoPlano {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espaco-sm);
 }
 
 .garantias {

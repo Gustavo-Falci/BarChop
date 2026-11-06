@@ -7,6 +7,8 @@ import type { SessaoBarbeiro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Campo } from "../../componentes/Campo";
+import { TelaDeEntrada } from "../../componentes/TelaDeEntrada";
+import { IconeSeta } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import {
   sessaoDaBarbearia,
@@ -110,9 +112,29 @@ export function RecuperarSenhaDoPainel({ emailInicial, aoVoltar }: Props) {
   }
 
   return (
-    <main className={estilos.pagina}>
-      <h1>Redefinir a senha</h1>
-
+    <TelaDeEntrada
+      titulo="Redefinir a senha"
+      voltar={
+        // No topo, como o voltar da página pública: é o caminho de volta,
+        // e não mais uma ação da tela.
+        <button type="button" className={estilos.voltar} onClick={aoVoltar}>
+          <IconeSeta width="16" height="16" className={estilos.setaDeVolta} />
+          Entrar com senha
+        </button>
+      }
+      apoio={
+        enviadoPara ? (
+          // `role="status"`: quem usa leitor de tela fica sabendo que o
+          // código foi mandado sem ter de procurar a frase.
+          <span role="status">
+            Se <b>{enviadoPara}</b> tiver conta no BarChop, mandamos um
+            código pra lá. Ele vale 10 minutos.
+          </span>
+        ) : (
+          "Vamos mandar um código pro seu e-mail. Com ele você cria uma senha nova."
+        )
+      }
+    >
       <form
         className={estilos.formulario}
         noValidate
@@ -123,10 +145,6 @@ export function RecuperarSenhaDoPainel({ emailInicial, aoVoltar }: Props) {
       >
         {enviadoPara ? (
           <>
-            <p>
-              Se <b>{enviadoPara}</b> tiver conta no BarChop, mandamos um
-              código pra lá. Ele vale 10 minutos.
-            </p>
             {/* `one-time-code` faz o celular sugerir o código recebido. */}
             <Campo
               rotulo="Código"
@@ -147,6 +165,7 @@ export function RecuperarSenhaDoPainel({ emailInicial, aoVoltar }: Props) {
               type="password"
               name="senha"
               autoComplete="new-password"
+              apoio="Mínimo de 8 caracteres"
               maxLength={SENHA_MAX}
               valor={senha}
               onChange={(proximo) => {
@@ -181,26 +200,20 @@ export function RecuperarSenhaDoPainel({ emailInicial, aoVoltar }: Props) {
             {enviadoPara ? "Salvar e entrar" : "Enviar código"}
           </Botao>
         </div>
+      </form>
 
-        <p className={estilos.troca}>
-          {enviadoPara ? (
-            <>
-              Não chegou?{" "}
-              <button
-                type="button"
-                className={estilos.link}
-                onClick={() => void enviarCodigo()}
-              >
-                Reenviar código
-              </button>
-              {" · "}
-            </>
-          ) : null}
-          <button type="button" className={estilos.link} onClick={aoVoltar}>
-            Voltar pra entrar
+      {enviadoPara ? (
+        <p className={estilos.pergunta}>
+          Não chegou?{" "}
+          <button
+            type="button"
+            className={estilos.link}
+            onClick={() => void enviarCodigo()}
+          >
+            Reenviar código
           </button>
         </p>
-      </form>
-    </main>
+      ) : null}
+    </TelaDeEntrada>
   );
 }

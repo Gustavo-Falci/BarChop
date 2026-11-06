@@ -1,0 +1,122 @@
+/* As telas de entrada vivem fora do shell do painel — /painel/entrar
+   fica fora do grupo (guardado), senão a guarda redirecionaria a tela
+   pra ela mesma. Então a página inteira é desta casca. */
+.tela {
+  display: flex;
+  flex-direction: column;
+  /* `dvh` e não `vh`: no celular a barra do navegador entra e sai, e
+     com `vh` a conta usa sempre a janela maior. */
+  min-height: 100dvh;
+}
+
+/* A barra do BarChop no topo, no lugar do título centrado no meio da
+   tela: no celular o título em cima é o que aparece sem rolar quando o
+   teclado sobe. */
+.barra {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding-inline: var(--espaco-md);
+  border-bottom: var(--borda-padrao) solid var(--cor-line);
+}
+
+.marca {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--cor-accent);
+  color: var(--cor-on-accent);
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.nome {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.area {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.pagina {
+  display: grid;
+  align-content: start;
+  gap: var(--espaco-lg);
+  flex: 1;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  padding: var(--espaco-xl) var(--espaco-md) var(--espaco-xxl);
+}
+
+.cabecalho {
+  display: grid;
+  gap: 6px;
+}
+
+.cabecalho h1 {
+  font-size: var(--texto-xl);
+}
+
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+/* Desktop: tela dividida (as telas usam a largura — pedido do dono). A
+   metade esquerda é um painel escuro com a marca, fixo e decorativo — o
+   texto gerado tem alternativa vazia (`/ ""`), o leitor de tela não o
+   lê —, e o formulário fica na metade direita, na largura de leitura.
+   A barra some: a metade escura já é a marca. */
+@media (min-width: 900px) {
+  .barra {
+    display: none;
+  }
+
+  .pagina {
+    /* `safe center` e NÃO `center`: no cadastro o conteúdo passa da
+       altura de uma janela de 640, e o center puro empurraria o topo
+       pra cima da borda, onde não há scroll. Com `safe`, o navegador
+       desiste de centrar quando não cabe e alinha no início. */
+    align-content: safe center;
+    width: 50%;
+    max-width: none;
+    margin-inline: 50% 0;
+    padding: var(--espaco-xxl) var(--espaco-lg);
+    /* Uma coluna na largura de leitura, centrada na metade direita. Os
+       filhos ocupam a coluna, menos quem se alinha sozinho (o voltar). */
+    grid-template-columns: minmax(0, 420px);
+    justify-content: center;
+  }
+
+  .pagina::before {
+    content: "BarChop\A Agenda online para barbearias." / "";
+    position: fixed;
+    inset: 0 50% 0 0;
+    display: grid;
+    align-content: center;
+    padding: var(--espaco-xxl);
+    white-space: pre-line;
+    background-color: var(--cor-dark);
+    background-image: radial-gradient(
+      color-mix(in srgb, var(--cor-accent) 18%, transparent) 1px,
+      transparent 1.5px
+    );
+    background-size: 22px 22px;
+    color: var(--cor-accent);
+    font-family: var(--fonte-display), system-ui, sans-serif;
+    font-size: clamp(2rem, 3.5vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1.1;
+  }
+}

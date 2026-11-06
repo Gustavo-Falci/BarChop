@@ -431,7 +431,7 @@ describe("aceitar convite", () => {
 
     expect(screen.getByLabelText(/e-mail/i)).toHaveValue("ana@gr.com");
     await userEvent.type(screen.getByLabelText(/código/i), CODIGO_DO_CONVITE_FALSO);
-    await userEvent.type(screen.getByLabelText(/^senha$/i), "senha-forte-123");
+    await userEvent.type(screen.getByLabelText(/crie uma senha/i), "senha-forte-123");
     await userEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel"));
@@ -443,7 +443,7 @@ describe("aceitar convite", () => {
     montarAceite();
 
     await userEvent.type(screen.getByLabelText(/código/i), "000000");
-    await userEvent.type(screen.getByLabelText(/^senha$/i), "senha-forte-123");
+    await userEvent.type(screen.getByLabelText(/crie uma senha/i), "senha-forte-123");
     await userEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() =>
@@ -463,10 +463,23 @@ describe("aceitar convite", () => {
       </ProvedorDoPainel>
     );
 
-    expect(screen.getByRole("link", { name: /recebi um convite/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /entrar com o código do convite/i })).toHaveAttribute(
       "href",
       "/painel/convite"
     );
+  });
+
+  // Onda C, PR 1: o voltar fica no topo, e quem não recebeu o código
+  // sabe a quem pedir outro.
+  it("volta pra entrar pelo topo e diz a quem pedir outro código", () => {
+    montarAceite();
+
+    expect(screen.getByRole("link", { name: /entrar com senha/i })).toHaveAttribute(
+      "href",
+      "/painel/entrar"
+    );
+    expect(screen.getByText(/peça pra quem te convidou mandar de novo, em equipe/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/crie uma senha/i)).toHaveAccessibleDescription(/mínimo de 8 caracteres/i);
   });
 
   it("senha curta para no campo, sem chamar a API", async () => {
@@ -475,10 +488,10 @@ describe("aceitar convite", () => {
     montarAceite(falso);
 
     await userEvent.type(screen.getByLabelText(/código/i), CODIGO_DO_CONVITE_FALSO);
-    await userEvent.type(screen.getByLabelText(/^senha$/i), "curta");
+    await userEvent.type(screen.getByLabelText(/crie uma senha/i), "curta");
     await userEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
-    expect(screen.getByLabelText(/^senha$/i)).toHaveAccessibleDescription(/8 caracteres/i);
+    expect(screen.getByLabelText(/crie uma senha/i)).toHaveAccessibleDescription(/pelo menos 8 caracteres/i);
     expect(aceitar).not.toHaveBeenCalled();
   });
 });

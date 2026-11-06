@@ -64,4 +64,12 @@ describe("entrar no suporte", () => {
     expect(await screen.findByText(/informe seu e-mail/i)).toBeInTheDocument();
     expect(login).not.toHaveBeenCalled();
   });
+
+  // Onda C, PR 1: o mesmo formato das entradas do painel.
+  it("tem a barra do BarChop com a área e o título no topo", () => {
+    montar();
+
+    expect(screen.getByRole("banner")).toHaveTextContent(/BarChop.*Suporte/);
+    expect(screen.getByRole("heading", { level: 1, name: "Entrar no suporte" })).toBeInTheDocument();
+  });
 });

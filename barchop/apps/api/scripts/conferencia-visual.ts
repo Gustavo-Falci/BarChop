@@ -280,11 +280,56 @@ async function main() {
     },
   });
 
+  // O suporte (onda C, PR 1 e 7): a conta só existe quando a senha vem do
+  // ambiente (`SENHA_DO_SUPORTE`, 12+ caracteres), como no criar-suporte.
+  // A senha nunca vai pro repositório nem pro log. Com ela, a fila ganha
+  // um pedido de troca de link e a tela de avisos um aviso publicado.
+  let emailDoSuporte: string | undefined;
+  if (process.env.SENHA_DO_SUPORTE) {
+    const { criarOperadorDeSuporte } = await import("../src/lib/suporte");
+    const operador = await criarOperadorDeSuporte({
+      nome: "Suporte",
+      email: "suporte@exemplo.com",
+      senha: process.env.SENHA_DO_SUPORTE,
+    });
+    emailDoSuporte = operador.email;
+    await prisma.solicitacaoTrocaLink.create({
+      data: {
+        barbeariaId: barbearia.id,
+        slugPedido: "gr-barber-centro",
+        motivo: "Mudamos o nome da barbearia pra GR Barber Centro.",
+      },
+    });
+    // O mesmo que a rota POST /suporte/avisos faz: o aviso e uma cópia
+    // no sino de cada membro ativo.
+    const titulo = "Novidade: lembrete por e-mail";
+    const texto = "Agora o cliente recebe um lembrete do horário por e-mail, um dia antes.";
+    const aviso = await prisma.aviso.create({
+      data: { titulo, texto, link: "/painel/ajuda", criadoPor: operador.id },
+    });
+    const membros = await prisma.barbeiro.findMany({ where: { ativo: true }, select: { id: true } });
+    await prisma.notificacao.createMany({
+      data: membros.map(({ id }) => ({
+        barbeiroId: id,
+        tipo: "plataforma" as const,
+        titulo,
+        texto,
+        link: "/painel/ajuda",
+        avisoId: aviso.id,
+      })),
+    });
+  }
+
   await app.listen({ port: 3333, host: "0.0.0.0" });
   console.log(`API de conferência em http://localhost:3333 (banco ${banco})`);
   console.log(`slug: ${barbearia.slug}`);
   console.log(`token do dono (localStorage "sessao.barbeiro"): ${token}`);
   console.log(`cliente da Minha conta: cliente@exemplo.com / senha-forte-123`);
+  console.log(
+    emailDoSuporte
+      ? `suporte: ${emailDoSuporte} (a senha é a do SENHA_DO_SUPORTE)`
+      : "suporte: sem conta (defina SENHA_DO_SUPORTE, 12+ caracteres, pra criar)"
+  );
   // O link do e-mail de lembrete do horário marcado do cliente (onda B,
   // PR 8). Vale 24 horas: o token é do banco de teste, e o horário é
   // daqui a dois dias, então ele não vence antes de começar.

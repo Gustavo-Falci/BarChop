@@ -153,18 +153,14 @@
 
 .inclui {
   display: grid;
-  gap: var(--espaco-sm);
-  padding-top: var(--espaco-md);
-  border-top: var(--borda-hairline) solid var(--cor-line);
+  gap: var(--espaco-xs);
 }
 
-/* `--cor-muted` passa de 4,5:1 sobre a surface nos dois modos. */
+/* "Inclui a cada mês" em texto normal, como na prancha da onda B (antes
+   em caixa alta). */
 .rotulo {
-  color: var(--cor-muted);
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 .servicos {
@@ -179,20 +175,27 @@
   display: flex;
   align-items: flex-start;
   gap: var(--espaco-sm);
+  font-size: var(--texto-sm);
   overflow-wrap: anywhere;
 }
 
+/* No tom do destaque, e não no verde da prancha: o --cor-ok não vem da
+   Aparência da barbearia, e o contraste dele sobre um card de outra cor
+   não é garantido. */
 .check {
   flex: none;
   margin-top: 2px;
   color: var(--cor-accent-text);
 }
 
-/* A ação fica no pé do cartão, alinhada entre os vizinhos da linha. */
+/* A ação fica no pé do cartão, alinhada entre os vizinhos da linha, com
+   a linha em cima separando o que o plano é de como assinar (prancha da
+   onda B; antes a linha ficava acima do "Inclui"). */
 .rodape {
   display: grid;
   margin-top: auto;
-  padding-top: var(--espaco-xs);
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
 .passo {
@@ -244,11 +247,11 @@
 
 /* ---------- Como funciona: três passos, sem caixa ---------- */
 
+/* Sem a linha em cima (prancha da onda B): as seções se separam pelo
+   espaço da página, como na Minha conta. */
 .comoFunciona {
   display: grid;
   gap: var(--espaco-md);
-  padding-top: var(--espaco-lg);
-  border-top: var(--borda-hairline) solid var(--cor-line);
 }
 
 .tituloDoComo {
@@ -269,7 +272,7 @@
    entre o nome e o texto. */
 .passoDoComo {
   display: grid;
-  grid-template-columns: 20px 1fr;
+  grid-template-columns: 32px 1fr;
   align-content: start;
   gap: 2px var(--espaco-sm);
 }
@@ -279,10 +282,19 @@
   margin: 0;
 }
 
+/* O número num círculo amarelo claro, como na prancha da onda B. O par
+   --cor-accent-text sobre --cor-pale-yellow passa de 4,5:1 (ver .selo). */
 .numero {
   grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--raio-pill);
+  background: var(--cor-pale-yellow);
   color: var(--cor-accent-text);
-  font-weight: 700;
+  font-size: var(--texto-sm);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 

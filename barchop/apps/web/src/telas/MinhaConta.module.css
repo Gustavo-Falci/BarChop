@@ -181,6 +181,13 @@
   gap: var(--espaco-sm);
 }
 
+/* O "tem certeza?" do Cancelar (06/11): no celular, um botão por linha.
+   Meio a meio, o "Sim, cancelar" quebrava em duas linhas a 390px. */
+.decisao {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
 /* ---------- Histórico: uma linha por horário, sem caixa ---------- */
 
 .linhas {
@@ -405,6 +412,12 @@
      roubavam espaço e quebravam o "até 23:30". */
   .horario .acoes {
     grid-auto-columns: max-content;
+  }
+
+  .horario .decisao {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    justify-content: start;
   }
 
   /* O aviso do prazo vencido desce pra linha de baixo, na largura do

@@ -111,11 +111,17 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
   - 1672 testes verdes; conferido 390 escuro, 360 claro (confirmado), 1280 escuro (confirmar).
 
 ### PR 5 (era o 6) — Entrar
-- **Parado (05/11): só quando o dono liberar.**
 - Título "Entrar" com apoio.
 - "Primeira vez aqui, ou esqueceu a senha?" com o link do código abaixo do formulário.
 - Linha "Pra agendar não precisa de conta".
 - O modo código com "← Entrar com senha".
+- **Feito (06/11, #296; liberado pelo dono em 06/11):**
+  - h1 "Entrar" com apoio "Pra ver seus horários e seu plano.", sem o nome da barbearia (a barra logo acima já mostra);
+  - pergunta e "Receber um código no e-mail" num bloco com linha em cima;
+  - "Pra agendar não precisa de conta": "escolha um horário" leva ao passo 1. Vindo de um passo (`?voltar=`), vira "voltar ao agendamento" com as escolhas. No remarcar não aparece;
+  - modo código: "← Entrar com senha" no topo nas duas etapas (desenho do voltar dos passos), explicação como apoio do título; saiu o "Voltar pra entrar" do fim. Botão segue "Enviar código";
+  - texto do "sem conta" em `--cor-ink-soft` (o `--cor-muted` reprova contraste no claro); links de texto com alvo de 44px.
+  - 1677 testes passando; conferido 390 escuro (login e código), 360 claro, 1280 escuro.
 
 ### PR 6 (era o 7) — Minha conta
 - Títulos h2 (Horários marcados, Meu plano, Histórico).

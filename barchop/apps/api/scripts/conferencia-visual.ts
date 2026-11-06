@@ -239,9 +239,10 @@ async function main() {
     [-14, "10:00", [corte], "concluido"],
     [-28, "11:00", [barba], "cancelado"],
   ];
+  let marcadoDaConta: string | undefined;
   for (const [dias, hora, servicos, status] of daConta) {
     const duracao = servicos.reduce((total, s) => total + s.duracaoMinutos, 0);
-    await prisma.agendamento.create({
+    const criado = await prisma.agendamento.create({
       data: {
         barbeariaId: barbearia.id,
         barbeiroId: barbeiro.id,
@@ -259,6 +260,7 @@ async function main() {
         },
       },
     });
+    if (status === "confirmado") marcadoDaConta = criado.id;
   }
 
   // A conta da casa conectada (redesenho das Configurações, PR 9: a
@@ -282,6 +284,18 @@ async function main() {
   console.log(`API de conferência em http://localhost:3333 (banco ${banco})`);
   console.log(`slug: ${barbearia.slug}`);
   console.log(`token do dono (localStorage "sessao.barbeiro"): ${token}`);
+  console.log(`cliente da Minha conta: cliente@exemplo.com / senha-forte-123`);
+  // O link do e-mail de lembrete do horário marcado do cliente (onda B,
+  // PR 8). Vale 24 horas: o token é do banco de teste, e o horário é
+  // daqui a dois dias, então ele não vence antes de começar.
+  if (marcadoDaConta) {
+    const { assinarTokenDoLembrete } = await import("../src/lib/lembrete");
+    const lembrete = assinarTokenDoLembrete(app, {
+      agendamentoId: marcadoDaConta,
+      expiraEm: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+    console.log(`lembrete: http://localhost:3000/${barbearia.slug}/lembrete/${lembrete}`);
+  }
 }
 
 main().catch((erro: unknown) => {

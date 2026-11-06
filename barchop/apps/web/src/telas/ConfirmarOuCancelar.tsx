@@ -7,12 +7,27 @@ import { ErroDaApi } from "@barchop/api-client";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
 import { Aviso } from "../componentes/Aviso";
-import { Botao } from "../componentes/Botao";
-import { formatarDataLonga } from "../formato/datas";
+import { BlocoDoDia } from "../componentes/BlocoDoDia";
+import { Botao, BotaoLink } from "../componentes/Botao";
+import { Chip } from "../componentes/Chip";
+import { caminhoDoPasso } from "../fluxo/passos";
+import { formatarDataComSemana } from "../formato/datas";
 import { prazoAcabou } from "../formato/prazos";
-import { AvisoDoPrazo } from "./AvisoDoPrazo";
+import { useNoHost } from "../tenant/ProvedorDoHost";
+import { AvisoDoPrazo, linkDoWhatsApp } from "./AvisoDoPrazo";
 import estilos from "./ConfirmarOuCancelar.module.css";
 import { Carregando } from "../componentes/Carregando";
+
+// "Corte e Barba".
+function emLista(nomes: string[]): string {
+  return nomes.length > 1 ? `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}` : (nomes[0] ?? "");
+}
+
+// "Sábado, 10 de outubro".
+function diaPorExtenso(data: string): string {
+  const texto = formatarDataComSemana(data);
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
 
 // O destino do link do e-mail de lembrete: confirmar presença ou
 // cancelar, sem login — quem autoriza é o token da URL.
@@ -32,6 +47,7 @@ import { Carregando } from "../componentes/Carregando";
 export function ConfirmarOuCancelar({ agora = new Date() }: { agora?: Date } = {}) {
   const { token } = useParams<{ slug: string; token: string }>();
   const api = useApi();
+  const noHost = useNoHost();
   const lido = useRequisicao(() => api.publico.lembrete(token), [token]);
 
   // O que a última ação devolveu vale mais que a leitura inicial.
@@ -89,30 +105,67 @@ export function ConfirmarOuCancelar({ agora = new Date() }: { agora?: Date } = {
     agora
   );
 
+  const confirmado = ativo && agendamento.presencaConfirmadaEm !== null;
+  // O aviso do prazo já traz o WhatsApp; o rodapé ficaria repetido.
+  const avisoDoPrazo = ativo && !podeCancelar;
+  const { whatsapp } = agendamento.barbearia;
+
   return (
     <div className={estilos.pagina}>
       <h1>Seu horário</h1>
-      <section className={estilos.resumo} aria-label="O horário">
-        <p className={estilos.barbearia}>{agendamento.barbearia.nome}</p>
-        <p className={estilos.quando}>
-          {formatarDataLonga(agendamento.data)} às {agendamento.horaInicio}
-        </p>
-        <p>
-          Com {agendamento.barbeiro.nome} · {agendamento.servicos.map((s) => s.nome).join(" + ")}
-        </p>
+
+      {/* O cartão da prancha da onda B: o dia num bloco, a data por
+          extenso com o selo do estado, e o resto em linhas. Sem o "Onde"
+          da prancha: o lembrete não traz o endereço (fora da onda). */}
+      <section className={estilos.cartao} aria-label="O horário">
+        <div className={estilos.topo}>
+          <BlocoDoDia data={agendamento.data} soVisual />
+          <div className={estilos.quando}>
+            <p className={estilos.dataEHora}>
+              {diaPorExtenso(agendamento.data)} às {agendamento.horaInicio}
+            </p>
+            {confirmado ? (
+              <Chip tom="ok" tamanho="pequeno">
+                Presença confirmada
+              </Chip>
+            ) : cancelado ? (
+              <Chip tom="erro" tamanho="pequeno">
+                Cancelado
+              </Chip>
+            ) : null}
+          </div>
+        </div>
+        <dl className={estilos.linhas}>
+          <div>
+            <dt>Serviços</dt>
+            <dd>{emLista(agendamento.servicos.map((s) => s.nome))}</dd>
+          </div>
+          <div>
+            <dt>Profissional</dt>
+            <dd>Com {agendamento.barbeiro.nome}</dd>
+          </div>
+          <div>
+            <dt>Barbearia</dt>
+            <dd>{agendamento.barbearia.nome}</dd>
+          </div>
+        </dl>
       </section>
 
       {cancelado ? (
-        <p className={estilos.estado}>Horário cancelado. O horário ficou livre pra outra pessoa.</p>
-      ) : null}
-
-      {ativo && agendamento.presencaConfirmadaEm ? (
-        <p className={estilos.estado}>Presença confirmada. Te esperamos!</p>
+        <div className={estilos.acoes}>
+          <p className={estilos.estado}>Horário cancelado. Ele ficou livre pra outra pessoa.</p>
+          {/* Pelo slug que veio com o token, e não o da URL: o dono pode
+              ter trocado o link depois que o e-mail saiu. */}
+          <BotaoLink href={noHost(caminhoDoPasso(agendamento.barbearia.slug, "servicos", { servicoIds: [] }))}>
+            Marcar outro horário
+          </BotaoLink>
+        </div>
       ) : null}
 
       {ativo && cancelando && podeCancelar ? (
-        <div className={estilos.acoes}>
-          <p>Tem certeza? O horário fica livre pra outra pessoa.</p>
+        <div className={estilos.certeza}>
+          <p className={estilos.estado}>Cancelar o horário?</p>
+          <p className={estilos.apoio}>Ele fica livre pra outra pessoa.</p>
           <Botao
             variante="contorno"
             carregando={enviando}
@@ -120,7 +173,7 @@ export function ConfirmarOuCancelar({ agora = new Date() }: { agora?: Date } = {
           >
             Sim, cancelar
           </Botao>
-          <Botao variante="contorno" onClick={() => setCancelando(false)}>
+          <Botao variante="fantasma" onClick={() => setCancelando(false)}>
             Voltar
           </Botao>
         </div>
@@ -128,10 +181,15 @@ export function ConfirmarOuCancelar({ agora = new Date() }: { agora?: Date } = {
 
       {ativo && !cancelando ? (
         <div className={estilos.acoes}>
-          {agendamento.presencaConfirmadaEm ? null : (
-            <Botao carregando={enviando} onClick={() => agir(api.publico.confirmarPresenca)}>
-              Confirmar presença
-            </Botao>
+          {confirmado ? (
+            <p className={estilos.estado}>Presença confirmada. Te esperamos!</p>
+          ) : (
+            <>
+              <p className={estilos.apoio}>Vai conseguir vir? Confirme pra barbearia saber que você vem.</p>
+              <Botao carregando={enviando} onClick={() => agir(api.publico.confirmarPresenca)}>
+                Confirmar presença
+              </Botao>
+            </>
           )}
           {podeCancelar ? (
             <Botao variante="contorno" onClick={() => setCancelando(true)}>
@@ -141,15 +199,21 @@ export function ConfirmarOuCancelar({ agora = new Date() }: { agora?: Date } = {
         </div>
       ) : null}
 
-      {ativo && !podeCancelar ? (
+      {avisoDoPrazo ? (
         <AvisoDoPrazo
           acao="cancelar"
-          whatsapp={agendamento.barbearia.whatsapp}
+          whatsapp={whatsapp}
           telefone={agendamento.barbearia.telefone}
         />
       ) : null}
 
       {aviso ? <Aviso>{aviso}</Aviso> : null}
+
+      {whatsapp && !avisoDoPrazo ? (
+        <p className={estilos.rodape}>
+          Algum problema? Fale com a barbearia pelo <a href={linkDoWhatsApp(whatsapp)}>WhatsApp</a>.
+        </p>
+      ) : null}
     </div>
   );
 }

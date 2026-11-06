@@ -153,8 +153,15 @@ Segunda de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do pa
 - Ações por estado.
 - "Marcar outro horário" depois de cancelar.
 - WhatsApp no rodapé quando a barbearia tem (o dado já vem).
+- **Feito (06/11, #299):**
+  - componente novo `BlocoDoDia` (semana curta, número, mês, no amarelo claro), usado aqui e na Minha conta (saiu o CSS repetido dela); `soVisual` tira o bloco do leitor de tela quando a data por extenso está ao lado (aqui);
+  - cartão: bloco do dia, "Sábado, 10 de outubro às 10:00" com o selo (Presença confirmada / Cancelado) e linhas Serviços / Profissional / Barbearia. Sem o "Onde" da prancha (o lembrete não traz endereço); no lugar, a barbearia, que o token traz;
+  - ações por estado: pendente pergunta "Vai conseguir vir?" antes do Confirmar; confirmado diz "Te esperamos!"; cancelar abre uma caixa "Cancelar o horário?" com Sim, cancelar / Voltar; cancelado oferece "Marcar outro horário" pelo slug do token;
+  - rodapé "Algum problema? Fale com a barbearia pelo WhatsApp." quando há WhatsApp e o aviso do prazo não aparece (ele já traz o contato); `linkDoWhatsApp` exportado do `AvisoDoPrazo`;
+  - semente imprime o login do cliente e um link de lembrete (24 h) do horário marcado dele;
+  - 1684 testes passando; conferido 390 escuro (pendente, confirmado), 360 claro (pergunta, cancelado), 1280 escuro; Minha conta conferida de novo a 1280.
 
 ## Conferência visual
-- Semente `apps/api/scripts/conferencia-visual.ts` (de `barchop/`) + `pnpm --filter web dev`; página em `localhost:3000/barbearia-teste`.
+- Semente `apps/api/scripts/conferencia-visual.ts` (de `barchop/`) + `pnpm --filter web dev`; página em `localhost:3000/barbearia-teste`. Ela imprime o login do cliente (`cliente@exemplo.com` / `senha-forte-123`) e um link de lembrete.
 - A cada PR: 360, 390 e 1280px, nos dois temas (o tema da página segue o sistema, ou `localStorage["pagina.<slug>.modo"]`).
 - Testes primeiro (TDD) no que muda comportamento ou texto; a suíte web inteira verde antes do PR.

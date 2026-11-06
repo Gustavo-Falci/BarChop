@@ -2,18 +2,105 @@
    --fluxo-estreita, declarada no layout (app/(publico)/[slug]). */
 .pagina {
   display: grid;
-  gap: var(--espaco-md);
+  gap: var(--espaco-lg);
   padding: var(--espaco-lg);
   width: 100%;
   max-width: var(--fluxo-estreita);
   margin-inline: auto;
 }
 
-.resumo { display: grid; gap: var(--espaco-xs); }
-.barbearia { font-weight: 600; }
-.quando { font-size: var(--texto-lg); }
+.pagina p {
+  margin: 0;
+}
+
+/* O cartão do horário (prancha da onda B): o bloco do dia ao lado da
+   data por extenso e do selo; embaixo, as linhas do que e com quem. */
+.cartao {
+  display: grid;
+  gap: var(--espaco-md);
+  padding: var(--espaco-lg);
+  border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
+  border-radius: var(--raio-cartao, var(--raio-lg));
+  background: var(--cor-surface);
+  box-shadow: var(--cartao-sombra, var(--sombra-1));
+}
+
+.topo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+  min-width: 0;
+}
+
+.quando {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dataEHora {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+/* Rótulo numa coluna fixa, valor ao lado. `--cor-ink-soft` no rótulo:
+   o --cor-muted da prancha reprova contraste no claro (ver Confirmacao). */
+.linhas {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+  font-size: var(--texto-sm);
+}
+
+.linhas > div {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: var(--espaco-sm);
+}
+
+.linhas dt {
+  color: var(--cor-ink-soft);
+}
+
+.linhas dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .estado { font-weight: 600; }
 .acoes { display: grid; gap: var(--espaco-sm); }
+
+/* `--cor-ink-soft`: é texto, e o piso é 4.5:1. */
+.apoio { color: var(--cor-ink-soft); }
+
+/* A pergunta antes de cancelar, numa caixa à parte: é um passo a mais,
+   e não mais um botão da lista. */
+.certeza {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-lg);
+  background: var(--cor-paper-soft);
+}
+
+.rodape {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}
+
+.rodape a {
+  color: var(--cor-accent-text);
+  font-weight: 600;
+  text-decoration: underline;
+}
 
 /* Desktop: o horário à esquerda, o que fazer com ele à direita (as telas
    usam a largura — pedido do dono). */
@@ -33,12 +120,8 @@
     grid-column: 1 / -1;
   }
 
-  .resumo {
+  .cartao {
     grid-column: 1;
-    grid-row: 2 / span 3;
-    padding: var(--espaco-lg);
-    border: var(--borda-padrao) solid var(--cartao-borda, var(--cor-line-strong));
-    border-radius: var(--raio-cartao, var(--raio-lg));
-    background: var(--cor-surface);
+    grid-row: 2 / span 4;
   }
 }

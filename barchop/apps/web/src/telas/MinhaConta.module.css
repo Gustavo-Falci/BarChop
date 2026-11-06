@@ -132,54 +132,17 @@
   min-width: 0;
 }
 
-/* O dia num bloco, no amarelo claro da prancha (onda B): a semana curta,
-   o número grande e o mês, tudo no tom do destaque. O leitor de tela
-   ouve a data por extenso (.somenteLeitor). As duas cores vêm da
-   Aparência da barbearia (CoresDaPagina), como o resto. */
-.dia {
-  flex: none;
-  display: grid;
-  justify-items: center;
-  width: 56px;
-  padding: var(--espaco-xs) 0;
-  border-radius: var(--raio-md);
-  background: var(--cor-pale-yellow);
-  color: var(--cor-accent-text);
-  line-height: 1.1;
-}
-
-.semana,
-.mes {
-  font-size: var(--texto-xs);
-  font-weight: 600;
-}
+/* O bloco do dia é o componente BlocoDoDia (onda B, PR 8). */
 
 /* O que foi marcado, em destaque; com quem e até quando, no apoio. */
 .servicosDoHorario {
   font-weight: 600;
 }
 
-.numero {
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: var(--texto-xl);
-  font-weight: 700;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
 /* "Corte pelo plano", no tom do destaque, como o mês do bloco do dia. */
 .peloPlano {
   color: var(--cor-accent-text);
   font-weight: 600;
-}
-
-.somenteLeitor {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 .detalhes {

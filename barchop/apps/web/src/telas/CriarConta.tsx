@@ -360,7 +360,9 @@ function mesmoTelefone(a: string, b: string): boolean {
 const MARCADO = new Set(["pendente", "confirmado"]);
 
 // A conta pronta, com os horários que a API juntou a ela. Sem nenhum
-// (telefone novo, ou cadastro sem horário marcado), só a confirmação.
+// (telefone novo, cadastro sem horário marcado), carregando ou com a
+// lista falhando, só a confirmação: a sessão já está gravada, e o botão
+// leva pra Minha conta, que mostra o erro se houver.
 function ContaPronta({ destino }: { destino: string }) {
   const api = useApi();
   const { dados } = useRequisicao(() => api.cliente.meusAgendamentos(), []);
@@ -377,7 +379,7 @@ function ContaPronta({ destino }: { destino: string }) {
           <p className={estilos.apoio}>
             {marcados.length > 0
               ? "Os horários que você marcou com este telefone já estão nela."
-              : "Agora é só entrar com o seu e-mail e a senha."}
+              : "Sua conta está pronta."}
           </p>
         </div>
       </div>
@@ -430,7 +432,7 @@ function TelefoneComHistorico({
       <div className={estilos.cabecalho}>
         <h1>Esse telefone já tem histórico aqui</h1>
         <p className={estilos.apoio}>
-          {nomeDaBarbearia} já atende o <b>{pedido.telefone}</b>. Pra proteger esse histórico, quem
+          {nomeDaBarbearia} já atende o <b className={estilos.semQuebra}>{pedido.telefone}</b>. Pra proteger esse histórico, quem
           junta ele à sua conta é a barbearia.
         </p>
       </div>

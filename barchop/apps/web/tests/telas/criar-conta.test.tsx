@@ -170,6 +170,19 @@ describe("criar conta", () => {
     expect(screen.getByText(/já estão nela/i)).toBeInTheDocument();
   });
 
+  it("sem horário marcado, a conta pronta só confirma, sem mandar entrar de novo", async () => {
+    montar();
+    await userEvent.click(screen.getByRole("button", { name: "Criar conta" }));
+    await preencherDados();
+    await userEvent.click(screen.getByRole("button", { name: "Mandar o código" }));
+
+    await confirmarCodigo();
+
+    expect(await screen.findByText("Sua conta está pronta.")).toBeInTheDocument();
+    expect(screen.queryByText(/já estão nela/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+  });
+
   it("vindo do agendamento: chega preenchido, manda o token e apaga o cartão salvo", async () => {
     gravarAgendamentoRecente();
     navegacaoFalsa.redefinir({ query: { criar: "1" } });

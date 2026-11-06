@@ -218,3 +218,7 @@
     justify-self: start;
   }
 }
+
+/* O telefone inteiro numa linha: "(11) 93333-" e "2222" separados não
+   se leem como um número. */
+.semQuebra { white-space: nowrap; }

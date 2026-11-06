@@ -53,4 +53,7 @@
   - o agendamento sem conta mostra a chamada;
   - o "Criar conta" abre o formulário preenchido, com o token guardado na aba;
   - o código é pedido.
-- A conta pronta e o telefone com histórico ficaram de fora do navegador porque o canal local guarda o código na memória. Estão nos testes.
+- Ponta a ponta contra a API de verdade (banco `_test`, código trocado direto no banco porque o script local não loga):
+  - agendar sem conta com e-mail → Criar conta → "Conta criada" com o horário junto;
+  - agendar sem e-mail e criar a conta com outro e-mail, sem o token → "Esse telefone já tem histórico aqui", com o link do WhatsApp pronto.
+- **Ordem do deploy**: API antes da web (ou junto). O corpo de `/auth/cliente/senha` tem `additionalProperties: false`, então a API velha recusa o `tokenDaConta` com 400.

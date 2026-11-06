@@ -147,6 +147,12 @@ Terceira de quatro ondas do pedido do dono de 01/11: A detalhes e cadastros do p
 - Imprimir em `--cor-accent`.
 - O endereço quebra no ponto (`<wbr>`), nunca estoura o cartão; teste com um slug longo.
 - Na impressão: barra e botão somem, o cartão ocupa a folha.
+- **Feito (06/11):**
+  - barra branca com "← Voltar ao painel" (`/painel`) e "Sai numa folha A4";
+  - endereço sem `https://`, em pedaços inline-block antes de cada ponto ou barra (no lugar do `<wbr>`: com ele o navegador ainda quebrava no hífen do nome). Um pedaço maior que o cartão quebra por dentro (`overflow-wrap: anywhere`);
+  - Imprimir em `--cor-accent`, 52px, pílula; QR 220px no celular, 320px a partir de 600px;
+  - impressão: `@page A4` com 12mm, barra e botão somem, o cartão ocupa a altura da folha, com fontes maiores (52/24/22px);
+  - testes antes do código; 1701 testes passando; conferido 360 com slug longo (quebra no ponto). A impressão não foi conferida no navegador: só o CSS.
 
 ### PR 7 — Suporte: fila e avisos
 - Barra "BarChop · Suporte" com Sair.

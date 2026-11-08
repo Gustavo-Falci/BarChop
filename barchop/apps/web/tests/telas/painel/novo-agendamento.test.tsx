@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useEffect, useState } from "react";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { NovoAgendamento } from "../../../src/telas/painel/NovoAgendamento";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
@@ -693,13 +694,21 @@ describe("novo agendamento no painel", () => {
   describe("encaixe", () => {
     afterEach(() => navegacaoFalsa.replace.mockReset());
 
-    // O `replace` do dublê passa a gravar a URL: a tela relê a query a
-    // cada render, como a de verdade.
+    // O `replace` do dublê passa a gravar a URL, e a tela renderiza de
+    // novo como no app (o Next re-renderiza a cada troca da query).
     function urlDeVerdade(query: Record<string, string> = {}) {
       navegacaoFalsa.redefinir({ pathname: "/painel/agendamentos/novo", query: { data: "2026-09-09", ...query } });
-      navegacaoFalsa.replace.mockImplementation((destino: string) => {
-        navegacaoFalsa.query = new URLSearchParams(destino.split("?")[1]);
-      });
+    }
+
+    function TelaComUrl() {
+      const [, setVersao] = useState(0);
+      useEffect(() => {
+        navegacaoFalsa.replace.mockImplementation((destino: string) => {
+          navegacaoFalsa.query = new URLSearchParams(destino.split("?")[1]);
+          setVersao((versao) => versao + 1);
+        });
+      }, []);
+      return <NovoAgendamento agora={AGORA} />;
     }
 
     function semearEncaixe(extra: Parameters<typeof criarApiClientFalso>[0] = {}) {
@@ -721,7 +730,7 @@ describe("novo agendamento no painel", () => {
       urlDeVerdade();
       const falso = semearEncaixe();
       const dia = vi.spyOn(falso.publico, "disponibilidadeDoDia");
-      montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+      montarPainel(<TelaComUrl />, falso);
 
       await escolherClienteECorte();
 
@@ -741,7 +750,7 @@ describe("novo agendamento no painel", () => {
       const original = falso.barbeiro.criarAgendamento;
       const criar = vi.fn(async (novo: Parameters<typeof original>[0]) => original(novo));
       falso.barbeiro.criarAgendamento = criar;
-      montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+      montarPainel(<TelaComUrl />, falso);
 
       await escolherClienteECorte();
       await abrirPasso("Duração");
@@ -754,7 +763,8 @@ describe("novo agendamento no painel", () => {
       await waitFor(() => expect(mes.mock.calls.at(-1)?.[1]).toMatchObject({ duracaoMinutos: 10 }));
 
       await abrirPasso("Horário");
-      await userEvent.click(await screen.findByRole("button", { name: "09:20" }));
+      // Fora do 15 em 15: vem com a marca do "logo depois".
+      await userEvent.click(await screen.findByRole("button", { name: /^09:20/ }));
       const agendar = screen.getByRole("button", { name: /^agendar$/i });
       await waitFor(() => expect(agendar).toBeEnabled());
       await userEvent.click(agendar);
@@ -766,7 +776,7 @@ describe("novo agendamento no painel", () => {
     it("as durações do encaixe são só as menores que o serviço", async () => {
       urlDeVerdade();
       montarPainel(
-        <NovoAgendamento agora={AGORA} />,
+        <TelaComUrl />,
         semearEncaixe({
           servicos: [
             { id: "s1", nome: "Corte", duracaoMinutos: 20, preco: "40.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
@@ -785,7 +795,7 @@ describe("novo agendamento no painel", () => {
     it("serviço de 5 min não tem encaixe", async () => {
       urlDeVerdade();
       montarPainel(
-        <NovoAgendamento agora={AGORA} />,
+        <TelaComUrl />,
         semearEncaixe({
           servicos: [
             { id: "s1", nome: "Corte", duracaoMinutos: 5, preco: "10.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
@@ -801,7 +811,7 @@ describe("novo agendamento no painel", () => {
 
     it("voltar pra do serviço tira a duração da URL", async () => {
       urlDeVerdade({ duracao: "15" });
-      montarPainel(<NovoAgendamento agora={AGORA} />, semearEncaixe());
+      montarPainel(<TelaComUrl />, semearEncaixe());
 
       await escolherClienteECorte();
       expect(await screen.findByTestId("resumo-duracao")).toHaveTextContent("Encaixe · 15 min");
@@ -814,7 +824,7 @@ describe("novo agendamento no painel", () => {
 
     it("tirar um serviço até o encaixe não ser menor volta pra do serviço", async () => {
       urlDeVerdade({ duracao: "25" });
-      montarPainel(<NovoAgendamento agora={AGORA} />, semearEncaixe());
+      montarPainel(<TelaComUrl />, semearEncaixe());
 
       await escolherClienteECorte();
       await userEvent.click(screen.getByRole("checkbox", { name: /Barba/ }));
@@ -829,7 +839,7 @@ describe("novo agendamento no painel", () => {
 
     it("a hora escolhida que deixa de caber avisa, junto do botão", async () => {
       urlDeVerdade({ hora: "12:30" });
-      montarPainel(<NovoAgendamento agora={AGORA} />, semearEncaixe());
+      montarPainel(<TelaComUrl />, semearEncaixe());
 
       await escolherClienteECorte();
 

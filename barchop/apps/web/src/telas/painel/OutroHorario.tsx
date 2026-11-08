@@ -47,7 +47,7 @@ export function OutroHorario({
       aberto && hora
         ? api.barbeiro.conferirHorario({ ...pedido, horaInicio: hora })
         : Promise.resolve(null),
-    [aberto, hora, pedido.barbeiroId, pedido.data, pedido.servicoIds.join(",")]
+    [aberto, hora, pedido.barbeiroId, pedido.data, pedido.servicoIds.join(","), pedido.duracaoMinutos]
   );
   // A resposta de antes não vale pra hora de agora: os dados do
   // useRequisicao ficam até a próxima chegar.

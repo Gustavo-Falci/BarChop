@@ -20,8 +20,22 @@ import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { IconeCheck } from "../../painel/icones";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { BuscaDeCliente } from "./BuscaDeCliente";
+import { EscolhaDaDuracao } from "./EscolhaDaDuracao";
 import { OutroHorario } from "./OutroHorario";
 import estilos from "./NovoAgendamento.module.css";
+
+// As durações que o encaixe oferece; só as menores que os serviços
+// aparecem.
+const DURACOES_DO_ENCAIXE = [5, 10, 15, 20, 25];
+
+function somarDuracoes(
+  servicos: { id: string; duracaoMinutos: number }[] | null,
+  ids: string[]
+): number {
+  return (servicos ?? [])
+    .filter((servico) => ids.includes(servico.id))
+    .reduce((total, servico) => total + servico.duracaoMinutos, 0);
+}
 
 // A grade do painel é a de 15 (apps/api/src/lib/regras.ts, gradeDe): o
 // horário fora dela que a API oferece é o fim de um atendimento.
@@ -52,6 +66,17 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   const [enviando, setEnviando] = useState(false);
 
   const servicos = useRequisicao(() => api.barbeiro.servicos(), []);
+
+  // O encaixe (pedido do barbeiro, 08/11/2026): `?duracao=` na URL, de 5
+  // em 5 e menor que a soma dos serviços. Lido daqui, e não guardado à
+  // parte: a agenda abre a tela com a duração do buraco (PR 4), e com os
+  // serviços ainda por escolher ela só passa a valer quando eles somam
+  // mais que ela. O preço continua o dos serviços.
+  const somaDosServicos = somarDuracoes(servicos.dados, servicoIds);
+  const duracaoDaUrl = Number(query.get("duracao"));
+  const encaixe =
+    DURACOES_DO_ENCAIXE.includes(duracaoDaUrl) && duracaoDaUrl < somaDosServicos ? duracaoDaUrl : undefined;
+  const duracaoDoAtendimento = encaixe ?? somaDosServicos;
 
   // Com quem. O profissional marca só na própria agenda (a API recusa o
   // resto); dono e recepção escolhem entre quem atende e já entrou. O
@@ -121,10 +146,10 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
           // painel encaixa livre (painel v2, marco 3).
           api.publico.disponibilidadeDoDia(
             slug,
-            { barbeiroId: profissionalId, data, servicoIds },
+            { barbeiroId: profissionalId, data, servicoIds, duracaoMinutos: encaixe },
             { comToken: true }
           ),
-    [slug, profissionalId, data, servicoIds.join(",")]
+    [slug, profissionalId, data, servicoIds.join(","), encaixe]
   );
 
   const diasComVaga = useRequisicao(
@@ -133,10 +158,10 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
         ? Promise.resolve({})
         : api.publico.disponibilidadeDoMes(
             slug,
-            { barbeiroId: profissionalId, mes, servicoIds },
+            { barbeiroId: profissionalId, mes, servicoIds, duracaoMinutos: encaixe },
             { comToken: true }
           ),
-    [slug, profissionalId, mes, servicoIds.join(",")]
+    [slug, profissionalId, mes, servicoIds.join(","), encaixe]
   );
 
   // A hora que a agenda mandou pela URL só é sintetizada na lista
@@ -170,9 +195,15 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   const conferenciaDoOutro = useRequisicao(
     () =>
       usandoOOutro && servicoIds.length > 0 && profissionalId
-        ? api.barbeiro.conferirHorario({ barbeiroId: profissionalId, data, horaInicio: hora, servicoIds })
+        ? api.barbeiro.conferirHorario({
+            barbeiroId: profissionalId,
+            data,
+            horaInicio: hora,
+            servicoIds,
+            duracaoMinutos: encaixe,
+          })
         : Promise.resolve(null),
-    [usandoOOutro, hora, profissionalId, data, servicoIds.join(",")]
+    [usandoOOutro, hora, profissionalId, data, servicoIds.join(","), encaixe]
   );
   const outroCabe =
     usandoOOutro && !conferenciaDoOutro.carregando && conferenciaDoOutro.dados?.cabe === true;
@@ -182,6 +213,16 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
     horarios.carregando ||
     horariosCarregados.includes(hora) ||
     outroCabe;
+
+  // A hora escolhida deixou de caber — somou um serviço, trocou a
+  // duração do encaixe — e já não há resposta a esperar: diz qual, junto
+  // do botão desligado.
+  const horaQueNaoCabe =
+    Boolean(hora) &&
+    servicoIds.length > 0 &&
+    !horarios.carregando &&
+    !(usandoOOutro && conferenciaDoOutro.carregando) &&
+    !horaAceitavel;
 
   const passado = ehPassado(data, agora);
 
@@ -278,6 +319,7 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
         servicoIds,
         data,
         horaInicio: hora,
+        duracaoMinutos: encaixe,
       });
       router.push(`/painel/agendamentos/${criado.id}`);
     } catch (causa) {
@@ -297,7 +339,6 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   }
 
   const escolhidos = (servicos.dados ?? []).filter((s) => servicoIds.includes(s.id));
-  const duracao = escolhidos.reduce((total, s) => total + s.duracaoMinutos, 0);
   const total = escolhidos.reduce((soma, s) => soma + Math.round(Number(s.preco) * 100), 0);
 
   const servicosEscolhidos = escolhidos.map((servico) => servico.nome).join(", ");
@@ -381,7 +422,7 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
           aoAlternar={() => alternar("servicos")}
           resumo={
             servicoIds.length > 0
-              ? servicosEscolhidos + " · " + duracao + " min"
+              ? servicosEscolhidos + " · " + somaDosServicos + " min"
               : undefined
           }
           idDoResumo="resumo-servicos"
@@ -393,13 +434,17 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
                 key={servico.id}
                 servico={servico}
                 marcado={servicoIds.includes(servico.id)}
-                aoAlternar={(id) =>
-                  setServicoIds((atuais) =>
-                    atuais.includes(id)
-                      ? atuais.filter((outro) => outro !== id)
-                      : [...atuais, id]
-                  )
-                }
+                aoAlternar={(id) => {
+                  const proximos = servicoIds.includes(id)
+                    ? servicoIds.filter((outro) => outro !== id)
+                    : [...servicoIds, id];
+                  setServicoIds(proximos);
+                  // Tirou serviço até o encaixe deixar de ser menor: não
+                  // é mais encaixe, e a duração sai da URL — senão voltaria
+                  // sozinha quando o serviço voltasse.
+                  const soma = somarDuracoes(servicos.dados, proximos);
+                  if (duracaoDaUrl && soma > 0 && duracaoDaUrl >= soma) trocarQuery({ duracao: null });
+                }}
               />
             ))}
         </Passo>
@@ -444,9 +489,39 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
           )}
         </Passo>
 
+        {/* Recolhido no caminho de sempre: a data pula direto pro
+            Horário, e "Do serviço" já é uma escolha feita. */}
+        <Passo
+          etapa="duracao"
+          numero={4}
+          titulo="Duração"
+          feito={servicoIds.length > 0}
+          aberto={aberto === "duracao"}
+          aoAlternar={() => alternar("duracao")}
+          resumo={
+            servicoIds.length === 0
+              ? undefined
+              : encaixe
+                ? `Encaixe · ${encaixe} min`
+                : `Do serviço · ${somaDosServicos} min`
+          }
+          idDoResumo="resumo-duracao"
+        >
+          {servicoIds.length === 0 ? (
+            <Vazio mensagem="Escolha um serviço" dica="A duração sai dos serviços escolhidos." />
+          ) : (
+            <EscolhaDaDuracao
+              soma={somaDosServicos}
+              encaixe={encaixe}
+              preco={formatarPreco((total / 100).toFixed(2))}
+              aoTrocar={(duracao) => trocarQuery({ duracao: duracao === undefined ? null : String(duracao) })}
+            />
+          )}
+        </Passo>
+
         <Passo
           etapa="horario"
-          numero={4}
+          numero={5}
           titulo="Horário"
           feito={Boolean(hora) && horaAceitavel}
           aberto={aberto === "horario"}
@@ -503,8 +578,8 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
               ainda ter um buraco num minuto quebrado. */}
           {servicoIds.length > 0 && profissionalId ? (
             <OutroHorario
-              pedido={{ barbeiroId: profissionalId, data, servicoIds }}
-              duracao={duracao}
+              pedido={{ barbeiroId: profissionalId, data, servicoIds, duracaoMinutos: encaixe }}
+              duracao={duracaoDoAtendimento}
               aoUsar={(escolhida) => {
                 setHoraDoOutro(escolhida);
                 trocarQuery({ hora: escolhida });
@@ -529,7 +604,7 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
       >
         <div className={estilos.resumo} data-testid="resumo-do-pedido">
           <strong className={estilos.total}>
-            {duracao} min · {formatarPreco((total / 100).toFixed(2))}
+            {duracaoDoAtendimento} min{encaixe ? " · encaixe" : ""} · {formatarPreco((total / 100).toFixed(2))}
           </strong>
           <span className={estilos.quando}>
             {formatarDataLonga(data)}
@@ -560,6 +635,13 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
             <Aviso>{aviso}</Aviso>
           </div>
         ) : null}
+        {!aviso && horaQueNaoCabe ? (
+          <div className={estilos.aviso}>
+            <Aviso tom="atencao">
+              {hora} não cabe {duracaoDoAtendimento} min neste dia. Escolha outro horário.
+            </Aviso>
+          </div>
+        ) : null}
 
         {/* Num invólucro: o Botao espalha as props depois da própria
             classe, e um `className` aqui apagaria a dele. */}
@@ -579,7 +661,7 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   );
 }
 
-type Etapa = "cliente" | "servicos" | "data" | "horario";
+type Etapa = "cliente" | "servicos" | "data" | "duracao" | "horario";
 
 // Uma constante, e não a frase solta em dois lugares: ela entra na conta
 // do que falta e é retirada da frase, e um erro de digitação entre as

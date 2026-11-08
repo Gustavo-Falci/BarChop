@@ -30,6 +30,20 @@ export interface NovoAgendamentoBarbeiroInput {
   observacoes?: string;
 }
 
+// GET /agendamentos/cabe: o "Outro horário" do painel (08/11/2026). Um
+// minuto qualquer cabe? Não caber é resposta, com o código e a frase da
+// recusa que o POST daria.
+export interface ConferenciaDeHorario {
+  barbeiroId: string;
+  data: string; // "YYYY-MM-DD"
+  horaInicio: string; // "HH:mm"
+  servicoIds: string[];
+}
+
+export type HorarioConferido =
+  | { cabe: true }
+  | { cabe: false; codigo: string; mensagem: string };
+
 // Body de POST /barbearias/:slug/agendamentos — o cliente agendando pelo
 // link público, sem conta. O `barbeariaId` sai do slug, a `origem` é fixa
 // em "cliente", e o cliente é resolvido pelo telefone dentro daquela

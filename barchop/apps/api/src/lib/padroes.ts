@@ -44,3 +44,13 @@ export const PADRAO_DATA = "^[0-9]{4}-[0-9]{2}-[0-9]{2}$";
 // "YYYY-MM". O mês vai de 01 a 12 no próprio pattern — assim "2026-13"
 // morre no schema, e não numa data inválida lá adiante.
 export const PADRAO_MES = "^[0-9]{4}-(0[1-9]|1[0-2])$";
+
+// A duração do encaixe (pedido do barbeiro, 08/11/2026): de 5 em 5
+// minutos. Menor que a soma dos serviços é regra de negócio, com 422
+// (lib/agendamento.ts, duracaoDoAtendimento).
+export const ESQUEMA_DURACAO_DO_ENCAIXE = {
+  type: "integer",
+  minimum: 5,
+  maximum: 1435,
+  multipleOf: 5,
+} as const;

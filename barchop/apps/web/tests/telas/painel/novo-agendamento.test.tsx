@@ -837,9 +837,39 @@ describe("novo agendamento no painel", () => {
       expect(screen.getByTestId("resumo-duracao")).toHaveTextContent("Do serviço · 20 min");
     });
 
+    it("o Encaixar da agenda: hora fora da lista e a duração do buraco, conferidas pela API", async () => {
+      // O buraco começa quando um bloqueio acaba (13:20): fora da grade e
+      // sem "logo depois", então não está na lista.
+      urlDeVerdade({ hora: "13:20", duracao: "10", profissional: "bb1" });
+      const falso = semearEncaixe();
+      const conferir = vi.spyOn(falso.barbeiro, "conferirHorario");
+      const original = falso.barbeiro.criarAgendamento;
+      const criar = vi.fn(async (novo: Parameters<typeof original>[0]) => original(novo));
+      falso.barbeiro.criarAgendamento = criar;
+      montarPainel(<TelaComUrl />, falso);
+
+      await escolherClienteECorte();
+
+      expect(await screen.findByTestId("resumo-duracao")).toHaveTextContent("Encaixe · 10 min");
+      const agendar = screen.getByRole("button", { name: /^agendar$/i });
+      await waitFor(() => expect(agendar).toBeEnabled());
+      expect(conferir.mock.calls.at(-1)?.[0]).toMatchObject({ horaInicio: "13:20", duracaoMinutos: 10 });
+      await userEvent.click(agendar);
+
+      await waitFor(() => expect(criar).toHaveBeenCalled());
+      expect(criar.mock.calls[0][0]).toMatchObject({ horaInicio: "13:20", duracaoMinutos: 10 });
+    });
+
     it("a hora escolhida que deixa de caber avisa, junto do botão", async () => {
       urlDeVerdade({ hora: "12:30" });
-      montarPainel(<TelaComUrl />, semearEncaixe());
+      montarPainel(
+        <TelaComUrl />,
+        semearEncaixe({
+          horariosQueNaoCabem: {
+            "12:30": { codigo: "horario_ocupado", mensagem: "bate com Bruno, marcado das 12:00 às 12:45" },
+          },
+        })
+      );
 
       await escolherClienteECorte();
 

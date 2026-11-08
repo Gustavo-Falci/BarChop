@@ -17,6 +17,9 @@ export interface JanelaFuncionamento {
 export interface IntervaloOcupado {
   horaInicio: string; // "HH:mm"
   horaFim: string;
+  // Um atendimento (e não pausa ou bloqueio): é o fim dele que o "logo
+  // depois do anterior" oferece.
+  atendimento?: boolean;
 }
 
 export interface CalcularHorariosParams {
@@ -28,6 +31,10 @@ export interface CalcularHorariosParams {
   // depois (regra da barbearia, painel v2). Só a ponta do fechamento
   // muda: o que está ocupado segue inteiro, e nada passa da meia-noite.
   cabeAntesDeFechar?: boolean; // padrão true
+  // Além da grade, o minuto em que um atendimento termina (09:40 quando o
+  // anterior sai às 09:40), se a duração cabe ali. Fim de pausa ou de
+  // bloqueio não conta: o vão já é do profissional.
+  logoDepoisDoAnterior?: boolean; // padrão false
 }
 
 const MINUTOS_NO_DIA = 24 * 60;
@@ -54,6 +61,7 @@ export function calcularHorariosDisponiveis(
     duracaoTotalMinutos,
     intervaloMinutos = 15,
     cabeAntesDeFechar = true,
+    logoDepoisDoAnterior = false,
   } = params;
 
   if (
@@ -71,15 +79,27 @@ export function calcularHorariosDisponiveis(
     .map((a) => ({
       inicio: horaParaMinutos(a.horaInicio),
       fim: horaParaMinutos(a.horaFim),
+      atendimento: a.atendimento === true,
     }))
     .sort((a, b) => a.inicio - b.inicio);
 
   const horariosDisponiveis: string[] = [];
   let cursor = abertura;
+  // Se quem empurrou o cursor até aqui foi um atendimento. É de quem
+  // terminou por último: um bloqueio que passa do atendimento leva o vão.
+  let cursorDeAtendimento = false;
 
   // `limiteDoInicio`: o último minuto em que um atendimento pode
   // começar no vão. Por padrão, o que termina bem no fim do vão.
   function preencherGap(gapInicio: number, limiteDoInicio: number) {
+    // O "logo depois": o próprio início do vão, quando ele é o fim de um
+    // atendimento fora da grade. Vem antes dos da grade, então a lista
+    // segue em ordem.
+    const foraDaGrade = gapInicio % intervaloMinutos !== 0;
+    if (logoDepoisDoAnterior && cursorDeAtendimento && foraDaGrade && gapInicio <= limiteDoInicio) {
+      horariosDisponiveis.push(minutosParaHora(gapInicio));
+    }
+
     // alinha candidatos ao grid de intervaloMinutos a partir da meia-noite,
     // não a partir do início do gap — evita sugerir horários "quebrados"
     // tipo 09:07 só porque o agendamento anterior terminou nesse minuto.
@@ -99,7 +119,13 @@ export function calcularHorariosDisponiveis(
     if (ocupado.inicio - cursor >= duracaoTotalMinutos) {
       preencherGap(cursor, ocupado.inicio - duracaoTotalMinutos);
     }
-    cursor = Math.max(cursor, ocupado.fim);
+    if (ocupado.fim > cursor) {
+      cursor = ocupado.fim;
+      cursorDeAtendimento = ocupado.atendimento;
+    } else if (ocupado.fim === cursor && ocupado.atendimento) {
+      // Pausa e atendimento terminando juntos: conta o atendimento.
+      cursorDeAtendimento = true;
+    }
   }
 
   if (cabeAntesDeFechar) {

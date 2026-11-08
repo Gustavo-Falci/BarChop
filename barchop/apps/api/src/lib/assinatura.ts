@@ -176,9 +176,17 @@ async function quemSaiuDoLink(barbeariaId: string, agora: Date): Promise<{ id: s
 
 // Os ids da Stripe ficam de fora: o painel não precisa deles.
 // O teste de 14 dias: o início é o fim menos os dias, e a contagem vai
-// até agora, se o teste ainda corre.
-async function usoNoTeste(barbeariaId: string, testeTerminaEm: Date, agora: Date): Promise<UsoNoTeste> {
-  const desde = new Date(testeTerminaEm.getTime() - DIAS_DE_TESTE * UM_DIA);
+// até agora, se o teste ainda corre. Teste estendido (o suporte muda só
+// o fim): o início é o da assinatura, que nasce no cadastro — o mais
+// cedo dos dois, senão os primeiros dias saem da conta.
+async function usoNoTeste(
+  barbeariaId: string,
+  testeTerminaEm: Date,
+  criadaEm: Date,
+  agora: Date
+): Promise<UsoNoTeste> {
+  const pelosDias = testeTerminaEm.getTime() - DIAS_DE_TESTE * UM_DIA;
+  const desde = new Date(Math.min(pelosDias, criadaEm.getTime()));
   const ate = agora < testeTerminaEm ? agora : testeTerminaEm;
   const [agendamentos, servicos] = await Promise.all([
     prisma.agendamento.count({
@@ -205,7 +213,7 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
   const efetivo = planoEfetivo(assinatura, agora);
   const limite = limiteDeProfissionais(efetivo);
   const pago = assinatura.situacao === "ativa" || assinatura.situacao === "em_atraso";
-  const uso = !pago && linha.testeTerminaEm ? await usoNoTeste(barbeariaId, linha.testeTerminaEm, agora) : null;
+  const uso = !pago && linha.testeTerminaEm ? await usoNoTeste(barbeariaId, linha.testeTerminaEm, linha.criadaEm, agora) : null;
   return {
     situacao: assinatura.situacao,
     plano: assinatura.plano,

@@ -10,14 +10,13 @@ import { montarPainel } from "../../ajudantes/painel";
 // mostra a de cada um com o caminho pra mudar. O dublê do dono tem só o
 // Rafael (bb1).
 
-function jornadaComAlmoco(): DiaDaJornada[] {
+function jornadaComAlmocoECafe(): DiaDaJornada[] {
   return [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
     diaSemana,
     modo: diaSemana === 0 ? "folga" : "barbearia",
     horaInicio: null,
     horaFim: null,
-    pausaInicio: diaSemana >= 1 && diaSemana <= 5 ? "12:00" : null,
-    pausaFim: diaSemana >= 1 && diaSemana <= 5 ? "13:00" : null,
+    pausas: diaSemana >= 1 && diaSemana <= 5 ? [{ inicio: "12:00", fim: "13:00" }, { inicio: "16:00", fim: "16:15" }] : [],
   }));
 }
 
@@ -31,13 +30,13 @@ describe("pausas da equipe em Horários", () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/configuracoes/horarios" });
   });
 
-  it("mostra a pausa de cada membro que atende, com o caminho pra mudar", async () => {
-    montarPainel(<HorariosDaBarbearia />, criarApiClientFalso({ jornadas: { bb1: jornadaComAlmoco() } }));
+  it("mostra as pausas de cada membro que atende, com o caminho pra mudar", async () => {
+    montarPainel(<HorariosDaBarbearia />, criarApiClientFalso({ jornadas: { bb1: jornadaComAlmocoECafe() } }));
 
     await screen.findByRole("region", { name: "Pausas da equipe" });
-    expect(await within(pausas()).findByText("Seg a sex, 12:00–13:00")).toBeInTheDocument();
+    expect(await within(pausas()).findByText("Seg a sex, 12:00–13:00 e 16:00–16:15")).toBeInTheDocument();
     expect(within(pausas()).getByText("Rafael")).toBeInTheDocument();
-    expect(within(pausas()).getByRole("link", { name: "Mudar a pausa de Rafael" })).toHaveAttribute(
+    expect(within(pausas()).getByRole("link", { name: "Mudar as pausas de Rafael" })).toHaveAttribute(
       "href",
       "/painel/equipe/bb1"
     );

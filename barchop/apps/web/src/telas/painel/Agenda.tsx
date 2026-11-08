@@ -278,7 +278,7 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
             Object.fromEntries(
               dias.flatMap((dia): [string, ExpedienteDoDia][] => {
                 const dele = dia.profissionais.find((p) => p.id === sozinhoNaLista);
-                return dele ? [[dia.data, { janela: dele.janela, pausas: dele.pausa ? [dele.pausa] : [] }]] : [];
+                return dele ? [[dia.data, { janela: dele.janela, pausas: dele.pausas }]] : [];
               })
             )
           )

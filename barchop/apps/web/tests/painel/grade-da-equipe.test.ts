@@ -126,6 +126,28 @@ describe("gradeDeTempo com o expediente", () => {
   };
   const aberto = { abre: "09:00", fecha: "18:00" };
 
+  it("duas pausas no dia viram duas faixas, e as duas somem dos livres", () => {
+    const grade = gradeDeTempo({
+      dias: [TERCA],
+      horarios: HORARIOS,
+      agendamentos: [],
+      agora: AGORA,
+      profissionais: EQUIPE,
+      expediente: { [TERCA]: [
+        { id: "bb1", janela: aberto, pausas: [{ inicio: "12:00", fim: "13:00" }, { inicio: "16:00", fim: "16:15" }] },
+        { id: "m2", janela: aberto, pausas: [] },
+      ] },
+    });
+
+    const [rafael] = grade.colunas;
+    expect(rafael.fechadas).toEqual([
+      { linha: linhaDe("12:00"), linhas: 60 / MINUTOS_POR_LINHA, rotulo: "Pausa" },
+      { linha: linhaDe("16:00"), linhas: 15 / MINUTOS_POR_LINHA, rotulo: "Pausa" },
+    ]);
+    expect(rafael.livres.map((f) => f.hora)).not.toContain("16:00");
+    expect(rafael.livres.map((f) => f.hora)).toContain("16:15");
+  });
+
   it("a pausa vira faixa e some dos horários livres", () => {
     const grade = gradeDeTempo({
       dias: [TERCA],
@@ -134,8 +156,8 @@ describe("gradeDeTempo com o expediente", () => {
       agora: AGORA,
       profissionais: EQUIPE,
       expediente: { [TERCA]: [
-        { id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } },
-        { id: "m2", janela: aberto, pausa: null },
+        { id: "bb1", janela: aberto, pausas: [{ inicio: "12:00", fim: "13:00" }] },
+        { id: "m2", janela: aberto, pausas: [] },
       ] },
     });
 
@@ -156,8 +178,8 @@ describe("gradeDeTempo com o expediente", () => {
       agora: AGORA,
       profissionais: EQUIPE,
       expediente: { [TERCA]: [
-        { id: "bb1", janela: aberto, pausa: null },
-        { id: "m2", janela: { abre: "13:00", fecha: "17:00" }, pausa: null },
+        { id: "bb1", janela: aberto, pausas: [] },
+        { id: "m2", janela: { abre: "13:00", fecha: "17:00" }, pausas: [] },
       ] },
     });
 
@@ -179,8 +201,8 @@ describe("gradeDeTempo com o expediente", () => {
       agora: AGORA,
       profissionais: EQUIPE,
       expediente: { [TERCA]: [
-        { id: "bb1", janela: aberto, pausa: null },
-        { id: "m2", janela: null, pausa: null },
+        { id: "bb1", janela: aberto, pausas: [] },
+        { id: "m2", janela: null, pausas: [] },
       ] },
     });
 
@@ -197,8 +219,8 @@ describe("gradeDeTempo com o expediente", () => {
       agora: AGORA,
       profissionais: EQUIPE,
       expediente: { [TERCA]: [
-        { id: "bb1", janela: { abre: "08:00", fecha: "18:00" }, pausa: null },
-        { id: "m2", janela: { abre: "08:00", fecha: "18:00" }, pausa: null },
+        { id: "bb1", janela: { abre: "08:00", fecha: "18:00" }, pausas: [] },
+        { id: "m2", janela: { abre: "08:00", fecha: "18:00" }, pausas: [] },
       ] },
     });
 
@@ -212,7 +234,7 @@ describe("gradeDeTempo com o expediente", () => {
       horarios: HORARIOS,
       agendamentos: [],
       agora: AGORA,
-      expediente: { [TERCA]: [{ id: "bb1", janela: aberto, pausa: { inicio: "12:00", fim: "13:00" } }] },
+      expediente: { [TERCA]: [{ id: "bb1", janela: aberto, pausas: [{ inicio: "12:00", fim: "13:00" }] }] },
     });
 
     expect(grade.colunas[0].fechadas.map((f) => f.rotulo)).toEqual(["Pausa"]);
@@ -227,7 +249,7 @@ describe("gradeDeTempo com o expediente", () => {
       horarios: HORARIOS,
       agendamentos: [],
       agora: AGORA,
-      expediente: { [TERCA]: [{ id: "m2", janela: aberto, pausa: null }] },
+      expediente: { [TERCA]: [{ id: "m2", janela: aberto, pausas: [] }] },
       bloqueios: [bloqueio({ horaInicio: "15:00", horaFim: "16:00", motivo: "Médico" })],
     });
 
@@ -264,8 +286,8 @@ describe("gradeDeTempo na semana, com o expediente de cada dia", () => {
       agendamentos: [],
       agora: AGORA,
       expediente: {
-        [SEGUNDA]: [{ id: "bb1", janela: aberto, pausa: null }],
-        [TERCA]: [{ id: "bb1", janela: aberto, pausa: almoco }],
+        [SEGUNDA]: [{ id: "bb1", janela: aberto, pausas: [] }],
+        [TERCA]: [{ id: "bb1", janela: aberto, pausas: [almoco] }],
       },
     });
 
@@ -283,8 +305,8 @@ describe("gradeDeTempo na semana, com o expediente de cada dia", () => {
       agendamentos: [],
       agora: AGORA,
       expediente: {
-        [SEGUNDA]: [{ id: "bb1", janela: aberto, pausa: null }],
-        [TERCA]: [{ id: "bb1", janela: { abre: "08:00", fecha: "18:00" }, pausa: null }],
+        [SEGUNDA]: [{ id: "bb1", janela: aberto, pausas: [] }],
+        [TERCA]: [{ id: "bb1", janela: { abre: "08:00", fecha: "18:00" }, pausas: [] }],
       },
     });
 
@@ -301,8 +323,8 @@ describe("gradeDeTempo na semana, com o expediente de cada dia", () => {
       agora: AGORA,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: aberto, pausa: almoco },
-          { id: "m2", janela: aberto, pausa: almoco },
+          { id: "bb1", janela: aberto, pausas: [almoco] },
+          { id: "m2", janela: aberto, pausas: [almoco] },
         ],
       },
     });
@@ -321,8 +343,8 @@ describe("gradeDeTempo na semana, com o expediente de cada dia", () => {
       agora: AGORA,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: aberto, pausa: almoco },
-          { id: "m2", janela: aberto, pausa: { inicio: "13:00", fim: "14:00" } },
+          { id: "bb1", janela: aberto, pausas: [almoco] },
+          { id: "m2", janela: aberto, pausas: [{ inicio: "13:00", fim: "14:00" }] },
         ],
       },
     });
@@ -340,8 +362,8 @@ describe("gradeDeTempo na semana, com o expediente de cada dia", () => {
       agora: AGORA,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: { abre: "09:00", fecha: "13:00" }, pausa: null },
-          { id: "m2", janela: { abre: "14:00", fecha: "18:00" }, pausa: null },
+          { id: "bb1", janela: { abre: "09:00", fecha: "13:00" }, pausas: [] },
+          { id: "m2", janela: { abre: "14:00", fecha: "18:00" }, pausas: [] },
         ],
       },
     });
@@ -361,8 +383,8 @@ describe("gradeDeTempo na semana, com o expediente de cada dia", () => {
       agora: AGORA,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: aberto, pausa: almoco },
-          { id: "m2", janela: null, pausa: null },
+          { id: "bb1", janela: aberto, pausas: [almoco] },
+          { id: "m2", janela: null, pausas: [] },
         ],
       },
     });
@@ -375,8 +397,8 @@ describe("gradeDeTempo na semana, com o expediente de cada dia", () => {
       agora: AGORA,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: null, pausa: null },
-          { id: "m2", janela: null, pausa: null },
+          { id: "bb1", janela: null, pausas: [] },
+          { id: "m2", janela: null, pausas: [] },
         ],
       },
     });
@@ -405,8 +427,8 @@ describe("gradeDeTempo na semana: quem pode atender em cada horário livre", () 
       agora: AGORA,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: aberto, pausa: almoco },
-          { id: "m2", janela: aberto, pausa: null },
+          { id: "bb1", janela: aberto, pausas: [almoco] },
+          { id: "m2", janela: aberto, pausas: [] },
         ],
       },
     });
@@ -423,8 +445,8 @@ describe("gradeDeTempo na semana: quem pode atender em cada horário livre", () 
       agora: AGORA,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: aberto, pausa: null },
-          { id: "m2", janela: aberto, pausa: null },
+          { id: "bb1", janela: aberto, pausas: [] },
+          { id: "m2", janela: aberto, pausas: [] },
         ],
       },
     });
@@ -442,8 +464,8 @@ describe("gradeDeTempo na semana: quem pode atender em cada horário livre", () 
       bloqueios: [bloqueio({ barbeiroId: "m2", horaInicio: "12:00", horaFim: "13:00", motivo: "Médico" })],
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: aberto, pausa: almoco },
-          { id: "m2", janela: aberto, pausa: null },
+          { id: "bb1", janela: aberto, pausas: [almoco] },
+          { id: "m2", janela: aberto, pausas: [] },
         ],
       },
     });
@@ -460,8 +482,8 @@ describe("gradeDeTempo na semana: quem pode atender em cada horário livre", () 
       agora: AGORA,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: aberto, pausa: almoco },
-          { id: "m2", janela: aberto, pausa: almoco },
+          { id: "bb1", janela: aberto, pausas: [almoco] },
+          { id: "m2", janela: aberto, pausas: [almoco] },
         ],
       },
     });
@@ -475,7 +497,7 @@ describe("gradeDeTempo na semana: quem pode atender em cada horário livre", () 
       horarios: HORARIOS,
       agendamentos: [],
       agora: AGORA,
-      expediente: { [TERCA]: [{ id: "bb1", janela: aberto, pausa: null }] },
+      expediente: { [TERCA]: [{ id: "bb1", janela: aberto, pausas: [] }] },
     });
     expect(livre(sozinho.colunas[0], "11:00")?.profissionais).toBeUndefined();
 
@@ -487,8 +509,8 @@ describe("gradeDeTempo na semana: quem pode atender em cada horário livre", () 
       profissionais: EQUIPE,
       expediente: {
         [TERCA]: [
-          { id: "bb1", janela: aberto, pausa: null },
-          { id: "m2", janela: aberto, pausa: null },
+          { id: "bb1", janela: aberto, pausas: [] },
+          { id: "m2", janela: aberto, pausas: [] },
         ],
       },
     });

@@ -1,4 +1,4 @@
-/* A aba: a Jornada, a Pausa e, por último, a barra de salvar. */
+/* A aba: a Jornada, as Pausas e, por último, a barra de salvar. */
 .jornada {
   display: grid;
   gap: var(--espaco-xl);
@@ -76,7 +76,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* As horas (do próprio ou da pausa) numa faixa, alinhadas pelo pé. */
+/* As horas do próprio numa faixa, alinhadas pelo pé. */
 .faixa {
   display: flex;
   flex-wrap: wrap;
@@ -86,4 +86,82 @@
 
 .adicionar {
   display: flex;
+}
+
+/* As pausas em edição (várias por dia desde 08/11): uma linha cada, com
+   começo, fim e "Tirar"; o aviso de fora do horário embaixo da linha. */
+.pausas {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+/* Na folha do dia, o bloco das pausas se separa do modo e das horas. */
+.pausasDoDia {
+  margin-top: var(--espaco-sm);
+}
+
+.tituloDasPausas {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ink-soft);
+}
+
+.listaDePausas {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pausa {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+/* Duas horas que dividem a linha e o "Tirar" na ponta: cabe em 360px. */
+.horasDaPausa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaco-xs);
+}
+
+/* Menos padding nos lados que o campo comum: a hora e o relógio do
+   seletor cabem inteiros mesmo em 360px. */
+.hora {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  padding-inline: var(--espaco-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.tirar {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--espaco-xs);
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: none;
+  color: var(--cor-ink);
+  /* A mesma letra do "+ Outra pausa", que é um Botao. */
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tirar:hover {
+  background: var(--cor-paper-soft);
+}
+
+.tirar:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+.ate {
+  color: var(--cor-ink-soft);
 }

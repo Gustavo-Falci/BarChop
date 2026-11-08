@@ -12,6 +12,7 @@ import {
   horariosDoProfissionalNoDia,
   type ClientePrisma,
 } from "../lib/disponibilidade";
+import { duracaoDoAtendimento } from "../lib/agendamento";
 import { foraDoLink } from "../lib/assinatura";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData, dateParaHora } from "../lib/horas";
@@ -19,6 +20,7 @@ import { proximosHorarios } from "../lib/proximos-horarios";
 import { gradeDe, regrasDe, SELECT_REGRAS } from "../lib/regras";
 import { clienteDaRequisicao, ehMembroDaBarbearia } from "../plugins/auth";
 import {
+  ESQUEMA_DURACAO_DO_ENCAIXE,
   PADRAO_DATA,
   PADRAO_MES,
   PADRAO_SLUG,
@@ -50,6 +52,9 @@ const filtroDia = {
     // O agendamento que o cliente logado está remarcando: abre a agenda
     // do profissional dele mesmo fora do link (lib/assinatura.ts).
     remarcar: { type: "string", pattern: PADRAO_UUID },
+    // O encaixe do painel (lib/agendamento.ts, duracaoDoAtendimento):
+    // a agenda medida por ele, e não pelos serviços.
+    duracaoMinutos: ESQUEMA_DURACAO_DO_ENCAIXE,
     servicoIds: {
       type: "array",
       minItems: 1,
@@ -69,6 +74,9 @@ const filtroMes = {
     // O agendamento que o cliente logado está remarcando: abre a agenda
     // do profissional dele mesmo fora do link (lib/assinatura.ts).
     remarcar: { type: "string", pattern: PADRAO_UUID },
+    // O encaixe do painel (lib/agendamento.ts, duracaoDoAtendimento):
+    // a agenda medida por ele, e não pelos serviços.
+    duracaoMinutos: ESQUEMA_DURACAO_DO_ENCAIXE,
     servicoIds: {
       type: "array",
       minItems: 1,
@@ -160,6 +168,7 @@ async function barbeariaComRegras(request: FastifyRequest, slug: string, remarca
   }
   return {
     id: barbearia.id,
+    paraCliente,
     grade: gradeDe(regras, paraCliente),
     regrasDoCliente: paraCliente ? regras : undefined,
     foraDoLink: ocultos,
@@ -193,12 +202,13 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
     "/barbearias/:slug/disponibilidade",
     { schema: { params: paramsSlug, querystring: filtroDia } },
     async (request) => {
-      const { barbeiroId, data, servicoIds } = request.query;
+      const { barbeiroId, data, servicoIds, duracaoMinutos } = request.query;
       const barbearia = await barbeariaComRegras(request, request.params.slug, request.query.remarcar);
 
       // Os serviços antes da agenda: serviço de outra barbearia ou
       // inativo é 422 também no "qualquer um".
-      const { duracaoTotalMinutos } = await carregarServicos(prisma, barbearia.id, servicoIds);
+      const { duracaoTotalMinutos: dosServicos } = await carregarServicos(prisma, barbearia.id, servicoIds);
+      const duracaoTotalMinutos = duracaoDoAtendimento(dosServicos, duracaoMinutos, barbearia.paraCliente);
       const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds, barbearia.foraDoLink);
       const dataDate = dataDaQuery(data);
 
@@ -233,10 +243,11 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
     "/barbearias/:slug/disponibilidade/mes",
     { schema: { params: paramsSlug, querystring: filtroMes } },
     async (request) => {
-      const { barbeiroId, mes, servicoIds } = request.query;
+      const { barbeiroId, mes, servicoIds, duracaoMinutos } = request.query;
       const barbearia = await barbeariaComRegras(request, request.params.slug, request.query.remarcar);
 
-      const { duracaoTotalMinutos } = await carregarServicos(prisma, barbearia.id, servicoIds);
+      const { duracaoTotalMinutos: dosServicos } = await carregarServicos(prisma, barbearia.id, servicoIds);
+      const duracaoTotalMinutos = duracaoDoAtendimento(dosServicos, duracaoMinutos, barbearia.paraCliente);
       const barbeiroIds = await agendaDe(prisma, barbearia.id, barbeiroId, servicoIds, barbearia.foraDoLink);
 
       const [ano, numeroDoMes] = mes.split("-").map(Number);

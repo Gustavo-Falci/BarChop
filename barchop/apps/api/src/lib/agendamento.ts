@@ -98,6 +98,9 @@ export interface CriarAgendamentoParams {
   // Só do remarcar do cliente: o profissional é o do agendamento antigo,
   // então quem ficou fora do link pelo limite do plano ainda vale.
   remarcando?: boolean;
+  // Só do painel: o encaixe, menor que a soma dos serviços. Sem ele, a
+  // duração é a dos serviços.
+  duracaoMinutos?: number;
 }
 
 // Recebe o `tx` em vez de abrir a própria transação: o fluxo público
@@ -143,7 +146,7 @@ export type AgendamentoCriado = Awaited<ReturnType<typeof criarAgendamento>>;
 
 export type ConferirHorarioParams = Pick<
   CriarAgendamentoParams,
-  "barbeariaId" | "barbeiroId" | "servicoIds" | "data" | "horaInicio" | "origem" | "remarcando"
+  "barbeariaId" | "barbeiroId" | "servicoIds" | "data" | "horaInicio" | "origem" | "remarcando" | "duracaoMinutos"
 >;
 
 // Tudo que decide se o horário serve, antes de gravar: o POST e a
@@ -151,7 +154,7 @@ export type ConferirHorarioParams = Pick<
 // aqui, então o campo que diz "cabe" nunca leva a um 422. Recusa com
 // ErroDeNegocio; serve, devolve o que a criação grava.
 export async function conferirHorario(tx: Prisma.TransactionClient, params: ConferirHorarioParams) {
-  const { barbeariaId, barbeiroId, servicoIds, data, horaInicio, origem, remarcando } = params;
+  const { barbeariaId, barbeiroId, servicoIds, data, horaInicio, origem, remarcando, duracaoMinutos } = params;
 
   await garantirBarbeiro(tx, barbeariaId, barbeiroId);
   // O cliente não marca horário novo pelo link com quem ficou fora pelo
@@ -165,12 +168,16 @@ export async function conferirHorario(tx: Prisma.TransactionClient, params: Conf
     servicoIds
   );
 
+  // Do encaixe, quando o painel pede; senão a dos serviços. É ela que
+  // mede tudo daqui pra baixo — o vão, a pausa, o bloqueio e o horaFim.
+  const duracao = duracaoDoAtendimento(duracaoTotalMinutos, duracaoMinutos, origem === "cliente");
+
   // Antes do horário: com quem não faz o serviço, nenhum horário serve.
   await garantirServicosDoProfissional(tx, barbeiroId, servicoIds);
 
   let horaFim: string;
   try {
-    horaFim = somarMinutos(horaInicio, duracaoTotalMinutos);
+    horaFim = somarMinutos(horaInicio, duracao);
   } catch {
     // somarMinutos lança quando a soma passa da meia-noite. Isso é
     // pedido inválido, não bug: 422 em vez de 500.
@@ -241,7 +248,7 @@ export async function conferirHorario(tx: Prisma.TransactionClient, params: Conf
     janela,
     atendimentos: ocupados,
     ocupados: [...bloqueados, ...contexto.pausa],
-    duracaoTotalMinutos,
+    duracaoTotalMinutos: duracao,
     grade: gradeDe(regras, paraCliente),
   };
   if (paraCliente) {
@@ -281,4 +288,41 @@ function motivoDoPainel(
     return `bate com ${outro.cliente.nome}, marcado das ${dateParaHora(outro.horaInicio)} às ${dateParaHora(outro.horaFim)}`;
   }
   return "esse horário não está disponível";
+}
+
+// A duração do atendimento: a dos serviços, ou a do encaixe que o painel
+// escolheu (pedido do barbeiro, 08/11/2026). O encaixe é sempre menor
+// que os serviços — do tamanho deles não é encaixe, e maior o painel
+// marca de outro jeito. O preço não muda.
+export function duracaoDoAtendimento(
+  duracaoDosServicos: number,
+  duracaoMinutos: number | undefined,
+  paraCliente: boolean
+): number {
+  if (duracaoMinutos === undefined) return duracaoDosServicos;
+  if (paraCliente) {
+    throw new ErroDeNegocio("só a barbearia marca encaixe", "encaixe_so_no_painel");
+  }
+  if (duracaoMinutos >= duracaoDosServicos) {
+    throw new ErroDeNegocio(
+      `o encaixe tem que ser menor que os ${duracaoDosServicos} min dos serviços`,
+      "encaixe_invalido"
+    );
+  }
+  return duracaoMinutos;
+}
+
+// O encaixe não tem coluna: é o agendamento que dura menos que os
+// serviços dele (a duração congelada de cada um). Devolve a duração do
+// encaixe, ou null. Só o criarAgendamento grava o horaFim, e nada muda
+// os serviços depois — conferido em produção em 08/11/2026: nenhum
+// agendamento de antes passa por encaixe.
+export function duracaoDoEncaixe(agendamento: {
+  horaInicio: Date;
+  horaFim: Date;
+  servicos: { duracaoNoMomento: number }[];
+}): number | null {
+  const duracao = (agendamento.horaFim.getTime() - agendamento.horaInicio.getTime()) / 60_000;
+  const dosServicos = agendamento.servicos.reduce((soma, servico) => soma + servico.duracaoNoMomento, 0);
+  return duracao < dosServicos ? duracao : null;
 }

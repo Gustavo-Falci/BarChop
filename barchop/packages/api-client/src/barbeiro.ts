@@ -742,7 +742,10 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // O "Outro horário": o minuto digitado cabe? A mesma conferência do
     // POST, sem gravar.
     conferirHorario(pedido: ConferenciaDeHorario): Promise<HorarioConferido> {
-      return requisicao("/agendamentos/cabe", { query: { ...pedido }, comToken: true });
+      return requisicao("/agendamentos/cabe", {
+        query: { ...pedido, duracaoMinutos: pedido.duracaoMinutos?.toString() },
+        comToken: true,
+      });
     },
 
     // Devolve o agendamento NOVO: remarcar cancela o antigo e cria outro,

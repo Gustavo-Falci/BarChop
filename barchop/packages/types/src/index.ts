@@ -28,6 +28,9 @@ export interface NovoAgendamentoBarbeiroInput {
   data: string; // "YYYY-MM-DD"
   horaInicio: string; // "HH:mm"
   observacoes?: string;
+  // O encaixe (08/11/2026): de 5 em 5, menor que a soma dos serviços.
+  // Sem ele, a duração é a dos serviços. O preço não muda.
+  duracaoMinutos?: number;
 }
 
 // GET /agendamentos/cabe: o "Outro horário" do painel (08/11/2026). Um
@@ -38,6 +41,7 @@ export interface ConferenciaDeHorario {
   data: string; // "YYYY-MM-DD"
   horaInicio: string; // "HH:mm"
   servicoIds: string[];
+  duracaoMinutos?: number;
 }
 
 export type HorarioConferido =

@@ -1,0 +1,2 @@
+/* As durações do encaixe logo embaixo da escolha principal. */
+.duracao { display: grid; gap: var(--espaco-md); }

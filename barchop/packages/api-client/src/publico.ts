@@ -21,6 +21,8 @@ export interface FiltroDoDia {
   // O agendamento que o cliente logado está remarcando (com `comToken`):
   // a API abre a agenda do profissional dele mesmo fora do link.
   remarcar?: string;
+  // O encaixe do painel (com `comToken`): a agenda medida por ele.
+  duracaoMinutos?: number;
 }
 
 // `comToken`: o painel pergunta como membro da barbearia, ou o cliente
@@ -34,6 +36,8 @@ export interface FiltroDoMes {
   mes: string; // "YYYY-MM"
   servicoIds: string[];
   remarcar?: string;
+  // O encaixe do painel (com `comToken`): a agenda medida por ele.
+  duracaoMinutos?: number;
 }
 
 // Por onde o cliente se identifica: telefone OU e-mail, nunca os dois —
@@ -85,7 +89,7 @@ export function criarApiPublica(requisicao: Requisicao) {
     ): Promise<string[]> {
       const resposta = await requisicao<Disponibilidade>(
         `/barbearias/${slug}/disponibilidade`,
-        { query: { ...filtro }, comToken: opcoes.comToken }
+        { query: { ...filtro, duracaoMinutos: filtro.duracaoMinutos?.toString() }, comToken: opcoes.comToken }
       );
       return resposta.horarios;
     },
@@ -97,7 +101,7 @@ export function criarApiPublica(requisicao: Requisicao) {
     ): Promise<Record<string, boolean>> {
       const resposta = await requisicao<DisponibilidadeDoMes>(
         `/barbearias/${slug}/disponibilidade/mes`,
-        { query: { ...filtro }, comToken: opcoes.comToken }
+        { query: { ...filtro, duracaoMinutos: filtro.duracaoMinutos?.toString() }, comToken: opcoes.comToken }
       );
       return resposta.dias;
     },

@@ -3,13 +3,14 @@ import { normalizarEmail } from "@barchop/formato";
 import {
   conferirHorario,
   criarAgendamento,
+  duracaoDoEncaixe,
   escolherProfissional,
   INCLUDE_AGENDAMENTO,
 } from "../lib/agendamento";
 import { garantirAlteravel, garantirFuturo } from "../lib/agendamento-alteravel";
 import { assinarTokenDaConta } from "../lib/conta-do-agendamento";
 import { diaEstaFechado, soltarPagamento } from "../lib/caixa";
-import { travarQualquerUm } from "../lib/disponibilidade";
+import { carregarServicos, travarQualquerUm } from "../lib/disponibilidade";
 import { enderecoDasBarbearias } from "../lib/endereco";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
@@ -24,6 +25,7 @@ import {
   textoDoRemarcado,
 } from "../lib/lembrete";
 import {
+  ESQUEMA_DURACAO_DO_ENCAIXE,
   PADRAO_DATA,
   PADRAO_EMAIL,
   PADRAO_HORA,
@@ -62,6 +64,8 @@ const corpoNovoAgendamento = {
     data: { type: "string", pattern: PADRAO_DATA },
     horaInicio: { type: "string", pattern: PADRAO_HORA },
     observacoes: { type: "string", maxLength: 500 },
+    // O encaixe: menor que a soma dos serviços (lib/agendamento.ts).
+    duracaoMinutos: ESQUEMA_DURACAO_DO_ENCAIXE,
   },
 } as const;
 
@@ -129,6 +133,7 @@ const filtroCabe = {
       maxItems: 10,
       items: { type: "string", pattern: PADRAO_UUID },
     },
+    duracaoMinutos: ESQUEMA_DURACAO_DO_ENCAIXE,
   },
 } as const;
 
@@ -255,7 +260,7 @@ export function registrarRotasAgendamentos(app: App): void {
     { schema: { querystring: filtroCabe } },
     async (request) => {
       const barbeariaId = request.user.barbeariaId;
-      const { barbeiroId, data, horaInicio, servicoIds } = request.query;
+      const { barbeiroId, data, horaInicio, servicoIds, duracaoMinutos } = request.query;
 
       // A recusa diz com quem bate: o profissional só pergunta da
       // própria agenda, como no POST.
@@ -272,6 +277,7 @@ export function registrarRotasAgendamentos(app: App): void {
           data,
           horaInicio,
           origem: "barbeiro",
+          duracaoMinutos,
         });
         return { cabe: true };
       } catch (erro) {
@@ -424,7 +430,10 @@ export function registrarRotasAgendamentos(app: App): void {
           // O do colega não existe pro profissional: 404, como no GET.
           const antigo = await tx.agendamento.findFirstOrThrow({
             where: { id: request.params.id, barbeariaId, ...agendaVisivel(request) },
-            include: { servicos: { select: { servicoId: true } }, pagamento: { select: { id: true } } },
+            include: {
+              servicos: { select: { servicoId: true, duracaoNoMomento: true } },
+              pagamento: { select: { id: true } },
+            },
           });
 
           // Antes do garantirAlteravel: o pagamento conclui o atendimento,
@@ -463,11 +472,19 @@ export function registrarRotasAgendamentos(app: App): void {
             throw new ErroDeNegocio("esse agendamento já foi alterado", "status_nao_permite");
           }
 
+          // O encaixe muda de hora e continua encaixe, com a mesma duração
+          // — enquanto ela for menor que os serviços de hoje (o serviço
+          // pode ter encurtado). Senão, volta pra duração dos serviços.
+          const servicoIds = antigo.servicos.map((servico) => servico.servicoId);
+          const doEncaixe = duracaoDoEncaixe(antigo);
+          const { duracaoTotalMinutos } = await carregarServicos(tx, barbeariaId, servicoIds);
+
           const novo = await criarAgendamento(tx, {
             barbeariaId,
             barbeiroId: destino,
             clienteId: antigo.clienteId,
-            servicoIds: antigo.servicos.map((servico) => servico.servicoId),
+            servicoIds,
+            duracaoMinutos: doEncaixe !== null && doEncaixe < duracaoTotalMinutos ? doEncaixe : undefined,
             data,
             horaInicio,
             origem: "barbeiro",

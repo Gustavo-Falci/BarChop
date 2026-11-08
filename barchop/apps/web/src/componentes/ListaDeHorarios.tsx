@@ -14,6 +14,7 @@ export function ListaDeHorarios({
   horarios,
   selecionada,
   aoEscolher,
+  logoDepois,
 }: {
   horarios: string[];
   // Opcional: a tela de novo agendamento do painel chega com a hora já
@@ -22,6 +23,11 @@ export function ListaDeHorarios({
   // nenhuma, como antes.
   selecionada?: string;
   aoEscolher: (hora: string) => void;
+  // Só o painel: quais horários são o fim de um atendimento, fora da
+  // grade (pedido do barbeiro, 08/11/2026). Ganham uma bolinha e o
+  // "logo depois de um atendimento" pro leitor de tela. O link não
+  // marca nada: pro cliente é só mais um horário.
+  logoDepois?: (hora: string) => boolean;
 }) {
   // Visto no app rodando: um dia inteiro de 15 em 15 minutos são mais
   // de trinta botões, e numa parede só achar "fim da tarde" era contar
@@ -44,6 +50,12 @@ export function ListaDeHorarios({
           onClick={() => aoEscolher(hora)}
         >
           {hora}
+          {logoDepois?.(hora) ? (
+            <>
+              <span aria-hidden="true" className={estilos.marca} />
+              <span className={estilos.somenteLeitor}>, logo depois de um atendimento</span>
+            </>
+          ) : null}
         </button>
       ))}
     </div>

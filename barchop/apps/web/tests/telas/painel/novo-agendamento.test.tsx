@@ -567,6 +567,7 @@ describe("novo agendamento no painel", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
     await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
+    await abrirPasso("Horário");
 
     expect(await screen.findByRole("button", { name: "09:40, logo depois de um atendimento" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "09:45" })).toBeInTheDocument();

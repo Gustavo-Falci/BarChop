@@ -118,6 +118,39 @@ describe("GET /barbearias/me/assinatura", () => {
     await app.close();
   });
 
+  // O suporte estende o teste mudando só o fim (pedido do dono, 08/11):
+  // o início segue o do cadastro, senão os primeiros dias saem da conta.
+  it("teste estendido: o uso começa no início de verdade, não 14 dias antes do fim novo", async () => {
+    const app = buildApp();
+    const { token, barbeariaId, barbeiroId } = await criarBarbeariaComToken(app);
+    // Cadastro há 10 dias; o fim, 14 dias depois dele, mais 7.
+    const criadaEm = new Date(Date.now() - 10 * UM_DIA);
+    const estendido = new Date(criadaEm.getTime() + (DIAS_DE_TESTE + 7) * UM_DIA);
+    await definir(barbeariaId, { criadaEm, testeTerminaEm: estendido });
+    const cliente = await prisma.cliente.create({ data: { barbeariaId, nome: "Ana", telefone: "11999990000" } });
+    // Marcado no segundo dia do teste: dentro do teste, fora dos "14 dias antes do fim".
+    await prisma.agendamento.create({
+      data: {
+        barbeariaId,
+        barbeiroId,
+        clienteId: cliente.id,
+        data: dataParaDate("2026-10-20"),
+        horaInicio: horaParaDate("10:00"),
+        horaFim: horaParaDate("10:30"),
+        criadoEm: new Date(criadaEm.getTime() + UM_DIA),
+      },
+    });
+
+    const corpo = (await lerAssinatura(app, token)).json();
+
+    expect(corpo.usoNoTeste).toMatchObject({
+      desde: criadaEm.toISOString(),
+      ate: estendido.toISOString(),
+      agendamentos: 1,
+    });
+    await app.close();
+  });
+
   it("falta menos de um dia: conta como 1", async () => {
     const app = buildApp();
     const { token, barbeariaId } = await criarBarbeariaComToken(app);

@@ -72,6 +72,20 @@ describe("várias pausas no dublê", () => {
     expect(salva[4].pausas).toEqual([ALMOCO, CAFE]);
   });
 
+  it("a aba antiga parada desde antes do café não o apaga ao salvar outro dia", async () => {
+    const falso = criarApiClientFalso();
+    await falso.barbeiro.salvarJornada("bb1", comDia(4, { pausas: [ALMOCO] }));
+    const velha = await falso.barbeiro.jornada("bb1");
+    await falso.barbeiro.salvarJornada("bb1", comDia(4, { pausas: [ALMOCO, CAFE] }));
+
+    const salva = await falso.barbeiro.salvarJornada(
+      "bb1",
+      velha.map((dia) => (dia.diaSemana === 2 ? { ...dia, pausaInicio: "11:00", pausaFim: "11:30" } : dia))
+    );
+
+    expect(salva[4].pausas).toEqual([ALMOCO, CAFE]);
+  });
+
   it("a ocupação devolve todas as pausas, e a primeira em `pausa`", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.salvarJornada("bb1", comDia(4, { pausas: [ALMOCO, CAFE] }));

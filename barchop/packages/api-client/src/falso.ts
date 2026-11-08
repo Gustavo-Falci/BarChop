@@ -585,22 +585,21 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   }
 
   // As pausas do dia com as recusas e a regra da web antiga do PUT da API
-  // (`pausasDoDia`, routers/equipe.ts): o campo antigo, comparado com o
-  // que está salvo, decide.
+  // (`pausasDoDia`, routers/equipe.ts): com os campos antigos no corpo, é
+  // a web antiga, e o campo antigo comparado com o que está salvo decide.
   function pausasDoDia(dia: DiaDaJornada, salvas: FaixaDePausa[]): FaixaDePausa[] {
     if (dia.modo === "folga") return [];
-    let lista: FaixaDePausa[] | null = null;
-    if (dia.pausas) {
-      dia.pausas.forEach(exigirNaOrdem);
-      const emOrdem = [...dia.pausas].sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0));
+    if (dia.pausaInicio === undefined && dia.pausaFim === undefined) {
+      const pausas = dia.pausas ?? [];
+      pausas.forEach(exigirNaOrdem);
+      const emOrdem = [...pausas].sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0));
       emOrdem.forEach((pausa, i) => {
         if (i > 0 && pausa.inicio < emOrdem[i - 1].fim) {
           throw new ErroDaApi(422, "pausas_se_cruzam", "duas pausas do dia se cruzam");
         }
       });
-      lista = emOrdem;
+      return emOrdem;
     }
-    if (dia.pausaInicio === undefined && dia.pausaFim === undefined) return lista ?? [];
 
     const { pausaInicio, pausaFim } = dia;
     let antiga: FaixaDePausa | null = null;
@@ -612,10 +611,9 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       exigirNaOrdem(antiga);
     }
     const mesma = (a: FaixaDePausa | null, b: FaixaDePausa | null) => a?.inicio === b?.inicio && a?.fim === b?.fim;
-    if (lista && mesma(antiga, lista[0] ?? null)) return lista;
     if (mesma(antiga, salvas[0] ?? null)) return salvas;
     if (salvas.length >= 2) {
-      throw new ErroDaApi(422, "recarregue_a_pagina", "o dia tem mais de uma pausa: recarregue a página para mudar");
+      throw new ErroDaApi(422, "recarregue_a_pagina", "Neste dia já há mais de uma pausa. Recarregue a página para mudar.");
     }
     return antiga ? [antiga] : [];
   }

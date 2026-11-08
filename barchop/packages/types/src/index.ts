@@ -465,8 +465,9 @@ export interface DiaDaJornada {
   // devolve.
   pausas?: FaixaDePausa[];
   // A primeira das `pausas`, do tempo em que o dia tinha uma só. A API
-  // ainda devolve e aceita, até o PR que as tira: quem manda `pausas`
-  // manda estas iguais à primeira, ou não manda.
+  // ainda devolve e aceita, até o PR que as tira. Só a web antiga manda:
+  // com elas no corpo, a API ignora as `pausas` dele (ver o PUT em
+  // routers/equipe.ts). A web nova não manda.
   pausaInicio?: string | null;
   pausaFim?: string | null;
 }

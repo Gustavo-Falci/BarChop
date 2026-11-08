@@ -27,11 +27,11 @@ Respondidas pelo dono em 08/11 (as marcadas com **(dono)**).
 
 - `DiaDaJornada` ganha `pausas: { inicio, fim }[]` (em ordem de início). `pausaInicio`/`pausaFim` continuam na resposta com a **primeira** pausa, até o PR 3.
 - `OcupacaoDoProfissional` ganha `pausas`; `pausa` continua com a primeira.
-- `PUT /equipe/:id/jornada`: **quem decide é o campo antigo comparado com o que está salvo**, não a presença de `pausas`. A web antiga monta o corpo espalhando o dia do GET (`{ ...dia, pausaInicio, pausaFim }`), então depois do PR 1 ela devolve as `pausas` velhas junto da pausa editada. Por dia:
-  - campos antigos ausentes, ou iguais a `pausas[0]` do corpo: web nova, valem as `pausas`;
-  - campos antigos iguais à primeira salva: a web antiga não mexeu no dia, fica tudo;
-  - senão, a web antiga mexeu: com 0 ou 1 salva vira `[antiga]` (ou `[]`); com 2+ salvas, **422 `recarregue_a_pagina`**, em vez de apagar as outras em silêncio.
-  - **PR 2: a web nova manda os campos antigos iguais a `pausas[0]`, ou não manda.** Espalhar o dia do GET e trocar só `pausas` cairia no caminho da web antiga.
+- `PUT /equipe/:id/jornada`: **os campos antigos no corpo dizem que é a web antiga**. Ela monta o corpo espalhando o dia do GET (`{ ...dia, pausaInicio, pausaFim }`), então depois do PR 1 devolve as `pausas` (talvez velhas) junto; com os campos antigos presentes, as `pausas` do corpo não valem. Por dia:
+  - campos antigos ausentes: web nova, valem as `pausas`;
+  - campo antigo igual à primeira salva agora: a web antiga não mexeu no dia, ficam as salvas (inclusive uma que outra aba pôs depois do GET dela);
+  - diferente: a web antiga mexeu. Com 0 ou 1 salva vira `[antiga]` (ou `[]`); com 2+ salvas, **422 `recarregue_a_pagina`** ("Na quinta já há mais de uma pausa. Recarregue a página para mudar.": a web antiga mostra a mensagem como veio).
+  - **PR 2: a web nova nunca manda `pausaInicio`/`pausaFim`** (tirar do dia do GET antes do PUT).
 - Durante a transição a API também grava a primeira pausa nas colunas antigas: se a API voltar pra versão anterior, ela ainda vê a pausa principal.
 
 ## PRs

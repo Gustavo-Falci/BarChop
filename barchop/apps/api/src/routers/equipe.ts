@@ -209,14 +209,15 @@ function listaDePausas(diaSemana: number, pausas: FaixaDePausa[]): FaixaDePausa[
 // que estava antes de trocar o modo).
 //
 // A web de antes das várias pausas conhece só `pausaInicio`/`pausaFim`,
-// e reenvia o dia como veio do GET, com as `pausas` velhas junto. Por
-// isso quem decide é o campo antigo, comparado com o que está salvo:
-// - campo antigo ausente, ou igual à primeira das `pausas` do corpo: é a
-//   web nova, valem as `pausas`;
-// - campo antigo igual à primeira salva: a web antiga não mexeu no dia,
-//   fica tudo como está;
-// - senão, a web antiga mexeu. Com uma pausa salva (ou nenhuma), vale a
-//   dela; com duas ou mais, ela apagaria as outras sem ver: 422.
+// e reenvia o dia como veio do GET, com as `pausas` (talvez velhas)
+// junto. A web nova nunca manda os campos antigos: a presença deles é o
+// que diz que o corpo é da web antiga, e aí as `pausas` do corpo não
+// valem nada. Quem decide é o campo antigo, comparado com o que está
+// salvo agora:
+// - igual à primeira salva: a web antiga não mexeu no dia, ficam as
+//   salvas (inclusive uma que outra aba pôs depois do GET dela);
+// - diferente: a web antiga mexeu. Com uma pausa salva (ou nenhuma),
+//   vale a dela; com duas ou mais, ela apagaria as outras sem ver: 422.
 function pausasDoDia(
   dia: {
     diaSemana: number;
@@ -228,20 +229,23 @@ function pausasDoDia(
   salvas: FaixaDePausa[]
 ): FaixaDePausa[] {
   if (dia.modo === "folga") return [];
-  const lista = dia.pausas ? listaDePausas(dia.diaSemana, dia.pausas) : null;
-  if (dia.pausaInicio === undefined && dia.pausaFim === undefined) return lista ?? [];
+  if (dia.pausaInicio === undefined && dia.pausaFim === undefined) {
+    return listaDePausas(dia.diaSemana, dia.pausas ?? []);
+  }
 
   const antiga = pausaAntiga(dia);
-  if (lista && mesmaFaixa(antiga, lista[0] ?? null)) return lista;
   if (mesmaFaixa(antiga, salvas[0] ?? null)) return salvas;
   if (salvas.length >= 2) {
+    // A web antiga mostra esta mensagem como veio: frase pro barbeiro.
     throw new ErroDeNegocio(
-      `o dia ${dia.diaSemana} tem mais de uma pausa: recarregue a página para mudar`,
+      `${NO_DIA[dia.diaSemana]} já há mais de uma pausa. Recarregue a página para mudar.`,
       "recarregue_a_pagina"
     );
   }
   return antiga ? [antiga] : [];
 }
+
+const NO_DIA = ["No domingo", "Na segunda", "Na terça", "Na quarta", "Na quinta", "Na sexta", "No sábado"];
 
 // O membro existe nesta barbearia? Leitura e escrita da jornada e dos
 // serviços passam por aqui: de outra barbearia é 404, como no PATCH.

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
@@ -220,8 +221,31 @@ describe("a aba da web antiga", () => {
     );
 
     expect(resposta.statusCode).toBe(422);
-    expect(resposta.json().erro).toBe("recarregue_a_pagina");
+    // A web antiga mostra a mensagem como veio.
+    expect(resposta.json()).toMatchObject({
+      erro: "recarregue_a_pagina",
+      mensagem: "Na quinta já há mais de uma pausa. Recarregue a página para mudar.",
+    });
     expect((await lerJornada(app, agenda))[4].pausas).toEqual([ALMOCO, CAFE]);
+    await app.close();
+  });
+
+  it("parada desde antes de outra aba pôr o café: salvar outro dia não o apaga", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await putJornada(app, agenda, semana({ diaSemana: 4, modo: "barbearia", pausas: [ALMOCO] }));
+    const velha = await lerJornada(app, agenda);
+    // A outra aba, já com a web nova, acrescenta o café.
+    await quintaComDuas(app, agenda);
+
+    const resposta = await putJornada(
+      app,
+      agenda,
+      velha.map((dia) => (dia.diaSemana === 2 ? { ...dia, pausaInicio: "11:00", pausaFim: "11:30" } : dia))
+    );
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json().jornada[4].pausas).toEqual([ALMOCO, CAFE]);
     await app.close();
   });
 
@@ -369,8 +393,21 @@ describe("as várias pausas nos horários", () => {
 // A cópia da migration 20261108130000, rodada de novo sobre uma linha
 // com a pausa só nas colunas antigas: a suíte aplica as migrations num
 // banco vazio, então sem isto o INSERT … SELECT nunca seria exercitado.
+// O SQL sai do próprio arquivo da migration, não de uma cópia.
+const COPIA_DA_MIGRATION = (() => {
+  const sql = readFileSync(
+    new URL(
+      "../../../../packages/database/prisma/migrations/20261108130000_pausas_da_jornada/migration.sql",
+      import.meta.url
+    ),
+    "utf-8"
+  );
+  const inicio = sql.indexOf('INSERT INTO "pausa_da_jornada"');
+  return sql.slice(inicio, sql.indexOf(";", inicio));
+})();
+
 describe("a cópia das pausas antigas", () => {
-  it("leva a pausa das colunas pra tabela, e a folga fica de fora", async () => {
+  it("leva a pausa das colunas antigas pra tabela", async () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
     await prisma.jornadaProfissional.update({
@@ -378,13 +415,8 @@ describe("a cópia das pausas antigas", () => {
       data: { pausaInicio: new Date("1970-01-01T12:00:00Z"), pausaFim: new Date("1970-01-01T13:00:00Z") },
     });
 
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO "pausa_da_jornada" ("jornada_id", "hora_inicio", "hora_fim")
-      SELECT "id", "pausa_inicio", "pausa_fim"
-      FROM "jornada_profissional"
-      WHERE "pausa_inicio" IS NOT NULL
-        AND "pausa_fim" IS NOT NULL
-        AND "modo" <> 'folga'`);
+    expect(COPIA_DA_MIGRATION).toContain("SELECT");
+    await prisma.$executeRawUnsafe(COPIA_DA_MIGRATION);
 
     expect((await lerJornada(app, agenda))[4].pausas).toEqual([ALMOCO]);
     expect(await prisma.pausaDaJornada.count()).toBe(1);

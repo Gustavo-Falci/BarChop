@@ -3,7 +3,10 @@
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import estilos from "./EscolhaDaDuracao.module.css";
 
-const DURACOES = [5, 10, 15, 20, 25];
+// As durações que o encaixe oferece; só as menores que os serviços
+// aparecem. A tela do Novo agendamento valida o `?duracao=` por esta
+// mesma lista.
+export const DURACOES_DO_ENCAIXE = [5, 10, 15, 20, 25];
 
 // O passo Duração do Novo agendamento (canvas "Agenda: encaixe e horário
 // quebrado", prancha Enc-NovoAgendamento-Encaixe): a do serviço, ou um
@@ -20,7 +23,7 @@ export function EscolhaDaDuracao({
   preco: string;
   aoTrocar: (duracao: number | undefined) => void;
 }) {
-  const menores = DURACOES.filter((duracao) => duracao < soma);
+  const menores = DURACOES_DO_ENCAIXE.filter((duracao) => duracao < soma);
   // Ao ligar o encaixe, 15 min — o buraco mais comum na agenda — ou o
   // maior que couber abaixo do serviço.
   const padrao = menores.includes(15) ? 15 : menores[menores.length - 1];
@@ -44,7 +47,6 @@ export function EscolhaDaDuracao({
           nome="duracao-do-encaixe"
           legenda="Quanto tempo o encaixe leva"
           legendaOculta
-          preencher
           opcoes={menores.map((duracao) => ({ valor: String(duracao), rotulo: `${duracao} min` }))}
           valor={String(encaixe)}
           aoTrocar={(valor) => aoTrocar(Number(valor))}

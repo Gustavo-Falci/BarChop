@@ -20,13 +20,9 @@ import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { IconeCheck } from "../../painel/icones";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { BuscaDeCliente } from "./BuscaDeCliente";
-import { EscolhaDaDuracao } from "./EscolhaDaDuracao";
+import { DURACOES_DO_ENCAIXE, EscolhaDaDuracao } from "./EscolhaDaDuracao";
 import { OutroHorario } from "./OutroHorario";
 import estilos from "./NovoAgendamento.module.css";
-
-// As durações que o encaixe oferece; só as menores que os serviços
-// aparecem.
-const DURACOES_DO_ENCAIXE = [5, 10, 15, 20, 25];
 
 function somarDuracoes(
   servicos: { id: string; duracaoMinutos: number }[] | null,
@@ -221,6 +217,8 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
     Boolean(hora) &&
     servicoIds.length > 0 &&
     !horarios.carregando &&
+    // Lista que falhou não diz que não cabe.
+    !horarios.erro &&
     !(usandoOOutro && conferenciaDoOutro.carregando) &&
     !horaAceitavel;
 

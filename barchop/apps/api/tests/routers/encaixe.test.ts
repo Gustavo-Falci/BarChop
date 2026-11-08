@@ -175,6 +175,29 @@ describe("encaixe", () => {
     await app.close();
   });
 
+  it("o serviço encurtou até o encaixe não ser menor: o remarcar do painel volta pra duração do serviço", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const encaixe = (await marcar(app, agenda, "10:00", { duracaoMinutos: 15 })).json();
+    await app.inject({
+      method: "PATCH",
+      url: `/servicos/${agenda.servico.id}`,
+      headers: auth(agenda.token),
+      payload: { duracaoMinutos: 10 },
+    });
+
+    const resposta = await app.inject({
+      method: "POST",
+      url: `/agendamentos/${encaixe.id}/remarcar`,
+      headers: auth(agenda.token),
+      payload: { data: QUINTA, horaInicio: "14:00" },
+    });
+
+    expect(resposta.statusCode).toBe(201);
+    expect(resposta.json()).toMatchObject({ horaInicio: "14:00", horaFim: "14:10" });
+    await app.close();
+  });
+
   it("o cliente remarca o encaixe pelo link e volta pra duração do serviço (decisão do dono, 08/11)", async () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);

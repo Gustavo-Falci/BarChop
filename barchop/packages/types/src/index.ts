@@ -460,10 +460,20 @@ export interface DiaDaJornada {
   modo: ModoJornada;
   horaInicio: string | null; // "HH:mm"
   horaFim: string | null;
-  // A pausa do almoço do dia (painel v2, marco 3): as duas ou nenhuma, e
-  // nunca na folga. Opcional ao mandar; a API sempre devolve.
+  // As pausas do dia (08/11/2026), em ordem de início, sem se cruzar
+  // (encostar pode); nenhuma na folga. Opcional ao mandar; a API sempre
+  // devolve.
+  pausas?: FaixaDePausa[];
+  // A primeira das `pausas`, do tempo em que o dia tinha uma só. A API
+  // ainda devolve e aceita, até o PR que as tira: quem manda `pausas`
+  // manda estas iguais à primeira, ou não manda.
   pausaInicio?: string | null;
   pausaFim?: string | null;
+}
+
+export interface FaixaDePausa {
+  inicio: string; // "HH:mm"
+  fim: string;
 }
 
 // Exceção por data no horário da barbearia (painel v2, marco 3): fecha a
@@ -536,6 +546,9 @@ export interface OcupacaoDoProfissional extends MinutosDoDia {
   // jornada) e a pausa da jornada. `null` = fechado / sem pausa. Bloqueio
   // fica de fora: a agenda o desenha à parte, com o motivo.
   janela: { abre: string; fecha: string } | null;
+  // Todas as pausas do dia, em ordem; vazia no dia fechado.
+  pausas: FaixaDePausa[];
+  // A primeira das `pausas`, até o PR que tira o campo.
   pausa: { inicio: string; fim: string } | null;
 }
 

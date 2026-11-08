@@ -24,6 +24,7 @@ const TABELAS = [
   "codigo_verificacao",
   "bloqueio",
   "profissional_servico",
+  "pausa_da_jornada",
   "jornada_profissional",
   "agendamento_servico",
   "agendamento",

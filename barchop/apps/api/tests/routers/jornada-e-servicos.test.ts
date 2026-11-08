@@ -42,6 +42,7 @@ describe("GET /equipe/:id/jornada", () => {
         ...dia,
         horaInicio: null,
         horaFim: null,
+        pausas: [],
         pausaInicio: null,
         pausaFim: null,
       }))
@@ -87,6 +88,7 @@ describe("PUT /equipe/:id/jornada", () => {
       modo: "folga",
       horaInicio: null,
       horaFim: null,
+      pausas: [],
       pausaInicio: null,
       pausaFim: null,
     });
@@ -95,6 +97,7 @@ describe("PUT /equipe/:id/jornada", () => {
       modo: "proprio",
       horaInicio: "13:00",
       horaFim: "20:00",
+      pausas: [],
       pausaInicio: null,
       pausaFim: null,
     });
@@ -119,6 +122,7 @@ describe("PUT /equipe/:id/jornada", () => {
       modo: "folga",
       horaInicio: null,
       horaFim: null,
+      pausas: [],
       pausaInicio: null,
       pausaFim: null,
     });

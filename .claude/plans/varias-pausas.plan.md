@@ -1,7 +1,7 @@
 # Plan: Várias pausas na jornada (pedido do barbeiro em produção, 08/11)
 
 **Origem**: conversa do dono com o barbeiro da `jesus-barber` (08/11/2026), "Mais de uma pausa"; passo 4 da ordem combinada.
-**Canvas**: a desenhar depois das decisões abaixo (pelo fluxo do tipo Design, com o Design System do BarChop, escuro e claro).
+**Canvas**: página "Várias pausas" (Pau-Jornada, Pau-Jornada-Folha, Pau-PausasDeSempre, Pau-Horarios, escuro e claro), publicada em 08/11; aguarda aprovação do dono.
 **Complexity**: Medium, 3 PRs (expandir → web → contrair).
 
 ## Summary
@@ -20,14 +20,18 @@ Respondidas pelo dono em 08/11 (as marcadas com **(dono)**).
 - **(dono) a) Pausa fora do horário do dia**: hoje a API aceita e ela não tem efeito (só conta o pedaço dentro do expediente). Na análise de 08/11 eu disse "não podem sair da jornada". **Decidido: continuar aceitando, sem efeito, com um aviso na folha** ("fora do horário deste dia, não muda nada"). Recusar seria frágil: o horário da casa e as datas especiais mudam por fora, e uma mudança lá invalidaria pausas já salvas.
 - **(dono) b) Quantas o barbeiro precisar**: a tela não limita (o "+ Outra pausa" fica sempre). Na API, só um teto técnico de 24 por dia (`maxItems`), contra corpo gigante; ninguém chega nele.
 - **(dono) c) "Pausa de sempre" vira "Pausas de sempre"**: uma lista aplicada a todos os dias de trabalho, trocando a lista de cada dia. Nasce do primeiro dia salvo que tem pausa.
-- Códigos de erro novos: `pausas_se_cruzam`, `pausas_demais` (passou do teto técnico; junto de `pausa_incompleta` e `pausa_invalida`).
+- Códigos de erro novos: `pausas_se_cruzam` e `recarregue_a_pagina` (junto de `pausa_incompleta` e `pausa_invalida`). Passar do teto técnico é o 400 da validação de schema (o `pausas_demais` do rascunho saiu: nunca apareceria).
 - Datas especiais: as pausas valem nelas como hoje.
 
 ## Contrato (transição sem quebrar a web antiga)
 
 - `DiaDaJornada` ganha `pausas: { inicio, fim }[]` (em ordem de início). `pausaInicio`/`pausaFim` continuam na resposta com a **primeira** pausa, até o PR 3.
 - `OcupacaoDoProfissional` ganha `pausas`; `pausa` continua com a primeira.
-- `PUT /equipe/:id/jornada`: com `pausas`, valem elas. Só com `pausaInicio`/`pausaFim` (web antiga), vira uma pausa. **Aba antiga num dia que já tem 2+ pausas, sem `pausas` no corpo: 422 `recarregue_a_pagina`**, em vez de apagar as outras em silêncio.
+- `PUT /equipe/:id/jornada`: **quem decide é o campo antigo comparado com o que está salvo**, não a presença de `pausas`. A web antiga monta o corpo espalhando o dia do GET (`{ ...dia, pausaInicio, pausaFim }`), então depois do PR 1 ela devolve as `pausas` velhas junto da pausa editada. Por dia:
+  - campos antigos ausentes, ou iguais a `pausas[0]` do corpo: web nova, valem as `pausas`;
+  - campos antigos iguais à primeira salva: a web antiga não mexeu no dia, fica tudo;
+  - senão, a web antiga mexeu: com 0 ou 1 salva vira `[antiga]` (ou `[]`); com 2+ salvas, **422 `recarregue_a_pagina`**, em vez de apagar as outras em silêncio.
+  - **PR 2: a web nova manda os campos antigos iguais a `pausas[0]`, ou não manda.** Espalhar o dia do GET e trocar só `pausas` cairia no caminho da web antiga.
 - Durante a transição a API também grava a primeira pausa nas colunas antigas: se a API voltar pra versão anterior, ela ainda vê a pausa principal.
 
 ## PRs
@@ -36,7 +40,7 @@ Respondidas pelo dono em 08/11 (as marcadas com **(dono)**).
 - Migration escrita à mão (o `migrate dev` propõe derrubar `agendamento.periodo`), com bloco "Desfazer", como a `20261008120000_jornada_pausa`. Conferir no banco de teste que o Postgres aceita a expressão do EXCLUDE.
 - `disponibilidade.ts`: o tipo da jornada perde `pausaInicio/pausaFim` e ganha `pausas`; `pausaComoOcupado` lê a lista. Assim o tsc acha todo leitor: `findUnique` (dia, linha 174), `findMany` (período/mês, 305), ocupação (`ocupacao.ts:86`, `const [pausa] =` vira todas; `minutosDeTrabalho` já conta sobreposição uma vez), `conferirHorario` (`contexto.pausa`; a mensagem diz qual pausa bateu), `equipe.ts` (GET/PUT). Conferir que `proximosHorarios` (página pública) passa pelo mesmo caminho.
 - PUT: `deleteMany` + `createMany` das pausas da semana na mesma `$transaction` dos 7 updates; `maxItems: 24` por dia no schema (teto técnico).
-- **Prova da compatibilidade**: os testes de API `jornada-e-servicos`, `disponibilidade-profissional`, `ocupacao` e `agendamentos-cabe` ficam intocados e passam. Testes novos: duas pausas no dia, na disponibilidade (dia e mês), no POST/`/cabe`, na ocupação; cruzar → 422; 25 → 400; folga apaga; corpo antigo com 2+ salvas → 422; migration copiou.
+- **Prova da compatibilidade**: os testes de API `jornada-e-servicos`, `disponibilidade-profissional`, `ocupacao` e `agendamentos-cabe` passam; nos de formato exato (`toEqual`) a única mudança é acrescentar `pausas: []`. A prova de verdade é o teste que simula a web antiga (GET → muda o campo antigo mantendo `pausas` → PUT). Testes novos (`varias-pausas.test.ts`): duas pausas no dia, na disponibilidade (dia e mês), no POST/`/cabe`, na ocupação; cruzar → 422; 25 → 400; folga apaga; aba antiga (1 salva aplica, 2+ dá 422, dia não mexido sobrevive, aba de antes do deploy); o `INSERT … SELECT` da migration rodado de novo (a suíte aplica as migrations num banco vazio); EXCLUDE e CHECK no banco.
 - api-client e dublê aceitam as duas formas na semente e derivam `pausas` (os testes da web que semeiam `pausaInicio` não mudam neste PR).
 - Typecheck dos 7 projetos (o mobile usa os tipos).
 - **Deploy**: migration + API. A web antiga segue funcionando.

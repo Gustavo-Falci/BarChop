@@ -37,11 +37,17 @@ export interface DiaDaJornada {
   modo: "barbearia" | "proprio" | "folga";
   horaInicio: Date | null;
   horaFim: Date | null;
-  // A pausa do almoço (painel v2, marco 3): as duas ou nenhuma. Opcional
-  // porque a janela não depende dela — só o `pausaComoOcupado` lê.
-  pausaInicio?: Date | null;
-  pausaFim?: Date | null;
+  // As pausas do dia (tabela `pausa_da_jornada`, 08/11/2026). Obrigatória
+  // de propósito: quem lê a jornada sem `INCLUIR_PAUSAS` não compila, em
+  // vez de calcular os horários sem pausa nenhuma.
+  pausas: IntervaloOcupado[];
 }
+
+// O `include` de toda leitura da jornada que vai pro cálculo: as pausas
+// em ordem de início (a ocupação e o GET citam a primeira).
+export const INCLUIR_PAUSAS = {
+  pausas: { orderBy: { horaInicio: "asc" }, select: { horaInicio: true, horaFim: true } },
+} as const;
 
 export interface BloqueioDoDia {
   dataInicio: Date;
@@ -59,7 +65,8 @@ const FECHADO: LinhaDeHorario = { horaAbertura: null, horaFechamento: null, fech
 // recortado nele — o membro não atende com a porta fechada.
 export function janelaEfetiva(
   funcionamento: LinhaDeHorario | null,
-  jornada: DiaDaJornada | null
+  // A janela não depende das pausas.
+  jornada: Pick<DiaDaJornada, "modo" | "horaInicio" | "horaFim"> | null
 ): LinhaDeHorario {
   if (
     !funcionamento ||
@@ -82,24 +89,26 @@ export function janelaEfetiva(
   return { horaAbertura: new Date(inicio), horaFechamento: new Date(fim), fechado: false };
 }
 
-// A pausa do membro no dia vira o que o `horariosLivres` entende: um
-// intervalo ocupado, como o bloqueio de horas — fora da janela, não tem
-// efeito. Vale pro cliente e pro painel: é horário, não regra.
+// As pausas do membro no dia viram o que o `horariosLivres` entende:
+// intervalos ocupados, como o bloqueio de horas — fora da janela, não
+// têm efeito. Vale pro cliente e pro painel: é horário, não regra.
 export function pausaComoOcupado(jornada: DiaDaJornada | null): IntervaloOcupado[] {
-  if (!jornada || jornada.modo === "folga" || !jornada.pausaInicio || !jornada.pausaFim) return [];
-  return [{ horaInicio: jornada.pausaInicio, horaFim: jornada.pausaFim }];
+  if (!jornada || jornada.modo === "folga") return [];
+  return jornada.pausas
+    .map((pausa) => ({ horaInicio: pausa.horaInicio, horaFim: pausa.horaFim }))
+    .sort((a, b) => a.horaInicio.getTime() - b.horaInicio.getTime());
 }
 
-// O horário pedido invade a pausa? Dá o código próprio na criação, pelo
-// mesmo motivo do `caiEmBloqueio`: sem isto a recusa sairia como
-// `horario_indisponivel`, sem dizer por quê. Devolve a faixa, que a
-// mensagem cita.
+// O horário pedido invade alguma pausa? Dá o código próprio na criação,
+// pelo mesmo motivo do `caiEmBloqueio`: sem isto a recusa sairia como
+// `horario_indisponivel`, sem dizer por quê. Devolve a primeira faixa
+// que bate, que a mensagem cita.
 export function pausaQueBate(
-  pausa: IntervaloOcupado[],
+  pausas: IntervaloOcupado[],
   horaInicio: string,
   horaFim: string
 ): IntervaloOcupado | undefined {
-  return pausa.find(
+  return pausas.find(
     (faixa) => dateParaHora(faixa.horaInicio) < horaFim && horaInicio < dateParaHora(faixa.horaFim)
   );
 }
@@ -150,7 +159,7 @@ export function caiEmBloqueio(
 }
 
 // O que um dia precisa pra calcular a agenda de um membro: a janela já
-// cruzada com a jornada, a pausa dele e os bloqueios que o tocam. A
+// cruzada com a jornada, as pausas dele e os bloqueios que o tocam. A
 // exceção da data (feriado, horário especial) substitui a linha do dia
 // da semana antes do cruzamento — vale pra toda a equipe, no link e no
 // painel. Quatro consultas, e a rota do mês tem a versão dela com uma
@@ -173,6 +182,7 @@ export async function contextoDoDia(
     }),
     db.jornadaProfissional.findUnique({
       where: { barbeiroId_diaSemana: { barbeiroId, diaSemana } },
+      include: INCLUIR_PAUSAS,
     }),
     db.bloqueio.findMany({
       where: { barbeiroId, dataInicio: { lte: data }, dataFim: { gte: data } },
@@ -182,7 +192,7 @@ export async function contextoDoDia(
 
   return {
     janela: janelaEfetiva(excecao ?? funcionamento, jornada),
-    pausa: pausaComoOcupado(jornada),
+    pausas: pausaComoOcupado(jornada),
     bloqueios,
   };
 }
@@ -236,7 +246,7 @@ export async function horariosDoProfissionalNoDia(
   return horariosLivres({
     janela,
     atendimentos: ocupados,
-    ocupados: [...bloqueados, ...contexto.pausa],
+    ocupados: [...bloqueados, ...contexto.pausas],
     duracaoTotalMinutos,
     grade,
   });
@@ -302,7 +312,7 @@ export async function agendaDoPeriodo(
       where: { barbeariaId, data: { gte: primeiroDia, lte: ultimoDia } },
       select: { data: true, horaAbertura: true, horaFechamento: true, fechado: true },
     }),
-    db.jornadaProfissional.findMany({ where: { barbeiroId: { in: barbeiroIds } } }),
+    db.jornadaProfissional.findMany({ where: { barbeiroId: { in: barbeiroIds } }, include: INCLUIR_PAUSAS }),
     db.bloqueio.findMany({
       where: { barbeiroId: { in: barbeiroIds }, dataInicio: { lte: ultimoDia }, dataFim: { gte: primeiroDia } },
       select: { barbeiroId: true, dataInicio: true, dataFim: true, horaInicio: true, horaFim: true },

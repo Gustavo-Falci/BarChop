@@ -4,6 +4,7 @@ import { normalizarEmail } from "@barchop/formato";
 import { garantirVagaNoPlano, sincronizarQuantidade } from "../lib/assinatura";
 import { emitirCodigo } from "../lib/codigos";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
+import { INCLUIR_PAUSAS } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { dateParaHora, horaParaDate } from "../lib/horas";
 import { corpoDaOrdem, garantirMesmoConjunto, ordemNaPosicao } from "../lib/ordem";
@@ -83,7 +84,24 @@ const corpoPutJornada = {
           modo: { type: "string", enum: ["barbearia", "proprio", "folga"] },
           horaInicio: { type: ["string", "null"], pattern: PADRAO_HORA },
           horaFim: { type: ["string", "null"], pattern: PADRAO_HORA },
-          // A pausa do almoço do dia (painel v2, marco 3).
+          // As pausas do dia (08/11/2026). Os itens aceitam exatamente o
+          // que o GET devolve: a web antiga reenvia o dia como veio. O
+          // teto é técnico, contra corpo gigante; ninguém chega nele.
+          pausas: {
+            type: "array",
+            maxItems: 24,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["inicio", "fim"],
+              properties: {
+                inicio: { type: "string", pattern: PADRAO_HORA },
+                fim: { type: "string", pattern: PADRAO_HORA },
+              },
+            },
+          },
+          // A pausa única de antes (painel v2, marco 3): a web antiga só
+          // conhece estes. Ver `pausasDoDia`.
           pausaInicio: { type: ["string", "null"], pattern: PADRAO_HORA },
           pausaFim: { type: ["string", "null"], pattern: PADRAO_HORA },
         },
@@ -105,52 +123,124 @@ const corpoPutServicos = {
   },
 } as const;
 
+interface FaixaDePausa {
+  inicio: string; // "HH:mm"
+  fim: string;
+}
+
 function serializarDiaDaJornada(dia: {
   diaSemana: number;
   modo: string;
   horaInicio: Date | null;
   horaFim: Date | null;
-  pausaInicio: Date | null;
-  pausaFim: Date | null;
+  pausas: { horaInicio: Date; horaFim: Date }[];
 }) {
+  const pausas = dia.pausas.map((pausa) => ({
+    inicio: dateParaHora(pausa.horaInicio),
+    fim: dateParaHora(pausa.horaFim),
+  }));
   return {
     diaSemana: dia.diaSemana,
     modo: dia.modo,
     horaInicio: dia.horaInicio ? dateParaHora(dia.horaInicio) : null,
     horaFim: dia.horaFim ? dateParaHora(dia.horaFim) : null,
-    pausaInicio: dia.pausaInicio ? dateParaHora(dia.pausaInicio) : null,
-    pausaFim: dia.pausaFim ? dateParaHora(dia.pausaFim) : null,
+    pausas,
+    // A primeira, pra web de antes das várias pausas, até o PR que tira.
+    pausaInicio: pausas[0]?.inicio ?? null,
+    pausaFim: pausas[0]?.fim ?? null,
   };
 }
 
-// A pausa do dia, validada e convertida. Folga não tem pausa: a que vier
-// é descartada, como as horas num dia que não é próprio — a tela manda o
-// que estava antes de trocar o modo. O CHECK `jornada_pausa_inteira`
-// exige o mesmo.
-function pausaDoDia(dia: {
+// As duas nulas contam como a mesma "nenhuma".
+function mesmaFaixa(a: FaixaDePausa | null, b: FaixaDePausa | null): boolean {
+  return a?.inicio === b?.inicio && a?.fim === b?.fim;
+}
+
+// "HH:mm" compara como texto na ordem do relógio.
+function exigirNaOrdem(diaSemana: number, pausa: FaixaDePausa): void {
+  if (pausa.inicio >= pausa.fim) {
+    throw new ErroDeNegocio(
+      `no dia ${diaSemana} a pausa precisa começar antes de terminar`,
+      "pausa_invalida"
+    );
+  }
+}
+
+// A pausa única dos campos antigos, validada.
+function pausaAntiga(dia: {
   diaSemana: number;
-  modo: string;
   pausaInicio?: string | null;
   pausaFim?: string | null;
-}): { pausaInicio: Date | null; pausaFim: Date | null } {
+}): FaixaDePausa | null {
   const { pausaInicio, pausaFim } = dia;
-  if (dia.modo === "folga" || (!pausaInicio && !pausaFim)) {
-    return { pausaInicio: null, pausaFim: null };
-  }
+  if (!pausaInicio && !pausaFim) return null;
   if (!pausaInicio || !pausaFim) {
     throw new ErroDeNegocio(
       `a pausa do dia ${dia.diaSemana} precisa de começo e fim`,
       "pausa_incompleta"
     );
   }
-  // "HH:mm" compara como texto na ordem do relógio.
-  if (pausaInicio >= pausaFim) {
+  const pausa = { inicio: pausaInicio, fim: pausaFim };
+  exigirNaOrdem(dia.diaSemana, pausa);
+  return pausa;
+}
+
+// A lista de `pausas`, validada e em ordem de início. Encostar pode
+// (12:00–13:00 e 13:00–13:30); cruzar, não. A EXCLUDE
+// `pausas_sem_cruzar` recusaria depois, mas com um 500.
+function listaDePausas(diaSemana: number, pausas: FaixaDePausa[]): FaixaDePausa[] {
+  for (const pausa of pausas) exigirNaOrdem(diaSemana, pausa);
+  const emOrdem = [...pausas].sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0));
+  for (let i = 1; i < emOrdem.length; i += 1) {
+    const antes = emOrdem[i - 1];
+    const depois = emOrdem[i];
+    if (depois.inicio < antes.fim) {
+      throw new ErroDeNegocio(
+        `no dia ${diaSemana} as pausas ${antes.inicio}–${antes.fim} e ${depois.inicio}–${depois.fim} se cruzam`,
+        "pausas_se_cruzam"
+      );
+    }
+  }
+  return emOrdem;
+}
+
+// As pausas que o dia vai ter. Folga não tem: as que vierem são
+// descartadas, como as horas num dia que não é próprio (a tela manda o
+// que estava antes de trocar o modo).
+//
+// A web de antes das várias pausas conhece só `pausaInicio`/`pausaFim`,
+// e reenvia o dia como veio do GET, com as `pausas` velhas junto. Por
+// isso quem decide é o campo antigo, comparado com o que está salvo:
+// - campo antigo ausente, ou igual à primeira das `pausas` do corpo: é a
+//   web nova, valem as `pausas`;
+// - campo antigo igual à primeira salva: a web antiga não mexeu no dia,
+//   fica tudo como está;
+// - senão, a web antiga mexeu. Com uma pausa salva (ou nenhuma), vale a
+//   dela; com duas ou mais, ela apagaria as outras sem ver: 422.
+function pausasDoDia(
+  dia: {
+    diaSemana: number;
+    modo: string;
+    pausas?: FaixaDePausa[];
+    pausaInicio?: string | null;
+    pausaFim?: string | null;
+  },
+  salvas: FaixaDePausa[]
+): FaixaDePausa[] {
+  if (dia.modo === "folga") return [];
+  const lista = dia.pausas ? listaDePausas(dia.diaSemana, dia.pausas) : null;
+  if (dia.pausaInicio === undefined && dia.pausaFim === undefined) return lista ?? [];
+
+  const antiga = pausaAntiga(dia);
+  if (lista && mesmaFaixa(antiga, lista[0] ?? null)) return lista;
+  if (mesmaFaixa(antiga, salvas[0] ?? null)) return salvas;
+  if (salvas.length >= 2) {
     throw new ErroDeNegocio(
-      `no dia ${dia.diaSemana} a pausa precisa começar antes de terminar`,
-      "pausa_invalida"
+      `o dia ${dia.diaSemana} tem mais de uma pausa: recarregue a página para mudar`,
+      "recarregue_a_pagina"
     );
   }
-  return { pausaInicio: horaParaDate(pausaInicio), pausaFim: horaParaDate(pausaFim) };
+  return antiga ? [antiga] : [];
 }
 
 // O membro existe nesta barbearia? Leitura e escrita da jornada e dos
@@ -167,6 +257,7 @@ async function lerJornada(barbeiroId: string) {
   const dias = await prisma.jornadaProfissional.findMany({
     where: { barbeiroId },
     orderBy: { diaSemana: "asc" },
+    include: INCLUIR_PAUSAS,
   });
   return { jornada: dias.map(serializarDiaDaJornada) };
 }
@@ -476,6 +567,24 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
       const { id } = request.params;
       await garantirMembro(request.user.barbeariaId, id);
 
+      // As pausas salvas de cada dia, pra regra da web antiga
+      // (`pausasDoDia`), e o id de cada linha, pra gravar as novas.
+      const salvos = await prisma.jornadaProfissional.findMany({
+        where: { barbeiroId: id },
+        select: { id: true, diaSemana: true, ...INCLUIR_PAUSAS },
+      });
+      const salvoDe = (diaSemana: number) => {
+        const linha = salvos.find((dia) => dia.diaSemana === diaSemana);
+        if (!linha) throw new Error(`jornada sem a linha do dia ${diaSemana}`);
+        return {
+          jornadaId: linha.id,
+          pausas: linha.pausas.map((pausa) => ({
+            inicio: dateParaHora(pausa.horaInicio),
+            fim: dateParaHora(pausa.horaFim),
+          })),
+        };
+      };
+
       // Toda a validação antes de gravar: um dia ruim no meio da lista
       // não pode deixar meia semana gravada (mesma regra dos horários).
       const vistos = new Set<number>();
@@ -492,9 +601,9 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         // tela costuma mandar as horas antigas depois de trocar o modo,
         // como no `fechado` do funcionamento. O CHECK do banco exige
         // que fiquem nulas.
-        const pausa = pausaDoDia(dia);
+        const pausas = pausasDoDia(dia, salvoDe(dia.diaSemana).pausas);
         if (dia.modo !== "proprio") {
-          return { diaSemana: dia.diaSemana, modo: dia.modo, horaInicio: null, horaFim: null, ...pausa };
+          return { diaSemana: dia.diaSemana, modo: dia.modo, horaInicio: null, horaFim: null, pausas };
         }
         if (!dia.horaInicio || !dia.horaFim) {
           throw new ErroDeNegocio(
@@ -514,20 +623,40 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
           modo: dia.modo,
           horaInicio: horaParaDate(dia.horaInicio),
           horaFim: horaParaDate(dia.horaFim),
-          ...pausa,
+          pausas,
         };
       });
 
       // Update e não upsert: as sete linhas existem desde o insert do
-      // membro (trigger da migration 20261004120000).
-      await prisma.$transaction(
-        dias.map(({ diaSemana, ...resto }) =>
+      // membro (trigger da migration 20261004120000). Os updates vêm
+      // primeiro de propósito: travam as sete linhas, e um PUT ao mesmo
+      // tempo espera este terminar antes de apagar as pausas (senão os
+      // dois apagariam só as de antes e somariam as suas).
+      //
+      // A primeira pausa vai também pras colunas antigas, até o PR que as
+      // derruba: se a API voltar pra versão anterior, ela ainda a vê.
+      await prisma.$transaction([
+        ...dias.map(({ diaSemana, pausas, ...resto }) =>
           prisma.jornadaProfissional.update({
             where: { barbeiroId_diaSemana: { barbeiroId: id, diaSemana } },
-            data: resto,
+            data: {
+              ...resto,
+              pausaInicio: pausas[0] ? horaParaDate(pausas[0].inicio) : null,
+              pausaFim: pausas[0] ? horaParaDate(pausas[0].fim) : null,
+            },
           })
-        )
-      );
+        ),
+        prisma.pausaDaJornada.deleteMany({ where: { jornada: { barbeiroId: id } } }),
+        prisma.pausaDaJornada.createMany({
+          data: dias.flatMap(({ diaSemana, pausas }) =>
+            pausas.map((pausa) => ({
+              jornadaId: salvoDe(diaSemana).jornadaId,
+              horaInicio: horaParaDate(pausa.inicio),
+              horaFim: horaParaDate(pausa.fim),
+            }))
+          ),
+        }),
+      ]);
 
       return lerJornada(id);
     }

@@ -217,7 +217,7 @@ export async function conferirHorario(tx: Prisma.TransactionClient, params: Conf
       "horario_bloqueado"
     );
   }
-  const pausa = pausaQueBate(contexto.pausa, horaInicio, horaFim);
+  const pausa = pausaQueBate(contexto.pausas, horaInicio, horaFim);
   if (pausa) {
     throw new ErroDeNegocio(
       `esse horário cai na pausa do profissional (${faixa(pausa)})`,
@@ -247,7 +247,7 @@ export async function conferirHorario(tx: Prisma.TransactionClient, params: Conf
   const entradas = {
     janela,
     atendimentos: ocupados,
-    ocupados: [...bloqueados, ...contexto.pausa],
+    ocupados: [...bloqueados, ...contexto.pausas],
     duracaoTotalMinutos: duracao,
     grade: gradeDe(regras, paraCliente),
   };

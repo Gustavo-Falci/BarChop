@@ -92,6 +92,8 @@ describe("jornada do membro", () => {
       modo: "proprio",
       horaInicio: "13:00",
       horaFim: "20:00",
+      // O que veio do GET vai de volta; a API decide pelo campo antigo.
+      pausas: [],
       pausaInicio: null,
       pausaFim: null,
     });

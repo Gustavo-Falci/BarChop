@@ -23,6 +23,7 @@ import {
   efeitoDaJanela,
   efeitoDoCabe,
   efeitoDoIntervalo,
+  efeitoDoLogoDepois,
   efeitoDoMesmoDia,
   efeitoDoPrazo,
 } from "./regras";
@@ -42,7 +43,7 @@ function simNao(valor: boolean): "sim" | "nao" {
   return valor ? "sim" : "nao";
 }
 
-// As sete regras numa lista só, cada uma com o valor que o seletor lê, o
+// As oito regras numa lista só, cada uma com o valor que o seletor lê, o
 // que a escolha grava e a frase do efeito. A lista é também o que monta o
 // "o que mudou" da barra de salvar. `chave`: sim ou não, ligado num
 // interruptor na própria linha; as outras abrem a folha (PR 4, 01/11).
@@ -64,6 +65,16 @@ const COMO_MARCA: Regra[] = [
     valor: (r) => String(r.intervaloMinutos),
     aplicar: (v) => ({ intervaloMinutos: Number(v) as Regras["intervaloMinutos"] }),
     efeito: (r) => efeitoDoIntervalo(r.intervaloMinutos),
+  },
+  {
+    // Logo abaixo do intervalo: é a exceção dele.
+    nome: "logo-depois-do-anterior",
+    legenda: "Oferecer logo depois do anterior",
+    chave: true,
+    opcoes: OPCOES_SIM_NAO,
+    valor: (r) => simNao(r.logoDepoisDoAnterior),
+    aplicar: (v) => ({ logoDepoisDoAnterior: v === "sim" }),
+    efeito: (r) => efeitoDoLogoDepois(r.logoDepoisDoAnterior, r.intervaloMinutos),
   },
   {
     nome: "antecedencia-minima",
@@ -156,6 +167,7 @@ function TelaDasRegras() {
       aceitaMesmoDia,
       janelaDias,
       cabeAntesDeFechar,
+      logoDepoisDoAnterior,
       prazoRemarcarHoras,
       prazoCancelarHoras,
     } = barbearia.dados;
@@ -165,6 +177,7 @@ function TelaDasRegras() {
       aceitaMesmoDia,
       janelaDias,
       cabeAntesDeFechar,
+      logoDepoisDoAnterior,
       prazoRemarcarHoras,
       prazoCancelarHoras,
     };

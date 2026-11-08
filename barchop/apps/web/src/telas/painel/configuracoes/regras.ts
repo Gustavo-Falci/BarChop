@@ -80,3 +80,10 @@ export function resumoDasRegras(regras: RegrasDeAgendamento): string {
   const janela = regras.janelaDias === null ? "agenda sem limite" : `agenda de ${regras.janelaDias} dias`;
   return `Grade de ${duracao(regras.intervaloMinutos)} · ${janela}`;
 }
+
+// "Oferecer logo depois do anterior" (pedido do barbeiro, 08/11/2026).
+export function efeitoDoLogoDepois(ligado: boolean, intervaloMinutos: number): string {
+  return ligado
+    ? `Além dos de ${intervaloMinutos} em ${intervaloMinutos}, o cliente vê a hora em que o atendimento anterior termina. Assim não sobra buraco curto na agenda.`
+    : `O cliente vê só os horários de ${intervaloMinutos} em ${intervaloMinutos}.`;
+}

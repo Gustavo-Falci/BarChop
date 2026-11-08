@@ -43,8 +43,6 @@ describe("GET /equipe/:id/jornada", () => {
         horaInicio: null,
         horaFim: null,
         pausas: [],
-        pausaInicio: null,
-        pausaFim: null,
       }))
     );
     await app.close();
@@ -89,8 +87,6 @@ describe("PUT /equipe/:id/jornada", () => {
       horaInicio: null,
       horaFim: null,
       pausas: [],
-      pausaInicio: null,
-      pausaFim: null,
     });
     expect(jornada[1]).toEqual({
       diaSemana: 1,
@@ -98,8 +94,6 @@ describe("PUT /equipe/:id/jornada", () => {
       horaInicio: "13:00",
       horaFim: "20:00",
       pausas: [],
-      pausaInicio: null,
-      pausaFim: null,
     });
     expect(jornada[2]).toMatchObject({ modo: "barbearia" });
     await app.close();
@@ -123,8 +117,6 @@ describe("PUT /equipe/:id/jornada", () => {
       horaInicio: null,
       horaFim: null,
       pausas: [],
-      pausaInicio: null,
-      pausaFim: null,
     });
     await app.close();
   });
@@ -178,15 +170,14 @@ describe("PUT /equipe/:id/jornada", () => {
     const dono = await criarBarbeariaComToken(app);
     const semana = SEMANA_DA_BARBEARIA.map((dia) =>
       dia.diaSemana === 1
-        ? { diaSemana: 1, modo: "barbearia", pausaInicio: "12:00", pausaFim: "13:00" }
+        ? { diaSemana: 1, modo: "barbearia", pausas: [{ inicio: "12:00", fim: "13:00" }] }
         : dia.diaSemana === 2
           ? {
               diaSemana: 2,
               modo: "proprio",
               horaInicio: "10:00",
               horaFim: "19:00",
-              pausaInicio: "14:00",
-              pausaFim: "14:30",
+              pausas: [{ inicio: "14:00", fim: "14:30" }],
             }
           : dia
     );
@@ -199,9 +190,9 @@ describe("PUT /equipe/:id/jornada", () => {
     });
 
     expect(resposta.statusCode).toBe(200);
-    expect(lida.json().jornada[1]).toMatchObject({ modo: "barbearia", pausaInicio: "12:00", pausaFim: "13:00" });
-    expect(lida.json().jornada[2]).toMatchObject({ modo: "proprio", pausaInicio: "14:00", pausaFim: "14:30" });
-    expect(lida.json().jornada[3]).toMatchObject({ pausaInicio: null, pausaFim: null });
+    expect(lida.json().jornada[1]).toMatchObject({ modo: "barbearia", pausas: [{ inicio: "12:00", fim: "13:00" }] });
+    expect(lida.json().jornada[2]).toMatchObject({ modo: "proprio", pausas: [{ inicio: "14:00", fim: "14:30" }] });
+    expect(lida.json().jornada[3]).toMatchObject({ pausas: [] });
     await app.close();
   });
 
@@ -213,15 +204,15 @@ describe("PUT /equipe/:id/jornada", () => {
       app,
       dono.token,
       dono.barbeiroId,
-      comDia({ diaSemana: 3, modo: "folga", pausaInicio: "12:00", pausaFim: "13:00" })
+      comDia({ diaSemana: 3, modo: "folga", pausas: [{ inicio: "12:00", fim: "13:00" }] })
     );
 
     expect(resposta.statusCode).toBe(200);
-    expect(resposta.json().jornada[3]).toMatchObject({ modo: "folga", pausaInicio: null, pausaFim: null });
+    expect(resposta.json().jornada[3]).toMatchObject({ modo: "folga", pausas: [] });
     await app.close();
   });
 
-  it("pausa sem fim, ou com o fim antes do começo: 422, e nada é gravado", async () => {
+  it("pausa sem fim (400, do schema) ou com o fim antes do começo (422): nada é gravado", async () => {
     const app = buildApp();
     const dono = await criarBarbeariaComToken(app);
 
@@ -229,17 +220,16 @@ describe("PUT /equipe/:id/jornada", () => {
       app,
       dono.token,
       dono.barbeiroId,
-      comDia({ diaSemana: 2, modo: "barbearia", pausaInicio: "12:00" })
+      comDia({ diaSemana: 2, modo: "barbearia", pausas: [{ inicio: "12:00" }] })
     );
     const invertida = await putJornada(
       app,
       dono.token,
       dono.barbeiroId,
-      comDia({ diaSemana: 2, modo: "barbearia", pausaInicio: "13:00", pausaFim: "12:00" })
+      comDia({ diaSemana: 2, modo: "barbearia", pausas: [{ inicio: "13:00", fim: "12:00" }] })
     );
 
-    expect(semFim.statusCode).toBe(422);
-    expect(semFim.json().erro).toBe("pausa_incompleta");
+    expect(semFim.statusCode).toBe(400);
     expect(invertida.statusCode).toBe(422);
     expect(invertida.json().erro).toBe("pausa_invalida");
     const lida = await app.inject({
@@ -247,7 +237,7 @@ describe("PUT /equipe/:id/jornada", () => {
       url: `/equipe/${dono.barbeiroId}/jornada`,
       headers: auth(dono.token),
     });
-    expect(lida.json().jornada[2]).toMatchObject({ pausaInicio: null, pausaFim: null });
+    expect(lida.json().jornada[2]).toMatchObject({ pausas: [] });
     await app.close();
   });
 

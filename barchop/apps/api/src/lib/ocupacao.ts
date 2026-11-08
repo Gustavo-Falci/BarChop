@@ -121,8 +121,6 @@ export async function ocupacaoDoDia(
         ? { abre: dateParaHora(expediente.horaAbertura!), fecha: dateParaHora(expediente.horaFechamento!) }
         : null,
       pausas: faixas,
-      // A primeira, do tempo da pausa única, até o PR que tira o campo.
-      pausa: faixas[0] ?? null,
     };
   });
 

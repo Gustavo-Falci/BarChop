@@ -570,12 +570,16 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     return ids.map((id) => porId.get(id)!);
   }
 
-  // O dia como a API devolve: as `pausas` (da semente, ou derivadas da
-  // pausa antiga dela) e a primeira nos campos antigos.
+  // O dia como a API devolve: só as chaves do contrato, e nenhuma pausa
+  // na folga.
   function comPausas(dia: DiaDaJornada): DiaDaJornada & { pausas: FaixaDePausa[] } {
-    const antiga = dia.pausaInicio && dia.pausaFim ? [{ inicio: dia.pausaInicio, fim: dia.pausaFim }] : [];
-    const pausas = dia.modo === "folga" ? [] : (dia.pausas ?? antiga).map((p) => ({ ...p }));
-    return { ...dia, pausas, pausaInicio: pausas[0]?.inicio ?? null, pausaFim: pausas[0]?.fim ?? null };
+    return {
+      diaSemana: dia.diaSemana,
+      modo: dia.modo,
+      horaInicio: dia.horaInicio ?? null,
+      horaFim: dia.horaFim ?? null,
+      pausas: dia.modo === "folga" ? [] : (dia.pausas ?? []).map((p) => ({ ...p })),
+    };
   }
 
   function exigirNaOrdem(pausa: FaixaDePausa): void {
@@ -584,38 +588,19 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     }
   }
 
-  // As pausas do dia com as recusas e a regra da web antiga do PUT da API
-  // (`pausasDoDia`, routers/equipe.ts): com os campos antigos no corpo, é
-  // a web antiga, e o campo antigo comparado com o que está salvo decide.
-  function pausasDoDia(dia: DiaDaJornada, salvas: FaixaDePausa[]): FaixaDePausa[] {
+  // As pausas do dia com as recusas do PUT da API (`pausasDoDia`,
+  // routers/equipe.ts): em ordem, sem se cruzar (encostar pode).
+  function pausasDoDia(dia: DiaDaJornada): FaixaDePausa[] {
     if (dia.modo === "folga") return [];
-    if (dia.pausaInicio === undefined && dia.pausaFim === undefined) {
-      const pausas = dia.pausas ?? [];
-      pausas.forEach(exigirNaOrdem);
-      const emOrdem = [...pausas].sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0));
-      emOrdem.forEach((pausa, i) => {
-        if (i > 0 && pausa.inicio < emOrdem[i - 1].fim) {
-          throw new ErroDaApi(422, "pausas_se_cruzam", "duas pausas do dia se cruzam");
-        }
-      });
-      return emOrdem;
-    }
-
-    const { pausaInicio, pausaFim } = dia;
-    let antiga: FaixaDePausa | null = null;
-    if (pausaInicio || pausaFim) {
-      if (!pausaInicio || !pausaFim) {
-        throw new ErroDaApi(422, "pausa_incompleta", "a pausa precisa de começo e fim");
+    const pausas = dia.pausas ?? [];
+    pausas.forEach(exigirNaOrdem);
+    const emOrdem = [...pausas].sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0));
+    emOrdem.forEach((pausa, i) => {
+      if (i > 0 && pausa.inicio < emOrdem[i - 1].fim) {
+        throw new ErroDaApi(422, "pausas_se_cruzam", "duas pausas do dia se cruzam");
       }
-      antiga = { inicio: pausaInicio, fim: pausaFim };
-      exigirNaOrdem(antiga);
-    }
-    const mesma = (a: FaixaDePausa | null, b: FaixaDePausa | null) => a?.inicio === b?.inicio && a?.fim === b?.fim;
-    if (mesma(antiga, salvas[0] ?? null)) return salvas;
-    if (salvas.length >= 2) {
-      throw new ErroDaApi(422, "recarregue_a_pagina", "Neste dia já há mais de uma pausa. Recarregue a página para mudar.");
-    }
-    return antiga ? [antiga] : [];
+    });
+    return emOrdem;
   }
 
   // O que o trigger da API dá a todo membro, criado na primeira leitura.
@@ -627,8 +612,6 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       horaInicio: null,
       horaFim: null,
       pausas: [],
-      pausaInicio: null,
-      pausaFim: null,
     }));
     return estado.jornadas![id].map(comPausas);
   }
@@ -1595,13 +1578,19 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         return jornadaDe(id);
       },
       // As mesmas recusas do PUT da API; hora em dia que não é próprio
-      // é descartada, como lá, e as pausas na folga também.
+      // é descartada, como lá, e as pausas na folga também. A pausa única
+      // de antes no corpo é de uma aba com a web antiga: 422, e nada muda.
       async salvarJornada(id: string, jornada: DiaDaJornada[]) {
         membroOu404(id);
-        const salvas = jornadaDe(id);
+        if (jornada.some((dia) => "pausaInicio" in dia || "pausaFim" in dia)) {
+          throw new ErroDaApi(
+            422,
+            "recarregue_a_pagina",
+            "Esta página está desatualizada. Recarregue para salvar a jornada."
+          );
+        }
         const dias = jornada.map((dia) => {
-          const pausas = pausasDoDia(dia, salvas.find((d) => d.diaSemana === dia.diaSemana)?.pausas ?? []);
-          const pausa = { pausas, pausaInicio: pausas[0]?.inicio ?? null, pausaFim: pausas[0]?.fim ?? null };
+          const pausa = { pausas: pausasDoDia(dia) };
           if (dia.modo !== "proprio") return { ...dia, horaInicio: null, horaFim: null, ...pausa };
           if (!dia.horaInicio || !dia.horaFim) {
             throw new ErroDaApi(422, "horario_incompleto", "dia próprio sem entrada e saída");
@@ -1988,7 +1977,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             : null;
         const expedienteDe = (id: string) => {
           const dia = jornadaDe(id).find((j) => j.diaSemana === diaSemana);
-          if (!casaAberta || dia?.modo === "folga") return { janela: null, pausas: [], pausa: null };
+          if (!casaAberta || dia?.modo === "folga") return { janela: null, pausas: [] };
           let janela: { abre: string; fecha: string } | null = casaAberta;
           if (dia?.modo === "proprio" && dia.horaInicio && dia.horaFim) {
             const abre = dia.horaInicio > casaAberta.abre ? dia.horaInicio : casaAberta.abre;
@@ -1996,7 +1985,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             janela = abre < fecha ? { abre, fecha } : null;
           }
           const pausas = janela && dia ? dia.pausas : [];
-          return { janela, pausas, pausa: pausas[0] ?? null };
+          return { janela, pausas };
         };
         const profissionais = equipe()
           .filter((m) => m.atende && m.ativo && !m.convitePendente)

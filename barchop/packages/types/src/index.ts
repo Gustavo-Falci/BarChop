@@ -461,15 +461,12 @@ export interface DiaDaJornada {
   horaInicio: string | null; // "HH:mm"
   horaFim: string | null;
   // As pausas do dia (08/11/2026), em ordem de início, sem se cruzar
-  // (encostar pode); nenhuma na folga. Opcional ao mandar; a API sempre
-  // devolve.
+  // (encostar pode); nenhuma na folga. Opcional ao mandar (sem ela, o dia
+  // fica sem pausa); a API sempre devolve. A pausa única de antes
+  // (`pausaInicio`/`pausaFim`) saiu do contrato: no corpo do PUT, ela é
+  // de uma aba com a web antiga, e a API responde 422
+  // `recarregue_a_pagina` (routers/equipe.ts).
   pausas?: FaixaDePausa[];
-  // A primeira das `pausas`, do tempo em que o dia tinha uma só. A API
-  // ainda devolve e aceita, até o PR que as tira. Só a web antiga manda:
-  // com elas no corpo, a API ignora as `pausas` dele (ver o PUT em
-  // routers/equipe.ts). A web nova não manda.
-  pausaInicio?: string | null;
-  pausaFim?: string | null;
 }
 
 export interface FaixaDePausa {
@@ -544,13 +541,11 @@ export interface OcupacaoDoProfissional extends MinutosDoDia {
   nome: string;
   // O expediente do dia (painel v2, marco 6), pra agenda sombrear o que
   // está fechado: a janela efetiva (data especial > horário da casa, ∩
-  // jornada) e a pausa da jornada. `null` = fechado / sem pausa. Bloqueio
-  // fica de fora: a agenda o desenha à parte, com o motivo.
+  // jornada) e as pausas da jornada. `null` = fechado. Bloqueio fica de
+  // fora: a agenda o desenha à parte, com o motivo.
   janela: { abre: string; fecha: string } | null;
   // Todas as pausas do dia, em ordem; vazia no dia fechado.
   pausas: FaixaDePausa[];
-  // A primeira das `pausas`, até o PR que tira o campo.
-  pausa: { inicio: string; fim: string } | null;
 }
 
 export interface OcupacaoDoDia {

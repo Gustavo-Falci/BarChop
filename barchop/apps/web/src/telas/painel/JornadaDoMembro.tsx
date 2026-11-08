@@ -22,9 +22,9 @@ import { Carregando } from "../../componentes/Carregando";
 // ainda não tem nenhuma: o almoço mais comum.
 const PAUSA_PADRAO: FaixaDePausa = { inicio: "12:00", fim: "13:00" };
 
-// O dia como a tela guarda e manda: só as `pausas`, sem os campos da
-// pausa única de antes. Com `pausaInicio`/`pausaFim` no corpo, a API
-// trataria o PUT como da web antiga (routers/equipe.ts).
+// O dia como a tela guarda e manda: só as chaves do contrato. Com a
+// pausa única de antes (`pausaInicio`/`pausaFim`) no corpo, a API recusa
+// o PUT como de uma aba com a web antiga (routers/equipe.ts).
 function paraTela(dia: DiaDaJornada): DiaDaJornada {
   return {
     diaSemana: dia.diaSemana,

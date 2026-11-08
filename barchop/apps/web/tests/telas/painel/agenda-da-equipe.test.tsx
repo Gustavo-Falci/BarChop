@@ -88,8 +88,7 @@ describe("agenda da equipe", () => {
       modo: "barbearia" as const,
       horaInicio: null,
       horaFim: null,
-      pausaInicio: diaSemana === 2 ? "14:00" : null,
-      pausaFim: diaSemana === 2 ? "15:00" : null,
+      pausas: diaSemana === 2 ? [{ inicio: "14:00", fim: "15:00" }] : [],
     }));
     montarPainel(<Agenda agora={AGORA} />, falso);
 
@@ -172,8 +171,7 @@ describe("agenda da equipe na semana", () => {
       modo: "barbearia" as const,
       horaInicio: null,
       horaFim: null,
-      pausaInicio: diaSemana === 2 ? "14:00" : null,
-      pausaFim: diaSemana === 2 ? "15:00" : null,
+      pausas: diaSemana === 2 ? [{ inicio: "14:00", fim: "15:00" }] : [],
     }));
     falso.estado.jornadas!.bb1 = jornada;
     falso.estado.jornadas!.m2 = jornada;
@@ -217,8 +215,7 @@ describe("agenda da equipe na semana", () => {
       modo: "barbearia" as const,
       horaInicio: null,
       horaFim: null,
-      pausaInicio: diaSemana === 2 ? "14:00" : null,
-      pausaFim: diaSemana === 2 ? "15:00" : null,
+      pausas: diaSemana === 2 ? [{ inicio: "14:00", fim: "15:00" }] : [],
     }));
     montarPainel(<Agenda agora={AGORA} />, falso);
 
@@ -307,8 +304,7 @@ describe("semana por profissional", () => {
       modo: "barbearia" as const,
       horaInicio: null,
       horaFim: null,
-      pausaInicio: diaSemana === 2 ? "14:00" : null,
-      pausaFim: diaSemana === 2 ? "15:00" : null,
+      pausas: diaSemana === 2 ? [{ inicio: "14:00", fim: "15:00" }] : [],
     }));
     return falso;
   }

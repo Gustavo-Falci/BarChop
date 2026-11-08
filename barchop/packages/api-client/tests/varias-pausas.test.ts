@@ -3,8 +3,8 @@ import type { DiaDaJornada } from "@barchop/types";
 import { criarApiClientFalso } from "../src/index";
 
 // Várias pausas por dia (08/11/2026): o dublê segue as regras do PUT
-// /equipe/:id/jornada da API (routers/equipe.ts), inclusive a da aba da
-// web antiga, e a ocupação devolve todas.
+// /equipe/:id/jornada da API (routers/equipe.ts), inclusive a recusa da
+// aba da web antiga, e a ocupação devolve todas.
 
 const QUINTA = "2037-01-08";
 const ALMOCO = { inicio: "12:00", fim: "13:00" };
@@ -15,19 +15,20 @@ const SEMANA: DiaDaJornada[] = [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
   modo: "barbearia",
   horaInicio: null,
   horaFim: null,
+  pausas: [],
 }));
 
 const comDia = (diaSemana: number, dia: Partial<DiaDaJornada>) =>
   SEMANA.map((d) => (d.diaSemana === diaSemana ? { ...d, ...dia } : d));
 
 describe("várias pausas no dublê", () => {
-  it("grava as pausas em ordem, com a primeira nos campos antigos", async () => {
+  it("grava as pausas em ordem, sem os campos da pausa única", async () => {
     const falso = criarApiClientFalso();
 
     const salva = await falso.barbeiro.salvarJornada("bb1", comDia(4, { pausas: [CAFE, ALMOCO] }));
 
-    expect(salva[4]).toMatchObject({ pausas: [ALMOCO, CAFE], pausaInicio: "12:00", pausaFim: "13:00" });
-    expect((await falso.barbeiro.jornada("bb1"))[3]).toMatchObject({ pausas: [], pausaInicio: null });
+    expect(salva[4]).toEqual({ diaSemana: 4, modo: "barbearia", horaInicio: null, horaFim: null, pausas: [ALMOCO, CAFE] });
+    expect((await falso.barbeiro.jornada("bb1"))[3].pausas).toEqual([]);
   });
 
   it("recusa pausas que se cruzam e pausa invertida; a folga fica sem", async () => {
@@ -41,18 +42,10 @@ describe("várias pausas no dublê", () => {
     ).rejects.toMatchObject({ status: 422, codigo: "pausa_invalida" });
 
     const salva = await falso.barbeiro.salvarJornada("bb1", comDia(4, { modo: "folga", pausas: [ALMOCO] }));
-    expect(salva[4]).toMatchObject({ pausas: [], pausaInicio: null, pausaFim: null });
+    expect(salva[4]).toMatchObject({ modo: "folga", pausas: [] });
   });
 
-  it("a semente com a pausa antiga vira uma pausa", async () => {
-    const falso = criarApiClientFalso({
-      jornadas: { bb1: comDia(4, { pausaInicio: "12:00", pausaFim: "13:00" }) },
-    });
-
-    expect((await falso.barbeiro.jornada("bb1"))[4].pausas).toEqual([ALMOCO]);
-  });
-
-  it("a aba antiga: num dia com duas pausas, mexer no campo antigo dá 422; o dia que ela não mexeu fica", async () => {
+  it("a aba da web antiga (campos da pausa única no corpo): 422 recarregue_a_pagina, e nada muda", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.salvarJornada("bb1", comDia(4, { pausas: [ALMOCO, CAFE] }));
     const lida = await falso.barbeiro.jornada("bb1");
@@ -60,39 +53,23 @@ describe("várias pausas no dublê", () => {
     await expect(
       falso.barbeiro.salvarJornada(
         "bb1",
-        lida.map((dia) => (dia.diaSemana === 4 ? { ...dia, pausaInicio: "12:30", pausaFim: "13:30" } : dia))
+        lida.map((dia) => ({ ...dia, pausaInicio: dia.diaSemana === 2 ? "11:00" : null, pausaFim: null }) as DiaDaJornada)
       )
-    ).rejects.toMatchObject({ status: 422, codigo: "recarregue_a_pagina" });
-
-    const salva = await falso.barbeiro.salvarJornada(
-      "bb1",
-      lida.map((dia) => (dia.diaSemana === 2 ? { ...dia, pausaInicio: "11:00", pausaFim: "11:30" } : dia))
-    );
-    expect(salva[2].pausas).toEqual([{ inicio: "11:00", fim: "11:30" }]);
-    expect(salva[4].pausas).toEqual([ALMOCO, CAFE]);
+    ).rejects.toMatchObject({
+      status: 422,
+      codigo: "recarregue_a_pagina",
+      mensagem: "Esta página está desatualizada. Recarregue para salvar a jornada.",
+    });
+    expect((await falso.barbeiro.jornada("bb1"))[4].pausas).toEqual([ALMOCO, CAFE]);
   });
 
-  it("a aba antiga parada desde antes do café não o apaga ao salvar outro dia", async () => {
-    const falso = criarApiClientFalso();
-    await falso.barbeiro.salvarJornada("bb1", comDia(4, { pausas: [ALMOCO] }));
-    const velha = await falso.barbeiro.jornada("bb1");
-    await falso.barbeiro.salvarJornada("bb1", comDia(4, { pausas: [ALMOCO, CAFE] }));
-
-    const salva = await falso.barbeiro.salvarJornada(
-      "bb1",
-      velha.map((dia) => (dia.diaSemana === 2 ? { ...dia, pausaInicio: "11:00", pausaFim: "11:30" } : dia))
-    );
-
-    expect(salva[4].pausas).toEqual([ALMOCO, CAFE]);
-  });
-
-  it("a ocupação devolve todas as pausas, e a primeira em `pausa`", async () => {
+  it("a ocupação devolve todas as pausas, sem o campo da pausa única", async () => {
     const falso = criarApiClientFalso();
     await falso.barbeiro.salvarJornada("bb1", comDia(4, { pausas: [ALMOCO, CAFE] }));
 
     const [rafael] = (await falso.barbeiro.ocupacaoDoDia(QUINTA)).profissionais;
 
     expect(rafael.pausas).toEqual([ALMOCO, CAFE]);
-    expect(rafael.pausa).toEqual(ALMOCO);
+    expect(rafael).not.toHaveProperty("pausa");
   });
 });

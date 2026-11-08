@@ -160,6 +160,19 @@ describe("encaixe na lista da agenda", () => {
     expect(await within(dia).findByText("Livre 09:30 – 09:40 · 10 min")).toBeInTheDocument();
   });
 
+  it("o profissional logado vê os buracos da própria agenda", async () => {
+    const falso = criarApiClientFalso({
+      papel: "profissional",
+      clientes: [{ id: "c1", nome: "João Silva", telefone: "(11) 99999-0001", email: null, temConta: false }],
+      jornadas: { bb1: jornadaComAlmoco() },
+      agendamentos: [marcado("a1", "09:00", "09:30"), marcado("a2", "09:40", "10:30")],
+    });
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    const dia = await quarta();
+    expect(await within(dia).findByText("Livre 09:30 – 09:40 · 10 min")).toBeInTheDocument();
+  });
+
   it("sem o expediente, nenhum Livre: melhor não oferecer que oferecer o almoço", async () => {
     const falso = semear();
     vi.spyOn(falso.barbeiro, "ocupacaoDoDia").mockRejectedValue(new Error("fora do ar"));

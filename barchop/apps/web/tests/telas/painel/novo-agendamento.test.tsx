@@ -865,6 +865,19 @@ describe("novo agendamento no painel", () => {
       expect(criar.mock.calls[0][0]).toMatchObject({ horaInicio: "13:20", duracaoMinutos: 10 });
     });
 
+    it("a conferência que falhou não diz que a hora não cabe", async () => {
+      urlDeVerdade({ hora: "13:20", duracao: "10" });
+      const falso = semearEncaixe();
+      const conferir = vi.spyOn(falso.barbeiro, "conferirHorario").mockRejectedValue(new Error("fora do ar"));
+      montarPainel(<TelaComUrl />, falso);
+
+      await escolherClienteECorte();
+
+      await waitFor(() => expect(conferir).toHaveBeenCalled());
+      await waitFor(() => expect(screen.getByRole("button", { name: /^agendar$/i })).toBeDisabled());
+      expect(within(screen.getByTestId("fecho")).queryByText(/não cabe/)).toBeNull();
+    });
+
     it("a hora escolhida que deixa de caber avisa, junto do botão", async () => {
       urlDeVerdade({ hora: "12:30" });
       montarPainel(

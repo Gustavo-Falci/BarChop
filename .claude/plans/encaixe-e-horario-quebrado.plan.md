@@ -43,7 +43,7 @@ O barbeiro quer (a) marcar um cliente num buraco da agenda com duração menor q
 - `scheduling`: `horarioCabe(params, horaInicio)` → `null | motivo`, mesmas restrições do cálculo, qualquer minuto.
 - `criarAgendamento` com `origem = "barbeiro"`: usa `horarioCabe` em vez de `includes` na lista. Cliente segue na lista.
 - Rota `GET /agendamentos/cabe?barbeiroId&data&horaInicio&servicoIds[&duracaoMinutos]` → `{ cabe: true } | { cabe: false, codigo, mensagem }` (mensagem: "bate com Fulano, marcado das 09:40 às 10:30", "cai na pausa", "fora do expediente", "bloqueado").
-- api-client + dublê; web: botão "Outro horário" abre o campo, valida ao digitar (com debounce), "Usar HH:MM".
+- api-client + dublê; web: botão "Outro horário" abre o campo, confere a cada hora completa digitada (sem timer: a suíte não tem fake timers), "Usar HH:MM". PR #318.
 
 ### PR 3 — Encaixe
 - API: `duracaoMinutos?` (inteiro, múltiplo de 5, ≥ 5) no `POST /agendamentos` e na disponibilidade do dia e do mês (só membro; cliente recebe 422 `encaixe_so_no_painel`). `criarAgendamento` recusa `>= soma dos serviços` (422 `encaixe_invalido`), `horaFim` sai da duração escolhida.

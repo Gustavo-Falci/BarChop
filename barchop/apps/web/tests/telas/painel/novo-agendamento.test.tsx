@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { NovoAgendamento } from "../../../src/telas/painel/NovoAgendamento";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
@@ -575,6 +575,10 @@ describe("novo agendamento no painel", () => {
   });
 
   describe("outro horário", () => {
+    // Um teste daqui faz o `replace` gravar a URL; o resto do arquivo
+    // espera o dublê que não grava.
+    afterEach(() => navegacaoFalsa.replace.mockReset());
+
     function semearOutro(extra: Parameters<typeof criarApiClientFalso>[0] = {}) {
       return criarApiClientFalso({
         clientes: [
@@ -602,7 +606,12 @@ describe("novo agendamento no painel", () => {
       falso.barbeiro.criarAgendamento = criar;
       montarPainel(<NovoAgendamento agora={AGORA} />, falso);
 
-      await abrirOutro({ hora: "09:35" });
+      // O `replace` grava a URL de verdade aqui: a hora sai do vazio pelo
+      // "Usar", como na tela.
+      navegacaoFalsa.replace.mockImplementation((destino: string) => {
+        navegacaoFalsa.query = new URLSearchParams(destino.split("?")[1]);
+      });
+      await abrirOutro();
       await userEvent.type(screen.getByLabelText("Qualquer minuto"), "09:35");
 
       // Corte de 30 min no dublê.

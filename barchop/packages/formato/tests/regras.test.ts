@@ -32,6 +32,7 @@ describe("listas e padrões", () => {
       aceitaMesmoDia: true,
       janelaDias: null,
       cabeAntesDeFechar: true,
+      logoDepoisDoAnterior: false,
       prazoRemarcarHoras: 0,
       prazoCancelarHoras: 0,
     });

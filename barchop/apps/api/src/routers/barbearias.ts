@@ -93,6 +93,7 @@ const corpoPatchBarbearia = {
     aceitaMesmoDia: { type: "boolean" },
     janelaDias: { type: ["integer", "null"], enum: [...JANELAS_DIAS, null] },
     cabeAntesDeFechar: { type: "boolean" },
+    logoDepoisDoAnterior: { type: "boolean" },
     prazoRemarcarHoras: { type: "integer", enum: [...PRAZOS_HORAS] },
     prazoCancelarHoras: { type: "integer", enum: [...PRAZOS_HORAS] },
   },

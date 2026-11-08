@@ -96,6 +96,8 @@ model Barbearia {
   // Nula = sem limite.
   janelaDias                Int?      @map("janela_dias") @db.SmallInt
   cabeAntesDeFechar         Boolean   @default(true) @map("cabe_antes_de_fechar")
+  // Além da grade, o link oferece o fim de um atendimento (08/11/2026).
+  logoDepoisDoAnterior      Boolean   @default(false) @map("logo_depois_do_anterior")
   prazoRemarcarHoras        Int       @default(0) @map("prazo_remarcar_horas") @db.SmallInt
   prazoCancelarHoras        Int       @default(0) @map("prazo_cancelar_horas") @db.SmallInt
   // A Aparência da página pública: o que está no ar e o rascunho que o

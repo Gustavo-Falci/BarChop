@@ -63,6 +63,8 @@ export interface RegrasDeAgendamento {
   // null = sem limite.
   janelaDias: 7 | 14 | 30 | 60 | 90 | null;
   cabeAntesDeFechar: boolean;
+  // Além da grade, o link oferece o minuto em que um atendimento termina.
+  logoDepoisDoAnterior: boolean;
   prazoRemarcarHoras: 0 | 1 | 2 | 6 | 12 | 24 | 48;
   prazoCancelarHoras: 0 | 1 | 2 | 6 | 12 | 24 | 48;
 }

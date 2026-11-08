@@ -131,6 +131,23 @@ describe("encaixe na lista da agenda", () => {
     );
   });
 
+  it("duas pausas no dia: as duas aparecem e as duas cortam os buracos", async () => {
+    const falso = semear();
+    falso.estado.jornadas!.bb1 = jornadaComAlmoco().map((dia) =>
+      dia.diaSemana === 3
+        ? { ...dia, pausaInicio: undefined, pausaFim: undefined, pausas: [{ inicio: "09:30", fim: "09:40" }, { inicio: "12:00", fim: "13:00" }] }
+        : dia
+    );
+    montarPainel(<Agenda agora={AGORA} />, falso);
+
+    const dia = await quarta();
+    expect(await within(dia).findByText("09:30 – 09:40 · Pausa")).toBeInTheDocument();
+    expect(within(dia).getByText("12:00 – 13:00 · Pausa")).toBeInTheDocument();
+    // O vão das 09:30 às 09:40 é todo pausa: não sobra Livre ali.
+    expect(within(dia).queryByText(/Livre 09:30/)).toBeNull();
+    expect(within(dia).getByText("Livre 11:30 – 12:00 · 30 min")).toBeInTheDocument();
+  });
+
   it("dia que já passou não oferece buraco", async () => {
     navegacaoFalsa.redefinir({ pathname: "/painel/agenda", query: { vista: "lista", data: "2026-09-08" } });
     montarPainel(<Agenda agora={new Date("2026-09-10T10:00:00-03:00")} />, semear());

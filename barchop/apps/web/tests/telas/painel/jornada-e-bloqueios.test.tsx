@@ -92,10 +92,9 @@ describe("jornada do membro", () => {
       modo: "proprio",
       horaInicio: "13:00",
       horaFim: "20:00",
-      // O que veio do GET vai de volta; a API decide pelo campo antigo.
+      // Sem `pausaInicio`/`pausaFim`: com eles no corpo, a API trataria
+      // o pedido como da web antiga (PUT /equipe/:id/jornada).
       pausas: [],
-      pausaInicio: null,
-      pausaFim: null,
     });
     expect(semana[2]).toMatchObject({ modo: "barbearia" });
     expect(await screen.findByText(/jornada salva/i)).toBeInTheDocument();
@@ -201,10 +200,34 @@ describe("jornada do membro", () => {
   });
 });
 
-// Painel v2, marco 3: a pausa do almoço é de cada profissional, por dia
-// (decisão do dono, 2026-10-07).
-describe("pausa na jornada", () => {
-  it("aplica a pausa de sempre aos dias de trabalho, menos à folga, e salva", async () => {
+// Painel v2, marco 3: a pausa é de cada profissional, por dia (decisão do
+// dono, 2026-10-07). Desde 08/11, quantas o barbeiro precisar no mesmo
+// dia (pedido do barbeiro; canvas "Várias pausas").
+const ALMOCO = { inicio: "12:00", fim: "13:00" };
+const CAFE = { inicio: "16:00", fim: "16:15" };
+
+function horas(folha: ReturnType<typeof within>, n: number, quando: string, inicio: string, fim: string) {
+  fireEvent.change(folha.getByLabelText(`Início da pausa ${n} ${quando}`), { target: { value: inicio } });
+  fireEvent.change(folha.getByLabelText(`Fim da pausa ${n} ${quando}`), { target: { value: fim } });
+}
+
+// A sexta com o almoço e o café; o resto acompanha a barbearia.
+function comAnaESextaComDuas() {
+  return comAna({
+    jornadas: {
+      m2: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
+        diaSemana,
+        modo: "barbearia" as const,
+        horaInicio: null,
+        horaFim: null,
+        pausas: diaSemana === 5 ? [ALMOCO, CAFE] : [],
+      })),
+    },
+  });
+}
+
+describe("pausas na jornada", () => {
+  it("aplica as pausas de sempre aos dias de trabalho, menos à folga, e salva", async () => {
     const falso = comAna();
     const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
     montarPainel(<CadastroDeMembro />, falso);
@@ -213,21 +236,45 @@ describe("pausa na jornada", () => {
     const domingo = await abrirDia("domingo");
     await userEvent.click(domingo.getByRole("radio", { name: "Folga" }));
     await usar();
-    const folha = await abrirDia("pausa de sempre");
-    fireEvent.change(folha.getByLabelText("Pausa de sempre: início"), { target: { value: "12:00" } });
-    fireEvent.change(folha.getByLabelText("Pausa de sempre: fim"), { target: { value: "13:00" } });
+    const folha = await abrirDia("pausas de sempre");
+    horas(folha, 1, "de sempre", "12:00", "13:00");
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar outra pausa de sempre" }));
+    horas(folha, 2, "de sempre", "16:00", "16:15");
     await userEvent.click(folha.getByRole("button", { name: /aplicar aos dias de trabalho/i }));
-    expect(linhaDoDia("pausa de sempre")).toHaveTextContent("12:00–13:00");
+    expect(linhaDoDia("pausas de sempre")).toHaveTextContent("12:00–13:00 e 16:00–16:15");
+    expect(linhaDoDia("segunda")).toHaveTextContent("pausas 12:00–13:00 e 16:00–16:15");
     await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
     const [, semana] = salvar.mock.calls[0];
-    expect(semana[1]).toMatchObject({ pausaInicio: "12:00", pausaFim: "13:00" });
-    expect(semana[6]).toMatchObject({ pausaInicio: "12:00", pausaFim: "13:00" });
-    expect(semana[0]).toMatchObject({ modo: "folga", pausaInicio: null, pausaFim: null });
+    expect(semana[1].pausas).toEqual([ALMOCO, CAFE]);
+    expect(semana[6].pausas).toEqual([ALMOCO, CAFE]);
+    expect(semana[0]).toMatchObject({ modo: "folga", pausas: [] });
+    // A web nova nunca manda os campos antigos: com eles, a API trataria
+    // o pedido como da web antiga.
+    for (const dia of semana) {
+      expect(dia).not.toHaveProperty("pausaInicio");
+      expect(dia).not.toHaveProperty("pausaFim");
+    }
   });
 
-  it("um dia ganha pausa própria e outro perde a dele", async () => {
+  it("as pausas de sempre nascem do primeiro dia com pausa e trocam as de cada dia", async () => {
+    montarPainel(<CadastroDeMembro />, comAnaESextaComDuas());
+
+    await abrirAba("Jornada");
+    expect(await screen.findByRole("button", { name: /^pausas de sempre/i })).toHaveTextContent(
+      "12:00–13:00 e 16:00–16:15"
+    );
+    const folha = await abrirDia("pausas de sempre");
+    await userEvent.click(folha.getByRole("button", { name: "Tirar a pausa 2 de sempre" }));
+    await userEvent.click(folha.getByRole("button", { name: /aplicar aos dias de trabalho/i }));
+
+    expect(linhaDoDia("sexta")).toHaveTextContent("pausa 12:00–13:00");
+    expect(linhaDoDia("sexta")).not.toHaveTextContent("16:00");
+    expect(linhaDoDia("terça")).toHaveTextContent("pausa 12:00–13:00");
+  });
+
+  it("um dia ganha duas pausas e outro perde a dele", async () => {
     const falso = comAna();
     const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
     montarPainel(<CadastroDeMembro />, falso);
@@ -235,23 +282,44 @@ describe("pausa na jornada", () => {
     await abrirAba("Jornada");
     const terca = await abrirDia("terça");
     await userEvent.click(terca.getByRole("button", { name: "Adicionar pausa na terça" }));
-    fireEvent.change(terca.getByLabelText("Início da pausa na terça"), { target: { value: "14:00" } });
-    fireEvent.change(terca.getByLabelText("Fim da pausa na terça"), { target: { value: "14:30" } });
+    horas(terca, 1, "na terça", "14:00", "14:30");
+    await userEvent.click(terca.getByRole("button", { name: "Adicionar outra pausa na terça" }));
+    horas(terca, 2, "na terça", "10:00", "10:15");
     await usar();
-    expect(linhaDoDia("terça")).toHaveTextContent("pausa 14:00–14:30");
+    // Em ordem de início, como a API devolve.
+    expect(linhaDoDia("terça")).toHaveTextContent("pausas 10:00–10:15 e 14:00–14:30");
     const quarta = await abrirDia("quarta");
     await userEvent.click(quarta.getByRole("button", { name: "Adicionar pausa na quarta" }));
-    await userEvent.click(quarta.getByRole("button", { name: "Tirar pausa na quarta" }));
+    await userEvent.click(quarta.getByRole("button", { name: "Tirar a pausa 1 na quarta" }));
     await usar();
+    expect(barra()).toHaveTextContent("Terça: horário ou pausas");
     await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
 
     await waitFor(() => expect(salvar).toHaveBeenCalled());
     const [, semana] = salvar.mock.calls[0];
-    expect(semana[2]).toMatchObject({ pausaInicio: "14:00", pausaFim: "14:30" });
-    expect(semana[3]).toMatchObject({ pausaInicio: null, pausaFim: null });
+    expect(semana[2].pausas).toEqual([
+      { inicio: "10:00", fim: "10:15" },
+      { inicio: "14:00", fim: "14:30" },
+    ]);
+    expect(semana[3].pausas).toEqual([]);
   });
 
-  it("pausa que termina antes de começar para na folha, sem chamar a API", async () => {
+  it("tirar só a segunda pausa do dia", async () => {
+    montarPainel(<CadastroDeMembro />, comAnaESextaComDuas());
+
+    await abrirAba("Jornada");
+    expect(await screen.findByRole("button", { name: /^sexta/i })).toHaveTextContent(
+      "pausas 12:00–13:00 e 16:00–16:15"
+    );
+    const folha = await abrirDia("sexta");
+    await userEvent.click(folha.getByRole("button", { name: "Tirar a pausa 2 na sexta" }));
+    await usar();
+
+    expect(linhaDoDia("sexta")).toHaveTextContent("pausa 12:00–13:00");
+    expect(linhaDoDia("sexta")).not.toHaveTextContent("16:00");
+  });
+
+  it("pausas que se cruzam param na folha, sem chamar a API", async () => {
     const falso = comAna();
     const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
     montarPainel(<CadastroDeMembro />, falso);
@@ -259,15 +327,90 @@ describe("pausa na jornada", () => {
     await abrirAba("Jornada");
     const folha = await abrirDia("segunda");
     await userEvent.click(folha.getByRole("button", { name: "Adicionar pausa na segunda" }));
-    fireEvent.change(folha.getByLabelText("Início da pausa na segunda"), { target: { value: "13:00" } });
-    fireEvent.change(folha.getByLabelText("Fim da pausa na segunda"), { target: { value: "12:00" } });
+    horas(folha, 1, "na segunda", "12:00", "13:00");
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar outra pausa na segunda" }));
+    horas(folha, 2, "na segunda", "12:30", "13:30");
     await usar();
 
-    expect(folha.getByText(/segunda.*pausa precisa começar antes de terminar/i)).toBeInTheDocument();
+    expect(folha.getByText("Segunda: as pausas 12:00–13:00 e 12:30–13:30 se cruzam.")).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(salvar).not.toHaveBeenCalled();
   });
 
-  it("folga não tem pausa: escolher folga tira a do dia", async () => {
+  it("encostar pode: 12:00–13:00 e 13:00–13:30", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    await abrirAba("Jornada");
+    const folha = await abrirDia("segunda");
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar pausa na segunda" }));
+    horas(folha, 1, "na segunda", "12:00", "13:00");
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar outra pausa na segunda" }));
+    horas(folha, 2, "na segunda", "13:00", "13:30");
+    await usar();
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(linhaDoDia("segunda")).toHaveTextContent("pausas 12:00–13:00 e 13:00–13:30");
+  });
+
+  it("pausa que termina antes de começar, ou sem as horas, para na folha", async () => {
+    const falso = comAna();
+    const salvar = vi.spyOn(falso.barbeiro, "salvarJornada");
+    montarPainel(<CadastroDeMembro />, falso);
+
+    await abrirAba("Jornada");
+    const folha = await abrirDia("segunda");
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar pausa na segunda" }));
+    horas(folha, 1, "na segunda", "13:00", "12:00");
+    await usar();
+    expect(folha.getByText(/segunda.*pausa precisa começar antes de terminar/i)).toBeInTheDocument();
+
+    horas(folha, 1, "na segunda", "12:00", "13:00");
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar outra pausa na segunda" }));
+    await usar();
+    expect(folha.getByText(/segunda.*começo e o fim da pausa/i)).toBeInTheDocument();
+    expect(salvar).not.toHaveBeenCalled();
+  });
+
+  it("pausa fora do horário do dia ganha o aviso, e ainda dá pra usar", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    await abrirAba("Jornada");
+    const folha = await abrirDia("sexta");
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar pausa na sexta" }));
+    horas(folha, 1, "na sexta", "12:00", "13:00");
+    expect(folha.queryByText(/fora do horário/)).not.toBeInTheDocument();
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar outra pausa na sexta" }));
+    horas(folha, 2, "na sexta", "19:00", "19:30");
+
+    expect(
+      await folha.findByText("19:00–19:30 fica fora do horário deste dia (09:00–18:00): não muda nada na agenda.")
+    ).toBeInTheDocument();
+    horas(folha, 2, "na sexta", "17:30", "18:30");
+    expect(
+      folha.getByText("17:30–18:30 passa do horário deste dia (09:00–18:00): só vale a parte de dentro.")
+    ).toBeInTheDocument();
+    await usar();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(linhaDoDia("sexta")).toHaveTextContent("pausas 12:00–13:00 e 17:30–18:30");
+  });
+
+  it("no horário próprio, o aviso segue as horas dele", async () => {
+    montarPainel(<CadastroDeMembro />, comAna());
+
+    await abrirAba("Jornada");
+    const folha = await abrirDia("quarta");
+    await userEvent.click(folha.getByRole("radio", { name: "Horário próprio" }));
+    fireEvent.change(folha.getByLabelText("Entrada na quarta"), { target: { value: "13:00" } });
+    fireEvent.change(folha.getByLabelText("Saída na quarta"), { target: { value: "18:00" } });
+    await userEvent.click(folha.getByRole("button", { name: "Adicionar pausa na quarta" }));
+    horas(folha, 1, "na quarta", "12:00", "12:30");
+
+    expect(
+      await folha.findByText("12:00–12:30 fica fora do horário deste dia (13:00–18:00): não muda nada na agenda.")
+    ).toBeInTheDocument();
+  });
+
+  it("folga não tem pausa: escolher folga tira as do dia", async () => {
     montarPainel(<CadastroDeMembro />, comAna());
 
     await abrirAba("Jornada");
@@ -275,7 +418,7 @@ describe("pausa na jornada", () => {
     await userEvent.click(folha.getByRole("button", { name: "Adicionar pausa na sexta" }));
     await userEvent.click(folha.getByRole("radio", { name: "Folga" }));
 
-    expect(folha.queryByLabelText("Início da pausa na sexta")).not.toBeInTheDocument();
+    expect(folha.queryByLabelText("Início da pausa 1 na sexta")).not.toBeInTheDocument();
     expect(folha.queryByRole("button", { name: "Adicionar pausa na sexta" })).not.toBeInTheDocument();
   });
 });

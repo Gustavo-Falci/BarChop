@@ -9,9 +9,10 @@ import { resumoDaPausa } from "../pausa";
 import estilos from "./Configuracoes.module.css";
 import { Carregando } from "../../../componentes/Carregando";
 
-// A pausa do almoço é de cada profissional, na jornada dele (painel v2,
-// marco 3; decisão do dono, 2026-10-07). Horários não edita a pausa: mostra
-// a de cada um e leva pra jornada, onde ela mora — um lugar só pra mudar.
+// As pausas são de cada profissional, na jornada dele (painel v2, marco
+// 3; decisão do dono, 2026-10-07; várias por dia desde 08/11). Horários
+// não edita as pausas: mostra as de cada um e leva pra jornada, onde elas
+// moram — um lugar só pra mudar.
 export function PausasDaEquipe() {
   const api = useApiDoPainel();
   const pausas = useRequisicao(async () => {
@@ -31,7 +32,7 @@ export function PausasDaEquipe() {
   return (
     <Secao
       titulo="Pausas da equipe"
-      descricao="Cada pessoa tem a sua pausa, na jornada dela. Durante a pausa, ninguém marca horário com quem está pausando."
+      descricao="Cada pessoa tem as suas pausas, na jornada dela. Durante uma pausa, ninguém marca horário com quem está pausando."
     >
       {pausas.erro ? <Aviso>{pausas.erro.mensagem || "Não foi possível carregar as pausas agora."}</Aviso> : null}
       {!pausas.dados && !pausas.erro ? <Carregando compacto /> : null}
@@ -42,7 +43,7 @@ export function PausasDaEquipe() {
               <Link
                 href={`/painel/equipe/${membro.id}`}
                 className={estilos.linha}
-                aria-label={`Mudar a pausa de ${membro.nome}`}
+                aria-label={`Mudar as pausas de ${membro.nome}`}
               >
                 <strong className={estilos.nomeDaArea}>{membro.nome}</strong>
                 <span className={estilos.valor}>{resumo}</span>

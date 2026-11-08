@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import type { ErroDaApi } from "@barchop/api-client";
-import type { DiaDaJornada, HorarioSerializado, ModoJornada } from "@barchop/types";
+import type { DiaDaJornada, FaixaDePausa, HorarioSerializado, ModoJornada } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { BarraDeMudancas } from "../../componentes/BarraDeMudancas";
 import { Botao } from "../../componentes/Botao";
@@ -13,24 +13,37 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { IconeSeta } from "../../painel/icones";
 import estilos from "./JornadaDoMembro.module.css";
+import estilosDoCampo from "../../componentes/Campo.module.css";
 import estilosDaFolha from "../../componentes/FolhaDeEscolha.module.css";
-import { temPausa } from "./pausa";
+import { pausasDe, temPausa, textoDasPausas } from "./pausa";
 import { Carregando } from "../../componentes/Carregando";
 
-// A pausa que o "+ Pausa" e o "Aplicar" usam quando a pessoa ainda não
-// tem nenhuma: o almoço mais comum.
-const PAUSA_PADRAO = { inicio: "12:00", fim: "13:00" };
+// A pausa que o "+ Pausa" e as "Pausas de sempre" usam quando a pessoa
+// ainda não tem nenhuma: o almoço mais comum.
+const PAUSA_PADRAO: FaixaDePausa = { inicio: "12:00", fim: "13:00" };
 
-// A pausa de sempre nasce da primeira que a semana salva já tem.
-function pausaDaSemana(semana: DiaDaJornada[]): { inicio: string; fim: string } {
-  const dia = semana.find(temPausa);
-  return dia ? { inicio: dia.pausaInicio!, fim: dia.pausaFim! } : PAUSA_PADRAO;
+// O dia como a tela guarda e manda: só as `pausas`, sem os campos da
+// pausa única de antes. Com `pausaInicio`/`pausaFim` no corpo, a API
+// trataria o PUT como da web antiga (routers/equipe.ts).
+function paraTela(dia: DiaDaJornada): DiaDaJornada {
+  return {
+    diaSemana: dia.diaSemana,
+    modo: dia.modo,
+    horaInicio: dia.horaInicio,
+    horaFim: dia.horaFim,
+    pausas: pausasDe(dia).map((pausa) => ({ inicio: pausa.inicio, fim: pausa.fim })),
+  };
 }
 
-// O dia tem a pausa aberta enquanto tiver alguma das duas horas: apagar
-// uma não pode sumir com o campo que a pessoa está editando.
-function pausaAberta(dia: DiaDaJornada): boolean {
-  return dia.modo !== "folga" && (dia.pausaInicio != null || dia.pausaFim != null);
+// As pausas de sempre nascem das do primeiro dia salvo que tem pausa.
+function pausasDaSemana(semana: DiaDaJornada[]): FaixaDePausa[] {
+  const dia = semana.find(temPausa);
+  return dia ? pausasDe(dia).map((pausa) => ({ ...pausa })) : [{ ...PAUSA_PADRAO }];
+}
+
+// "HH:mm" compara como texto na ordem do relógio.
+function emOrdem(pausas: FaixaDePausa[]): FaixaDePausa[] {
+  return [...pausas].sort((a, b) => (a.inicio < b.inicio ? -1 : a.inicio > b.inicio ? 1 : 0));
 }
 
 // O nome do dia e a preposição que ele pede: "na segunda", "no sábado".
@@ -60,16 +73,23 @@ function rotuloDoModo(modo: ModoJornada): string {
   return MODOS.find((opcao) => opcao.valor === modo)?.rotulo ?? modo;
 }
 
+function barbeariaAberta(horario: HorarioSerializado | undefined): horario is HorarioSerializado & {
+  horaAbertura: string;
+  horaFechamento: string;
+} {
+  return !!horario && !horario.fechado && !!horario.horaAbertura && !!horario.horaFechamento;
+}
+
 // As horas da barbearia num dia: "09:00–18:00", ou que ela fecha.
 function horasDaBarbearia(horario: HorarioSerializado | undefined): string | undefined {
   if (!horario) return undefined;
-  if (horario.fechado || !horario.horaAbertura || !horario.horaFechamento) return "barbearia fechada";
+  if (!barbeariaAberta(horario)) return "barbearia fechada";
   return `${horario.horaAbertura}–${horario.horaFechamento}`;
 }
 
-// O resumo da linha do dia: "Horário próprio · 13:00–18:00 · pausa
-// 15:00–15:30", "Folga". As horas da barbearia só quando já chegaram:
-// a linha não espera por elas.
+// O resumo da linha do dia: "Horário próprio · 13:00–18:00 · pausas
+// 12:00–13:00 e 16:00–16:15", "Folga". As horas da barbearia só quando
+// já chegaram: a linha não espera por elas.
 function resumoDoDia(dia: DiaDaJornada, horario: HorarioSerializado | undefined): string {
   const partes = [rotuloDoModo(dia.modo)];
   if (dia.modo === "barbearia") {
@@ -79,21 +99,35 @@ function resumoDoDia(dia: DiaDaJornada, horario: HorarioSerializado | undefined)
   if (dia.modo === "proprio" && dia.horaInicio && dia.horaFim) {
     partes.push(`${dia.horaInicio}–${dia.horaFim}`);
   }
-  if (dia.modo !== "folga" && temPausa(dia)) {
-    partes.push(`pausa ${dia.pausaInicio}–${dia.pausaFim}`);
+  const pausas = pausasDe(dia);
+  if (pausas.length > 0) {
+    partes.push(`${pausas.length > 1 ? "pausas" : "pausa"} ${textoDasPausas(pausas)}`);
   }
   return partes.join(" · ");
 }
 
-// A mesma regra da API: as duas horas, e a entrada antes da saída.
-// "HH:mm" compara como texto na ordem do relógio. Vale na folha do dia
-// e de novo no Salvar.
+// As mesmas recusas da API, antes dela: as duas horas, o começo antes
+// do fim e nenhuma cruzando a outra (encostar pode).
+function erroDasPausas(nome: string, pausas: FaixaDePausa[]): string | undefined {
+  if (pausas.some((pausa) => !pausa.inicio || !pausa.fim)) return `${nome}: informe o começo e o fim da pausa.`;
+  if (pausas.some((pausa) => pausa.inicio >= pausa.fim)) return `${nome}: a pausa precisa começar antes de terminar.`;
+  const ordenadas = emOrdem(pausas);
+  for (let i = 1; i < ordenadas.length; i += 1) {
+    const antes = ordenadas[i - 1]!;
+    const depois = ordenadas[i]!;
+    if (depois.inicio < antes.fim) {
+      return `${nome}: as pausas ${antes.inicio}–${antes.fim} e ${depois.inicio}–${depois.fim} se cruzam.`;
+    }
+  }
+  return undefined;
+}
+
+// A mesma regra da API pras horas: as duas, e a entrada antes da saída.
+// Vale na folha do dia e de novo no Salvar.
 function erroDoDia(dia: DiaDaJornada): string | undefined {
   const nome = capitalizar(DIAS[dia.diaSemana].nome);
-  if (pausaAberta(dia)) {
-    if (!dia.pausaInicio || !dia.pausaFim) return `${nome}: informe o começo e o fim da pausa.`;
-    if (dia.pausaInicio >= dia.pausaFim) return `${nome}: a pausa precisa começar antes de terminar.`;
-  }
+  const daPausa = erroDasPausas(nome, pausasDe(dia));
+  if (daPausa) return daPausa;
   if (dia.modo !== "proprio") return undefined;
   if (!dia.horaInicio || !dia.horaFim) return `${nome}: informe a entrada e a saída do horário próprio.`;
   if (dia.horaInicio >= dia.horaFim) return `${nome}: a entrada precisa ser antes da saída.`;
@@ -101,7 +135,7 @@ function erroDoDia(dia: DiaDaJornada): string | undefined {
 }
 
 // O que a barra de salvar diz: "Segunda: Horário da barbearia → Folga",
-// ou só que o horário ou a pausa do dia mudou.
+// ou só que o horário ou as pausas do dia mudaram.
 function oQueMudou(gravada: DiaDaJornada[], semana: DiaDaJornada[]): string[] {
   return semana.flatMap((dia) => {
     const antes = gravada.find((outro) => outro.diaSemana === dia.diaSemana);
@@ -109,14 +143,47 @@ function oQueMudou(gravada: DiaDaJornada[], semana: DiaDaJornada[]): string[] {
     const nome = capitalizar(DIAS[dia.diaSemana].nome);
     return antes.modo !== dia.modo
       ? [`${nome}: ${rotuloDoModo(antes.modo)} → ${rotuloDoModo(dia.modo)}`]
-      : [`${nome}: horário ou pausa`];
+      : [`${nome}: horário ou pausas`];
   });
+}
+
+// A janela em que o dia atende, pro aviso da pausa fora do horário: a
+// da barbearia, ou a própria recortada nela, como a API faz
+// (janelaEfetiva). Sem as horas da barbearia ainda, nenhum aviso.
+function janelaDoDia(
+  modo: ModoJornada,
+  horaInicio: string,
+  horaFim: string,
+  horario: HorarioSerializado | undefined
+): { abre: string; fecha: string } | null {
+  if (modo === "folga" || !barbeariaAberta(horario)) return null;
+  if (modo === "barbearia") return { abre: horario.horaAbertura, fecha: horario.horaFechamento };
+  if (!horaInicio || !horaFim || horaInicio >= horaFim) return null;
+  const abre = horaInicio > horario.horaAbertura ? horaInicio : horario.horaAbertura;
+  const fecha = horaFim < horario.horaFechamento ? horaFim : horario.horaFechamento;
+  return abre < fecha ? { abre, fecha } : null;
+}
+
+// Pausa fora do horário do dia é aceita (decisão do dono, 08/11): não
+// tem efeito, ou só a parte de dentro tem. O aviso diz isso.
+function avisoDaPausa(pausa: FaixaDePausa, janela: { abre: string; fecha: string } | null): string | undefined {
+  if (!janela || !pausa.inicio || !pausa.fim || pausa.inicio >= pausa.fim) return undefined;
+  const faixa = `${pausa.inicio}–${pausa.fim}`;
+  const doDia = `${janela.abre}–${janela.fecha}`;
+  if (pausa.fim <= janela.abre || pausa.inicio >= janela.fecha) {
+    return `${faixa} fica fora do horário deste dia (${doDia}): não muda nada na agenda.`;
+  }
+  if (pausa.inicio < janela.abre || pausa.fim > janela.fecha) {
+    return `${faixa} passa do horário deste dia (${doDia}): só vale a parte de dentro.`;
+  }
+  return undefined;
 }
 
 // A semana de trabalho do membro: em cada dia ele acompanha o horário
 // da barbearia, tem o próprio, ou folga. O horário próprio é recortado
 // no da barbearia pela API — não atende com a porta fechada. Cada dia de
-// trabalho pode ter a pausa do almoço (painel v2, marco 3).
+// trabalho tem quantas pausas a pessoa precisar (painel v2, marco 3;
+// várias desde 08/11).
 //
 // Um dia por linha, e tocar abre a folha do dia (redesenho dos
 // detalhes, PR 6; decisão 4 do canvas): eram três pílulas por dia, que
@@ -124,17 +191,18 @@ function oQueMudou(gravada: DiaDaJornada[], semana: DiaDaJornada[]): string[] {
 export function JornadaDoMembro({ membroId }: { membroId: string }) {
   const api = useApiDoPainel();
   const salva = useRequisicao(() => api.barbeiro.jornada(membroId), [membroId]);
-  // As horas da barbearia, só pro resumo de quem acompanha o horário
-  // dela. Sem elas (ainda carregando, ou erro), a linha sai sem as horas.
+  // As horas da barbearia, pro resumo de quem acompanha o horário dela e
+  // pro aviso da pausa fora do horário. Sem elas (ainda carregando, ou
+  // erro), a linha sai sem as horas e a folha, sem o aviso.
   const horarios = useRequisicao(() => api.barbeiro.horarios(), []);
 
   const [semana, setSemana] = useState<DiaDaJornada[]>([]);
-  const [pausaDeSempre, setPausaDeSempre] = useState(PAUSA_PADRAO);
+  const [pausasDeSempre, setPausasDeSempre] = useState<FaixaDePausa[]>([{ ...PAUSA_PADRAO }]);
   const [erro, setErro] = useState<string | undefined>();
   const [confirmacao, setConfirmacao] = useState<string | undefined>();
   const [salvando, setSalvando] = useState(false);
   const [diaAberto, setDiaAberto] = useState<number | null>(null);
-  const [pausaAbertaNaFolha, setPausaAbertaNaFolha] = useState(false);
+  const [pausasAbertas, setPausasAbertas] = useState(false);
 
   // Sincronizado durante a renderização, como em CadastroDeServico: um
   // efeito deixaria a semana vazia aparecer por um quadro. `vista` é a
@@ -144,10 +212,11 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
   const [vista, setVista] = useState<DiaDaJornada[] | null>(null);
   const [gravada, setGravada] = useState<DiaDaJornada[] | null>(null);
   if (salva.dados && salva.dados !== vista) {
+    const naTela = salva.dados.map(paraTela);
     setVista(salva.dados);
-    setGravada(salva.dados);
-    setSemana(salva.dados);
-    setPausaDeSempre(pausaDaSemana(salva.dados));
+    setGravada(naTela);
+    setSemana(naTela);
+    setPausasDeSempre(pausasDaSemana(naTela));
   }
 
   if (salva.erro) {
@@ -164,13 +233,14 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
     setSemana((atual) => atual.map((dia) => (dia.diaSemana === novo.diaSemana ? novo : dia)));
   }
 
-  // A pausa de sempre em todo dia de trabalho; a folga fica sem.
-  function aplicarPausa(pausa: { inicio: string; fim: string }) {
+  // As pausas de sempre em todo dia de trabalho, no lugar das de cada
+  // dia; a folga fica sem.
+  function aplicarPausas(pausas: FaixaDePausa[]) {
     setErro(undefined);
     setConfirmacao(undefined);
-    setPausaDeSempre(pausa);
+    setPausasDeSempre(pausas);
     setSemana((atual) =>
-      atual.map((dia) => (dia.modo === "folga" ? dia : { ...dia, pausaInicio: pausa.inicio, pausaFim: pausa.fim }))
+      atual.map((dia) => (dia.modo === "folga" ? dia : { ...dia, pausas: pausas.map((pausa) => ({ ...pausa })) }))
     );
   }
 
@@ -188,7 +258,7 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
 
     setSalvando(true);
     try {
-      const resposta = await api.barbeiro.salvarJornada(membroId, semana);
+      const resposta = (await api.barbeiro.salvarJornada(membroId, semana)).map(paraTela);
       setGravada(resposta);
       setSemana(resposta);
       setConfirmacao("Jornada salva.");
@@ -207,19 +277,19 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
     if (!gravada) return;
     setErro(undefined);
     setSemana(gravada);
-    setPausaDeSempre(pausaDaSemana(gravada));
+    setPausasDeSempre(pausasDaSemana(gravada));
   }
 
-  const algumaPausa = semana.some((dia) => dia.modo !== "folga" && temPausa(dia));
+  const algumaPausa = semana.some(temPausa);
   const aberto = diaAberto === null ? undefined : semana.find((dia) => dia.diaSemana === diaAberto);
 
   // A barra fica fora das duas seções, filha do invólucro da aba: dentro
-  // da Jornada ela deixaria de ficar presa ao rolar até a Pausa.
+  // da Jornada ela deixaria de ficar presa ao rolar até as Pausas.
   return (
     <div className={estilos.jornada}>
       <Grupo
         titulo="Jornada"
-        descricao="Em que dias e horários a pessoa atende. O horário próprio vale só dentro do horário da barbearia; na pausa, ninguém marca com ela."
+        descricao="Em que dias e horários a pessoa atende. O horário próprio vale só dentro do horário da barbearia; nas pausas, ninguém marca com ela."
       >
         {!salva.dados ? <Carregando compacto /> : null}
         {semana.length > 0 ? (
@@ -239,18 +309,18 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
         ) : null}
       </Grupo>
 
-      {/* Um atalho pra pausa de todo dia, como a rotina em Horários: a
-          pausa de cada dia continua na folha do dia. */}
+      {/* Um atalho pras pausas de todo dia, como a rotina em Horários: as
+          pausas de cada dia continuam na folha do dia. */}
       {semana.length > 0 ? (
-        <Grupo titulo="Pausa">
+        <Grupo titulo="Pausas">
           <div className={estilos.cartao}>
-            <button type="button" className={estilos.linha} onClick={() => setPausaAbertaNaFolha(true)}>
+            <button type="button" className={estilos.linha} onClick={() => setPausasAbertas(true)}>
               <span className={estilos.texto}>
-                <span className={estilos.nome}>Pausa de sempre</span>
+                <span className={estilos.nome}>Pausas de sempre</span>
                 {/* Sem pausa em nenhum dia, o 12:00–13:00 do padrão daria
                     a entender que há uma. */}
                 <span className={estilos.apoio}>
-                  {algumaPausa ? `${pausaDeSempre.inicio}–${pausaDeSempre.fim}` : "Nenhum dia tem pausa"}
+                  {algumaPausa && pausasDeSempre.length > 0 ? textoDasPausas(pausasDeSempre) : "Nenhum dia tem pausa"}
                 </span>
               </span>
               <IconeSeta className={estilos.seta} width={18} height={18} aria-hidden="true" />
@@ -266,18 +336,14 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
           membroId={membroId}
           dia={aberto}
           horario={horarioDo(aberto.diaSemana)}
-          pausaDeSempre={pausaDeSempre}
+          primeiraPausa={pausasDeSempre[0] ?? PAUSA_PADRAO}
           aoUsar={usarDia}
           aoFechar={() => setDiaAberto(null)}
         />
       ) : null}
 
-      {pausaAbertaNaFolha ? (
-        <FolhaDaPausa
-          pausa={pausaDeSempre}
-          aoAplicar={aplicarPausa}
-          aoFechar={() => setPausaAbertaNaFolha(false)}
-        />
+      {pausasAbertas ? (
+        <FolhaDasPausas pausas={pausasDeSempre} aoAplicar={aplicarPausas} aoFechar={() => setPausasAbertas(false)} />
       ) : null}
 
       {/* Um Salvar só, na barra do pé: o que mudou, Descartar e o erro
@@ -293,23 +359,112 @@ export function JornadaDoMembro({ membroId }: { membroId: string }) {
   );
 }
 
+// As pausas em edição, uma linha cada: começo, fim e "Tirar"; embaixo,
+// o "+ Pausa" (ou "+ Outra pausa"), sem limite. `quando` entra no nome
+// acessível de cada controle ("na sexta", "de sempre"). A primeira pausa
+// nasce da `primeira`; as outras, vazias.
+function LinhasDePausa({
+  pausas,
+  quando,
+  janela,
+  primeira,
+  titulo,
+  rotulo,
+  aoMudar,
+}: {
+  pausas: FaixaDePausa[];
+  quando: string;
+  janela: { abre: string; fecha: string } | null;
+  primeira: FaixaDePausa;
+  titulo?: string;
+  rotulo?: string;
+  aoMudar: (pausas: FaixaDePausa[]) => void;
+}) {
+  const id = useId();
+
+  function trocar(posicao: number, campo: keyof FaixaDePausa, valor: string) {
+    aoMudar(pausas.map((pausa, i) => (i === posicao ? { ...pausa, [campo]: valor } : pausa)));
+  }
+
+  return (
+    <div className={titulo ? `${estilos.pausas} ${estilos.pausasDoDia}` : estilos.pausas}>
+      {titulo ? (
+        <h3 id={`${id}-titulo`} className={estilos.tituloDasPausas}>
+          {titulo}
+        </h3>
+      ) : null}
+      {pausas.length > 0 ? (
+        <ul
+          className={estilos.listaDePausas}
+          aria-labelledby={titulo ? `${id}-titulo` : undefined}
+          aria-label={titulo ? undefined : rotulo}
+        >
+          {pausas.map((pausa, i) => {
+            const aviso = avisoDaPausa(pausa, janela);
+            return (
+              <li key={i} className={estilos.pausa}>
+                <div className={estilos.horasDaPausa}>
+                  <input
+                    type="time"
+                    className={`${estilosDoCampo.entrada} ${estilos.hora}`}
+                    aria-label={`Início da pausa ${i + 1} ${quando}`}
+                    value={pausa.inicio}
+                    onChange={(evento) => trocar(i, "inicio", evento.target.value)}
+                  />
+                  <span aria-hidden="true" className={estilos.ate}>
+                    –
+                  </span>
+                  <input
+                    type="time"
+                    className={`${estilosDoCampo.entrada} ${estilos.hora}`}
+                    aria-label={`Fim da pausa ${i + 1} ${quando}`}
+                    value={pausa.fim}
+                    onChange={(evento) => trocar(i, "fim", evento.target.value)}
+                  />
+                  <Botao
+                    variante="fantasma"
+                    aria-label={`Tirar a pausa ${i + 1} ${quando}`}
+                    onClick={() => aoMudar(pausas.filter((_, j) => j !== i))}
+                  >
+                    Tirar
+                  </Botao>
+                </div>
+                {aviso ? <Aviso tom="atencao">{aviso}</Aviso> : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      <div className={estilos.adicionar}>
+        <Botao
+          variante="fantasma"
+          aria-label={pausas.length === 0 ? `Adicionar pausa ${quando}` : `Adicionar outra pausa ${quando}`}
+          onClick={() => aoMudar([...pausas, pausas.length === 0 ? { ...primeira } : { inicio: "", fim: "" }])}
+        >
+          {pausas.length === 0 ? "+ Pausa" : "+ Outra pausa"}
+        </Botao>
+      </div>
+    </div>
+  );
+}
+
 // A folha de um dia: o modo nos rádios e, logo abaixo, as horas do
-// próprio e a pausa. O rascunho é da folha: só o "Usar esta" leva pra
-// semana, e fechar pelo X ou pelo fundo desiste. As horas e a pausa só
+// próprio e as pausas. O rascunho é da folha: só o "Usar esta" leva pra
+// semana, e fechar pelo X ou pelo fundo desiste. As horas e as pausas só
 // são limpas ao usar, pra ir e voltar entre os modos sem perder o que
 // foi digitado.
 function FolhaDoDia({
   membroId,
   dia,
   horario,
-  pausaDeSempre,
+  primeiraPausa,
   aoUsar,
   aoFechar,
 }: {
   membroId: string;
   dia: DiaDaJornada;
   horario: HorarioSerializado | undefined;
-  pausaDeSempre: { inicio: string; fim: string };
+  primeiraPausa: FaixaDePausa;
   aoUsar: (dia: DiaDaJornada) => void;
   aoFechar: () => void;
 }) {
@@ -319,24 +474,21 @@ function FolhaDoDia({
   const [modo, setModo] = useState<ModoJornada>(dia.modo);
   const [horaInicio, setHoraInicio] = useState(dia.horaInicio ?? "");
   const [horaFim, setHoraFim] = useState(dia.horaFim ?? "");
-  const [comPausa, setComPausa] = useState(pausaAberta(dia));
-  const [pausaInicio, setPausaInicio] = useState(dia.pausaInicio ?? "");
-  const [pausaFim, setPausaFim] = useState(dia.pausaFim ?? "");
+  const [pausas, setPausas] = useState<FaixaDePausa[]>(pausasDe(dia).map((pausa) => ({ ...pausa })));
   const [erro, setErro] = useState<string | undefined>();
   const horasDela = horasDaBarbearia(horario);
 
   // O dia como fica: a partir do original (mesmas chaves, na mesma
-  // ordem), pra que abrir e usar sem mexer não conte como mudança.
+  // ordem), pra que abrir e usar sem mexer não conte como mudança. As
+  // pausas em ordem de início, como a API devolve.
   function montar(): DiaDaJornada {
     const proprio = modo === "proprio";
-    const pausa = modo !== "folga" && comPausa;
     return {
       ...dia,
       modo,
       horaInicio: proprio ? horaInicio || null : null,
       horaFim: proprio ? horaFim || null : null,
-      pausaInicio: pausa ? pausaInicio || null : null,
-      pausaFim: pausa ? pausaFim || null : null,
+      pausas: modo === "folga" ? [] : emOrdem(pausas),
     };
   }
 
@@ -400,53 +552,18 @@ function FolhaDoDia({
             </div>
           ) : null}
 
-          {modo === "folga" ? null : comPausa ? (
-            <div className={estilos.faixa}>
-              <Campo
-                rotulo="Pausa"
-                type="time"
-                aria-label={`Início da pausa ${em} ${nome}`}
-                valor={pausaInicio}
-                onChange={(valor) => {
-                  setPausaInicio(valor);
-                  setErro(undefined);
-                }}
-              />
-              <Campo
-                rotulo="até"
-                type="time"
-                aria-label={`Fim da pausa ${em} ${nome}`}
-                valor={pausaFim}
-                onChange={(valor) => {
-                  setPausaFim(valor);
-                  setErro(undefined);
-                }}
-              />
-              <Botao
-                variante="fantasma"
-                aria-label={`Tirar pausa ${em} ${nome}`}
-                onClick={() => {
-                  setComPausa(false);
-                  setErro(undefined);
-                }}
-              >
-                Tirar pausa
-              </Botao>
-            </div>
-          ) : (
-            <div className={estilos.adicionar}>
-              <Botao
-                variante="fantasma"
-                aria-label={`Adicionar pausa ${em} ${nome}`}
-                onClick={() => {
-                  setComPausa(true);
-                  setPausaInicio(pausaInicio || pausaDeSempre.inicio);
-                  setPausaFim(pausaFim || pausaDeSempre.fim);
-                }}
-              >
-                + Pausa
-              </Botao>
-            </div>
+          {modo === "folga" ? null : (
+            <LinhasDePausa
+              titulo="Pausas"
+              pausas={pausas}
+              quando={`${em} ${nome}`}
+              janela={janelaDoDia(modo, horaInicio, horaFim, horario)}
+              primeira={primeiraPausa}
+              aoMudar={(novas) => {
+                setPausas(novas);
+                setErro(undefined);
+              }}
+            />
           )}
 
           {erro ? <Aviso>{erro}</Aviso> : null}
@@ -474,62 +591,51 @@ function FolhaDoDia({
   );
 }
 
-// A folha da pausa de sempre: as duas horas e o "Aplicar", que põe a
-// pausa em todo dia de trabalho (a folga fica sem).
-function FolhaDaPausa({
-  pausa,
+// A folha das pausas de sempre: a lista e o "Aplicar", que a põe em todo
+// dia de trabalho no lugar das de cada dia (a folga fica sem).
+function FolhaDasPausas({
+  pausas: iniciais,
   aoAplicar,
   aoFechar,
 }: {
-  pausa: { inicio: string; fim: string };
-  aoAplicar: (pausa: { inicio: string; fim: string }) => void;
+  pausas: FaixaDePausa[];
+  aoAplicar: (pausas: FaixaDePausa[]) => void;
   aoFechar: () => void;
 }) {
-  const [inicio, setInicio] = useState(pausa.inicio);
-  const [fim, setFim] = useState(pausa.fim);
+  const [pausas, setPausas] = useState<FaixaDePausa[]>(iniciais.map((pausa) => ({ ...pausa })));
   const [erro, setErro] = useState<string | undefined>();
 
   return (
     <Folha
-      titulo="Pausa de sempre"
-      apoio="Vai pra todo dia de trabalho; a folga fica sem. Depois, cada dia ainda muda a dele."
+      titulo="Pausas de sempre"
+      apoio="Vão pra todo dia de trabalho, no lugar das pausas de cada dia; a folga fica sem. Depois, cada dia ainda muda as dele."
       aoFechar={aoFechar}
-      focoInicial="input"
+      focoInicial="input, button"
     >
       {(fechar) => (
         <>
-          <div className={estilos.faixa}>
-            <Campo
-              rotulo="Começa"
-              type="time"
-              aria-label="Pausa de sempre: início"
-              valor={inicio}
-              onChange={(valor) => {
-                setInicio(valor);
-                setErro(undefined);
-              }}
-            />
-            <Campo
-              rotulo="Termina"
-              type="time"
-              aria-label="Pausa de sempre: fim"
-              valor={fim}
-              onChange={(valor) => {
-                setFim(valor);
-                setErro(undefined);
-              }}
-            />
-          </div>
+          <LinhasDePausa
+            rotulo="Pausas de sempre"
+            pausas={pausas}
+            quando="de sempre"
+            janela={null}
+            primeira={PAUSA_PADRAO}
+            aoMudar={(novas) => {
+              setPausas(novas);
+              setErro(undefined);
+            }}
+          />
           {erro ? <Aviso>{erro}</Aviso> : null}
           <div className={estilosDaFolha.usar}>
             <Botao
               type="button"
               onClick={() => {
-                if (!inicio || !fim || inicio >= fim) {
-                  setErro("A pausa de sempre precisa começar antes de terminar.");
+                const problema = erroDasPausas("Pausas de sempre", pausas);
+                if (problema) {
+                  setErro(problema);
                   return;
                 }
-                aoAplicar({ inicio, fim });
+                aoAplicar(emOrdem(pausas));
                 fechar();
               }}
             >

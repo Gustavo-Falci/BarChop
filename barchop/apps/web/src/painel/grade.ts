@@ -44,7 +44,7 @@ export interface BloqueioPosicionado {
 }
 
 // O que está fechado dentro da janela da grade, numa coluna (painel v2,
-// marco 6): fora do expediente do profissional, ou a pausa do almoço.
+// marco 6): fora do expediente do profissional, ou uma pausa dele.
 export interface FaixaFechada {
   linha: number;
   linhas: number;
@@ -52,9 +52,9 @@ export interface FaixaFechada {
 }
 
 // O expediente do dia de um profissional, como a ocupação da API o
-// devolve: a janela efetiva e a pausa. A grade só desenha — a regra é
+// devolve: a janela efetiva e as pausas. A grade só desenha — a regra é
 // da API (janelaEfetiva).
-export type ExpedienteDoProfissional = Pick<OcupacaoDoProfissional, "id" | "janela" | "pausa">;
+export type ExpedienteDoProfissional = Pick<OcupacaoDoProfissional, "id" | "janela" | "pausas">;
 
 // Uma coluna é um dia (semana, ou dia de quem trabalha sozinho) ou, na
 // vista de dia da equipe, um profissional nesse dia — aí ela tem o
@@ -308,15 +308,16 @@ export function gradeDeTempo(entrada: {
               bloqueado: e.id === donoDaColuna ? bloqueiaMinuto : bloqueiosNaColuna(data, e.id).bloqueiaMinuto,
               abre: emMinutos(e.janela.abre),
               fecha: emMinutos(e.janela.fecha),
-              pausa: e.pausa ? { inicio: emMinutos(e.pausa.inicio), fim: emMinutos(e.pausa.fim) } : null,
+              pausas: e.pausas.map((p) => ({ inicio: emMinutos(p.inicio), fim: emMinutos(p.fim) })),
             },
           ]
         : []
     );
     const noTurno = (minuto: number) => turnos.filter((t) => t.abre <= minuto && minuto < t.fecha);
-    // Alguém atende neste minuto: está no turno e fora da pausa.
-    const atendeAlguem = (minuto: number) =>
-      noTurno(minuto).some((t) => !t.pausa || minuto < t.pausa.inicio || t.pausa.fim <= minuto);
+    const foraDasPausas = (t: (typeof turnos)[number], minuto: number) =>
+      !t.pausas.some((p) => p.inicio <= minuto && minuto < p.fim);
+    // Alguém atende neste minuto: está no turno e fora das pausas.
+    const atendeAlguem = (minuto: number) => noTurno(minuto).some((t) => foraDasPausas(t, minuto));
 
     // A janela em que se oferece horário: do primeiro que abre ao último
     // que fecha, quando a API mandou o expediente; senão, o horário da
@@ -329,12 +330,12 @@ export function gradeDeTempo(entrada: {
         : aberto(horario)
           ? { abre: emMinutos(horario.horaAbertura), fecha: emMinutos(horario.horaFechamento) }
           : null;
-    // Quem pode receber cliente neste minuto: no turno, fora da pausa,
+    // Quem pode receber cliente neste minuto: no turno, fora das pausas,
     // sem folga e sem agendamento dele ali. O agendamento de um não tira
     // o horário do outro.
     const podemAtender = (minuto: number) =>
       noTurno(minuto)
-        .filter((t) => !t.pausa || minuto < t.pausa.inicio || t.pausa.fim <= minuto)
+        .filter((t) => foraDasPausas(t, minuto))
         .filter((t) => !t.bloqueado(minuto))
         .filter(
           (t) =>

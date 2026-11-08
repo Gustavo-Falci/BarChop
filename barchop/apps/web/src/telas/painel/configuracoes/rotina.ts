@@ -53,10 +53,15 @@ export function aplicarRotina(semana: HorarioSerializado[], rotina: Rotina): Hor
 // semana (três ou mais viram "x a y"), unidos por vírgula e "e".
 export function fraseDaRotina(rotina: Rotina): string {
   if (rotina.dias.length === 0) return "Fechado a semana toda";
-  const horario = `${rotina.abre}–${rotina.fecha}`;
-  if (rotina.dias.length === 7) return `Todos os dias, ${horario}`;
+  return fraseDosDias(rotina.dias, `${rotina.abre}–${rotina.fecha}`);
+}
 
-  const posicoes = ORDEM_DA_SEMANA.map((dia, posicao) => (rotina.dias.includes(dia) ? posicao : -1)).filter(
+// Os dias na frase da rotina e, depois da vírgula, o horário já escrito:
+// "Seg a sex, 12:00–13:00 e 16:00–16:15" (as várias pausas, 08/11).
+export function fraseDosDias(dias: number[], horario: string): string {
+  if (dias.length === 7) return `Todos os dias, ${horario}`;
+
+  const posicoes = ORDEM_DA_SEMANA.map((dia, posicao) => (dias.includes(dia) ? posicao : -1)).filter(
     (posicao) => posicao >= 0
   );
   const trechos: number[][] = [];

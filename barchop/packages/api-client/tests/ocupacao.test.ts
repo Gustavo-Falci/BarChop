@@ -18,7 +18,7 @@ const OCUPACAO = {
   data: QUINTA,
   casa: { minutosDeTrabalho: 540, minutosAgendados: 45 },
   profissionais: [
-    { id: "bb1", nome: "Rafael", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausa: null },
+    { id: "bb1", nome: "Rafael", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
   ],
 };
 
@@ -74,7 +74,7 @@ describe("dublê — ocupação do dia", () => {
       data: QUINTA,
       casa: { minutosDeTrabalho: 540, minutosAgendados: 45 },
       profissionais: [
-        { id: "bb0", nome: "Gustavo", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausa: null },
+        { id: "bb0", nome: "Gustavo", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
       ],
     });
   });
@@ -89,7 +89,7 @@ describe("dublê — ocupação do dia", () => {
     const domingo = await falso.barbeiro.ocupacaoDoDia(DOMINGO);
 
     expect(quinta.profissionais).toEqual([
-      { id: "bb1", nome: "Rafael", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausa: null },
+      { id: "bb1", nome: "Rafael", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
     ]);
     expect(domingo.casa).toEqual({ minutosDeTrabalho: 0, minutosAgendados: 0 });
     expect(domingo.profissionais[0]).toMatchObject({ janela: null, pausa: null });

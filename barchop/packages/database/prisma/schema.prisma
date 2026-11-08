@@ -334,10 +334,29 @@ model JornadaProfissional {
   pausaInicio DateTime?   @map("pausa_inicio") @db.Time
   pausaFim    DateTime?   @map("pausa_fim") @db.Time
 
-  barbeiro Barbeiro @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
+  barbeiro Barbeiro         @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
+  // As pausas do dia (08/11/2026): a fonte desde a migration
+  // 20261108130000. As colunas acima guardam só a primeira, até o PR
+  // que as derruba.
+  pausas   PausaDaJornada[]
 
   @@unique([barbeiroId, diaSemana])
   @@map("jornada_profissional")
+}
+
+// Uma pausa de um dia da jornada. CHECK `pausa_na_ordem` (início antes do
+// fim) e EXCLUDE `pausas_sem_cruzar` (duas do mesmo dia não se cruzam;
+// encostar pode), na migration 20261108130000: o schema declarativo não
+// as expressa.
+model PausaDaJornada {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jornadaId  String   @map("jornada_id") @db.Uuid
+  horaInicio DateTime @map("hora_inicio") @db.Time
+  horaFim    DateTime @map("hora_fim") @db.Time
+
+  jornada JornadaProfissional @relation(fields: [jornadaId], references: [id], onDelete: Cascade)
+
+  @@map("pausa_da_jornada")
 }
 
 model ProfissionalServico {

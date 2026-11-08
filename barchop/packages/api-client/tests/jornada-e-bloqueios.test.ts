@@ -107,6 +107,7 @@ describe("dublê — jornada, serviços e bloqueios", () => {
       modo: "proprio",
       horaInicio: "13:00",
       horaFim: "20:00",
+      pausas: [],
       pausaInicio: null,
       pausaFim: null,
     });

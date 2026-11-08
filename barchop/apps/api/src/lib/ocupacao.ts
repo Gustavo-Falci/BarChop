@@ -2,6 +2,7 @@ import type { OcupacaoDoDia } from "@barchop/types";
 import { dateParaHora } from "./horas";
 import {
   aplicarBloqueios,
+  INCLUIR_PAUSAS,
   janelaEfetiva,
   pausaComoOcupado,
   PODE_ATENDER,
@@ -83,7 +84,7 @@ export async function ocupacaoDoDia(
       where: { barbeariaId_data: { barbeariaId, data } },
       select: { horaAbertura: true, horaFechamento: true, fechado: true },
     }),
-    db.jornadaProfissional.findMany({ where: { barbeiroId: { in: ids }, diaSemana } }),
+    db.jornadaProfissional.findMany({ where: { barbeiroId: { in: ids }, diaSemana }, include: INCLUIR_PAUSAS }),
     db.bloqueio.findMany({
       where: { barbeiroId: { in: ids }, dataInicio: { lte: data }, dataFim: { gte: data } },
       select: { barbeiroId: true, dataInicio: true, dataFim: true, horaInicio: true, horaFim: true },
@@ -102,12 +103,15 @@ export async function ocupacaoDoDia(
       bloqueios.filter((bloqueio) => bloqueio.barbeiroId === membro.id),
       data
     );
-    const [pausa] = pausaComoOcupado(jornada);
+    const pausas = pausaComoOcupado(jornada);
     const aberto = !expediente.fechado && expediente.horaAbertura && expediente.horaFechamento;
+    const faixas = aberto
+      ? pausas.map((pausa) => ({ inicio: dateParaHora(pausa.horaInicio), fim: dateParaHora(pausa.horaFim) }))
+      : [];
     return {
       id: membro.id,
       nome: membro.nome,
-      minutosDeTrabalho: minutosDeTrabalho(janela, [...bloqueados, ...pausaComoOcupado(jornada)]),
+      minutosDeTrabalho: minutosDeTrabalho(janela, [...bloqueados, ...pausas]),
       minutosAgendados: minutosAgendados(
         agendamentos.filter((agendamento) => agendamento.barbeiroId === membro.id)
       ),
@@ -116,7 +120,9 @@ export async function ocupacaoDoDia(
       janela: aberto
         ? { abre: dateParaHora(expediente.horaAbertura!), fecha: dateParaHora(expediente.horaFechamento!) }
         : null,
-      pausa: aberto && pausa ? { inicio: dateParaHora(pausa.horaInicio), fim: dateParaHora(pausa.horaFim) } : null,
+      pausas: faixas,
+      // A primeira, do tempo da pausa única, até o PR que tira o campo.
+      pausa: faixas[0] ?? null,
     };
   });
 

@@ -218,6 +218,11 @@ describe("novo agendamento no painel", () => {
       async (_slug: string, filtro: { servicoIds: string[] }) =>
         filtro.servicoIds.length > 1 ? ["12:00"] : ["11:00", "11:30", "12:00"]
     );
+    // A hora que a lista não tem passa pela conferência (o Encaixar da
+    // agenda, 08/11): no dublê, ela recusa o mesmo que a lista.
+    falso.estado.horariosQueNaoCabem = {
+      "11:00": { codigo: "horario_ocupado", mensagem: "bate com outro atendimento" },
+    };
     montarPainel(<NovoAgendamento agora={AGORA} />, falso);
 
     await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));

@@ -184,10 +184,15 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   //
   // A hora do "Outro horário" não está na lista por definição: vale pela
   // conferência da API, refeita a cada troca de serviço, dia ou
-  // profissional — somar um serviço pode fazê-la deixar de caber. Só a
-  // que veio de "Usar"; a da URL segue a lista.
+  // profissional — somar um serviço pode fazê-la deixar de caber. A da
+  // URL que a lista que voltou não tem, também: o "Encaixar" da agenda
+  // manda o começo do buraco, que pode ser o fim de um bloqueio fora da
+  // grade (13:20). O painel aceita qualquer minuto que cabe.
   const [horaDoOutro, setHoraDoOutro] = useState<string | null>(null);
-  const usandoOOutro = Boolean(hora) && hora === horaDoOutro;
+  const usandoOOutro =
+    Boolean(hora) &&
+    (hora === horaDoOutro ||
+      (servicoIds.length > 0 && !horarios.carregando && !horarios.erro && !horariosCarregados.includes(hora)));
   const conferenciaDoOutro = useRequisicao(
     () =>
       usandoOOutro && servicoIds.length > 0 && profissionalId

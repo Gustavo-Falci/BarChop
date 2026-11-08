@@ -421,13 +421,16 @@ function LinhasDePausa({
                     value={pausa.fim}
                     onChange={(evento) => trocar(i, "fim", evento.target.value)}
                   />
-                  <Botao
-                    variante="fantasma"
+                  {/* Botão de texto e não o Botao: o padding dele apertava
+                      as horas até cortar ("12:0") em 360px. */}
+                  <button
+                    type="button"
+                    className={estilos.tirar}
                     aria-label={`Tirar a pausa ${i + 1} ${quando}`}
                     onClick={() => aoMudar(pausas.filter((_, j) => j !== i))}
                   >
                     Tirar
-                  </Botao>
+                  </button>
                 </div>
                 {aviso ? <Aviso tom="atencao">{aviso}</Aviso> : null}
               </li>

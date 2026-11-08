@@ -128,11 +128,38 @@
   gap: var(--espaco-xs);
 }
 
+/* Menos padding nos lados que o campo comum: a hora e o relógio do
+   seletor cabem inteiros mesmo em 360px. */
 .hora {
   min-width: 0;
   width: 100%;
   min-height: 44px;
+  padding-inline: var(--espaco-sm);
   font-variant-numeric: tabular-nums;
+}
+
+.tirar {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--espaco-xs);
+  border: 0;
+  border-radius: var(--raio-sm);
+  background: none;
+  color: var(--cor-ink);
+  /* A mesma letra do "+ Outra pausa", que é um Botao. */
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-md);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tirar:hover {
+  background: var(--cor-paper-soft);
+}
+
+.tirar:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
 }
 
 .ate {

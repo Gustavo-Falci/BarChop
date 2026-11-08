@@ -14,6 +14,7 @@ import { useRequisicao } from "../../api/useRequisicao";
 import { ehPassado, formatarDataComSemana } from "../../formato/datas";
 import { TOM_DO_STATUS, rotuloDoStatus } from "../../formato/status";
 import { IconeCheck, IconeConversa } from "../../painel/icones";
+import { encaixeDe, textoDoEncaixe } from "../../painel/encaixe";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import estilos from "./DetalheDoAgendamento.module.css";
@@ -209,6 +210,10 @@ export function DetalheDoAgendamento() {
     0
   );
   const duracao = atual.servicos.reduce((soma, s) => soma + s.duracaoNoMomento, 0);
+  // Encaixe (08/11/2026): termina antes do que os serviços somam. O
+  // total segue o dos serviços, como as linhas de cima; a linha do
+  // encaixe diz quanto ele leva de verdade.
+  const encaixe = encaixeDe(atual);
   const telefoneDiscavel = atual.cliente.telefone.replace(/\D/g, "");
   const semCaixa = caixa.erro?.codigo === "recurso_do_plano";
   const pago = caixa.dados?.pagamento ?? null;
@@ -441,6 +446,11 @@ export function DetalheDoAgendamento() {
                   {/* precoNoMomento, não o preço de hoje: é o que foi
                       combinado com aquele cliente naquele dia. */}
                   <span className={estilos.valor}>{formatarPreco((total / 100).toFixed(2))}</span>
+                </li>
+              ) : null}
+              {encaixe ? (
+                <li className={estilos.encaixe}>
+                  <span>Encaixe · {textoDoEncaixe(encaixe)}</span>
                 </li>
               ) : null}
             </ul>

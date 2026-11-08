@@ -2,8 +2,10 @@
 
 import { useState, type ReactNode } from "react";
 import type { AgendamentoComCliente, BloqueioSerializado, HorarioSerializado } from "@barchop/types";
+import { Chip } from "../../../componentes/Chip";
 import { situacaoDoAgendamento } from "../../../componentes/GradeDeTempo";
 import { ehPassado, formatarDataComSemana, formatarDataLonga, hojeIso, horaJaPassou } from "../../../formato/datas";
+import { buracosDoDia, encaixeDe, textoDoEncaixe, type Buraco, type ExpedienteDoDia } from "../../../painel/encaixe";
 import { diaAberto } from "../../../painel/grade";
 import estilos from "./ListaDaAgenda.module.css";
 
@@ -16,7 +18,15 @@ export interface ProfissionalDaLista {
 
 type Item =
   | { tipo: "agendamento"; inicio: string; fim: string; agendamento: AgendamentoComCliente }
-  | { tipo: "bloqueio"; inicio: string; fim: string; bloqueio: BloqueioSerializado };
+  | { tipo: "bloqueio"; inicio: string; fim: string; bloqueio: BloqueioSerializado }
+  | { tipo: "pausa"; inicio: string; fim: string }
+  | ({ tipo: "livre" } & Buraco);
+
+function chave(item: Item): string {
+  if (item.tipo === "agendamento") return item.agendamento.id;
+  if (item.tipo === "bloqueio") return `b-${item.bloqueio.id}`;
+  return `${item.tipo}-${item.inicio}`;
+}
 
 const DIA_CURTO = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 const MES_CURTO = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -41,13 +51,17 @@ function rotuloDaSemana(domingo: string): string {
 
 // Os itens de um dia, em ordem de horário: os agendamentos (cancelado
 // some, como na grade) e os bloqueios que tocam o dia. Bloqueio do dia
-// inteiro vai na frente.
+// inteiro vai na frente. Com o expediente do dia (um profissional só na
+// lista), também a pausa e os buracos entre dois ocupados (o encaixe,
+// pedido do barbeiro, 08/11/2026). `desde`: hoje, a hora de agora.
 function itensDoDia(
   dia: string,
   agendamentos: AgendamentoComCliente[],
-  bloqueios: BloqueioSerializado[]
+  bloqueios: BloqueioSerializado[],
+  expediente?: ExpedienteDoDia,
+  desde?: string
 ): Item[] {
-  const itens: Item[] = [
+  const ocupados: Item[] = [
     ...agendamentos
       .filter((a) => a.data === dia && a.status !== "cancelado")
       .map((a): Item => ({ tipo: "agendamento", inicio: a.horaInicio, fim: a.horaFim, agendamento: a })),
@@ -57,7 +71,14 @@ function itensDoDia(
         (b): Item => ({ tipo: "bloqueio", inicio: b.horaInicio ?? "00:00", fim: b.horaFim ?? "23:59", bloqueio: b })
       ),
   ];
-  return itens.sort((a, b) => a.inicio.localeCompare(b.inicio));
+  const doExpediente: Item[] =
+    expediente && ocupados.length > 0
+      ? [
+          ...expediente.pausas.map((pausa): Item => ({ tipo: "pausa", ...pausa })),
+          ...buracosDoDia(ocupados, expediente, desde).map((buraco): Item => ({ tipo: "livre", ...buraco })),
+        ]
+      : [];
+  return [...ocupados, ...doExpediente].sort((a, b) => a.inicio.localeCompare(b.inicio));
 }
 
 // A vista "Lista" da agenda (agenda no celular, PR 4), no jeito do
@@ -73,6 +94,8 @@ export function ListaDaAgenda({
   profissionais,
   aoAbrir,
   aoMarcar,
+  expediente,
+  aoEncaixar,
   aoMostrarMais,
 }: {
   dias: string[];
@@ -86,6 +109,12 @@ export function ListaDaAgenda({
   aoAbrir: (id: string) => void;
   // Dia aberto e vazio: tocar leva pro novo agendamento naquela data.
   aoMarcar: (data: string) => void;
+  // O expediente de cada dia, só com um profissional na lista e só de
+  // hoje em diante: sem ele, nem pausa nem buraco (melhor não oferecer
+  // um buraco que oferecer o almoço).
+  expediente?: Record<string, ExpedienteDoDia>;
+  // O "Encaixar"/"Marcar" da linha Livre.
+  aoEncaixar?: (data: string, buraco: Buraco) => void;
   aoMostrarMais: () => void;
 }) {
   const [verMaisCedo, setVerMaisCedo] = useState(false);
@@ -104,6 +133,34 @@ export function ListaDaAgenda({
   };
 
   function cartao(item: Item, dia: string) {
+    if (item.tipo === "pausa") {
+      return (
+        <li key={chave(item)} className={estilos.bloqueio}>
+          {item.inicio} – {item.fim} · Pausa
+        </li>
+      );
+    }
+    if (item.tipo === "livre") {
+      const encaixar = item.duracao !== undefined;
+      return (
+        <li key={chave(item)} className={estilos.livre}>
+          <span className={estilos.textoDoLivre}>
+            {/* O "min" preso ao número: no 360 ele caía sozinho na linha de baixo. */}
+            Livre {item.inicio} – {item.fim} · {`${item.minutos}\u00a0min`}
+          </span>
+          {aoEncaixar ? (
+            <button
+              type="button"
+              className={estilos.acaoDoLivre}
+              aria-label={`${encaixar ? "Encaixar" : "Marcar"} às ${item.inicio}`}
+              onClick={() => aoEncaixar(dia, item)}
+            >
+              {encaixar ? "Encaixar" : "Marcar"}
+            </button>
+          ) : null}
+        </li>
+      );
+    }
     if (item.tipo === "bloqueio") {
       const { bloqueio } = item;
       const quem = daPessoa(bloqueio.barbeiroId);
@@ -120,6 +177,7 @@ export function ListaDaAgenda({
     const { agendamento } = item;
     const situacao = situacaoDoAgendamento(agendamento, dia === hoje ? agora : undefined);
     const quem = daPessoa(agendamento.barbeiro.id);
+    const encaixe = encaixeDe(agendamento);
     return (
       <li key={agendamento.id}>
         <button
@@ -145,9 +203,15 @@ export function ListaDaAgenda({
             </span>
             <span className={estilos.quando}>
               {agendamento.horaInicio} – {agendamento.horaFim}
+              {encaixe ? ` · ${textoDoEncaixe(encaixe)}` : ""}
               {situacao ? ` · ${situacao}` : ""}
             </span>
           </span>
+          {encaixe ? (
+            <Chip tom="acento" tamanho="pequeno">
+              Encaixe
+            </Chip>
+          ) : null}
           {comEtiqueta && quem ? <span className={estilos.etiqueta}>{curto(quem)}</span> : null}
         </button>
       </li>
@@ -157,8 +221,14 @@ export function ListaDaAgenda({
   return (
     <div className={estilos.lista} data-testid="lista-da-agenda">
       {dias.map((dia, indice) => {
-        const itens = itensDoDia(dia, agendamentos, bloqueios);
         const ehHoje = dia === hoje;
+        const itens = itensDoDia(
+          dia,
+          agendamentos,
+          bloqueios,
+          ehPassado(dia, agora) ? undefined : expediente?.[dia],
+          ehHoje ? horaDeAgora : undefined
+        );
         // Hoje, o que já acabou sai da frente; o que está acontecendo fica.
         const acabados = ehHoje ? itens.filter((item) => horaJaPassou(dia, item.fim, agora)) : [];
         const seguintes = itens.filter((item) => !acabados.includes(item));
@@ -224,7 +294,7 @@ export function ListaDaAgenda({
                     <ul className={estilos.cartoes}>
                       {seguintes.map((item, i) => (
                         <ItemComRegua
-                          key={item.tipo === "agendamento" ? item.agendamento.id : `b-${item.bloqueio.id}`}
+                          key={chave(item)}
                           regua={i === posicaoDaRegua ? horaDeAgora : undefined}
                         >
                           {cartao(item, dia)}

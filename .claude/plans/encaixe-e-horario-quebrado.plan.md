@@ -55,6 +55,7 @@ O barbeiro quer (a) marcar um cliente num buraco da agenda com duração menor q
 - Lista da agenda: etiqueta "Encaixe" e "15 min (o serviço tem 30)".
 - Linha "Livre HH:MM – HH:MM · N min" entre dois itens do mesmo profissional (só com um profissional na lista: a lista mistura a equipe). Com menos de 30 min o botão é "Encaixar", que abre o Novo agendamento com a hora e a duração do buraco; senão "Marcar".
 - Detalhe do agendamento: linha "Encaixe · 15 min (o serviço tem 30)".
+- Feito (08/11): o expediente da lista vem da ocupação dia a dia (como a semana), só com um profissional na lista e de hoje em diante; falhou, nenhum Livre. A pausa da jornada entra como linha listrada e corta o buraco. A hora do Encaixar que a lista não tem (fim de bloqueio fora da grade) passa pela conferência da API. Filtrada em um, a lista não repete a etiqueta do nome.
 
 ## Conferido antes de começar (08/11)
 

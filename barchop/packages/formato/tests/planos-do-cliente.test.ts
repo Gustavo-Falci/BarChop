@@ -20,7 +20,7 @@ import {
   parteDoPlano,
   preverPeloPlano,
   problemaDoPlano,
-  problemaDoRecebimento,
+  cicloDoRecebi,
   usosRestantes,
   type AssinaturaParaPrever,
   type HorarioParaPrever,
@@ -310,16 +310,59 @@ describe("o ciclo no balcão", () => {
     expect(cicloEmAtraso("2026-11-24", "2026-11-25")).toBe(true);
   });
 
-  it("o \"recebi\" vale a partir do dia da renovação; antes, o ciclo está em dia", () => {
-    const hoje = "2026-11-24";
-    expect(problemaDoRecebimento({ situacao: "pendente", cicloTerminaEm: null }, hoje)).toBeNull();
-    expect(problemaDoRecebimento({ situacao: "em_atraso", cicloTerminaEm: "2026-11-10" }, hoje)).toBeNull();
+});
+
+// O "recebi" (decisões do dono, 08/11): no dia da renovação ou depois,
+// abre o ciclo a partir de hoje; antes, no balcão, guarda o próximo, que
+// começa quando o de agora acabar — um só à frente, e o teste grátis
+// segue até o fim. Na InfinitePay, antes da renovação segue recusado.
+describe("o ciclo do \"recebi\"", () => {
+  const hoje = "2026-11-20";
+  const base = { ciclo: "mensal" as const, pagoAte: null };
+
+  it("sem ciclo pago (pendente, em atraso): o ciclo começa hoje", () => {
+    const novo = { problema: null, situacao: "ativa", cicloComecaEm: hoje, cicloTerminaEm: "2026-12-20", pagoAte: null };
+    expect(cicloDoRecebi({ ...base, situacao: "pendente", cicloComecaEm: null, cicloTerminaEm: null }, hoje, true)).toEqual(novo);
+    expect(
+      cicloDoRecebi({ ...base, situacao: "em_atraso", cicloComecaEm: "2026-10-10", cicloTerminaEm: "2026-11-10" }, hoje, true)
+    ).toEqual(novo);
+  });
+
+  it("no dia da renovação, o ciclo novo começa hoje, como antes", () => {
+    expect(
+      cicloDoRecebi({ ...base, situacao: "ativa", cicloComecaEm: "2026-10-20", cicloTerminaEm: hoje }, hoje, true)
+    ).toEqual({ problema: null, situacao: "ativa", cicloComecaEm: hoje, cicloTerminaEm: "2026-12-20", pagoAte: null });
+  });
+
+  it("adiantado no balcão: o ciclo de agora segue, e o próximo fica pago a partir do fim dele", () => {
+    expect(
+      cicloDoRecebi({ ...base, situacao: "ativa", cicloComecaEm: "2026-10-24", cicloTerminaEm: "2026-11-24" }, hoje, true)
+    ).toEqual({ problema: null, situacao: "ativa", cicloComecaEm: "2026-10-24", cicloTerminaEm: "2026-11-24", pagoAte: "2026-12-24" });
+  });
+
+  it("no teste grátis: o teste segue até o fim, e o mês pago começa depois dele", () => {
+    expect(
+      cicloDoRecebi({ ...base, situacao: "teste", cicloComecaEm: "2026-11-15", cicloTerminaEm: "2026-11-22" }, hoje, true)
+    ).toEqual({ problema: null, situacao: "teste", cicloComecaEm: "2026-11-15", cicloTerminaEm: "2026-11-22", pagoAte: "2026-12-22" });
+  });
+
+  it("um só à frente: com o próximo já pago, o segundo adiantado é recusado", () => {
+    const pago = { ...base, situacao: "ativa" as const, cicloComecaEm: "2026-10-24", cicloTerminaEm: "2026-11-24", pagoAte: "2026-12-24" };
+    expect(cicloDoRecebi(pago, hoje, true)).toEqual({ problema: "ja_pago_adiantado" });
+  });
+
+  it("sem adiantado (a InfinitePay): antes da renovação, o ciclo está em dia", () => {
     for (const situacao of ["ativa", "teste"] as const) {
-      expect(problemaDoRecebimento({ situacao, cicloTerminaEm: "2026-11-24" }, hoje)).toBeNull();
-      expect(problemaDoRecebimento({ situacao, cicloTerminaEm: "2026-11-20" }, hoje)).toBeNull();
-      expect(problemaDoRecebimento({ situacao, cicloTerminaEm: "2026-11-25" }, hoje)).toBe("ciclo_em_dia");
+      expect(
+        cicloDoRecebi({ ...base, situacao, cicloComecaEm: "2026-10-24", cicloTerminaEm: "2026-11-24" }, hoje, false)
+      ).toEqual({ problema: "ciclo_em_dia" });
     }
-    expect(problemaDoRecebimento({ situacao: "cancelada", cicloTerminaEm: null }, hoje)).toBe("cancelada");
+  });
+
+  it("cancelada: recusada", () => {
+    expect(
+      cicloDoRecebi({ ...base, situacao: "cancelada", cicloComecaEm: "2026-10-24", cicloTerminaEm: "2026-11-24" }, hoje, true)
+    ).toEqual({ problema: "cancelada" });
   });
 });
 

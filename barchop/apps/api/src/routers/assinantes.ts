@@ -2,9 +2,8 @@ import { Prisma, prisma } from "@barchop/database";
 import {
   FORMAS_DE_PAGAMENTO,
   SITUACOES_DO_ASSINANTE,
+  cicloDoRecebi,
   dividirMensalidade,
-  fimDoCiclo,
-  problemaDoRecebimento,
   type CicloDoCliente,
   type SituacaoDoAssinante,
 } from "@barchop/formato";
@@ -38,8 +37,8 @@ import type { App } from "../tipos";
 // no Grátis: a assinatura é do cliente com quem vende, e continua valendo
 // (decisão 6 do plano).
 //
-// O ciclo: o "recebi" abre um ciclo novo a partir de hoje, e antes do dia
-// da renovação é recusado (`problemaDoRecebimento`). Sem "recebi", a
+// O ciclo: o "recebi" abre um ciclo novo a partir de hoje; antes do dia
+// da renovação, guarda o próximo em `pagoAte` (`cicloDoRecebi`). Sem "recebi", a
 // assinatura fica em atraso no dia seguinte, marcada na leitura
 // (`marcarAtrasadas`), sem tarefa agendada.
 
@@ -91,6 +90,7 @@ function serializarAssinatura(assinatura: AssinaturaComTudo): AssinaturaDoPainel
     ciclo: assinatura.ciclo as CicloDoCliente,
     cicloComecaEm: assinatura.cicloComecaEm ? dateParaData(assinatura.cicloComecaEm) : null,
     cicloTerminaEm: assinatura.cicloTerminaEm ? dateParaData(assinatura.cicloTerminaEm) : null,
+    pagoAte: assinatura.pagoAte ? dateParaData(assinatura.pagoAte) : null,
     canceladaEm: assinatura.canceladaEm?.toISOString() ?? null,
     criadoEm: assinatura.criadoEm.toISOString(),
     cliente: assinatura.cliente,
@@ -220,15 +220,30 @@ export function registrarRotasAssinantes(app: App): void {
         if (atual.forma === "online" && !porLink) {
           throw new ErroDeNegocio("assinatura online: o pagamento entra pelo provedor", "assinatura_online");
         }
-        const termina = atual.cicloTerminaEm ? dateParaData(atual.cicloTerminaEm) : null;
-        const problema = problemaDoRecebimento(
-          { situacao: atual.situacao as SituacaoDoAssinante, cicloTerminaEm: termina },
-          hoje
+        const data = (dia: Date | null) => (dia ? dateParaData(dia) : null);
+        const termina = data(atual.cicloTerminaEm);
+        // A da InfinitePay tem o link do ciclo: adiantado, segue recusado.
+        const novo = cicloDoRecebi(
+          {
+            situacao: atual.situacao as SituacaoDoAssinante,
+            ciclo: atual.ciclo as CicloDoCliente,
+            cicloComecaEm: data(atual.cicloComecaEm),
+            cicloTerminaEm: termina,
+            pagoAte: data(atual.pagoAte),
+          },
+          hoje,
+          atual.forma === "no_balcao"
         );
-        if (problema === "cancelada") {
-          throw new ErroDeNegocio("esta assinatura foi cancelada", "assinatura_cancelada");
-        }
-        if (problema === "ciclo_em_dia") {
+        if (novo.problema !== null) {
+          if (novo.problema === "cancelada") {
+            throw new ErroDeNegocio("esta assinatura foi cancelada", "assinatura_cancelada");
+          }
+          if (novo.problema === "ja_pago_adiantado") {
+            throw new ErroDeNegocio(
+              `o próximo ciclo já está pago, até ${diaEMes(data(atual.pagoAte) ?? hoje)}`,
+              "ja_pago_adiantado"
+            );
+          }
           const oQue = atual.situacao === "teste" ? "o teste grátis" : "o ciclo pago";
           throw new ErroDeNegocio(
             `${oQue} vai até ${diaEMes(termina ?? hoje)}: marque o próximo pagamento a partir desse dia`,
@@ -262,13 +277,15 @@ export function registrarRotasAssinantes(app: App): void {
         if (porLink) {
           await tx.linkDoCiclo.updateMany({ where: { assinaturaId: atual.id, situacao: "aberto" }, data: { situacao: "fechado" } });
         }
-        // O ciclo segue o dia do pagamento, não o do caixa.
+        // O ciclo segue o dia do pagamento, não o do caixa; o adiantado
+        // começa no fim do de agora.
         const renovada = await tx.assinaturaDoCliente.update({
           where: { id: atual.id },
           data: {
-            situacao: "ativa",
-            cicloComecaEm: dataParaDate(hoje),
-            cicloTerminaEm: dataParaDate(fimDoCiclo(hoje, atual.ciclo as CicloDoCliente)),
+            situacao: novo.situacao,
+            cicloComecaEm: dataParaDate(novo.cicloComecaEm),
+            cicloTerminaEm: dataParaDate(novo.cicloTerminaEm),
+            pagoAte: novo.pagoAte ? dataParaDate(novo.pagoAte) : null,
           },
           include: INCLUDE_ASSINATURA,
         });

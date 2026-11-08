@@ -63,6 +63,7 @@ const VIVA: AssinaturaDoPainel = {
   ciclo: "mensal",
   cicloComecaEm: "2026-10-01",
   cicloTerminaEm: "2026-11-01",
+  pagoAte: null,
   canceladaEm: null,
   linkDoCiclo: null,
   provedor: null,

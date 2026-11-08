@@ -82,6 +82,7 @@ const carlosAtrasado: AssinaturaDoPainel = {
   ciclo: "mensal",
   cicloComecaEm: "2026-09-20",
   cicloTerminaEm: "2026-10-20",
+  pagoAte: null,
   canceladaEm: null,
   linkDoCiclo: null,
   provedor: null,
@@ -149,8 +150,25 @@ describe("a aba Assinantes", () => {
     expect(within(joaoNaLista).getByText("De Gustavo")).toBeInTheDocument();
     expect(within(joaoNaLista).getByText("Ativa")).toBeInTheDocument();
     expect(within(joaoNaLista).getByText(/renova em 10\/11/i)).toBeInTheDocument();
-    // Em dia: o "Recebi" seria recusado (ciclo_em_dia).
-    expect(within(joaoNaLista).queryByRole("button", { name: /recebi/i })).not.toBeInTheDocument();
+    // Em dia: o "Recebi" guarda o próximo ciclo (adiantado, decisão do dono 08/11).
+    expect(within(joaoNaLista).getByRole("button", { name: /recebi/i })).toBeInTheDocument();
+  });
+
+  it("Recebi adiantado: a janela diz de quando a quando vale o próximo, e a linha mostra até quando está pago", async () => {
+    const falso = semear();
+    const receber = vi.spyOn(falso.barbeiro, "receberMensalidade");
+    montarPainel(<ListaDePlanos agora={AGORA} />, falso);
+    await abrirAssinantes();
+
+    await userEvent.click(await within(linhaDe("João Silva")).findByRole("button", { name: /recebi/i }));
+    const janela = await screen.findByRole("dialog", { name: /recebi a mensalidade/i });
+    expect(within(janela).getByText(/o próximo ciclo fica pago: vale de 10\/11 até 10\/12/i)).toBeInTheDocument();
+    await userEvent.click(within(janela).getByRole("button", { name: /confirmar/i }));
+
+    await waitFor(() => expect(receber).toHaveBeenCalledWith("as2", "pix"));
+    expect(await within(linhaDe("João Silva")).findByText(/pago até 10\/12/i)).toBeInTheDocument();
+    // Um só à frente: com o próximo pago, o Recebi sai da linha.
+    expect(within(linhaDe("João Silva")).queryByRole("button", { name: /recebi/i })).not.toBeInTheDocument();
   });
 
   it("filtra pela situação, com quantas há em cada", async () => {
@@ -237,7 +255,8 @@ describe("a aba Assinantes no celular", () => {
     expect(within(joaoNaLista).getByText("2 cortes · De Gustavo")).toBeInTheDocument();
     expect(within(joaoNaLista).getByText(/no balcão · renova em 10\/11/i)).toBeInTheDocument();
     expect(within(joaoNaLista).getByText("Ativa")).toBeInTheDocument();
-    expect(within(joaoNaLista).queryByRole("button", { name: /recebi/i })).not.toBeInTheDocument();
+    // Em dia, o Recebi guarda o próximo ciclo (adiantado).
+    expect(within(joaoNaLista).getByRole("button", { name: /recebi/i })).toBeInTheDocument();
   });
 
   it("o item abre o cliente, e o Recebi abre a janela sem abrir o cliente", async () => {
@@ -293,7 +312,8 @@ describe("os planos no detalhe do cliente", () => {
 
     await waitFor(() => expect(assinar).toHaveBeenCalledWith("c1", "pl1"));
     expect(await within(planos).findByText("Pendente")).toBeInTheDocument();
-    expect(within(planos).getByRole("button", { name: /recebi/i })).toBeInTheDocument();
+    // Um Recebi na nova (pendente) e um no "2 cortes", em dia (adiantado).
+    expect(within(planos).getAllByRole("button", { name: /recebi/i })).toHaveLength(2);
   });
 
   it("plano com dias grátis diz até quando vai o teste", async () => {

@@ -107,6 +107,7 @@ const doGustavoEmDia: AssinaturaDoPainel = {
   ciclo: "mensal",
   cicloComecaEm: "2026-10-10",
   cicloTerminaEm: "2026-11-10",
+  pagoAte: null,
   canceladaEm: null,
   linkDoCiclo: null,
   provedor: null,
@@ -190,7 +191,7 @@ describe("dublê — assinantes", () => {
     expect((await api.barbeiro.assinantes("c1")).assinantes).toHaveLength(1);
   });
 
-  it("recebi: abre o ciclo hoje; em dia é recusado; o caixa é o próximo aberto", async () => {
+  it("recebi: abre o ciclo hoje; em dia guarda o próximo, um só; o caixa é o próximo aberto", async () => {
     const api = semear("dono", { diasFechados: ["2026-10-24"] });
     const pendente = await api.barbeiro.assinarPlano("c1", "pl1");
 
@@ -198,9 +199,12 @@ describe("dublê — assinantes", () => {
     expect(recebido.assinatura).toMatchObject({ situacao: "ativa", cicloComecaEm: "2026-10-24", cicloTerminaEm: "2026-11-24" });
     expect(recebido.recebimento).toMatchObject({ data: "2026-10-25", valorCentavos: 12000, casaCentavos: 12000, forma: "dinheiro" });
 
-    const emDia = await erroDe(api.barbeiro.receberMensalidade("as9", "pix"));
-    expect(emDia.codigo).toBe("ciclo_em_dia");
-    expect(emDia.status).toBe(422);
+    const adiantado = await api.barbeiro.receberMensalidade("as9", "pix");
+    expect(adiantado.assinatura).toMatchObject({ cicloComecaEm: "2026-10-10", cicloTerminaEm: "2026-11-10", pagoAte: "2026-12-10" });
+
+    const deNovo = await erroDe(api.barbeiro.receberMensalidade("as9", "pix"));
+    expect(deNovo.codigo).toBe("ja_pago_adiantado");
+    expect(deNovo.status).toBe(422);
   });
 
   it("cancelar tira do plano; cancelada de novo não é erro e não recebe", async () => {

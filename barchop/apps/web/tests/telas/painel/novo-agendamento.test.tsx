@@ -585,8 +585,10 @@ describe("novo agendamento no painel", () => {
       });
     }
 
-    async function abrirOutro() {
-      navegacaoFalsa.redefinir({ pathname: "/painel/agendamentos/novo", query: { data: "2026-09-09" } });
+    // `replace` do dublê não muda a URL: quem testa o "Usar" até o fim
+    // monta já com a hora que ele grava.
+    async function abrirOutro(query: Record<string, string> = {}) {
+      navegacaoFalsa.redefinir({ pathname: "/painel/agendamentos/novo", query: { data: "2026-09-09", ...query } });
       await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
       await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
       await abrirPasso("Horário");
@@ -600,13 +602,14 @@ describe("novo agendamento no painel", () => {
       falso.barbeiro.criarAgendamento = criar;
       montarPainel(<NovoAgendamento agora={AGORA} />, falso);
 
-      await abrirOutro();
+      await abrirOutro({ hora: "09:35" });
       await userEvent.type(screen.getByLabelText("Qualquer minuto"), "09:35");
 
       // Corte de 30 min no dublê.
       expect(await screen.findByText("Cabe: 09:35 – 10:05")).toBeInTheDocument();
       await userEvent.click(screen.getByRole("button", { name: "Usar 09:35" }));
-      expect(screen.getByTestId("resumo-horario")).toHaveTextContent("09:35");
+      expect(navegacaoFalsa.replace).toHaveBeenLastCalledWith(expect.stringContaining("hora=09%3A35"));
+      expect(await screen.findByTestId("resumo-horario")).toHaveTextContent("09:35");
 
       const agendar = screen.getByRole("button", { name: /^agendar$/i });
       await waitFor(() => expect(agendar).toBeEnabled());
@@ -662,7 +665,7 @@ describe("novo agendamento no painel", () => {
       const falso = semearOutro();
       montarPainel(<NovoAgendamento agora={AGORA} />, falso);
 
-      await abrirOutro();
+      await abrirOutro({ hora: "09:35" });
       await userEvent.type(screen.getByLabelText("Qualquer minuto"), "09:35");
       await userEvent.click(await screen.findByRole("button", { name: "Usar 09:35" }));
       await waitFor(() => expect(screen.getByRole("button", { name: /^agendar$/i })).toBeEnabled());

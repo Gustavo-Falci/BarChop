@@ -1,0 +1,59 @@
+/* O "Outro horário" embaixo da lista (canvas "Agenda: encaixe e horário
+   quebrado", prancha Enc-NovoAgendamento-Outro). */
+.outro { display: grid; gap: var(--espaco-sm); margin-top: var(--espaco-md); justify-items: start; }
+
+.abrir {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  padding: 0 14px;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-pill);
+  background: transparent;
+  color: var(--cor-ink);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.quadro {
+  justify-self: stretch;
+  display: grid;
+  gap: var(--espaco-sm);
+  padding: var(--espaco-md);
+  border: var(--borda-padrao) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+}
+
+.cabe { display: flex; align-items: center; gap: var(--espaco-md); }
+
+.faixa {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-ok);
+  font-variant-numeric: tabular-nums;
+}
+
+.voltar {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--cor-ink-soft);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.abrir:focus-visible,
+.voltar:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+}

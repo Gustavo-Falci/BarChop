@@ -188,3 +188,115 @@ describe("cabeAntesDeFechar", () => {
     expect(horarios.slice(-2)).toEqual(["17:00", "17:30"]);
   });
 });
+
+// "Oferecer logo depois do anterior" (pedido do barbeiro, 08/11): além da
+// grade, o minuto em que um atendimento termina. Fim de pausa ou de
+// bloqueio não conta: ali o vão já é do profissional.
+describe("logo depois do anterior", () => {
+  const atendimento = (horaInicio: string, horaFim: string) => ({ horaInicio, horaFim, atendimento: true });
+
+  it("desligado (o padrão), segue só a grade", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [atendimento("09:00", "09:40")],
+      duracaoTotalMinutos: 30,
+    });
+
+    expect(horarios[0]).toBe("09:45");
+  });
+
+  it("ligado, oferece o fim do atendimento antes da grade", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [atendimento("09:00", "09:40")],
+      duracaoTotalMinutos: 30,
+      logoDepoisDoAnterior: true,
+    });
+
+    expect(horarios.slice(0, 3)).toEqual(["09:40", "09:45", "10:00"]);
+  });
+
+  it("fim que já cai na grade não aparece duas vezes", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [atendimento("09:00", "09:30")],
+      duracaoTotalMinutos: 30,
+      logoDepoisDoAnterior: true,
+    });
+
+    expect(horarios.filter((h) => h === "09:30")).toHaveLength(1);
+  });
+
+  it("só oferece se a duração cabe no vão", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [atendimento("09:00", "09:40"), atendimento("10:00", "11:00")],
+      duracaoTotalMinutos: 30,
+      logoDepoisDoAnterior: true,
+    });
+
+    // 09:40 + 30 = 10:10, invade o das 10:00.
+    expect(horarios).not.toContain("09:40");
+    expect(horarios[0]).toBe("11:00");
+  });
+
+  it("fim de pausa ou bloqueio não conta", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [{ horaInicio: "12:00", horaFim: "12:40" }],
+      duracaoTotalMinutos: 30,
+      logoDepoisDoAnterior: true,
+    });
+
+    expect(horarios).not.toContain("12:40");
+    expect(horarios).toContain("12:45");
+  });
+
+  it("o vão é de quem terminou por último: bloqueio depois do atendimento não conta", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [atendimento("13:00", "13:40"), { horaInicio: "13:00", horaFim: "14:10" }],
+      duracaoTotalMinutos: 30,
+      logoDepoisDoAnterior: true,
+    });
+
+    expect(horarios).not.toContain("13:40");
+    expect(horarios).not.toContain("14:10");
+    expect(horarios).toContain("14:15");
+  });
+
+  it("pausa e atendimento terminando no mesmo minuto: conta como atendimento", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [{ horaInicio: "12:00", horaFim: "12:50" }, atendimento("12:20", "12:50")],
+      duracaoTotalMinutos: 30,
+      logoDepoisDoAnterior: true,
+    });
+
+    expect(horarios).toContain("12:50");
+  });
+
+  it("com o serviço podendo passar do fechamento, oferece o fim do último antes de fechar", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [atendimento("17:00", "17:50")],
+      duracaoTotalMinutos: 30,
+      cabeAntesDeFechar: false,
+      logoDepoisDoAnterior: true,
+    });
+
+    expect(horarios.slice(-1)).toEqual(["17:50"]);
+  });
+
+  it("a lista continua em ordem do relógio", () => {
+    const horarios = calcularHorariosDisponiveis({
+      horarioFuncionamento: ABERTO,
+      agendamentosExistentes: [atendimento("09:00", "09:40"), atendimento("11:00", "11:20")],
+      duracaoTotalMinutos: 15,
+      logoDepoisDoAnterior: true,
+    });
+
+    expect(horarios).toEqual([...horarios].sort());
+    expect(horarios).toContain("11:20");
+  });
+});

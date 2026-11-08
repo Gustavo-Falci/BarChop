@@ -1,6 +1,7 @@
 import { prisma } from "@barchop/database";
 import { normalizarEmail } from "@barchop/formato";
 import {
+  conferirHorario,
   criarAgendamento,
   escolherProfissional,
   INCLUDE_AGENDAMENTO,
@@ -112,6 +113,33 @@ const filtroAgendamentos = {
   },
 } as const;
 
+// O "Outro horário" do painel: o minuto digitado cabe? `servicoIds`
+// repetido na query, como na disponibilidade.
+const filtroCabe = {
+  type: "object",
+  additionalProperties: false,
+  required: ["barbeiroId", "data", "horaInicio", "servicoIds"],
+  properties: {
+    barbeiroId: { type: "string", pattern: PADRAO_UUID },
+    data: { type: "string", pattern: PADRAO_DATA },
+    horaInicio: { type: "string", pattern: PADRAO_HORA },
+    servicoIds: {
+      type: "array",
+      minItems: 1,
+      maxItems: 10,
+      items: { type: "string", pattern: PADRAO_UUID },
+    },
+  },
+} as const;
+
+// As recusas que são do horário pedido — viram `{ cabe: false }`.
+const CODIGOS_DO_HORARIO = new Set([
+  "horario_indisponivel",
+  "horario_bloqueado",
+  "horario_na_pausa",
+  "duracao_invalida",
+]);
+
 // Um dia em milissegundos — o intervalo é fechado nas duas pontas, daí
 // o `+ 1` na contagem.
 const UM_DIA = 24 * 60 * 60 * 1000;
@@ -214,6 +242,44 @@ export function registrarRotasAgendamentos(app: App): void {
       await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
 
       return reply.code(201).send(serializarAgendamentoComCliente(agendamento));
+    }
+  );
+
+  // A mesma conferência do POST (lib/agendamento.ts, conferirHorario),
+  // sem gravar: o campo diz "cabe" só quando o POST aceitaria. 200 nos
+  // dois casos — não caber é a resposta, não um erro da pergunta. O que
+  // não é do horário (serviço inválido, profissional de fora) segue
+  // como erro.
+  app.get(
+    "/agendamentos/cabe",
+    { schema: { querystring: filtroCabe } },
+    async (request) => {
+      const barbeariaId = request.user.barbeariaId;
+      const { barbeiroId, data, horaInicio, servicoIds } = request.query;
+
+      // A recusa diz com quem bate: o profissional só pergunta da
+      // própria agenda, como no POST.
+      const membro = membroDoToken(request);
+      if (membro.papel === "profissional" && barbeiroId !== membro.id) {
+        throw new ErroHttp(403, "sem_permissao", "você só marca na sua própria agenda");
+      }
+
+      try {
+        await conferirHorario(prisma, {
+          barbeariaId,
+          barbeiroId,
+          servicoIds,
+          data,
+          horaInicio,
+          origem: "barbeiro",
+        });
+        return { cabe: true };
+      } catch (erro) {
+        if (erro instanceof ErroDeNegocio && CODIGOS_DO_HORARIO.has(erro.codigo)) {
+          return { cabe: false, codigo: erro.codigo, mensagem: erro.message };
+        }
+        throw erro;
+      }
     }
   );
 

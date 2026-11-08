@@ -326,27 +326,75 @@ describe("recebi", () => {
     await c.app.close();
   });
 
-  it("antes do dia da renovação o ciclo está em dia (422); no dia, abre o próximo", async () => {
+  // Pago antes do vencimento (decisões do dono, 08/11): o ciclo de agora
+  // segue, o próximo fica guardado em `pagoAte`, e o dinheiro entra no
+  // caixa de hoje. Um só à frente.
+  it("adiantado: guarda o próximo ciclo a partir do fim do atual; o segundo é recusado", async () => {
     const c = await cenario();
-    const emDia = await assinaturaPronta(c, c.daCasa.id, { comeca: somarDias(HOJE, -10), termina: somarDias(HOJE, 20) });
-    const cedo = await receber(c, c.dono.token, emDia.id);
-    expect(cedo.statusCode).toBe(422);
-    expect(cedo.json().erro).toBe("ciclo_em_dia");
+    const termina = somarDias(HOJE, 20);
+    const emDia = await assinaturaPronta(c, c.daCasa.id, { comeca: somarDias(HOJE, -10), termina });
 
-    await prisma.assinaturaDoCliente.update({
-      where: { id: emDia.id },
-      data: { cicloComecaEm: dataParaDate(somarDias(HOJE, -30)), cicloTerminaEm: dataParaDate(HOJE) },
+    const cedo = await receber(c, c.dono.token, emDia.id);
+    expect(cedo.statusCode).toBe(201);
+    expect(cedo.json().assinatura).toMatchObject({
+      situacao: "ativa",
+      cicloComecaEm: somarDias(HOJE, -10),
+      cicloTerminaEm: termina,
+      pagoAte: fimDoCiclo(termina, "mensal"),
     });
-    const noDia = await receber(c, c.dono.token, emDia.id);
-    expect(noDia.statusCode).toBe(201);
-    expect(noDia.json().assinatura).toMatchObject({ cicloComecaEm: HOJE, cicloTerminaEm: fimDoCiclo(HOJE, "mensal") });
+    expect(cedo.json().recebimento).toMatchObject({ data: HOJE, valorCentavos: 12000, forma: "pix" });
+
+    const deNovo = await receber(c, c.dono.token, emDia.id);
+    expect(deNovo.statusCode).toBe(422);
+    expect(deNovo.json().erro).toBe("ja_pago_adiantado");
+    expect(await prisma.recebimentoDoPlano.count({ where: { assinaturaId: emDia.id } })).toBe(1);
     await c.app.close();
   });
 
-  it("em teste, só depois do fim do teste", async () => {
+  it("adiantado: no dia da renovação o ciclo pago entra sozinho, sem ficar em atraso", async () => {
+    const c = await cenario();
+    const emDia = await assinaturaPronta(c, c.daCasa.id, { comeca: somarDias(HOJE, -10), termina: somarDias(HOJE, 20) });
+    await receber(c, c.dono.token, emDia.id);
+    // O tempo passa: o ciclo pago acabou ontem, e o guardado vai até daqui a um mês.
+    const pagoAte = fimDoCiclo(somarDias(HOJE, -1), "mensal");
+    await prisma.assinaturaDoCliente.update({
+      where: { id: emDia.id },
+      data: {
+        cicloComecaEm: dataParaDate(somarDias(HOJE, -31)),
+        cicloTerminaEm: dataParaDate(somarDias(HOJE, -1)),
+        pagoAte: dataParaDate(pagoAte),
+      },
+    });
+
+    const [lida] = (await listar(c, c.dono.token)).json().assinantes;
+    expect(lida).toMatchObject({ situacao: "ativa", cicloComecaEm: somarDias(HOJE, -1), cicloTerminaEm: pagoAte, pagoAte: null });
+    await c.app.close();
+  });
+
+  it("no dia da renovação, o \"recebi\" abre o ciclo a partir de hoje", async () => {
+    const c = await cenario();
+    const noDia = await assinaturaPronta(c, c.daCasa.id, { comeca: somarDias(HOJE, -30), termina: HOJE });
+    const recebido = await receber(c, c.dono.token, noDia.id);
+    expect(recebido.statusCode).toBe(201);
+    expect(recebido.json().assinatura).toMatchObject({
+      cicloComecaEm: HOJE,
+      cicloTerminaEm: fimDoCiclo(HOJE, "mensal"),
+      pagoAte: null,
+    });
+    await c.app.close();
+  });
+
+  it("em teste: o teste vai até o fim, e o mês pago começa depois dele", async () => {
     const c = await cenario();
     const emTeste = (await assinar(c, c.dono.token, c.doLucas.id)).json();
-    expect((await receber(c, c.dono.token, emTeste.id)).json().erro).toBe("ciclo_em_dia");
+    const recebido = await receber(c, c.dono.token, emTeste.id);
+    expect(recebido.statusCode).toBe(201);
+    expect(recebido.json().assinatura).toMatchObject({
+      situacao: "teste",
+      cicloComecaEm: emTeste.cicloComecaEm,
+      cicloTerminaEm: emTeste.cicloTerminaEm,
+      pagoAte: fimDoCiclo(emTeste.cicloTerminaEm, "mensal"),
+    });
     await c.app.close();
   });
 

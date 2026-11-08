@@ -102,8 +102,9 @@ export function contaQueRecebe<T extends { barbeiroId: string; daCasa: boolean }
 // lê a situação chama isto antes — a lista de assinantes, o "recebi", e
 // depois o caixa (PR 6) e "minhas assinaturas" (PR 10). O atraso da
 // online não sai daqui: quem diz é o provedor, pelo webhook. Daqui sai o
-// ciclo online já pago antes da renovação (`pago_ate`), que entra quando
-// o de agora acaba.
+// ciclo já pago antes da renovação (`pago_ate`: online, ou o "recebi"
+// adiantado do balcão), que entra quando o de agora acaba — antes do
+// atraso, senão o balcão pago adiantado ficaria em atraso.
 export async function marcarAtrasadas(
   db: Prisma.TransactionClient,
   barbeariaId: string,
@@ -116,7 +117,6 @@ export async function marcarAtrasadas(
     where: {
       ...onde,
       barbeariaId,
-      forma: "online",
       situacao: { not: "cancelada" },
       pagoAte: { not: null },
       cicloTerminaEm: { lte: dataParaDate(hoje) },

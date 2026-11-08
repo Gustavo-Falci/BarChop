@@ -274,6 +274,7 @@ describe("o dublê da conta de quem vende", () => {
       ciclo: "mensal",
       cicloComecaEm: "2026-10-01",
       cicloTerminaEm: "2026-11-01",
+      pagoAte: null,
       canceladaEm: null,
       linkDoCiclo: null,
       provedor: null,

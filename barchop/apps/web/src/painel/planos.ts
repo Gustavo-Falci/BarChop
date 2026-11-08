@@ -1,6 +1,6 @@
 import {
   formatarReais,
-  problemaDoRecebimento,
+  cicloDoRecebi,
   type CicloDoCliente,
   type SituacaoDoAssinante,
 } from "@barchop/formato";
@@ -86,16 +86,24 @@ export function porLink(assinatura: { provedor?: ProvedorDePagamento | null }): 
   return assinatura.provedor != null && !PROVEDORES[assinatura.provedor].renovaSozinho;
 }
 
+// Com o próximo ciclo já pago (`pagoAte`), diz até quando.
 export function fraseDoCiclo(
-  assinatura: Pick<AssinaturaDoPainel, "situacao" | "cicloTerminaEm"> & { provedor?: ProvedorDePagamento | null }
+  assinatura: Pick<AssinaturaDoPainel, "situacao" | "cicloTerminaEm"> & {
+    pagoAte?: string | null;
+    provedor?: ProvedorDePagamento | null;
+  }
 ): string {
   const termina = assinatura.cicloTerminaEm;
+  const pagoAte = assinatura.pagoAte ?? null;
   switch (assinatura.situacao) {
     case "pendente":
       return "Esperando o 1º pagamento";
     case "teste":
-      return `Teste grátis até ${diaEMes(termina!)}`;
+      return pagoAte
+        ? `Teste grátis até ${diaEMes(termina!)} · pago até ${diaEMes(pagoAte)}`
+        : `Teste grátis até ${diaEMes(termina!)}`;
     case "ativa":
+      if (pagoAte) return `Pago até ${diaEMes(pagoAte)}`;
       return porLink(assinatura) ? `Vale até ${diaEMes(termina!)}` : `Renova em ${diaEMes(termina!)}`;
     case "em_atraso":
       return `Venceu em ${diaEMes(termina!)} · atende como avulso`;
@@ -104,11 +112,18 @@ export function fraseDoCiclo(
   }
 }
 
+// O ciclo que o "Recebi" de hoje abriria, pela mesma regra da API: no
+// balcão, antes da renovação, guarda o próximo; na InfinitePay, não.
+export function cicloDoRecebiDeHoje(assinatura: AssinaturaDoPainel, hoje: string) {
+  return cicloDoRecebi(assinatura, hoje, assinatura.forma === "no_balcao");
+}
+
 // O "Recebi" só aparece quando a API o aceitaria: no balcão ou na
-// InfinitePay, e não antes do dia da renovação (problemaDoRecebimento).
+// InfinitePay, e não com o próximo ciclo já pago.
 export function podeReceber(assinatura: AssinaturaDoPainel, hoje: string): boolean {
   return (
-    (assinatura.forma === "no_balcao" || porLink(assinatura)) && problemaDoRecebimento(assinatura, hoje) === null
+    (assinatura.forma === "no_balcao" || porLink(assinatura)) &&
+    cicloDoRecebiDeHoje(assinatura, hoje).problema === null
   );
 }
 

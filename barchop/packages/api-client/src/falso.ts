@@ -15,7 +15,7 @@ import {
   dividirMensalidade,
   fimDoCiclo,
   problemaDoPlano,
-  problemaDoRecebimento,
+  cicloDoRecebi,
   parteDoPlano,
   preverPeloPlano,
   usosRestantes,
@@ -1075,6 +1075,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   // renovação sem "recebi".
   function marcarAtrasadas(): void {
     for (const a of estado.assinaturas!) {
+      // O ciclo já pago adiantado entra quando o de agora acaba, antes do
+      // atraso, como na API.
+      if (a.situacao !== "cancelada" && a.pagoAte && a.cicloTerminaEm !== null && a.cicloTerminaEm <= estado.hoje) {
+        Object.assign(a, { situacao: "ativa", cicloComecaEm: a.cicloTerminaEm, cicloTerminaEm: a.pagoAte, pagoAte: null });
+      }
       const emCiclo = a.situacao === "ativa" || a.situacao === "teste";
       if (a.forma === "no_balcao" && emCiclo && a.cicloTerminaEm !== null && cicloEmAtraso(a.cicloTerminaEm, estado.hoje)) {
         a.situacao = "em_atraso";
@@ -2557,6 +2562,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           ciclo: plano.ciclo,
           cicloComecaEm: emTeste ? estado.hoje : null,
           cicloTerminaEm: emTeste ? somarDias(estado.hoje, plano.diasDeTeste) : null,
+          pagoAte: null,
           canceladaEm: null,
           criadoEm: new Date().toISOString(),
           cliente: { id: cliente.id, nome: cliente.nome, telefone: cliente.telefone },
@@ -2577,11 +2583,14 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         if (atual.forma === "online" && !porLink) {
           throw new ErroDaApi(422, "assinatura_online", "assinatura online: o pagamento entra pelo provedor");
         }
-        const problema = problemaDoRecebimento(atual, estado.hoje);
-        if (problema === "cancelada") {
+        const novo = cicloDoRecebi(atual, estado.hoje, atual.forma === "no_balcao");
+        if (novo.problema === "cancelada") {
           throw new ErroDaApi(422, "assinatura_cancelada", "esta assinatura foi cancelada");
         }
-        if (problema === "ciclo_em_dia") {
+        if (novo.problema === "ja_pago_adiantado") {
+          throw new ErroDaApi(422, "ja_pago_adiantado", `o próximo ciclo já está pago, até ${diaEMes(atual.pagoAte!)}`);
+        }
+        if (novo.problema !== null) {
           const oQue = atual.situacao === "teste" ? "o teste grátis" : "o ciclo pago";
           throw new ErroDaApi(
             422,
@@ -2596,10 +2605,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           parteDaCasa: vendedor === null ? 0 : (estado.divisao!.parteDaCasa[vendedor] ?? 0),
         });
         Object.assign(atual, {
-          situacao: "ativa",
+          situacao: novo.situacao,
           linkDoCiclo: null,
-          cicloComecaEm: estado.hoje,
-          cicloTerminaEm: fimDoCiclo(estado.hoje, atual.ciclo),
+          cicloComecaEm: novo.cicloComecaEm,
+          cicloTerminaEm: novo.cicloTerminaEm,
+          pagoAte: novo.pagoAte,
         });
         // Quem recebe é quem está logado (bb1, no dublê).
         const mensalidade: MensalidadeDoCaixa = {
@@ -2655,7 +2665,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
               ciclo: a.ciclo,
               cicloComecaEm: a.cicloComecaEm,
               cicloTerminaEm: a.cicloTerminaEm,
-              pagoAte: null,
+              pagoAte: a.pagoAte,
               vendedorId: a.plano.vendedor?.id ?? null,
               servicos,
               usados: Object.fromEntries(
@@ -2753,6 +2763,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           ciclo: plano.ciclo,
           cicloComecaEm: emTeste ? estado.hoje : null,
           cicloTerminaEm: emTeste ? somarDias(estado.hoje, plano.diasDeTeste) : null,
+          pagoAte: null,
           canceladaEm: null,
           criadoEm: new Date().toISOString(),
           cliente: { id: estado.cliente.id, nome: estado.cliente.nome, telefone: estado.cliente.telefone },

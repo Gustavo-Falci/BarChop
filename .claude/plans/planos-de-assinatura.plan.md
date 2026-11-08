@@ -46,6 +46,7 @@ Diferenças do plano, combinadas no caminho:
   - **o "recebi" abre um ciclo novo a partir de hoje** (`problemaDoRecebimento`, no `formato`):
     - pendente, em atraso, ou no dia da renovação em diante: vale;
     - antes do dia da renovação (ativa ou em teste): 422 `ciclo_em_dia`. Guardar um ciclo que começa no futuro tiraria os usos de hoje da conta. Pagar adiantado pediria uma coluna nova (`pago_ate`), numa migração;
+    - **mudou em 08/11 (pedido do barbeiro em produção, decisões do dono):** no balcão, o "recebi" antes da renovação **guarda o próximo ciclo** em `pago_ate` (a coluna já existia, do online): o ciclo de agora segue com os usos dele, e o pago começa no fim dele, virado pelo `marcarAtrasadas`. **Um só à frente** (o segundo é 422 `ja_pago_adiantado`); **no teste grátis, o teste vai até o fim** e o mês pago começa depois. O dinheiro entra no caixa de hoje. A InfinitePay segue com `ciclo_em_dia` (tem o link do ciclo). Regra em `cicloDoRecebi`, no `formato`, usada pela API, pelo dublê e pela tela;
     - pagar atrasado recomeça o ciclo no dia do pagamento: o dia da renovação anda;
   - assinar com dias grátis nasce `teste`, de hoje até hoje + dias; sem dias grátis, `pendente` e sem ciclo, até o 1º "recebi";
   - a parte da casa usa a "parte da casa" de hoje do vendedor; o dia do caixa é o próximo aberto, e o ciclo segue o dia do pagamento;

@@ -882,8 +882,9 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao(`/clientes/${clienteId}/assinaturas`, { metodo: "POST", corpo: { planoId }, comToken: true });
     },
 
-    // Abre um ciclo a partir de hoje. Antes do dia da renovação: 422
-    // `ciclo_em_dia`.
+    // Abre um ciclo a partir de hoje; antes do dia da renovação, no balcão,
+    // guarda o próximo em `pagoAte` (um só: o segundo é 422
+    // `ja_pago_adiantado`). Na InfinitePay, antes da renovação: 422 `ciclo_em_dia`.
     receberMensalidade(assinaturaId: string, forma: FormaDoPagamento): Promise<RecebimentoDoBalcao> {
       return requisicao(`/assinaturas/${assinaturaId}/recebimentos`, { metodo: "POST", corpo: { forma }, comToken: true });
     },

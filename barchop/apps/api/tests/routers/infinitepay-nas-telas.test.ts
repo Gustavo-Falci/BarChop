@@ -145,7 +145,7 @@ describe("o Recebi na assinatura da InfinitePay", () => {
     expect(sino.some((aviso) => aviso.texto.includes("estorne"))).toBe(true);
   });
 
-  it("dentro do ciclo pago segue recusado, como no balcão", async () => {
+  it("dentro do ciclo pago segue recusado (o balcão guarda o próximo; aqui manda o link)", async () => {
     const c = await cenarioDaInfinitePay();
     const { id } = await assinada(c);
     expect((await receber(c, id)).statusCode).toBe(201);

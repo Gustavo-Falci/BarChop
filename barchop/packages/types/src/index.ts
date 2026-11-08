@@ -917,6 +917,9 @@ export interface AssinaturaDoPainel {
   ciclo: CicloDoCliente;
   cicloComecaEm: string | null;
   cicloTerminaEm: string | null;
+  // O ciclo seguinte, já pago (online, ou o "recebi" adiantado do
+  // balcão), que começa em `cicloTerminaEm` e vai até aqui. Senão, null.
+  pagoAte: string | null;
   canceladaEm: string | null;
   criadoEm: string;
   cliente: { id: string; nome: string; telefone: string };

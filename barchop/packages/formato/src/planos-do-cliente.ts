@@ -164,19 +164,51 @@ export function cicloPagoOnline(
   return { cicloComecaEm: vencimento, cicloTerminaEm: fim, pagoAte: null };
 }
 
-export type ProblemaDoRecebimento = "cancelada" | "ciclo_em_dia";
+export type ProblemaDoRecebimento = "cancelada" | "ciclo_em_dia" | "ja_pago_adiantado";
 
-// O "recebi" do balcão abre um ciclo novo a partir de hoje. Antes do dia
-// da renovação o ciclo pago ainda vale, e um segundo "recebi" é recusado:
-// guardar um ciclo que começa no futuro tiraria os usos de hoje da conta.
-export function problemaDoRecebimento(
-  assinatura: { situacao: SituacaoDoAssinante; cicloTerminaEm: string | null },
-  hoje: string
-): ProblemaDoRecebimento | null {
-  if (assinatura.situacao === "cancelada") return "cancelada";
-  const emCiclo = assinatura.situacao === "ativa" || assinatura.situacao === "teste";
-  if (emCiclo && assinatura.cicloTerminaEm !== null && hoje < assinatura.cicloTerminaEm) return "ciclo_em_dia";
-  return null;
+export type CicloDoRecebi =
+  | { problema: ProblemaDoRecebimento }
+  | {
+      problema: null;
+      situacao: "ativa" | "teste";
+      cicloComecaEm: string;
+      cicloTerminaEm: string;
+      pagoAte: string | null;
+    };
+
+// O ciclo depois do "recebi". No dia da renovação ou depois (e sem ciclo
+// pago), abre um ciclo a partir de hoje. Antes da renovação, o ciclo de
+// agora segue com os usos dele, e o pago fica em `pagoAte`, que começa
+// quando este acabar, como no online (decisões do dono, 08/11: guarda o
+// próximo, um só à frente, e o teste grátis vai até o fim). Quem não
+// aceita adiantado (a InfinitePay, que tem o link do ciclo) segue
+// recusando antes da renovação.
+export function cicloDoRecebi(
+  assinatura: {
+    situacao: SituacaoDoAssinante;
+    ciclo: CicloDoCliente;
+    cicloComecaEm: string | null;
+    cicloTerminaEm: string | null;
+    pagoAte: string | null;
+  },
+  hoje: string,
+  aceitaAdiantado: boolean
+): CicloDoRecebi {
+  const { situacao, ciclo, cicloComecaEm, cicloTerminaEm } = assinatura;
+  if (situacao === "cancelada") return { problema: "cancelada" };
+  const emCiclo = situacao === "ativa" || situacao === "teste";
+  if (emCiclo && cicloTerminaEm !== null && hoje < cicloTerminaEm) {
+    if (!aceitaAdiantado) return { problema: "ciclo_em_dia" };
+    if (assinatura.pagoAte !== null) return { problema: "ja_pago_adiantado" };
+    return {
+      problema: null,
+      situacao,
+      cicloComecaEm: cicloComecaEm ?? hoje,
+      cicloTerminaEm,
+      pagoAte: fimDoCiclo(cicloTerminaEm, ciclo),
+    };
+  }
+  return { problema: null, situacao: "ativa", cicloComecaEm: hoje, cicloTerminaEm: fimDoCiclo(hoje, ciclo), pagoAte: null };
 }
 
 // `null` = ilimitado.

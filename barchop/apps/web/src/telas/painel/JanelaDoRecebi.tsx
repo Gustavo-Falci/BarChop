@@ -9,7 +9,7 @@ import { Botao } from "../../componentes/Botao";
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import { depoisDaSaida } from "../../movimento/depoisDaSaida";
 import { ROTULO_DA_FORMA } from "../../painel/caixa";
-import { diaEMes } from "../../painel/planos";
+import { cicloDoRecebiDeHoje, diaEMes } from "../../painel/planos";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import estilos from "./JanelaDoRecebi.module.css";
 
@@ -17,8 +17,18 @@ import estilos from "./JanelaDoRecebi.module.css";
 const OPCOES_DE_FORMA = FORMAS_DE_PAGAMENTO.map((valor) => ({ valor, rotulo: ROTULO_DA_FORMA[valor] }));
 
 // O "Recebi" do balcão (PR 7b): a mensalidade entra no caixa com a forma,
-// e o ciclo recomeça hoje. Na lista de assinantes e no detalhe do
-// cliente.
+// e o ciclo recomeça hoje; pago antes da renovação, o próximo fica
+// guardado e começa no fim do de agora. Na lista de assinantes e no
+// detalhe do cliente.
+function efeitoDoRecebi(assinatura: AssinaturaDoPainel, hoje: string): string {
+  const novo = cicloDoRecebiDeHoje(assinatura, hoje);
+  if (novo.problema === null && novo.pagoAte !== null) {
+    return `Entra no caixa e o próximo ciclo fica pago: vale de ${diaEMes(novo.cicloTerminaEm)} até ${diaEMes(novo.pagoAte)}.`;
+  }
+  const ate = novo.problema === null ? novo.cicloTerminaEm : fimDoCiclo(hoje, assinatura.ciclo);
+  return `Entra no caixa e o plano vale até ${diaEMes(ate)}.`;
+}
+
 export function JanelaDoRecebi({
   assinatura,
   hoje,
@@ -71,7 +81,7 @@ export function JanelaDoRecebi({
         opcoes={OPCOES_DE_FORMA}
         valor={forma}
         aoTrocar={setForma}
-        efeito={`Entra no caixa e o plano vale até ${diaEMes(fimDoCiclo(hoje, assinatura.ciclo))}.`}
+        efeito={efeitoDoRecebi(assinatura, hoje)}
       />
       {erro ? <Aviso>{erro}</Aviso> : null}
       <div className={estilos.rodape}>

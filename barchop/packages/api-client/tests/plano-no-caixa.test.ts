@@ -65,6 +65,7 @@ const assinatura = (
   ciclo: "mensal",
   cicloComecaEm: "2026-10-10",
   cicloTerminaEm: "2026-11-10",
+  pagoAte: null,
   canceladaEm: null,
   linkDoCiclo: null,
   provedor: null,

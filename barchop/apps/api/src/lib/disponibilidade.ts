@@ -1,6 +1,11 @@
 import type { Prisma } from "@barchop/database";
 import { REGRAS_PADRAO, regraQueRecusa } from "@barchop/formato";
-import { calcularHorariosDisponiveis } from "@barchop/scheduling";
+import {
+  calcularHorariosDisponiveis,
+  horarioCabe,
+  type CalcularHorariosParams,
+  type HorarioNaoCabe,
+} from "@barchop/scheduling";
 import type { RegrasDeAgendamento } from "@barchop/types";
 import { ErroDeNegocio } from "./erro-negocio";
 import { dateParaHora } from "./horas";
@@ -87,9 +92,14 @@ export function pausaComoOcupado(jornada: DiaDaJornada | null): IntervaloOcupado
 
 // O horário pedido invade a pausa? Dá o código próprio na criação, pelo
 // mesmo motivo do `caiEmBloqueio`: sem isto a recusa sairia como
-// `horario_indisponivel`, sem dizer por quê.
-export function caiNaPausa(pausa: IntervaloOcupado[], horaInicio: string, horaFim: string): boolean {
-  return pausa.some(
+// `horario_indisponivel`, sem dizer por quê. Devolve a faixa, que a
+// mensagem cita.
+export function pausaQueBate(
+  pausa: IntervaloOcupado[],
+  horaInicio: string,
+  horaFim: string
+): IntervaloOcupado | undefined {
+  return pausa.find(
     (faixa) => dateParaHora(faixa.horaInicio) < horaFim && horaInicio < dateParaHora(faixa.horaFim)
   );
 }
@@ -396,7 +406,7 @@ export function descartarPassados(params: {
   return horarios.filter((hora) => regraQueRecusa(regras, agora, data, hora) === null);
 }
 
-export function horariosLivres(params: {
+interface ParamsDosLivres {
   janela: LinhaDeHorario | null;
   // Os agendamentos não cancelados, à parte do resto: é o fim deles que
   // o "logo depois do anterior" oferece. Pausa e bloqueio vão em
@@ -407,7 +417,20 @@ export function horariosLivres(params: {
   // A do cliente ou a do painel (lib/regras.ts); sem ela, a de antes
   // das regras.
   grade?: Grade;
-}): string[] {
+}
+
+export function horariosLivres(params: ParamsDosLivres): string[] {
+  return calcularHorariosDisponiveis(paraOCalculo(params));
+}
+
+// O "Outro horário" do painel: um minuto qualquer, com as mesmas
+// entradas da lista. `indice` conta de `atendimentos` e depois
+// `ocupados`, na ordem recebida.
+export function horarioQueNaoCabe(params: ParamsDosLivres, horaInicio: string): HorarioNaoCabe | null {
+  return horarioCabe(paraOCalculo(params), horaInicio);
+}
+
+function paraOCalculo(params: ParamsDosLivres): CalcularHorariosParams {
   const { janela, atendimentos = [], ocupados, duracaoTotalMinutos, grade = GRADE_PADRAO } = params;
   const emHoras = (ocupado: IntervaloOcupado, atendimento: boolean) => ({
     horaInicio: dateParaHora(ocupado.horaInicio),
@@ -415,7 +438,7 @@ export function horariosLivres(params: {
     atendimento,
   });
 
-  return calcularHorariosDisponiveis({
+  return {
     horarioFuncionamento: {
       horaAbertura: janela?.horaAbertura
         ? dateParaHora(janela.horaAbertura)
@@ -435,7 +458,7 @@ export function horariosLivres(params: {
     intervaloMinutos: grade.intervaloMinutos,
     cabeAntesDeFechar: grade.cabeAntesDeFechar,
     logoDepoisDoAnterior: grade.logoDepoisDoAnterior,
-  });
+  };
 }
 
 // O barbeiroId vem do corpo ou da query nos três chamadores — no fluxo

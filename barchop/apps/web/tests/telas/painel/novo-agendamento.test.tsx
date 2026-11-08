@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import { NovoAgendamento } from "../../../src/telas/painel/NovoAgendamento";
 import { navegacaoFalsa } from "../../ajudantes/navegacao";
@@ -572,5 +572,118 @@ describe("novo agendamento no painel", () => {
     expect(await screen.findByRole("button", { name: "09:40, logo depois de um atendimento" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "09:45" })).toBeInTheDocument();
     expect(screen.getByText(/logo depois de um atendimento \(fora do 15 em 15\)/i)).toBeInTheDocument();
+  });
+
+  describe("outro horário", () => {
+    // Um teste daqui faz o `replace` gravar a URL; o resto do arquivo
+    // espera o dublê que não grava.
+    afterEach(() => navegacaoFalsa.replace.mockReset());
+
+    function semearOutro(extra: Parameters<typeof criarApiClientFalso>[0] = {}) {
+      return criarApiClientFalso({
+        clientes: [
+          { id: "c1", nome: "João Silva", telefone: "(11) 99999-0001", email: null, temConta: false },
+        ],
+        horariosLivres: ["11:00", "11:30"],
+        ...extra,
+      });
+    }
+
+    // `replace` do dublê não muda a URL: quem testa o "Usar" até o fim
+    // monta já com a hora que ele grava.
+    async function abrirOutro(query: Record<string, string> = {}) {
+      navegacaoFalsa.redefinir({ pathname: "/painel/agendamentos/novo", query: { data: "2026-09-09", ...query } });
+      await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
+      await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
+      await abrirPasso("Horário");
+      await userEvent.click(await screen.findByRole("button", { name: "Outro horário" }));
+    }
+
+    it("qualquer minuto que cabe: Usar e Agendar mandam esse minuto", async () => {
+      const falso = semearOutro();
+      const original = falso.barbeiro.criarAgendamento;
+      const criar = vi.fn(async (novo: Parameters<typeof original>[0]) => original(novo));
+      falso.barbeiro.criarAgendamento = criar;
+      montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+      // O `replace` grava a URL de verdade aqui: a hora sai do vazio pelo
+      // "Usar", como na tela.
+      navegacaoFalsa.replace.mockImplementation((destino: string) => {
+        navegacaoFalsa.query = new URLSearchParams(destino.split("?")[1]);
+      });
+      await abrirOutro();
+      await userEvent.type(screen.getByLabelText("Qualquer minuto"), "09:35");
+
+      // Corte de 30 min no dublê.
+      expect(await screen.findByText("Cabe: 09:35 – 10:05")).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Usar 09:35" }));
+      expect(navegacaoFalsa.replace).toHaveBeenLastCalledWith(expect.stringContaining("hora=09%3A35"));
+      expect(await screen.findByTestId("resumo-horario")).toHaveTextContent("09:35");
+
+      const agendar = screen.getByRole("button", { name: /^agendar$/i });
+      await waitFor(() => expect(agendar).toBeEnabled());
+      await userEvent.click(agendar);
+
+      await waitFor(() => expect(criar).toHaveBeenCalled());
+      expect(criar.mock.calls[0][0]).toMatchObject({ horaInicio: "09:35", data: "2026-09-09" });
+    });
+
+    it("não cabe: diz por quê, e não oferece usar", async () => {
+      montarPainel(
+        <NovoAgendamento agora={AGORA} />,
+        semearOutro({
+          horariosQueNaoCabem: {
+            "09:35": { codigo: "horario_indisponivel", mensagem: "bate com Ana Souza, marcado das 09:30 às 10:00" },
+          },
+        })
+      );
+
+      await abrirOutro();
+      await userEvent.type(screen.getByLabelText("Qualquer minuto"), "935");
+
+      expect(
+        await screen.findByText("Não cabe 30 min: bate com Ana Souza, marcado das 09:30 às 10:00.")
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^Usar/ })).toBeNull();
+      expect(screen.getByLabelText("Qualquer minuto")).toHaveAttribute("aria-invalid", "true");
+    });
+
+    it("hora que não existe: pede o formato ao sair do campo", async () => {
+      montarPainel(<NovoAgendamento agora={AGORA} />, semearOutro());
+
+      await abrirOutro();
+      await userEvent.type(screen.getByLabelText("Qualquer minuto"), "25:00");
+      await userEvent.tab();
+
+      expect(screen.getByText("Digite a hora como 09:35.")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^Usar/ })).toBeNull();
+    });
+
+    it("Voltar pra lista fecha o campo", async () => {
+      montarPainel(<NovoAgendamento agora={AGORA} />, semearOutro());
+
+      await abrirOutro();
+      expect(screen.getByRole("button", { name: "Outro horário" })).toHaveAttribute("aria-expanded", "true");
+      await userEvent.click(screen.getByRole("button", { name: "Voltar pra lista" }));
+
+      expect(screen.queryByLabelText("Qualquer minuto")).toBeNull();
+      expect(screen.getByRole("button", { name: "Outro horário" })).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("o minuto usado deixa de valer se, com outro serviço, não cabe mais", async () => {
+      const falso = semearOutro();
+      montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+      await abrirOutro({ hora: "09:35" });
+      await userEvent.type(screen.getByLabelText("Qualquer minuto"), "09:35");
+      await userEvent.click(await screen.findByRole("button", { name: "Usar 09:35" }));
+      await waitFor(() => expect(screen.getByRole("button", { name: /^agendar$/i })).toBeEnabled());
+
+      falso.estado.horariosQueNaoCabem["09:35"] = { codigo: "horario_indisponivel", mensagem: "bate com Ana" };
+      await abrirPasso("Serviços");
+      await userEvent.click(screen.getByRole("checkbox", { name: /Barba/ }));
+
+      await waitFor(() => expect(screen.getByRole("button", { name: /^agendar$/i })).toBeDisabled());
+    });
   });
 });

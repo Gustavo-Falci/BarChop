@@ -80,6 +80,15 @@ describe("POST /agendamentos/:id/remarcar", () => {
     expect(resposta.statusCode).toBe(201);
   });
 
+  it("o painel remarca pra qualquer minuto que cabe, fora da grade (08/11/2026)", async () => {
+    const c = await cenario();
+
+    const resposta = await remarcar(c, { data: QUINTA, horaInicio: "14:05" });
+
+    expect(resposta.statusCode).toBe(201);
+    expect(resposta.json().horaInicio).toBe("14:05");
+  });
+
   it("horário ocupado por outro: 422 horario_indisponivel, e o antigo fica de pé", async () => {
     const c = await cenario();
     await marcarPeloPainel(c.app, c.agenda, { data: QUINTA, horaInicio: "14:00" });

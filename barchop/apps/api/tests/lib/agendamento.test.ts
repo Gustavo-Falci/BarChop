@@ -209,16 +209,16 @@ describe("criarAgendamento", () => {
     ).rejects.toMatchObject({ status: 422, codigo: "horario_indisponivel" });
   });
 
-  it("recusa horário fora da grade de 15 minutos com 422", async () => {
+  it("o painel marca fora da grade de 15, se cabe", async () => {
     const c = await cenario();
 
-    // calcularHorariosDisponiveis alinha os candidatos ao grid a partir
-    // da meia-noite: 10:07 nunca está na lista.
-    await expect(
-      prisma.$transaction((tx) =>
-        criarAgendamento(tx, params(c, { horaInicio: "10:07" }))
-      )
-    ).rejects.toMatchObject({ status: 422, codigo: "horario_indisponivel" });
+    // O "Outro horário" (08/11/2026): qualquer minuto que caiba. O link
+    // segue na grade (regras-de-agendamento.test.ts).
+    const criado = await prisma.$transaction((tx) =>
+      criarAgendamento(tx, params(c, { horaInicio: "10:07" }))
+    );
+
+    expect(criado.horaFim.toISOString().slice(11, 16)).toBe("10:52");
   });
 
   it("recusa horário já ocupado com 422, antes de chegar no banco", async () => {

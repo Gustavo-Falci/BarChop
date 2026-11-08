@@ -16,6 +16,8 @@ import type {
   ExcecaoSalva,
   HorarioSerializado,
   MembroDaEquipe,
+  ConferenciaDeHorario,
+  HorarioConferido,
   NovoAgendamentoBarbeiroInput,
   OcupacaoDoDia,
   CaixaDoDia,
@@ -735,6 +737,12 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
         corpo: novo,
         comToken: true,
       });
+    },
+
+    // O "Outro horário": o minuto digitado cabe? A mesma conferência do
+    // POST, sem gravar.
+    conferirHorario(pedido: ConferenciaDeHorario): Promise<HorarioConferido> {
+      return requisicao("/agendamentos/cabe", { query: { ...pedido }, comToken: true });
     },
 
     // Devolve o agendamento NOVO: remarcar cancela o antigo e cria outro,

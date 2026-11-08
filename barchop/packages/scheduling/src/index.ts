@@ -140,3 +140,58 @@ export function calcularHorariosDisponiveis(
 
   return horariosDisponiveis;
 }
+
+// Por que um horário qualquer não serve: dia fechado, fora do expediente
+// ou batendo com o que já está ocupado. `indice` é a posição do que bate
+// em `agendamentosExistentes`, pra quem chamou dizer com quem.
+export type HorarioNaoCabe =
+  | { motivo: "fechado" }
+  | { motivo: "fora_do_expediente" }
+  | { motivo: "ocupado"; indice: number };
+
+// O "Outro horário" do painel: qualquer minuto, e não só os da grade. As
+// mesmas pontas do `calcularHorariosDisponiveis` — tudo que a lista
+// oferece cabe aqui, e o que cabe aqui na grade está na lista (testes).
+// `intervaloMinutos` e `logoDepoisDoAnterior` não entram: só dizem quais
+// minutos a lista sugere.
+export function horarioCabe(
+  params: CalcularHorariosParams,
+  horaInicio: string
+): HorarioNaoCabe | null {
+  const {
+    horarioFuncionamento,
+    agendamentosExistentes,
+    duracaoTotalMinutos,
+    cabeAntesDeFechar = true,
+  } = params;
+
+  if (
+    horarioFuncionamento.fechado ||
+    !horarioFuncionamento.horaAbertura ||
+    !horarioFuncionamento.horaFechamento
+  ) {
+    return { motivo: "fechado" };
+  }
+
+  const abertura = horaParaMinutos(horarioFuncionamento.horaAbertura);
+  const fechamento = horaParaMinutos(horarioFuncionamento.horaFechamento);
+  const inicio = horaParaMinutos(horaInicio);
+  const fim = inicio + duracaoTotalMinutos;
+
+  const dentro = cabeAntesDeFechar
+    ? fim <= fechamento
+    : inicio <= fechamento - 1 && inicio <= MINUTOS_NO_DIA - 1 - duracaoTotalMinutos;
+  if (inicio < abertura || !dentro) return { motivo: "fora_do_expediente" };
+
+  // O que bate e começa primeiro: é o que a frase vai citar.
+  let indice = -1;
+  agendamentosExistentes.forEach((ocupado, i) => {
+    const comeca = horaParaMinutos(ocupado.horaInicio);
+    if (comeca < fim && inicio < horaParaMinutos(ocupado.horaFim)) {
+      if (indice === -1 || comeca < horaParaMinutos(agendamentosExistentes[indice].horaInicio)) {
+        indice = i;
+      }
+    }
+  });
+  return indice === -1 ? null : { motivo: "ocupado", indice };
+}

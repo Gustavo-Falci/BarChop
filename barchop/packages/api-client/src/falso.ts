@@ -49,6 +49,8 @@ import type {
   HorarioSerializado,
   MembroDaEquipe,
   Notificacao,
+  ConferenciaDeHorario,
+  HorarioConferido,
   NovoAgendamentoBarbeiroInput,
   NovoAgendamentoPublicoInput,
   OcupacaoDoDia,
@@ -171,6 +173,9 @@ export interface EstadoFalso {
   perfil: PerfilPublicoBarbearia;
   servicos: ServicoSerializado[];
   horariosLivres: string[];
+  // O "Outro horário": o que a conferência e o POST do painel recusam,
+  // pela hora. O resto cabe.
+  horariosQueNaoCabem: Record<string, { codigo: string; mensagem: string }>;
   diasComVaga: Record<string, boolean>;
   // O `clienteId` é do dublê, não da API: AgendamentoSerializado não o
   // tem, e sem ele `comCliente` não sabe qual dos clientes da lista
@@ -453,6 +458,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     perfil: semente.perfil ?? PERFIL_PADRAO,
     servicos: [...(semente.servicos ?? SERVICOS_PADRAO)],
     horariosLivres: [...(semente.horariosLivres ?? ["09:00", "09:30", "10:00"])],
+    horariosQueNaoCabem: { ...(semente.horariosQueNaoCabem ?? {}) },
     diasComVaga: { ...(semente.diasComVaga ?? {}) },
     agendamentos: (semente.agendamentos ?? []).map((agendamento) => ({
       ...agendamento,
@@ -1993,7 +1999,13 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         }
         return comCliente(achado);
       },
+      async conferirHorario(pedido: ConferenciaDeHorario): Promise<HorarioConferido> {
+        const recusa = estado.horariosQueNaoCabem[pedido.horaInicio];
+        return recusa ? { cabe: false, ...recusa } : { cabe: true };
+      },
       async criarAgendamento(novo: NovoAgendamentoBarbeiroInput) {
+        const recusa = estado.horariosQueNaoCabem[novo.horaInicio];
+        if (recusa) throw new ErroDaApi(422, recusa.codigo, recusa.mensagem);
         return comCliente(novoAgendamento({ ...novo, origem: "barbeiro" }));
       },
       async enviarCapa(arquivo: Blob) {

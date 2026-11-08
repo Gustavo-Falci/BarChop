@@ -20,6 +20,7 @@ import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { IconeCheck } from "../../painel/icones";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { BuscaDeCliente } from "./BuscaDeCliente";
+import { OutroHorario } from "./OutroHorario";
 import estilos from "./NovoAgendamento.module.css";
 
 // A grade do painel é a de 15 (apps/api/src/lib/regras.ts, gradeDe): o
@@ -159,8 +160,28 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
   // marcado, sem esperar a resposta chegar. Depois que a resposta
   // chegou (`!carregando`), `hora` só continua aceitável se estiver na
   // lista que voltou.
+  //
+  // A hora do "Outro horário" não está na lista por definição: vale pela
+  // conferência da API, refeita a cada troca de serviço, dia ou
+  // profissional — somar um serviço pode fazê-la deixar de caber. Só a
+  // que veio de "Usar"; a da URL segue a lista.
+  const [horaDoOutro, setHoraDoOutro] = useState<string | null>(null);
+  const usandoOOutro = Boolean(hora) && hora === horaDoOutro;
+  const conferenciaDoOutro = useRequisicao(
+    () =>
+      usandoOOutro && servicoIds.length > 0 && profissionalId
+        ? api.barbeiro.conferirHorario({ barbeiroId: profissionalId, data, horaInicio: hora, servicoIds })
+        : Promise.resolve(null),
+    [usandoOOutro, hora, profissionalId, data, servicoIds.join(",")]
+  );
+  const outroCabe =
+    usandoOOutro && !conferenciaDoOutro.carregando && conferenciaDoOutro.dados?.cabe === true;
+
   const horaAceitavel =
-    servicoIds.length === 0 || horarios.carregando || horariosCarregados.includes(hora);
+    servicoIds.length === 0 ||
+    horarios.carregando ||
+    horariosCarregados.includes(hora) ||
+    outroCabe;
 
   const passado = ehPassado(data, agora);
 
@@ -478,6 +499,19 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
               ) : null}
             </>
           )}
+          {/* Também com a lista vazia: o dia pode não ter vaga na grade e
+              ainda ter um buraco num minuto quebrado. */}
+          {servicoIds.length > 0 && profissionalId ? (
+            <OutroHorario
+              pedido={{ barbeiroId: profissionalId, data, servicoIds }}
+              duracao={duracao}
+              aoUsar={(escolhida) => {
+                setHoraDoOutro(escolhida);
+                trocarQuery({ hora: escolhida });
+                setAberto(null);
+              }}
+            />
+          ) : null}
         </Passo>
       </div>
 

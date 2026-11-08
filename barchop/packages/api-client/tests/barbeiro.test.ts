@@ -338,4 +338,43 @@ describe("api do barbeiro", () => {
     expect(init.method).toBe("PATCH");
     expect(agendamento.cliente.nome).toBe("João");
   });
+
+  it("confere um horário qualquer, com servicoIds repetido na query", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
+      respostaJson({ cabe: false, codigo: "horario_indisponivel", mensagem: "bate com João" })
+    );
+
+    const conferido = await clientAutenticado(fetchFalso).barbeiro.conferirHorario({
+      barbeiroId: "bb1",
+      data: "2026-09-10",
+      horaInicio: "09:35",
+      servicoIds: ["s1", "s2"],
+    });
+
+    const { url, init } = urlEInit(fetchFalso);
+    expect(url).toBe(
+      "https://api.exemplo.br/agendamentos/cabe?barbeiroId=bb1&data=2026-09-10&horaInicio=09%3A35&servicoIds=s1&servicoIds=s2"
+    );
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer jwt-do-barbeiro");
+    expect(conferido).toEqual({ cabe: false, codigo: "horario_indisponivel", mensagem: "bate com João" });
+  });
+});
+
+describe("outro horário no dublê", () => {
+  it("cabe, a não ser o que a semente diz que não cabe; e o POST recusa igual", async () => {
+    const falso = criarApiClientFalso({
+      horariosQueNaoCabem: { "09:35": { codigo: "horario_indisponivel", mensagem: "bate com João" } },
+    });
+    const pedido = { barbeiroId: "bb1", data: "2026-09-10", servicoIds: ["s1"] };
+
+    expect(await falso.barbeiro.conferirHorario({ ...pedido, horaInicio: "09:40" })).toEqual({ cabe: true });
+    expect(await falso.barbeiro.conferirHorario({ ...pedido, horaInicio: "09:35" })).toEqual({
+      cabe: false,
+      codigo: "horario_indisponivel",
+      mensagem: "bate com João",
+    });
+    await expect(
+      falso.barbeiro.criarAgendamento({ ...pedido, clienteId: "c1", horaInicio: "09:35" })
+    ).rejects.toMatchObject({ status: 422, codigo: "horario_indisponivel", mensagem: "bate com João" });
+  });
 });

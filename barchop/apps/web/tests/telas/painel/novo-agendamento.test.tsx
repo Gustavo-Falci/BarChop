@@ -686,4 +686,156 @@ describe("novo agendamento no painel", () => {
       await waitFor(() => expect(screen.getByRole("button", { name: /^agendar$/i })).toBeDisabled());
     });
   });
+
+  // O encaixe (pedido do barbeiro, 08/11/2026): duração menor que a do
+  // serviço, pra caber num buraco. Mora na URL (`?duracao=`), como a
+  // hora, e a agenda vai abrir a tela com ela (PR 4).
+  describe("encaixe", () => {
+    afterEach(() => navegacaoFalsa.replace.mockReset());
+
+    // O `replace` do dublê passa a gravar a URL: a tela relê a query a
+    // cada render, como a de verdade.
+    function urlDeVerdade(query: Record<string, string> = {}) {
+      navegacaoFalsa.redefinir({ pathname: "/painel/agendamentos/novo", query: { data: "2026-09-09", ...query } });
+      navegacaoFalsa.replace.mockImplementation((destino: string) => {
+        navegacaoFalsa.query = new URLSearchParams(destino.split("?")[1]);
+      });
+    }
+
+    function semearEncaixe(extra: Parameters<typeof criarApiClientFalso>[0] = {}) {
+      return criarApiClientFalso({
+        clientes: [
+          { id: "c1", nome: "João Silva", telefone: "(11) 99999-0001", email: null, temConta: false },
+        ],
+        horariosLivres: ["11:00", "11:30"],
+        ...extra,
+      });
+    }
+
+    async function escolherClienteECorte() {
+      await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
+      await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
+    }
+
+    it("sem mexer, a duração é a do serviço e nada vai como encaixe", async () => {
+      urlDeVerdade();
+      const falso = semearEncaixe();
+      const dia = vi.spyOn(falso.publico, "disponibilidadeDoDia");
+      montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+      await escolherClienteECorte();
+
+      expect(await screen.findByTestId("resumo-duracao")).toHaveTextContent("Do serviço · 30 min");
+      await waitFor(() => expect(dia).toHaveBeenCalled());
+      expect(dia.mock.calls.at(-1)?.[1]).not.toHaveProperty("duracaoMinutos", expect.anything());
+      expect(screen.getByTestId("resumo-do-pedido")).toHaveTextContent("30 min · R$ 40,00");
+    });
+
+    it("encaixe de 10 min: a lista e o mês refazem com ele, o fecho avisa e o POST manda", async () => {
+      urlDeVerdade();
+      const falso = semearEncaixe();
+      falso.publico.disponibilidadeDoDia = vi.fn(async (_slug: string, filtro: { duracaoMinutos?: number }) =>
+        filtro.duracaoMinutos === 10 ? ["09:20", "11:00", "11:30"] : ["11:00", "11:30"]
+      );
+      const mes = vi.spyOn(falso.publico, "disponibilidadeDoMes");
+      const original = falso.barbeiro.criarAgendamento;
+      const criar = vi.fn(async (novo: Parameters<typeof original>[0]) => original(novo));
+      falso.barbeiro.criarAgendamento = criar;
+      montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+      await escolherClienteECorte();
+      await abrirPasso("Duração");
+      await userEvent.click(screen.getByRole("radio", { name: "Encaixe" }));
+      await userEvent.click(screen.getByRole("radio", { name: "10 min" }));
+
+      expect(navegacaoFalsa.replace).toHaveBeenLastCalledWith(expect.stringContaining("duracao=10"));
+      expect(screen.getByText(/O preço continua o do serviço, R\$ 40,00/)).toBeInTheDocument();
+      expect(screen.getByTestId("resumo-do-pedido")).toHaveTextContent("10 min · encaixe · R$ 40,00");
+      await waitFor(() => expect(mes.mock.calls.at(-1)?.[1]).toMatchObject({ duracaoMinutos: 10 }));
+
+      await abrirPasso("Horário");
+      await userEvent.click(await screen.findByRole("button", { name: "09:20" }));
+      const agendar = screen.getByRole("button", { name: /^agendar$/i });
+      await waitFor(() => expect(agendar).toBeEnabled());
+      await userEvent.click(agendar);
+
+      await waitFor(() => expect(criar).toHaveBeenCalled());
+      expect(criar.mock.calls[0][0]).toMatchObject({ horaInicio: "09:20", duracaoMinutos: 10 });
+    });
+
+    it("as durações do encaixe são só as menores que o serviço", async () => {
+      urlDeVerdade();
+      montarPainel(
+        <NovoAgendamento agora={AGORA} />,
+        semearEncaixe({
+          servicos: [
+            { id: "s1", nome: "Corte", duracaoMinutos: 20, preco: "40.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
+          ],
+        })
+      );
+
+      await escolherClienteECorte();
+      await abrirPasso("Duração");
+      await userEvent.click(screen.getByRole("radio", { name: "Encaixe" }));
+
+      const tempos = within(screen.getByRole("group", { name: "Quanto tempo o encaixe leva" }));
+      expect(tempos.getAllByRole("radio").map((radio) => radio.getAttribute("value"))).toEqual(["5", "10", "15"]);
+    });
+
+    it("serviço de 5 min não tem encaixe", async () => {
+      urlDeVerdade();
+      montarPainel(
+        <NovoAgendamento agora={AGORA} />,
+        semearEncaixe({
+          servicos: [
+            { id: "s1", nome: "Corte", duracaoMinutos: 5, preco: "10.00", ativo: true, categoria: null, descricao: null, fotoUrl: null },
+          ],
+        })
+      );
+
+      await escolherClienteECorte();
+      await abrirPasso("Duração");
+
+      expect(screen.queryByRole("radio", { name: "Encaixe" })).toBeNull();
+    });
+
+    it("voltar pra do serviço tira a duração da URL", async () => {
+      urlDeVerdade({ duracao: "15" });
+      montarPainel(<NovoAgendamento agora={AGORA} />, semearEncaixe());
+
+      await escolherClienteECorte();
+      expect(await screen.findByTestId("resumo-duracao")).toHaveTextContent("Encaixe · 15 min");
+      await abrirPasso("Duração");
+      await userEvent.click(screen.getByRole("radio", { name: "Do serviço · 30 min" }));
+
+      expect(navegacaoFalsa.replace).toHaveBeenLastCalledWith(expect.not.stringContaining("duracao="));
+      expect(screen.getByTestId("resumo-do-pedido")).toHaveTextContent("30 min · R$ 40,00");
+    });
+
+    it("tirar um serviço até o encaixe não ser menor volta pra do serviço", async () => {
+      urlDeVerdade({ duracao: "25" });
+      montarPainel(<NovoAgendamento agora={AGORA} />, semearEncaixe());
+
+      await escolherClienteECorte();
+      await userEvent.click(screen.getByRole("checkbox", { name: /Barba/ }));
+      expect(await screen.findByTestId("resumo-duracao")).toHaveTextContent("Encaixe · 25 min");
+
+      // Sobra a Barba, de 20: um encaixe de 25 não é encaixe.
+      await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
+
+      expect(navegacaoFalsa.replace).toHaveBeenLastCalledWith(expect.not.stringContaining("duracao="));
+      expect(screen.getByTestId("resumo-duracao")).toHaveTextContent("Do serviço · 20 min");
+    });
+
+    it("a hora escolhida que deixa de caber avisa, junto do botão", async () => {
+      urlDeVerdade({ hora: "12:30" });
+      montarPainel(<NovoAgendamento agora={AGORA} />, semearEncaixe());
+
+      await escolherClienteECorte();
+
+      expect(
+        await within(screen.getByTestId("fecho")).findByText("12:30 não cabe 30 min neste dia. Escolha outro horário.")
+      ).toBeInTheDocument();
+    });
+  });
 });

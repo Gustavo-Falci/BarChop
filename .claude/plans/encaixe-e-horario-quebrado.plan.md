@@ -47,7 +47,7 @@ O barbeiro quer (a) marcar um cliente num buraco da agenda com duração menor q
 
 ### PR 3 — Encaixe
 - API: `duracaoMinutos?` (inteiro, múltiplo de 5, ≥ 5) no `POST /agendamentos` e na disponibilidade do dia e do mês (só membro; cliente recebe 422 `encaixe_so_no_painel`). `criarAgendamento` recusa `>= soma dos serviços` (422 `encaixe_invalido`), `horaFim` sai da duração escolhida.
-- Serializador do painel: `encaixe: boolean`.
+- Sem campo novo no serializador: o agendamento já traz `horaInicio`, `horaFim` e a `duracaoNoMomento` de cada serviço, e o encaixe sai daí (PR 4 deriva na web). Nada muda os serviços de um agendamento depois de criado (conferido 08/11). PR #319.
 - Remarcar do painel mantém a duração (ver Decisões); remarcar do cliente usa a do serviço.
 - api-client + dublê; web: passo "Duração" antes do Horário ("Do serviço · N min" | "Encaixe" com chips menores que N); a lista refaz; barra de baixo "N min · encaixe · R$ X"; aviso quando o horário escolhido deixa de caber.
 

@@ -539,7 +539,12 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           bloqueios={(bloqueios.dados ?? []).filter((b) => !filtro || filtro.has(b.barbeiroId))}
           horarios={horarios.dados}
           agora={agora}
-          profissionais={atendentes.map((pessoa, indice) => ({ ...pessoa, tom: indice % 6 }))}
+          // Só quem o filtro deixou: filtrado em um, a etiqueta com o nome
+          // dele em todo cartão só apertaria o texto (o encaixe, 08/11).
+          // O tom é o da ordem da equipe, igual na grade.
+          profissionais={atendentes
+            .map((pessoa, indice) => ({ ...pessoa, tom: indice % 6 }))
+            .filter((pessoa) => !filtro || filtro.has(pessoa.id))}
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
           aoMarcar={(dia) =>
             router.push(`/painel/agendamentos/novo?data=${dia}` + (soUm ? `&profissional=${soUm}` : ""))

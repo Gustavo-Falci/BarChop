@@ -145,7 +145,8 @@ export function ListaDaAgenda({
       return (
         <li key={chave(item)} className={estilos.livre}>
           <span className={estilos.textoDoLivre}>
-            Livre {item.inicio} – {item.fim} · {item.minutos} min
+            {/* O "min" preso ao número: no 360 ele caía sozinho na linha de baixo. */}
+            Livre {item.inicio} – {item.fim} · {`${item.minutos}\u00a0min`}
           </span>
           {aoEncaixar ? (
             <button

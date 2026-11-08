@@ -329,15 +329,10 @@ model JornadaProfissional {
   // Só no modo `proprio`, e as duas — CHECK `jornada_horas_do_modo`.
   horaInicio  DateTime?   @map("hora_inicio") @db.Time
   horaFim     DateTime?   @map("hora_fim") @db.Time
-  // Pausa do almoço (painel v2, marco 3): as duas ou nenhuma, nunca na
-  // folga — CHECK `jornada_pausa_inteira` (migration 20261008120000).
-  pausaInicio DateTime?   @map("pausa_inicio") @db.Time
-  pausaFim    DateTime?   @map("pausa_fim") @db.Time
 
   barbeiro Barbeiro         @relation(fields: [barbeiroId], references: [id], onDelete: Cascade)
-  // As pausas do dia (08/11/2026): a fonte desde a migration
-  // 20261108130000. As colunas acima guardam só a primeira, até o PR
-  // que as derruba.
+  // As pausas do dia (08/11/2026, migration 20261108130000). A pausa
+  // única de antes (`pausa_inicio`/`pausa_fim`) saiu na 20261108190000.
   pausas   PausaDaJornada[]
 
   @@unique([barbeiroId, diaSemana])

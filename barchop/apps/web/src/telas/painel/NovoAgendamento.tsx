@@ -22,6 +22,12 @@ import { usePainel } from "../../painel/SessaoDoPainel";
 import { BuscaDeCliente } from "./BuscaDeCliente";
 import estilos from "./NovoAgendamento.module.css";
 
+// A grade do painel é a de 15 (apps/api/src/lib/regras.ts, gradeDe): o
+// horário fora dela que a API oferece é o fim de um atendimento.
+function foraDaGradeDoPainel(hora: string): boolean {
+  return Number(hora.slice(3, 5)) % 15 !== 0;
+}
+
 // Quatro blocos numa tela só, e não um wizard: o wizard do fluxo do
 // cliente existe porque celular não comporta quatro passos, e um
 // monitor comporta. `agora` por parâmetro, como toda tela que olhe
@@ -449,16 +455,28 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
               }
             />
           ) : (
-            <ListaDeHorarios
-              horarios={horariosParaExibir}
-              selecionada={hora}
-              aoEscolher={(escolhida) => {
-                trocarQuery({ hora: escolhida });
-                // Última escolha da sequência: recolhe tudo e o que
-                // sobra à vista é o fecho, que é onde a tela termina.
-                setAberto(null);
-              }}
-            />
+            <>
+              <ListaDeHorarios
+                horarios={horariosParaExibir}
+                selecionada={hora}
+                aoEscolher={(escolhida) => {
+                  trocarQuery({ hora: escolhida });
+                  // Última escolha da sequência: recolhe tudo e o que
+                  // sobra à vista é o fecho, que é onde a tela termina.
+                  setAberto(null);
+                }}
+                logoDepois={foraDaGradeDoPainel}
+              />
+              {/* A API do painel oferece também o fim de cada atendimento
+                  (lib/regras.ts, gradeDe): o que não cai no 15 em 15 é
+                  esse. A legenda só aparece quando há algum. */}
+              {horariosParaExibir.some(foraDaGradeDoPainel) ? (
+                <p className={estilos.legendaDoLogoDepois}>
+                  <span aria-hidden="true" className={estilos.bolinha} />
+                  Logo depois de um atendimento (fora do 15 em 15)
+                </p>
+              ) : null}
+            </>
           )}
         </Passo>
       </div>

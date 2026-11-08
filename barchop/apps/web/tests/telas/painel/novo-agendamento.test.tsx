@@ -554,4 +554,23 @@ describe("novo agendamento no painel", () => {
       expect(fecho).toHaveTextContent("11:00");
     });
   });
+
+  it("horário logo depois de um atendimento vem marcado, com a legenda", async () => {
+    navegacaoFalsa.redefinir({ pathname: "/painel/agendamentos/novo", query: { data: "2026-09-09" } });
+    const falso = criarApiClientFalso({
+      clientes: [
+        { id: "c1", nome: "João Silva", telefone: "(11) 99999-0001", email: null, temConta: false },
+      ],
+      horariosLivres: ["09:40", "09:45", "10:00"],
+    });
+    montarPainel(<NovoAgendamento agora={AGORA} />, falso);
+
+    await userEvent.click(await screen.findByRole("button", { name: /João Silva/ }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Corte/ }));
+    await abrirPasso("Horário");
+
+    expect(await screen.findByRole("button", { name: "09:40, logo depois de um atendimento" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "09:45" })).toBeInTheDocument();
+    expect(screen.getByText(/logo depois de um atendimento \(fora do 15 em 15\)/i)).toBeInTheDocument();
+  });
 });

@@ -225,7 +225,8 @@ export async function horariosDoProfissionalNoDia(
   });
   return horariosLivres({
     janela,
-    ocupados: [...ocupados, ...bloqueados, ...contexto.pausa],
+    atendimentos: ocupados,
+    ocupados: [...bloqueados, ...contexto.pausa],
     duracaoTotalMinutos,
     grade,
   });
@@ -327,7 +328,8 @@ export async function agendaDoPeriodo(
     );
     return horariosLivres({
       janela,
-      ocupados: [...ocupados, ...bloqueados, ...pausaComoOcupado(jornada)],
+      atendimentos: ocupados,
+      ocupados: [...bloqueados, ...pausaComoOcupado(jornada)],
       duracaoTotalMinutos,
       grade,
     });
@@ -396,13 +398,22 @@ export function descartarPassados(params: {
 
 export function horariosLivres(params: {
   janela: LinhaDeHorario | null;
+  // Os agendamentos não cancelados, à parte do resto: é o fim deles que
+  // o "logo depois do anterior" oferece. Pausa e bloqueio vão em
+  // `ocupados`.
+  atendimentos?: IntervaloOcupado[];
   ocupados: IntervaloOcupado[];
   duracaoTotalMinutos: number;
   // A do cliente ou a do painel (lib/regras.ts); sem ela, a de antes
   // das regras.
   grade?: Grade;
 }): string[] {
-  const { janela, ocupados, duracaoTotalMinutos, grade = GRADE_PADRAO } = params;
+  const { janela, atendimentos = [], ocupados, duracaoTotalMinutos, grade = GRADE_PADRAO } = params;
+  const emHoras = (ocupado: IntervaloOcupado, atendimento: boolean) => ({
+    horaInicio: dateParaHora(ocupado.horaInicio),
+    horaFim: dateParaHora(ocupado.horaFim),
+    atendimento,
+  });
 
   return calcularHorariosDisponiveis({
     horarioFuncionamento: {
@@ -416,13 +427,14 @@ export function horariosLivres(params: {
       // horários grava.
       fechado: janela?.fechado ?? true,
     },
-    agendamentosExistentes: ocupados.map((ocupado) => ({
-      horaInicio: dateParaHora(ocupado.horaInicio),
-      horaFim: dateParaHora(ocupado.horaFim),
-    })),
+    agendamentosExistentes: [
+      ...atendimentos.map((ocupado) => emHoras(ocupado, true)),
+      ...ocupados.map((ocupado) => emHoras(ocupado, false)),
+    ],
     duracaoTotalMinutos,
     intervaloMinutos: grade.intervaloMinutos,
     cabeAntesDeFechar: grade.cabeAntesDeFechar,
+    logoDepoisDoAnterior: grade.logoDepoisDoAnterior,
   });
 }
 

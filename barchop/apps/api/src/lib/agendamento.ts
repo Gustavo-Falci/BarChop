@@ -204,7 +204,8 @@ export async function criarAgendamento(
   if (
     !horariosLivres({
       janela,
-      ocupados: [...ocupados, ...bloqueados, ...contexto.pausa],
+      atendimentos: ocupados,
+      ocupados: [...bloqueados, ...contexto.pausa],
       duracaoTotalMinutos,
       grade: gradeDe(regras, paraCliente),
     }).includes(horaInicio)

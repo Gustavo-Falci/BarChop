@@ -45,3 +45,25 @@
 /* O escolhido na cor de seleção do resto (o dia escolhido no calendário),
    e não o creme sobre escuro que destoava de tudo. */
 .horario[aria-current="true"] { border-color: transparent; background: var(--cor-accent); color: var(--cor-on-accent); }
+
+/* O "logo depois de um atendimento" do painel: uma bolinha no canto, na
+   cor do texto (vale escolhido ou não). */
+.horario { position: relative; }
+.marca {
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.somenteLeitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

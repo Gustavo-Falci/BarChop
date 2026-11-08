@@ -20,6 +20,7 @@ export const SELECT_REGRAS = {
   aceitaMesmoDia: true,
   janelaDias: true,
   cabeAntesDeFechar: true,
+  logoDepoisDoAnterior: true,
   prazoRemarcarHoras: true,
   prazoCancelarHoras: true,
 } as const;
@@ -30,6 +31,7 @@ type LinhaDeRegras = {
   aceitaMesmoDia: boolean;
   janelaDias: number | null;
   cabeAntesDeFechar: boolean;
+  logoDepoisDoAnterior: boolean;
   prazoRemarcarHoras: number;
   prazoCancelarHoras: number;
 };
@@ -43,6 +45,7 @@ export function regrasDe(linha: LinhaDeRegras): RegrasDeAgendamento {
     aceitaMesmoDia: linha.aceitaMesmoDia,
     janelaDias: linha.janelaDias as RegrasDeAgendamento["janelaDias"],
     cabeAntesDeFechar: linha.cabeAntesDeFechar,
+    logoDepoisDoAnterior: linha.logoDepoisDoAnterior,
     prazoRemarcarHoras: linha.prazoRemarcarHoras as RegrasDeAgendamento["prazoRemarcarHoras"],
     prazoCancelarHoras: linha.prazoCancelarHoras as RegrasDeAgendamento["prazoCancelarHoras"],
   };
@@ -54,24 +57,28 @@ export async function carregarRegras(db: ClientePrisma, barbeariaId: string): Pr
   );
 }
 
-// O que o cálculo dos horários livres precisa: a grade dos inícios e se
-// o serviço tem que terminar até fechar.
+// O que o cálculo dos horários livres precisa: a grade dos inícios, se
+// o serviço tem que terminar até fechar e se o fim de um atendimento
+// também é oferecido.
 export interface Grade {
   intervaloMinutos: number;
   cabeAntesDeFechar: boolean;
+  logoDepoisDoAnterior: boolean;
 }
 
 // O comportamento de antes das regras.
-export const GRADE_PADRAO: Grade = { intervaloMinutos: 15, cabeAntesDeFechar: true };
+export const GRADE_PADRAO: Grade = { intervaloMinutos: 15, cabeAntesDeFechar: true, logoDepoisDoAnterior: false };
 
 // O cliente usa a grade da barbearia. O painel nunca vê menos que o
 // cliente: a grade de 15 contém as de 30 e 60 (todas contam da
-// meia-noite), e terminar depois de fechar, se a casa deixa o cliente,
-// deixa o painel também.
+// meia-noite), terminar depois de fechar, se a casa deixa o cliente,
+// deixa o painel também, e o "logo depois do anterior" o painel vê
+// sempre (pedido do barbeiro, 08/11/2026).
 export function gradeDe(regras: RegrasDeAgendamento, paraCliente: boolean): Grade {
   return {
     intervaloMinutos: paraCliente ? regras.intervaloMinutos : GRADE_PADRAO.intervaloMinutos,
     cabeAntesDeFechar: regras.cabeAntesDeFechar,
+    logoDepoisDoAnterior: paraCliente ? regras.logoDepoisDoAnterior : true,
   };
 }
 

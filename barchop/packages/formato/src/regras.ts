@@ -28,6 +28,8 @@ export interface RegrasDeAgendamento {
   janelaDias: (typeof JANELAS_DIAS)[number] | null;
   // Desligado, o serviço pode começar antes de fechar e terminar depois.
   cabeAntesDeFechar: boolean;
+  // Além da grade, o link oferece o minuto em que um atendimento termina.
+  logoDepoisDoAnterior: boolean;
   prazoRemarcarHoras: (typeof PRAZOS_HORAS)[number];
   prazoCancelarHoras: (typeof PRAZOS_HORAS)[number];
 }
@@ -40,6 +42,7 @@ export const REGRAS_PADRAO: RegrasDeAgendamento = {
   aceitaMesmoDia: true,
   janelaDias: null,
   cabeAntesDeFechar: true,
+  logoDepoisDoAnterior: false,
   prazoRemarcarHoras: 0,
   prazoCancelarHoras: 0,
 };

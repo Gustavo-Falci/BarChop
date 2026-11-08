@@ -53,6 +53,7 @@ type Regras = Partial<{
   aceitaMesmoDia: boolean;
   janelaDias: number | null;
   cabeAntesDeFechar: boolean;
+  logoDepoisDoAnterior: boolean;
   prazoRemarcarHoras: number;
   prazoCancelarHoras: number;
 }>;
@@ -138,6 +139,7 @@ describe("as regras na barbearia", () => {
     aceitaMesmoDia: true,
     janelaDias: null,
     cabeAntesDeFechar: true,
+    logoDepoisDoAnterior: false,
     prazoRemarcarHoras: 0,
     prazoCancelarHoras: 0,
   };
@@ -154,7 +156,7 @@ describe("as regras na barbearia", () => {
     await app.close();
   });
 
-  it("o PATCH do dono grava as sete e as duas leituras devolvem", async () => {
+  it("o PATCH do dono grava as oito e as duas leituras devolvem", async () => {
     const app = buildApp();
     const barbearia = await criarBarbeariaComToken(app);
     const regras = {
@@ -163,6 +165,7 @@ describe("as regras na barbearia", () => {
       aceitaMesmoDia: false,
       janelaDias: 30,
       cabeAntesDeFechar: false,
+      logoDepoisDoAnterior: true,
       prazoRemarcarHoras: 12,
       prazoCancelarHoras: 24,
     };
@@ -200,6 +203,7 @@ describe("as regras na barbearia", () => {
     ["aceitaMesmoDia", "sim"],
     ["janelaDias", 10],
     ["cabeAntesDeFechar", "talvez"],
+    ["logoDepoisDoAnterior", "sim"],
     ["prazoRemarcarHoras", 3],
     ["prazoCancelarHoras", -1],
   ])("%s fora das opções dá 400", async (campo, valor) => {
@@ -487,6 +491,114 @@ describe("o cliente remarca e cancela dentro do prazo", () => {
     });
 
     expect(resposta.statusCode).toBe(200);
+    await app.close();
+  });
+});
+
+// "Oferecer logo depois do anterior" (pedido do barbeiro, 08/11): o link
+// oferece também o minuto em que um atendimento termina. O painel vê
+// sempre (nunca menos que o cliente).
+describe("logo depois do anterior", () => {
+  // O Corte do helper tem 45 min: às 09:00 termina 09:45, fora da grade
+  // de 30 do cliente.
+  it("ligada, o link oferece o fim do atendimento, e o POST aceita", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await definirRegras(agenda, { intervaloMinutos: 30, logoDepoisDoAnterior: true });
+    await marcarPeloPainel(app, agenda, { data: SEXTA, horaInicio: "09:00" });
+
+    const amanha = await horariosDoDia(app, agenda, SEXTA);
+    const marcado = await agendarPeloLink(app, agenda, { data: SEXTA, horaInicio: "09:45" });
+
+    expect(amanha.slice(0, 3)).toEqual(["09:45", "10:00", "10:30"]);
+    expect(marcado.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it("ligada, o qualquer um e os próximos horários seguem a mesma conta", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await definirRegras(agenda, { intervaloMinutos: 30, logoDepoisDoAnterior: true });
+    // Agora é QUINTA 10:00: 10:30 + 45 termina 11:15.
+    await marcarPeloPainel(app, agenda, { data: QUINTA, horaInicio: "10:30" });
+    await marcarPeloPainel(app, agenda, { data: SEXTA, horaInicio: "09:00" });
+
+    const primeiros = await proximos(app, agenda);
+    const qualquerUm = await agendarPeloLink(app, agenda, { data: SEXTA, horaInicio: "09:45", barbeiro: false });
+
+    expect(primeiros[0]).toEqual({ data: QUINTA, horaInicio: "11:15" });
+    expect(qualquerUm.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it("desligada (o padrão), o link segue só a grade e recusa o quebrado", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await definirRegras(agenda, { intervaloMinutos: 30 });
+    await marcarPeloPainel(app, agenda, { data: SEXTA, horaInicio: "09:00" });
+
+    const amanha = await horariosDoDia(app, agenda, SEXTA);
+    const recusado = await agendarPeloLink(app, agenda, { data: SEXTA, horaInicio: "09:45" });
+
+    expect(amanha[0]).toBe("10:00");
+    expect(recusado.statusCode).toBe(422);
+    expect(recusado.json().erro).toBe("horario_indisponivel");
+    await app.close();
+  });
+
+  it("o painel vê o logo depois mesmo com a regra desligada", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const barba = (
+      await app.inject({
+        method: "POST",
+        url: "/servicos",
+        headers: auth(agenda.token),
+        payload: { nome: "Barba", duracaoMinutos: 40, preco: "30.00" },
+      })
+    ).json();
+    const marcado = await app.inject({
+      method: "POST",
+      url: "/agendamentos",
+      headers: auth(agenda.token),
+      payload: {
+        barbeiroId: agenda.barbeiroId,
+        clienteId: agenda.cliente.id,
+        servicoIds: [barba.id],
+        data: SEXTA,
+        horaInicio: "09:00",
+      },
+    });
+    expect(marcado.statusCode).toBe(201);
+
+    const doPainel = await horariosDoDia(app, agenda, SEXTA, auth(agenda.token));
+    const doLink = await horariosDoDia(app, agenda, SEXTA);
+    const peloPainel = await agendarPeloPainel(app, agenda, { data: SEXTA, horaInicio: "09:40" });
+
+    expect(doPainel.slice(0, 2)).toEqual(["09:40", "09:45"]);
+    expect(doLink).not.toContain("09:40");
+    expect(peloPainel.statusCode).toBe(201);
+    await app.close();
+  });
+
+  it("o fim de um bloqueio não conta", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await definirRegras(agenda, { intervaloMinutos: 30, logoDepoisDoAnterior: true });
+    await prisma.bloqueio.create({
+      data: {
+        barbeariaId: agenda.barbeariaId,
+        barbeiroId: agenda.barbeiroId,
+        dataInicio: new Date(`${SEXTA}T00:00:00Z`),
+        dataFim: new Date(`${SEXTA}T00:00:00Z`),
+        horaInicio: new Date("1970-01-01T09:00:00Z"),
+        horaFim: new Date("1970-01-01T09:40:00Z"),
+      },
+    });
+
+    const amanha = await horariosDoDia(app, agenda, SEXTA);
+
+    expect(amanha[0]).toBe("10:00");
     await app.close();
   });
 });

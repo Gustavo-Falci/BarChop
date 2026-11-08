@@ -361,3 +361,22 @@
 .profissional {
   display: grid;
 }
+
+/* A legenda da bolinha dos horários logo depois de um atendimento
+   (ListaDeHorarios, `logoDepois`). */
+.legendaDoLogoDepois {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin: var(--espaco-sm) 0 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.bolinha {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cor-ink);
+}

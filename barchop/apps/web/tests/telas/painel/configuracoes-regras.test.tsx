@@ -98,6 +98,26 @@ describe("regras de agendamento", () => {
     expect(linha(/cliente cancela/i)).toHaveAccessibleDescription(/até 24 h antes/i);
   });
 
+  it("logo depois do anterior: desligado de início, ligar diz o efeito e grava", async () => {
+    const falso = criarApiClientFalso();
+    montarPainel(<RegrasDeAgendamento />, falso);
+
+    await screen.findByRole("button", { name: /intervalo entre horários/i });
+    expect(chave(/logo depois do anterior/i)).not.toBeChecked();
+    expect(chave(/logo depois do anterior/i)).toHaveAccessibleDescription(/só os horários de 15 em 15/i);
+
+    await userEvent.click(chave(/logo depois do anterior/i));
+
+    expect(chave(/logo depois do anterior/i)).toBeChecked();
+    expect(chave(/logo depois do anterior/i)).toHaveAccessibleDescription(
+      /além dos de 15 em 15.*hora em que o atendimento anterior termina/i
+    );
+    expect(barra()).toHaveTextContent("Oferecer logo depois do anterior: Não → Sim");
+
+    await userEvent.click(within(barra()).getByRole("button", { name: "Salvar" }));
+    await waitFor(() => expect(falso.estado.perfil).toMatchObject({ logoDepoisDoAnterior: true }));
+  });
+
   it("fechar a folha sem usar deixa a regra como estava", async () => {
     montarPainel(<RegrasDeAgendamento />, criarApiClientFalso({ areasDecididas: ["regras_de_agendamento"] }));
 

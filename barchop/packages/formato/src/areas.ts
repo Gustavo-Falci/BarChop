@@ -40,6 +40,7 @@ const AREA_DO_CAMPO: Record<string, AreaDeConfiguracao> = {
   aceitaMesmoDia: "regras_de_agendamento",
   janelaDias: "regras_de_agendamento",
   cabeAntesDeFechar: "regras_de_agendamento",
+  logoDepoisDoAnterior: "regras_de_agendamento",
   prazoRemarcarHoras: "regras_de_agendamento",
   prazoCancelarHoras: "regras_de_agendamento",
 };

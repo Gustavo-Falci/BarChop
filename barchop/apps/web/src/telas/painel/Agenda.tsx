@@ -11,6 +11,7 @@ import { SeletorDeVista, type Vista } from "../../componentes/SeletorDeVista";
 import { useRequisicao } from "../../api/useRequisicao";
 import { ehPassado, formatarDataLonga, hojeIso, horaJaPassou } from "../../formato/datas";
 import type { DestinoDoArrasto } from "../../painel/arrasto";
+import type { ExpedienteDoDia } from "../../painel/encaixe";
 import { diasDaSemana, gradeDeTempo, gradeDoMes } from "../../painel/grade";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
@@ -254,6 +255,36 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
     vista === "dia" && atendentes.length > 1
       ? atendentes.filter((a) => !filtro || filtro.has(a.id))
       : undefined;
+
+  // O buraco livre da lista (o encaixe, pedido do barbeiro, 08/11/2026):
+  // só com um profissional na lista — o profissional logado, o filtro em
+  // um só, ou a barbearia de uma pessoa —, porque a lista da equipe
+  // mistura as agendas e o buraco de um seria o atendimento de outro.
+  const sozinhoNaLista = !daEquipe
+    ? perfil.id
+    : filtro?.size === 1
+      ? [...filtro][0]
+      : equipe.dados && atendentes.length === 1
+        ? atendentes[0].id
+        : undefined;
+  // O expediente dele (janela e pausa), dia a dia, como a semana faz, e
+  // só de hoje em diante. Ao contrário da grade, falhou, a lista fica sem
+  // buraco: oferecer o almoço seria pior que não oferecer nada.
+  const diasDoExpediente = vista === "lista" && sozinhoNaLista ? diasDaLista.filter((dia) => !ehPassado(dia, agora)) : [];
+  const expedienteDaLista = useRequisicao(
+    () =>
+      diasDoExpediente.length > 0 && sozinhoNaLista
+        ? Promise.all(diasDoExpediente.map((dia) => api.barbeiro.ocupacaoDoDia(dia))).then((dias) =>
+            Object.fromEntries(
+              dias.flatMap((dia): [string, ExpedienteDoDia][] => {
+                const dele = dia.profissionais.find((p) => p.id === sozinhoNaLista);
+                return dele ? [[dia.data, { janela: dele.janela, pausas: dele.pausa ? [dele.pausa] : [] }]] : [];
+              })
+            )
+          )
+        : Promise.resolve(null),
+    [sozinhoNaLista, diasDoExpediente[0], diasDoExpediente.length]
+  );
 
   function irPara(proxima: Vista, proximaData: string, quem: string[] = filtro ? [...filtro] : []) {
     guardarVista(proxima);
@@ -512,6 +543,16 @@ export function Agenda({ agora: agoraFixo }: { agora?: Date }) {
           aoAbrir={(id) => router.push(`/painel/agendamentos/${id}`)}
           aoMarcar={(dia) =>
             router.push(`/painel/agendamentos/novo?data=${dia}` + (soUm ? `&profissional=${soUm}` : ""))
+          }
+          expediente={
+            expedienteDaLista.carregando || expedienteDaLista.erro ? undefined : (expedienteDaLista.dados ?? undefined)
+          }
+          aoEncaixar={(dia, buraco) =>
+            router.push(
+              `/painel/agendamentos/novo?data=${dia}&hora=${buraco.inicio}` +
+                (buraco.duracao ? `&duracao=${buraco.duracao}` : "") +
+                (sozinhoNaLista ? `&profissional=${sozinhoNaLista}` : "")
+            )
           }
           aoMostrarMais={() => setMaisDias({ de: data, dias: extras + DIAS_DA_LISTA })}
         />

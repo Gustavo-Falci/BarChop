@@ -344,6 +344,13 @@
   font-weight: 700;
 }
 
+/* O encaixe: o tempo de verdade, abaixo do que os serviços somam. */
+.encaixe {
+  color: var(--cor-accent-text);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
 .secundario {
   font-size: var(--texto-sm);
   font-weight: 400;

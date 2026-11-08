@@ -696,6 +696,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     servicoIds: string[];
     origem: string;
     observacoes?: string;
+    // O encaixe do painel: o horaFim sai dele, como na API.
+    duracaoMinutos?: number;
     clienteId?: string;
     // Sem ele é "qualquer um": o dublê fica com o membro logado.
     barbeiroId?: string;
@@ -723,7 +725,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       id: `a${estado.agendamentos.length + 1}`,
       data: entrada.data,
       horaInicio: entrada.horaInicio,
-      horaFim: somarMinutos(entrada.horaInicio, duracaoDe(entrada.servicoIds)),
+      horaFim: somarMinutos(entrada.horaInicio, entrada.duracaoMinutos ?? duracaoDe(entrada.servicoIds)),
       status: "pendente",
       origem: entrada.origem,
       observacoes: entrada.observacoes ?? null,

@@ -225,6 +225,8 @@ export function NovoAgendamento({ agora = new Date() }: { agora?: Date }) {
     // Lista que falhou não diz que não cabe.
     !horarios.erro &&
     !(usandoOOutro && conferenciaDoOutro.carregando) &&
+    // Nem a conferência que falhou (a API ainda sem o encaixe, a rede).
+    !(usandoOOutro && conferenciaDoOutro.erro) &&
     !horaAceitavel;
 
   const passado = ehPassado(data, agora);

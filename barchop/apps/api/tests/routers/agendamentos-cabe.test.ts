@@ -138,7 +138,7 @@ describe("outro horário no painel", () => {
       payload: {
         jornada: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) =>
           diaSemana === 4
-            ? { diaSemana, modo: "barbearia", pausaInicio: "12:00", pausaFim: "13:00" }
+            ? { diaSemana, modo: "barbearia", pausas: [{ inicio: "12:00", fim: "13:00" }] }
             : { diaSemana, modo: "barbearia" }
         ),
       },

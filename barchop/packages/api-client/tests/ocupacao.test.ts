@@ -18,7 +18,7 @@ const OCUPACAO = {
   data: QUINTA,
   casa: { minutosDeTrabalho: 540, minutosAgendados: 45 },
   profissionais: [
-    { id: "bb1", nome: "Rafael", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
+    { id: "bb1", nome: "Rafael", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausas: [] },
   ],
 };
 
@@ -74,7 +74,7 @@ describe("dublê — ocupação do dia", () => {
       data: QUINTA,
       casa: { minutosDeTrabalho: 540, minutosAgendados: 45 },
       profissionais: [
-        { id: "bb0", nome: "Gustavo", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
+        { id: "bb0", nome: "Gustavo", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausas: [] },
       ],
     });
   });
@@ -89,10 +89,10 @@ describe("dublê — ocupação do dia", () => {
     const domingo = await falso.barbeiro.ocupacaoDoDia(DOMINGO);
 
     expect(quinta.profissionais).toEqual([
-      { id: "bb1", nome: "Rafael", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
+      { id: "bb1", nome: "Rafael", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausas: [] },
     ]);
     expect(domingo.casa).toEqual({ minutosDeTrabalho: 0, minutosAgendados: 0 });
-    expect(domingo.profissionais[0]).toMatchObject({ janela: null, pausa: null });
+    expect(domingo.profissionais[0]).toMatchObject({ janela: null, pausas: [] });
   });
 
   // O expediente segue a regra da API (janelaEfetiva): data especial >
@@ -103,8 +103,8 @@ describe("dublê — ocupação do dia", () => {
       jornadas: {
         bb1: [0, 1, 2, 3, 4, 5, 6].map((diaSemana) =>
           diaSemana === 4
-            ? { diaSemana, modo: "proprio" as const, horaInicio: "08:00", horaFim: "14:00", pausaInicio: "12:00", pausaFim: "13:00" }
-            : { diaSemana, modo: "barbearia" as const, horaInicio: null, horaFim: null, pausaInicio: null, pausaFim: null }
+            ? { diaSemana, modo: "proprio" as const, horaInicio: "08:00", horaFim: "14:00", pausas: [{ inicio: "12:00", fim: "13:00" }] }
+            : { diaSemana, modo: "barbearia" as const, horaInicio: null, horaFim: null, pausas: [] }
         ),
       },
     });
@@ -112,6 +112,7 @@ describe("dublê — ocupação do dia", () => {
     const [rafael] = (await falso.barbeiro.ocupacaoDoDia(QUINTA)).profissionais;
 
     expect(rafael.janela).toEqual({ abre: "10:00", fecha: "14:00" });
-    expect(rafael.pausa).toEqual({ inicio: "12:00", fim: "13:00" });
+    expect(rafael.pausas).toEqual([{ inicio: "12:00", fim: "13:00" }]);
+    expect(rafael).not.toHaveProperty("pausa");
   });
 });

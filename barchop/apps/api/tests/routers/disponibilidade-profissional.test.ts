@@ -215,8 +215,7 @@ describe("pausa na disponibilidade", () => {
   const PAUSA_NA_QUINTA = jornadaCom({
     diaSemana: 4,
     modo: "barbearia",
-    pausaInicio: "12:00",
-    pausaFim: "13:00",
+    pausas: [{ inicio: "12:00", fim: "13:00" }],
   });
 
   it("a pausa tira a faixa dos horários, e marcar nela dá 422 horario_na_pausa", async () => {
@@ -289,7 +288,7 @@ describe("pausa na disponibilidade", () => {
       app,
       agenda,
       agenda.ana.barbeiroId,
-      jornadaCom({ diaSemana: 4, modo: "barbearia", pausaInicio: "09:00", pausaFim: "18:00" })
+      jornadaCom({ diaSemana: 4, modo: "barbearia", pausas: [{ inicio: "09:00", fim: "18:00" }] })
     );
     const params = new URLSearchParams({ barbeiroId: agenda.ana.barbeiroId, mes: "2037-09" });
     params.append("servicoIds", agenda.corte.id);

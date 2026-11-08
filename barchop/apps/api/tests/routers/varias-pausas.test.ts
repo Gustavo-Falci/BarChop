@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
@@ -19,7 +18,7 @@ const CAFE = { inicio: "16:00", fim: "16:15" };
 
 function semana(...dias: Dia[]): Dia[] {
   return [0, 1, 2, 3, 4, 5, 6].map(
-    (diaSemana) => dias.find((dia) => dia.diaSemana === diaSemana) ?? { diaSemana, modo: "barbearia" }
+    (diaSemana) => dias.find((dia) => dia.diaSemana === diaSemana) ?? { diaSemana, modo: "barbearia", pausas: [] }
   );
 }
 
@@ -48,7 +47,7 @@ async function quintaComDuas(app: App, agenda: Agenda) {
 }
 
 describe("PUT /equipe/:id/jornada com várias pausas", () => {
-  it("grava as pausas do dia em ordem, e a primeira segue nos campos antigos", async () => {
+  it("grava as pausas do dia em ordem; a resposta não tem mais os campos da pausa única", async () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
 
@@ -65,17 +64,30 @@ describe("PUT /equipe/:id/jornada com várias pausas", () => {
       horaInicio: null,
       horaFim: null,
       pausas: [ALMOCO, CAFE],
-      pausaInicio: "12:00",
-      pausaFim: "13:00",
     });
-    expect((await lerJornada(app, agenda))[3]).toMatchObject({ pausas: [], pausaInicio: null, pausaFim: null });
-    // Nas colunas antigas também: se a API voltar pra versão anterior,
-    // ela ainda vê o almoço.
-    const linha = await prisma.jornadaProfissional.findUniqueOrThrow({
-      where: { barbeiroId_diaSemana: { barbeiroId: agenda.barbeiroId, diaSemana: 4 } },
+    expect((await lerJornada(app, agenda))[3]).toEqual({
+      diaSemana: 3,
+      modo: "barbearia",
+      horaInicio: null,
+      horaFim: null,
+      pausas: [],
     });
-    expect(linha.pausaInicio?.toISOString().slice(11, 16)).toBe("12:00");
-    expect(linha.pausaFim?.toISOString().slice(11, 16)).toBe("13:00");
+    await app.close();
+  });
+
+  it("sem `pausas` no dia, o dia fica sem pausa", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    await quintaComDuas(app, agenda);
+
+    const resposta = await putJornada(
+      app,
+      agenda,
+      [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({ diaSemana, modo: "barbearia" }))
+    );
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json().jornada[4].pausas).toEqual([]);
     await app.close();
   });
 
@@ -164,51 +176,18 @@ describe("PUT /equipe/:id/jornada com várias pausas", () => {
     const resposta = await putJornada(app, agenda, semana({ diaSemana: 4, modo: "folga", pausas: [ALMOCO, CAFE] }));
 
     expect(resposta.statusCode).toBe(200);
-    expect(resposta.json().jornada[4]).toMatchObject({ modo: "folga", pausas: [], pausaInicio: null, pausaFim: null });
+    expect(resposta.json().jornada[4]).toMatchObject({ modo: "folga", pausas: [] });
     expect(await prisma.pausaDaJornada.count()).toBe(0);
     await app.close();
   });
 });
 
-// A web de antes do PR 2 monta o corpo espalhando o dia que veio do GET
-// e trocando só `pausaInicio`/`pausaFim`: depois deste deploy o GET traz
-// `pausas`, e ela as devolve como vieram. O que manda é o campo antigo
-// comparado com o que está salvo.
+// Uma aba aberta com a web de antes das várias pausas ainda manda
+// `pausaInicio`/`pausaFim`. Desde o PR 3 (contrair) a API não sabe mais o
+// que eles querem dizer: recusa com o código que a web mostra como veio,
+// e nada muda.
 describe("a aba da web antiga", () => {
-  it("com uma pausa salva, a edição do campo antigo vale", async () => {
-    const app = buildApp();
-    const agenda = await prepararAgenda(app);
-    await putJornada(app, agenda, semana({ diaSemana: 4, modo: "barbearia", pausas: [ALMOCO] }));
-
-    const lida = await lerJornada(app, agenda);
-    const resposta = await putJornada(
-      app,
-      agenda,
-      lida.map((dia) => (dia.diaSemana === 4 ? { ...dia, pausaInicio: "12:30", pausaFim: "13:30" } : dia))
-    );
-
-    expect(resposta.statusCode).toBe(200);
-    expect(resposta.json().jornada[4].pausas).toEqual([{ inicio: "12:30", fim: "13:30" }]);
-    await app.close();
-  });
-
-  it("tirar a única pausa pelo campo antigo também vale", async () => {
-    const app = buildApp();
-    const agenda = await prepararAgenda(app);
-    await putJornada(app, agenda, semana({ diaSemana: 4, modo: "barbearia", pausas: [ALMOCO] }));
-
-    const lida = await lerJornada(app, agenda);
-    const resposta = await putJornada(
-      app,
-      agenda,
-      lida.map((dia) => (dia.diaSemana === 4 ? { ...dia, pausaInicio: null, pausaFim: null } : dia))
-    );
-
-    expect(resposta.json().jornada[4].pausas).toEqual([]);
-    await app.close();
-  });
-
-  it("num dia com duas pausas, mexer no campo antigo dá 422 recarregue_a_pagina", async () => {
+  it("com os campos antigos no corpo: 422 recarregue_a_pagina, e as pausas ficam", async () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
     await quintaComDuas(app, agenda);
@@ -217,77 +196,32 @@ describe("a aba da web antiga", () => {
     const resposta = await putJornada(
       app,
       agenda,
-      lida.map((dia) => (dia.diaSemana === 4 ? { ...dia, pausaInicio: "12:30", pausaFim: "13:30" } : dia))
+      lida.map((dia) => ({ ...dia, pausaInicio: dia.diaSemana === 2 ? "11:00" : null, pausaFim: dia.diaSemana === 2 ? "11:30" : null }))
     );
 
     expect(resposta.statusCode).toBe(422);
-    // A web antiga mostra a mensagem como veio.
     expect(resposta.json()).toMatchObject({
       erro: "recarregue_a_pagina",
-      mensagem: "Na quinta já há mais de uma pausa. Recarregue a página para mudar.",
+      mensagem: "Esta página está desatualizada. Recarregue para salvar a jornada.",
     });
-    expect((await lerJornada(app, agenda))[4].pausas).toEqual([ALMOCO, CAFE]);
+    const depois = await lerJornada(app, agenda);
+    expect(depois[2].pausas).toEqual([]);
+    expect(depois[4].pausas).toEqual([ALMOCO, CAFE]);
     await app.close();
   });
 
-  it("parada desde antes de outra aba pôr o café: salvar outro dia não o apaga", async () => {
+  it("um campo antigo só, mesmo nulo, já basta pra recusar", async () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
-    await putJornada(app, agenda, semana({ diaSemana: 4, modo: "barbearia", pausas: [ALMOCO] }));
-    const velha = await lerJornada(app, agenda);
-    // A outra aba, já com a web nova, acrescenta o café.
-    await quintaComDuas(app, agenda);
 
     const resposta = await putJornada(
       app,
       agenda,
-      velha.map((dia) => (dia.diaSemana === 2 ? { ...dia, pausaInicio: "11:00", pausaFim: "11:30" } : dia))
+      semana({ diaSemana: 4, modo: "barbearia", pausas: [ALMOCO], pausaFim: null })
     );
 
-    expect(resposta.statusCode).toBe(200);
-    expect(resposta.json().jornada[4].pausas).toEqual([ALMOCO, CAFE]);
-    await app.close();
-  });
-
-  it("o dia com duas pausas que ela não mexeu sobrevive ao salvar outro dia", async () => {
-    const app = buildApp();
-    const agenda = await prepararAgenda(app);
-    await quintaComDuas(app, agenda);
-
-    const lida = await lerJornada(app, agenda);
-    const resposta = await putJornada(
-      app,
-      agenda,
-      lida.map((dia) => (dia.diaSemana === 2 ? { ...dia, pausaInicio: "11:00", pausaFim: "11:30" } : dia))
-    );
-
-    expect(resposta.statusCode).toBe(200);
-    expect(resposta.json().jornada[2].pausas).toEqual([{ inicio: "11:00", fim: "11:30" }]);
-    expect(resposta.json().jornada[4].pausas).toEqual([ALMOCO, CAFE]);
-    await app.close();
-  });
-
-  it("aberta antes do deploy (sem `pausas` no corpo): a mesma regra", async () => {
-    const app = buildApp();
-    const agenda = await prepararAgenda(app);
-    await quintaComDuas(app, agenda);
-
-    const semPausas = (await lerJornada(app, agenda)).map(({ pausas: _pausas, ...dia }) => dia as Dia);
-    const outroDia = await putJornada(
-      app,
-      agenda,
-      semPausas.map((dia) => (dia.diaSemana === 2 ? { ...dia, pausaInicio: "11:00", pausaFim: "11:30" } : dia))
-    );
-    const mesmoDia = await putJornada(
-      app,
-      agenda,
-      semPausas.map((dia) => (dia.diaSemana === 4 ? { ...dia, pausaInicio: null, pausaFim: null } : dia))
-    );
-
-    expect(outroDia.statusCode).toBe(200);
-    expect(outroDia.json().jornada[4].pausas).toEqual([ALMOCO, CAFE]);
-    expect(mesmoDia.statusCode).toBe(422);
-    expect(mesmoDia.json().erro).toBe("recarregue_a_pagina");
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("recarregue_a_pagina");
     await app.close();
   });
 });
@@ -383,44 +317,27 @@ describe("as várias pausas nos horários", () => {
     ).json().profissionais;
 
     expect(profissional.pausas).toEqual([ALMOCO, CAFE]);
-    expect(profissional.pausa).toEqual(ALMOCO);
+    // O campo da pausa única saiu no PR 3 (contrair).
+    expect(profissional).not.toHaveProperty("pausa");
     // 09:00–18:00 são 540; menos 60 do almoço e 15 do café.
     expect(profissional.minutosDeTrabalho).toBe(465);
     await app.close();
   });
 });
 
-// A cópia da migration 20261108130000, rodada de novo sobre uma linha
-// com a pausa só nas colunas antigas: a suíte aplica as migrations num
-// banco vazio, então sem isto o INSERT … SELECT nunca seria exercitado.
-// O SQL sai do próprio arquivo da migration, não de uma cópia.
-const COPIA_DA_MIGRATION = (() => {
-  const sql = readFileSync(
-    new URL(
-      "../../../../packages/database/prisma/migrations/20261108130000_pausas_da_jornada/migration.sql",
-      import.meta.url
-    ),
-    "utf-8"
-  );
-  const inicio = sql.indexOf('INSERT INTO "pausa_da_jornada"');
-  return sql.slice(inicio, sql.indexOf(";", inicio));
-})();
+// O que o banco garante sozinho, pra quem escrever por fora do PUT.
+describe("as travas do banco", () => {
+  it("as colunas da pausa única e o CHECK delas saíram", async () => {
+    const colunas = await prisma.$queryRaw<{ column_name: string }[]>`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'jornada_profissional' AND column_name IN ('pausa_inicio', 'pausa_fim')
+    `;
+    const travas = await prisma.$queryRaw<{ conname: string }[]>`
+      SELECT conname FROM pg_constraint WHERE conname = 'jornada_pausa_inteira'
+    `;
 
-describe("a cópia das pausas antigas", () => {
-  it("leva a pausa das colunas antigas pra tabela", async () => {
-    const app = buildApp();
-    const agenda = await prepararAgenda(app);
-    await prisma.jornadaProfissional.update({
-      where: { barbeiroId_diaSemana: { barbeiroId: agenda.barbeiroId, diaSemana: 4 } },
-      data: { pausaInicio: new Date("1970-01-01T12:00:00Z"), pausaFim: new Date("1970-01-01T13:00:00Z") },
-    });
-
-    expect(COPIA_DA_MIGRATION).toContain("SELECT");
-    await prisma.$executeRawUnsafe(COPIA_DA_MIGRATION);
-
-    expect((await lerJornada(app, agenda))[4].pausas).toEqual([ALMOCO]);
-    expect(await prisma.pausaDaJornada.count()).toBe(1);
-    await app.close();
+    expect(colunas).toEqual([]);
+    expect(travas).toEqual([]);
   });
 
   it("o banco recusa duas pausas que se cruzam no mesmo dia, e aceita as que encostam", async () => {

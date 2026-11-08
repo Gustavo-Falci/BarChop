@@ -92,8 +92,8 @@ describe("jornada do membro", () => {
       modo: "proprio",
       horaInicio: "13:00",
       horaFim: "20:00",
-      // Sem `pausaInicio`/`pausaFim`: com eles no corpo, a API trataria
-      // o pedido como da web antiga (PUT /equipe/:id/jornada).
+      // Sem `pausaInicio`/`pausaFim`: com eles no corpo, a API recusa o
+      // pedido como da web antiga (PUT /equipe/:id/jornada).
       pausas: [],
     });
     expect(semana[2]).toMatchObject({ modo: "barbearia" });
@@ -250,8 +250,8 @@ describe("pausas na jornada", () => {
     expect(semana[1].pausas).toEqual([ALMOCO, CAFE]);
     expect(semana[6].pausas).toEqual([ALMOCO, CAFE]);
     expect(semana[0]).toMatchObject({ modo: "folga", pausas: [] });
-    // A web nova nunca manda os campos antigos: com eles, a API trataria
-    // o pedido como da web antiga.
+    // A web nova nunca manda os campos antigos: com eles, a API recusa o
+    // pedido como da web antiga.
     for (const dia of semana) {
       expect(dia).not.toHaveProperty("pausaInicio");
       expect(dia).not.toHaveProperty("pausaFim");

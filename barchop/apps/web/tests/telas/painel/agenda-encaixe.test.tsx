@@ -42,8 +42,7 @@ function jornadaComAlmoco(): DiaDaJornada[] {
     modo: diaSemana === 0 ? "folga" : "barbearia",
     horaInicio: null,
     horaFim: null,
-    pausaInicio: diaSemana >= 1 && diaSemana <= 5 ? "12:00" : null,
-    pausaFim: diaSemana >= 1 && diaSemana <= 5 ? "13:00" : null,
+    pausas: diaSemana >= 1 && diaSemana <= 5 ? [{ inicio: "12:00", fim: "13:00" }] : [],
   }));
 }
 
@@ -135,7 +134,7 @@ describe("encaixe na lista da agenda", () => {
     const falso = semear();
     falso.estado.jornadas!.bb1 = jornadaComAlmoco().map((dia) =>
       dia.diaSemana === 3
-        ? { ...dia, pausaInicio: undefined, pausaFim: undefined, pausas: [{ inicio: "09:30", fim: "09:40" }, { inicio: "12:00", fim: "13:00" }] }
+        ? { ...dia, pausas: [{ inicio: "09:30", fim: "09:40" }, { inicio: "12:00", fim: "13:00" }] }
         : dia
     );
     montarPainel(<Agenda agora={AGORA} />, falso);

@@ -56,7 +56,7 @@ describe("GET /barbearias/me/ocupacao", () => {
       data: QUINTA,
       casa: { minutosDeTrabalho: 540, minutosAgendados: 45 },
       profissionais: [
-        { id: agenda.barbeiroId, nome: "Barbeiro um", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
+        { id: agenda.barbeiroId, nome: "Barbeiro um", minutosDeTrabalho: 540, minutosAgendados: 45, janela: { abre: "09:00", fecha: "18:00" }, pausas: [] },
       ],
     });
     await app.close();
@@ -65,7 +65,7 @@ describe("GET /barbearias/me/ocupacao", () => {
   it("desconta a pausa do almoço e o bloqueio de horas", async () => {
     const app = buildApp();
     const agenda = await prepararAgenda(app);
-    expect((await jornadaComQuinta(app, agenda, agenda.barbeiroId, { modo: "barbearia", pausaInicio: "12:00", pausaFim: "13:00" })).statusCode).toBe(200);
+    expect((await jornadaComQuinta(app, agenda, agenda.barbeiroId, { modo: "barbearia", pausas: [{ inicio: "12:00", fim: "13:00" }] })).statusCode).toBe(200);
     expect((await bloquear(app, agenda, { horaInicio: "15:00", horaFim: "16:00" })).statusCode).toBe(201);
 
     const resposta = await lerOcupacao(app, agenda.token, QUINTA);
@@ -135,7 +135,7 @@ describe("GET /barbearias/me/ocupacao", () => {
     const resposta = await lerOcupacao(app, agenda.token, QUINTA);
 
     expect(resposta.json().profissionais).toEqual([
-      { id: agenda.barbeiroId, nome: "Barbeiro um", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
+      { id: agenda.barbeiroId, nome: "Barbeiro um", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausas: [] },
       {
         id: profissional.barbeiroId,
         nome: "Membro p1",
@@ -144,7 +144,6 @@ describe("GET /barbearias/me/ocupacao", () => {
         // A janela é a da jornada dele, não a da casa.
         janela: { abre: "13:00", fecha: "18:00" },
         pausas: [],
-        pausa: null,
       },
     ]);
     expect(resposta.json().casa).toEqual({ minutosDeTrabalho: 840, minutosAgendados: 0 });
@@ -161,7 +160,7 @@ describe("GET /barbearias/me/ocupacao", () => {
 
     expect(resposta.statusCode).toBe(200);
     expect(resposta.json().profissionais).toEqual([
-      { id: profissional.barbeiroId, nome: "Membro p1", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausas: [], pausa: null },
+      { id: profissional.barbeiroId, nome: "Membro p1", minutosDeTrabalho: 540, minutosAgendados: 0, janela: { abre: "09:00", fecha: "18:00" }, pausas: [] },
     ]);
     expect(resposta.json().casa).toEqual({ minutosDeTrabalho: 540, minutosAgendados: 0 });
     await app.close();
@@ -205,14 +204,13 @@ describe("GET /barbearias/me/ocupacao", () => {
       const agenda = await prepararAgenda(app);
       await jornadaComQuinta(app, agenda, agenda.barbeiroId, {
         modo: "barbearia",
-        pausaInicio: "12:00",
-        pausaFim: "13:00",
+        pausas: [{ inicio: "12:00", fim: "13:00" }],
       });
 
       const [profissional] = (await lerOcupacao(app, agenda.token, QUINTA)).json().profissionais;
 
       expect(profissional.janela).toEqual({ abre: "09:00", fecha: "18:00" });
-      expect(profissional.pausa).toEqual({ inicio: "12:00", fim: "13:00" });
+      expect(profissional.pausas).toEqual([{ inicio: "12:00", fim: "13:00" }]);
       await app.close();
     });
 
@@ -240,8 +238,8 @@ describe("GET /barbearias/me/ocupacao", () => {
       const [quinta] = (await lerOcupacao(app, agenda.token, QUINTA)).json().profissionais;
       const [domingo] = (await lerOcupacao(app, agenda.token, DOMINGO)).json().profissionais;
 
-      expect(quinta).toMatchObject({ janela: null, pausa: null });
-      expect(domingo).toMatchObject({ janela: null, pausa: null });
+      expect(quinta).toMatchObject({ janela: null, pausas: [] });
+      expect(domingo).toMatchObject({ janela: null, pausas: [] });
       await app.close();
     });
 

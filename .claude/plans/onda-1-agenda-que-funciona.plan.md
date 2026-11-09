@@ -4,7 +4,51 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-06, fim do dia — conta do cliente e link do horário no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-08, fim do dia — pedidos do barbeiro da `jesus-barber`, passos 1 a 4 no ar, Pix planejado) — vale mais que as seções abaixo
+
+**Contexto:** em 08/11 o dono trouxe os pedidos do barbeiro que usa o BarChop de verdade em produção (`jesus-barber`, JESUS BARBER; a outra barbearia de produção é a `barbearia-teste`). Ordem combinada: 1 teste +7 dias → 2 Pix dos planos dos clientes → 3 encaixe e horário quebrado → 4 várias pausas → 5 pagar o BarChop por Pix, conferido pelo Suporte.
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `9f205af`, #323). Nada aberto. **Produção = `9f205af`** (deploy do dono em 08/11, conferido: `/health` 200 e `/barbearias/jesus-barber/proximos-horarios` 200 lendo a jornada nova).
+- **Passo 1 feito:** o teste da `jesus-barber` foi estendido até **2026-11-15 14:43 UTC** (`now() + 7 days` no psql da VM, conferido por SELECT). #315: o "uso no teste" conta desde o cadastro quando o teste foi estendido.
+- **Passo 2 feito, #316:** "Recebi" adiantado no balcão guarda o próximo ciclo em `pagoAte` (um só à frente; `ja_pago_adiantado`; o teste vai até o fim; a InfinitePay segue recusando com `ciclo_em_dia`). Sem canvas (decisão do dono).
+- **Passo 3 feito**, plano `.claude/plans/encaixe-e-horario-quebrado.plan.md`, canvas "Agenda: encaixe e horário quebrado":
+  - #317: regra "oferecer logo depois do anterior" no link, com migration.
+  - #318: outro horário no painel, a qualquer minuto.
+  - #319: encaixe, com duração ajustada (`duracaoMinutos`, derivado, sem coluna). Remarcar pelo cliente usa a duração do serviço.
+  - #320: na agenda, etiqueta Encaixe, linha Livre/Encaixar, pausa na lista e linha no Detalhe.
+- **Passo 4 feito**, plano `.claude/plans/varias-pausas.plan.md`, canvas "Várias pausas", em expand/contract:
+  - #321 expandir: tabela `pausa_da_jornada`, com EXCLUDE pra duas pausas do mesmo dia não se cruzarem.
+  - #322 web: várias pausas na jornada, na grade e na lista; "Pausas de sempre" vira lista; aviso da pausa fora do horário.
+  - #323 contrair: as colunas `pausa_inicio`/`pausa_fim` e o CHECK `jornada_pausa_inteira` saíram (migration `20261108190000_sem_pausa_unica`). O corpo com campo antigo dá 422 `recarregue_a_pagina`. **A API não volta pra imagem anterior** sem uma migration que recrie as colunas (SQL comentado na migration).
+  - Em produção, as 8 pausas antigas estão na tabela nova.
+- **Suítes no fim do dia:** API 1515, api-client 251, web 1787; tsc e lint limpos.
+- **Passo 5, só desenho e plano:** canvas "Pix do BarChop" (11 pranchas `Pix-*`, escuro e claro), **aprovado** pelo dono em 08/11. Plano `.claude/plans/pix-do-barchop.plan.md`, com 5 PRs:
+  1. banco, formato e API;
+  2. web: Faturas com Pix;
+  3. web: Suporte confere o Pix;
+  4. cron de aviso 5 dias antes e de vencimento;
+  5. Pix da diferença de profissional.
+  - Decisões do dono:
+    - QR e copia e cola com o valor exato, na chave do BarChop;
+    - "Já paguei" vira pedido na fila do Suporte, sem comprovante;
+    - o plano vale na hora, marcado "Aguardando conferência", e a recusa volta ao que era antes;
+    - aviso 5 dias antes; sem pagar, cai no Grátis sem apagar nada;
+    - as 6 propostas da nota laranja do canvas foram adotadas com o "Aprovado".
+
+**Ao retomar (só quando o dono pedir):**
+1. **Antes do PR 1 do Pix, o ok do dono** em:
+   - (a) cartão vivo bloqueia Pix e Pix vigente bloqueia cartão (409 nos dois sentidos);
+   - (b) `PIX_CHAVE`, `PIX_NOME_DO_RECEBEDOR`, `PIX_CIDADE_DO_RECEBEDOR` e `PIX_SEGREDO_DO_IDENTIFICADOR` em `infra/api.env`, **vazias em produção até os PRs 2, 3 e 4 estarem no ar**, e depois um Pix de R$ 1,00 de teste;
+   - (c) PR 5: Pix da diferença proporcional, ou o número novo só vale na renovação;
+   - (d) **em aberto:** o que o extrato do banco do dono mostra num Pix recebido (nome, identificador ou só valor e hora).
+   - Achados que já estão no plano: o webhook da Stripe atrasado não pode derrubar o Pix (a guarda de hoje deixaria); o identificador é estável (HMAC); pagar o Essencial no meio do teste tira o Completo na hora (como no cartão, `trialing` → `ativa`).
+2. **O teste da `jesus-barber` acaba em 15/11.** Se o Pix não estiver no ar até lá, perguntar ao dono se estende de novo ou se o barbeiro assina no cartão.
+3. Os da lista de 06/11, abaixo: testes reais opcionais em produção, onda D (marketing), G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas; **24/11** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+**Ambiente local:** a semente de conferência roda no banco `gr_barber_test`, que já está sem as colunas da pausa única. Ao conferir no navegador, subir a semente de novo (com `SENHA_DO_SUPORTE` pra entrar no Suporte). Branches antigas ainda não apagadas: `logo-depois-do-anterior`, `outro-horario-no-painel`, `encaixe`, `encaixe-na-agenda`, `varias-pausas-api`, `varias-pausas-web`, `varias-pausas-contrair` (só com autorização do dono).
+
+## RETOMAR AQUI (2026-11-06, fim do dia — conta do cliente e link do horário no ar) — histórico
 
 **Estado:**
 - **Depois da onda C, quatro PRs mesclados e no ar** (deploy do dono em 06/11, conferido por curl no código publicado; `main` = merge deste PR de docs, antes `606bc9b`). Nada aberto; só a `main`.

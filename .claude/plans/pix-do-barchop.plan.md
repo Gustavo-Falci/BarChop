@@ -84,7 +84,8 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
   - A forma de pagar segue nas pílulas que já existiam (o canvas desenhou em lista); o Cartão leva "Renova sozinho"; o Pix fica "Em breve" enquanto a cotação não responde ou responde `pix_desligado` (produção hoje).
   - Textos sem promessa de sino na recusa ("a resposta dele aparece aqui"): os avisos são do PR 4. A frase do pago ("Avisamos no sino e por e-mail no dia …") fica, porque o PR 4 entra antes do primeiro aviso.
   - "Mudar plano ou profissionais" com o Pix vigente reabre a escolha e paga só por Pix, pro período seguinte, com "← Voltar ao plano".
-  - Ficou pro PR 4 (quando o Pix ligar em produção): a pergunta frequente "Quais formas de pagamento…" e a garantia "Pagamento no cartão pela Stripe".
+  - A pergunta frequente "Quais formas de pagamento…" de Faturas já fala do Pix "quando aparecer como opção no Pagamento" (verdade antes e depois de ligar). A garantia "Pagamento no cartão pela Stripe" segue verdadeira. Fica pra onda D: a resposta da página Preços do site ("Por enquanto, só cartão").
+  - "Próximo Pix" no pago usa a equipe de hoje, o mesmo pedido do QR da renovação.
 
 ### PR 3 — Web: Suporte confere o Pix (canvas Pix-Suporte)
 - Pedidos mistura Pix e troca de link (Pix primeiro); contador na aba; "Achei o Pix" / "Não achei" com resposta.

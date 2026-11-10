@@ -1035,7 +1035,9 @@ const PERGUNTAS: { pergunta: string; resposta: string }[] = [
   },
   {
     pergunta: "Quais formas de pagamento são aceitas?",
-    resposta: "Cartão de crédito, pelo Checkout da Stripe. Pix e boleto chegam em breve.",
+    // Verdade antes e depois de o Pix ligar em produção (variáveis PIX_*).
+    resposta:
+      "Cartão de crédito, pelo Checkout da Stripe, que renova sozinho. Pix, quando aparecer como opção no Pagamento: o BarChop gera o QR com o valor certo, o plano vale na hora e o suporte confere no extrato; cada período é um Pix novo. Boleto chega em breve.",
   },
   {
     pergunta: "O que acontece se o pagamento falhar?",

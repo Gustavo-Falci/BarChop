@@ -470,7 +470,8 @@ function Pago({
         </dd>
         <dt>Próximo Pix</dt>
         <dd>
-          {formatarReais(precoDoPlano(pedido.plano, pedido.ciclo, quantos))} até {diaEMes(fim)}
+          {/* O mesmo pedido do QR da renovação: a equipe de hoje. */}
+          {formatarReais(precoDoPlano(pedido.plano, pedido.ciclo, pedido.profissionais))} até {diaEMes(fim)}
         </dd>
       </dl>
       <p className={estilos.apoio}>

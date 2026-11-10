@@ -4,7 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ResumoDaAssinatura } from "@barchop/types";
-import { diaEMes, diasQueFaltam, emLista, nomeDoPlano, profissionais, temPlanoPago } from "./assinatura";
+import {
+  diaEMes,
+  diasQueFaltam,
+  emLista,
+  estadoDoPix,
+  nomeDoPlano,
+  periodoDoCiclo,
+  profissionais,
+  temPlanoPago,
+} from "./assinatura";
 import { faixaFechada, fecharFaixa } from "./faixa";
 import { IconeFechar } from "./icones";
 import { useAssinatura } from "./ProvedorDaAssinatura";
@@ -39,6 +48,30 @@ function recadoDa(resumo: ResumoDaAssinatura): Recado | null {
       acao: "Resolver",
       fechavel: false,
       chave: "atraso",
+    };
+  }
+  // O Pix não renova sozinho (plano pix-do-barchop): antes do excedente,
+  // que no Pix vencido diria só "No Grátis…" sem dizer por quê.
+  const pix = estadoDoPix(resumo);
+  if (pix === "vencido") {
+    return {
+      tom: "atencao",
+      texto: `O Pix do próximo ${periodoDoCiclo(resumo.ciclo)} não chegou: a barbearia está no Grátis desde ${diaEMes(resumo.periodoTerminaEm!)}.`,
+      acao: "Pagar por Pix",
+      fechavel: false,
+      chave: "pix-vencido",
+    };
+  }
+  if (pix === "renovar") {
+    const dias = diasAte(resumo.periodoTerminaEm!);
+    return {
+      tom: "atencao",
+      texto:
+        `O ${nomeDoPlano(resumo)} vence em ${diaEMes(resumo.periodoTerminaEm!)}, daqui a ${dias === 1 ? "1 dia" : `${dias} dias`}.` +
+        ` Pague o próximo ${periodoDoCiclo(resumo.ciclo)} por Pix pra não cair no Grátis.`,
+      acao: "Pagar por Pix",
+      fechavel: false,
+      chave: `pix-renovar:${resumo.periodoTerminaEm}`,
     };
   }
   // Só enquanto o plano pago vale: acabado, o que importa é o Grátis.

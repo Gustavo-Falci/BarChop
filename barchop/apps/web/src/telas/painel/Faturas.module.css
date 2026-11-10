@@ -679,6 +679,190 @@
   gap: var(--espaco-md);
 }
 
+/* O Pix do BarChop (plano pix-do-barchop, PR 2; canvas Pix-Pagar,
+   Pix-Aguardando e Pix-Renovar). */
+.mudarPlano {
+  justify-self: start;
+  margin-block: calc(var(--espaco-sm) * -1);
+}
+
+.pix {
+  display: grid;
+  gap: var(--espaco-md);
+  padding-block-start: var(--espaco-md);
+  border-block-start: var(--borda-hairline) solid var(--cor-line);
+  min-width: 0;
+}
+
+.valorDoPix {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.valorDoPix .subtitulo {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+.valorGrande {
+  font-family: var(--fonte-display);
+  font-size: var(--texto-display);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* O QR sempre em fundo branco, também no tema escuro: a câmera do banco
+   lê módulo escuro sobre claro. */
+.qrDoPix {
+  justify-self: center;
+  width: 216px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  padding: var(--espaco-sm);
+  box-sizing: border-box;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: var(--raio-md);
+  background: #ffffff;
+}
+
+.qrDoPix svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.copiaECola {
+  display: grid;
+  gap: var(--espaco-sm);
+  min-width: 0;
+}
+
+.codigoDoPix {
+  margin: 0;
+  padding: var(--espaco-sm) var(--espaco-md);
+  border: var(--borda-hairline) solid var(--cor-line);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  color: var(--cor-ink-soft);
+  font-family: ui-monospace, monospace;
+  font-size: var(--texto-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copiaECola .dica {
+  min-height: 1.5em;
+  font-size: var(--texto-xs);
+  text-align: center;
+}
+
+.recebedor {
+  color: var(--cor-ink);
+}
+
+.passosDoPix {
+  display: grid;
+  gap: var(--espaco-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--texto-sm);
+}
+
+.passosDoPix li {
+  display: flex;
+  gap: var(--espaco-sm);
+}
+
+.numeroDoPasso {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: 50%;
+  background: var(--cor-paper-soft);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.noPix {
+  display: grid;
+  gap: var(--espaco-lg);
+  min-width: 0;
+  max-width: 40rem;
+}
+
+/* No Pix o nome do plano é título de cartão (canvas): menor, e o selo
+   não quebra linha. */
+.nomeNoPix {
+  font-size: var(--texto-lg);
+}
+
+.seloDoPix {
+  flex: none;
+  white-space: nowrap;
+}
+
+.fraseDoPix {
+  margin: 0;
+}
+
+.dadosDoPix {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--espaco-xs) var(--espaco-md);
+  margin: 0;
+  padding: var(--espaco-md);
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  font-size: var(--texto-sm);
+}
+
+.dadosDoPix dt {
+  color: var(--cor-ink-soft);
+}
+
+.dadosDoPix dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.botoesDoPix {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.resposta {
+  display: grid;
+  gap: var(--espaco-xs);
+  margin: 0;
+  padding: var(--espaco-md);
+  border-radius: var(--raio-md);
+  background: var(--cor-erro-fundo);
+}
+
+.quemResponde {
+  color: var(--cor-erro);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.textoDaResposta {
+  margin: 0;
+}
+
+.quando .apoio {
+  display: block;
+  font-weight: 400;
+}
+
 /* No celular, o preço desce pra baixo do nome e alinha à esquerda. */
 @media (max-width: 500px) {
   .cartao,

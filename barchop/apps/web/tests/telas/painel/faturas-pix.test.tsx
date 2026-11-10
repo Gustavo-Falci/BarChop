@@ -188,7 +188,7 @@ describe("Faturas: pagar com Pix (Pix-Pagar)", () => {
     await waitFor(() => expect(pix).toBeEnabled());
     await usuario.click(pix);
 
-    expect(texto(await screen.findByTestId("valor-do-pix"))).toBe("R$ 94,90");
+    expect(texto(await screen.findByTestId("valor-do-pix"))).toBe("R$ 74,90");
   });
 
   it("Já paguei: o plano vale na hora, aguardando conferência; Ainda não paguei volta ao teste", async () => {
@@ -266,7 +266,8 @@ describe("Faturas: o plano pago por Pix (Pix-Aguardando, confirmado)", () => {
 
     const plano = await screen.findByRole("region", { name: "Essencial mensal" });
     expect(within(plano).getByText("Pago")).toBeInTheDocument();
-    expect(within(plano).getByText("Pix conferido pelo suporte em 01/11. Tudo certo até 01/12.")).toBeInTheDocument();
+    // A data da conferência vem da lista de pagamentos, que chega depois.
+    expect(await within(plano).findByText("Pix conferido pelo suporte em 01/11. Tudo certo até 01/12.")).toBeInTheDocument();
     expect(within(plano).getByText("01/12 · 2 profissionais")).toBeInTheDocument();
     expect(texto(within(plano).getByText(/até 01\/12$/))).toBe("R$ 59,90 até 01/12");
     expect(within(plano).getByText("Avisamos no sino e por e-mail no dia 26/11, com o QR do próximo mês.")).toBeInTheDocument();

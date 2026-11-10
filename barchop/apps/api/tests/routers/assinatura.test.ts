@@ -68,6 +68,8 @@ describe("GET /barbearias/me/assinatura", () => {
         agendamentos: 0,
         servicos: expect.any(Number),
       },
+      forma: "cartao",
+      pix: { aguardando: null, ultimaRecusa: null },
     });
     await app.close();
   });

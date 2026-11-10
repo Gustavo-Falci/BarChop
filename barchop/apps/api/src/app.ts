@@ -7,6 +7,7 @@ import { armazenamentoPadrao, type Armazenamento } from "./lib/armazenamento";
 import { confiancaNoProxy, origemPermitida, origensPermitidas, proxiesConfiaveis } from "./lib/borda";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { cobrancaDoAmbiente, type Cobranca } from "./lib/cobranca";
+import { pixDoAmbiente, type ConfigDoPix } from "./lib/pix";
 import { provedoresDoAmbiente, type FabricaDeProvedores } from "./lib/provedores";
 import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDaEquipe, limitesDeAuth, limitesPublicos } from "./lib/limites";
@@ -32,6 +33,7 @@ import { registrarRotasBloqueios } from "./routers/bloqueios";
 import { registrarRotasOnboarding } from "./routers/onboarding";
 import { registrarRotasSolicitacaoDeLink } from "./routers/solicitacao-de-link";
 import { registrarRotasLoginDoSuporte, registrarRotasSuporte } from "./routers/suporte";
+import { registrarRotasSuportePix } from "./routers/suporte-pix";
 import { registrarRotasEquipe } from "./routers/equipe";
 import { registrarRotasPlanos, registrarRotasPlanosPublicos } from "./routers/planos";
 import { registrarRotasAssinantes } from "./routers/assinantes";
@@ -73,6 +75,9 @@ declare module "fastify" {
     // Uma fábrica, porque cada vendedor tem a própria chave; nos testes,
     // a de memória.
     provedores: FabricaDeProvedores;
+    // O Pix do BarChop (plano pix-do-barchop): chave, recebedor e o
+    // segredo do identificador, do ambiente. Null = desligado.
+    pix: ConfigDoPix | null;
   }
 }
 
@@ -86,6 +91,8 @@ export function buildApp(
     armazenamento?: Armazenamento;
     cobranca?: Cobranca;
     provedores?: FabricaDeProvedores;
+    // Ausente, lê do ambiente; null desliga (os testes escolhem).
+    pix?: ConfigDoPix | null;
     // A borda (proxy de confiança e CORS) lê daqui; o padrão é o
     // process.env. Existe pra o teste montar a API "atrás do Caddy" sem
     // mexer no ambiente do processo.
@@ -163,6 +170,9 @@ export function buildApp(
 
   // A CHAVE_DE_CIFRA só é lida ao usar uma conexão gravada (lib/provedores).
   app.decorate("provedores", opts.provedores ?? provedoresDoAmbiente(ambiente));
+
+  // Sem as quatro variáveis PIX_*, o Pix fica desligado (lib/pix.ts).
+  app.decorate("pix", opts.pix === undefined ? pixDoAmbiente(ambiente) : opts.pix);
 
   // Escopo só pras quatro rotas que recebem senha — as duas de login e
   // as duas de signup. Existe por causa do `await`: os contadores são
@@ -265,6 +275,7 @@ export function buildApp(
   app.register(async (doSuporte: App) => {
     doSuporte.addHook("onRequest", autenticarSuporte);
     registrarRotasSuporte(doSuporte);
+    registrarRotasSuportePix(doSuporte);
     registrarRotasAvisos(doSuporte);
   });
 

@@ -20,7 +20,9 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
 1. Pix pago no teste: o período pago começa no fim do teste (`testeTerminaEm`), sem perder dias. Como no cartão, a barbearia passa a `ativa` no plano escolhido na hora.
 2. Mais profissionais que os pagos no meio do período: Pix da diferença, proporcional aos dias que faltam (PR 5).
 3. Um Pix em conferência por vez (índice parcial no banco); **Ainda não paguei** desfaz o pedido e volta ao que era antes.
-4. **Em aberto**: o que o extrato do banco do dono mostra num Pix recebido. O cartão do Suporte mostra valor, hora do "Já paguei" e identificador; ajustar o destaque quando o dono responder.
+4. **Em aberto**: o que o extrato do banco do dono mostra num Pix recebido. O cartão do Suporte mostra valor, hora do "Já paguei" e identificador; ajustar o destaque quando o dono responder. **09/11**: o dono mandou o comprovante de um Pix *enviado* (mostra nome, valor, data e hora, banco de destino e o ID da transação E2E), que não responde o lado de quem recebe. O manual do Bacen (item 2.6.2) diz que o banco de quem paga repassa o txid (62/05) intacto ao recebedor, pra conciliação. Fechar no Pix de R$ 1,00 de teste, olhando o extrato de quem recebe. O identificador segue visível no cartão do Suporte; o destaque se decide no PR 3.
+
+**(dono, 09/11: "OK para as 4")** as técnicas abaixo ficam valendo: 409 cartão×Pix nos dois sentidos; variáveis `PIX_*` vazias até os PRs 2–4 no ar, depois Pix de R$ 1,00; PR 5 com a diferença **proporcional** (a resposta veio a uma pergunta "proporcional ou só na renovação": confirmar ao começar o PR 5).
 5. Pagou depois de vencer: o período conta do dia do pagamento.
 6. Anual por Pix: mesma tela, preço anual de `precoDoPlano`, vale 12 meses.
 
@@ -63,6 +65,13 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
 - Testes: BR Code (CRC-16/CCITT-FALSE de "123456789" = 0x29B1, e o payload completo do exemplo do manual do Bacen, buscado na fonte, não de cabeça), webhook da Stripe atrasado não derruba o Pix, cartão novo depois do Pix grava `forma = cartao`, 409 nos dois sentidos, identificador igual em duas cotações seguidas, cotação (teste → começa no fim do teste; vigente → começa no fim do período; vencido/Grátis → hoje; anual), "Já paguei" (vale na hora; dois seguidos → 409; valor nunca do corpo; equipe maior → 422), desfazer, confirmar, recusar (volta ao retrato: teste com o mesmo `testeTerminaEm`, Grátis), vencimento no `planoEfetivo` e no limite do link, Suporte sem token → 401.
 - **Deploy**: migration + API, com as variáveis `PIX_*` vazias. A web antiga não chama nada novo.
 - **Base**: só depois do #323 (contrair pausas) mergeado: os dois mexem no `schema.prisma`.
+- **Feito 09/11** (branch `pix-do-barchop-api`). Desvios do que está acima, conferidos na revisão:
+  - O identificador (HMAC) mora na API (`lib/pix.ts`), não no `@barchop/formato`: precisa do segredo do servidor. O formato tem o BR Code, a máscara da chave e o período (`fimDoPeriodoDoPix`: 31/01 → último dia de fevereiro).
+  - O identificador é único **só entre os aguardando** (índice parcial): é derivado do pedido, então incluir os confirmados recusaria pra sempre um pedido que batesse com um antigo; recusado ou desfeito, pagar de novo dá o mesmo identificador.
+  - Início "hoje" = meia-noite de São Paulo, pro QR não mudar a cada recarga.
+  - Recusa e desfazer só voltam ao retrato se a assinatura ainda é este Pix (`forma = 'pix'` e o mesmo fim de período); se um cartão assumiu (Checkout aberto antes do Pix e concluído depois), só o pagamento muda.
+  - `GET …/faturas` com os pagamentos Pix fica pro PR 2 (quem usa é a tela). Os avisos de confirmação e recusa ficam no PR 4, como planejado.
+  - O dublê liga o Pix pela semente (`pixLigado: true`); sem ela, 409 `pix_desligado`.
 
 ### PR 2 — Web: Faturas com Pix (canvas Pix-Pagar, Pix-Aguardando, Pix-Renovar)
 - Pix habilitado quando a cotação responde; QR pelo `CodigoQr` que já existe; "Copiar código"; "Já paguei"; "Aguardando conferência" com "Ver o QR de novo" e "Ainda não paguei"; recusado com a resposta; "Pagar o próximo mês" nos 5 dias antes e depois de vencer.

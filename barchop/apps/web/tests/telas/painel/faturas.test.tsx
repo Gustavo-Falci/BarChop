@@ -42,6 +42,8 @@ function resumo(parcial: Partial<ResumoDaAssinatura> = {}): ResumoDaAssinatura {
       agendamentos: 7,
       servicos: 3,
     },
+    forma: "cartao",
+    pix: { aguardando: null, ultimaRecusa: null },
     ...parcial,
   };
 }

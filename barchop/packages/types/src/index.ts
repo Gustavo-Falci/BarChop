@@ -572,6 +572,10 @@ export interface DisponibilidadeDoMes {
 export type IdDoPlano = "gratis" | "essencial" | "completo";
 export type CicloDoPlano = "mensal" | "anual";
 export type SituacaoDaAssinatura = "teste" | "ativa" | "em_atraso" | "cancelada" | "gratis";
+// Como a barbearia paga o BarChop: o cartão renova sozinho na Stripe; o
+// Pix paga um período por vez, conferido pelo Suporte.
+export type FormaDePagarOBarChop = "cartao" | "pix";
+export type SituacaoDoPix = "aguardando" | "confirmado" | "recusado" | "desfeito";
 
 export interface ResumoDaAssinatura {
   situacao: SituacaoDaAssinatura;
@@ -599,6 +603,50 @@ export interface ResumoDaAssinatura {
   // O que a barbearia fez no teste, pra recomendar o plano. Só sem plano
   // pago e com teste (vigente ou vencido); senão, null.
   usoNoTeste: UsoNoTeste | null;
+  forma: FormaDePagarOBarChop;
+  // O Pix em conferência (o plano já vale) e a última recusa do Suporte,
+  // se o último Pix foi recusado.
+  pix: {
+    aguardando: PagamentoPix | null;
+    ultimaRecusa: { resposta: string; decididoEm: string } | null;
+  };
+}
+
+// GET /barbearias/me/assinatura/pix — o que pagar por Pix pelo pedido
+// (plano, ciclo, profissionais). O valor é sempre calculado pela API.
+// `identificador` é o txid do QR: o mesmo a cada recarga da tela.
+export interface CotacaoDoPix {
+  valorCentavos: number;
+  periodoComecaEm: string;
+  periodoTerminaEm: string;
+  identificador: string;
+  copiaECola: string;
+  recebedor: { nome: string; chaveMascarada: string };
+}
+
+// Um Pix pago ao BarChop. `copiaECola` só pro dono ("Ver o QR de novo");
+// null com o Pix desligado.
+export interface PagamentoPix {
+  id: string;
+  identificador: string;
+  plano: Exclude<IdDoPlano, "gratis">;
+  ciclo: CicloDoPlano;
+  profissionais: number;
+  valorCentavos: number;
+  periodoComecaEm: string;
+  periodoTerminaEm: string;
+  situacao: SituacaoDoPix;
+  resposta: string | null;
+  criadoEm: string;
+  decididoEm: string | null;
+  copiaECola: string | null;
+}
+
+// GET /suporte/pix — os aguardando, com a barbearia e o dono, pra o
+// Suporte achar no extrato. Sem o copia e cola.
+export interface PixNaFila extends Omit<PagamentoPix, "copiaECola"> {
+  barbearia: { id: string; nome: string; slug: string };
+  dono: { nome: string; email: string | null } | null;
 }
 
 export interface UsoNoTeste {

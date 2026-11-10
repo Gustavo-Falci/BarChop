@@ -110,11 +110,16 @@ async function aplicar(
   // nova: só a que está gravada, ou uma nova que chega ativa, mudam a
   // situação.
   if (linha.stripeSubscriptionId && linha.stripeSubscriptionId !== assinatura.id && situacao !== "ativa") return;
+  // Com Pix (plano pix-do-barchop), só um cartão que chega ativo assume:
+  // um Checkout concluído depois. Evento atrasado de uma assinatura
+  // velha não derruba o Pix.
+  if (linha.forma === "pix" && situacao !== "ativa") return;
 
   await tx.assinatura.update({
     where: { id: linha.id },
     data: {
       situacao,
+      forma: "cartao",
       plano: plano.plano,
       ciclo: plano.ciclo,
       stripeCustomerId: assinatura.customerId,

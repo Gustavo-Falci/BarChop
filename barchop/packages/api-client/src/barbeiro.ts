@@ -50,6 +50,8 @@ import type {
   EstadoDoOnboarding,
   SolicitacaoDeLink,
   ProvedorDePagamento,
+  CotacaoDoPix,
+  PagamentoPix,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
@@ -669,6 +671,29 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // Sem ter assinado, 409: ainda não há cliente na Stripe.
     portalDaAssinatura(): Promise<{ url: string }> {
       return requisicao("/barbearias/me/assinatura/portal", { metodo: "POST", comToken: true });
+    },
+
+    // O Pix do BarChop (plano pix-do-barchop). A cotação: o QR com o valor
+    // exato e o período que ele paga. 409 `pix_desligado` sem as
+    // variáveis do Pix na API; 409 `assinatura_no_cartao` com cartão vivo.
+    cotacaoDoPix(pedido: PedidoDeAssinatura): Promise<CotacaoDoPix> {
+      const query = new URLSearchParams({
+        plano: pedido.plano,
+        ciclo: pedido.ciclo,
+        profissionais: String(pedido.profissionais),
+      });
+      return requisicao(`/barbearias/me/assinatura/pix?${query.toString()}`, { comToken: true });
+    },
+
+    // "Já paguei": o plano vale na hora, aguardando o Suporte. 409
+    // `pix_em_conferencia` se já há um.
+    jaPagueiOPix(pedido: PedidoDeAssinatura): Promise<PagamentoPix> {
+      return requisicao("/barbearias/me/assinatura/pix", { metodo: "POST", corpo: pedido, comToken: true });
+    },
+
+    // "Ainda não paguei": volta ao que era antes do Pix.
+    desfazerOPix(id: string): Promise<PagamentoPix> {
+      return requisicao(`/barbearias/me/assinatura/pix/${id}/desfazer`, { metodo: "POST", comToken: true });
     },
 
     async enviarFotoDoMembro(id: string, arquivo: Blob): Promise<string> {

@@ -43,6 +43,33 @@ export function fraseDaCobranca(resumo: ResumoDaAssinatura): string | null {
   return resumo.primeiraCobrancaPendente ? `1ª cobrança em ${quando}` : `Próxima cobrança em ${quando}`;
 }
 
+// O plano pago por Pix (plano pix-do-barchop), visto do painel. Vem
+// antes de `temPlanoPago`: o "Já paguei" grava a assinatura `ativa`, mas
+// nada da Stripe vale pra ela (sem Portal, sem "Próxima cobrança"). O
+// vencimento sai do fim do período, nunca da situação: até o cron do
+// vencimento passar, a linha segue `ativa` com o período já acabado.
+export type EstadoDoPix = "aguardando" | "pago" | "renovar" | "vencido";
+
+// "Pagar o próximo mês" aparece nestes dias antes do fim do período.
+export const DIAS_DO_AVISO_DO_PIX = 5;
+
+const UM_DIA = 24 * 60 * 60 * 1000;
+
+export function estadoDoPix(resumo: ResumoDaAssinatura, agora: Date = new Date()): EstadoDoPix | null {
+  if (resumo.forma !== "pix" || !resumo.periodoTerminaEm) return null;
+  if (resumo.situacao !== "ativa" && resumo.situacao !== "gratis") return null;
+  if (resumo.pix.aguardando) return "aguardando";
+  const falta = Date.parse(resumo.periodoTerminaEm) - agora.getTime();
+  if (falta <= 0) return "vencido";
+  if (falta <= DIAS_DO_AVISO_DO_PIX * UM_DIA) return "renovar";
+  return "pago";
+}
+
+// "mês" ou "ano": o que cada Pix paga.
+export function periodoDoCiclo(ciclo: ResumoDaAssinatura["ciclo"]): string {
+  return ciclo === "anual" ? "ano" : "mês";
+}
+
 // Tem plano pago na Stripe: assinar de novo não, gerenciar sim.
 export function temPlanoPago(resumo: ResumoDaAssinatura): boolean {
   return resumo.situacao === "ativa" || resumo.situacao === "em_atraso";

@@ -696,6 +696,12 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao(`/barbearias/me/assinatura/pix/${id}/desfazer`, { metodo: "POST", comToken: true });
     },
 
+    // A lista "Pagamentos" de Faturas: do mais novo pro mais velho, sem
+    // os desfeitos.
+    pagamentosDoPix(): Promise<PagamentoPix[]> {
+      return requisicao("/barbearias/me/assinatura/pix/pagamentos", { comToken: true });
+    },
+
     async enviarFotoDoMembro(id: string, arquivo: Blob): Promise<string> {
       const formulario = new FormData();
       formulario.append("arquivo", arquivo, "foto");

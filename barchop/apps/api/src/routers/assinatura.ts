@@ -220,6 +220,17 @@ export function registrarRotasAssinatura(app: App): void {
     }
   );
 
+  // A lista "Pagamentos" de Faturas: os Pix da barbearia, do mais novo
+  // pro mais velho. O desfeito ("Ainda não paguei") não foi pagamento
+  // nenhum e fica de fora. Responde mesmo com o Pix desligado.
+  app.get("/barbearias/me/assinatura/pix/pagamentos", { onRequest: exigirPapel("dono") }, async (request) => {
+    const linhas = await prisma.pagamentoPix.findMany({
+      where: { barbeariaId: request.user.barbeariaId, situacao: { not: "desfeito" } },
+      orderBy: [{ criadoEm: "desc" }, { id: "desc" }],
+    });
+    return linhas.map((linha) => serializarPagamentoPix(linha, app.pix));
+  });
+
   // As faturas na tela de Faturas. Sem cliente na Stripe ainda não há
   // fatura nenhuma, e nem vale perguntar.
   app.get("/barbearias/me/assinatura/faturas", { onRequest: exigirPapel("dono") }, async (request) => {

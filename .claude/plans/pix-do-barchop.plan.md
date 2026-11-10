@@ -76,6 +76,16 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
 ### PR 2 — Web: Faturas com Pix (canvas Pix-Pagar, Pix-Aguardando, Pix-Renovar)
 - Pix habilitado quando a cotação responde; QR pelo `CodigoQr` que já existe; "Copiar código"; "Já paguei"; "Aguardando conferência" com "Ver o QR de novo" e "Ainda não paguei"; recusado com a resposta; "Pagar o próximo mês" nos 5 dias antes e depois de vencer.
 - TDD com o dublê; conferência no navegador a 360/390, claro e escuro.
+- **10/11, respostas do dono:** (a) Pix de renovação com outro plano, ciclo ou profissionais **vale na hora** (a API do PR 1 já grava no "Já paguei"); (b) **não estender o teste da `jesus-barber`** (acaba 15/11 14:43 UTC): PRs 2–4 no ar e o Pix de R$ 1,00 antes disso.
+- **Feito 10/11 (branch `pix-do-barchop-faturas`).** Desvios:
+  - A lista "Pagamentos" vem de uma rota nova, `GET /barbearias/me/assinatura/pix/pagamentos` (do mais novo pro mais velho, sem os desfeitos), e não do `GET …/faturas`, que segue só com as faturas da Stripe (outro formato). **Deploy: API antes da web.**
+  - O estado do Pix (`estadoDoPix` em `painel/assinatura.ts`: aguardando, pago, renovar, vencido) vem antes de `temPlanoPago`: o "Já paguei" grava `ativa`, mas nada da Stripe vale (sem Portal, sem "Próxima cobrança"). Vencido sai do fim do período, nunca da situação (até o cron do PR 4, a linha segue `ativa`).
+  - A faixa do topo ganhou os recados do Pix (5 dias antes e vencido), antes do excedente.
+  - A forma de pagar segue nas pílulas que já existiam (o canvas desenhou em lista); o Cartão leva "Renova sozinho"; o Pix fica "Em breve" enquanto a cotação não responde ou responde `pix_desligado` (produção hoje).
+  - Textos sem promessa de sino na recusa ("a resposta dele aparece aqui"): os avisos são do PR 4. A frase do pago ("Avisamos no sino e por e-mail no dia …") fica, porque o PR 4 entra antes do primeiro aviso.
+  - "Mudar plano ou profissionais" com o Pix vigente reabre a escolha e paga só por Pix, pro período seguinte, com "← Voltar ao plano".
+  - A pergunta frequente "Quais formas de pagamento…" de Faturas já fala do Pix "quando aparecer como opção no Pagamento" (verdade antes e depois de ligar). A garantia "Pagamento no cartão pela Stripe" segue verdadeira. Fica pra onda D: a resposta da página Preços do site ("Por enquanto, só cartão").
+  - "Próximo Pix" no pago usa a equipe de hoje, o mesmo pedido do QR da renovação.
 
 ### PR 3 — Web: Suporte confere o Pix (canvas Pix-Suporte)
 - Pedidos mistura Pix e troca de link (Pix primeiro); contador na aba; "Achei o Pix" / "Não achei" com resposta.

@@ -18,16 +18,21 @@ import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Chip } from "../../componentes/Chip";
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
 import {
+  DIAS_DO_AVISO_DO_PIX,
   diaEMes,
+  estadoDoPix,
   fraseDaCobranca,
   nomeDoPlano,
+  periodoDoCiclo,
   profissionais,
   temPlanoPago,
+  type EstadoDoPix,
 } from "../../painel/assinatura";
 import { useAssinatura } from "../../painel/ProvedorDaAssinatura";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
 import { irParaAStripe } from "../../painel/stripe";
+import { PixDoPedido, PlanoNoPix, useCotacaoDoPix } from "./FaturasNoPix";
 import estilos from "./Faturas.module.css";
 
 // Faturas (Onda 2, marco 1, PR 5), no modelo da tela de assinatura do
@@ -39,6 +44,7 @@ import estilos from "./Faturas.module.css";
 
 type PlanoPago = "essencial" | "completo";
 type Etapa = "plano" | "pagamento";
+type FormaDePagar = "cartao" | "pix";
 
 const PLANOS_PAGOS: readonly PlanoPago[] = ["essencial", "completo"];
 
@@ -129,6 +135,9 @@ export function Faturas({
   const { resumo, recarregar } = useAssinatura();
   const voltouDoCheckout = useSearchParams().get("ok") === "1";
   const [consultas, setConsultas] = useState(0);
+  // Com o Pix, "Mudar plano ou profissionais" abre a escolha de novo.
+  const [mudandoOPix, setMudandoOPix] = useState(false);
+  const pix = resumo ? estadoDoPix(resumo, agora) : null;
 
   // Voltou do Checkout e o webhook ainda não chegou: consulta de novo,
   // com limite.
@@ -159,6 +168,18 @@ export function Faturas({
           )}
         </>
       );
+    } else if (pix && mudandoOPix) {
+      conteudo = (
+        <Assinar
+          resumo={resumo}
+          agora={agora}
+          soPix
+          aoVoltar={() => setMudandoOPix(false)}
+          aoPagar={() => setMudandoOPix(false)}
+        />
+      );
+    } else if (pix) {
+      conteudo = <PlanoNoPix resumo={resumo} estado={pix} agora={agora} aoMudar={() => setMudandoOPix(true)} />;
     } else if (temPlanoPago(resumo)) {
       conteudo = <ComPlanoPago resumo={resumo} />;
     } else {
@@ -170,7 +191,7 @@ export function Faturas({
     <div className={estilos.pagina}>
       <CabecalhoDaPagina
         titulo="Faturas"
-        apoio={apoioDaPagina(resumo, nomeDaBarbearia ?? slug)}
+        apoio={apoioDaPagina(resumo, nomeDaBarbearia ?? slug, pix)}
       />
       {conteudo}
     </div>
@@ -179,9 +200,23 @@ export function Faturas({
 
 // O apoio do título. Sem plano pago, diz em que pé a barbearia está: o
 // teste até quando, ou o Grátis com o limite do link. Com plano, o nome.
-function apoioDaPagina(resumo: ResumoDaAssinatura | null, nome: string | null | undefined): string | undefined {
+// Com o Pix, o que o canvas pede em cada momento.
+function apoioDaPagina(
+  resumo: ResumoDaAssinatura | null,
+  nome: string | null | undefined,
+  pix: EstadoDoPix | null
+): string | undefined {
   const barbearia = nome ?? undefined;
   if (!resumo) return barbearia;
+  if (pix === "renovar") {
+    return `O Pix não renova sozinho: cada ${periodoDoCiclo(resumo.ciclo)} é um Pix novo, com o valor certo.`;
+  }
+  if (pix === "vencido") {
+    return `Só ${profissionais(resumo.limiteDeProfissionais ?? 1)} aparece no link. Pague pra voltar com a equipe toda.`;
+  }
+  if (pix) {
+    return barbearia ? `O plano da ${barbearia} e os pagamentos feitos.` : "O plano da barbearia e os pagamentos feitos.";
+  }
   if (temPlanoPago(resumo)) {
     return barbearia ? `O plano e as cobranças da ${barbearia}.` : "O plano e as cobranças da barbearia.";
   }
@@ -218,9 +253,24 @@ function Trilha({ atual }: { atual: number }) {
 }
 
 // Sem plano pago (teste, Grátis ou cancelada): escolher, pagar e voltar
-// com o acesso liberado.
-function Assinar({ resumo, agora }: { resumo: ResumoDaAssinatura; agora: Date }) {
+// com o acesso liberado. `soPix`: com o Pix vigente, mudar de plano é
+// pagar o próximo período por Pix (o cartão espera o Pix acabar).
+function Assinar({
+  resumo,
+  agora,
+  soPix = false,
+  aoVoltar,
+  aoPagar,
+}: {
+  resumo: ResumoDaAssinatura;
+  agora: Date;
+  soPix?: boolean;
+  aoVoltar?: () => void;
+  aoPagar?: () => void;
+}) {
   const api = useApiDoPainel();
+  const [forma, setForma] = useState<FormaDePagar>(soPix ? "pix" : "cartao");
+  const recusa = soPix ? null : resumo.pix.ultimaRecusa;
   const equipe = Math.max(1, resumo.profissionais);
   const cabeNoEssencial = equipe <= (limiteDeProfissionais("essencial") ?? Infinity);
   const recomendado: PlanoPago = cabeNoEssencial ? "essencial" : "completo";
@@ -246,6 +296,12 @@ function Assinar({ resumo, agora }: { resumo: ResumoDaAssinatura; agora: Date })
   const hoje = cobraNoFimDoTeste ? 0 : total;
   const noGratis = resumo.situacao !== "teste" || !resumo.diasDeTesteRestantes;
 
+  const pedido = { plano, ciclo, profissionais: profissionaisNoPlano };
+  // Só no Pagamento: a cotação também diz se o Pix está ligado na API.
+  const cotacao = useCotacaoDoPix(etapa === "pagamento" ? pedido : null);
+  const pixNoPedido = etapa === "pagamento" && forma === "pix";
+  const cotado = cotacao.tipo === "ok" ? cotacao.cotacao : null;
+
   async function assinar() {
     setAssinando(true);
     setErro(null);
@@ -260,6 +316,23 @@ function Assinar({ resumo, agora }: { resumo: ResumoDaAssinatura; agora: Date })
 
   return (
     <>
+      {aoVoltar ? (
+        <div className={estilos.mudarPlano}>
+          <Botao variante="fantasma" onClick={aoVoltar}>
+            ← Voltar ao plano
+          </Botao>
+        </div>
+      ) : null}
+      {recusa && etapa === "plano" ? (
+        <Recusa
+          resposta={recusa.resposta}
+          nadaApagado={noGratis}
+          aoPagarDeNovo={() => {
+            setForma("pix");
+            setEtapa("pagamento");
+          }}
+        />
+      ) : null}
       <Trilha atual={etapa === "plano" ? 0 : 1} />
       <div className={estilos.corpo}>
         <div className={estilos.etapa}>
@@ -279,38 +352,63 @@ function Assinar({ resumo, agora }: { resumo: ResumoDaAssinatura; agora: Date })
             />
           ) : (
             <section className={estilos.cartao} aria-labelledby="como-pagar">
-              <div className={estilos.topoDoCartao}>
-                <h2 id="como-pagar" className={estilos.tituloDaEtapa}>
-                  Como você prefere pagar?
-                </h2>
+              {/* Canvas Pix-Pagar: o voltar fica acima do título. */}
+              <div className={estilos.mudarPlano}>
                 <Botao variante="fantasma" onClick={() => setEtapa("plano")}>
                   ← Mudar plano
                 </Botao>
               </div>
-              <SeletorEmPilulas<"cartao" | "pix" | "boleto">
-                nome="pagamento"
-                legenda="Forma de pagamento"
-                valor="cartao"
-                aoTrocar={() => {}}
-                opcoes={[
-                  { valor: "cartao", rotulo: "Cartão", selo: "Acesso na hora" },
-                  { valor: "pix", rotulo: "Pix", desligada: true, selo: "Em breve" },
-                  { valor: "boleto", rotulo: "Boleto", desligada: true, selo: "Em breve" },
-                ]}
-              />
-              <p className={estilos.apoio}>
-                Você termina na página segura da Stripe. Renovação automática no cartão; o BarChop não vê o número
-                dele.
-              </p>
-              {erro ? <Aviso>{erro}</Aviso> : null}
-              <Botao onClick={assinar} carregando={assinando}>
-                Assinar o {nome} · {formatarReais(hoje)} hoje
-              </Botao>
-              <p className={estilos.rodape}>
-                {cobraNoFimDoTeste
-                  ? `Hoje ${formatarReais(0)} · a partir de ${diaEMes(fimDoTeste!)}, ${formatarReais(total)}/${porCiclo(ciclo)} · o ${nome} vale assim que você assinar · cancele quando quiser`
-                  : `${formatarReais(total)} hoje · renova a cada ${porCiclo(ciclo)} · cancele quando quiser`}
-              </p>
+              <h2 id="como-pagar" className={estilos.tituloDaEtapa}>
+                {soPix ? "Pagar por Pix" : "Como você prefere pagar?"}
+              </h2>
+              {soPix ? null : (
+                <SeletorEmPilulas<FormaDePagar | "boleto">
+                  nome="pagamento"
+                  legenda="Forma de pagamento"
+                  valor={forma}
+                  aoTrocar={(valor) => {
+                    if (valor !== "boleto") setForma(valor);
+                  }}
+                  opcoes={[
+                    { valor: "cartao", rotulo: "Cartão", selo: "Renova sozinho" },
+                    // Ligado quando a API cota: sem as variáveis do Pix
+                    // (ou ainda perguntando), segue em breve.
+                    {
+                      valor: "pix",
+                      rotulo: "Pix",
+                      desligada: cotacao.tipo === "carregando" || cotacao.tipo === "desligado",
+                      selo: cotacao.tipo === "ok" || cotacao.tipo === "erro" ? "Acesso na hora" : "Em breve",
+                    },
+                    { valor: "boleto", rotulo: "Boleto", desligada: true, selo: "Em breve" },
+                  ]}
+                />
+              )}
+              {forma === "pix" ? (
+                <PixDoPedido
+                  pedido={pedido}
+                  cotacao={cotacao}
+                  agora={agora}
+                  titulo="Pague por Pix"
+                  comPassos
+                  aoPagar={aoPagar}
+                />
+              ) : (
+                <>
+                  <p className={estilos.apoio}>
+                    Você termina na página segura da Stripe. Renovação automática no cartão; o BarChop não vê o
+                    número dele.
+                  </p>
+                  {erro ? <Aviso>{erro}</Aviso> : null}
+                  <Botao onClick={assinar} carregando={assinando}>
+                    Assinar o {nome} · {formatarReais(hoje)} hoje
+                  </Botao>
+                  <p className={estilos.rodape}>
+                    {cobraNoFimDoTeste
+                      ? `Hoje ${formatarReais(0)} · a partir de ${diaEMes(fimDoTeste!)}, ${formatarReais(total)}/${porCiclo(ciclo)} · o ${nome} vale assim que você assinar · cancele quando quiser`
+                      : `${formatarReais(total)} hoje · renova a cada ${porCiclo(ciclo)} · cancele quando quiser`}
+                  </p>
+                </>
+              )}
             </section>
           )}
         </div>
@@ -321,11 +419,12 @@ function Assinar({ resumo, agora }: { resumo: ResumoDaAssinatura; agora: Date })
             ciclo={ciclo}
             profissionais={profissionaisNoPlano}
             total={total}
-            hoje={hoje}
-            cobraEm={cobraNoFimDoTeste ? fimDoTeste : null}
+            hoje={pixNoPedido ? (cotado?.valorCentavos ?? total) : hoje}
+            cobraEm={cobraNoFimDoTeste && !pixNoPedido ? fimDoTeste : null}
+            porPix={pixNoPedido ? { venceEm: cotado?.periodoTerminaEm ?? null } : null}
             aoTrocarParaAnual={() => setCiclo("anual")}
           />
-          {noGratis ? (
+          {noGratis && !(recusa && etapa === "plano") ? (
             <p className={estilos.nadaApagado}>
               <strong>Nada foi apagado.</strong> A agenda, os clientes e o histórico continuam guardados. Assinar
               devolve tudo no mesmo estado.
@@ -535,6 +634,42 @@ function EscolhaDoPlano({
   );
 }
 
+// A recusa do Suporte (canvas Pix-Aguardando, recusado): a assinatura já
+// voltou ao que era; a resposta fica até o próximo Pix.
+function Recusa({
+  resposta,
+  nadaApagado,
+  aoPagarDeNovo,
+}: {
+  resposta: string;
+  nadaApagado: boolean;
+  aoPagarDeNovo: () => void;
+}) {
+  return (
+    <section className={estilos.cartao} aria-labelledby="pix-nao-encontrado">
+      <h2 id="pix-nao-encontrado" className={estilos.tituloDaEtapa}>
+        Pix não encontrado
+      </h2>
+      <figure className={estilos.resposta}>
+        <figcaption className={estilos.quemResponde}>Resposta do suporte do BarChop</figcaption>
+        <blockquote className={estilos.textoDaResposta}>{resposta}</blockquote>
+      </figure>
+      {nadaApagado ? (
+        <p className={estilos.nadaApagado}>
+          <strong>Nada foi apagado.</strong> A agenda, os clientes e o histórico continuam guardados. Pagar devolve a
+          equipe toda ao link.
+        </p>
+      ) : null}
+      <div className={estilos.botoesDoPix}>
+        <Botao onClick={aoPagarDeNovo}>Pagar com Pix de novo</Botao>
+        <BotaoLink href="/painel/ajuda" variante="contorno">
+          Falar com o suporte
+        </BotaoLink>
+      </div>
+    </section>
+  );
+}
+
 function SeuPedido({
   plano,
   ciclo,
@@ -542,6 +677,7 @@ function SeuPedido({
   total,
   hoje,
   cobraEm,
+  porPix,
   aoTrocarParaAnual,
 }: {
   plano: PlanoPago;
@@ -550,6 +686,8 @@ function SeuPedido({
   total: number;
   hoje: number;
   cobraEm: string | null;
+  // Pagando por Pix: não renova sozinho, vence (a data sai da cotação).
+  porPix: { venceEm: string | null } | null;
   aoTrocarParaAnual: () => void;
 }) {
   const anual = precoDoPlano(plano, "anual", quantos);
@@ -568,7 +706,10 @@ function SeuPedido({
         </div>
         <div className={estilos.linhaDaConta}>
           <dt>Cobrança</dt>
-          <dd>{ciclo === "anual" ? "Anual" : "Mensal"}</dd>
+          <dd>
+            {ciclo === "anual" ? "Anual" : "Mensal"}
+            {porPix ? ", por Pix" : ""}
+          </dd>
         </div>
       </dl>
       <div className={estilos.hoje}>
@@ -578,9 +719,13 @@ function SeuPedido({
         </strong>
       </div>
       <p className={estilos.depois}>
-        {cobraEm
-          ? `depois ${formatarReais(total)}/${porCiclo(ciclo)} a partir de ${diaEMes(cobraEm)}`
-          : `renova a cada ${porCiclo(ciclo)}`}
+        {porPix
+          ? porPix.venceEm
+            ? `vence em ${diaEMes(porPix.venceEm)} · avisamos ${DIAS_DO_AVISO_DO_PIX} dias antes`
+            : "não renova sozinho: cada período é um Pix novo"
+          : cobraEm
+            ? `depois ${formatarReais(total)}/${porCiclo(ciclo)} a partir de ${diaEMes(cobraEm)}`
+            : `renova a cada ${porCiclo(ciclo)}`}
       </p>
       {ciclo === "mensal" ? (
         <p className={estilos.apoio}>
@@ -890,7 +1035,9 @@ const PERGUNTAS: { pergunta: string; resposta: string }[] = [
   },
   {
     pergunta: "Quais formas de pagamento são aceitas?",
-    resposta: "Cartão de crédito, pelo Checkout da Stripe. Pix e boleto chegam em breve.",
+    // Verdade antes e depois de o Pix ligar em produção (variáveis PIX_*).
+    resposta:
+      "Cartão de crédito, pelo Checkout da Stripe, que renova sozinho. Pix, quando aparecer como opção no Pagamento: o BarChop gera o QR com o valor certo, o plano vale na hora e o suporte confere no extrato; cada período é um Pix novo. Boleto chega em breve.",
   },
   {
     pergunta: "O que acontece se o pagamento falhar?",

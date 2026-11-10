@@ -1680,6 +1680,13 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         Object.assign(pagamento, { situacao: "desfeito", decididoEm: new Date().toISOString() });
         return { ...pagamento };
       },
+      async pagamentosDoPix() {
+        exigirDono();
+        return estado
+          .pagamentosPix!.filter((p) => p.situacao !== "desfeito")
+          .reverse()
+          .map((p) => ({ ...p }));
+      },
       async checkoutDaAssinatura(_pedido: PedidoDeAssinatura) {
         exigirDono();
         const { situacao } = estado.assinatura!;

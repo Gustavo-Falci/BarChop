@@ -432,6 +432,64 @@ describe("POST /barbearias/me/assinatura/pix/:id/desfazer (Ainda não paguei)", 
   });
 });
 
+// PR 2: a lista "Pagamentos" de Faturas. Fica numa rota própria (o
+// `GET …/faturas` segue só com as faturas da Stripe, outro formato).
+describe("GET /barbearias/me/assinatura/pix/pagamentos", () => {
+  function pagamentos(app: App, token: string) {
+    return app.inject({ method: "GET", url: "/barbearias/me/assinatura/pix/pagamentos", headers: auth(token) });
+  }
+
+  it("do mais novo pro mais velho, sem os desfeitos, só da própria barbearia", async () => {
+    const { app } = montar();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    const outra = await criarBarbeariaComToken(app, "outra");
+    await definir(barbeariaId, { situacao: "gratis", testeTerminaEm: null });
+    const suporte = await tokenDoSuporte(app);
+
+    const desfeito = (await jaPaguei(app, token)).json();
+    await desfazer(app, token, desfeito.id);
+    const recusado = (await jaPaguei(app, token)).json();
+    await decidir(app, suporte, recusado.id, "recusar", "Não achei o Pix no extrato.");
+    const confirmado = (await jaPaguei(app, token)).json();
+    await decidir(app, suporte, confirmado.id, "confirmar");
+    const aguardando = (await jaPaguei(app, token, { ...ESSENCIAL, profissionais: 2 })).json();
+    await jaPaguei(app, outra.token);
+
+    const resposta = await pagamentos(app, token);
+
+    expect(resposta.statusCode).toBe(200);
+    const lista = resposta.json();
+    expect(lista.map((p: { id: string }) => p.id)).toEqual([aguardando.id, confirmado.id, recusado.id]);
+    expect(lista.map((p: { situacao: string }) => p.situacao)).toEqual(["aguardando", "confirmado", "recusado"]);
+    expect(lista[0]).toEqual(aguardando);
+    expect(lista[2]).toMatchObject({ resposta: "Não achei o Pix no extrato.", decididoEm: expect.any(String) });
+    await app.close();
+  });
+
+  it("sem Pix nenhum, lista vazia; com o Pix desligado também responde (sem copia e cola)", async () => {
+    const ligado = montar();
+    const { token } = await criarBarbeariaComToken(ligado.app);
+    expect((await pagamentos(ligado.app, token)).json()).toEqual([]);
+    await jaPaguei(ligado.app, token);
+    await ligado.app.close();
+
+    const desligado = montar(null);
+    const resposta = await pagamentos(desligado.app, token);
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toHaveLength(1);
+    expect(resposta.json()[0].copiaECola).toBeNull();
+    await desligado.app.close();
+  });
+
+  it("só o dono", async () => {
+    const { app } = montar();
+    const { barbeariaId } = await criarBarbeariaComToken(app);
+    const recepcao = await criarMembroComToken(app, barbeariaId, "recepcao", "r");
+    expect((await pagamentos(app, recepcao.token)).statusCode).toBe(403);
+    await app.close();
+  });
+});
+
 describe("o Suporte confere o Pix", () => {
   it("GET /suporte/pix: os aguardando, do mais velho pro mais novo, com barbearia e dono", async () => {
     const { app } = montar();

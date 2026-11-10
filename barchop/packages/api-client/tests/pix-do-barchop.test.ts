@@ -71,6 +71,13 @@ describe("api do Pix do BarChop", () => {
     expect(chamada(fetchFalso).url).toBe(`https://api.exemplo.br/barbearias/me/assinatura/pix/${PAGAMENTO.id}/desfazer`);
   });
 
+  it("a lista de pagamentos de Faturas (PR 2)", async () => {
+    const fetchFalso = responde([PAGAMENTO]);
+
+    expect(await cliente(fetchFalso).barbeiro.pagamentosDoPix()).toEqual([PAGAMENTO]);
+    expect(chamada(fetchFalso).url).toBe("https://api.exemplo.br/barbearias/me/assinatura/pix/pagamentos");
+  });
+
   it("o Suporte lê a fila e decide", async () => {
     const fila = responde({ pagamentos: [] });
     expect(await cliente(fila).suporte.pixNaFila()).toEqual([]);
@@ -119,6 +126,23 @@ describe("o dublê do Pix do BarChop", () => {
     expect(depois).toMatchObject({ situacao: "teste", forma: "cartao", planoEfetivo: "completo" });
     expect(depois.pix).toEqual({ aguardando: null, ultimaRecusa: { resposta: "Não achei", decididoEm: expect.any(String) } });
     expect(await api.suporte.pixNaFila()).toEqual([]);
+  });
+
+  it("a lista de pagamentos: do mais novo pro mais velho, sem os desfeitos", async () => {
+    const api = criarApiClientFalso({ pixLigado: true });
+    expect(await api.barbeiro.pagamentosDoPix()).toEqual([]);
+
+    const desfeito = await api.barbeiro.jaPagueiOPix(PEDIDO);
+    await api.barbeiro.desfazerOPix(desfeito.id);
+    const recusado = await api.barbeiro.jaPagueiOPix(PEDIDO);
+    await api.suporte.recusarPix(recusado.id, "Não achei");
+    const aguardando = await api.barbeiro.jaPagueiOPix({ ...PEDIDO, profissionais: 2 });
+
+    const lista = await api.barbeiro.pagamentosDoPix();
+    expect(lista.map((p) => [p.id, p.situacao])).toEqual([
+      [aguardando.id, "aguardando"],
+      [recusado.id, "recusado"],
+    ]);
   });
 
   it("Ainda não paguei volta ao que era; confirmar mantém o plano", async () => {

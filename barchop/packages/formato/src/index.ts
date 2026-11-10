@@ -37,6 +37,7 @@ export {
 export {
   CICLOS,
   DIAS_DE_TESTE,
+  FORMAS_DE_PAGAR_O_BARCHOP,
   IDS_DOS_PLANOS,
   PLANOS,
   RECURSOS,
@@ -48,12 +49,23 @@ export {
   formatarReais,
   temRecurso,
   type Ciclo,
+  type FormaDePagarOBarChop,
   type IdDoPlano,
   type Plano,
   type Recurso,
   type SituacaoDaAssinatura,
   type SituacaoParaOPlano,
 } from "./planos";
+export {
+  SITUACOES_DO_PIX,
+  brCodeDoPix,
+  chaveMascarada,
+  crc16DoPix,
+  fimDoPeriodoDoPix,
+  inicioDoDiaEmSaoPaulo,
+  type DadosDoBrCode,
+  type SituacaoDoPix,
+} from "./pix";
 export {
   MOTIVOS_DA_PARTE,
   MOTIVOS_DO_PLANO,

@@ -1,6 +1,8 @@
 import type {
   AvisoPublicado,
   NovoAviso,
+  PagamentoPix,
+  PixNaFila,
   SessaoSuporte,
   SolicitacaoDeLink,
   SolicitacaoNaFila,
@@ -52,6 +54,24 @@ export function criarApiSuporte(requisicao: Requisicao) {
         comToken: true,
       });
       return resposta.aviso;
+    },
+
+    // O Pix do BarChop (plano pix-do-barchop): os aguardando, do mais
+    // velho pro mais novo, com a barbearia e o dono, pra achar no extrato.
+    async pixNaFila(): Promise<PixNaFila[]> {
+      const resposta = await requisicao<{ pagamentos: PixNaFila[] }>("/suporte/pix", { comToken: true });
+      return resposta.pagamentos;
+    },
+
+    // Achou no extrato: o plano já vale; só o pagamento muda.
+    confirmarPix(id: string): Promise<PagamentoPix> {
+      return requisicao(`/suporte/pix/${id}/confirmar`, { metodo: "POST", comToken: true });
+    },
+
+    // Não achou: a assinatura volta ao que era. A resposta é o que o dono
+    // lê em Faturas.
+    recusarPix(id: string, resposta: string): Promise<PagamentoPix> {
+      return requisicao(`/suporte/pix/${id}/recusar`, { metodo: "POST", corpo: { resposta }, comToken: true });
     },
 
     // A resposta é obrigatória: é o que o dono lê em Configurações.

@@ -6,6 +6,7 @@ import {
   planoEfetivo,
   temRecurso,
   type Ciclo,
+  type FormaDePagarOBarChop,
   type IdDoPlano,
   type Recurso,
   type SituacaoDaAssinatura,
@@ -52,7 +53,7 @@ async function planoQueVale(
 ): Promise<IdDoPlano | null> {
   const linha = await db.assinatura.findUnique({
     where: { barbeariaId },
-    select: { situacao: true, plano: true, testeTerminaEm: true },
+    select: { situacao: true, plano: true, testeTerminaEm: true, forma: true, periodoTerminaEm: true },
   });
   if (!linha) return null;
   return planoEfetivo(
@@ -60,9 +61,36 @@ async function planoQueVale(
       situacao: linha.situacao as SituacaoDaAssinatura,
       plano: linha.plano as IdDoPlano,
       testeTerminaEm: linha.testeTerminaEm,
+      forma: linha.forma as FormaDePagarOBarChop,
+      periodoTerminaEm: linha.periodoTerminaEm,
     },
     agora
   );
+}
+
+// O pedido de um plano pago (Checkout do cartão, cotação e "Já paguei"
+// do Pix): nunca menos que a equipe de hoje, nem mais que o plano
+// permite.
+export async function conferirPedidoDoPlano(
+  barbeariaId: string,
+  plano: Exclude<IdDoPlano, "gratis">,
+  profissionais: number,
+  db: Prisma.TransactionClient = prisma
+): Promise<void> {
+  const contados = await contarProfissionais(barbeariaId, db);
+  if (profissionais < contados) {
+    throw new ErroDeNegocio(
+      `a equipe tem ${contados} profissionais: assine para pelo menos ${contados}`,
+      "quantidade_menor_que_a_equipe"
+    );
+  }
+  const limite = limiteDeProfissionais(plano);
+  if (limite !== null && profissionais > limite) {
+    throw new ErroDeNegocio(
+      `o ${PLANOS[plano].nome} vai até ${limite} profissionais: escolha o Completo`,
+      "limite_do_plano"
+    );
+  }
 }
 
 // O convite de cada plano quando a equipe bate no limite.
@@ -197,7 +225,11 @@ async function usoNoTeste(
   return { desde: desde.toISOString(), ate: testeTerminaEm.toISOString(), agendamentos, servicos };
 }
 
-export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Promise<ResumoDaAssinatura> {
+// Sem o Pix: o router junta (lib/pix.ts › resumoDoPix).
+export async function resumoDaAssinatura(
+  barbeariaId: string,
+  agora: Date
+): Promise<Omit<ResumoDaAssinatura, "pix">> {
   const [linha, profissionais, saiuDoLink] = await Promise.all([
     prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } }),
     contarProfissionais(barbeariaId),
@@ -209,6 +241,8 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
     plano: linha.plano as IdDoPlano,
     ciclo: linha.ciclo as Ciclo,
     testeTerminaEm: linha.testeTerminaEm,
+    forma: linha.forma as FormaDePagarOBarChop,
+    periodoTerminaEm: linha.periodoTerminaEm,
   };
   const efetivo = planoEfetivo(assinatura, agora);
   const limite = limiteDeProfissionais(efetivo);
@@ -239,6 +273,7 @@ export async function resumoDaAssinatura(barbeariaId: string, agora: Date): Prom
     foraDoLink: saiuDoLink,
     temPortal: linha.stripeCustomerId !== null,
     usoNoTeste: uso,
+    forma: assinatura.forma,
   };
 }
 

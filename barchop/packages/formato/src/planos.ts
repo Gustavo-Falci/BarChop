@@ -100,21 +100,38 @@ export function temRecurso(plano: IdDoPlano, recurso: Recurso): boolean {
   return PLANOS[plano].recursos.includes(recurso);
 }
 
+// Como a barbearia paga o BarChop. O cartão renova sozinho na Stripe;
+// o Pix (plano pix-do-barchop) paga um período por vez, conferido pelo
+// Suporte. A lista vira CHECK na migration do pagamento_pix.
+export const FORMAS_DE_PAGAR_O_BARCHOP = ["cartao", "pix"] as const;
+export type FormaDePagarOBarChop = (typeof FORMAS_DE_PAGAR_O_BARCHOP)[number];
+
 export interface SituacaoParaOPlano {
   situacao: SituacaoDaAssinatura;
   plano: IdDoPlano;
   testeTerminaEm: Date | null;
+  forma: FormaDePagarOBarChop;
+  periodoTerminaEm: Date | null;
 }
 
 // O plano que vale agora: teste vigente libera o Completo; ativa ou em
 // atraso vale o contratado; o resto cai no Grátis. O instante do fim do
 // teste já conta como vencido, e teste sem data de fim também.
+//
+// No Pix, o fim do período vale na hora, sem esperar o cron arrumar a
+// linha: período vencido (ou sem fim) cai no Grátis. No cartão, não: a
+// Stripe é quem diz, e um webhook atrasado não pode tirar o plano.
 export function planoEfetivo(assinatura: SituacaoParaOPlano, agora: Date): IdDoPlano {
   switch (assinatura.situacao) {
     case "teste":
       return assinatura.testeTerminaEm !== null && agora < assinatura.testeTerminaEm ? "completo" : "gratis";
     case "ativa":
     case "em_atraso":
+      if (assinatura.forma === "pix") {
+        return assinatura.periodoTerminaEm !== null && agora < assinatura.periodoTerminaEm
+          ? assinatura.plano
+          : "gratis";
+      }
       return assinatura.plano;
     case "cancelada":
     case "gratis":

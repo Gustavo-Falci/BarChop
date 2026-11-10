@@ -126,6 +126,7 @@ model Barbearia {
   slugsAntigos          SlugAntigo[]
   solicitacoesDeLink    SolicitacaoTrocaLink[]
   assinatura            Assinatura?
+  pagamentosPix         PagamentoPix[]
   regrasDeDivisao       RegraDeDivisao[]
   pagamentos            Pagamento[]
   fechamentos           FechamentoDoDia[]
@@ -161,12 +162,52 @@ model Assinatura {
   periodoTerminaEm         DateTime? @map("periodo_termina_em") @db.Timestamptz
   // Cancelada no Portal: a Stripe segue `active` até esta data.
   cancelaEm                DateTime? @map("cancela_em") @db.Timestamptz
+  // `cartao` (Stripe) ou `pix` (plano pix-do-barchop; CHECK). No Pix,
+  // `periodoTerminaEm` é o fim do período pago e vale na hora
+  // (planoEfetivo em @barchop/formato).
+  forma                    String    @default("cartao") @db.VarChar(10)
   criadaEm                 DateTime  @default(now()) @map("criada_em") @db.Timestamptz
   atualizadaEm             DateTime  @default(now()) @updatedAt @map("atualizada_em") @db.Timestamptz
 
   barbearia Barbearia @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
 
   @@map("assinatura")
+}
+
+// Um Pix pago ao BarChop (plano pix-do-barchop): nasce no "Já paguei" do
+// dono, já valendo, e o Suporte confirma ou recusa. As colunas `antes_*`
+// são o retrato da assinatura antes do Pix: a recusa e o "Ainda não
+// paguei" voltam exatamente a ele. Índices parciais na migration
+// 20261109120000_pix_do_barchop: um aguardando por barbearia, e o
+// identificador único entre os que valem.
+model PagamentoPix {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  barbeariaId            String    @map("barbearia_id") @db.Uuid
+  identificador          String    @db.VarChar(25)
+  plano                  String
+  ciclo                  String
+  profissionais          Int       @db.SmallInt
+  valorCentavos          Int       @map("valor_centavos")
+  periodoComecaEm        DateTime  @map("periodo_comeca_em") @db.Timestamptz
+  periodoTerminaEm       DateTime  @map("periodo_termina_em") @db.Timestamptz
+  situacao               String    @default("aguardando") @db.VarChar(20)
+  resposta               String?   @db.VarChar(500)
+  criadoEm               DateTime  @default(now()) @map("criado_em") @db.Timestamptz
+  decididoEm             DateTime? @map("decidido_em") @db.Timestamptz
+  decididoPor            String?   @map("decidido_por") @db.Uuid
+  antesSituacao          String    @map("antes_situacao")
+  antesPlano             String    @map("antes_plano")
+  antesCiclo             String    @map("antes_ciclo")
+  antesForma             String    @map("antes_forma") @db.VarChar(10)
+  antesPeriodoTerminaEm  DateTime? @map("antes_periodo_termina_em") @db.Timestamptz
+  antesProfissionais     Int?      @map("antes_profissionais") @db.SmallInt
+
+  barbearia Barbearia        @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
+  operador  OperadorSuporte? @relation(fields: [decididoPor], references: [id], onDelete: SetNull)
+
+  @@index([situacao, criadoEm])
+  @@index([barbeariaId, criadoEm])
+  @@map("pagamento_pix")
 }
 
 // Os eventos do webhook da Stripe já processados: o id do evento é a
@@ -191,8 +232,9 @@ model OperadorSuporte {
   senhaAlteradaEm DateTime? @map("senha_alterada_em") @db.Timestamptz
   criadoEm        DateTime  @default(now()) @map("criado_em") @db.Timestamptz
 
-  decisoes SolicitacaoTrocaLink[]
-  avisos   Aviso[]
+  decisoes      SolicitacaoTrocaLink[]
+  avisos        Aviso[]
+  decisoesDoPix PagamentoPix[]
 
   @@map("operador_suporte")
 }

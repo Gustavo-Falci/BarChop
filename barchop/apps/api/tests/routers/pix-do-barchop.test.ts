@@ -38,7 +38,7 @@ function montar(pix: ConfigDoPix | null = PIX): { app: App; cobranca: CobrancaDe
 const ESSENCIAL = { plano: "essencial", ciclo: "mensal", profissionais: 1 } as const;
 
 function cotar(app: App, token: string, pedido: Record<string, unknown> = ESSENCIAL) {
-  const query = new URLSearchParams(Object.entries(pedido).map(([k, v]) => [k, String(v)])).toString();
+  const query = new URLSearchParams(Object.entries(pedido).map(([k, v]): [string, string] => [k, String(v)])).toString();
   return app.inject({ method: "GET", url: `/barbearias/me/assinatura/pix?${query}`, headers: auth(token) });
 }
 

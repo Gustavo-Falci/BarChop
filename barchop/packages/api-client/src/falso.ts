@@ -1,5 +1,10 @@
 import {
   APARENCIA_PADRAO,
+  brCodeDoPix,
+  fimDoPeriodoDoPix,
+  inicioDoDiaEmSaoPaulo,
+  limiteDeProfissionais,
+  precoDoPlano,
   DIAS_PARA_CANCELAR,
   MINIMO_DA_INFINITEPAY_CENTAVOS,
   CATEGORIAS_DE_SERVICO,
@@ -88,6 +93,9 @@ import type {
   PagamentosOnline,
   PlanoDaVitrine,
   ProvedorDePagamento,
+  CotacaoDoPix,
+  PagamentoPix,
+  PixNaFila,
 } from "@barchop/types";
 import type {
   AceiteDoConvite,
@@ -253,6 +261,11 @@ export interface EstadoFalso {
   assinatura?: ResumoDaAssinatura;
   // As faturas da Stripe, da mais nova. Sem semente, nenhuma.
   faturas?: FaturaDaAssinatura[];
+  // O Pix do BarChop (plano pix-do-barchop). Sem semente, desligado (409
+  // `pix_desligado`), como a API sem as variáveis PIX_*. Os pagamentos,
+  // do mais velho pro mais novo; com algum, o `pix` do resumo sai deles.
+  pixLigado?: boolean;
+  pagamentosPix?: PagamentoPix[];
   // O caixa do dia (Onda 2, marco 2). Sem semente: nenhum pagamento,
   // nenhum dia fechado e a divisão em 0 (quem atendeu fica com tudo).
   pagamentos?: PagamentoDoAgendamento[];
@@ -305,6 +318,8 @@ const ASSINATURA_PADRAO: ResumoDaAssinatura = {
   foraDoLink: [],
   temPortal: false,
   usoNoTeste: { desde: new Date().toISOString(), ate: FIM_DO_TESTE_PADRAO, agendamentos: 0, servicos: 0 },
+  forma: "cartao",
+  pix: { aguardando: null, ultimaRecusa: null },
 };
 
 const PERFIL_PADRAO: PerfilPublicoBarbearia = {
@@ -494,6 +509,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     avisosPublicados: (semente.avisosPublicados ?? []).map((a) => ({ ...a })),
     assinatura: { ...(semente.assinatura ?? ASSINATURA_PADRAO) },
     faturas: (semente.faturas ?? []).map((f) => ({ ...f })),
+    pixLigado: semente.pixLigado ?? false,
+    pagamentosPix: (semente.pagamentosPix ?? []).map((p) => ({ ...p })),
     pagamentos: (semente.pagamentos ?? []).map(copiaDoPagamento),
     diasFechados: [...(semente.diasFechados ?? [])],
     divisao: {
@@ -530,6 +547,76 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
   }
 
   // As mesmas respostas do `pedidoPendente` da API.
+  // O Pix do BarChop: o retrato da assinatura antes de cada "Já paguei",
+  // pra recusa e "Ainda não paguei" voltarem a ele, como na API.
+  const antesDoPix = new Map<string, ResumoDaAssinatura>();
+
+  function exigirPixLigado(): void {
+    if (!estado.pixLigado) {
+      throw new ErroDaApi(409, "pix_desligado", "o pagamento por Pix ainda não está ligado");
+    }
+  }
+
+  // As regras da API: sem cartão vivo; o período começa no fim do teste
+  // vigente, no fim do Pix vigente, ou hoje.
+  function cotarPix(pedido: PedidoDeAssinatura): CotacaoDoPix {
+    exigirDono();
+    exigirPixLigado();
+    const atual = estado.assinatura!;
+    const agora = new Date();
+    if (atual.forma === "cartao" && atual.temPortal && (atual.situacao === "ativa" || atual.situacao === "em_atraso")) {
+      throw new ErroDaApi(409, "assinatura_no_cartao", "a barbearia já paga no cartão: mude o plano em Gerenciar assinatura");
+    }
+    const testeVigente = atual.situacao === "teste" && atual.testeTerminaEm && new Date(atual.testeTerminaEm) > agora;
+    const pixVigente =
+      atual.forma === "pix" && atual.situacao === "ativa" && atual.periodoTerminaEm && new Date(atual.periodoTerminaEm) > agora;
+    const comeca = testeVigente
+      ? new Date(atual.testeTerminaEm!)
+      : pixVigente
+        ? new Date(atual.periodoTerminaEm!)
+        : inicioDoDiaEmSaoPaulo(agora);
+    const valorCentavos = precoDoPlano(pedido.plano, pedido.ciclo, pedido.profissionais);
+    const identificador = `PIX${pedido.plano[0]!.toUpperCase()}${pedido.ciclo[0]!.toUpperCase()}${pedido.profissionais}`;
+    return {
+      valorCentavos,
+      periodoComecaEm: comeca.toISOString(),
+      periodoTerminaEm: fimDoPeriodoDoPix(comeca, pedido.ciclo).toISOString(),
+      identificador,
+      copiaECola: brCodeDoPix({ chave: "pix@exemplo.com", nome: "BarChop", cidade: "Sao Paulo", valorCentavos, identificador }),
+      recebedor: { nome: "BarChop", chaveMascarada: "p•••@exemplo.com" },
+    };
+  }
+
+  function pixAguardando(id: string, daBarbearia: boolean): PagamentoPix {
+    if (daBarbearia) exigirDono();
+    const pagamento = estado.pagamentosPix!.find((p) => p.id === id);
+    if (!pagamento) throw new ErroDaApi(404, "nao_encontrado", "pagamento não encontrado");
+    if (pagamento.situacao !== "aguardando") throw new ErroDaApi(422, "pix_decidido", "esse Pix já foi decidido");
+    return pagamento;
+  }
+
+  function voltarAoQueEra(pagamento: PagamentoPix): void {
+    const antes = antesDoPix.get(pagamento.id);
+    const atual = estado.assinatura!;
+    if (antes && atual.forma === "pix" && atual.periodoTerminaEm === pagamento.periodoTerminaEm) {
+      estado.assinatura = { ...antes, pix: atual.pix };
+    }
+  }
+
+  function resumoDoPix(): ResumoDaAssinatura["pix"] {
+    const pagamentos = estado.pagamentosPix!;
+    if (pagamentos.length === 0) return estado.assinatura!.pix;
+    const aguardando = pagamentos.find((p) => p.situacao === "aguardando") ?? null;
+    const ultimo = pagamentos[pagamentos.length - 1]!;
+    return {
+      aguardando: aguardando ? { ...aguardando } : null,
+      ultimaRecusa:
+        ultimo.situacao === "recusado" && ultimo.resposta && ultimo.decididoEm
+          ? { resposta: ultimo.resposta, decididoEm: ultimo.decididoEm }
+          : null,
+    };
+  }
+
   function pedidoPendente(id: string): SolicitacaoNaFila {
     const pedido = estado.solicitacoesDeLink!.find((s) => s.id === id);
     if (!pedido) throw new ErroDaApi(404, "nao_encontrado", "pedido não encontrado");
@@ -1540,7 +1627,58 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       // de mentira, e a situação só muda pela semente.
       async assinatura() {
         exigirDono();
-        return { ...estado.assinatura!, foraDoLink: estado.assinatura!.foraDoLink.map((m) => ({ ...m })) };
+        return {
+          ...estado.assinatura!,
+          foraDoLink: estado.assinatura!.foraDoLink.map((m) => ({ ...m })),
+          pix: resumoDoPix(),
+        };
+      },
+      async cotacaoDoPix(pedido: PedidoDeAssinatura) {
+        return cotarPix(pedido);
+      },
+      async jaPagueiOPix(pedido: PedidoDeAssinatura) {
+        const cotacao = cotarPix(pedido);
+        if (estado.pagamentosPix!.some((p) => p.situacao === "aguardando")) {
+          throw new ErroDaApi(409, "pix_em_conferencia", "já há um Pix em conferência: espere o suporte ou desfaça");
+        }
+        const pagamento: PagamentoPix = {
+          id: `pix-${estado.pagamentosPix!.length + 1}`,
+          identificador: cotacao.identificador,
+          plano: pedido.plano,
+          ciclo: pedido.ciclo,
+          profissionais: pedido.profissionais,
+          valorCentavos: cotacao.valorCentavos,
+          periodoComecaEm: cotacao.periodoComecaEm,
+          periodoTerminaEm: cotacao.periodoTerminaEm,
+          situacao: "aguardando",
+          resposta: null,
+          criadoEm: new Date().toISOString(),
+          decididoEm: null,
+          copiaECola: cotacao.copiaECola,
+        };
+        estado.pagamentosPix!.push(pagamento);
+        antesDoPix.set(pagamento.id, { ...estado.assinatura! });
+        estado.assinatura = {
+          ...estado.assinatura!,
+          situacao: "ativa",
+          forma: "pix",
+          plano: pedido.plano,
+          ciclo: pedido.ciclo,
+          planoEfetivo: pedido.plano,
+          periodoTerminaEm: cotacao.periodoTerminaEm,
+          diasDeTesteRestantes: null,
+          primeiraCobrancaPendente: false,
+          cancelaEm: null,
+          limiteDeProfissionais: limiteDeProfissionais(pedido.plano),
+          usoNoTeste: null,
+        };
+        return { ...pagamento };
+      },
+      async desfazerOPix(id: string) {
+        const pagamento = pixAguardando(id, true);
+        voltarAoQueEra(pagamento);
+        Object.assign(pagamento, { situacao: "desfeito", decididoEm: new Date().toISOString() });
+        return { ...pagamento };
       },
       async checkoutDaAssinatura(_pedido: PedidoDeAssinatura) {
         exigirDono();
@@ -2873,6 +3011,27 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
               ? { id: estado.perfil.id, nome: estado.perfil.nome, slug: estado.perfil.slug }
               : { ...s.barbearia },
           }));
+      },
+      async pixNaFila(): Promise<PixNaFila[]> {
+        const dono = equipe().find((m) => m.papel === "dono");
+        return estado.pagamentosPix!
+          .filter((p) => p.situacao === "aguardando")
+          .map(({ copiaECola: _semCodigo, ...p }) => ({
+            ...p,
+            barbearia: { id: estado.perfil.id, nome: estado.perfil.nome, slug: estado.perfil.slug },
+            dono: dono ? { nome: dono.nome, email: dono.email ?? null } : null,
+          }));
+      },
+      async confirmarPix(id: string) {
+        const pagamento = pixAguardando(id, false);
+        Object.assign(pagamento, { situacao: "confirmado", decididoEm: new Date().toISOString() });
+        return { ...pagamento, copiaECola: null };
+      },
+      async recusarPix(id: string, resposta: string) {
+        const pagamento = pixAguardando(id, false);
+        voltarAoQueEra(pagamento);
+        Object.assign(pagamento, { situacao: "recusado", resposta: resposta.trim(), decididoEm: new Date().toISOString() });
+        return { ...pagamento, copiaECola: null };
       },
       // 409 desfaz tudo: o pedido fica pendente e o link não muda.
       async aprovar(id: string) {

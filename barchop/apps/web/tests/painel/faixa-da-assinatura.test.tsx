@@ -47,6 +47,8 @@ function resumo(parcial: Partial<ResumoDaAssinatura> = {}): ResumoDaAssinatura {
     foraDoLink: [],
     temPortal: false,
     usoNoTeste: null,
+    forma: "cartao",
+    pix: { aguardando: null, ultimaRecusa: null },
     ...parcial,
   };
 }

@@ -79,10 +79,13 @@ CREATE TABLE "pagamento_pix" (
 CREATE UNIQUE INDEX "pagamento_pix_um_aguardando"
     ON "pagamento_pix"("barbearia_id") WHERE "situacao" = 'aguardando';
 
--- O identificador único entre os que valem. Recusado e desfeito saem:
--- pagar de novo com os mesmos dados dá o mesmo identificador.
-CREATE UNIQUE INDEX "pagamento_pix_identificador_valendo"
-    ON "pagamento_pix"("identificador") WHERE "situacao" IN ('aguardando', 'confirmado');
+-- O identificador único só entre os aguardando: é o que o Suporte
+-- procura no extrato, e são poucos de cada vez. Confirmado, recusado ou
+-- desfeito saem: o identificador é derivado do pedido (sempre o mesmo pro
+-- mesmo pedido), então um índice com os confirmados recusaria pra sempre
+-- o pedido que um dia batesse com um deles.
+CREATE UNIQUE INDEX "pagamento_pix_identificador_aguardando"
+    ON "pagamento_pix"("identificador") WHERE "situacao" = 'aguardando';
 
 -- A fila do Suporte e a lista do dono.
 CREATE INDEX "pagamento_pix_situacao_criado_em_idx" ON "pagamento_pix"("situacao", "criado_em");

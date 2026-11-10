@@ -191,10 +191,10 @@ export function registrarRotasAssinatura(app: App): void {
         return reply.code(201).send(serializarPagamentoPix(pagamento, config));
       } catch (erro) {
         // O índice parcial: outro "Já paguei" passou na frente, ou (raro)
-        // o identificador bateu com o de outro Pix que vale.
+        // o identificador bateu com o de outro Pix em conferência.
         if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
           if (String(erro.meta?.target ?? "").includes("identificador")) {
-            throw new ErroHttp(409, "identificador_repetido", "tente de novo amanhã ou fale com o suporte");
+            throw new ErroHttp(409, "identificador_repetido", "outro Pix em conferência tem o mesmo identificador: tente de novo em alguns minutos");
           }
           throw emConferencia();
         }

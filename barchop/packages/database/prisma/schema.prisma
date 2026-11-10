@@ -179,7 +179,7 @@ model Assinatura {
 // são o retrato da assinatura antes do Pix: a recusa e o "Ainda não
 // paguei" voltam exatamente a ele. Índices parciais na migration
 // 20261109120000_pix_do_barchop: um aguardando por barbearia, e o
-// identificador único entre os que valem.
+// identificador único entre os aguardando.
 model PagamentoPix {
   id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   barbeariaId            String    @map("barbearia_id") @db.Uuid

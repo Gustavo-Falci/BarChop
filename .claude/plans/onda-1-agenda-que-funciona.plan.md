@@ -4,7 +4,31 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-08, fim do dia — pedidos do barbeiro da `jesus-barber`, passos 1 a 4 no ar, Pix planejado) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-09, fim do dia — Pix do BarChop, PR 1 no ar) — vale mais que as seções abaixo
+
+**Contexto:** passo 5 dos pedidos do barbeiro da `jesus-barber` (ver o RETOMAR AQUI de 08/11, abaixo): pagar o BarChop por Pix, conferido pelo Suporte. Plano `.claude/plans/pix-do-barchop.plan.md` (5 PRs), canvas "Pix do BarChop" aprovado em 08/11.
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `caf74c6`, #325). Nada aberto. **Produção = `caf74c6`** (deploy do dono em 09/11, conferido por curl: `/health` 200; `/suporte/pix`, `/barbearias/me/assinatura/pix` e `/suporte/pix/:id/recusar` sem token 401, e rota inexistente do suporte 404; perfil e `proximos-horarios` da `jesus-barber` 200, lendo a coluna nova `assinatura.forma`).
+- **Decisões do dono em 09/11 ("OK para as 4"):** 409 cartão×Pix nos dois sentidos; `PIX_*` vazias em produção até os PRs 2–4 no ar, depois Pix de R$ 1,00 de teste; PR 5 com a diferença **proporcional** (o "OK" respondeu uma pergunta "proporcional ou só na renovação": confirmar ao começar o PR 5).
+- **(d) extrato, ainda em aberto:** o dono mandou o comprovante de um Pix *enviado*, que não mostra o lado de quem recebe. O manual do Bacen (2.6.2) diz que o banco de quem paga repassa o txid (62/05) ao recebedor. Fecha no Pix de R$ 1,00, olhando o extrato de quem recebe; o destaque do cartão do Suporte se decide no PR 3.
+- **PR 1 = #325, mergeado e no ar** (sem mudança visível):
+  - `@barchop/formato`: `brCodeDoPix` (CRC conferido com o exemplo do manual do Bacen, `…63041D3D`), `chaveMascarada`, `inicioDoDiaEmSaoPaulo`, `fimDoPeriodoDoPix` (31/01 → fim de fevereiro); `planoEfetivo` com `forma` e `periodoTerminaEm` (Pix vencido cai no Grátis na hora; cartão não).
+  - migration `20261109120000_pix_do_barchop` (só acrescenta): `assinatura.forma` (`cartao` | `pix`) e `pagamento_pix` com o retrato de antes; um aguardando por barbearia; identificador único só entre os aguardando.
+  - API: cotação (`GET /barbearias/me/assinatura/pix`), "Já paguei" (`POST`, vale na hora), "Ainda não paguei" (`/:id/desfazer`), fila do Suporte (`GET /suporte/pix`, `/:id/confirmar`, `/:id/recusar`). Resumo da assinatura com `forma` e `pix { aguardando, ultimaRecusa }`. Webhook da Stripe: com Pix, só cartão que chega `ativa` assume. Recusa/desfazer só voltam ao retrato se a assinatura ainda é este Pix.
+  - api-client e dublê (`pixLigado: true` na semente liga o Pix).
+- **Suítes no fim do dia:** API 1546, api-client 258, formato 281, web 1787; type-check do repo, lint e build da API limpos.
+
+**Ao retomar (só quando o dono pedir):**
+1. **Duas respostas do dono antes do PR 2:**
+   - (a) Pix de renovação com outro plano, ciclo ou número de profissionais **vale na hora** (proposta) ou a tela só deixa renovar no mesmo plano?
+   - (b) **O teste da `jesus-barber` acaba em 15/11** (2026-11-15 14:43 UTC). O Pix não fica no ar a tempo (PRs 2–4 + Pix de teste): estender o teste de novo, ou o barbeiro assina no cartão?
+2. **PR 2 do Pix: web Faturas** (canvas Pix-Pagar, Pix-Aguardando, Pix-Renovar), com o `GET …/faturas` listando os pagamentos Pix. Depois PR 3 (Suporte), PR 4 (avisos e vencimento), PR 5 (diferença de profissional).
+3. Os da lista de 06/11: testes reais opcionais em produção, onda D (marketing), G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas; **24/11** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+**Ambiente local:** banco `gr_barber_test` já com a migration do Pix. Ao conferir no navegador, subir a semente de novo (com `SENHA_DO_SUPORTE`). Branch `pix-do-barchop-api` ainda não apagada (local e remota; só com autorização do dono). As branches de 08/11 já foram apagadas.
+
+## RETOMAR AQUI (2026-11-08, fim do dia — pedidos do barbeiro da `jesus-barber`, passos 1 a 4 no ar, Pix planejado) — histórico
 
 **Contexto:** em 08/11 o dono trouxe os pedidos do barbeiro que usa o BarChop de verdade em produção (`jesus-barber`, JESUS BARBER; a outra barbearia de produção é a `barbearia-teste`). Ordem combinada: 1 teste +7 dias → 2 Pix dos planos dos clientes → 3 encaixe e horário quebrado → 4 várias pausas → 5 pagar o BarChop por Pix, conferido pelo Suporte.
 

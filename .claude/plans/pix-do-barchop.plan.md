@@ -65,7 +65,7 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
 - Testes: BR Code (CRC-16/CCITT-FALSE de "123456789" = 0x29B1, e o payload completo do exemplo do manual do Bacen, buscado na fonte, não de cabeça), webhook da Stripe atrasado não derruba o Pix, cartão novo depois do Pix grava `forma = cartao`, 409 nos dois sentidos, identificador igual em duas cotações seguidas, cotação (teste → começa no fim do teste; vigente → começa no fim do período; vencido/Grátis → hoje; anual), "Já paguei" (vale na hora; dois seguidos → 409; valor nunca do corpo; equipe maior → 422), desfazer, confirmar, recusar (volta ao retrato: teste com o mesmo `testeTerminaEm`, Grátis), vencimento no `planoEfetivo` e no limite do link, Suporte sem token → 401.
 - **Deploy**: migration + API, com as variáveis `PIX_*` vazias. A web antiga não chama nada novo.
 - **Base**: só depois do #323 (contrair pausas) mergeado: os dois mexem no `schema.prisma`.
-- **Feito 09/11** (branch `pix-do-barchop-api`). Desvios do que está acima, conferidos na revisão:
+- **Feito 09/11: #325, mergeado e no ar (produção `caf74c6`, deploy conferido por curl).** Desvios do que está acima, conferidos na revisão:
   - O identificador (HMAC) mora na API (`lib/pix.ts`), não no `@barchop/formato`: precisa do segredo do servidor. O formato tem o BR Code, a máscara da chave e o período (`fimDoPeriodoDoPix`: 31/01 → último dia de fevereiro).
   - O identificador é único **só entre os aguardando** (índice parcial): é derivado do pedido, então incluir os confirmados recusaria pra sempre um pedido que batesse com um antigo; recusado ou desfeito, pagar de novo dá o mesmo identificador.
   - Início "hoje" = meia-noite de São Paulo, pro QR não mudar a cada recarga.

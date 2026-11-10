@@ -123,35 +123,35 @@ describe("planoEfetivo", () => {
   const ANTES = new Date("2026-10-31T12:00:00Z");
 
   it("teste vigente libera o Completo, seja qual for o plano escolhido", () => {
-    expect(planoEfetivo({ situacao: "teste", plano: "gratis", testeTerminaEm: DEPOIS }, AGORA)).toBe("completo");
-    expect(planoEfetivo({ situacao: "teste", plano: "essencial", testeTerminaEm: DEPOIS }, AGORA)).toBe(
+    expect(planoEfetivo({ situacao: "teste", plano: "gratis", testeTerminaEm: DEPOIS, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe("completo");
+    expect(planoEfetivo({ situacao: "teste", plano: "essencial", testeTerminaEm: DEPOIS, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe(
       "completo"
     );
   });
 
   it("teste vencido cai no Grátis; o instante do fim já conta como vencido", () => {
-    expect(planoEfetivo({ situacao: "teste", plano: "completo", testeTerminaEm: ANTES }, AGORA)).toBe("gratis");
-    expect(planoEfetivo({ situacao: "teste", plano: "completo", testeTerminaEm: AGORA }, AGORA)).toBe("gratis");
+    expect(planoEfetivo({ situacao: "teste", plano: "completo", testeTerminaEm: ANTES, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe("gratis");
+    expect(planoEfetivo({ situacao: "teste", plano: "completo", testeTerminaEm: AGORA, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe("gratis");
   });
 
   it("teste sem data de fim cai no Grátis", () => {
-    expect(planoEfetivo({ situacao: "teste", plano: "completo", testeTerminaEm: null }, AGORA)).toBe("gratis");
+    expect(planoEfetivo({ situacao: "teste", plano: "completo", testeTerminaEm: null, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe("gratis");
   });
 
   it("ativa ou em atraso vale o plano contratado", () => {
-    expect(planoEfetivo({ situacao: "ativa", plano: "essencial", testeTerminaEm: null }, AGORA)).toBe("essencial");
-    expect(planoEfetivo({ situacao: "em_atraso", plano: "completo", testeTerminaEm: null }, AGORA)).toBe(
+    expect(planoEfetivo({ situacao: "ativa", plano: "essencial", testeTerminaEm: null, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe("essencial");
+    expect(planoEfetivo({ situacao: "em_atraso", plano: "completo", testeTerminaEm: null, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe(
       "completo"
     );
   });
 
   it("cancelada ou no Grátis vale o Grátis", () => {
-    expect(planoEfetivo({ situacao: "cancelada", plano: "completo", testeTerminaEm: null }, AGORA)).toBe("gratis");
-    expect(planoEfetivo({ situacao: "gratis", plano: "essencial", testeTerminaEm: null }, AGORA)).toBe("gratis");
+    expect(planoEfetivo({ situacao: "cancelada", plano: "completo", testeTerminaEm: null, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe("gratis");
+    expect(planoEfetivo({ situacao: "gratis", plano: "essencial", testeTerminaEm: null, forma: "cartao", periodoTerminaEm: null }, AGORA)).toBe("gratis");
   });
 
   it("no teste, o limite de profissionais é o do Completo (sem limite)", () => {
-    const plano = planoEfetivo({ situacao: "teste", plano: "gratis", testeTerminaEm: DEPOIS }, AGORA);
+    const plano = planoEfetivo({ situacao: "teste", plano: "gratis", testeTerminaEm: DEPOIS, forma: "cartao", periodoTerminaEm: null }, AGORA);
     expect(limiteDeProfissionais(plano)).toBeNull();
   });
 });

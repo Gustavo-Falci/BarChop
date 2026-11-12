@@ -70,7 +70,7 @@ export function TopoDaHome() {
           srcSet={srcset("cadeira", CADEIRA.computador.srcs, "webp")}
           sizes={CADEIRA.computador.tamanho}
         />
-        {/* eslint-disable-next-line @next/next/no-img-element -- arquivos prontos em public/home, sem o otimizador do Next na VM */}
+        {/* <img> puro: arquivos prontos em public/home, sem o otimizador do Next na VM. */}
         <img
           src="/home/cadeira-1280.webp"
           alt=""

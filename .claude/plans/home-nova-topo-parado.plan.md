@@ -89,7 +89,7 @@ Só os testes afetados, mais tsc, lint e o build (por causa do grupo de rotas).
 | Cabeçalho fixo cobrir as âncoras (#como-funciona) | Média | `scroll-margin-top` nas seções da home |
 
 ## Acceptance
-- [ ] Topo novo no ar em 375, 320×568 e 1440 px, aprovado pelo dono no navegador (revisado em 1440×900, 1280×720, 375×812, 393×659 e 320×568; falta o dono)
+- [x] Topo novo no ar em 375, 320×568 e 1440 px, aprovado pelo dono (revisado em 1440×900, 1280×720, 375×812, 393×659 e 320×568; "pode mergear" em 12/11)
 - [x] Cabeçalho escuro sobre o topo, claro depois; outras páginas iguais
 - [x] Título e botão no HTML do servidor; nada se move com "reduzir movimento"
 - [x] Crédito da cadeira na home

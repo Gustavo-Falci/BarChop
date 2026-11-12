@@ -37,6 +37,15 @@ const GANHOS = [
   "A agenda de cada profissional da equipe, num lugar só",
 ];
 
+// De onde o dono veio (home nova, marco 1): o "Criar barbearia" da home
+// leva ?origem=home, e a API conta esse cadastro à parte. Lido do
+// endereço na hora de criar, e não por useSearchParams: assim a página
+// não precisa de Suspense, e o redirect do www pro painel já preserva a
+// busca. Qualquer outro valor fica de fora — é contagem, não rastreio.
+function origemDoCadastro(): { origem?: "home" } {
+  return new URLSearchParams(window.location.search).get("origem") === "home" ? { origem: "home" } : {};
+}
+
 // O cadastro do dono (Onda 1, F1). Era o modo "criar" do /painel/entrar;
 // virou tela própria porque quem chega pra criar uma conta precisa saber
 // o que vai ganhar, e quem chega pra entrar não precisa ler isso.
@@ -162,6 +171,7 @@ export function CadastroDoDono() {
         barbearia: { nome: nomeDaBarbearia.trim(), slug },
         barbeiro: { nome: nome.trim(), email: email.trim(), senha },
         codigo,
+        ...origemDoCadastro(),
       });
     } catch (causa) {
       const erro = causa as ErroDaApi;

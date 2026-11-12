@@ -85,6 +85,8 @@ export interface NovaBarbearia {
   barbeiro: { nome: string; email: string; senha: string };
   // O código que chegou no e-mail do dono (pedirCodigoDeCadastro).
   codigo: string;
+  // Veio do "Criar barbearia" da home (home nova, marco 1): a API conta à parte.
+  origem?: "home";
 }
 
 export interface EdicaoDoPerfil {

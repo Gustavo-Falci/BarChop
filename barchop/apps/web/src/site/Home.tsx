@@ -4,6 +4,12 @@ import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./Home.module.css";
 import { TabelaDePrecos } from "./TabelaDePrecos";
 import { Revelar } from "./Revelar";
+import { ContaVisita } from "./ContaVisita";
+
+// O cadastro marcado como vindo da home (home nova, marco 1: linha de base
+// de visita → cadastro). Só os convites do corpo da home: o cabeçalho e o
+// rodapé aparecem em todas as páginas do site.
+const CADASTRO_PELA_HOME = "/painel/cadastro?origem=home";
 
 // A home do SaaS (marco 1s). O texto só promete o que o produto já faz:
 // lembrete por e-mail (o WhatsApp oficial espera a Meta, ADR-0009),
@@ -86,6 +92,7 @@ const PERGUNTAS = [
 export function Home() {
   return (
     <main className={estilos.home}>
+      <ContaVisita />
       <section className={estilos.topo}>
         <div className={estilos.promessa}>
           <p className={estilos.chapeu}>Agenda online para barbearias</p>
@@ -96,7 +103,7 @@ export function Home() {
             perde menos horário pra falta.
           </p>
           <div className={estilos.acoes}>
-            <LinkDeAcao href="/painel/cadastro" grande>
+            <LinkDeAcao href={CADASTRO_PELA_HOME} grande>
               Criar minha barbearia grátis
             </LinkDeAcao>
             <p className={estilos.nota}>{DIAS_DE_TESTE} dias com tudo liberado. Sem cartão.</p>
@@ -146,7 +153,7 @@ export function Home() {
             plano ou fique no Grátis.
           </p>
         </div>
-        <TabelaDePrecos />
+        <TabelaDePrecos cadastro={CADASTRO_PELA_HOME} />
         <Link href="/precos" className={estilos.detalhes}>
           Ver todos os detalhes dos preços
         </Link>
@@ -168,7 +175,7 @@ export function Home() {
         <h2 id="comecar" className={estilos.tituloDaSecao}>
           Comece hoje, sem falar com ninguém.
         </h2>
-        <LinkDeAcao href="/painel/cadastro" grande>
+        <LinkDeAcao href={CADASTRO_PELA_HOME} grande>
           Criar minha barbearia grátis
         </LinkDeAcao>
       </Revelar>

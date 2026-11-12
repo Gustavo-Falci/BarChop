@@ -69,6 +69,12 @@ export interface DefinicaoDeSenhaDoCliente {
 // o Novo agendamento encaixa livre (painel v2, marco 3).
 export function criarApiPublica(requisicao: Requisicao) {
   return {
+    // A home avisa que foi vista (home nova, marco 1: linha de base de
+    // visita → cadastro). A API só soma 1 no total do dia.
+    async contarVisita(): Promise<void> {
+      await requisicao("/site/visita", { metodo: "POST", corpo: { pagina: "home" } });
+    },
+
     perfilDaBarbearia(slug: string): Promise<PerfilPublicoBarbearia> {
       return requisicao(`/barbearias/${slug}`);
     },

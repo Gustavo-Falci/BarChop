@@ -40,7 +40,9 @@ function fraseDoLimite(plano: IdDoPlano): string {
   return limite === 1 ? "1 profissional" : `Até ${limite} profissionais`;
 }
 
-export function TabelaDePrecos() {
+// `cadastro`: pra onde cada plano leva. A home passa o endereço com a
+// origem marcada (home nova, marco 1); /precos usa o padrão.
+export function TabelaDePrecos({ cadastro = "/painel/cadastro" }: { cadastro?: string } = {}) {
   return (
     <ul aria-label="Planos" className={estilos.planos}>
       {IDS_DOS_PLANOS.map((id) => {
@@ -85,7 +87,7 @@ export function TabelaDePrecos() {
             </ul>
 
             <div className={estilos.convite}>
-              <LinkDeAcao href="/painel/cadastro" variante={pago ? "primario" : "contorno"}>
+              <LinkDeAcao href={cadastro} variante={pago ? "primario" : "contorno"}>
                 {destaque.convite}
               </LinkDeAcao>
             </div>

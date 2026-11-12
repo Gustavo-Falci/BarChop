@@ -1460,6 +1460,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     estado,
 
     publico: {
+      // A contagem da home não tem estado pra mostrar em tela nenhuma.
+      async contarVisita() {},
       // Os tipos vêm dos mesmos que o client real usa, e não de um
       // subconjunto escrito à mão: com um subconjunto, o objeto literal
       // do teste com `cliente` dentro viraria erro de propriedade

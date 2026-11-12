@@ -407,6 +407,23 @@ export interface AvisoPublicado {
   lidas: number;
 }
 
+// A linha de base da home nova (marco 1): o que GET /suporte/numeros
+// devolve. Um item por dia (data "YYYY-MM-DD" de São Paulo), do mais
+// velho pro de hoje, zerado quando nada foi contado.
+export interface NumerosDoDia {
+  dia: string;
+  visitas: number;
+  cadastros: number;
+  cadastrosDaHome: number;
+}
+
+export interface NumerosDoSite {
+  dias: NumerosDoDia[];
+  // `taxa`: cadastros vindos da home ÷ visitas da home, de 0 a 1. Sem
+  // visitas no período, null — zero diria que ninguém converteu.
+  totais: Omit<NumerosDoDia, "dia"> & { taxa: number | null };
+}
+
 // Como o suporte vê o pedido: com a barbearia e o link atual dela.
 export interface SolicitacaoNaFila extends SolicitacaoDeLink {
   barbearia: { id: string; nome: string; slug: string };

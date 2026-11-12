@@ -2,7 +2,14 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// `next/font/local` só existe dentro do build do Next: o dublê devolve o
+// `.variable`, que é o que o topo põe na seção.
+vi.mock("next/font/local", () => ({
+  default: ({ variable }: { variable: string }) => ({ variable }),
+}));
+
 import { TopoDaHome } from "../../src/site/TopoDaHome";
 
 // Home nova, marco 2: o topo do protótipo, parado. Fundo escuro, "Bar"
@@ -28,6 +35,13 @@ describe("topo da home", () => {
 
   it("serve de âncora pro cabeçalho da home", () => {
     expect(topo()).toHaveAttribute("id", "topo-da-home");
+  });
+
+  it("carrega os pesos leves da Clash só aqui, do pacote do repositório", () => {
+    expect(topo()).toHaveClass("--fonte-display-leve");
+    const fontes = join(__dirname, "../../../../font/ClashGrotesk_Complete/Fonts/WEB/fonts");
+    expect(readFileSync(join(fontes, "ClashGrotesk-Extralight.woff2")).length).toBeGreaterThan(0);
+    expect(readFileSync(join(fontes, "ClashGrotesk-Light.woff2")).length).toBeGreaterThan(0);
   });
 
   it("o convite leva ao cadastro marcado como vindo da home", () => {

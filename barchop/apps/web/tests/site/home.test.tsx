@@ -1,7 +1,14 @@
 import { formatarReais, precoDoPlano } from "@barchop/formato";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// `next/font/local` só existe dentro do build do Next (o topo da home
+// carrega os pesos leves da Clash): o dublê devolve só o `.variable`.
+vi.mock("next/font/local", () => ({
+  default: ({ variable }: { variable: string }) => ({ variable }),
+}));
+
 import { Home } from "../../src/site/Home";
 
 // O formatarReais separa "R$" do valor com espaço rígido (160), e o

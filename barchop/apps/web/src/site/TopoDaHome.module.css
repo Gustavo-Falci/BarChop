@@ -1,0 +1,379 @@
+/* O topo da home nova (marco 2), reescrito do hero do protótipo
+   (barchop-prototipo, src/styles/hero.css) no estado de repouso, sem o
+   movimento. Uma cena de 1440×900 (390×844 no celular) medida em --u:
+   1u = 1px nessa tela, e encolhe com a largura ou a altura, o que for
+   menor. A cadeira, não: a câmera do 3D tem campo de visão vertical fixo,
+   então a imagem dela é medida em % da altura do topo (as contas saem do
+   pnpm foto-da-cadeira) e cai no mesmo lugar da cena 3D do marco 3.
+
+   Os tons do escuro são os do modo escuro do painel (packages/
+   design-tokens, dark.*): o site trava o tema claro. */
+.topo {
+  --u: min(100vw / 1440, 100svh / 900);
+  --escuro: #151412; /* dark.paperFim */
+  --claro: #ece6da; /* dark.ink */
+  --claro-suave: #b8b0a2; /* dark.inkSoft */
+  --claro-mudo: #968f82; /* dark.muted */
+  --ouro: #e8c547; /* dark.accent */
+  --foco-x: 50.5%; /* o pé do feixe: onde a cena põe a cadeira */
+
+  position: relative;
+  isolation: isolate;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--escuro);
+  color: var(--claro);
+}
+
+.topo :focus-visible {
+  outline-color: var(--ouro);
+}
+
+/* O sopro da grade da agenda: linhas de 10 horários e 5 colunas, só nos
+   cantos (a máscara apaga o meio, onde fica a cadeira). */
+.grade {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(to bottom, rgb(236 230 218 / 0.075) 1px, transparent 1px),
+    linear-gradient(to right, rgb(236 230 218 / 0.05) 1px, transparent 1px);
+  background-size: 100% 10%, 20% 100%;
+  opacity: 0.14;
+  mask-image: radial-gradient(70% 80% at 50% 45%, transparent 38%, #000 92%);
+}
+
+/* O canhão de luz: o feixe em trapézio desfocado e o brilho da lâmpada
+   no alto, luz quente. */
+.foco {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.foco::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--foco-x) - 430 * var(--u));
+  top: calc(-60 * var(--u));
+  width: calc(860 * var(--u));
+  height: calc(1010 * var(--u));
+  background: linear-gradient(
+    180deg,
+    rgb(255 240 205 / 0.26) 0%,
+    rgb(255 236 196 / 0.12) 34%,
+    rgb(255 232 190 / 0.05) 72%,
+    rgb(255 232 190 / 0.02) 100%
+  );
+  clip-path: polygon(45.5% 0, 54.5% 0, 92% 100%, 8% 100%);
+  filter: blur(calc(26 * var(--u)));
+}
+
+.foco::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--foco-x) - 170 * var(--u));
+  top: calc(-150 * var(--u));
+  width: calc(340 * var(--u));
+  height: calc(260 * var(--u));
+  background: radial-gradient(closest-side, rgb(255 238 200 / 0.55), rgb(255 230 180 / 0.12) 55%, transparent);
+  filter: blur(calc(10 * var(--u)));
+}
+
+/* As duas metades do nome. O foco acende as letras: o degradê quente
+   ocupa o topo inteiro (100vw × 100svh) e cada metade o posiciona pela
+   própria distância até o canto do topo, pra luz cair no mesmo lugar nas
+   duas. */
+.nome {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.metade {
+  position: absolute;
+  white-space: nowrap;
+  line-height: 1;
+  color: var(--claro);
+}
+
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .metade {
+    color: transparent;
+    background-image: radial-gradient(
+      calc(700 * var(--u)) calc(1250 * var(--u)) at var(--foco-x) calc(470 * var(--u)),
+      #f4e6b8 0%,
+      #c9bfa9 22%,
+      #8a8273 46%,
+      #4a463e 70%,
+      #2a2722 100%
+    );
+    background-size: 100vw 100svh;
+    background-repeat: no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
+
+/* "Bar": fino, atrás da cadeira. */
+.bar {
+  --esquerda: calc(40 * var(--u));
+  --alto: calc(150 * var(--u));
+
+  z-index: 3;
+  left: var(--esquerda);
+  top: var(--alto);
+  font-family: var(--fonte-display-leve), system-ui, sans-serif;
+  font-size: calc(400 * var(--u));
+  font-weight: 200;
+  letter-spacing: -0.03em;
+  background-position: calc(-1 * var(--esquerda)) calc(-1 * var(--alto));
+}
+
+/* "Chop": pesado, na frente da cadeira e cortado pela borda de baixo. */
+.chop {
+  --direita: calc(40 * var(--u));
+  --abaixo: calc(34 * var(--u));
+
+  z-index: 5;
+  right: var(--direita);
+  bottom: calc(-1 * var(--abaixo));
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: calc(296 * var(--u));
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  background-position: right calc(-1 * var(--direita)) bottom var(--abaixo);
+}
+
+/* A cadeira, entre as duas metades. Centrada no pé do feixe; o recorte
+   do computador começa a 34,56% da altura e vai até o chão. */
+.cadeira img {
+  position: absolute;
+  z-index: 4;
+  left: var(--foco-x);
+  top: 34.56%;
+  width: auto;
+  max-width: none;
+  height: 65.44%;
+  translate: -50% 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* A promessa, no alto à esquerda: a metade leve e a pesada da Clash na
+   mesma frase. Nunca sobe pra baixo do cabeçalho em tela baixa. */
+.promessa {
+  position: absolute;
+  z-index: 6;
+  left: calc(56 * var(--u));
+  top: max(calc(104 * var(--u)), 92px);
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-family: var(--fonte-display-leve), system-ui, sans-serif;
+  font-size: max(calc(30 * var(--u)), 22px);
+  font-weight: 300;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  word-spacing: 0.08em;
+}
+
+.forte {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* Rótulos: a Inter em caixa alta com números tabulares. */
+.rotulo {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  position: absolute;
+  z-index: 6;
+  right: calc(56 * var(--u));
+  top: max(calc(112 * var(--u)), 100px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ouro);
+  animation: ponto 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+@keyframes ponto {
+  0% {
+    box-shadow: 0 0 0 0 rgb(232 197 71 / 0.5);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 9px rgb(232 197 71 / 0);
+  }
+}
+
+/* Com "reduzir movimento", o ponto fica parado (animação infinita
+   encurtada pela regra global piscaria). */
+@media (prefers-reduced-motion: reduce) {
+  .ponto {
+    animation: none;
+  }
+}
+
+/* O apoio e os convites, embaixo à esquerda. */
+.base {
+  position: absolute;
+  z-index: 6;
+  left: calc(56 * var(--u));
+  bottom: calc(66 * var(--u));
+  width: calc(700 * var(--u));
+  min-width: 340px;
+}
+
+.chapeu {
+  margin-bottom: 12px;
+  color: var(--claro-mudo);
+}
+
+.apoio {
+  max-width: max(340px, calc(450 * var(--u)));
+  margin: 0;
+  font-size: max(14.5px, calc(15.5 * var(--u)));
+  line-height: 1.6;
+  color: var(--claro-suave);
+}
+
+.apoio strong {
+  font-weight: 600;
+  color: var(--claro);
+}
+
+.botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: max(16px, calc(26 * var(--u)));
+}
+
+/* Os convites no escuro: o ouro do escuro com um fio escuro, e o
+   segundo só com o contorno claro, sem a sombra. */
+.botoes .ouro {
+  border-color: rgb(0 0 0 / 0.18);
+  background: var(--ouro);
+}
+
+.botoes .linha {
+  border-color: rgb(236 230 218 / 0.24);
+  background: transparent;
+  color: var(--claro);
+  box-shadow: none;
+}
+
+@media (hover: hover) {
+  .botoes .linha:hover {
+    border-color: var(--claro);
+  }
+}
+
+.nota {
+  margin-top: 16px;
+  font-size: 11.5px;
+  color: var(--claro-mudo);
+}
+
+/* Celular: o nome empilha, a cadeira no meio, a interface no pé. */
+@media (max-width: 760px) {
+  .topo {
+    --u: min(100vw / 390, 100svh / 844);
+    --foco-x: 50%;
+  }
+
+  .bar {
+    --esquerda: calc(14 * var(--u));
+    /* Desce junto quando a promessa desce pra fugir do cabeçalho. */
+    --alto: calc(118 * var(--u) + max(0px, 84px - 80 * var(--u)));
+
+    font-size: calc(160 * var(--u));
+  }
+
+  .chop {
+    --direita: calc(14 * var(--u));
+    --alto: calc(400 * var(--u));
+
+    top: var(--alto);
+    bottom: auto;
+    font-size: calc(150 * var(--u));
+    background-position: right calc(-1 * var(--direita)) top calc(-1 * var(--alto));
+  }
+
+  /* O miolo do quadro, com a cadeira do tamanho que a cena do celular
+     desenha (mais longe da câmera). */
+  .cadeira img {
+    top: 21.81%;
+    height: 45.37%;
+  }
+
+  .promessa {
+    left: 20px;
+    top: max(calc(80 * var(--u)), 84px);
+    font-size: calc(24 * var(--u));
+  }
+
+  .status {
+    left: 20px;
+    right: auto;
+    top: calc(550 * var(--u));
+    font-size: 11px;
+  }
+
+  .base {
+    left: 20px;
+    right: 20px;
+    bottom: calc(24 * var(--u));
+    width: auto;
+    min-width: 0;
+  }
+
+  .botoes {
+    flex-direction: column;
+  }
+
+  .botoes > * {
+    width: 100%;
+  }
+
+  .nota {
+    margin-top: 12px;
+    font-size: 11px;
+    text-align: center;
+  }
+}
+
+/* Celular baixo (iPhone com as barras do Safari): o rótulo, o apoio e a
+   nota não cabem sem cobrir o "Chop". Ficam o status e os dois botões,
+   que dizem o essencial. */
+@media (max-width: 760px) and (max-height: 720px) {
+  .chapeu,
+  .apoio,
+  .nota {
+    display: none;
+  }
+
+  .botoes {
+    margin-top: 0;
+    gap: 8px;
+  }
+}

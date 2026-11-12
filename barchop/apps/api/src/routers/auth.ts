@@ -2,6 +2,7 @@ import { prisma } from "@barchop/database";
 import { normalizarEmail, slugReservado } from "@barchop/formato";
 import { fimDoTeste } from "../lib/assinatura";
 import { consumirCodigo, emitirCodigo } from "../lib/codigos";
+import { contar } from "../lib/contagem-do-site";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { garantirSlugLivre } from "../lib/slug";
 import type { LimitesDeAuth } from "../lib/limites";
@@ -41,6 +42,10 @@ const corpoSignup = {
         senha: { type: "string", minLength: 8, maxLength: 200 },
       },
     },
+    // De onde o dono veio (home nova, marco 1): o link "Criar barbearia"
+    // da home leva ?origem=home, e o cadastro conta à parte. Fechado: é
+    // contagem, não rastreio.
+    origem: { type: "string", enum: ["home"] },
   },
 } as const;
 
@@ -116,6 +121,11 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
       if (!criado) {
         throw new ErroDeNegocio("código inválido ou vencido", "codigo_invalido");
       }
+
+      // Depois do commit: só conta barbearia que nasceu. contar() não
+      // lança — o cadastro já está feito e não volta atrás por causa disso.
+      await contar("cadastro", { log: request.log });
+      if (request.body.origem === "home") await contar("cadastro_da_home", { log: request.log });
 
       const token = app.jwt.sign({
         tipo: "barbeiro",

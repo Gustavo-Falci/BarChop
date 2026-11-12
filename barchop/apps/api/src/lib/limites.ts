@@ -311,6 +311,11 @@ const JANELA_AGENDAR = 60 * MINUTO;
 // é alguém recarregando sem parar, não um cliente olhando a agenda.
 const MAX_PROXIMOS_POR_IP = 60;
 
+// O aviso de visita da home (home nova, marco 1): a home avisa uma vez
+// por aba. 20 por minuto cobre um escritório inteiro atrás do mesmo NAT
+// e segura quem tenta inflar a conta.
+const MAX_VISITAS_POR_IP = 20;
+
 // Convidar e reenviar mandam e-mail pra qualquer endereço que o dono
 // digitar. 20 por dia montam uma equipe inteira com folga.
 const MAX_CONVITES_POR_BARBEARIA = 20;
@@ -341,6 +346,13 @@ export function limitesPublicos(app: App) {
         max: MAX_PROXIMOS_POR_IP,
         janela: MINUTO,
         chave: (request) => `proximos-ip:${request.ip}`,
+      }),
+    ],
+    visita: [
+      contador(app, {
+        max: MAX_VISITAS_POR_IP,
+        janela: MINUTO,
+        chave: (request) => `visita-ip:${request.ip}`,
       }),
     ],
   };

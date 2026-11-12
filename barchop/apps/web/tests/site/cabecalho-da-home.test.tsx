@@ -4,6 +4,7 @@ import { act, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CabecalhoDaHome } from "../../src/site/CabecalhoDaHome";
+import { avisarTopoClaro } from "../../src/site/cena/topoClaro";
 
 // Home nova, marco 2: a home tem cabeçalho próprio, fixo, escuro sobre o
 // topo escuro e claro (papel e tinta, como o das outras páginas) quando o
@@ -90,6 +91,51 @@ describe("cabeçalho da home", () => {
 
     topoDebaixoDoCabecalho(true, topo);
     expect(cabecalho()).toHaveAttribute("data-tema", "escuro");
+  });
+
+  // Marco 3: com a cadeira 3D, o topo fica preso debaixo do cabeçalho até
+  // a névoa acabar; quem diz que já clareou é o próprio topo.
+  it("com o topo preso, clareia quando o topo avisa que a névoa chegou", () => {
+    const topo = comTopo();
+    render(<CabecalhoDaHome topo="topo-da-home" />);
+    topoDebaixoDoCabecalho(true, topo);
+
+    act(() => avisarTopoClaro(true));
+    expect(cabecalho()).toHaveAttribute("data-tema", "claro");
+
+    act(() => avisarTopoClaro(false));
+    expect(cabecalho()).toHaveAttribute("data-tema", "escuro");
+  });
+
+  it("some ao descer e volta ao subir; perto do alto fica sempre", () => {
+    render(<CabecalhoDaHome topo="topo-da-home" />);
+    const rolarAte = (y: number) =>
+      act(() => {
+        Object.defineProperty(window, "scrollY", { value: y, configurable: true });
+        window.dispatchEvent(new Event("scroll"));
+      });
+
+    rolarAte(100);
+    expect(cabecalho()).not.toHaveAttribute("data-escondido");
+    rolarAte(400);
+    expect(cabecalho()).toHaveAttribute("data-escondido");
+    rolarAte(300);
+    expect(cabecalho()).not.toHaveAttribute("data-escondido");
+    rolarAte(900);
+    expect(cabecalho()).toHaveAttribute("data-escondido");
+    rolarAte(60);
+    expect(cabecalho()).not.toHaveAttribute("data-escondido");
+  });
+
+  it("escondido, sobe pra fora da tela; com o foco dentro, volta", () => {
+    expect(css()).toMatch(/\.cabecalho\[data-escondido\]\s*\{[^}]*translate:\s*0 -100%/);
+    expect(css()).toMatch(/\.cabecalho\[data-escondido\]:focus-within\s*\{[^}]*translate:\s*none/);
+  });
+
+  it("com reduzir movimento, some e volta sem deslizar", () => {
+    expect(css()).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.cabecalho\s*\{[^}]*transition-property:\s*background-color,\s*border-color,\s*color/
+    );
   });
 
   it("sem o observer no navegador, fica escuro (não quebra)", () => {

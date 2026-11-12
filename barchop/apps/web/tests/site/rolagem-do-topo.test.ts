@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COR_DO_CLARO, COR_DO_ESCURO, estadoDaRolagem } from "../../src/site/cena/rolagem";
+import { NEVOA_DO_CLARO, estadoDaRolagem } from "../../src/site/cena/rolagem";
 
 // Home nova, marco 3: rolar o topo preso leva a cena do repouso (0) até a
 // névoa (1). Uma conta pura, do progresso pro que a cena 3D e o CSS
@@ -13,7 +13,7 @@ describe("rolagem do topo", () => {
     expect(e.foco).toBe(1);
     expect(e.grade).toBe(1);
     expect(e.interfaceFora).toBe(false);
-    expect(e.fundo).toBe(COR_DO_ESCURO);
+    expect(e.escuro).toBe(1);
     expect(e.claro).toBe(false);
   });
 
@@ -46,12 +46,15 @@ describe("rolagem do topo", () => {
     expect(estadoDaRolagem(0.45).grade).toBe(0);
   });
 
-  it("o fundo vai do escuro do topo ao papel do site, sem faixa na emenda", () => {
-    expect(COR_DO_ESCURO).toBe("rgb(21, 20, 18)"); // dark.paperFim
-    expect(COR_DO_CLARO).toBe("rgb(247, 244, 238)"); // light.paper
-    expect(estadoDaRolagem(0.72).fundo).toBe(COR_DO_CLARO);
-    expect(estadoDaRolagem(1).fundo).toBe(COR_DO_CLARO);
-    expect(estadoDaRolagem(0.5).fundo).not.toBe(COR_DO_ESCURO);
+  it("o escuro do topo some e deixa o papel do site, sem faixa na emenda", () => {
+    // A camada escura apaga por cima do degradê do próprio site: no fim
+    // o topo é o mesmo papel das seções de baixo, até no pé da tela.
+    expect(estadoDaRolagem(0.3).escuro).toBe(1);
+    expect(estadoDaRolagem(0.5).escuro).toBeGreaterThan(0);
+    expect(estadoDaRolagem(0.5).escuro).toBeLessThan(1);
+    expect(estadoDaRolagem(0.72).escuro).toBe(0);
+    // A névoa do 3D termina no papel (light.paper, #F7F4EE).
+    expect(NEVOA_DO_CLARO).toBe(0xf7f4ee);
   });
 
   it("o cabeçalho clareia depois de 0,62", () => {

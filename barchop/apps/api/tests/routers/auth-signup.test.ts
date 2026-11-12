@@ -167,3 +167,72 @@ describe("POST /auth/signup", () => {
     await app.close();
   });
 });
+
+// Home nova, marco 1: todo cadastro conta; o que veio da home (o link
+// "Criar barbearia" da home leva ?origem=home) conta também à parte.
+describe("POST /auth/signup — contagem", () => {
+  async function contagens() {
+    const linhas = await prisma.contagemDoSite.findMany();
+    return Object.fromEntries(linhas.map((linha) => [linha.evento, linha.total]));
+  }
+
+  it("sem origem, conta só o cadastro", async () => {
+    const app = buildApp();
+    const resposta = await app.inject({ method: "POST", url: "/auth/signup", payload: await comCodigo(CORPO_VALIDO) });
+
+    expect(resposta.statusCode).toBe(201);
+    expect(await contagens()).toEqual({ cadastro: 1 });
+
+    await app.close();
+  });
+
+  it("vindo da home, conta o cadastro e o cadastro da home", async () => {
+    const app = buildApp();
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: { ...(await comCodigo(CORPO_VALIDO)), origem: "home" },
+    });
+
+    expect(resposta.statusCode).toBe(201);
+    expect(await contagens()).toEqual({ cadastro: 1, cadastro_da_home: 1 });
+
+    await app.close();
+  });
+
+  it("origem desconhecida → 400, sem criar nem contar", async () => {
+    const app = buildApp();
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: { ...(await comCodigo(CORPO_VALIDO)), origem: "instagram" },
+    });
+
+    expect(resposta.statusCode).toBe(400);
+    expect(await prisma.barbearia.count()).toBe(0);
+    expect(await contagens()).toEqual({});
+
+    await app.close();
+  });
+
+  it("cadastro que falha não conta", async () => {
+    const app = buildApp();
+    await app.inject({ method: "POST", url: "/auth/signup", payload: await comCodigo(CORPO_VALIDO) });
+    const segunda = await app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: {
+        ...(await comCodigo({
+          barbearia: { nome: "Outra", slug: "barbearia-do-gu" },
+          barbeiro: { nome: "Outro", email: "outro@exemplo.com", senha: "senha-forte-123" },
+        })),
+        origem: "home",
+      },
+    });
+
+    expect(segunda.statusCode).toBe(409);
+    expect(await contagens()).toEqual({ cadastro: 1 });
+
+    await app.close();
+  });
+});

@@ -903,3 +903,18 @@ model Notificacao {
   @@index([avisoId])
   @@map("notificacao")
 }
+
+// Contagens agregadas do site (home nova, marco 1: a linha de base de
+// visita → cadastro, plano .claude/plans/home-nova-linha-de-base.plan.md).
+// Uma linha por dia e evento, só o total: nada que identifique quem
+// visitou — sem IP, sem navegador, sem id. Os eventos são os de
+// EVENTOS_DO_SITE (apps/api/src/lib/contagem-do-site.ts).
+model ContagemDoSite {
+  // O dia no relógio de São Paulo, como o resto do produto.
+  dia    DateTime @db.Date
+  evento String   @db.VarChar(40)
+  total  Int      @default(0)
+
+  @@id([dia, evento])
+  @@map("contagem_do_site")
+}

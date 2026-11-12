@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Gratis } from "../../../src/site/Gratis";
+import { Gratis } from "../../../../src/site/Gratis";
 
 export const metadata: Metadata = {
   title: "BarChop Grátis — agenda online para quem trabalha sozinho",

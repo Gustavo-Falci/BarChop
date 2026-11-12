@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Privacidade } from "../../../src/site/Privacidade";
+import { Privacidade } from "../../../../src/site/Privacidade";
 
 export const metadata: Metadata = {
   title: "Política de privacidade — BarChop",

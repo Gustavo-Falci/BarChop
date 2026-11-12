@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Termos } from "../../../src/site/Termos";
+import { Termos } from "../../../../src/site/Termos";
 
 export const metadata: Metadata = {
   title: "Termos de uso — BarChop",

@@ -110,6 +110,13 @@ describe("cabeçalho da home", () => {
     expect(css()).toMatch(/\.cabecalho\s*\{[^}]*position:\s*fixed/);
   });
 
+  it("em 320px, o nome da marca fica só pro leitor de tela, e o link continua com nome", () => {
+    expect(css()).toMatch(/@media \(max-width: 359px\)\s*\{\s*\.nomeDaMarca\s*\{[^}]*clip-path:\s*inset\(50%\)/);
+    render(<CabecalhoDaHome topo="topo-da-home" />);
+    expect(screen.getByText("BarChop").className).toMatch(/nomeDaMarca/);
+    expect(screen.getByRole("link", { name: "BarChop" })).toHaveAttribute("href", "/");
+  });
+
   it("no celular estreito, o Preços sai pra caber, como no cabeçalho de sempre", () => {
     expect(css()).toMatch(/@media \(max-width: 419px\)\s*\{[^}]*\.precos\s*\{[^}]*display:\s*none/);
     render(<CabecalhoDaHome topo="topo-da-home" />);

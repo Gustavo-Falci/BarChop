@@ -25,15 +25,33 @@
   color: var(--cor-ink);
 }
 
+/* Nas bordas da cena do topo (56u, como a promessa e o status), não no
+   miolo de 1120px das seções: o cabeçalho é parte do topo. */
 .conteudo {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--espaco-md);
   width: 100%;
-  max-width: 1120px;
-  margin-inline: auto;
-  padding: var(--espaco-md) var(--espaco-lg);
+  padding: var(--espaco-md) max(var(--espaco-lg), calc(56 * min(100vw / 1440, 100svh / 900)));
+}
+
+/* O convite numa linha só, compacto no celular (o LinkDeAcao quebra a
+   linha abaixo de 420px; aqui "Criar barbearia" virava dois andares). */
+.nav .acao {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .conteudo {
+    padding-inline: 20px;
+  }
+
+  .nav .acao {
+    min-height: 42px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
 }
 
 .marca {
@@ -77,5 +95,18 @@
 @media (max-width: 419px) {
   .precos {
     display: none;
+  }
+}
+
+/* Em 320px nem assim cabia: o convite saía pela direita. Fica o ícone da
+   marca, e o nome só pro leitor de tela (o link continua "BarChop"). */
+@media (max-width: 359px) {
+  .nomeDaMarca {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

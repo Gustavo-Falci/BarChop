@@ -268,6 +268,15 @@
   margin-top: max(16px, calc(26 * var(--u)));
 }
 
+/* Os convites do protótipo: 52px de altura, a Clash 600 a 16px. O
+   "> a" vence a classe do LinkDeAcao sem depender da ordem do CSS. */
+.botoes > a {
+  min-height: 52px;
+  padding-inline: 24px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 /* Os convites no escuro: o ouro do escuro com um fio escuro, e o
    segundo só com o contorno claro, sem a sombra. */
 .botoes .ouro {
@@ -351,8 +360,9 @@
     flex-direction: column;
   }
 
-  .botoes > * {
+  .botoes > a {
     width: 100%;
+    font-size: 15.5px;
   }
 
   .nota {
@@ -360,12 +370,32 @@
     font-size: 11px;
     text-align: center;
   }
+
+  /* No celular o rótulo sai (o apoio já diz o que é) e o apoio aperta:
+     a base tem que caber entre o status e o pé da tela. */
+  .chapeu {
+    display: none;
+  }
+
+  .apoio {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .botoes {
+    gap: 8px;
+  }
+
+  .botoes > a {
+    min-height: 48px;
+  }
 }
 
 /* Celular baixo (iPhone com as barras do Safari): o rótulo, o apoio e a
-   nota não cabem sem cobrir o "Chop". Ficam o status e os dois botões,
+   nota não cabem sem cobrir o status e o "Chop" (medido: a 760px de
+   altura o apoio já encosta no status). Ficam o status e os dois botões,
    que dizem o essencial. */
-@media (max-width: 760px) and (max-height: 720px) {
+@media (max-width: 760px) and (max-height: 760px) {
   .chapeu,
   .apoio,
   .nota {
@@ -375,5 +405,10 @@
   .botoes {
     margin-top: 0;
     gap: 8px;
+  }
+
+  .botoes > a {
+    min-height: 46px;
+    font-size: 15px;
   }
 }

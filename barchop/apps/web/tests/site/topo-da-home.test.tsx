@@ -102,7 +102,7 @@ describe("topo da home", () => {
 
   it("no celular baixo, o apoio e a nota saem pra não cobrir o Chop", () => {
     expect(css()).toMatch(
-      /@media \(max-width: 760px\) and \(max-height: 720px\)\s*\{[^}]*\.apoio[^{]*\.nota[^{]*\{[^}]*display:\s*none/
+      /@media \(max-width: 760px\) and \(max-height: 760px\)\s*\{[^}]*\.apoio[^{]*\.nota[^{]*\{[^}]*display:\s*none/
     );
   });
 

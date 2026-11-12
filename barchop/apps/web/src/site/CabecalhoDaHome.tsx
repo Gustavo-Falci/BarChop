@@ -53,7 +53,7 @@ export function CabecalhoDaHome({ topo }: { topo: string }) {
       <div className={estilos.conteudo}>
         <Link href="/" className={estilos.marca}>
           <MarcaDoBarChop tamanho={30} />
-          BarChop
+          <span className={estilos.nomeDaMarca}>BarChop</span>
         </Link>
         <nav aria-label="Conta" className={estilos.nav}>
           <Link href="/precos" className={`${estilos.link} ${estilos.precos}`}>

@@ -1,5 +1,6 @@
 import { prisma } from "@barchop/database";
 import { normalizarEmail } from "@barchop/formato";
+import { numerosDoSite } from "../lib/contagem-do-site";
 import { ErroHttp } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
@@ -82,7 +83,24 @@ async function pedidoPendente(
   return tx.solicitacaoTrocaLink.findUniqueOrThrow({ where: { id } });
 }
 
+// A janela dos números do site: padrão 30 dias, até 90 (home nova,
+// marco 1). O ajv do Fastify converte "7" da busca em número.
+const filtroNumeros = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    dias: { type: "integer", minimum: 1, maximum: 90, default: 30 },
+  },
+} as const;
+
 export function registrarRotasSuporte(app: App): void {
+  // A linha de base da home nova: visitas da home, cadastros e cadastros
+  // vindos dela, por dia, com a taxa do período.
+  app.get("/suporte/numeros", { schema: { querystring: filtroNumeros } }, async (request) => {
+    operadorDoToken(request);
+    return numerosDoSite(request.query.dias);
+  });
+
   // A fila: os pendentes, do mais antigo pro mais novo, com a barbearia.
   app.get("/suporte/solicitacoes", async (request) => {
     operadorDoToken(request);

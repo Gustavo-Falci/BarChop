@@ -10,7 +10,8 @@
 .conteudo {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  /* center e não baseline: com o ícone, a linha de base do nome fica no pé do quadro */
+  align-items: center;
   justify-content: space-between;
   gap: var(--espaco-sm) var(--espaco-lg);
   width: 100%;
@@ -20,6 +21,9 @@
 }
 
 .marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   font-family: var(--fonte-display), system-ui, sans-serif;
   font-size: var(--texto-lg);

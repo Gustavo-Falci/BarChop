@@ -8,13 +8,15 @@
     "lint": "eslint .",
     "test": "turbo run test",
     "type-check": "turbo run type-check",
-    "design-system": "pnpm --filter @barchop/api exec tsx ../../scripts/design-system/gerar.mts"
+    "design-system": "pnpm --filter @barchop/api exec tsx ../../scripts/design-system/gerar.mts",
+    "marca": "pnpm --filter @barchop/api exec tsx ../../scripts/marca/gerar.mts"
   },
   "devDependencies": {
     "@eslint/js": "^9",
     "eslint": "^9",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.13.0",
+    "sharp": "0.35.4",
     "turbo": "^2.1.0",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.71.0"

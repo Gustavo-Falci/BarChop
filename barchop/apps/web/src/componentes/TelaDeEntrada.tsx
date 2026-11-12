@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { MarcaDoBarChop } from "./MarcaDoBarChop";
 import estilos from "./TelaDeEntrada.module.css";
 
 type Props = {
@@ -48,9 +49,7 @@ export function BarraDaEntrada({
 }) {
   return (
     <header className={sempreVisivel ? `${estilos.barra} ${estilos.sempreVisivel}` : estilos.barra}>
-      <span className={estilos.marca} aria-hidden="true">
-        B
-      </span>
+      <MarcaDoBarChop className={estilos.marca} />
       <span className={estilos.nome}>BarChop</span>
       {area ? <span className={estilos.area}>· {area}</span> : null}
       {acao ? <span className={estilos.acaoDaBarra}>{acao}</span> : null}

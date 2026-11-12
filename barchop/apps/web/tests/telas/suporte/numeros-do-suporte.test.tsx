@@ -84,6 +84,16 @@ describe("números do suporte", () => {
     expect(within(linhas[29]).getAllByRole("cell").map((c) => c.textContent)).toEqual(["14/10", "0", "0", "0"]);
   });
 
+  it("número grande sai com o ponto de milhar", async () => {
+    sessaoDoSuporte.gravar("jwt-falso-suporte");
+    montar(trintaDias({ 29: { visitas: 1234 } }));
+
+    const semana = await screen.findByRole("region", { name: "Últimos 7 dias" });
+    expect(semana).toHaveTextContent("1.234 visitas da home");
+    const tabela = screen.getByRole("table", { name: "Por dia" });
+    expect(within(within(tabela).getAllByRole("row")[1]).getAllByRole("cell")[1]).toHaveTextContent("1.234");
+  });
+
   it("sem visitas contadas, diz isso no lugar da taxa", async () => {
     sessaoDoSuporte.gravar("jwt-falso-suporte");
     montar(trintaDias());

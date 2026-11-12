@@ -20,8 +20,11 @@ const PORCENTAGEM = new Intl.NumberFormat("pt-BR", {
   maximumFractionDigits: 1,
 });
 
+// "1.329", com o ponto de milhar de quem lê.
+const INTEIRO = new Intl.NumberFormat("pt-BR");
+
 function contagem(total: number, um: string, varios: string): string {
-  return `${total} ${total === 1 ? um : varios}`;
+  return `${INTEIRO.format(total)} ${total === 1 ? um : varios}`;
 }
 
 // "2026-11-12" → "12/11", direto do texto: a data já vem no dia de São
@@ -127,9 +130,9 @@ export function NumerosDoSuporte() {
                 {[...mes.dias].reverse().map((dia) => (
                   <tr key={dia.dia}>
                     <td>{diaCurto(dia.dia)}</td>
-                    <td>{dia.visitas}</td>
-                    <td>{dia.cadastrosDaHome}</td>
-                    <td>{dia.cadastros}</td>
+                    <td>{INTEIRO.format(dia.visitas)}</td>
+                    <td>{INTEIRO.format(dia.cadastrosDaHome)}</td>
+                    <td>{INTEIRO.format(dia.cadastros)}</td>
                   </tr>
                 ))}
               </tbody>

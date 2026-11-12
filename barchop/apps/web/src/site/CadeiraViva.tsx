@@ -16,7 +16,7 @@ const carregarCena = () => import("./cena/cadeira").then((m) => m.criarCena);
 const LONGE_DO_TOPO = 0.25;
 
 // O que a rolagem escreve no topo (o CSS tem o repouso de padrão).
-const VARIAVEIS = ["--afastamento", "--nome", "--foco", "--grade", "--escuro"] as const;
+const VARIAVEIS = ["--afastamento", "--nome", "--foco", "--grade", "--escuro", "--canvas"] as const;
 
 // A cadeira 3D do topo da home (home nova, marco 3), por cima da imagem
 // parada do marco 2. Só em aparelho que passa pelas portas de podeTer3D,
@@ -44,7 +44,7 @@ export function CadeiraViva() {
 
     function pinta(e: EstadoDoTopo) {
       cena?.aplicar(e.cena);
-      const valores = [e.afastamento, e.nome, e.foco, e.grade, e.escuro];
+      const valores = [e.afastamento, e.nome, e.foco, e.grade, e.escuro, e.canvas];
       VARIAVEIS.forEach((v, i) => secao!.style.setProperty(v, String(valores[i])));
       secao!.dataset.ui = e.interfaceFora ? "fora" : "dentro";
       if (e.claro !== claro) {

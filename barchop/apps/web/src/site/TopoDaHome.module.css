@@ -17,9 +17,17 @@
   position: relative;
 }
 
-/* O topo preso por 1,35 tela de rolagem (1,2 no celular). */
+/* O topo preso por 1,35 tela de rolagem (1,2 no celular). No último
+   quarto (34svh, de 0,75 da rolagem em diante) as seções de baixo já
+   sobem por cima do topo, que nessa hora é só névoa e papel. */
 .trilho[data-vivo] {
   height: calc(100svh + 135svh);
+  margin-bottom: -34svh;
+}
+
+.trilho[data-vivo] ~ * {
+  position: relative;
+  z-index: 1;
 }
 
 .topo {
@@ -207,7 +215,7 @@
 }
 
 .topo[data-vivo] .gl {
-  opacity: 1;
+  opacity: var(--canvas, 1);
 }
 
 .topo[data-vivo] .cadeira img {
@@ -405,6 +413,7 @@
 @media (max-width: 760px) {
   .trilho[data-vivo] {
     height: calc(100svh + 120svh);
+    margin-bottom: -30svh;
   }
 
   .topo {

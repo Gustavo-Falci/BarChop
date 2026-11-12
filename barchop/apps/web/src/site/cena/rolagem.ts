@@ -30,6 +30,11 @@ export type EstadoDoTopo = {
   interfaceFora: boolean;
   /** Opacidade da camada escura do topo (1 = escuro, 0 = o papel do site). */
   escuro: number;
+  /**
+   * Opacidade do canvas da cadeira: a névoa exponencial nunca chega a
+   * 100%, então o canvas apaga no fim pra não sobrar vulto.
+   */
+  canvas: number;
   /** O cabeçalho passa pro tema claro. */
   claro: boolean;
 };
@@ -62,6 +67,7 @@ export function estadoDaRolagem(progresso: number): EstadoDoTopo {
     grade: 1 - faixa(p, 0.2, 0.45),
     interfaceFora: p > 0.02,
     escuro: 1 - suave(faixa(p, 0.3, 0.72)),
+    canvas: 1 - faixa(p, 0.75, 0.95),
     claro: p > 0.62,
   };
 }

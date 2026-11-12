@@ -9,10 +9,12 @@ import estilos from "./CascaDoSuporte.module.css";
 const ABAS = [
   { href: "/painel/suporte", rotulo: "Pedidos" },
   { href: "/painel/suporte/avisos", rotulo: "Avisos" },
+  // A linha de base da home nova (marco 1): visitas e cadastros.
+  { href: "/painel/suporte/numeros", rotulo: "Números" },
 ] as const;
 
 // A casca das telas do suporte (onda C): a barra "BarChop · Suporte" com
-// Sair e as abas Pedidos / Avisos, no lugar do botão "Avisos" da fila e do
+// Sair e as abas Pedidos / Avisos / Números, no lugar do botão "Avisos" da fila e do
 // voltar dos avisos. Fora do shell do painel: a sessão aqui é a do
 // suporte, que não tem barbearia.
 export function CascaDoSuporte({ aoSair, children }: { aoSair: () => void; children: ReactNode }) {

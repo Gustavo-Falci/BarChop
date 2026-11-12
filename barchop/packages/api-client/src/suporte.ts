@@ -1,6 +1,7 @@
 import type {
   AvisoPublicado,
   NovoAviso,
+  NumerosDoSite,
   PagamentoPix,
   PixNaFila,
   SessaoSuporte,
@@ -45,6 +46,12 @@ export function criarApiSuporte(requisicao: Requisicao) {
         comToken: true,
       });
       return resposta.avisos;
+    },
+
+    // A linha de base da home nova (marco 1): os últimos `dias` (1 a 90),
+    // um por dia, com os totais e a taxa do período.
+    numeros(dias = 30): Promise<NumerosDoSite> {
+      return requisicao("/suporte/numeros", { query: { dias: String(dias) }, comToken: true });
     },
 
     async publicarAviso(aviso: NovoAviso): Promise<AvisoPublicado> {

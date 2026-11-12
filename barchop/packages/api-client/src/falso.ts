@@ -87,6 +87,8 @@ import type {
   SolicitacaoNaFila,
   AvisoPublicado,
   NovoAviso,
+  NumerosDoDia,
+  NumerosDoSite,
   AssinaturaNaConta,
   AssinaturaOnlineCriada,
   ContaDePagamentoOnline,
@@ -256,6 +258,9 @@ export interface EstadoFalso {
   // Os avisos da plataforma já publicados, do mais novo. Sem semente,
   // nenhum.
   avisosPublicados?: AvisoPublicado[];
+  // Os números do site (home nova, marco 1), do dia mais velho pro de
+  // hoje — o último é hoje. Sem semente, nada contado.
+  numerosDoSite?: NumerosDoDia[];
   // A assinatura do BarChop, como o GET a resume. Sem semente: em teste,
   // com 14 dias pela frente.
   assinatura?: ResumoDaAssinatura;
@@ -507,6 +512,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     slugsEmUso: [...(semente.slugsEmUso ?? [])],
     notificacoes: (semente.notificacoes ?? []).map((n) => ({ ...n })),
     avisosPublicados: (semente.avisosPublicados ?? []).map((a) => ({ ...a })),
+    numerosDoSite: (semente.numerosDoSite ?? []).map((n) => ({ ...n })),
     assinatura: { ...(semente.assinatura ?? ASSINATURA_PADRAO) },
     faturas: (semente.faturas ?? []).map((f) => ({ ...f })),
     pixLigado: semente.pixLigado ?? false,
@@ -3054,6 +3060,23 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
       },
       async avisos() {
         return estado.avisosPublicados!.map((a) => ({ ...a }));
+      },
+      // Os últimos `dias` da semente, com os totais e a taxa como a API.
+      async numeros(dias = 30): Promise<NumerosDoSite> {
+        const lista = estado.numerosDoSite!.slice(-dias).map((n) => ({ ...n }));
+        const soma = (campo: "visitas" | "cadastros" | "cadastrosDaHome") =>
+          lista.reduce((total, dia) => total + dia[campo], 0);
+        const visitas = soma("visitas");
+        const cadastrosDaHome = soma("cadastrosDaHome");
+        return {
+          dias: lista,
+          totais: {
+            visitas,
+            cadastros: soma("cadastros"),
+            cadastrosDaHome,
+            taxa: visitas > 0 ? cadastrosDaHome / visitas : null,
+          },
+        };
       },
       // O mesmo schema da API: link só do painel ou https. Quem recebe
       // são os membros ativos — no dublê, a equipe.

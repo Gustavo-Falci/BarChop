@@ -1,0 +1,107 @@
+/* Os números do site: os dois períodos à esquerda, o dia a dia à
+   direita (as telas usam a largura). Mesma medida das outras telas do
+   suporte, sem caixa em volta de nada. */
+.pagina {
+  display: grid;
+  /* `minmax(0, 1fr)`: sem o zero, a coluna cresce com o conteúdo e a
+     página vaza pro lado no celular. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-lg);
+  align-content: start;
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: var(--espaco-lg) var(--espaco-md) var(--espaco-xl);
+}
+
+@media (min-width: 700px) {
+  .pagina {
+    padding: var(--espaco-xl) var(--espaco-lg);
+  }
+}
+
+.secao {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  text-align: start;
+}
+
+.periodos {
+  display: grid;
+  gap: var(--espaco-xl);
+  align-content: start;
+}
+
+.periodo {
+  display: grid;
+  gap: var(--espaco-sm);
+  padding-block-end: var(--espaco-lg);
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+}
+
+.periodo p {
+  margin: 0;
+}
+
+.taxa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.numero {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.apoio,
+.volumes {
+  color: var(--cor-ink-soft);
+}
+
+.semVisitas {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-md);
+}
+
+/* O dia a dia em linhas finas, números à direita e alinhados. */
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  align-self: start;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabela caption {
+  padding-block-end: var(--espaco-sm);
+}
+
+.tabela th,
+.tabela td {
+  padding: 8px 12px;
+  border-block-end: var(--borda-hairline) solid var(--cor-line);
+  text-align: end;
+}
+
+.tabela th:first-child,
+.tabela td:first-child {
+  padding-inline-start: 0;
+  text-align: start;
+}
+
+.tabela th:last-child,
+.tabela td:last-child {
+  padding-inline-end: 0;
+}
+
+.tabela th {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}

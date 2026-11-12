@@ -52,7 +52,7 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 |---|---|---|---|---|
 | 1 | Linha de base | O dono do produto vê quantas visitas a home atual recebe e quantas viram cadastro, sem cookie | complete | `.claude/plans/home-nova-linha-de-base.plan.md` |
 | 2 | Topo novo, parado | O visitante vê o topo escuro com "Bar/Chop", a frase, o botão e a imagem da cadeira sob o foco, com a navegação escura que clareia; o resto da home segue como está | complete | `.claude/plans/home-nova-topo-parado.plan.md` |
-| 3 | Cadeira viva e rolagem | A cadeira 3D substitui a imagem quando carrega (fica a imagem em aparelho fraco); rolar gira e aproxima a cadeira e dissolve na névoa até "Soa familiar?" | pending | — |
+| 3 | Cadeira viva e rolagem | A cadeira 3D substitui a imagem quando carrega (fica a imagem em aparelho fraco); rolar gira e aproxima a cadeira e dissolve na névoa até "Soa familiar?" | in-progress | `.claude/plans/home-nova-cadeira-viva.plan.md` |
 | 4 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | pending | — |
 | 5 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | pending | — |
 

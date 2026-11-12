@@ -13,7 +13,7 @@
     "android": {
       "package": "br.com.barchop.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F0C93A",
+        "backgroundColor": "#1A1A1A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

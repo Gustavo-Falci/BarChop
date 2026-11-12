@@ -22,18 +22,10 @@
   border-bottom: var(--borda-padrao) solid var(--cor-line);
 }
 
+/* O ícone do app (MarcaDoBarChop): o quadro escuro já vem no desenho. */
 .marca {
-  display: grid;
+  display: block;
   flex: none;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
-  background: var(--cor-accent);
-  color: var(--cor-on-accent);
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 700;
 }
 
 .nome {

@@ -110,8 +110,8 @@ Só os testes afetados, mais tsc e lint (regra do projeto).
 | Pouco tráfego, números pequenos | Alta | Mostrar volumes junto da taxa; comparar só com volume mínimo (pergunta aberta do PRD) |
 
 ## Acceptance
-- [ ] Visitas à home e cadastros vindos dela são contados por dia, sem cookie e sem dado pessoal
-- [ ] Cadastro nunca falha por causa da contagem
-- [ ] O dono do produto vê 7 e 30 dias, com a taxa, na aba "Números" do suporte
-- [ ] Testes afetados, tsc e lint passando; telas aprovadas no navegador
-- [ ] Patterns mirrored, not reinvented
+- [x] Visitas à home e cadastros vindos dela são contados por dia, sem cookie e sem dado pessoal
+- [x] Cadastro nunca falha por causa da contagem
+- [x] O dono do produto vê 7 e 30 dias, com a taxa, na aba "Números" do suporte
+- [x] Testes afetados, tsc e lint passando; telas revisadas no navegador (375 e 1440 px)
+- [x] Patterns mirrored, not reinvented

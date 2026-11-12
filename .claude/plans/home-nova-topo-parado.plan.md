@@ -89,9 +89,15 @@ Só os testes afetados, mais tsc, lint e o build (por causa do grupo de rotas).
 | Cabeçalho fixo cobrir as âncoras (#como-funciona) | Média | `scroll-margin-top` nas seções da home |
 
 ## Acceptance
-- [ ] Topo novo no ar em 375, 320×568 e 1440 px, aprovado pelo dono no navegador
-- [ ] Cabeçalho escuro sobre o topo, claro depois; outras páginas iguais
-- [ ] Título e botão no HTML do servidor; nada se move com "reduzir movimento"
-- [ ] Crédito da cadeira na home
-- [ ] Testes afetados, tsc, lint e build passando; Lighthouse mobile dentro das metas
-- [ ] Patterns mirrored, not reinvented
+- [ ] Topo novo no ar em 375, 320×568 e 1440 px, aprovado pelo dono no navegador (revisado em 1440×900, 1280×720, 375×812, 393×659 e 320×568; falta o dono)
+- [x] Cabeçalho escuro sobre o topo, claro depois; outras páginas iguais
+- [x] Título e botão no HTML do servidor; nada se move com "reduzir movimento"
+- [x] Crédito da cadeira na home
+- [x] Testes afetados, tsc, lint e build passando; Lighthouse mobile dentro das metas (acessibilidade 100; LCP 1,3 s e CLS 0 no trace de celular com 4G lenta e CPU 4×, servidor local)
+- [x] Patterns mirrored, not reinvented
+
+## Notas da execução
+- Tela baixa: a regra que tira o apoio e a nota vale até **760 px** de altura, não 720: medido, a 760 px o apoio já encostava no status. No celular o rótulo "Agenda online para barbearias" também sai (o apoio diz o que é).
+- Abaixo de 360 px o nome "BarChop" do cabeçalho fica só pro leitor de tela: em 320 px o convite saía pela direita.
+- Imagem: computador `cadeira-{1280,2200}`, celular `cadeira-celular-{640,1280}` (miolo do quadro, bordas esmaecidas). Celular 1280: AVIF 41 kB, WebP 87 kB.
+- "Reduzir movimento" coberto por teste de CSS; o chrome-devtools não emula a preferência.

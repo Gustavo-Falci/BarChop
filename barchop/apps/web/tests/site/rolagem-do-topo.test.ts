@@ -57,6 +57,14 @@ describe("rolagem do topo", () => {
     expect(NEVOA_DO_CLARO).toBe(0xf7f4ee);
   });
 
+  it("o canvas apaga no fim da névoa: não sobra vulto da cadeira", () => {
+    // A névoa exponencial nunca chega a 100%; o canvas apaga por cima.
+    expect(estadoDaRolagem(0).canvas).toBe(1);
+    expect(estadoDaRolagem(0.75).canvas).toBe(1);
+    expect(estadoDaRolagem(0.85).canvas).toBeLessThan(1);
+    expect(estadoDaRolagem(0.95).canvas).toBe(0);
+  });
+
   it("o cabeçalho clareia depois de 0,62", () => {
     expect(estadoDaRolagem(0.62).claro).toBe(false);
     expect(estadoDaRolagem(0.63).claro).toBe(true);

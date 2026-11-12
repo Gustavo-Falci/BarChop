@@ -134,9 +134,19 @@ describe("topo da home", () => {
     );
   });
 
+  it("com o 3D vivo, as seções de baixo sobem por cima do fim da névoa", () => {
+    // O último quarto do trilho (a partir de 0,75 da rolagem) as seções
+    // já entram por cima do topo ainda preso, em vez de esperar ele soltar.
+    expect(css()).toMatch(/\.trilho\[data-vivo\]\s*\{[^}]*margin-bottom:\s*-34svh/);
+    expect(css()).toMatch(
+      /@media \(max-width: 760px\)\s*\{[\s\S]*?\.trilho\[data-vivo\]\s*\{[^}]*margin-bottom:\s*-30svh/
+    );
+    expect(css()).toMatch(/\.trilho\[data-vivo\]\s*~\s*\*\s*\{[^}]*position:\s*relative;[^}]*z-index:\s*1/);
+  });
+
   it("com o 3D vivo, o canvas aparece e a imagem sai", () => {
     expect(css()).toMatch(/\.gl\s*\{[^}]*opacity:\s*0/);
-    expect(css()).toMatch(/\.topo\[data-vivo\]\s+\.gl\s*\{[^}]*opacity:\s*1/);
+    expect(css()).toMatch(/\.topo\[data-vivo\]\s+\.gl\s*\{[^}]*opacity:\s*var\(--canvas,\s*1\)/);
     expect(css()).toMatch(/\.topo\[data-vivo\]\s+\.cadeira\s+img\s*\{[^}]*opacity:\s*0/);
   });
 

@@ -129,7 +129,9 @@ pnpm --filter @barchop/web build
 - [x] Cabeçalho escuro → claro com a névoa; some ao descer, volta ao subir
 - [x] JS inicial da home: só +1,7 kB (CadeiraViva e as contas puras); 3D dentro do teto de peso
 - [ ] Aprovado pelo dono em 1440, 375 e 320×568
-- [x] Testes afetados, tsc, lint e build passando; Lighthouse mobile dentro das metas
+- [x] Testes afetados, tsc, lint e build passando
+- [x] Lighthouse mobile: acessibilidade, boas práticas e SEO 100 (a ferramenta não roda a categoria de desempenho)
+- [ ] LCP ≤ 2,5 s no celular: 1,2 s com cache, mas **2,98 s com cache frio** (4G lenta, CPU 4×) — o 3D não entra no caminho (começa depois do `load`, +1,7 kB no JS inicial); medir em produção no marco 5
 - [x] Patterns mirrored, not reinvented
 
 ## Notas da execução (12/11)
@@ -143,4 +145,5 @@ pnpm --filter @barchop/web build
 - **Medições** (celular 390×844, 4G lenta, CPU 4×): LCP **1,2 s** e CLS **0** com cache, como o marco 2 mediu (1,3 s); com cache frio, LCP 2,98 s, por causa das fontes e do JS inicial que já estavam no caminho crítico (o 3D só começa depois do `load`). Tarefas longas ao entrar o 3D: 71 ms e 53 ms. Lighthouse mobile: acessibilidade, boas práticas e SEO 100; só o `llms.txt` falha, como no marco 2.
 - **Conferido**: "reduzir movimento" (o navegador desta máquina já vem com a preferência ligada: nada baixa, trilho com a altura da tela), aparelho com 2 núcleos (fica a imagem), `/precos` sem o trilho.
 - O jsdom não tem canvas: `tests/setup.ts` ganhou um `getContext` que devolve `null` (o que o jsdom já fazia, sem o aviso no console).
-- Em aberto pro dono: o trecho creme entre o fim da névoa e "Soa familiar?" (a seção para a ~70% da tela quando o topo solta).
+- Também conferido: 320×568 e 1280×720 (o couro do 3D bate com a imagem em ≤ 1 px), e o "Ver como funciona" com o topo preso (o título para a 88 px do alto; o cabeçalho some no salto, não cobre).
+- O trecho creme entre o fim da névoa e "Soa familiar?" segue o conceito aprovado (`Downloads/arquivos/conceito/03-nevoa` e `04-cardapio`): vulto da cadeira na névoa, depois a seção sobe por cima. Puxar a seção mais cedo que 0,75 faz o texto entrar com a cadeira ainda à vista. Fica pro dono olhar no navegador.

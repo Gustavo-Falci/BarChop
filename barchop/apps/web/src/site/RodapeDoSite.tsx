@@ -1,11 +1,15 @@
 import Link from "next/link";
+import { MarcaDoBarChop } from "../componentes/MarcaDoBarChop";
 import estilos from "./RodapeDoSite.module.css";
 
 export function RodapeDoSite() {
   return (
     <footer className={estilos.rodape}>
       <div className={estilos.conteudo}>
-        <p className={estilos.marca}>BarChop</p>
+        <p className={estilos.marca}>
+          <MarcaDoBarChop tamanho={30} />
+          BarChop
+        </p>
         <p className={estilos.linha}>Agenda online para barbearias.</p>
         <nav aria-label="Links do site" className={estilos.documentos}>
           <Link href="/precos" className={estilos.link}>

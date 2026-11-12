@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MarcaDoBarChop } from "../componentes/MarcaDoBarChop";
 import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./CabecalhoDoSite.module.css";
 
@@ -9,6 +10,7 @@ export function CabecalhoDoSite() {
     <header className={estilos.cabecalho}>
       <div className={estilos.conteudo}>
         <Link href="/" className={estilos.marca}>
+          <MarcaDoBarChop tamanho={30} />
           BarChop
         </Link>
         <nav aria-label="Conta" className={estilos.nav}>

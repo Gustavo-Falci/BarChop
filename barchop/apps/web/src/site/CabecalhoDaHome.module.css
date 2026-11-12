@@ -15,7 +15,8 @@
   transition:
     background-color var(--duracao-media) ease,
     border-color var(--duracao-media) ease,
-    color var(--duracao-media) ease;
+    color var(--duracao-media) ease,
+    translate 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Quando o topo sai de baixo: o papel e a tinta das outras páginas. */
@@ -23,6 +24,23 @@
   border-bottom-color: var(--cor-line-strong);
   background: var(--cor-paper);
   color: var(--cor-ink);
+}
+
+/* Ao descer, sobe pra fora da tela; ao subir, volta (marco 3). Quem
+   navega pelo teclado e entra nele traz ele de volta. */
+.cabecalho[data-escondido] {
+  translate: 0 -100%;
+}
+
+.cabecalho[data-escondido]:focus-within {
+  translate: none;
+}
+
+/* Com reduzir movimento, some e volta sem deslizar. */
+@media (prefers-reduced-motion: reduce) {
+  .cabecalho {
+    transition-property: background-color, border-color, color;
+  }
 }
 
 /* Nas bordas da cena do topo (56u, como a promessa e o status), não no

@@ -29,6 +29,7 @@ import { registrarRotasClientes } from "./routers/clientes";
 import { registrarRotasClientesMe } from "./routers/clientes-me";
 import { registrarRotasAssinaturasDoCliente } from "./routers/assinaturas-do-cliente";
 import { registrarRotasDisponibilidade } from "./routers/disponibilidade";
+import { registrarRotasSite } from "./routers/site";
 import { registrarRotasBloqueios } from "./routers/bloqueios";
 import { registrarRotasOnboarding } from "./routers/onboarding";
 import { registrarRotasSolicitacaoDeLink } from "./routers/solicitacao-de-link";
@@ -202,6 +203,9 @@ export function buildApp(
     const limites = limitesPublicos(abertas);
     registrarRotasAgendamentosPublicas(abertas, limites);
     registrarRotasDisponibilidade(abertas, limites);
+    // O aviso de visita da home (linha de base da home nova): aberto, com
+    // limite por IP pra ninguém inflar a conta.
+    registrarRotasSite(abertas, limites);
   });
   // Sem login: quem autoriza é o token do link do e-mail de lembrete.
   registrarRotasLembretes(app);

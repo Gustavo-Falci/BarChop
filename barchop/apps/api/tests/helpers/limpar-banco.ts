@@ -18,6 +18,7 @@ const TABELAS = [
   "assinatura",
   "notificacao",
   "aviso",
+  "contagem_do_site",
   "solicitacao_troca_link",
   "operador_suporte",
   "slug_antigo",

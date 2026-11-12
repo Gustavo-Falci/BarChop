@@ -123,11 +123,24 @@ pnpm --filter @barchop/web build
 | Tarefa longa ao compilar shaders atrasar o toque | Média | Carregar no ocioso; medir no trace; se passar, aquecer os materiais (`renderer.compile`) num quadro separado |
 
 ## Acceptance
-- [ ] Com 3D: a cadeira troca a imagem sem salto; rolar gira, aproxima e dissolve até "Soa familiar?" sem corte
-- [ ] Aparelho fraco, sem WebGL, contexto perdido ou quadros lentos: fica (ou volta) a imagem parada
-- [ ] "Reduzir movimento": nada baixa, nada é preso, nada gira
-- [ ] Cabeçalho escuro → claro com a névoa; some ao descer, volta ao subir
-- [ ] JS inicial da home igual ao do marco 2; 3D dentro do teto de peso
+- [x] Com 3D: a cadeira troca a imagem sem salto; rolar gira, aproxima e dissolve até "Soa familiar?" sem corte
+- [x] Aparelho fraco, sem WebGL, contexto perdido ou quadros lentos: fica (ou volta) a imagem parada
+- [x] "Reduzir movimento": nada baixa, nada é preso, nada gira
+- [x] Cabeçalho escuro → claro com a névoa; some ao descer, volta ao subir
+- [x] JS inicial da home: só +1,7 kB (CadeiraViva e as contas puras); 3D dentro do teto de peso
 - [ ] Aprovado pelo dono em 1440, 375 e 320×568
-- [ ] Testes afetados, tsc, lint e build passando; Lighthouse mobile dentro das metas
-- [ ] Patterns mirrored, not reinvented
+- [x] Testes afetados, tsc, lint e build passando; Lighthouse mobile dentro das metas
+- [x] Patterns mirrored, not reinvented
+
+## Notas da execução (12/11)
+- **Peso medido** (`next build` + `next start`): chunk do three + cena **163 kB** comprimido (656 kB cru); `cadeira.glb` **372 kB** com gzip (o Next comprime `model/gltf-binary`; 641 kB cru). Total **~535 kB**, só depois do `load`. JS inicial da home: **+1,7 kB** comprimido. Nada de simplificar a malha.
+- **Calibragem** pela imagem parada, sem o protótipo: com o pé do feixe a 0,505 da largura no computador e 0,5 no celular, a caixa do couro no 3D bate com a da imagem em **≤ 1 px** em 1440×900 e em ±2 px CSS em 390×844. A única diferença visível é a poeira no feixe.
+- **Mudanças sobre o plano, vistas no navegador:**
+  - o fundo do topo não vira papel: a camada escura (`--escuro`) some e deixa o degradê do próprio site (emenda sem faixa até no pé da tela, onde o papel já é `paperFim`);
+  - a névoa exponencial nunca chega a 100%: sobrava um vulto da cadeira, então o canvas também apaga (`--canvas`, de 0,75 a 0,95);
+  - com o 3D, as seções de baixo sobem por cima do topo preso a partir de 0,75 da rolagem (`margin-bottom: -34svh`, -30svh no celular), em vez de esperar ele soltar;
+  - quem está no teclado com o foco no topo continua vendo a interface (`:focus-within`), e o cabeçalho escondido volta com o foco dentro dele.
+- **Medições** (celular 390×844, 4G lenta, CPU 4×): LCP **1,2 s** e CLS **0** com cache, como o marco 2 mediu (1,3 s); com cache frio, LCP 2,98 s, por causa das fontes e do JS inicial que já estavam no caminho crítico (o 3D só começa depois do `load`). Tarefas longas ao entrar o 3D: 71 ms e 53 ms. Lighthouse mobile: acessibilidade, boas práticas e SEO 100; só o `llms.txt` falha, como no marco 2.
+- **Conferido**: "reduzir movimento" (o navegador desta máquina já vem com a preferência ligada: nada baixa, trilho com a altura da tela), aparelho com 2 núcleos (fica a imagem), `/precos` sem o trilho.
+- O jsdom não tem canvas: `tests/setup.ts` ganhou um `getContext` que devolve `null` (o que o jsdom já fazia, sem o aviso no console).
+- Em aberto pro dono: o trecho creme entre o fim da névoa e "Soa familiar?" (a seção para a ~70% da tela quando o topo solta).

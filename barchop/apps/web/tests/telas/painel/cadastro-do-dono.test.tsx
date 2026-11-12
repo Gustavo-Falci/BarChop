@@ -93,6 +93,39 @@ describe("cadastro do dono", () => {
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
   });
 
+  // Home nova, marco 1: quem veio do "Criar barbearia" da home chega com
+  // ?origem=home, e o cadastro repassa pra API contar à parte.
+  async function cadastrarCom(busca: string) {
+    window.history.replaceState({}, "", `/painel/cadastro${busca}`);
+    const falso = criarApiClientFalso();
+    const recebidos: unknown[] = [];
+    const signup = falso.barbeiro.signup;
+    falso.barbeiro.signup = async (nova) => {
+      recebidos.push(nova);
+      return signup(nova);
+    };
+    montar(falso);
+    await preencher();
+    await continuar();
+    await screen.findByRole("status");
+    await digitarCodigo();
+    await waitFor(() => expect(recebidos).toHaveLength(1));
+    window.history.replaceState({}, "", "/");
+    return recebidos[0] as { origem?: string };
+  }
+
+  it("vindo da home, o cadastro manda a origem", async () => {
+    expect((await cadastrarCom("?origem=home")).origem).toBe("home");
+  });
+
+  it("sem origem, o cadastro não manda origem", async () => {
+    expect(await cadastrarCom("")).not.toHaveProperty("origem");
+  });
+
+  it("origem que não é contada não vai pra API", async () => {
+    expect(await cadastrarCom("?origem=instagram")).not.toHaveProperty("origem");
+  });
+
   it("o passo do código começa no campo do código", async () => {
     montar();
 

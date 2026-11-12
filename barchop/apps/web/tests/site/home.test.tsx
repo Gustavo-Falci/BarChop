@@ -21,13 +21,24 @@ describe("home do site", () => {
     );
   });
 
-  it("todo convite pra começar leva ao cadastro da barbearia", () => {
+  it("todo convite pra começar leva ao cadastro da barbearia, marcado como vindo da home", () => {
     render(<Home />);
     const convites = screen.getAllByRole("link", { name: /criar minha barbearia/i });
-    // O do topo e o do fim da página.
+    // O do topo e o do fim da página. A marca ?origem=home é o que a
+    // linha de base da home nova conta (marco 1).
     expect(convites.length).toBeGreaterThanOrEqual(2);
     for (const convite of convites) {
-      expect(convite).toHaveAttribute("href", "/painel/cadastro");
+      expect(convite).toHaveAttribute("href", "/painel/cadastro?origem=home");
+    }
+  });
+
+  it("os planos da home também levam ao cadastro marcado como vindo da home", () => {
+    render(<Home />);
+    const secao = screen.getByRole("region", { name: "Planos" });
+    const convites = within(secao).getAllByRole("link", { name: /começar grátis|testar 14 dias/i });
+    expect(convites).toHaveLength(3);
+    for (const convite of convites) {
+      expect(convite).toHaveAttribute("href", "/painel/cadastro?origem=home");
     }
   });
 

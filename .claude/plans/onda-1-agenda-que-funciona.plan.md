@@ -4,7 +4,55 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-09, fim do dia — Pix do BarChop, PR 1 no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-12, fim do dia — logo nova e home nova, marcos 1 e 2) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `6bd3b3c`, #332). Nada aberto.
+- **Produção:** não conferida desde 09/11 (`caf74c6`). O deploy dos merges abaixo é com o dono.
+  - A migration nova é a `20261112160000_contagem_do_site` (só acrescenta), do #330: rodar `prisma migrate deploy`, senão o contador de visitas da home falha.
+- **10/11, Pix do BarChop, PR 2 = #327 mergeado:** Faturas com Pix (pagar, aguardando, renovar, vencido).
+  - Respostas do dono:
+    - (a) Pix de renovação com outro plano, ciclo ou profissionais **vale na hora**;
+    - (b) **não estender o teste da `jesus-barber`** (acaba **15/11, 14:43 UTC**): PRs 2–4 no ar e o Pix de R$ 1,00 de teste antes disso.
+  - Detalhes no `pix-do-barchop.plan.md`.
+- **12/11, logo "Navalha em B"** (escolhida no canvas "Logos do BarChop", variação C, lâmina aberta 11°):
+  - #328: `pnpm marca` gera `app/icon.svg`, `apple-icon.png` e os ícones do Expo, e põe a `MarcaDoBarChop` nas telas de entrada;
+  - #329: ícone no cabeçalho e no rodapé do site.
+- **12/11, home nova** (PRD `.claude/prds/home-nova.prd.md`, 5 marcos; protótipo em `Documents/barchop-prototipo`):
+  - **Marco 1, linha de base:**
+    - #330: tabela `contagem_do_site`, `POST /site/visita` (uma vez por sessão), signup com `origem: "home"`, links do corpo da home com `?origem=home`;
+    - #331: `GET /suporte/numeros` + aba "Números" no Suporte.
+  - **Marco 2, a troca da home** (o dono decidiu não esperar a linha de base):
+    - **#332:** topo escuro parado do protótipo (`TopoDaHome`), com a imagem da cadeira (`pnpm foto-da-cadeira`, `public/home/`);
+    - `CabecalhoDaHome`, escuro que clareia; as outras páginas no grupo `app/(marketing)/(paginas)/` com o cabeçalho de sempre;
+    - crédito CC BY 4.0 da cadeira.
+    - Lighthouse mobile com acessibilidade 100; LCP 1,3 s e CLS 0 no trace de celular.
+  - PRD com marcos 1 e 2 `complete`.
+
+**Ao retomar (só quando o dono pedir):**
+1. **Pix do BarChop, urgente pelo prazo:** o teste da `jesus-barber` acaba em **15/11, 14:43 UTC**, e o dono não quer estender. Falta:
+   - PR 3 (Suporte confere o Pix);
+   - PR 4 (avisos e vencimento);
+   - preencher as `PIX_*` em produção;
+   - o Pix de R$ 1,00 de teste, que também fecha o (d), o que o extrato de quem recebe mostra.
+
+   Depois, PR 5 (confirmar com o dono a diferença **proporcional** ao começar).
+2. **Home nova, marco 3** (cadeira 3D por cima da imagem parada, rolagem que gira e aproxima e dissolve em névoa, cabeçalho que some ao descer, aparelho fraco ou sem WebGL fica na imagem, reduzir movimento): plano via `ecc:plan`, esperar aprovação. Depois:
+   - marco 4, abertura da navalha só na 1ª visita da sessão;
+   - marco 5, medido em produção.
+
+   Em aberto:
+   - status real em vez do exemplo fixo "14:40";
+   - `llms.txt`, única auditoria do Lighthouse que falhou.
+3. Os da lista de 06/11: testes reais opcionais em produção, onda D (marketing), G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas.
+   - **24/11:** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+**Ambiente local:**
+- O protótipo da home roda com `npx vite --port 4318` em `Documents/barchop-prototipo`; `window.__bc.cena` expõe a cena 3D.
+- Servidor do Next em segundo plano: TaskStop não mata o Node. Liberar a porta com `taskkill` pelo PID do `netstat`.
+- Branches antigas só se apagam com autorização do dono.
+
+## RETOMAR AQUI (2026-11-09, fim do dia — Pix do BarChop, PR 1 no ar) — histórico
 
 **Contexto:** passo 5 dos pedidos do barbeiro da `jesus-barber` (ver o RETOMAR AQUI de 08/11, abaixo): pagar o BarChop por Pix, conferido pelo Suporte. Plano `.claude/plans/pix-do-barchop.plan.md` (5 PRs), canvas "Pix do BarChop" aprovado em 08/11.
 

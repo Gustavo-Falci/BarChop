@@ -1,0 +1,112 @@
+/* O cabeçalho da home: o mesmo miolo do CabecalhoDoSite, fixo por cima
+   do topo. Os tons do escuro são os do modo escuro do painel
+   (packages/design-tokens, dark.*): o site trava o tema claro, então os
+   tokens --cor-* aqui são os do claro. */
+.cabecalho {
+  --escuro-tinta: #ece6da; /* dark.ink */
+  --escuro-ouro: #e8c547; /* dark.accent */
+
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  border-bottom: var(--borda-padrao) solid transparent;
+  background: transparent;
+  color: var(--escuro-tinta);
+  transition:
+    background-color var(--duracao-media) ease,
+    border-color var(--duracao-media) ease,
+    color var(--duracao-media) ease;
+}
+
+/* Quando o topo sai de baixo: o papel e a tinta das outras páginas. */
+.cabecalho[data-tema="claro"] {
+  border-bottom-color: var(--cor-line-strong);
+  background: var(--cor-paper);
+  color: var(--cor-ink);
+}
+
+/* Nas bordas da cena do topo (56u, como a promessa e o status), não no
+   miolo de 1120px das seções: o cabeçalho é parte do topo. */
+.conteudo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco-md);
+  width: 100%;
+  padding: var(--espaco-md) max(var(--espaco-lg), calc(56 * min(100vw / 1440, 100svh / 900)));
+}
+
+/* O convite numa linha só, compacto no celular (o LinkDeAcao quebra a
+   linha abaixo de 420px; aqui "Criar barbearia" virava dois andares). */
+.nav .acao {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .conteudo {
+    padding-inline: 20px;
+  }
+
+  .nav .acao {
+    min-height: 42px;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: inherit;
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-md);
+}
+
+.link {
+  font-weight: 600;
+  color: inherit;
+  text-underline-offset: 4px;
+}
+
+/* No escuro, o anel de foco é o ouro (a tinta do claro some no preto). */
+.cabecalho[data-tema="escuro"] :focus-visible {
+  outline-color: var(--escuro-ouro);
+}
+
+/* O convite no escuro: o ouro do escuro e um fio escuro, sem o contorno
+   claro que o LinkDeAcao usa sobre o papel. */
+.cabecalho[data-tema="escuro"] .acao {
+  border-color: rgb(0 0 0 / 0.18);
+  background: var(--escuro-ouro);
+}
+
+/* No celular estreito, Preços + Entrar + Criar barbearia passavam de
+   375px: o Preços sai daqui, como no cabeçalho das outras páginas. */
+@media (max-width: 419px) {
+  .precos {
+    display: none;
+  }
+}
+
+/* Em 320px nem assim cabia: o convite saía pela direita. Fica o ícone da
+   marca, e o nome só pro leitor de tela (o link continua "BarChop"). */
+@media (max-width: 359px) {
+  .nomeDaMarca {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

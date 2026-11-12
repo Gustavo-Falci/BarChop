@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Precos } from "../../../src/site/Precos";
+import { Precos } from "../../../../src/site/Precos";
 
 export const metadata: Metadata = {
   title: "Preços — BarChop",

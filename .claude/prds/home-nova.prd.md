@@ -51,7 +51,7 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
 | 1 | Linha de base | O dono do produto vê quantas visitas a home atual recebe e quantas viram cadastro, sem cookie | complete | `.claude/plans/home-nova-linha-de-base.plan.md` |
-| 2 | Topo novo, parado | O visitante vê o topo escuro com "Bar/Chop", a frase, o botão e a imagem da cadeira sob o foco, com a navegação escura que clareia; o resto da home segue como está | pending | — |
+| 2 | Topo novo, parado | O visitante vê o topo escuro com "Bar/Chop", a frase, o botão e a imagem da cadeira sob o foco, com a navegação escura que clareia; o resto da home segue como está | complete | `.claude/plans/home-nova-topo-parado.plan.md` |
 | 3 | Cadeira viva e rolagem | A cadeira 3D substitui a imagem quando carrega (fica a imagem em aparelho fraco); rolar gira e aproxima a cadeira e dissolve na névoa até "Soa familiar?" | pending | — |
 | 4 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | pending | — |
 | 5 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | pending | — |
@@ -60,13 +60,14 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 - [ ] Qual é o teto de peso aceitável só na home? (o 3D e as animações somam algo como 200–250 kB comprimidos a mais) — propor no plano, validar com Lighthouse.
 - [ ] Qual o critério para "aparelho fraco" (fica só a imagem parada)? — definir no plano do marco 3.
 - [ ] O status "próximo horário livre" do topo mostra um exemplo fixo ou algo real? (no protótipo é exemplo, marcado como "Exemplo")
-- [ ] Quanto tempo de linha de base antes de trocar a home? (depende do tráfego; sugestão: no mínimo 2 semanas ou N visitas)
+- [x] Quanto tempo de linha de base antes de trocar a home? — nenhum: o dono decidiu trocar já (12/11)
 
 ## Decisões (2026-11-12, dono do produto)
 - Abertura toca só na primeira visita da sessão.
 - Navegação da home escura sobre o topo, clareia com a névoa; demais páginas mantêm o cabeçalho claro.
 - Celular fraco ou sem 3D: imagem parada da cena.
 - Medição: contador próprio no servidor, sem cookie e sem terceiros.
+- Sem esperar a linha de base: a home nova vai ao ar no marco 2. A comparação antes/depois fica sem base; o contador passa a medir a home nova desde a troca.
 
 ## Risks
 | Risk | Likelihood | Impact | Mitigation |

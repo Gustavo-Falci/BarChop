@@ -9,7 +9,8 @@
     "test": "turbo run test",
     "type-check": "turbo run type-check",
     "design-system": "pnpm --filter @barchop/api exec tsx ../../scripts/design-system/gerar.mts",
-    "marca": "pnpm --filter @barchop/api exec tsx ../../scripts/marca/gerar.mts"
+    "marca": "pnpm --filter @barchop/api exec tsx ../../scripts/marca/gerar.mts",
+    "foto-da-cadeira": "pnpm --filter @barchop/api exec tsx ../../scripts/home/foto-da-cadeira.mts"
   },
   "devDependencies": {
     "@eslint/js": "^9",

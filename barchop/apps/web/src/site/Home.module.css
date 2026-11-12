@@ -10,161 +10,18 @@
   padding: var(--espaco-xxl) var(--espaco-lg);
 }
 
-/* Uma coluna no celular — promessa e convite antes de tudo —, duas no
-   desktop com a agenda de exemplo ao lado. */
-.topo {
-  display: grid;
-  gap: var(--espaco-xl);
-  align-items: center;
-}
-
-@media (min-width: 880px) {
-  .topo {
-    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr);
-    gap: var(--espaco-xxl);
-  }
-}
-
-.promessa {
-  display: grid;
-  gap: var(--espaco-md);
-}
-
-/* Chapéu, título, apoio e o convite entram um depois do outro na carga,
-   60ms de passo (motion PR 6). Só CSS: o HTML do servidor já traz tudo,
-   e quem pediu menos movimento cai na regra global que zera a animação. */
-.promessa > * {
-  animation: promessa-entra var(--duracao-longa) var(--curva-entrada) both;
-}
-
-.promessa > :nth-child(2) {
-  animation-delay: 60ms;
-}
-
-.promessa > :nth-child(3) {
-  animation-delay: 120ms;
-}
-
-.promessa > :nth-child(4) {
-  animation-delay: 180ms;
-}
-
-@keyframes promessa-entra {
-  from {
-    opacity: 0;
-    translate: 0 var(--deslize-normal);
-  }
-}
-
-.chapeu {
-  margin: 0;
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: var(--texto-sm);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--cor-ink-soft);
-}
-
-/* Maior que o --texto-display no desktop: é a frase que vende. clamp
-   pra não quebrar em quatro linhas no celular. */
-.titulo {
-  margin: 0;
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: clamp(var(--texto-display), 7vw, 64px);
-  line-height: 1.02;
-  letter-spacing: -0.03em;
-  text-wrap: balance;
+/* O cabeçalho da home é fixo: o "Ver como funciona" do topo e qualquer
+   âncora param com o título abaixo dele, não por baixo. */
+.tituloDaSecao {
+  scroll-margin-top: 96px;
 }
 
 /* O espaço da Clash Grotesk é estreito, e com o letter-spacing negativo
    dos títulos as palavras grudavam ("Soafamiliar?") nos tamanhos
    grandes do site. */
-.titulo,
 .tituloDaSecao,
 .tituloDoItem {
   word-spacing: 0.08em;
-}
-
-.apoio {
-  margin: 0;
-  max-width: 52ch;
-  font-size: var(--texto-lg);
-  line-height: 1.5;
-  color: var(--cor-ink-soft);
-}
-
-.acoes {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espaco-md);
-  margin-top: var(--espaco-sm);
-}
-
-.nota {
-  margin: 0;
-  font-size: var(--texto-sm);
-  color: var(--cor-ink-soft);
-}
-
-.exemplo {
-  display: grid;
-  gap: var(--espaco-md);
-  padding: var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-lg);
-  background: var(--cor-surface);
-  box-shadow: var(--sombra-1);
-}
-
-.exemploTitulo {
-  margin: 0;
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: var(--texto-lg);
-  font-weight: 700;
-}
-
-.exemploLista {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.exemploItem {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--espaco-md);
-  padding: var(--espaco-sm) 0;
-  border-bottom: var(--borda-hairline) solid var(--cor-line);
-  font-size: var(--texto-sm);
-}
-
-.exemploHora {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.exemploProfissional {
-  padding: 2px var(--espaco-sm);
-  border-radius: var(--raio-pill);
-  background: var(--cor-pale-blue);
-  font-size: var(--texto-xs);
-  font-weight: 600;
-}
-
-.exemploSelo {
-  justify-self: start;
-  margin: 0;
-  padding: var(--espaco-xs) var(--espaco-sm);
-  border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-pill);
-  background: var(--cor-accent);
-  color: var(--cor-dark);
-  font-size: var(--texto-xs);
-  font-weight: 700;
 }
 
 .secao {
@@ -328,4 +185,19 @@
   border-radius: var(--raio-lg);
   background: var(--cor-surface);
   text-align: center;
+}
+
+/* O crédito do modelo 3D da cadeira do topo (CC BY 4.0), discreto no
+   fim da home. */
+.credito {
+  margin: 0;
+  font-size: var(--texto-xs);
+  line-height: 1.5;
+  text-align: center;
+  color: var(--cor-ink-soft);
+}
+
+.credito a {
+  color: inherit;
+  text-underline-offset: 3px;
 }

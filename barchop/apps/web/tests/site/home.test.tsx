@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { formatarReais, precoDoPlano } from "@barchop/formato";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -90,6 +92,45 @@ describe("home do site", () => {
     expect(prometeWhatsapp).toEqual([]);
     expect(screen.getByRole("region", { name: "O que vem junto" })).toHaveTextContent(
       /e-mail/i
+    );
+  });
+
+  // Home nova, marco 2: o topo do protótipo entra no lugar do antigo.
+  it("abre com o topo novo e o cabeçalho escuro, que olha o topo", () => {
+    render(<Home />);
+    expect(screen.getByRole("banner")).toHaveAttribute("data-tema", "escuro");
+    expect(screen.getByRole("region", { name: "Sua barbearia agenda sozinha." })).toHaveAttribute(
+      "id",
+      "topo-da-home"
+    );
+    // A agenda de exemplo do topo antigo saiu.
+    expect(screen.queryByText("Confirmado pelo cliente")).not.toBeInTheDocument();
+  });
+
+  it("o \"Ver como funciona\" do topo cai na seção, abaixo do cabeçalho fixo", () => {
+    render(<Home />);
+    expect(screen.getByRole("link", { name: "Ver como funciona" })).toHaveAttribute(
+      "href",
+      "#como-funciona"
+    );
+    expect(document.getElementById("como-funciona")).toHaveTextContent("Como funciona");
+    const css = readFileSync(join(__dirname, "../../src/site/Home.module.css"), "utf8");
+    expect(css).toMatch(/\.tituloDaSecao\s*\{[^}]*scroll-margin-top/);
+  });
+
+  // A cadeira do topo é derivada do modelo "Barber Chair" (CC BY 4.0):
+  // a licença pede o crédito, o link da licença e que diga que mudou.
+  it("dá o crédito da cadeira, com o link do modelo e da licença", () => {
+    render(<Home />);
+    const credito = screen.getByText(/Barber Chair/).closest("p")!;
+    expect(credito).toHaveTextContent(/sweedboy69/);
+    expect(within(credito).getByRole("link", { name: "Barber Chair" })).toHaveAttribute(
+      "href",
+      "https://sketchfab.com/3d-models/barber-chair-b608436ca02d40c6a914fca72f7b3619"
+    );
+    expect(within(credito).getByRole("link", { name: "CC BY 4.0" })).toHaveAttribute(
+      "href",
+      "https://creativecommons.org/licenses/by/4.0/"
     );
   });
 

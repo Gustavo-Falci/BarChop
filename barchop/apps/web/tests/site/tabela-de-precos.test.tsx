@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { formatarReais, precoDoPlano } from "@barchop/formato";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -67,5 +69,24 @@ describe("tabela de preços do site", () => {
       "href",
       "/gratis"
     );
+  });
+
+  // Home nova, marco 4: na home os planos ficam sem cartão (fio em cima,
+  // como as outras seções); em /precos continuam os cartões.
+  it("sem variante, os planos são cartões, como em /precos", () => {
+    render(<TabelaDePrecos />);
+    expect(screen.getByRole("list", { name: "Planos" })).toHaveAttribute("data-variante", "cartoes");
+  });
+
+  it("em linhas, os planos ficam sem borda, fundo e raio, só com o fio em cima", () => {
+    render(<TabelaDePrecos variante="linhas" />);
+    expect(screen.getByRole("list", { name: "Planos" })).toHaveAttribute("data-variante", "linhas");
+
+    const css = readFileSync(join(__dirname, "../../src/site/TabelaDePrecos.module.css"), "utf8");
+    const regra = css.match(/\.planos\[data-variante="linhas"\] \.plano\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(regra).toMatch(/border:\s*0/);
+    expect(regra).toMatch(/border-top:/);
+    expect(regra).toMatch(/background:\s*none/);
+    expect(regra).toMatch(/border-radius:\s*0/);
   });
 });

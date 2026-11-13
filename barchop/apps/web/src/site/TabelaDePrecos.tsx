@@ -42,9 +42,14 @@ function fraseDoLimite(plano: IdDoPlano): string {
 
 // `cadastro`: pra onde cada plano leva. A home passa o endereço com a
 // origem marcada (home nova, marco 1); /precos usa o padrão.
-export function TabelaDePrecos({ cadastro = "/painel/cadastro" }: { cadastro?: string } = {}) {
+// `variante`: em /precos, cartões; na home nova (marco 4), linhas, sem
+// caixa, com o fio em cima como as outras seções.
+export function TabelaDePrecos({
+  cadastro = "/painel/cadastro",
+  variante = "cartoes",
+}: { cadastro?: string; variante?: "cartoes" | "linhas" } = {}) {
   return (
-    <ul aria-label="Planos" className={estilos.planos}>
+    <ul aria-label="Planos" className={estilos.planos} data-variante={variante}>
       {IDS_DOS_PLANOS.map((id) => {
         const plano = PLANOS[id];
         const mensal = precosDoCiclo(id, "mensal");

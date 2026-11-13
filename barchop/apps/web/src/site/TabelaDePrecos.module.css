@@ -26,6 +26,20 @@
   background: var(--cor-surface);
 }
 
+/* Na home nova (marco 4): sem cartão. Só o fio em cima, como as listas
+   das outras seções; o espaço entre as colunas faz o papel da borda. */
+.planos[data-variante="linhas"] {
+  gap: var(--espaco-xl) var(--espaco-xxl);
+}
+
+.planos[data-variante="linhas"] .plano {
+  padding: var(--espaco-lg) 0 0;
+  border: 0;
+  border-top: var(--borda-padrao) solid var(--cor-line-strong);
+  border-radius: 0;
+  background: none;
+}
+
 .cabeca {
   display: grid;
   gap: var(--espaco-xs);

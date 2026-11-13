@@ -4,7 +4,62 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-12, noite — home nova com a cadeira 3D no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-13, fim do dia — home nova completa, marcos 4 a 6 no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `2b4e444`, #341). Nada aberto. No GitHub só existe a `main`.
+- **Produção = `main` até o #340**, deploy do dono conferido em 13/11. Os #341 e este são só docs.
+- **PRD da home nova COMPLETO** (`.claude/prds/home-nova.prd.md`, marcos 1 a 6):
+  - **Marco 4, #338:** seções no estilo novo.
+  - **Marco 5, #339:** abertura da navalha (plano `.claude/plans/home-nova-abertura.plan.md`):
+    - toca só na 1ª visita da sessão;
+    - pulável por botão, tecla, roda do mouse e toque;
+    - fica de fora com reduzir movimento, com hash na URL ou ao voltar pelo histórico.
+  - **Marco 6, #340 + #341:** medido e no ar (plano `.claude/plans/home-nova-medido.plan.md`):
+    - as fontes do site (Clash e Inter) perderam o `preload`: elas disputavam a 4G com a imagem da cadeira;
+    - o celular ganhou a `cadeira-celular-960`.
+- **Resultado em produção:**
+  - LCP com limitação real **2,21 s** (era ~2,97 s), CLS 0, acessibilidade 96–100;
+  - telas baixas, reduzir movimento e o crédito da cadeira conferidos.
+- **Decisão do dono (13/11):** a meta de LCP vale no Lighthouse com `--throttling-method=devtools`, mediana de 5.
+  - O simulado (Lantern/PageSpeed) fica só como referência: 2,82 s em produção.
+  - Ele soma o JS do React/Next antes da 1ª pintura; até `/privacidade`, só texto, dá 3,2 s nele.
+- **Contador (aba Números):**
+  - 12/11: 4 visitas da home;
+  - 13/11: 40, das quais cerca de 25 são medições do marco 6;
+  - **0 cadastros**.
+- **Como medir:** `npx -y lighthouse@12 URL --form-factor=mobile --throttling-method=devtools --output=json --output-path=...`. O `lighthouse_audit` do MCP não roda a categoria de desempenho.
+
+**Ao retomar (só quando o dono pedir):**
+1. **Pix do BarChop, URGENTE:** o teste da `jesus-barber` acaba em **15/11, 14:43 UTC**, e o dono não quer estender. Falta:
+   - PR 3 (Suporte confere o Pix);
+   - PR 4 (avisos e vencimento);
+   - preencher as `PIX_*` em produção;
+   - o Pix de R$ 1,00 de teste, que também fecha o (d), o que o extrato de quem recebe mostra.
+
+   Depois, PR 5 (confirmar com o dono a diferença **proporcional** ao começar). Plano: `.claude/plans/pix-do-barchop.plan.md`; contexto no RETOMAR AQUI de 09/11, abaixo.
+2. **Home nova, pendências pequenas** (sem PRD aberto):
+   - reler o contador com 30 dias de home nova (~12/12);
+   - status real em vez do exemplo fixo "14:40" (pergunta aberta no PRD);
+   - `llms.txt`, a única auditoria do Lighthouse que falha;
+   - reservar o slug `home` só depois de conferir no banco que nenhuma barbearia o usa;
+   - se o LCP simulado do PageSpeed importar um dia (busca/SEO): fazer o topo pintar antes do JS do Next, uma reforma grande.
+3. **41 branches locais antigas** nesta máquina (`onda-0`, `onda-1*`, `painel-v2-*`, `docs-*`, `stripe-na-cobranca`…): apagar só com autorização.
+4. Os da lista de 06/11: testes reais opcionais em produção, onda D (marketing), G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas.
+   - **24/11:** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+**Ambiente local:**
+- Build de produção local:
+  - `NEXT_PUBLIC_URL_DO_SITE=http://localhost:3100 pnpm exec next build`;
+  - copiar `public` e `.next/static` pra `.next/standalone/apps/web/`;
+  - `PORT=3100 HOSTNAME=localhost node server.js`.
+
+  O HTML pré-renderizado da home (`.next/standalone/apps/web/.next/server/app/index.html`) dá pra editar pra testar variantes sem rebuild, reiniciando o servidor (ele guarda a página em memória).
+- Servidor do Next em segundo plano: TaskStop não mata o Node. Liberar a porta com `taskkill` pelo PID do `netstat -ano` (no Windows em português, o estado é "OUVINDO").
+- "Reduzir movimento": o Chrome do MCP chrome-devtools às vezes vem com a preferência ligada, às vezes não. Conferir com `matchMedia` antes de concluir algo.
+- Branches antigas só se apagam com autorização do dono.
+
+## RETOMAR AQUI (2026-11-12, noite — home nova com a cadeira 3D no ar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `588babd`, #337). Nada aberto.

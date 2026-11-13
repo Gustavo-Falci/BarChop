@@ -1,0 +1,65 @@
+/* O título das seções da home nova (marco 4): o rótulo em Inter caixa
+   alta e a frase em duas metades da Clash, a leve (300, da clashLeve) e
+   a pesada (700). Quem chama pode trocar as cores pelas variáveis: o
+   fecho escuro usa o claro do topo. */
+.cabeca {
+  display: grid;
+  gap: var(--espaco-sm);
+}
+
+.rotulo {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--rotulo-cor, var(--cor-accent-text));
+}
+
+.titulo {
+  margin: 0;
+  max-width: 14em;
+  font-size: var(--titulo-tamanho, clamp(34px, 4.6vw, 64px));
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  /* O espaço da Clash é estreito: sem isso as palavras grudam. */
+  word-spacing: 0.08em;
+  color: var(--titulo-cor, var(--cor-ink));
+}
+
+.leve {
+  font-family: var(--fonte-display-leve), var(--fonte-display), system-ui, sans-serif;
+  font-weight: 300;
+}
+
+.forte {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* A palavra anda sozinha: inline-block pra o translate valer. */
+.palavra {
+  display: inline-block;
+}
+
+/* Com data-estado (só depois de montar, abaixo da dobra) as palavras
+   sobem do desfoque na vez delas, a 70ms uma da outra; ao sair, voltam
+   juntas e rápido. Os tempos são os do titulos.js do protótipo. */
+.titulo[data-estado] .palavra {
+  transition:
+    opacity 0.95s cubic-bezier(0.22, 1, 0.36, 1),
+    translate 0.95s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+
+.titulo[data-estado="escondido"] .palavra {
+  opacity: 0;
+  translate: 0 0.42em;
+  filter: blur(8px);
+  transition-duration: 0.35s;
+  transition-delay: 0s;
+}

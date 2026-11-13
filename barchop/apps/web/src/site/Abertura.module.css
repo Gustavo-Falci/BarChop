@@ -249,3 +249,10 @@
     bottom: calc(40 * var(--u));
   }
 }
+
+/* No celular estreito, os dois cantos de cima se encostariam: fica a marca. */
+@media (max-width: 419px) {
+  .publico {
+    display: none;
+  }
+}

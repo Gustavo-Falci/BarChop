@@ -33,7 +33,7 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 4. **Abertura**: a navalha da marca atravessa a agenda do dia, deixando o rastro que vira horários marcados, fecha, vira o B e voa até o ícone da navegação. Toca só na primeira visita da sessão; pode ser pulada (botão, tecla, rolagem ou toque) e não acontece com "reduzir movimento".
 4a. **Navegação da home**: escura sobre o topo escuro, clareia quando a névoa chega. As outras páginas mantêm o cabeçalho claro atual.
 5. **"Reduzir movimento" e telas baixas** como no protótipo: sem abertura, sem giro nem aproximação na rolagem, nada parado piscando; a frase nunca encosta na navegação em celular baixo.
-6. **O conteúdo atual da home continua** abaixo do topo (dores, como funciona, o que vem junto, planos, perguntas e o fecho), com o texto que já existe, no tema claro do site.
+6. **O conteúdo atual da home continua** abaixo do topo (dores, como funciona, o que vem junto, planos, perguntas e o fecho), com o texto que já existe, no tema claro do site, **na linguagem do protótipo** (decisão do dono em 13/11): sem caixas, rótulo mono e título leve + forte, listas com fio em cima e o fecho no escuro.
 7. **Contador de conversão**: o servidor conta visitas da home e cadastros que vieram dela, sem cookie e sem ferramenta de terceiros, e o dono do produto vê os números. Entra antes da troca, para medir a home atual.
 8. **Crédito da cadeira 3D** ("Barber Chair", de sweedboy69, CC BY 4.0) visível no rodapé da home.
 
@@ -53,8 +53,9 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | 1 | Linha de base | O dono do produto vê quantas visitas a home atual recebe e quantas viram cadastro, sem cookie | complete | `.claude/plans/home-nova-linha-de-base.plan.md` |
 | 2 | Topo novo, parado | O visitante vê o topo escuro com "Bar/Chop", a frase, o botão e a imagem da cadeira sob o foco, com a navegação escura que clareia; o resto da home segue como está | complete | `.claude/plans/home-nova-topo-parado.plan.md` |
 | 3 | Cadeira viva e rolagem | A cadeira 3D substitui a imagem quando carrega (fica a imagem em aparelho fraco); rolar gira e aproxima a cadeira e dissolve na névoa até "Soa familiar?" | complete | `.claude/plans/home-nova-cadeira-viva.plan.md` |
-| 4 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | pending | — |
-| 5 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | pending | — |
+| 4 | Seções no estilo novo | Abaixo do topo, todas as seções sem caixa: rótulo mono e título leve + forte subindo do desfoque, listas com fio em cima, planos sem cartão, fecho escuro (pedido do dono em 13/11) | in-progress | `.claude/plans/home-nova-secoes.plan.md` |
+| 5 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | pending | `.claude/plans/home-nova-abertura.plan.md` |
+| 6 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | pending | — |
 
 ## Open Questions
 - [x] Qual é o teto de peso aceitável só na home? — **600 kB comprimidos, todos depois do `load`, e zero no JS inicial** (marco 3). Medido: three + cena 163 kB, `cadeira.glb` 372 kB com gzip, ~535 kB no total; JS inicial +1,7 kB.

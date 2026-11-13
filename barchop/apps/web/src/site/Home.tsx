@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./Home.module.css";
 import { TabelaDePrecos } from "./TabelaDePrecos";
+import { SCRIPT_DA_ABERTURA } from "./abertura/script";
 import { ContaVisita } from "./ContaVisita";
 import { clashLeve } from "./fontesDaHome";
 import { TituloDaSecao } from "./TituloDaSecao";
@@ -106,6 +107,9 @@ function numero(i: number) {
 export function Home() {
   return (
     <>
+      {/* Antes do cabeçalho e do topo: decide a abertura da navalha (marco
+          5) antes da primeira pintura deles. */}
+      <script dangerouslySetInnerHTML={{ __html: SCRIPT_DA_ABERTURA }} />
       <CabecalhoDaHome topo={ID_DO_TOPO} />
       <main className={clashLeve.variable}>
         <ContaVisita />

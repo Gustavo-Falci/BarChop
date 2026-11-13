@@ -63,6 +63,8 @@ describe("tocar", () => {
     html().classList.remove(CLASSE_DA_ABERTURA);
     html().removeAttribute(VIVA);
     document.body.innerHTML = "";
+    // Um caso que parou no meio não deixa a rolagem presa pro próximo.
+    document.body.removeAttribute("style");
   });
 
   it("marca o <html> como viva (a trava não corta) e prende a rolagem enquanto toca", async () => {

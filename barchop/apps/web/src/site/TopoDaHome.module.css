@@ -339,6 +339,28 @@
   }
 }
 
+/* O primeiro estado da abertura da navalha (marco 5), antes de o
+   tocar.ts chegar: o escuro com a agenda, sem luz, sem nome e sem a
+   interface (fora do Tab também; o .topo na frente vence o :focus-within
+   quando o foco está no botão de pular). A cadeira já é pintada, só
+   apagada: é ela o maior elemento do topo (o LCP). */
+:global(html.abertura-on) .topo .promessa,
+:global(html.abertura-on) .topo .status,
+:global(html.abertura-on) .topo .base {
+  opacity: 0;
+  visibility: hidden;
+}
+
+:global(html.abertura-on) .topo .foco,
+:global(html.abertura-on) .topo .grade,
+:global(html.abertura-on) .topo .metade {
+  opacity: 0;
+}
+
+:global(html.abertura-on) .topo .cadeira img {
+  filter: brightness(0.12);
+}
+
 /* O apoio e os convites, embaixo à esquerda. */
 .base {
   position: absolute;

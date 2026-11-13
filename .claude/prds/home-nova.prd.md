@@ -20,7 +20,7 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | Metric | Target | How measured |
 |---|---|---|
 | Visitas da home → cadastro concluído | Maior que a taxa da home atual (linha de base medida pelo contador antes da troca; alvo numérico TBD depois de ver a linha de base) | Contador próprio no servidor, sem cookie e sem terceiros (marco 1) |
-| Primeira pintura com o título e o botão de criar conta, no celular | LCP ≤ 2,5 s em celular médio (4G) | Lighthouse mobile na home em produção |
+| Primeira pintura com o título e o botão de criar conta, no celular | LCP ≤ 2,5 s em celular médio (4G) | Lighthouse mobile na home em produção, com rede e CPU limitadas de verdade (`--throttling-method=devtools`), mediana de 5; o número simulado do PageSpeed fica registrado ao lado, como referência (decisão do dono em 13/11, marco 6) |
 | Estabilidade do layout | CLS ≤ 0,1 | Lighthouse mobile |
 | Acessibilidade | Lighthouse acessibilidade ≥ 95; com "reduzir movimento" nada anda, gira ou aproxima | Lighthouse + teste manual com a preferência ligada |
 | Aprovação visual do dono do produto | 100% das telas em 375 px, telas baixas (320×568) e 1440 px | revisão no navegador antes de cada merge |
@@ -54,8 +54,8 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | 2 | Topo novo, parado | O visitante vê o topo escuro com "Bar/Chop", a frase, o botão e a imagem da cadeira sob o foco, com a navegação escura que clareia; o resto da home segue como está | complete | `.claude/plans/home-nova-topo-parado.plan.md` |
 | 3 | Cadeira viva e rolagem | A cadeira 3D substitui a imagem quando carrega (fica a imagem em aparelho fraco); rolar gira e aproxima a cadeira e dissolve na névoa até "Soa familiar?" | complete | `.claude/plans/home-nova-cadeira-viva.plan.md` |
 | 4 | Seções no estilo novo | Abaixo do topo, todas as seções sem caixa: rótulo mono e título leve + forte subindo do desfoque, listas com fio em cima, planos sem cartão, fecho escuro (pedido do dono em 13/11) | complete | `.claude/plans/home-nova-secoes.plan.md` |
-| 5 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | in-progress | `.claude/plans/home-nova-abertura.plan.md` |
-| 6 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | pending | — |
+| 5 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | complete | `.claude/plans/home-nova-abertura.plan.md` |
+| 6 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | in-progress | `.claude/plans/home-nova-medido.plan.md` |
 
 ## Open Questions
 - [x] Qual é o teto de peso aceitável só na home? — **600 kB comprimidos, todos depois do `load`, e zero no JS inicial** (marco 3). Medido: three + cena 163 kB, `cadeira.glb` 372 kB com gzip, ~535 kB no total; JS inicial +1,7 kB.
@@ -68,6 +68,7 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 - Navegação da home escura sobre o topo, clareia com a névoa; demais páginas mantêm o cabeçalho claro.
 - Celular fraco ou sem 3D: imagem parada da cena.
 - Medição: contador próprio no servidor, sem cookie e sem terceiros.
+- (13/11, marco 6) A meta de LCP vale no Lighthouse com limitação real (devtools). O simulado (Lantern, o do PageSpeed) soma todo o JS do React/Next antes da 1ª pintura: até `/privacidade`, só texto, dá 3,2 s nele; baixar dali pediria reformar o JS do framework.
 - Sem esperar a linha de base: a home nova vai ao ar no marco 2. A comparação antes/depois fica sem base; o contador passa a medir a home nova desde a troca.
 
 ## Risks

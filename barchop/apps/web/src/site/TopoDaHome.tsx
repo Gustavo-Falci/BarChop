@@ -19,7 +19,7 @@ const CADASTRO_PELA_HOME = "/painel/cadastro?origem=home";
 // luz; o celular, o miolo. As larguras e alturas são as dos arquivos e
 // reservam o lugar antes de a imagem chegar.
 const CADEIRA = {
-  celular: { srcs: [640, 1280], largura: 1280, altura: 1129, tamanho: "52vh" },
+  celular: { srcs: [640, 960, 1280],largura: 1280, altura: 1129, tamanho: "52vh" },
   computador: { srcs: [1280, 2200], largura: 1280, altura: 677, tamanho: "124vh" },
 };
 

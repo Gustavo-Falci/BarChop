@@ -25,6 +25,10 @@ export const clashGrotesk = localFont({
   ],
   variable: "--fonte-display",
   display: "swap",
+  // Sem pré-carga (home nova, marco 6): pré-carregadas, as fontes disputavam
+  // a 4G lenta com a imagem do LCP e o atrasavam ~0,8 s. O texto pinta na
+  // reserva ajustada (`display: swap`) e troca quando a fonte chega.
+  preload: false,
 });
 
 // Inter também self-hosted, de `font/Inter/` (Inter 4.1 do rsms, licença
@@ -50,6 +54,8 @@ export const inter = localFont({
   // que a --fonte-corpo é a Inter, e a página pública sobrescreve.
   variable: "--fonte-inter",
   display: "swap",
+  // Sem pré-carga, pelo mesmo motivo da Clash acima.
+  preload: false,
 });
 
 // As cinco fontes que a Aparência oferece pra página pública (marco F),

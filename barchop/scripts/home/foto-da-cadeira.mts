@@ -12,7 +12,7 @@
 // Escreve, em apps/web/public/home/:
 //   cadeira-{1280,2200}.{avif,webp}         o quadro inteiro (cadeira + poça
 //                                           de luz no chão), pro computador
-//   cadeira-celular-{640,1280}.{avif,webp}  o miolo do mesmo quadro, com as
+//   cadeira-celular-{640,960,1280}.{avif,webp}  o miolo do mesmo quadro, com as
 //                                           bordas esmaecidas, pro celular
 //
 // A posição no CSS (TopoDaHome.module.css) sai das medidas que este script
@@ -106,7 +106,7 @@ async function principal() {
   const imagemDoMiolo = sharp(miolo.data, {
     raw: { width: miolo.info.width, height: miolo.info.height, channels: 4 },
   });
-  await gravar(imagemDoMiolo, "cadeira-celular", [640, 1280]);
+  await gravar(imagemDoMiolo, "cadeira-celular", [640, 960, 1280]);
 
   // As medidas pro CSS, em fração do quadro e do recorte.
   const pct = (v: number) => `${(v * 100).toFixed(2)}%`;

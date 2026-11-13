@@ -90,6 +90,10 @@ describe("topo da home", () => {
     ]);
     expect(fontes[0]).toHaveAttribute("media", "(max-width: 760px)");
     expect(fontes[0].getAttribute("srcset")).toContain("/assets/home/cadeira-celular-640.avif 640w");
+    // Marco 6: um degrau no meio. O celular médio (DPR ~1,75, 52vh ≈ 430 px)
+    // pedia ~750 px e levava a de 1280 (42 kB); a de 960 basta.
+    expect(fontes[0].getAttribute("srcset")).toContain("/assets/home/cadeira-celular-960.avif 960w");
+    expect(fontes[1].getAttribute("srcset")).toContain("/assets/home/cadeira-celular-960.webp 960w");
     expect(fontes[2].getAttribute("srcset")).toContain("/assets/home/cadeira-2200.avif 2200w");
   });
 

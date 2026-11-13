@@ -128,7 +128,7 @@ pnpm --filter @barchop/web build
 - [x] "Reduzir movimento": nada baixa, nada é preso, nada gira
 - [x] Cabeçalho escuro → claro com a névoa; some ao descer, volta ao subir
 - [x] JS inicial da home: só +1,7 kB (CadeiraViva e as contas puras); 3D dentro do teto de peso
-- [ ] Aprovado pelo dono em 1440, 375 e 320×568
+- [x] Aprovado pelo dono ("pode mergear" em 12/11)
 - [x] Testes afetados, tsc, lint e build passando
 - [x] Lighthouse mobile: acessibilidade, boas práticas e SEO 100 (a ferramenta não roda a categoria de desempenho)
 - [ ] LCP ≤ 2,5 s no celular: 1,2 s com cache, mas **2,98 s com cache frio** (4G lenta, CPU 4×) — o 3D não entra no caminho (começa depois do `load`, +1,7 kB no JS inicial); medir em produção no marco 5

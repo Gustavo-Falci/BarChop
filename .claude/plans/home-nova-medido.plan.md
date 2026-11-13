@@ -105,3 +105,26 @@ npx lighthouse@12 https://barchop.com.br/ --form-factor=mobile --only-categories
 - [ ] Crédito da cadeira conferido no rodapé
 - [ ] Números do contador registrados no PRD
 - [ ] Testes afetados, tsc e lint passando
+
+## Execução (13/11)
+
+### Task 1 — fora, por decisão técnica
+O contraste é uma auditoria só no Lighthouse: falhando, a nota fica **96, acima da meta (≥ 95)**. E a promessa e o botão "Criar barbearia" do topo também entram por opacidade na mesma janela, então mudar só o cabeçalho não tiraria a oscilação; tirar de verdade pediria mudar o visual do fim da abertura. Meta atendida sem código.
+
+### Task 2 — investigação do LCP
+Build de produção local, HTML pré-renderizado editado por variante (sem rebuild), Lighthouse 12 CLI mobile, mediana de 3–5 rodadas. "Simulado" = o padrão do Lighthouse e do PageSpeed (Lantern); "real" = `--throttling-method=devtools` (4G lenta e CPU 4× aplicadas de fato).
+
+| Variante | LCP simulado | LCP real |
+|---|---|---|
+| Atual | 3,73 s | 2,97 s |
+| `decoding` padrão em vez de `async` | 4,03 s | — |
+| Sem preload das 6 fontes | 3,66 s | **2,14 s** |
+| Só a imagem de 640 px no celular | — | 2,67 s |
+| Sem preload + 640 px | 3,42 s | 2,15 s |
+| Sem preload das 2 leves + 640 px | 3,66 s | 2,52 s |
+| Só o Bold com preload + 640 px | 3,68 s | 2,33 s |
+| Sem JS nenhum + sem preload + 640 px (piso) | 2,15 s | 2,17 s |
+
+- **Rede real**: a imagem (42 kB) divide a 4G lenta com as 6 fontes pré-carregadas (~140 kB, prioridade alta) e chega em ~2,1 s. Sem o preload das fontes, o LCP cai ~0,8 s. É o ganho grande e barato.
+- **Simulado**: o Lantern conta todo o JS que roda antes da 1ª pintura observada (React + Next, ~170 kB comprimidos), e no Chrome sem limite a pintura sai depois desse JS. Até `/privacidade`, que é só texto, dá 3,2 s simulado no local. Sem JS nenhum o piso é 2,15 s. Fontes e imagem tiram ~0,3 s do simulado; o resto só sai mexendo no JS do framework antes da pintura.
+- Produção mede melhor que o local no simulado (3,0 s × 3,7 s), então o simulado em produção com fontes + imagem deve ficar perto de 2,7 s: ainda acima de 2,5 s.

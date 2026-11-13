@@ -75,7 +75,7 @@ describe("topo da home", () => {
     // alt vazio: some da árvore de acessibilidade.
     const imagem = secao.querySelector("picture img")!;
     expect(imagem).toHaveAttribute("alt", "");
-    expect(imagem).toHaveAttribute("src", "/home/cadeira-1280.webp");
+    expect(imagem).toHaveAttribute("src", "/assets/home/cadeira-1280.webp");
     // Largura e altura reservam o lugar (sem pulo de layout).
     expect(imagem).toHaveAttribute("width");
     expect(imagem).toHaveAttribute("height");
@@ -89,8 +89,8 @@ describe("topo da home", () => {
       "image/webp",
     ]);
     expect(fontes[0]).toHaveAttribute("media", "(max-width: 760px)");
-    expect(fontes[0].getAttribute("srcset")).toContain("/home/cadeira-celular-640.avif 640w");
-    expect(fontes[2].getAttribute("srcset")).toContain("/home/cadeira-2200.avif 2200w");
+    expect(fontes[0].getAttribute("srcset")).toContain("/assets/home/cadeira-celular-640.avif 640w");
+    expect(fontes[2].getAttribute("srcset")).toContain("/assets/home/cadeira-2200.avif 2200w");
   });
 
   // O jsdom não faz layout: os testes de CSS leem as regras.

@@ -6,6 +6,9 @@ import {
   isRewrite,
   unstable_doesMiddlewareMatch,
 } from "next/experimental/testing/server";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import { slugReservado } from "@barchop/formato";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { config, proxy } from "../../proxy";
 import { CABECALHO_DA_BARBEARIA, CABECALHO_DO_CAMINHO } from "../../src/tenant/rota";
@@ -114,6 +117,27 @@ describe("o matcher do proxy", () => {
     // sem imagem.
     expect(roda("/opengraph-image-pwu6ef")).toBe(false);
     expect(roda("/opengraph-image")).toBe(false);
+  });
+
+  it("não roda nos arquivos da home, em /assets", () => {
+    expect(roda("/assets/home/cadeira.glb")).toBe(false);
+    expect(roda("/assets/home/cadeira-celular-640.avif")).toBe(false);
+  });
+
+  it("nenhuma pasta de public/ pode parecer o link de uma barbearia", () => {
+    // Em produção, /home/cadeira.glb no host do site virou 308 pra
+    // home.barchop.com.br (404): "home" passa no formato de slug. Toda
+    // pasta servida da raiz fica fora do proxy, ou tem nome reservado.
+    const pastas = readdirSync(join(__dirname, "../../public"), { withFileTypes: true })
+      .filter((item) => item.isDirectory())
+      .map((item) => item.name);
+    expect(pastas.length).toBeGreaterThan(0);
+    for (const pasta of pastas) {
+      expect({ pasta, protegida: !roda(`/${pasta}/arquivo.png`) || slugReservado(pasta) }).toEqual({
+        pasta,
+        protegida: true,
+      });
+    }
   });
 
   it("um slug que só começa parecido continua passando pelo proxy", () => {

@@ -3,8 +3,9 @@ import Link from "next/link";
 import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./Home.module.css";
 import { TabelaDePrecos } from "./TabelaDePrecos";
-import { Revelar } from "./Revelar";
 import { ContaVisita } from "./ContaVisita";
+import { clashLeve } from "./fontesDaHome";
+import { TituloDaSecao } from "./TituloDaSecao";
 import { CabecalhoDaHome } from "./CabecalhoDaHome";
 import { ID_DO_TOPO, TopoDaHome } from "./TopoDaHome";
 
@@ -13,7 +14,8 @@ import { ID_DO_TOPO, TopoDaHome } from "./TopoDaHome";
 // rodapé aparecem em todas as páginas do site.
 const CADASTRO_PELA_HOME = "/painel/cadastro?origem=home";
 
-// A home do SaaS (marco 1s; topo novo na home nova, marco 2). O texto só promete o que o produto já faz:
+// A home do SaaS (marco 1s; topo novo na home nova, marco 2; seções na
+// linguagem do protótipo, marco 4). O texto só promete o que o produto já faz:
 // lembrete por e-mail (o WhatsApp oficial espera a Meta, ADR-0009),
 // os preços lidos de planos.ts (chegaram com a cobrança, Onda 2) e
 // nenhum número de prova antes de o piloto medir alguma coisa.
@@ -91,63 +93,91 @@ const PERGUNTAS = [
   },
 ];
 
+// O número do item em dois dígitos, como no protótipo ("01"). Só
+// desenho: a lista ordenada já diz a posição ao leitor de tela.
+function numero(i: number) {
+  return String(i + 1).padStart(2, "0");
+}
+
+// Abaixo do topo, as seções sem caixa (home nova, marco 4): o rótulo
+// curto de sempre em cima, que é o nome da seção pro leitor de tela, o
+// título leve + forte, e as listas lado a lado com um fio em cima. O
+// fecho sai do miolo pra pintar a largura toda no escuro do topo.
 export function Home() {
   return (
     <>
       <CabecalhoDaHome topo={ID_DO_TOPO} />
-      <main>
+      <main className={clashLeve.variable}>
         <ContaVisita />
         <TopoDaHome />
         <div className={estilos.home}>
-          <Revelar como="section" aria-labelledby="dor" className={estilos.secao}>
-            <h2 id="dor" className={estilos.tituloDaSecao}>Soa familiar?</h2>
-            <ul className={estilos.dores}>
-              {DORES.map((dor) => (
-                <li key={dor}>{dor}</li>
-              ))}
-            </ul>
-          </Revelar>
-
-          <Revelar como="section" aria-labelledby="como-funciona" className={estilos.secao}>
-            <h2 id="como-funciona" className={estilos.tituloDaSecao}>Como funciona</h2>
-            <ol className={estilos.passos}>
-              {PASSOS.map((passo) => (
-                <li key={passo.titulo} className={estilos.passo}>
-                  <h3 className={estilos.tituloDoItem}>{passo.titulo}</h3>
-                  <p>{passo.texto}</p>
+          <section id="dores" aria-labelledby="dores-rotulo" className={estilos.secao}>
+            <TituloDaSecao id="dores" rotulo="Soa familiar?" leve="Cadeira vazia" forte="é horário perdido." />
+            <ol className={estilos.lista}>
+              {DORES.map((dor, i) => (
+                <li key={dor} className={estilos.item}>
+                  <span className={estilos.numero} aria-hidden="true">
+                    {numero(i)}
+                  </span>
+                  <p className={estilos.dor}>{dor}</p>
                 </li>
               ))}
             </ol>
-          </Revelar>
+          </section>
 
-          <Revelar como="section" aria-labelledby="recursos" className={estilos.secao}>
-            <h2 id="recursos" className={estilos.tituloDaSecao}>O que vem junto</h2>
-            <ul className={estilos.recursos}>
+          <section id="como-funciona" aria-labelledby="como-funciona-rotulo" className={estilos.secao}>
+            <TituloDaSecao id="como-funciona" rotulo="Como funciona" leve="Três passos" forte="e a agenda anda." />
+            <ol className={estilos.lista}>
+              {PASSOS.map((passo, i) => (
+                <li key={passo.titulo} className={estilos.item}>
+                  <span className={estilos.numero} aria-hidden="true">
+                    Passo {i + 1}
+                  </span>
+                  <h3 className={estilos.tituloDoItem}>{passo.titulo}</h3>
+                  <p className={estilos.texto}>{passo.texto}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section id="recursos" aria-labelledby="recursos-rotulo" className={estilos.secao}>
+            <TituloDaSecao
+              id="recursos"
+              rotulo="O que vem junto"
+              leve="Do link ao lembrete,"
+              forte="tudo num lugar só."
+            />
+            <ul className={estilos.lista}>
               {RECURSOS.map((recurso) => (
-                <li key={recurso.titulo} className={estilos.recurso}>
+                <li key={recurso.titulo} className={estilos.item}>
                   <h3 className={estilos.tituloDoItem}>{recurso.titulo}</h3>
-                  <p>{recurso.texto}</p>
+                  <p className={estilos.texto}>{recurso.texto}</p>
                 </li>
               ))}
             </ul>
-          </Revelar>
+          </section>
 
-          <Revelar como="section" aria-labelledby="planos" className={estilos.secao}>
+          <section id="planos" aria-labelledby="planos-rotulo" className={estilos.secao}>
             <div className={estilos.cabecaDosPlanos}>
-              <h2 id="planos" className={estilos.tituloDaSecao}>Planos</h2>
+              <TituloDaSecao id="planos" rotulo="Planos" leve="Comece grátis," forte="mude quando crescer." />
               <p className={estilos.apoioDosPlanos}>
                 Comece com {DIAS_DE_TESTE} dias de tudo liberado. Depois, escolha um
                 plano ou fique no Grátis.
               </p>
             </div>
-            <TabelaDePrecos cadastro={CADASTRO_PELA_HOME} />
+            <TabelaDePrecos cadastro={CADASTRO_PELA_HOME} variante="linhas" />
             <Link href="/precos" className={estilos.detalhes}>
               Ver todos os detalhes dos preços
             </Link>
-          </Revelar>
+          </section>
 
-          <Revelar como="section" aria-labelledby="perguntas" className={estilos.secao}>
-            <h2 id="perguntas" className={estilos.tituloDaSecao}>Perguntas frequentes</h2>
+          <section id="perguntas" aria-labelledby="perguntas-rotulo" className={`${estilos.secao} ${estilos.perguntasLado}`}>
+            <TituloDaSecao
+              id="perguntas"
+              rotulo="Perguntas frequentes"
+              leve="Antes de começar,"
+              forte="o que todo mundo pergunta."
+            />
             <div className={estilos.perguntas}>
               {PERGUNTAS.map((item) => (
                 <details key={item.pergunta} className={estilos.pergunta}>
@@ -156,26 +186,28 @@ export function Home() {
                 </details>
               ))}
             </div>
-          </Revelar>
-
-          <Revelar como="section" aria-labelledby="comecar" className={estilos.final}>
-            <h2 id="comecar" className={estilos.tituloDaSecao}>
-              Comece hoje, sem falar com ninguém.
-            </h2>
-            <LinkDeAcao href={CADASTRO_PELA_HOME} grande>
-              Criar minha barbearia grátis
-            </LinkDeAcao>
-          </Revelar>
-
-          <p className={estilos.credito}>
-            A cadeira do topo é adaptada do modelo 3D{" "}
-            <a href="https://sketchfab.com/3d-models/barber-chair-b608436ca02d40c6a914fca72f7b3619">
-              Barber Chair
-            </a>
-            , de sweedboy69, sob a licença{" "}
-            <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
-          </p>
+          </section>
         </div>
+
+        <section id="comecar" aria-labelledby="comecar-titulo" className={estilos.fecho}>
+          <div className={estilos.miolo}>
+            <TituloDaSecao id="comecar" leve="Comece hoje," forte="sem falar com ninguém." />
+            <div className={estilos.acoes}>
+              <LinkDeAcao href={CADASTRO_PELA_HOME} grande className={estilos.ouro}>
+                Criar minha barbearia grátis
+              </LinkDeAcao>
+              <p className={estilos.nota}>{DIAS_DE_TESTE} dias com tudo liberado · sem cartão</p>
+            </div>
+            <p className={estilos.credito}>
+              A cadeira do topo é adaptada do modelo 3D{" "}
+              <a href="https://sketchfab.com/3d-models/barber-chair-b608436ca02d40c6a914fca72f7b3619">
+                Barber Chair
+              </a>
+              , de sweedboy69, sob a licença{" "}
+              <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+            </p>
+          </div>
+        </section>
       </main>
     </>
   );

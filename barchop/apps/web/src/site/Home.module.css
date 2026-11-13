@@ -1,144 +1,98 @@
+/* As seções da home abaixo do topo (home nova, marco 4), na linguagem do
+   protótipo: nada de caixa com título. Rótulo e título leve + forte
+   (TituloDaSecao), listas lado a lado no computador com um fio em cima e
+   o número em ouro, e o fecho no escuro do topo. */
 .home {
   display: grid;
   /* Sem o minmax, um filho que não quebra linha estica a coluna além
      da tela no celular. */
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--espaco-xxl);
+  gap: clamp(88px, 10vw, 152px);
   width: 100%;
   max-width: 1120px;
   margin-inline: auto;
-  padding: var(--espaco-xxl) var(--espaco-lg);
+  padding: var(--espaco-xxl) var(--espaco-lg) clamp(96px, 11vw, 160px);
 }
 
 /* O cabeçalho da home é fixo: o "Ver como funciona" do topo e qualquer
-   âncora param com o título abaixo dele, não por baixo. */
-.tituloDaSecao {
+   âncora param com a seção abaixo dele, não por baixo. */
+.secao {
+  display: grid;
+  gap: clamp(36px, 4.4vw, 64px);
   scroll-margin-top: 96px;
 }
 
-/* O espaço da Clash Grotesk é estreito, e com o letter-spacing negativo
-   dos títulos as palavras grudavam ("Soafamiliar?") nos tamanhos
-   grandes do site. */
-.tituloDaSecao,
-.tituloDoItem {
-  word-spacing: 0.08em;
-}
-
-.secao {
+/* As listas: três colunas no computador, cada item com o fio em cima. */
+.lista {
   display: grid;
-  gap: var(--espaco-lg);
-}
-
-.tituloDaSecao {
-  margin: 0;
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: var(--texto-xl);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-}
-
-.tituloDoItem {
-  margin: 0;
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: var(--texto-lg);
-}
-
-.dores {
-  display: grid;
-  gap: var(--espaco-sm);
+  gap: var(--espaco-xl) clamp(28px, 3.4vw, 48px);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.dores li {
-  padding: var(--espaco-md) var(--espaco-lg);
-  border-left: 4px solid var(--cor-accent);
-  background: var(--cor-paper-soft);
-  font-size: var(--texto-lg);
-}
-
-/* O número do passo sai do contador da lista, e não do texto: o leitor
-   de tela já anuncia a lista ordenada. */
-.passos {
-  display: grid;
-  gap: var(--espaco-lg);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: passo;
-}
-
-@media (min-width: 880px) {
-  .passos {
+@media (min-width: 760px) {
+  .lista {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-.passo {
+.item {
   display: grid;
   gap: var(--espaco-sm);
   align-content: start;
-  counter-increment: passo;
+  padding-top: 22px;
+  border-top: var(--borda-hairline) solid var(--cor-line-strong);
 }
 
-.passo::before {
-  content: counter(passo);
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-pill);
-  background: var(--cor-accent);
-  color: var(--cor-dark);
+/* O número ou o passo: o rótulo em Inter caixa alta, no ouro que lê no
+   creme. */
+.numero {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-accent-text);
+}
+
+/* A dor é a frase inteira, grande, no display. */
+.dor {
+  margin: 0;
   font-family: var(--fonte-display), system-ui, sans-serif;
-  font-weight: 700;
+  font-size: clamp(19px, 1.55vw, 22px);
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+  word-spacing: 0.06em;
+  color: var(--cor-ink);
 }
 
-.passo p,
-.recurso p,
+.tituloDoItem {
+  margin: 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: clamp(20px, 1.7vw, 24px);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  /* O espaço da Clash é estreito: sem isso as palavras grudam. */
+  word-spacing: 0.08em;
+}
+
+.texto,
 .pergunta p {
   margin: 0;
+  max-width: 32em;
   line-height: 1.55;
   color: var(--cor-ink-soft);
 }
 
-.recursos {
-  display: grid;
-  gap: var(--espaco-md);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (min-width: 640px) {
-  .recursos {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 960px) {
-  .recursos {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.recurso {
-  display: grid;
-  gap: var(--espaco-sm);
-  align-content: start;
-  padding: var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-md);
-  background: var(--cor-surface);
-}
-
-/* Os planos (TabelaDePrecos) com o título e o apoio em cima e o link
-   pros detalhes embaixo, alinhado à esquerda como o resto. */
+/* Os planos (TabelaDePrecos em linhas) com o título e o apoio em cima e
+   o link pros detalhes embaixo, alinhado à esquerda como o resto. */
 .cabecaDosPlanos {
   display: grid;
-  gap: var(--espaco-sm);
+  gap: var(--espaco-md);
 }
 
 .apoioDosPlanos {
@@ -155,9 +109,19 @@
   text-underline-offset: 4px;
 }
 
+/* As perguntas usam a largura: o título à esquerda e a lista à direita
+   no computador; uma coisa embaixo da outra no celular. */
+@media (min-width: 960px) {
+  .perguntasLado {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: start;
+    column-gap: clamp(40px, 5vw, 80px);
+  }
+}
+
 .perguntas {
   display: grid;
-  border-top: var(--borda-hairline) solid var(--cor-line);
+  border-top: var(--borda-hairline) solid var(--cor-line-strong);
 }
 
 .pergunta {
@@ -166,35 +130,68 @@
 
 .pergunta summary {
   padding: var(--espaco-md) 0;
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: clamp(18px, 1.5vw, 21px);
   font-weight: 600;
-  font-size: var(--texto-lg);
+  word-spacing: 0.08em;
   cursor: pointer;
 }
 
 .pergunta p {
-  padding-bottom: var(--espaco-md);
   max-width: 64ch;
+  padding-bottom: var(--espaco-md);
 }
 
-.final {
+/* O fecho: a largura toda no escuro do topo, o título grande em claro e
+   o convite no ouro do escuro. As cores são as do topo
+   (TopoDaHome.module.css), que vêm dos tokens do modo escuro. */
+.fecho {
+  --titulo-cor: #ece6da; /* dark.ink */
+  --titulo-tamanho: clamp(40px, 5.8vw, 84px);
+
+  padding: clamp(96px, 11vw, 160px) var(--espaco-lg) clamp(40px, 4vw, 56px);
+  background: #151412; /* dark.paperFim */
+  color: #b8b0a2; /* dark.inkSoft */
+  scroll-margin-top: 96px;
+}
+
+.miolo {
   display: grid;
-  justify-items: center;
-  gap: var(--espaco-lg);
-  padding: var(--espaco-xxl) var(--espaco-lg);
-  border: var(--borda-padrao) solid var(--cor-line-strong);
-  border-radius: var(--raio-lg);
-  background: var(--cor-surface);
-  text-align: center;
+  gap: clamp(32px, 3.6vw, 44px);
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 24px;
+}
+
+.ouro {
+  border-color: rgb(0 0 0 / 0.18);
+  background: #e8c547; /* dark.accent */
+}
+
+.nota {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #968f82; /* dark.muted */
 }
 
 /* O crédito do modelo 3D da cadeira do topo (CC BY 4.0), discreto no
-   fim da home. */
+   pé do fecho. */
 .credito {
-  margin: 0;
+  margin: clamp(48px, 7vw, 104px) 0 0;
+  padding-top: var(--espaco-md);
+  border-top: var(--borda-hairline) solid rgb(236 230 218 / 0.12);
   font-size: var(--texto-xs);
   line-height: 1.5;
-  text-align: center;
-  color: var(--cor-ink-soft);
+  color: #968f82; /* dark.muted */
 }
 
 .credito a {

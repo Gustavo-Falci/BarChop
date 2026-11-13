@@ -38,10 +38,12 @@ ENV NODE_ENV=production \
   HOSTNAME=0.0.0.0 \
   PORT=3000
 WORKDIR /app
-# O standalone não leva o .next/static: sem a cópia, a página abre sem
-# CSS nem JavaScript. Não há pasta public/ no app.
+# O standalone não leva o .next/static nem o public/: sem o static, a
+# página abre sem CSS nem JavaScript; sem o public/, os arquivos da home
+# (public/assets/home: a cadeira, imagem e 3D) dão 404.
 COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
 USER node
 EXPOSE 3000
 CMD ["node", "apps/web/server.js"]

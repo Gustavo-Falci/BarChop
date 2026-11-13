@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { LinkDoSite } from "./LinkDoSite";
 import estilos from "./LinkDeAcao.module.css";
 
 type Variante = "primario" | "contorno";
@@ -21,8 +21,8 @@ export function LinkDeAcao({ href, variante = "primario", grande = false, classN
     .filter(Boolean)
     .join(" ");
   return (
-    <Link href={href} className={classes}>
+    <LinkDoSite href={href} className={classes}>
       {children}
-    </Link>
+    </LinkDoSite>
   );
 }

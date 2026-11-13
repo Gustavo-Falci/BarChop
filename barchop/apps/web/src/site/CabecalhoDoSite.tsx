@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { MarcaDoBarChop } from "../componentes/MarcaDoBarChop";
 import { LinkDeAcao } from "./LinkDeAcao";
+import { LinkDoSite } from "./LinkDoSite";
 import estilos from "./CabecalhoDoSite.module.css";
 
-// Links do painel relativos: no www o proxy os manda com 308 pro host
-// `painel.` (src/tenant/rota.ts); em desenvolvimento abrem aqui mesmo.
+// Links do painel relativos e em <a> comum (LinkDoSite): no www o proxy
+// os manda com 308 pro host `painel.` (src/tenant/rota.ts); em
+// desenvolvimento abrem aqui mesmo.
 export function CabecalhoDoSite() {
   return (
     <header className={estilos.cabecalho}>
@@ -17,9 +19,9 @@ export function CabecalhoDoSite() {
           <Link href="/precos" className={`${estilos.entrar} ${estilos.precos}`}>
             Preços
           </Link>
-          <Link href="/painel/entrar" className={estilos.entrar}>
+          <LinkDoSite href="/painel/entrar" className={estilos.entrar}>
             Entrar
-          </Link>
+          </LinkDoSite>
           <LinkDeAcao href="/painel/cadastro">Criar barbearia</LinkDeAcao>
         </nav>
       </div>

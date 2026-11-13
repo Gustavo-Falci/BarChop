@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { MarcaDoBarChop } from "../componentes/MarcaDoBarChop";
 import { TOPO_CLARO } from "./cena/topoClaro";
 import { LinkDeAcao } from "./LinkDeAcao";
+import { LinkDoSite } from "./LinkDoSite";
 import estilos from "./CabecalhoDaHome.module.css";
 
 // Até aqui do alto da página o cabeçalho nunca some.
@@ -93,9 +94,9 @@ export function CabecalhoDaHome({ topo }: { topo: string }) {
           <Link href="/precos" className={`${estilos.link} ${estilos.precos}`}>
             Preços
           </Link>
-          <Link href="/painel/entrar" className={estilos.link}>
+          <LinkDoSite href="/painel/entrar" className={estilos.link}>
             Entrar
-          </Link>
+          </LinkDoSite>
           <LinkDeAcao href="/painel/cadastro" className={estilos.acao}>
             Criar barbearia
           </LinkDeAcao>

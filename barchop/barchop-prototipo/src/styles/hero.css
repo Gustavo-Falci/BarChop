@@ -1,0 +1,184 @@
+/* ---------- nav ---------- */
+.nav {
+  position: fixed; inset: 0 0 auto; z-index: 60;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  padding: 20px calc(56 * var(--u) + 2px) 0;
+  pointer-events: none;
+  transition: transform 0.6s var(--curva), opacity 0.4s;
+}
+.nav > * { pointer-events: auto; }
+.nav.is-escondida { transform: translateY(-130%); }
+.nav__logo { justify-self: start; display: inline-flex; align-items: center; gap: 10px; font: 700 22px / 1 var(--display); letter-spacing: -0.02em; color: var(--claro); transition: color 0.4s; }
+.nav__icone { display: block; width: 30px; height: 30px; }
+.nav__links {
+  display: flex; gap: 4px; align-items: center;
+  height: 50px; padding: 0 8px;
+  border-radius: var(--raio);
+  background: rgb(28 26 23 / 0.6);
+  border: 1px solid var(--fio-claro);
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  transition: background-color 0.4s, border-color 0.4s;
+}
+.nav__links a { position: relative; padding: 9px 14px; border-radius: 10px; font: 600 14.5px / 1 var(--corpo); color: rgb(236 230 218 / 0.78); transition: color 0.25s, background-color 0.25s; }
+@media (hover: hover) { .nav__links a:hover { color: var(--claro); background: rgb(236 230 218 / 0.07); } }
+.nav__links a.is-aqui { color: var(--claro); }
+.nav__links a.is-aqui::after { content: ''; position: absolute; left: 50%; bottom: 3px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--ouro); }
+.nav__cta { justify-self: end; --alto: 44px; font-size: 15px; padding: 0 18px; }
+/* sobre as seções claras a barra vira tinta */
+.nav.is-clara .nav__logo { color: var(--tinta); }
+.nav.is-clara .nav__links { background: rgb(247 244 238 / 0.78); border-color: var(--fio-escuro-2); }
+.nav.is-clara .nav__links a { color: rgb(38 34 28 / 0.72); }
+.nav.is-clara .nav__links a.is-aqui::after { background: var(--ouro-texto); }
+@media (hover: hover) { .nav.is-clara .nav__links a:hover, .nav.is-clara .nav__links a.is-aqui { color: var(--tinta); background: rgb(38 34 28 / 0.05); } }
+.nav.is-clara .nav__cta { background: var(--ouro-claro); box-shadow: var(--sombra-botao-claro); }
+
+/* ---------- hero ---------- */
+.hero { position: relative; height: 100svh; background: var(--escuro); }
+.hero__fixo {
+  --fundo: #151412;
+  position: relative; height: 100svh; overflow: hidden;
+  background: var(--fundo);
+  color: var(--claro);
+}
+
+/* a grade da agenda do dia: linhas de 10 horários e 4 colunas de profissionais. Na abertura ela é o fundo inteiro e
+   os blocos acendem quando a navalha passa; depois fica como um sopro nos cantos (o lugar do cabelo do Pente Fino) */
+.hero__grade {
+  --cw: 20%; /* a largura de uma coluna: a primeira é a dos horários, as outras quatro são dos profissionais */
+  z-index: 0;
+  background-color: var(--escuro);
+  background-image:
+    linear-gradient(to bottom, rgb(236 230 218 / 0.075) 1px, transparent 1px),
+    linear-gradient(to right, rgb(236 230 218 / 0.05) 1px, transparent 1px);
+  background-size: 100% 10%, 20% 100%;
+  transform-origin: 50% 50%;
+}
+/* no sopro sobram só as formas: horário e nome sairiam por trás da nav e do texto */
+.hero__grade.is-sopro .grade__hora, .hero__grade.is-sopro .grade__bloco > * { opacity: 0; }
+.hero__grade.is-sopro { opacity: 0.14; -webkit-mask-image: radial-gradient(70% 80% at 50% 45%, transparent 38%, #000 92%); mask-image: radial-gradient(70% 80% at 50% 45%, transparent 38%, #000 92%); }
+.grade__hora { position: absolute; left: calc(24 * var(--u)); color: rgb(236 230 218 / 0.34); transform: translateY(8px); }
+.grade__bloco {
+  position: absolute;
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 2px;
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
+  border-radius: 10px;
+  border: 1px solid rgb(232 197 71 / 0.42);
+  border-left: 3px solid var(--ouro);
+  background: rgb(232 197 71 / 0.12);
+  color: var(--claro);
+  font: 600 max(11px, calc(13 * var(--u))) / 1.25 var(--corpo);
+  overflow: hidden;
+  opacity: 0; transform: scale(0.92);
+  transform-origin: 100% 50%;
+  transition: opacity 0.3s, transform 0.55s var(--curva), background-color 0.6s;
+}
+.grade__bloco small { font-weight: 400; color: var(--claro-suave); font-size: 0.92em; }
+.grade__bloco.is-cheio { opacity: 1; transform: none; }
+.grade__bloco.is-flash { background: rgb(232 197 71 / 0.38); }
+
+/* o canhão de luz: feixe em trapézio desfocado + o brilho da lâmpada no topo (luz quente) */
+.hero__foco { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; }
+.hero__foco::before {
+  content: ''; position: absolute;
+  left: calc(var(--foco-x, 47%) - 430 * var(--u)); top: calc(-60 * var(--u));
+  width: calc(860 * var(--u)); height: calc(1010 * var(--u));
+  background: linear-gradient(180deg, rgb(255 240 205 / 0.26) 0%, rgb(255 236 196 / 0.12) 34%, rgb(255 232 190 / 0.05) 72%, rgb(255 232 190 / 0.02) 100%);
+  clip-path: polygon(45.5% 0, 54.5% 0, 92% 100%, 8% 100%);
+  filter: blur(calc(26 * var(--u)));
+}
+.hero__foco::after {
+  content: ''; position: absolute;
+  left: calc(var(--foco-x, 47%) - 170 * var(--u)); top: calc(-150 * var(--u));
+  width: calc(340 * var(--u)); height: calc(260 * var(--u));
+  background: radial-gradient(closest-side, rgb(255 238 200 / 0.55), rgb(255 230 180 / 0.12) 55%, transparent);
+  filter: blur(calc(10 * var(--u)));
+}
+
+/* os fios dourados que a navalha deixa: cada um é um horário que entrou na agenda */
+.hero__trilha { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.hero__trilha path { fill: none; stroke: var(--ouro); stroke-linecap: round; }
+/* a marca da abertura: só existe durante a abertura (fora dela fica invisível; quem mostra é o JS) */
+.hero__marca { position: absolute; left: 0; top: 0; z-index: 8; width: 100px; height: 100px; opacity: 0; overflow: visible; pointer-events: none; transform-origin: 0 0; will-change: transform, opacity; }
+
+.hero__nome { position: absolute; inset: 0; margin: 0; pointer-events: none; font-weight: inherit; }
+.hero__frase { position: absolute; z-index: 6; left: calc(56 * var(--u)); top: calc(104 * var(--u)); display: flex; flex-direction: column; font: 300 calc(30 * var(--u)) / 1.1 var(--display); letter-spacing: -0.02em; word-spacing: 0.08em; }
+.hero__frase-forte { font-weight: 700; letter-spacing: -0.03em; }
+.hero__frase .letra { opacity: 0; }
+
+/* as duas metades do nome: "Bar" fina atrás da cadeira, "Chop" pesada na frente e cortada pela borda de baixo.
+   O foco acende as duas (degradê quente no campo do hero inteiro, posicionado pelo JS em --bx/--by) */
+.hero__p {
+  position: absolute; white-space: nowrap;
+  font-family: var(--display); line-height: 1;
+  color: rgb(236 230 218 / calc(1 - var(--luz, 0)));
+  will-change: transform;
+}
+.hero__p::after {
+  content: attr(data-t); position: absolute; inset: 0;
+  color: transparent;
+  background: radial-gradient(calc(700 * var(--u)) calc(1250 * var(--u)) at var(--foco-px, 680px) calc(470 * var(--u)), #f4e6b8 0%, #c9bfa9 22%, #8a8273 46%, #4a463e 70%, #2a2722 100%);
+  background-size: var(--hw, 100vw) var(--hh, 100svh);
+  background-position: var(--bx, 0) var(--by, 0);
+  -webkit-background-clip: text; background-clip: text;
+  opacity: var(--luz, 0);
+}
+.hero__p--1 { z-index: 3; left: calc(40 * var(--u)); top: calc(150 * var(--u)); font-size: calc(400 * var(--u)); font-weight: 200; letter-spacing: -0.03em; }
+.hero__p--2 { z-index: 5; right: calc(40 * var(--u)); bottom: calc(-34 * var(--u)); font-size: calc(296 * var(--u)); font-weight: 700; letter-spacing: -0.045em; }
+.hero__gl { position: absolute; inset: 0; z-index: 4; width: 100%; height: 100%; pointer-events: none; }
+.abertura-on .hero__gl { opacity: 0; }
+
+.hero__status { position: absolute; z-index: 6; right: calc(56 * var(--u)); top: calc(112 * var(--u)); display: flex; align-items: center; gap: 10px; color: var(--claro); font-size: 12.5px; }
+.ponto { width: 8px; height: 8px; border-radius: 50%; background: var(--ouro); box-shadow: 0 0 0 0 rgb(232 197 71 / 0.5); animation: ponto 2.4s var(--curva) infinite; }
+.ponto.is-fechado { background: transparent; border: 1px solid var(--ouro); animation: none; }
+@keyframes ponto { 0% { box-shadow: 0 0 0 0 rgb(232 197 71 / 0.5); } 70%, 100% { box-shadow: 0 0 0 9px rgb(232 197 71 / 0); } }
+
+.hero__base { position: absolute; z-index: 6; left: calc(56 * var(--u)); bottom: calc(66 * var(--u)); width: calc(700 * var(--u)); min-width: 340px; }
+.hero__texto { max-width: max(340px, calc(450 * var(--u))); font-size: max(14.5px, calc(15.5 * var(--u))); line-height: 1.6; color: var(--claro-suave); }
+.hero__texto strong { color: var(--claro); font-weight: 600; }
+.hero__botoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: calc(26 * var(--u)); }
+.hero__nota { margin-top: 16px; color: var(--claro-mudo); font-size: 11.5px; }
+
+/* ---------- abertura (o loader é o próprio hero no primeiro estado) ---------- */
+.abertura__ui { position: absolute; inset: 0; z-index: 8; pointer-events: none; display: none; }
+.abertura-on .abertura__ui { display: block; }
+.abertura__canto { position: absolute; color: rgb(236 230 218 / 0.72); font-size: 12px; }
+.abertura__canto--se { left: calc(56 * var(--u)); top: 30px; }
+.abertura__canto--ie { left: calc(56 * var(--u)); bottom: 30px; }
+.abertura__canto--id { right: calc(56 * var(--u)); bottom: 30px; }
+.abertura__canto--id b { color: var(--ouro); font-weight: 600; display: inline-block; min-width: 1.4em; text-align: right; }
+.abertura__pular { position: absolute; right: calc(56 * var(--u)); top: 22px; padding: 9px 14px; border: 1px solid var(--fio-claro-2); border-radius: 10px; color: var(--claro); font-size: 12px; pointer-events: auto; transition: background-color 0.25s, color 0.25s; }
+@media (hover: hover) { .abertura__pular:hover { background: var(--claro); color: var(--tinta); } }
+.abertura-fim .abertura__ui { display: none; }
+
+/* ---------- celular: o nome empilha, a cadeira no meio, a interface no pé ---------- */
+@media (max-width: 760px) {
+  .nav { padding: 14px 16px 0; grid-template-columns: 1fr auto; }
+  .nav__links { display: none; }
+  .nav__cta { --alto: 42px; font-size: 14px; padding: 0 14px; }
+  .nav__logo { padding: 11px 0; font-size: 20px; }
+  .hero__grade { --cw: 25%; background-size: 100% 10%, 25% 100%; }
+  .grade__bloco[data-col="4"] { display: none; }
+  .grade__bloco small { display: none; }
+  .grade__hora { left: 10px; }
+  /* a frase nunca sobe para baixo da navegação (que vai até ~66px): em tela baixa o --u encolhe e 80u ficava em ~52px.
+     O "Bar" desce o mesmo tanto, pra manter a distância da frase */
+  .hero__frase { left: 20px; top: max(calc(80 * var(--u)), 74px); font-size: calc(24 * var(--u)); }
+  .hero__p--1 { left: calc(14 * var(--u)); top: calc(118 * var(--u) + max(0px, 74px - 80 * var(--u))); font-size: calc(160 * var(--u)); }
+  .hero__p--2 { right: calc(14 * var(--u)); bottom: auto; top: calc(400 * var(--u)); font-size: calc(150 * var(--u)); }
+  .hero__status { left: 20px; right: auto; top: calc(550 * var(--u)); font-size: 11px; }
+  .hero__base { left: 20px; right: 20px; width: auto; min-width: 0; bottom: calc(24 * var(--u)); }
+  .hero__texto { font-size: 14.5px; }
+  .hero__botoes { margin-top: 16px; flex-direction: column; }
+  .hero__botoes .botao { --alto: 50px; width: 100%; font-size: 15.5px; }
+  .hero__nota { margin-top: 12px; font-size: 11px; text-align: center; }
+  .abertura__canto--se, .abertura__canto--ie { left: 20px; }
+  .abertura__canto--id, .abertura__pular { right: 20px; }
+}
+
+/* celular baixo (iPhone com as barras do Safari): o parágrafo e a nota não cabem sem cobrir o "Chop";
+   ficam o status e os dois botões, que dizem o essencial */
+@media (max-width: 760px) and (max-height: 720px) {
+  .hero__texto, .hero__nota { display: none; }
+  .hero__botoes { margin-top: 0; gap: 8px; }
+  .hero__botoes .botao { --alto: 46px; font-size: 15px; }
+}

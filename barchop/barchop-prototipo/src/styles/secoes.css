@@ -1,0 +1,38 @@
+/* As seções depois do topo: só o bastante para ver a passagem do escuro ao papel. Nada de caixa com título:
+   listas lado a lado no desktop, com o número/passo como rótulo. */
+
+/* a dor sobe por cima do fim do hero enquanto a cadeira ainda some na névoa (o mesmo papel do cardápio no Pente Fino) */
+.dores { margin-top: calc(-40 * var(--su)); padding-top: calc(110 * var(--su)); }
+
+.dores__lista, .passos__lista {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(48 * var(--su));
+  margin-top: calc(64 * var(--su));
+}
+.dores__lista li, .passos__lista li { border-top: 1px solid var(--fio-escuro-2); padding-top: calc(22 * var(--su)); }
+.dores__lista .mono, .passos__lista .mono { display: block; color: var(--ouro-texto); margin-bottom: 14px; }
+.dores__lista p { font: 400 calc(22 * var(--su)) / 1.35 var(--display); letter-spacing: -0.005em; word-spacing: 0.06em; color: var(--tinta); }
+.passos__lista h3 { font: 600 calc(24 * var(--su)) / 1.15 var(--display); letter-spacing: -0.01em; word-spacing: 0.08em; }
+.passos__lista p { margin-top: 10px; color: var(--tinta-suave); max-width: 32em; }
+.passos { padding-top: 0; }
+
+.fecho { padding: calc(160 * var(--su)) 0; }
+.fecho .titulo { font-size: calc(84 * var(--su)); max-width: 11em; }
+.fecho__acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 24px; margin-top: calc(44 * var(--su)); }
+.fecho__acoes .mono { color: var(--claro-mudo); }
+
+.rodape { background: var(--escuro); color: var(--claro-mudo); border-top: 1px solid var(--fio-claro); padding: 28px 0 36px; font-size: 13.5px; }
+.rodape__miolo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 28px; align-items: baseline; }
+.rodape__nome { display: inline-flex; align-items: center; gap: 8px; margin: 0; font: 700 20px / 1 var(--display); letter-spacing: -0.02em; color: var(--claro); }
+.rodape__nome img { display: block; width: 34px; height: 34px; }
+.rodape__credito a { text-decoration: underline; text-underline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .secao { padding: 84px 0; }
+  .dores { padding-top: 72px; }
+  .passos { padding-top: 0; }
+  .dores__lista, .passos__lista { grid-template-columns: minmax(0, 1fr); gap: 28px; margin-top: 36px; }
+  .dores__lista p { font-size: 19px; }
+  .passos__lista h3 { font-size: 21px; }
+  .fecho .titulo { font-size: 44px; }
+}

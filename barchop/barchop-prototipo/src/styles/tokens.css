@@ -1,0 +1,78 @@
+/* fontes do BarChop: Clash Grotesk nos títulos (variável, do 200 ao 700 na mesma frase) e Inter no corpo.
+   Os arquivos vêm de font/ no monorepo (Clash: licença Indie da Fontshare; Inter: OFL). */
+@font-face {
+  font-family: 'Clash Grotesk';
+  src: url('/fonts/ClashGrotesk-Variable.woff2') format('woff2');
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Regular-latin.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-SemiBold-latin.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+:root {
+  /* os tokens do BarChop (packages/design-tokens): neutro quente nos dois modos e o ouro como única cor.
+     O escuro é o modo escuro do painel; o claro, o papel do site. */
+  --escuro: #151412;      /* dark.paperFim */
+  --escuro-2: #1c1a17;    /* dark.paper */
+  --escuro-3: #28251f;    /* dark.paperSoft */
+  --papel: #f7f4ee;       /* light.paper */
+  --papel-fim: #efeae1;   /* light.paperFim */
+  --superficie: #fffdf9;  /* light.surface */
+  --tinta: #26221c;       /* light.ink */
+  --tinta-suave: #5b544a; /* light.inkSoft */
+  --tinta-muda: #6f6759;  /* light.muted */
+  --claro: #ece6da;       /* dark.ink */
+  --claro-suave: #b8b0a2; /* dark.inkSoft */
+  --claro-mudo: #968f82;  /* dark.muted */
+  --ouro: #e8c547;        /* dark.accent */
+  --ouro-claro: #f0c93a;  /* light.accent */
+  --ouro-texto: #7d5f00;  /* light.accentText */
+  --sobre-ouro: #1a1a1a;  /* onAccent */
+  --fio-claro: rgb(236 230 218 / 0.1);
+  --fio-claro-2: rgb(236 230 218 / 0.24);
+  --fio-escuro: #e9e2d5;  /* light.line */
+  --fio-escuro-2: #dad1c1; /* light.lineStrong */
+
+  --display: 'Clash Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --corpo: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --raio: 14px;           /* radius.md */
+  --sombra-botao: 0 2px 0 rgb(0 0 0 / 0.35);
+  --sombra-botao-claro: 0 2px 0 rgb(38 34 28 / 0.22);
+
+  --curva: cubic-bezier(0.22, 1, 0.36, 1);
+  --curva-io: cubic-bezier(0.76, 0, 0.24, 1);
+  --rapido: 0.28s;
+
+  /* cena: 1 unidade = 1 px numa tela de 1440 × 900; seções: 1 px de design até 1280 de largura */
+  --u: min(100vw / 1440, 100svh / 900);
+  --su: min(1px, 100vw / 1280);
+  --lado: calc(64 * var(--su));
+  --miolo: 1180px;
+
+  --h2: calc(64 * var(--su));
+  --corpo-t: calc(17 * var(--su));
+  --rotulo-t: 12px;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --u: min(100vw / 390, 100svh / 844);
+    --su: min(1px, 100vw / 390);
+    --lado: 20px;
+    --h2: calc(40 * var(--su));
+    --corpo-t: 15.5px;
+    --rotulo-t: 11.5px;
+  }
+}

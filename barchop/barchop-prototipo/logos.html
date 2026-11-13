@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BarChop — conceitos de logo</title>
+  <meta name="robots" content="noindex">
+  <style>
+    @font-face { font-family: 'Clash Grotesk'; src: url('/fonts/ClashGrotesk-Variable.woff2') format('woff2'); font-weight: 200 700; }
+    @font-face { font-family: 'Inter'; src: url('/fonts/Inter-Regular-latin.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Inter'; src: url('/fonts/Inter-SemiBold-latin.woff2') format('woff2'); font-weight: 600; }
+    :root { --escuro: #151412; --escuro-2: #1c1a17; --papel: #f7f4ee; --tinta: #26221c; --ouro: #e8c547; --sobre-ouro: #1a1a1a; --mudo: #6f6759; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--papel); color: var(--tinta); font: 400 15px/1.5 'Inter', system-ui, sans-serif; }
+    header { padding: 40px 56px 8px; }
+    h1 { font: 300 40px/1.05 'Clash Grotesk'; letter-spacing: -0.02em; margin: 0; }
+    h1 b { font-weight: 700; }
+    header p { color: var(--mudo); max-width: 62ch; }
+    .grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 1px solid #dad1c1; margin-top: 24px; }
+    .conceito { padding: 28px 28px 36px; border-right: 1px solid #dad1c1; display: grid; gap: 18px; align-content: start; }
+    .conceito:nth-child(2n) { border-right: 0; } .conceito { border-bottom: 1px solid #dad1c1; }
+    .rot { font: 600 12px/1 'Inter'; letter-spacing: .08em; text-transform: uppercase; color: #7d5f00; }
+    .conceito h2 { font: 600 24px/1.1 'Clash Grotesk'; margin: 0; letter-spacing: -0.01em; }
+    .conceito p { margin: 0; color: #5b544a; font-size: 14px; }
+    .palco { display: grid; grid-template-columns: 1fr 1fr; border-radius: 14px; overflow: hidden; border: 1px solid #dad1c1; }
+    .palco > div { display: grid; place-items: center; padding: 26px 0; }
+    .palco .e { background: var(--escuro); }
+    .palco .c { background: var(--superficie, #fffdf9); }
+    .palco svg { width: 104px; height: 104px; }
+    .trava { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 14px; }
+    .trava svg { width: 34px; height: 34px; flex: none; }
+    .trava span { font: 700 26px/1 'Clash Grotesk'; letter-spacing: -0.02em; }
+    .trava span i { font-style: normal; font-weight: 300; }
+    .trava.e { background: var(--escuro); color: #ece6da; }
+    .trava.c { background: #fffdf9; border: 1px solid #e9e2d5; }
+    .pequenos { display: flex; align-items: end; gap: 14px; }
+    .pequenos svg { display: block; }
+    .pequenos small { font-size: 11px; color: var(--mudo); display: block; text-align: center; margin-top: 4px; }
+    .aba { display: inline-flex; align-items: center; gap: 8px; background: #dee1e6; border-radius: 10px 10px 0 0; padding: 8px 14px; font: 400 12px 'Inter'; color: #333; width: 100%; }
+    .aba svg { width: 16px; height: 16px; }
+    @media (max-width: 1100px) { .grade { grid-template-columns: 1fr 1fr; } .conceito:nth-child(2) { border-right: 0; } }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <!-- 1 · CORTE: o B do BarChop partido na diagonal, a metade de cima deslocada como se a navalha tivesse passado -->
+      <clipPath id="cima"><polygon points="0,0 64,0 64,20 0,46"/></clipPath>
+      <clipPath id="baixo"><polygon points="0,49 64,23 64,64 0,64"/></clipPath>
+      <symbol id="m-corte" viewBox="0 0 64 64">
+        <rect width="64" height="64" rx="15" fill="#E8C547"/>
+        <g fill="#1A1A1A">
+          <g clip-path="url(#baixo)"><path d="M19 13h15.5c7.6 0 12 3.7 12 9.4 0 3.9-2.2 6.6-5.6 7.6 4.3.9 7.1 4 7.1 8.6 0 6.4-4.7 10.4-12.8 10.4H19z M27.6 20v8.2h5.8c2.9 0 4.6-1.5 4.6-4.1s-1.7-4.1-4.6-4.1z M27.6 34.6v9.4h6.6c3.2 0 5-1.7 5-4.7s-1.8-4.7-5-4.7z" fill-rule="evenodd"/></g>
+          <g clip-path="url(#cima)" transform="translate(1.6 -1.6)"><path d="M19 13h15.5c7.6 0 12 3.7 12 9.4 0 3.9-2.2 6.6-5.6 7.6 4.3.9 7.1 4 7.1 8.6 0 6.4-4.7 10.4-12.8 10.4H19z M27.6 20v8.2h5.8c2.9 0 4.6-1.5 4.6-4.1s-1.7-4.1-4.6-4.1z M27.6 34.6v9.4h6.6c3.2 0 5-1.7 5-4.7s-1.8-4.7-5-4.7z" fill-rule="evenodd"/></g>
+        </g>
+      </symbol>
+
+      <!-- 2 · CADEIRA: a cadeira do topo do site reduzida a cinco formas (encosto, apoio, assento, pistão, base) -->
+      <symbol id="m-cadeira" viewBox="0 0 64 64">
+        <rect width="64" height="64" rx="15" fill="#E8C547"/>
+        <g fill="#1A1A1A">
+          <rect x="24" y="9" width="16" height="7" rx="3.5"/>
+          <rect x="30.5" y="16" width="3" height="4"/>
+          <rect x="20" y="19" width="24" height="18" rx="5"/>
+          <rect x="15" y="37" width="34" height="7" rx="3.5"/>
+          <rect x="29" y="44" width="6" height="7"/>
+          <rect x="18" y="51" width="28" height="4.5" rx="2.25"/>
+        </g>
+      </symbol>
+
+      <!-- 3 · AGENDA: um bloco de horário (a peça da agenda do painel) com o canto cortado na diagonal -->
+      <symbol id="m-agenda" viewBox="0 0 64 64">
+        <rect width="64" height="64" rx="15" fill="#1A1A1A"/>
+        <path d="M14 14h36v24L38 50H14z" fill="#E8C547"/>
+        <rect x="14" y="14" width="5" height="36" fill="#1A1A1A" opacity=".22"/>
+        <rect x="23" y="22" width="18" height="4" rx="2" fill="#1A1A1A"/>
+        <rect x="23" y="30" width="11" height="4" rx="2" fill="#1A1A1A" opacity=".5"/>
+      </symbol>
+
+      <!-- 4 · POSTE: o poste de barbearia em três listras, inclinado como corte -->
+      <symbol id="m-poste" viewBox="0 0 64 64">
+        <rect width="64" height="64" rx="15" fill="#E8C547"/>
+        <clipPath id="tubo"><rect x="22" y="8" width="20" height="48" rx="10"/></clipPath>
+        <rect x="22" y="8" width="20" height="48" rx="10" fill="#1A1A1A"/>
+        <g clip-path="url(#tubo)" fill="#E8C547">
+          <path d="M14 30L50 12v6L14 36z"/>
+          <path d="M14 44L50 26v6L14 50z"/>
+          <path d="M14 58L50 40v6L14 64z"/>
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+
+  <header>
+    <h1>Conceitos de <b>logo do BarChop</b></h1>
+    <p>Quatro caminhos, todos na cor da marca (ouro #E8C547 e o escuro #1A1A1A), lidos no escuro, no claro, ao lado do nome e no tamanho de favicon. O nome usa a Clash do site: "Bar" leve e "Chop" pesado, como no topo.</p>
+  </header>
+
+  <main class="grade">
+    <section class="conceito">
+      <p class="rot">Conceito 1</p>
+      <h2>Corte</h2>
+      <p>O B partido na diagonal, a metade de cima deslocada: a navalha passou. Liga o "Chop" do nome ao corte.</p>
+      <div class="palco"><div class="e"><svg><use href="#m-corte"/></svg></div><div class="c"><svg><use href="#m-corte"/></svg></div></div>
+      <div class="trava e"><svg><use href="#m-corte"/></svg><span><i>Bar</i>Chop</span></div>
+      <div class="trava c"><svg><use href="#m-corte"/></svg><span><i>Bar</i>Chop</span></div>
+      <div class="pequenos"><div><svg width="48" height="48"><use href="#m-corte"/></svg><small>48</small></div><div><svg width="32" height="32"><use href="#m-corte"/></svg><small>32</small></div><div><svg width="16" height="16"><use href="#m-corte"/></svg><small>16</small></div></div>
+      <div class="aba"><svg><use href="#m-corte"/></svg>BarChop — agenda online</div>
+    </section>
+
+    <section class="conceito">
+      <p class="rot">Conceito 2</p>
+      <h2>Cadeira</h2>
+      <p>A cadeira do topo do site em cinco formas. A mais literal: quem vê já sabe que é barbearia.</p>
+      <div class="palco"><div class="e"><svg><use href="#m-cadeira"/></svg></div><div class="c"><svg><use href="#m-cadeira"/></svg></div></div>
+      <div class="trava e"><svg><use href="#m-cadeira"/></svg><span><i>Bar</i>Chop</span></div>
+      <div class="trava c"><svg><use href="#m-cadeira"/></svg><span><i>Bar</i>Chop</span></div>
+      <div class="pequenos"><div><svg width="48" height="48"><use href="#m-cadeira"/></svg><small>48</small></div><div><svg width="32" height="32"><use href="#m-cadeira"/></svg><small>32</small></div><div><svg width="16" height="16"><use href="#m-cadeira"/></svg><small>16</small></div></div>
+      <div class="aba"><svg><use href="#m-cadeira"/></svg>BarChop — agenda online</div>
+    </section>
+
+    <section class="conceito">
+      <p class="rot">Conceito 3</p>
+      <h2>Agenda</h2>
+      <p>Um bloco de horário da agenda do painel, com o canto cortado. Fala do produto (agenda), não só do ramo.</p>
+      <div class="palco"><div class="e"><svg><use href="#m-agenda"/></svg></div><div class="c"><svg><use href="#m-agenda"/></svg></div></div>
+      <div class="trava e"><svg><use href="#m-agenda"/></svg><span><i>Bar</i>Chop</span></div>
+      <div class="trava c"><svg><use href="#m-agenda"/></svg><span><i>Bar</i>Chop</span></div>
+      <div class="pequenos"><div><svg width="48" height="48"><use href="#m-agenda"/></svg><small>48</small></div><div><svg width="32" height="32"><use href="#m-agenda"/></svg><small>32</small></div><div><svg width="16" height="16"><use href="#m-agenda"/></svg><small>16</small></div></div>
+      <div class="aba"><svg><use href="#m-agenda"/></svg>BarChop — agenda online</div>
+    </section>
+
+    <section class="conceito">
+      <p class="rot">Conceito 4</p>
+      <h2>Poste</h2>
+      <p>O poste de barbearia em três listras inclinadas. Clássico e reconhecível; o mais comum no ramo.</p>
+      <div class="palco"><div class="e"><svg><use href="#m-poste"/></svg></div><div class="c"><svg><use href="#m-poste"/></svg></div></div>
+      <div class="trava e"><svg><use href="#m-poste"/></svg><span><i>Bar</i>Chop</span></div>
+      <div class="trava c"><svg><use href="#m-poste"/></svg><span><i>Bar</i>Chop</span></div>
+      <div class="pequenos"><div><svg width="48" height="48"><use href="#m-poste"/></svg><small>48</small></div><div><svg width="32" height="32"><use href="#m-poste"/></svg><small>32</small></div><div><svg width="16" height="16"><use href="#m-poste"/></svg><small>16</small></div></div>
+      <div class="aba"><svg><use href="#m-poste"/></svg>BarChop — agenda online</div>
+    </section>
+  </main>
+</body>
+</html>

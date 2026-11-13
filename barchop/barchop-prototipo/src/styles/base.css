@@ -1,0 +1,106 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-stopped { overflow: clip; }
+body {
+  margin: 0;
+  background: var(--escuro);
+  color: var(--claro);
+  font: 400 var(--corpo-t) / 1.55 var(--corpo);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+img, svg, canvas { display: block; max-width: 100%; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+a { color: inherit; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+h1, h2, h3, p, ol, ul { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+::selection { background: var(--ouro); color: var(--sobre-ouro); }
+
+/* rótulos: a Inter em caixa alta com números tabulares (o BarChop não tem fonte mono; o horário não pula) */
+.mono {
+  font-family: var(--corpo);
+  font-size: var(--rotulo-t);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+}
+.pular-conteudo { position: fixed; left: 12px; top: -60px; z-index: 300; padding: 10px 16px; border-radius: var(--raio); background: var(--ouro); color: var(--sobre-ouro); font-weight: 600; transition: top 0.2s; }
+.pular-conteudo:focus-visible { top: 12px; }
+
+/* o anel de foco do BarChop: tinta no claro, ouro no escuro */
+:focus-visible { outline: 3px solid var(--ouro); outline-offset: 3px; border-radius: 6px; }
+.secao--clara :focus-visible { outline-color: var(--tinta); }
+
+/* ---------- seções ---------- */
+.secao { position: relative; padding: calc(140 * var(--su)) 0; }
+.secao--clara { background: var(--papel); color: var(--tinta); }
+.secao--escura { background: var(--escuro); color: var(--claro); }
+.secao__miolo { width: min(100% - 2 * var(--lado), var(--miolo)); margin-inline: auto; position: relative; }
+
+.rotulo { color: var(--claro-mudo); margin-bottom: calc(18 * var(--su)); }
+.secao--clara .rotulo { color: var(--ouro-texto); }
+
+/* título: a parte leve e a pesada da Clash na mesma frase (como o nome do topo) */
+.titulo {
+  font: 300 var(--h2) / 1.02 var(--display);
+  letter-spacing: -0.03em;
+  word-spacing: 0.08em; /* o espaço da Clash é estreito: com o tracking negativo as palavras grudavam */
+  text-wrap: balance;
+}
+.titulo .forte, .forte { font-weight: 700; letter-spacing: -0.035em; }
+.titulo .leve, .leve { font-weight: 300; }
+.palavra { display: inline-block; white-space: nowrap; }
+
+/* ---------- botões: o desenho do BarChop (raio 14, fio de 1px, sombra sem desfoque, afunda no aperto)
+   com o rótulo que sobe no hover, trazido do Pente Fino ---------- */
+.botao {
+  --alto: 52px;
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  height: var(--alto);
+  padding: 0 24px;
+  border: 1px solid transparent;
+  border-radius: var(--raio);
+  font: 600 16px / 1 var(--display);
+  letter-spacing: 0.01em;
+  word-spacing: 0.08em;
+  white-space: nowrap;
+  overflow: hidden;
+  box-shadow: var(--sombra-botao);
+  transition: transform var(--rapido) var(--curva), box-shadow var(--rapido), background-color var(--rapido), color var(--rapido), border-color var(--rapido);
+}
+.botao:active { transform: translateY(2px); box-shadow: none; transition-duration: 0.1s; }
+.botao--ouro { background: var(--ouro); color: var(--sobre-ouro); border-color: rgb(0 0 0 / 0.18); }
+@media (hover: hover) { .botao--ouro:hover { background: #f2d360; } }
+.botao--linha { border-color: var(--fio-claro-2); color: var(--claro); box-shadow: none; }
+@media (hover: hover) { .botao--linha:hover { border-color: var(--claro); background: rgb(236 230 218 / 0.06); } }
+.secao--clara .botao--linha { border-color: var(--fio-escuro-2); color: var(--tinta); }
+.secao--clara .botao--ouro { background: var(--ouro-claro); box-shadow: var(--sombra-botao-claro); }
+
+/* o rótulo sobe e a cópia de baixo entra no lugar (montado pelo JS: .botao__txt[data-txt]) */
+.botao__txt { position: relative; display: inline-block; overflow: hidden; line-height: 1.25; padding: 0.05em 0; }
+.botao__txt > span { display: block; transition: transform 0.55s var(--curva); }
+.botao__txt::after { content: attr(data-txt); position: absolute; left: 0; top: 100%; padding: 0.05em 0; white-space: nowrap; transition: transform 0.55s var(--curva); }
+.botao:hover .botao__txt > span, .botao:hover .botao__txt::after,
+.botao:focus-visible .botao__txt > span, .botao:focus-visible .botao__txt::after { transform: translateY(-100%); }
+
+/* ---------- barra de rolagem própria (src/motion/scrollbar.js) ---------- */
+.sbar { position: fixed; top: 6px; right: 3px; bottom: 6px; width: 10px; z-index: 120; pointer-events: none; mix-blend-mode: difference; }
+.sbar__thumb { position: absolute; right: 2px; width: 3px; border-radius: 3px; background: rgb(255 255 255 / 0.7); opacity: 0; transition: opacity 0.4s, width 0.2s; pointer-events: auto; }
+.sbar.is-on .sbar__thumb { opacity: 1; }
+.sbar.is-none { display: none; }
+@media (hover: hover) { .sbar__thumb:hover, .sbar.is-drag .sbar__thumb { width: 6px; } }
+@media (hover: none) { .sbar { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+  /* animação infinita encurtada pisca: o ponto do status fica parado */
+  .ponto { animation: none !important; }
+}
+.reduzido .ponto { animation: none !important; }

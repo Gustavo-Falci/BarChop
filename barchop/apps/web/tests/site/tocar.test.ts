@@ -98,6 +98,24 @@ describe("tocar", () => {
     expect(html().classList.contains(CLASSE_DA_ABERTURA)).toBe(false);
   });
 
+  it("quem pulou pelo teclado não fica com o foco no botão que some: vai pra promessa", async () => {
+    await tocar(montar());
+    passar(0.3);
+    const pular = document.querySelector<HTMLButtonElement>("[data-pular]")!;
+    pular.focus();
+    pular.click();
+    passar(1.2);
+
+    expect(document.activeElement).toBe(document.querySelector('[data-peca="promessa"]'));
+  });
+
+  it("sem o foco no botão, o foco fica onde estava", async () => {
+    await tocar(montar());
+    passar(DURACAO_DA_ABERTURA + 0.2);
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
   it.each(["Escape", " ", "Enter", "ArrowDown", "PageDown"])("a tecla \"%s\" também pula", async (tecla) => {
     await tocar(montar());
     passar(0.3);

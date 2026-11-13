@@ -54,4 +54,24 @@ describe("fontes do app", () => {
     expect(daAparencia).toHaveLength(5);
     for (const chamada of daAparencia) expect(chamada.preload).toBe(false);
   });
+
+  // Home nova, marco 6: pré-carregadas, as 6 fontes do topo (~140 kB)
+  // disputavam a 4G lenta com a imagem da cadeira (o LCP) e a empurravam
+  // pra ~3 s. Sem pré-carga, o texto pinta na reserva ajustada do next/font
+  // (`display: swap`) e a fonte troca quando chega.
+  it("a Clash e a Inter, sem pré-carga", async () => {
+    await import("../../app/fontes");
+
+    for (const variavel of ["--fonte-display", "--fonte-inter"]) {
+      const chamada = chamadasLocais.find((c) => c.variable === variavel);
+      expect(chamada?.preload, variavel).toBe(false);
+    }
+  });
+
+  it("os pesos leves da Clash, só da home, também sem pré-carga", async () => {
+    await import("../../src/site/fontesDaHome");
+
+    const chamada = chamadasLocais.find((c) => c.variable === "--fonte-display-leve");
+    expect(chamada?.preload).toBe(false);
+  });
 });

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { origemPermitida, origensPermitidas, proxiesConfiaveis } from "../../src/lib/borda";
 
@@ -61,5 +63,33 @@ describe("origensPermitidas", () => {
     expect(origemPermitida(lista, "https://a.b.barchop.com.br")).toBe(false);
     expect(origemPermitida(lista, "https://gr-barber.barchop.com.br.golpe.com")).toBe(false);
     expect(origemPermitida(lista, "https://golpe-barchop.com.br")).toBe(false);
+  });
+});
+
+describe("ORIGENS_PERMITIDAS do exemplo de produção", () => {
+  // O coringa `https://*.dominio` só cobre subdomínio: o domínio raiz,
+  // onde mora a home (que conta a visita em POST /site/visita), entra à
+  // parte. Sem ele, o navegador barrava a chamada da home (CORS).
+  const lista = () => {
+    const exemplo = readFileSync(join(__dirname, "../../../../infra/api.env.example"), "utf8");
+    const linha = exemplo.split(/\r?\n/).find((l) => l.startsWith("ORIGENS_PERMITIDAS="))!;
+    return origensPermitidas({ ORIGENS_PERMITIDAS: linha.slice("ORIGENS_PERMITIDAS=".length) });
+  };
+
+  it("deixa o site, o www, o painel e as barbearias chamarem a API", () => {
+    for (const origem of [
+      "https://barchop.com.br",
+      "https://www.barchop.com.br",
+      "https://painel.barchop.com.br",
+      "https://gr-barber.barchop.com.br",
+    ]) {
+      expect({ origem, permitida: origemPermitida(lista(), origem) }).toEqual({ origem, permitida: true });
+    }
+  });
+
+  it("o coringa não cobre o domínio raiz", () => {
+    expect(
+      origemPermitida(origensPermitidas({ ORIGENS_PERMITIDAS: "https://*.barchop.com.br" }), "https://barchop.com.br")
+    ).toBe(false);
   });
 });

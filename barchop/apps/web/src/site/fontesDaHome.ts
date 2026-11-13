@@ -21,4 +21,6 @@ export const clashLeve = localFont({
   ],
   variable: "--fonte-display-leve",
   display: "swap",
+  // Sem pré-carga, como a Clash e a Inter do app/fontes.ts (marco 6).
+  preload: false,
 });

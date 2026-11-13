@@ -57,12 +57,13 @@
   color: var(--cor-accent-text);
 }
 
-/* A dor é a frase inteira, grande, no display. */
+/* A dor é a frase inteira, grande, na Clash leve: o site só carrega a
+   Clash em 600/700, e o 400 do protótipo cairia no 600. */
 .dor {
   margin: 0;
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: clamp(19px, 1.55vw, 22px);
-  font-weight: 400;
+  font-family: var(--fonte-display-leve), var(--fonte-display), system-ui, sans-serif;
+  font-size: clamp(20px, 1.7vw, 24px);
+  font-weight: 300;
   line-height: 1.35;
   letter-spacing: -0.005em;
   word-spacing: 0.06em;
@@ -113,7 +114,7 @@
    no computador; uma coisa embaixo da outra no celular. */
 @media (min-width: 960px) {
   .perguntasLado {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
     column-gap: clamp(40px, 5vw, 80px);
   }
@@ -149,17 +150,20 @@
   --titulo-cor: #ece6da; /* dark.ink */
   --titulo-tamanho: clamp(40px, 5.8vw, 84px);
 
-  padding: clamp(96px, 11vw, 160px) var(--espaco-lg) clamp(40px, 4vw, 56px);
+  padding: clamp(96px, 11vw, 160px) 0 clamp(40px, 4vw, 56px);
   background: #151412; /* dark.paperFim */
   color: #b8b0a2; /* dark.inkSoft */
   scroll-margin-top: 96px;
 }
 
+/* O mesmo miolo das seções (.home): o fecho alinha com elas e com o
+   rodapé. */
 .miolo {
   display: grid;
   gap: clamp(32px, 3.6vw, 44px);
   max-width: 1120px;
   margin-inline: auto;
+  padding-inline: var(--espaco-lg);
 }
 
 .acoes {
@@ -196,5 +200,6 @@
 
 .credito a {
   color: inherit;
+  text-decoration: underline;
   text-underline-offset: 3px;
 }

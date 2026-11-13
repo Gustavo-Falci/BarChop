@@ -54,15 +54,30 @@ export async function tocar({ topo, cabecalho }: Alvo): Promise<() => void> {
     if (pedido) cancelAnimationFrame(pedido);
     for (const [alvo, tipo, f] of ouvintes) alvo.removeEventListener(tipo, f);
     for (const [el, antes] of originais) {
-      if (antes === null) el.removeAttribute("style");
-      else el.setAttribute("style", antes);
+      if (antes !== null) {
+        el.setAttribute("style", antes);
+        continue;
+      }
+      // No Chrome, o atributo acompanha o el.style só quando é lido: sem
+      // a leitura, a remoção deixa um style="" pra trás.
+      void el.getAttribute("style");
+      el.removeAttribute("style");
     }
     for (const bloco of todas("[data-bloco]")) {
       delete bloco.dataset.cheio;
       delete bloco.dataset.clarao;
     }
+    // O botão de pular some com a classe: quem estava nele (pulou pelo
+    // teclado) segue a partir da promessa, o título do topo.
+    const botaoDePular = pega("[data-pular]");
+    const estavaNoBotao = botaoDePular !== null && document.activeElement === botaoDePular;
     html.removeAttribute(VIVA);
     html.classList.remove(CLASSE_DA_ABERTURA);
+    const promessa = pega('[data-peca="promessa"]');
+    if (estavaNoBotao && promessa) {
+      promessa.tabIndex = -1;
+      promessa.focus({ preventScroll: true });
+    }
   }
 
   // A trava do script não corta mais: daqui em diante quem encerra é a abertura.

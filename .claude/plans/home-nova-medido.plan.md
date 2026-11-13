@@ -99,12 +99,12 @@ npx lighthouse@12 https://barchop.com.br/ --form-factor=mobile --only-categories
 
 ## Acceptance
 - [x] Marco 5 `complete` no PRD
-- [ ] Acessibilidade ≥ 95 em todas as rodadas (cabeçalho sem opacidade parcial)
-- [ ] LCP mobile em produção ≤ 2,5 s (mediana de 5), CLS ≤ 0,1
-- [ ] Telas baixas e "reduzir movimento" conferidos em produção
-- [ ] Crédito da cadeira conferido no rodapé
-- [ ] Números do contador registrados no PRD
-- [ ] Testes afetados, tsc e lint passando
+- [x] Acessibilidade ≥ 95 em todas as rodadas (96–100, sem mexer no cabeçalho)
+- [x] LCP mobile em produção ≤ 2,5 s (mediana de 5, limitação real: 2,21 s), CLS ≤ 0,1 (0)
+- [x] Telas baixas e "reduzir movimento" conferidos em produção
+- [x] Crédito da cadeira conferido no rodapé
+- [x] Números do contador registrados no PRD
+- [x] Testes afetados, tsc e lint passando
 
 ## Execução (13/11)
 
@@ -158,4 +158,4 @@ TBT ficou baixo com a abertura (117–399 ms); sem folga a ganhar que justifique
   - 375×667 e 393×659: frase 9 px abaixo da navegação. Em 393×659 (DPR 2,75) o celular leva a imagem de 960.
 - "Reduzir movimento" (preferência simulada no `matchMedia`, que é por onde o script da abertura, o 3D e a rolagem decidem; a ferramenta não emula a media query do CSS, então as regras CSS dela ficam conferidas pelos testes e pelos marcos 3 a 5): sem abertura, sem marca de sessão, o `.glb` não baixa e o trilho fica com a altura da tela (sem giro nem aproximação).
 - Crédito no rodapé: "Barber Chair" (Sketchfab) e "CC BY 4.0" (Creative Commons), com os links.
-- Contador: aguardando o dono ler a aba Números do suporte.
+- Contador (aba Números, lida com o login do dono): 12/11, 4 visitas; 13/11, 40 (cerca de 25 são as rodadas de Lighthouse e as conferências deste marco, que passam pelo contador); 0 cadastros da home e 0 no total. Sinal, não prova: reler com 30 dias.

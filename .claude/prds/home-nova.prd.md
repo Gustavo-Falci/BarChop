@@ -55,7 +55,7 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | 3 | Cadeira viva e rolagem | A cadeira 3D substitui a imagem quando carrega (fica a imagem em aparelho fraco); rolar gira e aproxima a cadeira e dissolve na névoa até "Soa familiar?" | complete | `.claude/plans/home-nova-cadeira-viva.plan.md` |
 | 4 | Seções no estilo novo | Abaixo do topo, todas as seções sem caixa: rótulo mono e título leve + forte subindo do desfoque, listas com fio em cima, planos sem cartão, fecho escuro (pedido do dono em 13/11) | complete | `.claude/plans/home-nova-secoes.plan.md` |
 | 5 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | complete | `.claude/plans/home-nova-abertura.plan.md` |
-| 6 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | in-progress | `.claude/plans/home-nova-medido.plan.md` |
+| 6 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | complete | `.claude/plans/home-nova-medido.plan.md` |
 
 ## Open Questions
 - [x] Qual é o teto de peso aceitável só na home? — **600 kB comprimidos, todos depois do `load`, e zero no JS inicial** (marco 3). Medido: three + cena 163 kB, `cadeira.glb` 372 kB com gzip, ~535 kB no total; JS inicial +1,7 kB.
@@ -71,6 +71,11 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 - (13/11, marco 6) A meta de LCP vale no Lighthouse com limitação real (devtools). O simulado (Lantern, o do PageSpeed) soma todo o JS do React/Next antes da 1ª pintura: até `/privacidade`, só texto, dá 3,2 s nele; baixar dali pediria reformar o JS do framework.
 - Sem esperar a linha de base: a home nova vai ao ar no marco 2. A comparação antes/depois fica sem base; o contador passa a medir a home nova desde a troca.
 
+## Resultado (13/11, marco 6)
+- LCP em produção, limitação real (meta): **2,21 s** (mediana de 5; era ~2,97 s). Simulado (PageSpeed, referência): 2,82 s. CLS 0. Acessibilidade 96–100.
+- Telas baixas (320×568, 375×667, 393×659), "reduzir movimento" e crédito da cadeira conferidos em produção.
+- Contador (aba Números): 12/11, 4 visitas; 13/11, 40 visitas (cerca de 25 são as medições do marco 6 em produção, contadas como visita); **0 cadastros**, da home e no total. Volume ainda baixo demais para comparar: tratar como sinal e reler com 30 dias de home nova.
+
 ## Risks
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
@@ -82,4 +87,4 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | Pouco tráfego deixa a comparação antes/depois sem significado | Alta | Média | Contador entra primeiro (marco 1); comparar só com volume mínimo; tratar como sinal, não prova |
 
 ---
-*Status: DRAFT — requirements only. Implementation planning pending via /plan.*
+*Status: COMPLETE — marcos 1 a 6 no ar (13/11/2026). Em aberto: reler o contador com 30 dias de home nova.*

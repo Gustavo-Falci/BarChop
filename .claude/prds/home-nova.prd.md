@@ -20,7 +20,7 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | Metric | Target | How measured |
 |---|---|---|
 | Visitas da home → cadastro concluído | Maior que a taxa da home atual (linha de base medida pelo contador antes da troca; alvo numérico TBD depois de ver a linha de base) | Contador próprio no servidor, sem cookie e sem terceiros (marco 1) |
-| Primeira pintura com o título e o botão de criar conta, no celular | LCP ≤ 2,5 s em celular médio (4G) | Lighthouse mobile na home em produção |
+| Primeira pintura com o título e o botão de criar conta, no celular | LCP ≤ 2,5 s em celular médio (4G) | Lighthouse mobile na home em produção, com rede e CPU limitadas de verdade (`--throttling-method=devtools`), mediana de 5; o número simulado do PageSpeed fica registrado ao lado, como referência (decisão do dono em 13/11, marco 6) |
 | Estabilidade do layout | CLS ≤ 0,1 | Lighthouse mobile |
 | Acessibilidade | Lighthouse acessibilidade ≥ 95; com "reduzir movimento" nada anda, gira ou aproxima | Lighthouse + teste manual com a preferência ligada |
 | Aprovação visual do dono do produto | 100% das telas em 375 px, telas baixas (320×568) e 1440 px | revisão no navegador antes de cada merge |
@@ -68,6 +68,7 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 - Navegação da home escura sobre o topo, clareia com a névoa; demais páginas mantêm o cabeçalho claro.
 - Celular fraco ou sem 3D: imagem parada da cena.
 - Medição: contador próprio no servidor, sem cookie e sem terceiros.
+- (13/11, marco 6) A meta de LCP vale no Lighthouse com limitação real (devtools). O simulado (Lantern, o do PageSpeed) soma todo o JS do React/Next antes da 1ª pintura: até `/privacidade`, só texto, dá 3,2 s nele; baixar dali pediria reformar o JS do framework.
 - Sem esperar a linha de base: a home nova vai ao ar no marco 2. A comparação antes/depois fica sem base; o contador passa a medir a home nova desde a troca.
 
 ## Risks

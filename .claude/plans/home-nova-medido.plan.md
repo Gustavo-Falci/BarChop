@@ -128,3 +128,15 @@ Build de produção local, HTML pré-renderizado editado por variante (sem rebui
 - **Rede real**: a imagem (42 kB) divide a 4G lenta com as 6 fontes pré-carregadas (~140 kB, prioridade alta) e chega em ~2,1 s. Sem o preload das fontes, o LCP cai ~0,8 s. É o ganho grande e barato.
 - **Simulado**: o Lantern conta todo o JS que roda antes da 1ª pintura observada (React + Next, ~170 kB comprimidos), e no Chrome sem limite a pintura sai depois desse JS. Até `/privacidade`, que é só texto, dá 3,2 s simulado no local. Sem JS nenhum o piso é 2,15 s. Fontes e imagem tiram ~0,3 s do simulado; o resto só sai mexendo no JS do framework antes da pintura.
 - Produção mede melhor que o local no simulado (3,0 s × 3,7 s), então o simulado em produção com fontes + imagem deve ficar perto de 2,7 s: ainda acima de 2,5 s.
+
+### Decisão do dono (13/11)
+"Correção + meta real": tirar o preload das fontes, imagem intermediária, e a meta de LCP passa a valer no Lighthouse com limitação real (devtools, mediana de 5); o simulado fica registrado como referência. PRD atualizado (métrica e Decisões).
+
+### Task 3 — correção (TDD)
+- RED `5bee828`: `tests/app/fontes.test.ts` (Clash, Inter e Clash leve com `preload: false`) e `tests/site/topo-da-home.test.tsx` (srcset do celular com 960 px) falhando pelo motivo certo.
+- GREEN `3a7185d`: `preload: false` em `app/fontes.ts` (Clash e Inter, vale pro site todo) e em `src/site/fontesDaHome.ts`; `cadeira-celular-960.{avif,webp}` (AVIF 25,5 kB × 42 kB da de 1280), gerada da WebP de 1280 com os parâmetros do `foto-da-cadeira.mts`, que passa a gravar 640/960/1280. Testes afetados 32/32, tsc e eslint limpos.
+- Build local, 5 rodadas: LCP real **2,97 → 2,14 s**, simulado 3,73 → 3,55 s, CLS 0, TBT 117–399 ms, a11y 96–100.
+- Navegador (375×812 DPR 3, 4G lenta): abertura toca, termina sem estilo sobrando, as fontes trocam sem salto (CLS 0,0002), LCP 1,65 s; com DPR 3 o celular ainda leva a de 1280, como deve.
+
+### Task 4 — fora
+TBT ficou baixo com a abertura (117–399 ms); sem folga a ganhar que justifique mexer no laço.

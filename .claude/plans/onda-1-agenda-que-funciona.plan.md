@@ -4,7 +4,51 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-12, fim do dia — logo nova e home nova, marcos 1 e 2) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-12, noite — home nova com a cadeira 3D no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `588babd`, #337). Nada aberto.
+- **Produção = `main` até o #337**, deploy do dono conferido em 12/11, à noite:
+  - home com a imagem da cadeira e o 3D (`/assets/home/*` 200, `cadeira.glb` 372 kB);
+  - console da home limpo;
+  - `POST /site/visita` 204: a contagem de visitas funciona.
+- **12/11, noite, home nova, marco 3 = #334** (plano `.claude/plans/home-nova-cadeira-viva.plan.md`, PRD com o marco 3 `complete`):
+  - cadeira 3D (three.js) por cima da imagem parada; o topo fica preso, a rolagem gira e aproxima a cadeira e a dissolve na névoa até "Soa familiar?";
+  - o cabeçalho clareia com a névoa, some ao descer e volta ao subir;
+  - fica só a imagem com reduzir movimento, sem WebGL2, economia de dados, aparelho fraco ou 2G; quadros lentos ou contexto perdido devolvem a imagem.
+  - Peso: 163 kB (three) + 372 kB (glb), só depois do `load`; JS inicial +1,7 kB.
+  - LCP no celular: 1,2 s com cache; **2,98 s com cache frio**, por fontes e JS que já estavam no caminho (medir no marco 5).
+  - Fonte: o protótipo `Documents/barchop-prototipo` não existe mais; o 3D veio do template "Pente Fino" (`Downloads/arquivos`), calibrado pela imagem parada.
+- **Consertos de produção achados no deploy:**
+  - **#335:** `barchop.com.br/home/*` virava 308 pra `home.barchop.com.br` (404), porque o proxy do tenant lia "home" como slug. A cadeira estava sem imagem em produção desde o #332. Os arquivos foram pra `public/assets/home/` (`assets` é reservado), o matcher deixa `assets/` de fora, e um teste confere que toda pasta de `public/` fica fora do proxy.
+  - **#336:** o `infra/web.Dockerfile` não copiava o `public/` pra imagem. Junto, o `LinkDoSite` passou a usar `<a>` comum nos links pro `/painel`: o `<Link>` do Next pré-carregava por fetch, seguia o 308 pro `painel.` e o navegador barrava (CORS).
+  - **#337:** `ORIGENS_PERMITIDAS` sem o domínio raiz (o coringa `*.` não cobre `barchop.com.br`) barrava o `POST /site/visita` da home. O dono corrigiu o `infra/api.env` da VM; os exemplos e um teste foram pro repo. **Visitas do #330 até 12/11 à noite não foram contadas**: a linha de base começa agora.
+- **Lição:** conferir a web local como em produção: build com `NEXT_PUBLIC_URL_DO_SITE=https://barchop.com.br`, `Host: barchop.com.br` no curl, e o `.next/standalone/apps/web/server.js` com `public/` copiado (não há Docker nesta máquina).
+
+**Ao retomar (só quando o dono pedir):**
+1. **Pix do BarChop, urgente pelo prazo:** o teste da `jesus-barber` acaba em **15/11, 14:43 UTC**, e o dono não quer estender. Falta:
+   - PR 3 (Suporte confere o Pix);
+   - PR 4 (avisos e vencimento);
+   - preencher as `PIX_*` em produção;
+   - o Pix de R$ 1,00 de teste, que também fecha o (d), o que o extrato de quem recebe mostra.
+
+   Depois, PR 5 (confirmar com o dono a diferença **proporcional** ao começar).
+2. **Home nova, marco 4:** a abertura da navalha, só na 1ª visita da sessão. Plano via `ecc:plan`, esperar aprovação. Depois, o marco 5, medido em produção (inclui o LCP frio de 2,98 s).
+
+   Em aberto:
+   - status real em vez do exemplo fixo "14:40";
+   - `llms.txt`, única auditoria do Lighthouse que falhou;
+   - reservar o slug `home` só depois de conferir no banco que nenhuma barbearia o usa.
+3. Branches já mergeadas que esperam autorização pra apagar: `home-nova-cadeira-viva`, `home-arquivos-fora-do-tenant`, `site-publico-e-links-do-painel`, `origens-com-o-site`, `pix-do-barchop-faturas` (e esta de docs).
+4. Os da lista de 06/11: testes reais opcionais em produção, onda D (marketing), G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas.
+   - **24/11:** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+**Ambiente local:**
+- O navegador desta máquina tem "reduzir movimento" ligado (Windows › Efeitos de animação desligado): a home fica só com a imagem. Pra ver o 3D, ligar a opção ou emular `prefers-reduced-motion: no-preference` no DevTools.
+- Servidor do Next em segundo plano: TaskStop não mata o Node. Liberar a porta com `taskkill` pelo PID do `netstat -ano` (no Windows em português, o estado é "OUVINDO").
+- Branches antigas só se apagam com autorização do dono.
+
+## RETOMAR AQUI (2026-11-12, fim do dia — logo nova e home nova, marcos 1 e 2) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `6bd3b3c`, #332). Nada aberto.

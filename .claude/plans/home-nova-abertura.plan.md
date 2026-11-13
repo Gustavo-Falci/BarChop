@@ -54,7 +54,11 @@ A fonte é o protótipo (`Documents/barchop-prototipo`): `src/motion/abertura.js
   - O conteúdo já está todo no HTML e o leitor de tela lê a promessa normalmente: a abertura só mexe no visual.
 - **Peso.** O código da abertura entra por `import()` só quando o `<html>` tem `abertura-on`. Quem não vê a abertura não baixa nada, e o JS inicial cresce só o pedaço que decide (~1 kB). As fontes são as que a home já carrega (Clash 200 e 700): a abertura espera por elas até 2,5 s, como no protótipo.
 
-## Pergunta ao dono
+## Respostas do dono (13/11)
+- **Lighthouse:** aceito medir a home com a abertura no marco 6; Speed Index e TBT podem piorar, o LCP mobile tem de ficar ≤ 2,5 s.
+- **Celular:** a abertura toca no celular também, com o desenho de celular do protótipo.
+
+## Perguntas que foram ao dono
 1. **Lighthouse sempre vê a abertura** (cada medição é uma sessão nova). O LCP deve ficar parecido, porque a imagem pinta desde o começo, mas o TBT e o "Speed Index" pioram. Proposta: medir a home **com** abertura no marco 6 e aceitar Speed Index pior, desde que o LCP fique ≤ 2,5 s. Ok?
 2. **A abertura toca no celular também?** O protótipo foi testado de 320×568 a 393×659. Recomendo que sim, com o desenho de celular do protótipo (o caminho e o tamanho mudam).
 

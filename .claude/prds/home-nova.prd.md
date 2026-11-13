@@ -53,8 +53,8 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | 1 | Linha de base | O dono do produto vê quantas visitas a home atual recebe e quantas viram cadastro, sem cookie | complete | `.claude/plans/home-nova-linha-de-base.plan.md` |
 | 2 | Topo novo, parado | O visitante vê o topo escuro com "Bar/Chop", a frase, o botão e a imagem da cadeira sob o foco, com a navegação escura que clareia; o resto da home segue como está | complete | `.claude/plans/home-nova-topo-parado.plan.md` |
 | 3 | Cadeira viva e rolagem | A cadeira 3D substitui a imagem quando carrega (fica a imagem em aparelho fraco); rolar gira e aproxima a cadeira e dissolve na névoa até "Soa familiar?" | complete | `.claude/plans/home-nova-cadeira-viva.plan.md` |
-| 4 | Seções no estilo novo | Abaixo do topo, todas as seções sem caixa: rótulo mono e título leve + forte subindo do desfoque, listas com fio em cima, planos sem cartão, fecho escuro (pedido do dono em 13/11) | in-progress | `.claude/plans/home-nova-secoes.plan.md` |
-| 5 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | pending | `.claude/plans/home-nova-abertura.plan.md` |
+| 4 | Seções no estilo novo | Abaixo do topo, todas as seções sem caixa: rótulo mono e título leve + forte subindo do desfoque, listas com fio em cima, planos sem cartão, fecho escuro (pedido do dono em 13/11) | complete | `.claude/plans/home-nova-secoes.plan.md` |
+| 5 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | in-progress | `.claude/plans/home-nova-abertura.plan.md` |
 | 6 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | pending | — |
 
 ## Open Questions

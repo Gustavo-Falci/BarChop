@@ -1,0 +1,258 @@
+/* As peças da abertura da navalha (home nova, marco 5), dentro do topo.
+   Só existem com a classe `abertura-on` no <html>, que o script inline
+   põe antes da primeira pintura; sem ela (já viu, reduzir movimento,
+   âncora, voltar), nada daqui aparece nem ocupa o Tab. O primeiro estado
+   sai do CSS; o resto, o tocar.ts escreve quadro a quadro. Os tons são os
+   do topo (--claro, --ouro…, definidos em .topo). */
+.agenda,
+.fios,
+.navalha,
+.cantos,
+.pular {
+  display: none;
+}
+
+:global(html.abertura-on) .agenda {
+  display: grid;
+}
+
+:global(html.abertura-on) .fios,
+:global(html.abertura-on) .navalha,
+:global(html.abertura-on) .cantos,
+:global(html.abertura-on) .pular {
+  display: block;
+}
+
+/* A agenda do dia: dez horários e quatro colunas de profissional, no
+   escuro, por trás do nome. */
+.agenda {
+  position: absolute;
+  inset: calc(112 * var(--u)) calc(56 * var(--u)) calc(104 * var(--u));
+  z-index: 2;
+  grid-template-columns: calc(64 * var(--u)) repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+  gap: calc(6 * var(--u)) calc(10 * var(--u));
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  background-image: linear-gradient(to bottom, rgb(236 230 218 / 0.07) 1px, transparent 1px);
+  background-size: 100% 10%;
+}
+
+.hora {
+  grid-column: 1;
+  align-self: start;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--claro-mudo);
+  font-variant-numeric: tabular-nums;
+}
+
+.bloco {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 calc(12 * var(--u));
+  overflow: hidden;
+  border: 1px dashed rgb(236 230 218 / 0.1);
+  border-radius: calc(6 * var(--u));
+  transition:
+    background-color 0.45s ease,
+    border-color 0.45s ease;
+}
+
+.servico,
+.cliente {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.servico {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ouro);
+}
+
+.cliente {
+  font-size: 13px;
+  color: var(--claro-suave);
+}
+
+/* Acendeu: a navalha passou por aqui. */
+.bloco[data-cheio] {
+  border-style: solid;
+  border-color: rgb(232 197 71 / 0.45);
+  background: rgb(232 197 71 / 0.12);
+}
+
+.bloco[data-cheio] .servico,
+.bloco[data-cheio] .cliente {
+  opacity: 1;
+}
+
+/* O clarão de quando acende. */
+.bloco[data-clarao] {
+  background: rgb(232 197 71 / 0.42);
+  transition: none;
+}
+
+/* Os sete fios dourados que a navalha deixa. */
+.fios {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: var(--ouro);
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+/* A navalha: o quadro dela começa no canto e quem põe no lugar é o
+   transform (origem 0 0). Aberta, a lâmina sai do quadro. */
+.navalha {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 7;
+  overflow: visible;
+  opacity: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+/* Os cantos: a marca, pra quem e quantos horários livres hoje. */
+.cantos {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  pointer-events: none;
+  opacity: 0;
+  color: var(--claro-suave);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.canto {
+  position: absolute;
+  margin: 0;
+}
+
+.marca {
+  top: calc(40 * var(--u));
+  left: calc(56 * var(--u));
+}
+
+.publico {
+  top: calc(40 * var(--u));
+  right: calc(56 * var(--u));
+}
+
+.livres {
+  bottom: calc(40 * var(--u));
+  left: calc(56 * var(--u));
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.contador {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ouro);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pular: o primeiro do Tab (o cabeçalho e a interface estão escondidos). */
+.pular {
+  position: absolute;
+  right: calc(56 * var(--u));
+  bottom: calc(36 * var(--u));
+  z-index: 8;
+  min-height: 44px;
+  padding: 0 var(--espaco-md);
+  border: 1px solid rgb(236 230 218 / 0.28);
+  border-radius: 999px;
+  background: rgb(21 20 18 / 0.6);
+  color: var(--claro);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.pular:hover {
+  border-color: var(--ouro);
+}
+
+@media (max-width: 760px) {
+  .agenda {
+    inset: calc(132 * var(--u)) var(--espaco-md) calc(120 * var(--u));
+    grid-template-columns: 40px repeat(4, minmax(0, 1fr));
+    gap: calc(5 * var(--u)) 5px;
+  }
+
+  .hora {
+    font-size: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .bloco {
+    padding: 0 6px;
+  }
+
+  /* No celular não cabe o serviço: fica o nome. */
+  .servico {
+    display: none;
+  }
+
+  .cliente {
+    font-size: 11px;
+  }
+
+  .marca,
+  .livres {
+    left: var(--espaco-md);
+  }
+
+  .publico {
+    right: var(--espaco-md);
+  }
+
+  .marca,
+  .publico {
+    top: calc(56 * var(--u));
+  }
+
+  .livres {
+    bottom: calc(48 * var(--u));
+  }
+
+  .pular {
+    right: var(--espaco-md);
+    bottom: calc(40 * var(--u));
+  }
+}
+
+/* No celular estreito, os dois cantos de cima se encostariam: fica a marca. */
+@media (max-width: 419px) {
+  .publico {
+    display: none;
+  }
+}

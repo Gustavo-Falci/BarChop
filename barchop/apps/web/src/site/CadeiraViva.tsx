@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { depoisDaAbertura } from "./abertura/fim";
 import type { Cena } from "./cena/cadeira";
 import { ambienteDoNavegador, podeTer3D, QUADROS_MEDIDOS, quadrosLentos } from "./cena/podeTer3D";
 import { estadoDaRolagem, type EstadoDoTopo } from "./cena/rolagem";
@@ -116,11 +117,19 @@ export function CadeiraViva() {
           : window.setTimeout(() => void comeca(), 200);
     }
 
-    if (document.readyState === "complete") noOcio();
-    else window.addEventListener("load", noOcio, { once: true });
+    // Com a abertura da navalha (marco 5) tocando, a cadeira 3D espera ela
+    // acabar: o topo tem de estar parado pra ela entrar.
+    function depoisDoLoad() {
+      void depoisDaAbertura().then(() => {
+        if (!acabou) noOcio();
+      });
+    }
+
+    if (document.readyState === "complete") depoisDoLoad();
+    else window.addEventListener("load", depoisDoLoad, { once: true });
 
     return () => {
-      window.removeEventListener("load", noOcio);
+      window.removeEventListener("load", depoisDoLoad);
       if (espera !== undefined) {
         if (typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(espera);
         window.clearTimeout(espera);

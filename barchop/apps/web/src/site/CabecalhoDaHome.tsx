@@ -87,7 +87,10 @@ export function CabecalhoDaHome({ topo }: { topo: string }) {
     >
       <div className={estilos.conteudo}>
         <Link href="/" className={estilos.marca}>
-          <MarcaDoBarChop tamanho={30} />
+          {/* Onde o B da abertura da navalha pousa (marco 5). */}
+          <span className={estilos.icone} data-marca-da-nav="">
+            <MarcaDoBarChop tamanho={30} />
+          </span>
           <span className={estilos.nomeDaMarca}>BarChop</span>
         </Link>
         <nav aria-label="Conta" className={estilos.nav}>

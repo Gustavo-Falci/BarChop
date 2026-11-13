@@ -54,7 +54,11 @@ A fonte é o protótipo (`Documents/barchop-prototipo`): `src/motion/abertura.js
   - O conteúdo já está todo no HTML e o leitor de tela lê a promessa normalmente: a abertura só mexe no visual.
 - **Peso.** O código da abertura entra por `import()` só quando o `<html>` tem `abertura-on`. Quem não vê a abertura não baixa nada, e o JS inicial cresce só o pedaço que decide (~1 kB). As fontes são as que a home já carrega (Clash 200 e 700): a abertura espera por elas até 2,5 s, como no protótipo.
 
-## Pergunta ao dono
+## Respostas do dono (13/11)
+- **Lighthouse:** aceito medir a home com a abertura no marco 6; Speed Index e TBT podem piorar, o LCP mobile tem de ficar ≤ 2,5 s.
+- **Celular:** a abertura toca no celular também, com o desenho de celular do protótipo.
+
+## Perguntas que foram ao dono
 1. **Lighthouse sempre vê a abertura** (cada medição é uma sessão nova). O LCP deve ficar parecido, porque a imagem pinta desde o começo, mas o TBT e o "Speed Index" pioram. Proposta: medir a home **com** abertura no marco 6 e aceitar Speed Index pior, desde que o LCP fique ≤ 2,5 s. Ok?
 2. **A abertura toca no celular também?** O protótipo foi testado de 320×568 a 393×659. Recomendo que sim, com o desenho de celular do protótipo (o caminho e o tamanho mudam).
 
@@ -143,9 +147,28 @@ pnpm lint
 | Conflito com o topo preso do marco 3 | Baixa | A rolagem fica travada durante a abertura; a cena 3D só entra depois do `load` e não depende dela |
 
 ## Acceptance
-- [ ] 1ª visita da sessão toca; F5, voltar e âncora não
-- [ ] Pulável por botão, teclas, roda e toque; botão acessível pelo Tab
-- [ ] Ausente com "reduzir movimento"; sem JS, a home é a de hoje
-- [ ] O B pousa no ícone do cabeçalho sem salto
-- [ ] Testes, tsc e lint passam; LCP mobile ≤ 2,5 s com a abertura
+- [x] 1ª visita da sessão toca; F5, voltar e âncora não (voltar: teste do script)
+- [x] Pulável por botão, teclas, roda e toque; botão acessível pelo Tab
+- [x] Ausente com "reduzir movimento"; sem JS, a home é a de hoje
+- [x] O B pousa no ícone do cabeçalho sem salto
+- [ ] Testes, tsc e lint passam (feito); LCP mobile ≤ 2,5 s com a abertura (Lighthouse no marco 6; ver Execução)
 - [ ] Prints aprovados pelo dono
+
+## Execução (13/11)
+Branch `home-nova-abertura` (sem rastrear a main), RED → GREEN por task:
+- Task 1: `abertura/script.ts` (8 testes). Task 2: `abertura/lamina.ts` (5). Task 3: `abertura/linhaDoTempo.ts` (16). Task 4: `tocar.ts`, `fim.ts`, `AberturaDaHome`, `GradeDaAgenda`, `NavalhaDaAbertura`, `Abertura.module.css`, e as marcas no topo, no cabeçalho, na home e na cadeira (`tocar.test.ts` 15, `abertura-da-home.test.tsx` 8).
+- Correções da Task 5: foco vai pra promessa quando quem pulou estava no botão (some com a classe); `style=""` que o Chrome deixava ao remover o atributo; "Para barbearias" some abaixo de 420 px.
+
+**Desvios do plano**
+- `deveAbrir.ts` virou `abertura/script.ts` (o teste roda a string do script); sem `abertura-fim`; a trava olha o atributo `data-abertura-viva` no `<html>`, não um global.
+- `curvas.ts` ficou dentro de `linhaDoTempo.ts` (só ela usa).
+- Botão de pular logo depois da camada escura (o teste do marco 2 quer a camada como 1º filho); continua o 1º do Tab porque o cabeçalho e a interface ficam `visibility: hidden`.
+- `CadeiraViva` espera `depoisDaAbertura()` antes de carregar o 3D.
+
+**Conferido no build de produção local (chrome-devtools, relógio congelado)**
+- 1440×900: 0,9 s (navalha cortando, agenda acendendo, fios), 2,4 s (B formado, agenda cheia), 3,2 s (voo, luz acendendo), fim = topo de sempre; B pousa no centro do ícone (diferença ≤ 3 px, o cabeçalho ainda deslizando).
+- 375×812: mesma história com o caminho do celular; B pousa no ícone; fim igual ao topo de sempre, com a cadeira 3D entrando depois.
+- Tab: 1º foco é "Pular abertura"; Enter aos 0,5 s termina em 0,78 s (5×).
+- F5 na mesma sessão e entrada em `/#planos` não tocam; com o "reduzir movimento" do Windows ligado, não toca.
+- LCP (celular 412×823, CPU 4×, Slow 4G do DevTools, cache frio): 4,16 s com abertura × 5,08 s sem; CLS 0. A abertura não piora o LCP (o maior elemento continua a cadeira); o número absoluto dessa rede é mais duro que o do Lighthouse, que fica pro marco 6 como combinado.
+- Console: só o `ContaVisita` sem a API local (`localhost:3333`), de antes.

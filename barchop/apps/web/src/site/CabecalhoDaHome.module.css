@@ -84,6 +84,23 @@
   text-decoration: none;
 }
 
+/* O ícone da marca: na abertura da navalha (marco 5), o B pousa aqui e
+   o ícone aparece em volta dele. */
+.icone {
+  display: inline-flex;
+}
+
+/* O primeiro estado da abertura: o cabeçalho ainda não chegou (fora do
+   Tab também). Quem traz de volta é o tocar.ts, quadro a quadro. */
+:global(html.abertura-on) .cabecalho {
+  opacity: 0;
+  visibility: hidden;
+}
+
+:global(html.abertura-on) .icone {
+  opacity: 0;
+}
+
 .nav {
   display: flex;
   align-items: center;

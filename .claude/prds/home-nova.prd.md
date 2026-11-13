@@ -54,8 +54,8 @@ We'll know we're right when **a taxa de visitas da home que terminam em "Criar b
 | 2 | Topo novo, parado | O visitante vê o topo escuro com "Bar/Chop", a frase, o botão e a imagem da cadeira sob o foco, com a navegação escura que clareia; o resto da home segue como está | complete | `.claude/plans/home-nova-topo-parado.plan.md` |
 | 3 | Cadeira viva e rolagem | A cadeira 3D substitui a imagem quando carrega (fica a imagem em aparelho fraco); rolar gira e aproxima a cadeira e dissolve na névoa até "Soa familiar?" | complete | `.claude/plans/home-nova-cadeira-viva.plan.md` |
 | 4 | Seções no estilo novo | Abaixo do topo, todas as seções sem caixa: rótulo mono e título leve + forte subindo do desfoque, listas com fio em cima, planos sem cartão, fecho escuro (pedido do dono em 13/11) | complete | `.claude/plans/home-nova-secoes.plan.md` |
-| 5 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | in-progress | `.claude/plans/home-nova-abertura.plan.md` |
-| 6 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | pending | — |
+| 5 | Abertura da navalha | Na primeira visita da sessão, a navalha atravessa a agenda, vira o B e pousa no ícone da navegação; pulável; ausente com "reduzir movimento" | complete | `.claude/plans/home-nova-abertura.plan.md` |
+| 6 | Medido e no ar | Lighthouse dentro das metas no celular, crédito da cadeira no rodapé, telas baixas e "reduzir movimento" conferidos em produção; contador comparando antes e depois | in-progress | `.claude/plans/home-nova-medido.plan.md` |
 
 ## Open Questions
 - [x] Qual é o teto de peso aceitável só na home? — **600 kB comprimidos, todos depois do `load`, e zero no JS inicial** (marco 3). Medido: three + cena 163 kB, `cadeira.glb` 372 kB com gzip, ~535 kB no total; JS inicial +1,7 kB.

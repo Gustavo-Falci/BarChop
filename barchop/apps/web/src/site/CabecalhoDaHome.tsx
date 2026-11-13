@@ -3,10 +3,14 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { MarcaDoBarChop } from "../componentes/MarcaDoBarChop";
+import { TOPO_CLARO } from "./cena/topoClaro";
 import { LinkDeAcao } from "./LinkDeAcao";
 import estilos from "./CabecalhoDaHome.module.css";
 
-type Tema = "escuro" | "claro";
+// Até aqui do alto da página o cabeçalho nunca some.
+const SEMPRE_VISIVEL = 140;
+// Movimentos menores que isso não decidem nada (o dedo treme).
+const FOLGA = 2;
 
 // O cabeçalho só da home (home nova, marco 2): fixo, transparente com
 // texto claro sobre o topo escuro e, quando o topo sai de baixo dele, com
@@ -16,10 +20,35 @@ type Tema = "escuro" | "claro";
 //
 // O HTML do servidor sai escuro, que é o que a pessoa vê ao chegar. Quem
 // muda é o IntersectionObserver olhando o topo numa faixa da altura do
-// cabeçalho; sem ele no navegador, fica escuro.
+// cabeçalho; sem ele no navegador, fica escuro. Com a cadeira 3D (marco
+// 3) o topo fica preso debaixo do cabeçalho até a névoa acabar, então o
+// topo também avisa (TOPO_CLARO) quando já clareou. Some ao descer e
+// volta ao subir.
 export function CabecalhoDaHome({ topo }: { topo: string }) {
   const cabecalho = useRef<HTMLElement>(null);
-  const [tema, setTema] = useState<Tema>("escuro");
+  const [foraDoTopo, setForaDoTopo] = useState(false);
+  const [nevoaClara, setNevoaClara] = useState(false);
+  const [escondido, setEscondido] = useState(false);
+  const tema = foraDoTopo || nevoaClara ? "claro" : "escuro";
+
+  useEffect(() => {
+    const ouvir = (ev: Event) => setNevoaClara((ev as CustomEvent<boolean>).detail === true);
+    document.addEventListener(TOPO_CLARO, ouvir);
+    return () => document.removeEventListener(TOPO_CLARO, ouvir);
+  }, []);
+
+  useEffect(() => {
+    let ultimo = window.scrollY;
+    function aoRolar() {
+      const y = window.scrollY;
+      if (y < SEMPRE_VISIVEL) setEscondido(false);
+      else if (y > ultimo + FOLGA) setEscondido(true);
+      else if (y < ultimo - FOLGA) setEscondido(false);
+      ultimo = y;
+    }
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    return () => window.removeEventListener("scroll", aoRolar);
+  }, []);
 
   useEffect(() => {
     const alvo = document.getElementById(topo);
@@ -33,7 +62,7 @@ export function CabecalhoDaHome({ topo }: { topo: string }) {
       observador = new IntersectionObserver(
         (entradas) => {
           const entrada = entradas.at(-1);
-          if (entrada) setTema(entrada.isIntersecting ? "escuro" : "claro");
+          if (entrada) setForaDoTopo(!entrada.isIntersecting);
         },
         { rootMargin: `0px 0px -${resto}px 0px` }
       );
@@ -49,7 +78,12 @@ export function CabecalhoDaHome({ topo }: { topo: string }) {
   }, [topo]);
 
   return (
-    <header ref={cabecalho} className={estilos.cabecalho} data-tema={tema}>
+    <header
+      ref={cabecalho}
+      className={estilos.cabecalho}
+      data-tema={tema}
+      data-escondido={escondido ? "" : undefined}
+    >
       <div className={estilos.conteudo}>
         <Link href="/" className={estilos.marca}>
           <MarcaDoBarChop tamanho={30} />

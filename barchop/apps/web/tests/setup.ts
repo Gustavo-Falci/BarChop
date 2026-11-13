@@ -44,6 +44,14 @@ vi.mock("next/navigation", () => ({
   useRouter: () => rotadorFalso,
 }));
 
+// O jsdom não tem canvas: o getContext devolve null (como um navegador
+// sem WebGL) e avisa "Not implemented" no console. A home nova (marco 3)
+// pergunta pelo WebGL2 em todo teste que a monta; o dublê dá a mesma
+// resposta, calado. Quem precisa de WebGL espia o protótipo no teste.
+if (typeof HTMLCanvasElement !== "undefined") {
+  HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext;
+}
+
 // O jsdom não implementa o <dialog> modal: sem `showModal` e `close`, a
 // janela de compartilhar (painel v2, marco 4) quebraria em todo teste.
 // O dublê só abre e fecha — foco preso e Esc são do navegador.

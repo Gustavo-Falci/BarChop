@@ -7,26 +7,58 @@
    pnpm foto-da-cadeira) e cai no mesmo lugar da cena 3D do marco 3.
 
    Os tons do escuro são os do modo escuro do painel (packages/
-   design-tokens, dark.*): o site trava o tema claro. */
+   design-tokens, dark.*): o site trava o tema claro.
+
+   Marco 3: a CadeiraViva põe a cadeira 3D (.gl) por cima da imagem e
+   marca `data-vivo`; o trilho alonga e o topo fica preso enquanto a
+   rolagem escreve as variáveis (--afastamento, --nome, --foco, --grade,
+   --escuro). Sem elas, vale o repouso: é o topo parado do marco 2. */
+.trilho {
+  position: relative;
+}
+
+/* O topo preso por 1,35 tela de rolagem (1,2 no celular). No último
+   quarto (34svh, de 0,75 da rolagem em diante) as seções de baixo já
+   sobem por cima do topo, que nessa hora é só névoa e papel. */
+.trilho[data-vivo] {
+  height: calc(100svh + 135svh);
+  margin-bottom: -34svh;
+}
+
+.trilho[data-vivo] ~ * {
+  position: relative;
+  z-index: 1;
+}
+
 .topo {
   --u: min(100vw / 1440, 100svh / 900);
-  --escuro: #151412; /* dark.paperFim */
+  --fundo-escuro: #151412; /* dark.paperFim */
   --claro: #ece6da; /* dark.ink */
   --claro-suave: #b8b0a2; /* dark.inkSoft */
   --claro-mudo: #968f82; /* dark.muted */
   --ouro: #e8c547; /* dark.accent */
   --foco-x: 50.5%; /* o pé do feixe: onde a cena põe a cadeira */
 
-  position: relative;
+  position: sticky;
+  top: 0;
   isolation: isolate;
   height: 100svh;
   overflow: hidden;
-  background: var(--escuro);
   color: var(--claro);
 }
 
 .topo :focus-visible {
   outline-color: var(--ouro);
+}
+
+/* A camada escura. Na névoa ela some e o que fica é o degradê do próprio
+   site, o mesmo das seções de baixo: a emenda não mostra faixa. */
+.fundo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--fundo-escuro);
+  opacity: var(--escuro, 1);
 }
 
 /* O sopro da grade da agenda: linhas de 10 horários e 5 colunas, só nos
@@ -39,7 +71,7 @@
     linear-gradient(to bottom, rgb(236 230 218 / 0.075) 1px, transparent 1px),
     linear-gradient(to right, rgb(236 230 218 / 0.05) 1px, transparent 1px);
   background-size: 100% 10%, 20% 100%;
-  opacity: 0.14;
+  opacity: calc(0.14 * var(--grade, 1));
   mask-image: radial-gradient(70% 80% at 50% 45%, transparent 38%, #000 92%);
 }
 
@@ -50,6 +82,7 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  opacity: var(--foco, 1);
 }
 
 .foco::before {
@@ -96,6 +129,7 @@
   white-space: nowrap;
   line-height: 1;
   color: var(--claro);
+  opacity: var(--nome, 1);
 }
 
 @supports (background-clip: text) or (-webkit-background-clip: text) {
@@ -129,6 +163,8 @@
   font-weight: 200;
   letter-spacing: -0.03em;
   background-position: calc(-1 * var(--esquerda)) calc(-1 * var(--alto));
+  /* Na rolagem, sobe e sai pela esquerda. */
+  translate: calc(-10vw * var(--afastamento, 0)) calc(-30svh * var(--afastamento, 0));
 }
 
 /* "Chop": pesado, na frente da cadeira e cortado pela borda de baixo. */
@@ -144,6 +180,8 @@
   font-weight: 700;
   letter-spacing: -0.045em;
   background-position: right calc(-1 * var(--direita)) bottom var(--abaixo);
+  /* Na rolagem, desce e sai pela direita. */
+  translate: calc(9vw * var(--afastamento, 0)) calc(26svh * var(--afastamento, 0));
 }
 
 /* A cadeira, entre as duas metades. Centrada no pé do feixe; o recorte
@@ -159,6 +197,74 @@
   translate: -50% 0;
   pointer-events: none;
   user-select: none;
+}
+
+/* A cadeira 3D (marco 3): o canvas cobre o topo inteiro, transparente, no
+   mesmo andar da imagem. Entra devagar por cima dela, já na mesma pose;
+   a imagem só sai quando o canvas terminou de entrar (as duas meio
+   transparentes ao mesmo tempo deixariam a cadeira clara). */
+.gl {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+
+.topo[data-vivo] .gl {
+  opacity: var(--canvas, 1);
+}
+
+.topo[data-vivo] .cadeira img {
+  opacity: 0;
+  transition: opacity 0s 400ms;
+}
+
+/* A interface sai de uma vez quando a rolagem começa e volta quando ela
+   chega no alto. Quem está no teclado com o foco no topo continua vendo. */
+.promessa,
+.status,
+.base {
+  transition:
+    opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    translate 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.status {
+  transition-delay: 0.05s;
+}
+
+.base {
+  transition-delay: 0.1s;
+}
+
+.topo[data-ui="fora"] .promessa,
+.topo[data-ui="fora"] .status,
+.topo[data-ui="fora"] .base {
+  opacity: 0;
+  translate: 0 -14px;
+  pointer-events: none;
+  transition-duration: 0.45s;
+  transition-timing-function: cubic-bezier(0.64, 0, 0.78, 0);
+}
+
+.topo[data-ui="fora"] .status {
+  transition-delay: 0.03s;
+}
+
+.topo[data-ui="fora"] .base {
+  transition-delay: 0.06s;
+}
+
+.topo:focus-within .promessa,
+.topo:focus-within .status,
+.topo:focus-within .base {
+  opacity: 1;
+  translate: none;
+  pointer-events: auto;
 }
 
 /* A promessa, no alto à esquerda: a metade leve e a pesada da Clash na
@@ -305,6 +411,11 @@
 
 /* Celular: o nome empilha, a cadeira no meio, a interface no pé. */
 @media (max-width: 760px) {
+  .trilho[data-vivo] {
+    height: calc(100svh + 120svh);
+    margin-bottom: -30svh;
+  }
+
   .topo {
     --u: min(100vw / 390, 100svh / 844);
     --foco-x: 50%;

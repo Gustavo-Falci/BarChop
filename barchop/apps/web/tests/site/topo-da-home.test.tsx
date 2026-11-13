@@ -115,4 +115,58 @@ describe("topo da home", () => {
   it("ocupa a tela inteira, medida pela tela com as barras do navegador", () => {
     expect(css()).toMatch(/\.topo\s*\{[^}]*height:\s*100svh/);
   });
+
+  // Marco 3: a cadeira 3D por cima da imagem, presa na rolagem.
+  it("o topo mora num trilho, e a cadeira 3D fica junto da imagem parada", () => {
+    const secao = topo();
+    expect(secao).toHaveAttribute("data-topo");
+    expect(secao.parentElement).toHaveAttribute("data-trilho");
+    // A imagem continua no HTML do servidor; o canvas entra ao lado dela.
+    expect(secao.querySelector("picture img")).not.toBeNull();
+    expect(secao.querySelector("canvas")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("sem o 3D o trilho tem a altura do topo; com ele, alonga e prende o topo", () => {
+    expect(css()).toMatch(/\.topo\s*\{[^}]*position:\s*sticky[^}]*top:\s*0/);
+    expect(css()).toMatch(/\.trilho\[data-vivo\]\s*\{[^}]*height:\s*calc\(100svh \+ 135svh\)/);
+    expect(css()).toMatch(
+      /@media \(max-width: 760px\)\s*\{[\s\S]*?\.trilho\[data-vivo\]\s*\{[^}]*height:\s*calc\(100svh \+ 120svh\)/
+    );
+  });
+
+  it("com o 3D vivo, as seções de baixo sobem por cima do fim da névoa", () => {
+    // O último quarto do trilho (a partir de 0,75 da rolagem) as seções
+    // já entram por cima do topo ainda preso, em vez de esperar ele soltar.
+    expect(css()).toMatch(/\.trilho\[data-vivo\]\s*\{[^}]*margin-bottom:\s*-34svh/);
+    expect(css()).toMatch(
+      /@media \(max-width: 760px\)\s*\{[\s\S]*?\.trilho\[data-vivo\]\s*\{[^}]*margin-bottom:\s*-30svh/
+    );
+    expect(css()).toMatch(/\.trilho\[data-vivo\]\s*~\s*\*\s*\{[^}]*position:\s*relative;[^}]*z-index:\s*1/);
+  });
+
+  it("com o 3D vivo, o canvas aparece e a imagem sai", () => {
+    expect(css()).toMatch(/\.gl\s*\{[^}]*opacity:\s*0/);
+    expect(css()).toMatch(/\.topo\[data-vivo\]\s+\.gl\s*\{[^}]*opacity:\s*var\(--canvas,\s*1\)/);
+    expect(css()).toMatch(/\.topo\[data-vivo\]\s+\.cadeira\s+img\s*\{[^}]*opacity:\s*0/);
+  });
+
+  it("a rolagem mexe no topo só por variáveis, com o repouso de padrão", () => {
+    const regras = css();
+    // A camada escura some e deixa o papel do site.
+    expect(regras).toMatch(/\.fundo\s*\{[^}]*opacity:\s*var\(--escuro,\s*1\)/);
+    expect(regras).toMatch(/\.foco\s*\{[^}]*opacity:\s*var\(--foco,\s*1\)/);
+    expect(regras).toMatch(/\.grade\s*\{[^}]*opacity:\s*calc\(0\.14 \* var\(--grade,\s*1\)\)/);
+    expect(regras).toMatch(/\.metade\s*\{[^}]*opacity:\s*var\(--nome,\s*1\)/);
+    expect(regras).toMatch(/\.bar\s*\{[^}]*translate:[^;]*var\(--afastamento,\s*0\)/);
+    expect(regras).toMatch(/\.chop\s*\{[^}]*translate:[^;]*var\(--afastamento,\s*0\)/);
+    // A interface sai de uma vez quando a rolagem começa.
+    expect(regras).toMatch(/\.topo\[data-ui="fora"\]\s+\.promessa[^{]*\{[^}]*opacity:\s*0/);
+  });
+
+  it("a camada escura vem do HTML, antes de tudo", () => {
+    const secao = topo();
+    const fundo = secao.firstElementChild!;
+    expect(fundo).toHaveAttribute("aria-hidden", "true");
+    expect(fundo.className).toMatch(/fundo/);
+  });
 });

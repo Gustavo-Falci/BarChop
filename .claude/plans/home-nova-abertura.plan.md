@@ -147,9 +147,28 @@ pnpm lint
 | Conflito com o topo preso do marco 3 | Baixa | A rolagem fica travada durante a abertura; a cena 3D só entra depois do `load` e não depende dela |
 
 ## Acceptance
-- [ ] 1ª visita da sessão toca; F5, voltar e âncora não
-- [ ] Pulável por botão, teclas, roda e toque; botão acessível pelo Tab
-- [ ] Ausente com "reduzir movimento"; sem JS, a home é a de hoje
-- [ ] O B pousa no ícone do cabeçalho sem salto
-- [ ] Testes, tsc e lint passam; LCP mobile ≤ 2,5 s com a abertura
+- [x] 1ª visita da sessão toca; F5, voltar e âncora não (voltar: teste do script)
+- [x] Pulável por botão, teclas, roda e toque; botão acessível pelo Tab
+- [x] Ausente com "reduzir movimento"; sem JS, a home é a de hoje
+- [x] O B pousa no ícone do cabeçalho sem salto
+- [ ] Testes, tsc e lint passam (feito); LCP mobile ≤ 2,5 s com a abertura (Lighthouse no marco 6; ver Execução)
 - [ ] Prints aprovados pelo dono
+
+## Execução (13/11)
+Branch `home-nova-abertura` (sem rastrear a main), RED → GREEN por task:
+- Task 1: `abertura/script.ts` (8 testes). Task 2: `abertura/lamina.ts` (5). Task 3: `abertura/linhaDoTempo.ts` (16). Task 4: `tocar.ts`, `fim.ts`, `AberturaDaHome`, `GradeDaAgenda`, `NavalhaDaAbertura`, `Abertura.module.css`, e as marcas no topo, no cabeçalho, na home e na cadeira (`tocar.test.ts` 15, `abertura-da-home.test.tsx` 8).
+- Correções da Task 5: foco vai pra promessa quando quem pulou estava no botão (some com a classe); `style=""` que o Chrome deixava ao remover o atributo; "Para barbearias" some abaixo de 420 px.
+
+**Desvios do plano**
+- `deveAbrir.ts` virou `abertura/script.ts` (o teste roda a string do script); sem `abertura-fim`; a trava olha o atributo `data-abertura-viva` no `<html>`, não um global.
+- `curvas.ts` ficou dentro de `linhaDoTempo.ts` (só ela usa).
+- Botão de pular logo depois da camada escura (o teste do marco 2 quer a camada como 1º filho); continua o 1º do Tab porque o cabeçalho e a interface ficam `visibility: hidden`.
+- `CadeiraViva` espera `depoisDaAbertura()` antes de carregar o 3D.
+
+**Conferido no build de produção local (chrome-devtools, relógio congelado)**
+- 1440×900: 0,9 s (navalha cortando, agenda acendendo, fios), 2,4 s (B formado, agenda cheia), 3,2 s (voo, luz acendendo), fim = topo de sempre; B pousa no centro do ícone (diferença ≤ 3 px, o cabeçalho ainda deslizando).
+- 375×812: mesma história com o caminho do celular; B pousa no ícone; fim igual ao topo de sempre, com a cadeira 3D entrando depois.
+- Tab: 1º foco é "Pular abertura"; Enter aos 0,5 s termina em 0,78 s (5×).
+- F5 na mesma sessão e entrada em `/#planos` não tocam; com o "reduzir movimento" do Windows ligado, não toca.
+- LCP (celular 412×823, CPU 4×, Slow 4G do DevTools, cache frio): 4,16 s com abertura × 5,08 s sem; CLS 0. A abertura não piora o LCP (o maior elemento continua a cadeira); o número absoluto dessa rede é mais duro que o do Lighthouse, que fica pro marco 6 como combinado.
+- Console: só o `ContaVisita` sem a API local (`localhost:3333`), de antes.

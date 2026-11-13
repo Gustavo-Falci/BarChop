@@ -113,9 +113,47 @@ describe("home do site", () => {
       "href",
       "#como-funciona"
     );
-    expect(document.getElementById("como-funciona")).toHaveTextContent("Como funciona");
+    expect(document.getElementById("como-funciona")).toBe(
+      screen.getByRole("region", { name: "Como funciona" })
+    );
     const css = readFileSync(join(__dirname, "../../src/site/Home.module.css"), "utf8");
-    expect(css).toMatch(/\.tituloDaSecao\s*\{[^}]*scroll-margin-top/);
+    expect(css).toMatch(/\.secao\s*\{[^}]*scroll-margin-top/);
+  });
+
+  // Home nova, marco 4: as seções de baixo na linguagem do protótipo. O
+  // nome de cada seção (o que o leitor de tela anuncia) é o rótulo curto
+  // de sempre; o título grande é a frase leve + forte.
+  it.each([
+    ["Soa familiar?", "Cadeira vazia é horário perdido."],
+    ["Como funciona", "Três passos e a agenda anda."],
+    ["O que vem junto", "Do link ao lembrete, tudo num lugar só."],
+    ["Planos", "Comece grátis, mude quando crescer."],
+    ["Perguntas frequentes", "Antes de começar, o que todo mundo pergunta."],
+  ])("a seção \"%s\" tem o rótulo em cima e o título \"%s\"", (rotulo, titulo) => {
+    render(<Home />);
+    const secao = screen.getByRole("region", { name: rotulo });
+    expect(within(secao).getByRole("heading", { level: 2 })).toHaveTextContent(titulo);
+  });
+
+  it("nenhuma seção da home desenha caixa: sem cartão, tarja nem raio", () => {
+    render(<Home />);
+    const css = readFileSync(join(__dirname, "../../src/site/Home.module.css"), "utf8");
+    expect(css).not.toMatch(/border-radius/);
+    expect(css).not.toMatch(/border-left/);
+    expect(screen.getByRole("list", { name: "Planos" })).toHaveAttribute("data-variante", "linhas");
+  });
+
+  it("fecha no escuro com o convite e o teste sem cartão", () => {
+    render(<Home />);
+    const fecho = screen.getByRole("region", { name: "Comece hoje, sem falar com ninguém." });
+    expect(fecho).toHaveAttribute("id", "comecar");
+    expect(within(fecho).getByRole("link", { name: /criar minha barbearia/i })).toHaveAttribute(
+      "href",
+      "/painel/cadastro?origem=home"
+    );
+    expect(fecho).toHaveTextContent(/sem cartão/i);
+    const css = readFileSync(join(__dirname, "../../src/site/Home.module.css"), "utf8");
+    expect(css).toMatch(/\.fecho\s*\{[^}]*background:\s*#151412/);
   });
 
   // A cadeira do topo é derivada do modelo "Barber Chair" (CC BY 4.0):

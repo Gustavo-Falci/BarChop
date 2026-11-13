@@ -20,7 +20,7 @@ const CADEIRA = {
 };
 
 function srcset(nome: string, larguras: number[], tipo: "avif" | "webp") {
-  return larguras.map((l) => `/home/${nome}-${l}.${tipo} ${l}w`).join(", ");
+  return larguras.map((l) => `/assets/home/${nome}-${l}.${tipo} ${l}w`).join(", ");
 }
 
 // O topo da home nova: fundo escuro com o feixe de luz e o sopro da grade
@@ -80,7 +80,7 @@ export function TopoDaHome() {
           />
           {/* <img> puro: arquivos prontos em public/home, sem o otimizador do Next na VM. */}
           <img
-            src="/home/cadeira-1280.webp"
+            src="/assets/home/cadeira-1280.webp"
             alt=""
             width={CADEIRA.computador.largura}
             height={CADEIRA.computador.altura}

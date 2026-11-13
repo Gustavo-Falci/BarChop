@@ -54,7 +54,9 @@ export const config = {
   // reescrito no host da barbearia. A imagem de Open Graph do site sai
   // em /opengraph-image-<hash>, que passa no formato de slug: sem ficar
   // de fora, iria pra opengraph-image-<hash>.barchop.com.br.
+  // Os arquivos de public/ moram em /assets (nome reservado pra slug):
+  // em /home, a cadeira da home ia pra home.barchop.com.br e dava 404.
   matcher: [
-    "/((?!_next/|__next|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$|opengraph-image$|opengraph-image-[a-z0-9]+$).*)",
+    "/((?!_next/|__next|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$|opengraph-image$|opengraph-image-[a-z0-9]+$|assets/).*)",
   ],
 };

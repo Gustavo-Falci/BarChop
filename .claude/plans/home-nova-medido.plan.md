@@ -140,3 +140,22 @@ Build de produção local, HTML pré-renderizado editado por variante (sem rebui
 
 ### Task 4 — fora
 TBT ficou baixo com a abertura (117–399 ms); sem folga a ganhar que justifique mexer no laço.
+
+### Task 5 — produção (13/11, depois do deploy de d5f36be)
+- HTML no ar com `cadeira-celular-960` no srcset e nenhum `<link rel="preload">` de fonte.
+- Lighthouse 12 CLI mobile, 5 rodadas, mediana:
+
+| | Antes (f55831e) | Agora |
+|---|---|---|
+| LCP com limitação real (meta ≤ 2,5 s) | ~2,97 s | **2,21 s** [2,13–2,37] |
+| LCP simulado (referência) | 2,9–3,0 s | 2,82 s [2,14–2,89] |
+| CLS | 0 | 0 |
+| TBT (real / simulado) | — / 460–590 ms | 344 / 151 ms |
+| Acessibilidade (mínima) | 96 | 96 (real: 100 em todas) |
+
+- Telas baixas, primeira visita da sessão (abertura toca e grava a marca), fim sem estilo sobrando:
+  - 320×568: frase 9 px abaixo da navegação; botão de pular visível durante a abertura (embaixo, à direita).
+  - 375×667 e 393×659: frase 9 px abaixo da navegação. Em 393×659 (DPR 2,75) o celular leva a imagem de 960.
+- "Reduzir movimento" (preferência simulada no `matchMedia`, que é por onde o script da abertura, o 3D e a rolagem decidem; a ferramenta não emula a media query do CSS, então as regras CSS dela ficam conferidas pelos testes e pelos marcos 3 a 5): sem abertura, sem marca de sessão, o `.glb` não baixa e o trilho fica com a altura da tela (sem giro nem aproximação).
+- Crédito no rodapé: "Barber Chair" (Sketchfab) e "CC BY 4.0" (Creative Commons), com os links.
+- Contador: aguardando o dono ler a aba Números do suporte.

@@ -41,7 +41,7 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { bolinha, estudio } from "./estudio";
 import { NEVOA_DO_CLARO, type EstadoDaCena } from "./rolagem";
 
-export const MODELO_DA_CADEIRA = "/home/cadeira.glb";
+export const MODELO_DA_CADEIRA = "/assets/home/cadeira.glb";
 
 const COURO_CONHAQUE = 0x45200d;
 /** A cadeira normalizada: do chão ao topo do apoio de cabeça. */

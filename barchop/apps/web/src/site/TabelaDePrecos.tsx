@@ -92,7 +92,7 @@ export function TabelaDePrecos({
             </ul>
 
             <div className={estilos.convite}>
-              <LinkDeAcao href={cadastro} variante={pago ? "primario" : "contorno"}>
+              <LinkDeAcao href={cadastro} variante={pago ? "primario" : "contorno"} rotuloQueSobe={variante === "linhas"}>
                 {destaque.convite}
               </LinkDeAcao>
             </div>

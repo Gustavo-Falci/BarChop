@@ -197,7 +197,7 @@ export function Home() {
           <div className={estilos.miolo}>
             <TituloDaSecao id="comecar" leve="Comece hoje," forte="sem falar com ninguém." />
             <div className={estilos.acoes}>
-              <LinkDeAcao href={CADASTRO_PELA_HOME} grande className={estilos.ouro}>
+              <LinkDeAcao href={CADASTRO_PELA_HOME} grande className={estilos.ouro} rotuloQueSobe>
                 Criar minha barbearia grátis
               </LinkDeAcao>
               <p className={estilos.nota}>{DIAS_DE_TESTE} dias com tudo liberado · sem cartão</p>

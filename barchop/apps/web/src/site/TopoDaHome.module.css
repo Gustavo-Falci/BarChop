@@ -422,6 +422,7 @@
 @media (hover: hover) {
   .botoes .linha:hover {
     border-color: var(--claro);
+    background: rgb(236 230 218 / 0.06);
   }
 }
 

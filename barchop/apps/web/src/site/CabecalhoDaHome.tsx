@@ -100,7 +100,7 @@ export function CabecalhoDaHome({ topo }: { topo: string }) {
           <LinkDoSite href="/painel/entrar" className={estilos.link}>
             Entrar
           </LinkDoSite>
-          <LinkDeAcao href="/painel/cadastro" className={estilos.acao}>
+          <LinkDeAcao href="/painel/cadastro" className={estilos.acao} rotuloQueSobe>
             Criar barbearia
           </LinkDeAcao>
         </nav>

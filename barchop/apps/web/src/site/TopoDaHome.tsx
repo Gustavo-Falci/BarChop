@@ -143,10 +143,10 @@ export function TopoDaHome() {
             </strong>
           </p>
           <div className={estilos.botoes}>
-            <LinkDeAcao href={CADASTRO_PELA_HOME} className={estilos.ouro}>
+            <LinkDeAcao href={CADASTRO_PELA_HOME} className={estilos.ouro} rotuloQueSobe>
               Criar minha barbearia grátis
             </LinkDeAcao>
-            <LinkDeAcao href="#como-funciona" variante="contorno" className={estilos.linha}>
+            <LinkDeAcao href="#como-funciona" variante="contorno" className={estilos.linha} rotuloQueSobe>
               Ver como funciona
             </LinkDeAcao>
           </div>

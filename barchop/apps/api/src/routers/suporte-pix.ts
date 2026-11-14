@@ -1,7 +1,10 @@
 import { prisma } from "@barchop/database";
 import type { AntesDoPix, PixNaFila } from "@barchop/types";
+import { PLANOS, formatarReais } from "@barchop/formato";
+import { notificarDonos } from "../lib/notificacoes";
 import { PADRAO_UUID } from "../lib/padroes";
 import { pagamentoAguardando, serializarPagamentoPix, voltarAoQueEra } from "../lib/pix";
+import { diaEMesNoAno, emailAosDonos, ondePagar } from "../lib/pix-avisos";
 import { operadorDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -22,6 +25,10 @@ const corpoRecusa = {
   additionalProperties: false,
   properties: { resposta: { type: "string", minLength: 1, maxLength: 500, pattern: "\\S" } },
 } as const;
+
+function nomeDoPlano(plano: string): string {
+  return PLANOS[plano as keyof typeof PLANOS]?.nome ?? plano;
+}
 
 export function registrarRotasSuportePix(app: App): void {
   // Os aguardando, do mais velho pro mais novo, com a barbearia e o dono:
@@ -70,10 +77,17 @@ export function registrarRotasSuportePix(app: App): void {
     const { operadorId } = operadorDoToken(request);
     const decidido = await prisma.$transaction(async (tx) => {
       const pagamento = await pagamentoAguardando(tx, request.params.id, null);
-      return tx.pagamentoPix.update({
+      const confirmado = await tx.pagamentoPix.update({
         where: { id: pagamento.id },
         data: { situacao: "confirmado", decididoEm: new Date(), decididoPor: operadorId },
       });
+      // Só no sino: o plano já valia desde o "Já paguei".
+      await notificarDonos(tx, pagamento.barbeariaId, {
+        titulo: "Pix confirmado",
+        texto: `O Suporte achou o seu Pix de ${formatarReais(pagamento.valorCentavos)}. O ${nomeDoPlano(pagamento.plano)} vale até ${diaEMesNoAno(pagamento.periodoTerminaEm)}.`,
+        link: "/painel/faturas",
+      });
+      return confirmado;
     });
     return serializarPagamentoPix(decidido, null);
   });
@@ -84,19 +98,35 @@ export function registrarRotasSuportePix(app: App): void {
     { schema: { params: paramsComId, body: corpoRecusa } },
     async (request) => {
       const { operadorId } = operadorDoToken(request);
+      const resposta = request.body.resposta.trim();
       const decidido = await prisma.$transaction(async (tx) => {
         const pagamento = await pagamentoAguardando(tx, request.params.id, null);
         await voltarAoQueEra(tx, pagamento);
-        return tx.pagamentoPix.update({
+        const recusado = await tx.pagamentoPix.update({
           where: { id: pagamento.id },
-          data: {
-            situacao: "recusado",
-            resposta: request.body.resposta.trim(),
-            decididoEm: new Date(),
-            decididoPor: operadorId,
-          },
+          data: { situacao: "recusado", resposta, decididoEm: new Date(), decididoPor: operadorId },
         });
+        // O texto do sino tem 500 caracteres, e a resposta também: ela
+        // inteira vai no e-mail e em Faturas; o sino só aponta.
+        await notificarDonos(tx, pagamento.barbeariaId, {
+          titulo: "Pix não encontrado",
+          texto: `O Suporte não achou o seu Pix de ${formatarReais(pagamento.valorCentavos)}. A resposta está em Faturas.`,
+          link: "/painel/faturas",
+        });
+        return recusado;
       });
+      // Depois do commit: o e-mail que não sai não desfaz a recusa.
+      await emailAosDonos(
+        decidido.barbeariaId,
+        {
+          assunto: "Não achamos o seu Pix do BarChop",
+          texto:
+            `Olá! O Suporte do BarChop não achou no extrato o seu Pix de ${formatarReais(decidido.valorCentavos)} ` +
+            `(${nomeDoPlano(decidido.plano)}). A resposta:\n\n${resposta}\n\n` +
+            `A barbearia voltou ao que era antes do Pix. A resposta fica ${ondePagar(process.env.URL_DO_PAINEL)}, onde dá pra pagar de novo.`,
+        },
+        { canal: app.canal, log: request.log }
+      );
       return serializarPagamentoPix(decidido, null);
     }
   );

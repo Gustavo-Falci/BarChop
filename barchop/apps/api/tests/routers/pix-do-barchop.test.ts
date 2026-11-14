@@ -9,7 +9,9 @@ import {
   type AssinaturaNaCobranca,
   type CobrancaDeMemoria,
 } from "../../src/lib/cobranca";
+import { canalDeMemoria, type CanalDeMensagem } from "../../src/lib/canal";
 import type { ConfigDoPix } from "../../src/lib/pix";
+import { varrerPixDoBarChop } from "../../src/lib/pix-avisos";
 import { criarOperadorDeSuporte } from "../../src/lib/suporte";
 import type { App } from "../../src/tipos";
 import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
@@ -669,6 +671,111 @@ describe("o Suporte confere o Pix", () => {
     });
 
     expect(resposta.statusCode).toBe(400);
+    await app.close();
+  });
+
+  // PR 4: o dono fica sabendo da decisão. Confirmar, só no sino; recusar,
+  // no sino e por e-mail, com a resposta do Suporte.
+  it("confirmar avisa o dono no sino, sem e-mail", async () => {
+    const canal = canalDeMemoria();
+    const app = buildApp({ cobranca: cobrancaDeMemoria(), pix: PIX, canal });
+    const { token, barbeiroId } = await criarBarbeariaComToken(app);
+    const pago = (await jaPaguei(app, token)).json();
+    const suporte = await tokenDoSuporte(app);
+    const antes = canal.enviadas.length;
+
+    await decidir(app, suporte, pago.id, "confirmar");
+
+    const avisos = await prisma.notificacao.findMany({ where: { barbeiroId } });
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0]).toMatchObject({ tipo: "pagamento", link: "/painel/faturas" });
+    expect(avisos[0].titulo).toMatch(/Pix confirmado/);
+    expect(avisos[0].texto).toMatch(/R\$\s44,90/);
+    expect(canal.enviadas.length).toBe(antes);
+    await app.close();
+  });
+
+  it("recusar avisa o dono no sino e por e-mail, com a resposta", async () => {
+    const canal = canalDeMemoria();
+    const app = buildApp({ cobranca: cobrancaDeMemoria(), pix: PIX, canal });
+    const { token, barbeiroId } = await criarBarbeariaComToken(app);
+    const pago = (await jaPaguei(app, token)).json();
+    const suporte = await tokenDoSuporte(app);
+    const antes = canal.enviadas.length;
+
+    await decidir(app, suporte, pago.id, "recusar", "Não achamos o Pix de R$ 44,90.");
+
+    const avisos = await prisma.notificacao.findMany({ where: { barbeiroId } });
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0].titulo).toMatch(/Pix não encontrado/);
+    // A resposta inteira vai no e-mail e em Faturas; o sino só aponta.
+    expect(avisos[0].texto).toMatch(/R\$\s44,90.*Faturas/);
+    const emails = canal.enviadas.slice(antes);
+    expect(emails).toHaveLength(1);
+    expect(emails[0]).toMatchObject({ para: "um@exemplo.com" });
+    expect(emails[0].texto).toContain("Não achamos o Pix de R$ 44,90.");
+    await app.close();
+  });
+
+  it("recusar com a resposta no limite (500): o sino cabe, a recusa vale", async () => {
+    const { app } = montar();
+    const { token } = await criarBarbeariaComToken(app);
+    const pago = (await jaPaguei(app, token)).json();
+    const suporte = await tokenDoSuporte(app);
+
+    const resposta = await decidir(app, suporte, pago.id, "recusar", "x".repeat(500));
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toMatchObject({ situacao: "recusado", resposta: "x".repeat(500) });
+    await app.close();
+  });
+
+  it("confirmar um anual: o \"vale até\" do sino leva o ano", async () => {
+    const { app } = montar();
+    const { token, barbeiroId } = await criarBarbeariaComToken(app);
+    const pago = (await jaPaguei(app, token, { plano: "completo", ciclo: "anual", profissionais: 1 })).json();
+    const suporte = await tokenDoSuporte(app);
+
+    await decidir(app, suporte, pago.id, "confirmar");
+
+    const [aviso] = await prisma.notificacao.findMany({ where: { barbeiroId } });
+    expect(aviso.texto).toMatch(/vale até \d\d\/\d\d\/\d{4}\./);
+    await app.close();
+  });
+
+  it("o e-mail da recusa que não sai não desfaz a recusa", async () => {
+    const quebrado: CanalDeMensagem = {
+      nome: "quebrado",
+      destinos: ["email"],
+      async enviar(mensagem) {
+        // O código do cadastro passa; só o aviso da recusa quebra.
+        if (/Pix/.test(mensagem.assunto ?? "")) throw new Error("fora do ar");
+      },
+    };
+    const app = buildApp({ cobranca: cobrancaDeMemoria(), pix: PIX, canal: quebrado });
+    const { token } = await criarBarbeariaComToken(app);
+    const pago = (await jaPaguei(app, token)).json();
+    const suporte = await tokenDoSuporte(app);
+
+    const resposta = await decidir(app, suporte, pago.id, "recusar");
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json().situacao).toBe("recusado");
+    await app.close();
+  });
+
+  it("o aguardando que venceu (o cron passou pro Grátis) ainda volta ao retrato na recusa", async () => {
+    const { app } = montar();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    const pago = (await jaPaguei(app, token)).json();
+    const fim = Date.parse(pago.periodoTerminaEm);
+    await varrerPixDoBarChop({ canal: canalDeMemoria(), log: app.log, agora: new Date(fim + DIA) });
+    expect((await lerLinha(barbeariaId)).situacao).toBe("gratis");
+    const suporte = await tokenDoSuporte(app);
+
+    await decidir(app, suporte, pago.id, "recusar");
+
+    expect((await lerLinha(barbeariaId)).situacao).toBe("teste");
     await app.close();
   });
 });

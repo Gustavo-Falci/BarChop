@@ -195,6 +195,8 @@ model PagamentoPix {
   criadoEm               DateTime  @default(now()) @map("criado_em") @db.Timestamptz
   decididoEm             DateTime? @map("decidido_em") @db.Timestamptz
   decididoPor            String?   @map("decidido_por") @db.Uuid
+  // O aviso de 5 dias antes do fim deste período já saiu (PR 4).
+  avisadoEm              DateTime? @map("avisado_em") @db.Timestamptz
   antesSituacao          String    @map("antes_situacao")
   antesPlano             String    @map("antes_plano")
   antesCiclo             String    @map("antes_ciclo")

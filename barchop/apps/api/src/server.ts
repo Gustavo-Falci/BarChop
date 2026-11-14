@@ -3,6 +3,7 @@ import { buildApp } from "./app";
 import { filaDoPgBoss, urlDoPg } from "./lib/fila";
 import { enderecoDasBarbearias } from "./lib/endereco";
 import { registrarCiclosPorLink } from "./lib/ciclos-por-link";
+import { registrarPixDoBarChop } from "./lib/pix-avisos";
 import { criarLinkDoLembrete, registrarLembrete } from "./lib/lembrete";
 
 // Entrypoint do bundle (ver tsup.config.ts). Toda a montagem da
@@ -54,6 +55,10 @@ async function main(): Promise<void> {
   await registrarLembrete(app.fila, { canal: app.canal, log: app.log, link });
   // A varredura diária dos ciclos da InfinitePay (8h de São Paulo).
   await registrarCiclosPorLink(app.fila, { fabrica: app.provedores, canal: app.canal, log: app.log });
+  // A varredura diária do Pix do BarChop (8h de São Paulo): aviso 5 dias
+  // antes do fim e o vencimento. Roda mesmo sem as PIX_*: os Pix que já
+  // existem precisam vencer.
+  await registrarPixDoBarChop(app.fila, { canal: app.canal, log: app.log, urlDoPainel: process.env.URL_DO_PAINEL });
 
   for (const sinal of ["SIGINT", "SIGTERM"] as const) {
     process.once(sinal, () => {

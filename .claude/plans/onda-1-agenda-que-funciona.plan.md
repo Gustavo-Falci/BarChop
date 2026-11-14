@@ -4,7 +4,40 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-14 — Pix do BarChop ligado em produção e testado) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-14, noite — Essencial até 2 e home igual ao protótipo no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `19bd84b`, #350). Nada aberto; só `main`, local e remota (`essencial-ate-2` e `home-botoes-do-prototipo` apagadas com autorização).
+- **Produção = `main` até o #350**, deploys do dono em 14/11, conferidos.
+- **#349 — Essencial vai até 2 profissionais** (era 3): `limiteDeProfissionais: 2` em `packages/formato/src/planos.ts`; Faturas e o nome do Portal "sem descida" leem de lá. Preço igual, sem preço novo na Stripe; o Portal não tinha máximo de quantidade (conferido pelo dono). Ninguém assinava o Essencial. Rodar `criar-precos` só renomearia o Portal (opcional).
+  - Completo com 1 profissional: paga a base (R$ 54,90); a quantidade segue a equipe por `sincronizarQuantidade`; no Pix, paga por período.
+- **#350 — home igual ao protótipo** (`barchop/barchop-prototipo/`, desenho aprovado; plano `.claude/plans/home-igual-ao-prototipo.plan.md`), num PR só a pedido do dono:
+  - botões com o rótulo que sobe (`LinkDeAcao rotuloQueSobe`, cópia `aria-hidden`);
+  - cabeçalho sem barra: pílula "O problema / Como funciona / Começar" com a seção ativa, "Entrar" + "Criar barbearia"; tema pela linha de 36 px, como o `nav.js`;
+  - topo: status pela hora de Brasília (`statusDoTopo`, no cliente; acabou o "14:40" fixo), agenda na geometria do `grade.js`, cantos e "Pular →" da abertura, luz/poça/poeira quentes e imagens paradas refeitas do protótipo (`pnpm foto-da-cadeira`, que agora grava em `public/assets/home`);
+  - seções nas medidas do protótipo (miolo 1180, títulos 64/40, papel liso);
+  - rolagem: Lenis 1.3.26 com o freio da roda e a barra fina, por `import()` depois do `load`; desligado no toque e com "reduzir movimento".
+  - Decisões do dono: seções a mais ficam no estilo; textos do topo ficam os atuais; **rodapé fica o `RodapeDoSite` padrão**.
+  - Conferido em www depois do deploy: versão nova no ar, abertura solta a página, freio da roda, celular 390 sem vazar pro lado, console limpo.
+- **Testes do #350:** web 1981, `tsc`, `eslint` e `next build` limpos.
+
+**Ao retomar:**
+1. **O Pix de verdade é o da `jesus-barber`, antes de 15/11, 14:43 UTC** (11:43 de Brasília).
+   - No extrato, conferir o valor e o identificador (fecha o (d): o que o extrato de quem recebe mostra).
+   - Depois, "Achei o Pix" no Suporte.
+2. **`barbearia-teste`:** o período termina 16/11, 13:18 UTC, sem Stripe. Se ela precisar seguir paga, mudar a data por SQL (gotchas de 14/11, abaixo).
+3. **PR 5**, a diferença de profissional no meio do período: confirmar com o dono se é **proporcional** ao começar. Canvas antes.
+4. **Home, sobras:** `llms.txt`; reservar o slug `home` (`packages/formato/src/slug.ts`) depois de conferir o banco; reler o contador por volta de 12/12.
+   - Na conferência em www, a página voltou ao topo uma vez; não se repetiu em três tentativas. Se o dono vir de novo, olhar o Lenis com o topo preso.
+5. Os da lista de 06/11: testes reais opcionais, onda D, G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas.
+   - **24/11:** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+**Gotchas de 14/11 (noite):**
+- **O navegador do dono tem "reduzir movimento" ligado** (Windows › Efeitos de animação): ele vê a home parada, sem abertura nem Lenis. Pra ver animada: ligar os efeitos ou DevTools › Rendering.
+- **Rolar por script com o Lenis ligado:** `scrollTo` nativo briga com o alvo do Lenis e a página pode voltar; conferir com `WheelEvent` ou `lenis.scrollTo`.
+- **Comparar com o protótipo:** copiar `barchop/barchop-prototipo` pro scratchpad e `npx vite --port 5174`; `?hora=14:20` fixa o status; aba em segundo plano congela o `requestAnimationFrame` (trazer pra frente).
+
+## RETOMAR AQUI (2026-11-14 — Pix do BarChop ligado em produção e testado) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `aed1b56`, #347). Nada aberto; só `main`, local e remota (branches de 13/11 e 14/11 apagadas com autorização).

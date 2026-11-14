@@ -310,11 +310,12 @@ function PixParaConferir({
           {etapa === "confirmado" ? (
             <>
               <strong>Pix confirmado.</strong> O &quot;Aguardando conferência&quot; sai de Faturas da {nome}; o{" "}
-              {PLANOS[pagamento.plano].nome} segue até {diaEMes(pagamento.periodoTerminaEm)}.
+              {PLANOS[pagamento.plano].nome} segue até{" "}
+              {pontasDoPeriodo(pagamento.periodoComecaEm, pagamento.periodoTerminaEm)[1]}.
             </>
           ) : (
             <>
-              <strong>Pix recusado.</strong> {antes.naRecusa} A resposta aparece em Faturas da {nome}.
+              <strong>Pix recusado.</strong> {antes.depoisDaRecusa} A resposta aparece em Faturas da {nome}.
             </>
           )}
         </p>

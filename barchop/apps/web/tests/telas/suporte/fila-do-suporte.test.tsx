@@ -255,6 +255,9 @@ describe("fila do suporte com Pix", () => {
     await screen.findAllByRole("article");
     expect(texto(pixDa(), "Plano")).toBe("Completo anual · 1 profissional");
     expect(texto(pixDa(), "Vale")).toMatch(/^\d\d\/\d\d\/(\d{4}) a \d\d\/\d\d\/(?!\1)\d{4}$/);
+
+    await userEvent.click(within(pixDa()).getByRole("button", { name: "Achei o Pix" }));
+    expect(await within(pixDa()).findByRole("status")).toHaveTextContent(/o Completo segue até \d\d\/\d\d\/\d{4}\./);
   });
 
   it("Achei o Pix: confirma, o cartão diz que confirmou e a aba desconta", async () => {

@@ -21,6 +21,7 @@ describe("antesDoPix", () => {
     expect(antesDoPix(NO_TESTE, AGORA)).toEqual({
       rotulo: "Teste até 15/11",
       naRecusa: "A barbearia volta pro teste na hora.",
+      depoisDaRecusa: "A barbearia voltou pro teste.",
     });
   });
 
@@ -28,6 +29,7 @@ describe("antesDoPix", () => {
     expect(antesDoPix({ ...NO_TESTE, testeTerminaEm: "2026-11-12T14:43:00.000Z" }, AGORA)).toEqual({
       rotulo: "Teste, acabou em 12/11",
       naRecusa: "O teste já acabou: a barbearia cai no Grátis na hora.",
+      depoisDaRecusa: "O teste já tinha acabado: a barbearia caiu no Grátis.",
     });
   });
 
@@ -35,6 +37,7 @@ describe("antesDoPix", () => {
     expect(antesDoPix({ ...NO_TESTE, situacao: "gratis", testeTerminaEm: null }, AGORA)).toEqual({
       rotulo: "Grátis",
       naRecusa: "A barbearia volta pro Grátis na hora.",
+      depoisDaRecusa: "A barbearia voltou pro Grátis.",
     });
   });
 
@@ -49,6 +52,7 @@ describe("antesDoPix", () => {
     expect(antesDoPix(pix, AGORA)).toEqual({
       rotulo: "Essencial por Pix até 08/12",
       naRecusa: "A barbearia volta pro Essencial por Pix, que vale até 08/12.",
+      depoisDaRecusa: "A barbearia voltou pro Essencial por Pix, que vale até 08/12.",
     });
   });
 
@@ -63,6 +67,18 @@ describe("antesDoPix", () => {
     expect(antesDoPix(vencido, AGORA)).toEqual({
       rotulo: "Grátis",
       naRecusa: "A barbearia volta pro Grátis na hora.",
+      depoisDaRecusa: "A barbearia voltou pro Grátis.",
     });
+  });
+
+  it("renovação de anual: o fim no outro ano leva o ano", () => {
+    const anual: AntesDoPix = {
+      situacao: "ativa",
+      plano: "completo",
+      forma: "pix",
+      periodoTerminaEm: "2027-11-27T03:00:00.000Z",
+      testeTerminaEm: null,
+    };
+    expect(antesDoPix(anual, AGORA).rotulo).toBe("Completo por Pix até 27/11/2027");
   });
 });

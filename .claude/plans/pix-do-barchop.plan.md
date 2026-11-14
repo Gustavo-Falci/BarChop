@@ -89,6 +89,14 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
 
 ### PR 3 — Web: Suporte confere o Pix (canvas Pix-Suporte)
 - Pedidos mistura Pix e troca de link (Pix primeiro); contador na aba; "Achei o Pix" / "Não achei" com resposta.
+- **Feito 13/11 (branch `pix-do-barchop-suporte`).** Desvios:
+  - `GET /suporte/pix` ganhou `antes` (`situacao`, `plano`, `forma`, `periodoTerminaEm` das colunas `antes_*`, e `testeTerminaEm` da assinatura quando era teste): o cartão diz pra onde a recusa volta pelo plano que valeria agora (`antesDoPix` na web, via `planoEfetivo`). A primeira barbearia real está no teste: "volta pro Grátis" fixo seria mentira. **Deploy: API antes da web.**
+  - Sem "Voltar ao pedido" depois de decidir (a API não desfaz uma conferência): o cartão fica com o resultado (`role="status"`, foco nele) e sai da contagem da aba. Pix já decidido (outro operador, ou "Ainda não paguei") some da fila.
+  - Recusa sem "no sino" (avisos são do PR 4); resposta já sugerida ("Não achamos um Pix de R$ X no dia DD/MM…"), editável.
+  - Trocas de link seguem em cartão inteiro na mesma lista (o canvas desenhou uma linha que levava a outra tela). Título "Pedidos".
+  - As duas listas carregam cada uma por si: uma falhando não esconde a outra.
+  - Achado na conferência: no anual o período saía "27/11 a 27/11". `pontasDoPeriodo` põe o ano quando ele muda (Suporte e Faturas).
+  - Destaque do cartão (pergunta (d) do extrato): valor grande + identificador; revisar depois do Pix de R$ 1,00.
 
 ### PR 4 — Avisos e vencimento (cron diário)
 - Trabalho na fila (como `ciclos-por-link`): 5 dias antes do fim de um período Pix sem próximo pago → notificação + e-mail (uma vez: coluna `avisado_em` no pagamento); vencido → `situacao = 'gratis'` + notificação + e-mail. Recusa e confirmação também avisam o dono (notificação; e-mail na recusa).

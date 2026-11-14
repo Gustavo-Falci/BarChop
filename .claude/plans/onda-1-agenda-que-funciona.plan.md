@@ -4,7 +4,38 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-13, noite — Pix PRs 3 e 4 no ar, falta testar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-14 — Pix do BarChop ligado em produção e testado) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `aed1b56`, #347). Nada aberto; só `main`, local e remota (branches de 13/11 e 14/11 apagadas com autorização).
+- **Produção = `main` até o #347**, deploy do dono em 14/11, conferido por curl: `/health` 200; `/barbearias/me/assinatura/pix` e `/suporte/pix` pedem login (401 sem token).
+- **14/11, conferido com o dono na VM:**
+  - migration `20261113220000_pix_avisado_em` aplicada (14/11, 02:05 UTC);
+  - as `PIX_*` **não estavam** no `infra/api.env`: o dono preencheu as quatro (segredo por `openssl rand -hex 32`, na VM, fora do chat) e recriou a API (`docker compose up -d api`; `restart` não relê o `env_file`). Conferido por `printenv` mascarado. **O Pix está ligado pra todas as barbearias.**
+- **Teste em produção, na `barbearia-teste`, sem pagar:**
+  - ela estava "ativa / completo / cartão" **sem Stripe** (gravada à mão): Faturas escondia o Pix. Foi pro Grátis por SQL pro teste e voltou depois a ativa/completo/mensal/cartão, **período até 16/11, 13:18 UTC** (o mesmo de antes);
+  - "Já paguei" → Suporte "Não achei" → Faturas mostra a resposta, o sino traz "Pix não encontrado", o e-mail chega. **Ok ponta a ponta.**
+  - O banco recusava o QR com "indisponibilidade temporária": a `PIX_CHAVE` era celular sem `+55` (o banco lê 11 dígitos como CPF), depois `55…` sem o `+`. Corrigida pra `+55DDDNUMERO`, o banco leu o QR. CRC conferido.
+- **#346 (docs):** plano do Pix ganhou "Depois (sem data) — Pix confirmado sozinho" (pergunta do dono: o QR estático não avisa ninguém; fica manual enquanto o volume for pequeno; futuro: cobrança pelo Asaas, QR dinâmico e webhook) e o risco do formato da chave.
+- **#347:** `avisarDaChaveDoPix` (`apps/api/src/lib/pix.ts`, chamado no `app.ts`): ao subir, `warn` com a chave mascarada se a `PIX_CHAVE` for `55` + 11 dígitos sem `+`, 11 dígitos que não são CPF, ou tiver pontuação. `infra/api.env.example` com o formato da chave.
+- **Testes ao fim do dia:** API 1589, api-client 260, web 1968.
+
+**Ao retomar:**
+1. **O Pix de verdade é o da `jesus-barber`, antes de 15/11, 14:43 UTC** (11:43 de Brasília).
+   - No extrato, conferir o valor e o identificador (fecha o (d): o que o extrato de quem recebe mostra).
+   - Depois, "Achei o Pix" no Suporte.
+2. **`barbearia-teste`:** o período termina 16/11, 13:18 UTC, sem Stripe. Se ela precisar seguir paga, mudar a data por SQL.
+3. **PR 5**, a diferença de profissional no meio do período: confirmar com o dono se é **proporcional** ao começar. Canvas antes.
+4. **Home nova, pendências pequenas:** status real no lugar do "14:40" fixo (`apps/web/src/site/TopoDaHome.tsx`); `llms.txt`; reservar o slug `home` (`packages/formato/src/slug.ts`) depois de conferir o banco; reler o contador por volta de 12/12.
+5. Os da lista de 06/11: testes reais opcionais, onda D, G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas.
+   - **24/11:** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+**Gotchas de 14/11:**
+- **Conferir variáveis sem mostrar o valor:** `docker compose exec api printenv | grep '^PIX_' | sed -E 's/^([A-Z_]+)=$/\1 = VAZIA/; s/^([A-Z_]+)=.+$/\1 = preenchida/'`.
+- **SQL na VM:** `docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -c "…"'`, aspas simples do SQL como `'\''`.
+- **Assinatura sem Stripe** (`stripe_subscription_id` nulo) pode mudar por SQL sem risco; **com Stripe, nunca**: o webhook regrava, e o cartão segue cobrando. Cancelar na Stripe.
+
+## RETOMAR AQUI (2026-11-13, noite — Pix PRs 3 e 4 no ar, falta testar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `b817d99`, #344). Nada aberto.

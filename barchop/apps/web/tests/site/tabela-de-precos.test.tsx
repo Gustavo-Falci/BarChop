@@ -27,6 +27,13 @@ describe("tabela de preços do site", () => {
     expect(nomes).toEqual(["Grátis", "Essencial", "Completo"]);
   });
 
+  it("em /precos (cartões) os convites ficam sem o efeito da home", () => {
+    render(<TabelaDePrecos />);
+    for (const convite of within(screen.getByRole("list", { name: "Planos" })).getAllByRole("link")) {
+      expect(convite).not.toHaveAttribute("data-rotulo");
+    }
+  });
+
   it("o preço mensal de cada plano vem de planos.ts", () => {
     render(<TabelaDePrecos />);
     expect(plano("Grátis")).toHaveTextContent(reais(0));

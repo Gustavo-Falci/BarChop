@@ -5,6 +5,7 @@ import estilos from "./Home.module.css";
 import { TabelaDePrecos } from "./TabelaDePrecos";
 import { SCRIPT_DA_ABERTURA } from "./abertura/script";
 import { ContaVisita } from "./ContaVisita";
+import { RolagemDaHome } from "./RolagemDaHome";
 import { clashLeve } from "./fontesDaHome";
 import { TituloDaSecao } from "./TituloDaSecao";
 import { CabecalhoDaHome } from "./CabecalhoDaHome";
@@ -110,9 +111,10 @@ export function Home() {
       {/* Antes do cabeçalho e do topo: decide a abertura da navalha (marco
           5) antes da primeira pintura deles. */}
       <script dangerouslySetInnerHTML={{ __html: SCRIPT_DA_ABERTURA }} />
-      <CabecalhoDaHome topo={ID_DO_TOPO} />
-      <main className={clashLeve.variable}>
+      <CabecalhoDaHome topo={ID_DO_TOPO} classeDaFonte={clashLeve.variable} />
+      <main className={`${clashLeve.variable} ${estilos.pagina}`}>
         <ContaVisita />
+        <RolagemDaHome />
         <TopoDaHome />
         <div className={estilos.home}>
           <section id="dores" aria-labelledby="dores-rotulo" className={estilos.secao}>
@@ -197,7 +199,7 @@ export function Home() {
           <div className={estilos.miolo}>
             <TituloDaSecao id="comecar" leve="Comece hoje," forte="sem falar com ninguém." />
             <div className={estilos.acoes}>
-              <LinkDeAcao href={CADASTRO_PELA_HOME} grande className={estilos.ouro}>
+              <LinkDeAcao href={CADASTRO_PELA_HOME} grande className={estilos.ouro} rotuloQueSobe>
                 Criar minha barbearia grátis
               </LinkDeAcao>
               <p className={estilos.nota}>{DIAS_DE_TESTE} dias com tudo liberado · sem cartão</p>

@@ -45,6 +45,77 @@
   font-size: var(--texto-lg);
 }
 
+/* O efeito dos botões do protótipo da home (barchop-prototipo, base.css):
+   cor, borda e fundo mudam em 0,28 s; o rótulo sobe em 0,55 s na curva
+   do protótipo e a cópia de baixo entra no lugar. */
+.efeito {
+  --curva-do-rotulo: cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    transform 0.28s var(--curva-do-rotulo),
+    box-shadow 0.28s,
+    background-color 0.28s,
+    color 0.28s,
+    border-color 0.28s;
+}
+
+.efeito:active {
+  transition-duration: 0.1s;
+}
+
+.rotulo {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  line-height: 1.25;
+  padding: 0.05em 0;
+}
+
+.texto {
+  display: block;
+  transition: transform 0.55s var(--curva-do-rotulo);
+}
+
+/* A cópia ocupa a largura do rótulo: se o celular estreito quebrar a
+   linha, ela quebra igual e entra inteira. */
+.copia {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 0.05em 0;
+  transition: transform 0.55s var(--curva-do-rotulo);
+}
+
+.efeito:focus-visible .texto,
+.efeito:focus-visible .copia {
+  transform: translateY(-100%);
+}
+
+@media (hover: hover) {
+  .efeito:hover .texto,
+  .efeito:hover .copia {
+    transform: translateY(-100%);
+  }
+
+  .efeito.primario:hover {
+    background: #f2d360;
+  }
+
+  .efeito.contorno:hover {
+    border-color: currentColor;
+  }
+}
+
+/* Sem movimento: o rótulo fica parado (a troca pela cópia igual não
+   diria nada) e só a cor muda. */
+@media (prefers-reduced-motion: reduce) {
+  .efeito .texto,
+  .efeito .copia {
+    transition: none;
+    transform: none !important;
+  }
+}
+
 /* No celular estreito, o convite grande ("Criar minha barbearia
    grátis") não cabe numa linha só dentro das caixas do site. */
 @media (max-width: 419px) {

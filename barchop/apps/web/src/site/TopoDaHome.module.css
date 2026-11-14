@@ -75,6 +75,13 @@
   mask-image: radial-gradient(70% 80% at 50% 45%, transparent 38%, #000 92%);
 }
 
+/* No celular, quatro colunas de 25% (o hero.css do protótipo). */
+@media (max-width: 760px) {
+  .grade {
+    background-size: 100% 10%, 25% 100%;
+  }
+}
+
 /* O canhão de luz: o feixe em trapézio desfocado e o brilho da lâmpada
    no alto, luz quente. */
 .foco {
@@ -331,6 +338,13 @@
   }
 }
 
+/* Fechada: o ponto vazado e parado (o is-fechado do protótipo). */
+.ponto[data-fechado] {
+  border: 1px solid var(--ouro);
+  background: transparent;
+  animation: none;
+}
+
 /* Com "reduzir movimento", o ponto fica parado (animação infinita
    encurtada pela regra global piscaria). */
 @media (prefers-reduced-motion: reduce) {
@@ -422,6 +436,7 @@
 @media (hover: hover) {
   .botoes .linha:hover {
     border-color: var(--claro);
+    background: rgb(236 230 218 / 0.06);
   }
 }
 

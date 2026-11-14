@@ -6,6 +6,7 @@ import { clashLeve } from "./fontesDaHome";
 import { GradeDaAgenda } from "./GradeDaAgenda";
 import { LinkDeAcao } from "./LinkDeAcao";
 import { NavalhaDaAbertura } from "./NavalhaDaAbertura";
+import { StatusAoVivo } from "./StatusAoVivo";
 import estilos from "./TopoDaHome.module.css";
 
 // O id que o CabecalhoDaHome observa pra saber se ainda está sobre o topo.
@@ -52,10 +53,12 @@ export function TopoDaHome() {
         {/* A camada escura: some com a névoa e deixa o papel do site. */}
         <div className={estilos.fundo} aria-hidden="true" />
         {/* Primeiro no Tab durante a abertura; sem ela, não existe (display: none). */}
-        <button type="button" className={estilosDaAbertura.pular} data-pular="">
-          Pular abertura
+        <button type="button" className={estilosDaAbertura.pular} data-pular="" aria-label="Pular abertura">
+          Pular →
         </button>
-        <div className={estilos.grade} data-sopro="" aria-hidden="true" />
+        <div className={estilos.grade} data-sopro="" aria-hidden="true">
+          <GradeDaAgenda sopro />
+        </div>
         <div className={estilos.foco} data-foco="" aria-hidden="true" />
         <GradeDaAgenda />
 
@@ -128,8 +131,7 @@ export function TopoDaHome() {
         </h1>
 
         <p className={`${estilos.rotulo} ${estilos.status}`} data-peca="status">
-          <span className={estilos.ponto} aria-hidden="true" />
-          Exemplo · próximo horário livre 14:40
+          <StatusAoVivo classeDoPonto={estilos.ponto} />
         </p>
 
         <div className={estilos.base} data-peca="base">
@@ -143,10 +145,10 @@ export function TopoDaHome() {
             </strong>
           </p>
           <div className={estilos.botoes}>
-            <LinkDeAcao href={CADASTRO_PELA_HOME} className={estilos.ouro}>
+            <LinkDeAcao href={CADASTRO_PELA_HOME} className={estilos.ouro} rotuloQueSobe>
               Criar minha barbearia grátis
             </LinkDeAcao>
-            <LinkDeAcao href="#como-funciona" variante="contorno" className={estilos.linha}>
+            <LinkDeAcao href="#como-funciona" variante="contorno" className={estilos.linha} rotuloQueSobe>
               Ver como funciona
             </LinkDeAcao>
           </div>

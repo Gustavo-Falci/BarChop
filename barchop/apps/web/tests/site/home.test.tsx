@@ -172,6 +172,18 @@ describe("home do site", () => {
     );
   });
 
+  it("os convites da home têm o efeito dos botões do protótipo", () => {
+    render(<Home />);
+    const convites = [
+      ...screen.getAllByRole("link", { name: /criar minha barbearia/i }),
+      screen.getByRole("link", { name: "Ver como funciona" }),
+      ...within(screen.getByRole("region", { name: "Planos" })).getAllByRole("link", {
+        name: /começar grátis|testar 14 dias/i,
+      }),
+    ];
+    for (const convite of convites) expect(convite).toHaveAttribute("data-rotulo", "sobe");
+  });
+
   it("as perguntas frequentes abrem a resposta ao tocar", async () => {
     render(<Home />);
     const secao = screen.getByRole("region", { name: "Perguntas frequentes" });

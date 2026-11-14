@@ -27,11 +27,29 @@ const AGENDAMENTOS: [number, number, number, string, string][] = [
   [2, 8, 1, "Barba", "Davi"],
 ];
 
-export function GradeDaAgenda() {
+// A posição de cada peça é a do grade.js: a coluna 1..4 em larguras de
+// --cw (a coluna 0 é a dos horários) e as linhas em 10% da altura.
+function posicao(coluna: number, linha: number, duracao: number) {
+  return {
+    left: `calc(${coluna} * var(--cw) + 0.5%)`,
+    width: "calc(var(--cw) - 1%)",
+    top: `${linha * 10 + 0.5}%`,
+    height: `${duracao * 10 - 1}%`,
+  };
+}
+
+// `sopro`: a mesma agenda, cheia e sem texto, no fundo do topo de sempre
+// (o protótipo deixa a grade da abertura como sopro nos cantos). Sem
+// data-bloco: a abertura não acende estes.
+export function GradeDaAgenda({ sopro = false }: { sopro?: boolean }) {
   return (
-    <div className={estilos.agenda} data-agenda="" aria-hidden="true">
+    <div
+      className={sopro ? estilos.sopro : estilos.agenda}
+      {...(sopro ? {} : { "data-agenda": "" })}
+      aria-hidden="true"
+    >
       {HORAS.map((hora, i) => (
-        <span key={hora} className={estilos.hora} style={{ gridRow: i + 1 }}>
+        <span key={hora} className={estilos.hora} style={{ top: `${i * 10}%` }}>
           {hora}
         </span>
       ))}
@@ -39,8 +57,9 @@ export function GradeDaAgenda() {
         <span
           key={`${coluna}-${linha}`}
           className={estilos.bloco}
-          data-bloco=""
-          style={{ gridColumn: coluna + 1, gridRow: `${linha + 1} / span ${duracao}` }}
+          data-col={coluna}
+          {...(sopro ? {} : { "data-bloco": "" })}
+          style={posicao(coluna, linha, duracao)}
         >
           <span className={estilos.servico}>{servico}</span>
           <span className={estilos.cliente}>{cliente}</span>

@@ -5,6 +5,7 @@ import {
   chaveMascarada,
   fimDoPeriodoDoPix,
   inicioDoDiaEmSaoPaulo,
+  normalizarCpf,
   precoDoPlano,
   type Ciclo,
 } from "@barchop/formato";
@@ -33,6 +34,31 @@ export function pixDoAmbiente(ambiente: Record<string, string | undefined>): Con
   const segredo = ambiente.PIX_SEGREDO_DO_IDENTIFICADOR?.trim();
   if (!chave || !nomeDoRecebedor || !cidadeDoRecebedor || !segredo) return null;
   return { chave, nomeDoRecebedor, cidadeDoRecebedor, segredo };
+}
+
+// O BR Code leva a chave como está, e o banco de quem paga só a acha no
+// formato do DICT: celular `+55DDDNUMERO`, CPF e CNPJ só com os dígitos.
+// Celular sem +55 o banco lê como CPF e recusa com "indisponibilidade
+// temporária" (produção, 14/11). Não corrige (onze dígitos podem ser
+// CPF): avisa no log ao subir, com a chave mascarada.
+function problemaDaChave(chave: string): string | null {
+  if (/^55\d{11}$/.test(chave)) return "a PIX_CHAVE parece um celular sem o +: use +55DDDNUMERO";
+  if (/^\d{11}$/.test(chave) && !normalizarCpf(chave)) {
+    return "a PIX_CHAVE tem 11 dígitos e não é um CPF: se é celular, use +55DDDNUMERO";
+  }
+  if (/^\+?[\d\s()./-]+$/.test(chave) && /[\s()./-]/.test(chave)) {
+    return "a PIX_CHAVE tem pontuação ou espaço: CPF e CNPJ só com os dígitos, celular como +55DDDNUMERO";
+  }
+  return null;
+}
+
+export function avisarDaChaveDoPix(
+  config: ConfigDoPix | null,
+  log: { warn: (obj: object, msg: string) => void }
+): void {
+  if (!config) return;
+  const problema = problemaDaChave(config.chave);
+  if (problema) log.warn({ chave: chaveMascarada(config.chave) }, `${problema} (o QR não vai funcionar nos bancos)`);
 }
 
 export function exigirPix(config: ConfigDoPix | null): ConfigDoPix {

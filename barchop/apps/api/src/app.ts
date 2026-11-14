@@ -7,7 +7,7 @@ import { armazenamentoPadrao, type Armazenamento } from "./lib/armazenamento";
 import { confiancaNoProxy, origemPermitida, origensPermitidas, proxiesConfiaveis } from "./lib/borda";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { cobrancaDoAmbiente, type Cobranca } from "./lib/cobranca";
-import { pixDoAmbiente, type ConfigDoPix } from "./lib/pix";
+import { avisarDaChaveDoPix, pixDoAmbiente, type ConfigDoPix } from "./lib/pix";
 import { provedoresDoAmbiente, type FabricaDeProvedores } from "./lib/provedores";
 import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDaEquipe, limitesDeAuth, limitesPublicos } from "./lib/limites";
@@ -174,6 +174,9 @@ export function buildApp(
 
   // Sem as quatro variáveis PIX_*, o Pix fica desligado (lib/pix.ts).
   app.decorate("pix", opts.pix === undefined ? pixDoAmbiente(ambiente) : opts.pix);
+  // Chave fora do formato do DICT (celular sem +55): o QR sai, mas o
+  // banco recusa. Avisa no log ao subir.
+  avisarDaChaveDoPix(app.pix, app.log);
 
   // Escopo só pras quatro rotas que recebem senha — as duas de login e
   // as duas de signup. Existe por causa do `await`: os contadores são

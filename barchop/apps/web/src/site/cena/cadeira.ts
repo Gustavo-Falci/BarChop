@@ -92,7 +92,8 @@ export function criarCena(canvas: HTMLCanvasElement, { aoQuadro }: Opcoes = {}):
   const mouse = { x: 0, y: 0, vx: 0, vy: 0, ax: 0, ay: 0 };
 
   // ---- luzes ----
-  const foco = new SpotLight(0xffffff, 380, 0, 0.36, 0.8, 1.6);
+  // Luz quente, a do feixe em CSS (cadeira.js do protótipo).
+  const foco = new SpotLight(0xfff1d8, 380, 0, 0.36, 0.8, 1.6);
   foco.position.set(0, 7.2, 1.6);
   cena.add(foco, foco.target);
   const recorte = new DirectionalLight(0xdfe6ff, 2.8);
@@ -125,7 +126,7 @@ export function criarCena(canvas: HTMLCanvasElement, { aoQuadro }: Opcoes = {}):
           float sombra = smoothstep(.95, .1, length(p * vec2(1., 1.2))) * .9 * uSombra;
           float a = clamp(poca + sombra, 0., 1.);
           float claro = poca / max(poca + sombra, 1e-4);
-          gl_FragColor = vec4(vec3(.86) * claro, a);
+          gl_FragColor = vec4(vec3(.92, .87, .76) * claro, a);
         }`,
     })
   );
@@ -168,7 +169,7 @@ export function criarCena(canvas: HTMLCanvasElement, { aoQuadro }: Opcoes = {}):
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader: `uniform sampler2D uMapa; uniform float uA; varying float vA;
-        void main(){ float m = texture2D(uMapa, gl_PointCoord).a; gl_FragColor = vec4(vec3(1.), m * vA * uA * .8); }`,
+        void main(){ float m = texture2D(uMapa, gl_PointCoord).a; gl_FragColor = vec4(vec3(1., .93, .78), m * vA * uA * .8); }`,
     })
   );
   palco.add(poeira);

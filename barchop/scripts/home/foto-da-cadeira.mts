@@ -3,13 +3,13 @@
 // fica por baixo do 3D, que entra por cima quando carrega.
 //
 // Como tirar o quadro (uma vez, e de novo só se a cena mudar):
-//   1. no protótipo (Documents/barchop-prototipo, `npx vite --port 4318`),
+//   1. no protótipo (barchop/barchop-prototipo, `npx vite --port 5174`),
 //      abrir em 1440×900 com DPR 2 e "reduzir movimento" (pula a abertura);
 //   2. zerar a poeira (`__bc.cena.e.poeira = 0`) e, num requestAnimationFrame,
 //      ler `document.querySelector('.hero__gl').toDataURL('image/png')`;
 //   3. salvar o PNG (2880×1800) e rodar este script com o caminho dele.
 //
-// Escreve, em apps/web/public/home/:
+// Escreve, em apps/web/public/assets/home/:
 //   cadeira-{1280,2200}.{avif,webp}         o quadro inteiro (cadeira + poça
 //                                           de luz no chão), pro computador
 //   cadeira-celular-{640,960,1280}.{avif,webp}  o miolo do mesmo quadro, com as
@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const SAIDA = join(REPO, "apps/web/public/home");
+const SAIDA = join(REPO, "apps/web/public/assets/home");
 
 // Alfa mínimo do que conta como imagem: abaixo disso a poça de luz já é
 // invisível sobre o escuro do topo.

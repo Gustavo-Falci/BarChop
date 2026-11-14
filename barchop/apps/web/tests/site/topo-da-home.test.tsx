@@ -57,8 +57,12 @@ describe("topo da home", () => {
     );
   });
 
-  it("o status diz que é exemplo", () => {
-    expect(topo()).toHaveTextContent("Exemplo · próximo horário livre 14:40");
+  it("o status diz que é exemplo, com a conta pela hora de agora", () => {
+    // A conta mora no statusDoTopo (status-do-topo.test.ts); aqui, só que
+    // ele aparece e se diz exemplo.
+    expect(topo()).toHaveTextContent(
+      /Exemplo · (próximo horário livre \d{1,2}:\d{2}|abre (hoje|amanhã|na \S+) às \d{1,2}:\d{2})/
+    );
   });
 
   it("promete o teste de 14 dias, sem cartão, e diz o que o produto é", () => {

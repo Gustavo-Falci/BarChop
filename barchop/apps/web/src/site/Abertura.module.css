@@ -13,7 +13,7 @@
 }
 
 :global(html.abertura-on) .agenda {
-  display: grid;
+  display: block;
 }
 
 :global(html.abertura-on) .fios,
@@ -23,44 +23,68 @@
   display: block;
 }
 
-/* A agenda do dia: dez horários e quatro colunas de profissional, no
-   escuro, por trás do nome. */
+/* A agenda do dia, a grade.js e o hero.css do protótipo: a tela inteira
+   em dez linhas de horário e cinco colunas (a primeira dos horários, as
+   outras quatro dos profissionais). Os blocos não aparecem vazios: cada
+   um entra quando a navalha passa por cima. */
 .agenda {
+  --cw: 20%;
+
   position: absolute;
-  inset: calc(112 * var(--u)) calc(56 * var(--u)) calc(104 * var(--u));
+  inset: 0;
   z-index: 2;
-  grid-template-columns: calc(64 * var(--u)) repeat(4, minmax(0, 1fr));
-  grid-template-rows: repeat(10, minmax(0, 1fr));
-  gap: calc(6 * var(--u)) calc(10 * var(--u));
   transform-origin: 50% 50%;
   pointer-events: none;
-  background-image: linear-gradient(to bottom, rgb(236 230 218 / 0.07) 1px, transparent 1px);
-  background-size: 100% 10%;
+  background-image:
+    linear-gradient(to bottom, rgb(236 230 218 / 0.075) 1px, transparent 1px),
+    linear-gradient(to right, rgb(236 230 218 / 0.05) 1px, transparent 1px);
+  background-size: 100% 10%, 20% 100%;
+}
+
+/* A mesma agenda, cheia e sem texto, no sopro do topo de sempre (dentro
+   do .grade, que dá a opacidade e a máscara). */
+.sopro {
+  --cw: 20%;
+
+  position: absolute;
+  inset: 0;
 }
 
 .hora {
-  grid-column: 1;
-  align-self: start;
-  font-size: 11px;
+  position: absolute;
+  left: calc(24 * var(--u));
+  translate: 0 8px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: var(--claro-mudo);
+  line-height: 1.4;
+  color: rgb(236 230 218 / 0.34);
   font-variant-numeric: tabular-nums;
 }
 
 .bloco {
+  position: absolute;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
-  min-width: 0;
-  padding: 0 calc(12 * var(--u));
+  padding: calc(10 * var(--u)) calc(12 * var(--u));
   overflow: hidden;
-  border: 1px dashed rgb(236 230 218 / 0.1);
-  border-radius: calc(6 * var(--u));
+  border: 1px solid rgb(232 197 71 / 0.42);
+  border-left: 3px solid var(--ouro);
+  border-radius: 10px;
+  background: rgb(232 197 71 / 0.12);
+  color: var(--claro);
+  font-size: max(11px, calc(13 * var(--u)));
+  font-weight: 600;
+  line-height: 1.25;
+  opacity: 0;
+  transform: scale(0.92);
+  transform-origin: 100% 50%;
   transition:
-    background-color 0.45s ease,
-    border-color 0.45s ease;
+    opacity 0.3s,
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.6s;
 }
 
 .servico,
@@ -68,39 +92,38 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  opacity: 0;
-  transition: opacity 0.45s ease;
-}
-
-.servico {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ouro);
 }
 
 .cliente {
-  font-size: 13px;
+  font-size: 0.92em;
+  font-weight: 400;
   color: var(--claro-suave);
 }
 
 /* Acendeu: a navalha passou por aqui. */
 .bloco[data-cheio] {
-  border-style: solid;
-  border-color: rgb(232 197 71 / 0.45);
-  background: rgb(232 197 71 / 0.12);
-}
-
-.bloco[data-cheio] .servico,
-.bloco[data-cheio] .cliente {
   opacity: 1;
+  transform: none;
 }
 
 /* O clarão de quando acende. */
 .bloco[data-clarao] {
-  background: rgb(232 197 71 / 0.42);
-  transition: none;
+  background: rgb(232 197 71 / 0.38);
+}
+
+/* No sopro sobram só as formas: horário e nome sairiam por trás do
+   cabeçalho e do texto. */
+.sopro .hora {
+  display: none;
+}
+
+.sopro .bloco {
+  opacity: 1;
+  transform: none;
+}
+
+.sopro .bloco > * {
+  opacity: 0;
 }
 
 /* Os sete fios dourados que a navalha deixa. */
@@ -130,19 +153,21 @@
   pointer-events: none;
 }
 
-/* Os cantos: a marca, pra quem e quantos horários livres hoje. */
+/* Os cantos: a marca, pra quem e quantos horários livres hoje (os
+   abertura__canto do protótipo). */
 .cantos {
   position: absolute;
   inset: 0;
   z-index: 7;
   pointer-events: none;
   opacity: 0;
-  color: var(--claro-suave);
+  color: rgb(236 230 218 / 0.72);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   line-height: 1.4;
   text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 
 .canto {
@@ -151,108 +176,94 @@
 }
 
 .marca {
-  top: calc(40 * var(--u));
+  top: 30px;
   left: calc(56 * var(--u));
 }
 
 .publico {
-  top: calc(40 * var(--u));
-  right: calc(56 * var(--u));
+  bottom: 30px;
+  left: calc(56 * var(--u));
 }
 
 .livres {
-  bottom: calc(40 * var(--u));
-  left: calc(56 * var(--u));
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+  right: calc(56 * var(--u));
+  bottom: 30px;
 }
 
 .contador {
-  font-family: var(--fonte-display), system-ui, sans-serif;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  display: inline-block;
+  min-width: 1.4em;
+  font-weight: 600;
+  text-align: right;
   color: var(--ouro);
-  font-variant-numeric: tabular-nums;
 }
 
 /* Pular: o primeiro do Tab (o cabeçalho e a interface estão escondidos). */
 .pular {
   position: absolute;
+  top: 22px;
   right: calc(56 * var(--u));
-  bottom: calc(36 * var(--u));
   z-index: 8;
-  min-height: 44px;
-  padding: 0 var(--espaco-md);
-  border: 1px solid rgb(236 230 218 / 0.28);
-  border-radius: 999px;
-  background: rgb(21 20 18 / 0.6);
+  padding: 9px 14px;
+  border: 1px solid rgb(236 230 218 / 0.24);
+  border-radius: 10px;
+  background: none;
   color: var(--claro);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
+  line-height: 1.4;
   text-transform: uppercase;
   cursor: pointer;
+  transition:
+    background-color 0.25s,
+    color 0.25s;
 }
 
-.pular:hover {
-  border-color: var(--ouro);
+@media (hover: hover) {
+  .pular:hover {
+    background: var(--claro);
+    color: #26221c; /* light.ink */
+  }
+}
+
+/* No toque, o alvo tem os 44px do guia. */
+@media (hover: none) {
+  .pular {
+    min-height: 44px;
+  }
 }
 
 @media (max-width: 760px) {
+  .agenda,
+  .sopro {
+    --cw: 25%;
+  }
+
   .agenda {
-    inset: calc(132 * var(--u)) var(--espaco-md) calc(120 * var(--u));
-    grid-template-columns: 40px repeat(4, minmax(0, 1fr));
-    gap: calc(5 * var(--u)) 5px;
+    background-size: 100% 10%, 25% 100%;
   }
 
-  .hora {
-    font-size: 10px;
-    letter-spacing: 0.02em;
-  }
-
-  .bloco {
-    padding: 0 6px;
-  }
-
-  /* No celular não cabe o serviço: fica o nome. */
-  .servico {
+  .bloco[data-col="4"] {
     display: none;
   }
 
   .cliente {
-    font-size: 11px;
-  }
-
-  .marca,
-  .livres {
-    left: var(--espaco-md);
-  }
-
-  .publico {
-    right: var(--espaco-md);
-  }
-
-  .marca,
-  .publico {
-    top: calc(56 * var(--u));
-  }
-
-  .livres {
-    bottom: calc(48 * var(--u));
-  }
-
-  .pular {
-    right: var(--espaco-md);
-    bottom: calc(40 * var(--u));
-  }
-}
-
-/* No celular estreito, os dois cantos de cima se encostariam: fica a marca. */
-@media (max-width: 419px) {
-  .publico {
     display: none;
+  }
+
+  .hora {
+    left: 10px;
+  }
+
+  .marca,
+  .publico {
+    left: 20px;
+  }
+
+  .livres,
+  .pular {
+    right: 20px;
   }
 }

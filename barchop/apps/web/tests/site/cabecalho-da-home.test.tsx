@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CabecalhoDaHome } from "../../src/site/CabecalhoDaHome";
@@ -54,10 +54,16 @@ describe("cabeçalho da home", () => {
     document.body.innerHTML = "";
   });
 
-  it("a marca volta pra home, e os links são os do site", () => {
+  it("a marca volta pra home; a pílula leva às seções; Entrar e o convite à direita", () => {
     render(<CabecalhoDaHome topo="topo-da-home" />);
     expect(screen.getByRole("link", { name: "BarChop" })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: "Preços" })).toHaveAttribute("href", "/precos");
+    const secoes = within(screen.getByRole("navigation", { name: "Seções" })).getAllByRole("link");
+    expect(secoes.map((a) => [a.textContent, a.getAttribute("href")])).toEqual([
+      ["O problema", "#dores"],
+      ["Como funciona", "#como-funciona"],
+      ["Começar", "#comecar"],
+    ]);
+    expect(screen.queryByRole("link", { name: "Preços" })).toBeNull();
     expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute("href", "/painel/entrar");
     // O cabeçalho aparece fora do corpo da home: sem ?origem=home, como o
     // de sempre (só os convites do corpo contam como vindos da home).
@@ -127,8 +133,37 @@ describe("cabeçalho da home", () => {
     expect(cabecalho()).not.toHaveAttribute("data-escondido");
   });
 
+  // O jsdom não faz layout: as caixas das seções são de mentira.
+  function secaoEm(id: string, top: number, bottom: number) {
+    const el = document.createElement("section");
+    el.id = id;
+    el.getBoundingClientRect = () => ({ top, bottom }) as DOMRect;
+    document.body.append(el);
+  }
+
+  it("marca na pílula a seção que está no meio da tela", async () => {
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    secaoEm("dores", -100, 300);
+    secaoEm("como-funciona", 300, 900);
+    secaoEm("comecar", 900, 1400);
+    render(<CabecalhoDaHome topo="topo-da-home" />);
+
+    expect(await screen.findByRole("link", { name: "Como funciona" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("link", { name: "O problema" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("sobre o fecho escuro, volta ao escuro mesmo com o topo lá em cima", () => {
+    const topo = comTopo();
+    Object.defineProperty(window, "innerHeight", { value: 800, configurable: true });
+    secaoEm("comecar", 0, 800);
+    render(<CabecalhoDaHome topo="topo-da-home" />);
+    topoDebaixoDoCabecalho(false, topo);
+
+    expect(cabecalho()).toHaveAttribute("data-tema", "escuro");
+  });
+
   it("escondido, sobe pra fora da tela; com o foco dentro, volta", () => {
-    expect(css()).toMatch(/\.cabecalho\[data-escondido\]\s*\{[^}]*translate:\s*0 -100%/);
+    expect(css()).toMatch(/\.cabecalho\[data-escondido\]\s*\{[^}]*translate:\s*0 -130%/);
     expect(css()).toMatch(/\.cabecalho\[data-escondido\]:focus-within\s*\{[^}]*translate:\s*none/);
   });
 
@@ -159,13 +194,11 @@ describe("cabeçalho da home", () => {
   it("em 320px, o nome da marca fica só pro leitor de tela, e o link continua com nome", () => {
     expect(css()).toMatch(/@media \(max-width: 359px\)\s*\{\s*\.nomeDaMarca\s*\{[^}]*clip-path:\s*inset\(50%\)/);
     render(<CabecalhoDaHome topo="topo-da-home" />);
-    expect(screen.getByText("BarChop").className).toMatch(/nomeDaMarca/);
+    expect(screen.getByRole("link", { name: "BarChop" }).querySelector("[class*=nomeDaMarca]")).toHaveTextContent("BarChop");
     expect(screen.getByRole("link", { name: "BarChop" })).toHaveAttribute("href", "/");
   });
 
-  it("no celular estreito, o Preços sai pra caber, como no cabeçalho de sempre", () => {
-    expect(css()).toMatch(/@media \(max-width: 419px\)\s*\{[^}]*\.precos\s*\{[^}]*display:\s*none/);
-    render(<CabecalhoDaHome topo="topo-da-home" />);
-    expect(screen.getByRole("link", { name: "Preços" }).className).toMatch(/precos/);
+  it("no celular, a pílula sai e ficam a marca e os convites", () => {
+    expect(css()).toMatch(/@media \(max-width: 760px\)\s*\{[^@]*\.pilula\s*\{[^}]*display:\s*none/);
   });
 });

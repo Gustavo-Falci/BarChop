@@ -1,0 +1,57 @@
+/* A rolagem da home (RolagemDaHome.tsx): com o Lenis ligado, a barra
+   nativa some (ela ocupa largura e fazia a página pular de lado quando
+   a abertura travava o body) e a fina flutua por cima. Sem o Lenis
+   (reduzir movimento, toque), nada daqui vale. */
+:global(html).pagina {
+  scrollbar-width: none;
+}
+
+:global(html).pagina::-webkit-scrollbar {
+  display: none;
+}
+
+:global(html.lenis).pagina,
+:global(html.lenis).pagina body {
+  height: auto;
+}
+
+:global(html.lenis-stopped).pagina {
+  overflow: clip;
+}
+
+.barra {
+  position: fixed;
+  top: 6px;
+  right: 3px;
+  bottom: 6px;
+  z-index: 120;
+  width: 10px;
+  pointer-events: none;
+  mix-blend-mode: difference;
+}
+
+.barra[data-sem] {
+  display: none;
+}
+
+.polegar {
+  position: absolute;
+  right: 2px;
+  width: 3px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 0.7);
+  opacity: 0;
+  pointer-events: auto;
+  transition:
+    opacity 0.4s,
+    width 0.2s;
+}
+
+.barra[data-ligada] .polegar {
+  opacity: 1;
+}
+
+.polegar:hover,
+.barra[data-arrastando] .polegar {
+  width: 6px;
+}

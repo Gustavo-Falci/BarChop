@@ -4,7 +4,7 @@ import { PLANOS, formatarReais } from "@barchop/formato";
 import { notificarDonos } from "../lib/notificacoes";
 import { PADRAO_UUID } from "../lib/padroes";
 import { pagamentoAguardando, serializarPagamentoPix, voltarAoQueEra } from "../lib/pix";
-import { diaEMes, emailAosDonos, ondePagar } from "../lib/pix-avisos";
+import { diaEMesNoAno, emailAosDonos, ondePagar } from "../lib/pix-avisos";
 import { operadorDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -84,7 +84,7 @@ export function registrarRotasSuportePix(app: App): void {
       // Só no sino: o plano já valia desde o "Já paguei".
       await notificarDonos(tx, pagamento.barbeariaId, {
         titulo: "Pix confirmado",
-        texto: `O Suporte achou o seu Pix de ${formatarReais(pagamento.valorCentavos)}. O ${nomeDoPlano(pagamento.plano)} vale até ${diaEMes(pagamento.periodoTerminaEm)}.`,
+        texto: `O Suporte achou o seu Pix de ${formatarReais(pagamento.valorCentavos)}. O ${nomeDoPlano(pagamento.plano)} vale até ${diaEMesNoAno(pagamento.periodoTerminaEm)}.`,
         link: "/painel/faturas",
       });
       return confirmado;
@@ -106,9 +106,11 @@ export function registrarRotasSuportePix(app: App): void {
           where: { id: pagamento.id },
           data: { situacao: "recusado", resposta, decididoEm: new Date(), decididoPor: operadorId },
         });
+        // O texto do sino tem 500 caracteres, e a resposta também: ela
+        // inteira vai no e-mail e em Faturas; o sino só aponta.
         await notificarDonos(tx, pagamento.barbeariaId, {
           titulo: "Pix não encontrado",
-          texto: `O Suporte não achou o seu Pix de ${formatarReais(pagamento.valorCentavos)}: ${resposta}`,
+          texto: `O Suporte não achou o seu Pix de ${formatarReais(pagamento.valorCentavos)}. A resposta está em Faturas.`,
           link: "/painel/faturas",
         });
         return recusado;

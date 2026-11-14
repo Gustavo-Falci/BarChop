@@ -708,11 +708,38 @@ describe("o Suporte confere o Pix", () => {
     const avisos = await prisma.notificacao.findMany({ where: { barbeiroId } });
     expect(avisos).toHaveLength(1);
     expect(avisos[0].titulo).toMatch(/Pix não encontrado/);
-    expect(avisos[0].texto).toContain("Não achamos o Pix de R$ 44,90.");
+    // A resposta inteira vai no e-mail e em Faturas; o sino só aponta.
+    expect(avisos[0].texto).toMatch(/R\$\s44,90.*Faturas/);
     const emails = canal.enviadas.slice(antes);
     expect(emails).toHaveLength(1);
     expect(emails[0]).toMatchObject({ para: "um@exemplo.com" });
     expect(emails[0].texto).toContain("Não achamos o Pix de R$ 44,90.");
+    await app.close();
+  });
+
+  it("recusar com a resposta no limite (500): o sino cabe, a recusa vale", async () => {
+    const { app } = montar();
+    const { token } = await criarBarbeariaComToken(app);
+    const pago = (await jaPaguei(app, token)).json();
+    const suporte = await tokenDoSuporte(app);
+
+    const resposta = await decidir(app, suporte, pago.id, "recusar", "x".repeat(500));
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toMatchObject({ situacao: "recusado", resposta: "x".repeat(500) });
+    await app.close();
+  });
+
+  it("confirmar um anual: o \"vale até\" do sino leva o ano", async () => {
+    const { app } = montar();
+    const { token, barbeiroId } = await criarBarbeariaComToken(app);
+    const pago = (await jaPaguei(app, token, { plano: "completo", ciclo: "anual", profissionais: 1 })).json();
+    const suporte = await tokenDoSuporte(app);
+
+    await decidir(app, suporte, pago.id, "confirmar");
+
+    const [aviso] = await prisma.notificacao.findMany({ where: { barbeiroId } });
+    expect(aviso.texto).toMatch(/vale até \d\d\/\d\d\/\d{4}\./);
     await app.close();
   });
 

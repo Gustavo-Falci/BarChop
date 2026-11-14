@@ -43,9 +43,18 @@ const DIA_E_MES = new Intl.DateTimeFormat("pt-BR", {
   timeZone: "America/Sao_Paulo",
 });
 
+const ANO = new Intl.DateTimeFormat("pt-BR", { year: "numeric", timeZone: "America/Sao_Paulo" });
+
 // "15/12", no fuso da barbearia.
 export function diaEMes(instante: Date): string {
   return DIA_E_MES.format(instante);
+}
+
+// "15/12", ou "27/11/2027" quando o ano não é o de agora (o anual):
+// "vale até 27/11" leria como daqui a duas semanas.
+export function diaEMesNoAno(instante: Date, agora: Date = new Date()): string {
+  const ano = ANO.format(instante);
+  return ano === ANO.format(agora) ? diaEMes(instante) : `${diaEMes(instante)}/${ano}`;
 }
 
 function linkDeFaturas(urlDoPainel: string | undefined): string | null {

@@ -4,7 +4,63 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-13, fim do dia — home nova completa, marcos 4 a 6 no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-13, noite — Pix PRs 3 e 4 no ar, falta testar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `b817d99`, #344). Nada aberto.
+- **Produção = `main` até o #344**, deploy do dono em 13/11, à noite:
+  - **conferido por curl:** `/health` 200; as rotas do Pix pedem login (401 sem token); o perfil da `jesus-barber` responde 200;
+  - **não conferido** (precisa de login): se a migration `20261113220000_pix_avisado_em` entrou e se as `PIX_*` estão ligadas. O teste de 14/11 mostra.
+- **13/11, noite: Pix do BarChop, PRs 3 e 4** (plano `.claude/plans/pix-do-barchop.plan.md`, com "Feito" e os desvios de cada um):
+  - **#343, PR 3: o Suporte confere o Pix.**
+    - **Fila:** Pedidos mostra os Pix antes das trocas de link, e a aba conta os abertos.
+    - **Cartão de cada Pix:**
+      - valor e identificador, pra procurar no extrato;
+      - plano, período e dono;
+      - "Antes": pra onde a recusa volta. Vem do campo novo `antes` de `GET /suporte/pix`.
+    - **Decisão:** "Achei o Pix" confirma; "Não achei" pede uma resposta, que já vem sugerida.
+    - **Anual:** o período leva o ano, no Suporte e em Faturas (`pontasDoPeriodo`).
+  - **#344, PR 4: avisos e vencimento**, só na API.
+    - **Trabalho diário `pix-do-barchop`**, às 8h de São Paulo:
+      - **aviso de renovar:** no sino e por e-mail, no dia que Faturas promete (fim − 5 dias, em dias de São Paulo), uma vez só (`avisado_em`);
+      - **vencido:** a assinatura vai pro Grátis, sem apagar a forma nem o fim.
+    - **Suporte:** confirmar avisa o dono no sino. Recusar avisa no sino ("A resposta está em Faturas") e por e-mail, com a resposta inteira.
+- **QR de exemplo:** o dono escaneou no banco dele e o app respondeu "chave não encontrada". Ou seja, o BR Code foi lido certo.
+- **Testes ao fim do dia:** API 1583, api-client 260, web 1968.
+
+**Ao retomar (14/11):**
+1. **O dono testa o Pix em produção, sem pagar nada**, na `barbearia-teste`:
+   1. **Faturas → Pix:** o QR e o nome do recebedor aparecem.
+      - Se o Pix ficar "Em breve", as `PIX_*` não foram lidas: conferir o `api.env` e reiniciar a API.
+      - Se der erro ao abrir, a migration não entrou: rodar `migrate deploy`.
+      - Se aparecer que a assinatura está no cartão, a `barbearia-teste` paga pela Stripe e o Pix fica bloqueado de propósito: usar um cadastro novo de teste.
+   2. **Escanear o QR no banco, sem confirmar:** o banco mostra o nome e o valor antes de pagar. Um Pix pra mesma conta pode ser recusado pelo banco.
+   3. **"Já paguei" → Suporte "Não achei":**
+      - Faturas mostra a resposta;
+      - o sino traz "Pix não encontrado";
+      - o e-mail chega ao dono.
+2. **O Pix de verdade é o da `jesus-barber`, antes de 15/11, 14:43 UTC.**
+   - No extrato, conferir o valor e o identificador. Isso fecha o (d), o que o extrato de quem recebe mostra.
+   - Depois, "Achei o Pix" no Suporte.
+3. **PR 5**, a diferença de profissional no meio do período: confirmar com o dono se é **proporcional** ao começar. Canvas antes.
+4. **Home nova, pendências pequenas** (conferidas em 13/11: nenhuma feita):
+   - status real no lugar do "14:40" fixo (`apps/web/src/site/TopoDaHome.tsx`);
+   - `llms.txt`;
+   - reservar o slug `home` em `packages/formato/src/slug.ts`, depois de conferir no banco que nenhuma barbearia o usa;
+   - reler o contador por volta de 12/12.
+5. As "41 branches locais antigas" eram do outro computador: nesta máquina só existe a `main`.
+6. Os da lista de 06/11: testes reais opcionais, onda D, G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas.
+   - **24/11:** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+
+**Ambiente local (13/11):**
+- **Cliente do Prisma velho:** se o tsc acusar campo que não existe (ex. `contagemDoSite`), rodar `pnpm --filter @barchop/database exec prisma generate`.
+- **Conferir o Pix local:**
+  1. Subir a semente com `PIX_*` de exemplo (`PIX_CHAVE=pix@exemplo.com`…) e `SENHA_DO_SUPORTE` gerada no scratchpad.
+  2. Fazer o "Já paguei" por curl com o token do dono.
+  3. Pôr o token do suporte no navegador com `evaluate_script` + `sourcePath`, num script do scratchpad, sem imprimir o token.
+- **`Notificacao.texto` é `VarChar(500)`:** um texto montado com a entrada de alguém precisa caber nisso.
+
+## RETOMAR AQUI (2026-11-13, fim do dia — home nova completa, marcos 4 a 6 no ar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `2b4e444`, #341). Nada aberto. No GitHub só existe a `main`.

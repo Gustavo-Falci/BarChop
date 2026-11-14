@@ -234,7 +234,7 @@ describe("GET /barbearias/me/assinatura", () => {
       planoEfetivo: "essencial",
       diasDeTesteRestantes: null,
       periodoTerminaEm: fim.toISOString(),
-      limiteDeProfissionais: 3,
+      limiteDeProfissionais: 2,
       excedente: false,
       usoNoTeste: null,
     });

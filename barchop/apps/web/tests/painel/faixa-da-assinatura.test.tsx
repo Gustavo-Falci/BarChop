@@ -59,7 +59,7 @@ const ATIVA = resumo({
   planoEfetivo: "essencial",
   diasDeTesteRestantes: null,
   periodoTerminaEm: "2026-11-28T14:11:00Z",
-  limiteDeProfissionais: 3,
+  limiteDeProfissionais: 2,
   temPortal: true,
 });
 

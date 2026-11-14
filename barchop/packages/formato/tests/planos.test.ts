@@ -42,7 +42,6 @@ describe("precoDoPlano", () => {
   it("mensal: base com 1 profissional, mais o extra por profissional a mais", () => {
     expect(precoDoPlano("essencial", "mensal", 1)).toBe(4490);
     expect(precoDoPlano("essencial", "mensal", 2)).toBe(5990);
-    expect(precoDoPlano("essencial", "mensal", 3)).toBe(7490);
     expect(precoDoPlano("completo", "mensal", 1)).toBe(5490);
     expect(precoDoPlano("completo", "mensal", 2)).toBe(7490);
     expect(precoDoPlano("completo", "mensal", 4)).toBe(11490);
@@ -66,7 +65,7 @@ describe("precoDoPlano", () => {
 
   it("recusa quantidade acima do limite do plano", () => {
     expect(() => precoDoPlano("gratis", "mensal", 2)).toThrow(RangeError);
-    expect(() => precoDoPlano("essencial", "mensal", 4)).toThrow(RangeError);
+    expect(() => precoDoPlano("essencial", "mensal", 3)).toThrow(RangeError);
   });
 
   it("recusa quantidade que não é um inteiro a partir de 1", () => {
@@ -90,7 +89,7 @@ describe("precosDoCiclo", () => {
 describe("limiteDeProfissionais", () => {
   it("Grátis 1, Essencial 3, Completo sem limite (null)", () => {
     expect(limiteDeProfissionais("gratis")).toBe(1);
-    expect(limiteDeProfissionais("essencial")).toBe(3);
+    expect(limiteDeProfissionais("essencial")).toBe(2);
     expect(limiteDeProfissionais("completo")).toBeNull();
   });
 });

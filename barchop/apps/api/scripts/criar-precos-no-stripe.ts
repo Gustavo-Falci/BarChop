@@ -16,8 +16,8 @@
 //
 // Depois dos preços, o Portal. Ele guarda ids de preço, então na
 // configuração padrão cada preço arquivado vira o novo do mesmo produto e
-// ciclo. Em seguida, a configuração "sem descida" (quem tem mais de 3
-// profissionais só troca entre os preços do Completo): uma cópia da
+// ciclo. Em seguida, a configuração "sem descida" (quem passa do limite
+// do Essencial só troca entre os preços do Completo): uma cópia da
 // padrão. Mudou o Portal no painel da Stripe? Rodar de novo.
 import Stripe from "stripe";
 import {

@@ -58,9 +58,12 @@ const CONSULTAS_NA_VOLTA = 15;
 
 const ETAPAS = ["Plano", "Pagamento", "Acesso liberado"] as const;
 
+// O limite do Essencial sai de planos.ts, como o resto do preço.
+const ATE_NO_ESSENCIAL = `Até ${limiteDeProfissionais("essencial")} profissionais`;
+
 const DESCRICOES: Record<PlanoPago, { curta: string; longa: string }> = {
   essencial: {
-    curta: "Até 3 profissionais",
+    curta: ATE_NO_ESSENCIAL,
     longa: "Agenda, link de agendamento e painel inteiros para a barbearia pequena.",
   },
   completo: {
@@ -72,7 +75,7 @@ const DESCRICOES: Record<PlanoPago, { curta: string; longa: string }> = {
 // O que cada plano promete. "Em breve" no que o BarChop ainda não tem: a
 // tela não vende o que não existe (decisão 8 do plano da cobrança).
 const VEM_NO_PLANO: Record<PlanoPago, string[]> = {
-  essencial: ["Agenda, link de agendamento e painel", "Até 3 profissionais", "Caixa e relatórios (em breve)"],
+  essencial: ["Agenda, link de agendamento e painel", ATE_NO_ESSENCIAL, "Caixa e relatórios (em breve)"],
   completo: [
     "Agenda, link de agendamento e painel",
     "Profissionais sem limite",

@@ -56,7 +56,7 @@ export const PLANOS: Record<IdDoPlano, Plano> = {
     nome: "Essencial",
     baseMensalCentavos: 4490,
     extraMensalCentavos: 1500,
-    limiteDeProfissionais: 3,
+    limiteDeProfissionais: 2,
     recursos: ["caixa", "relatorios"],
   },
   completo: {

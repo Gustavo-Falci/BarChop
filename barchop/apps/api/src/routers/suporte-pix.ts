@@ -1,5 +1,5 @@
 import { prisma } from "@barchop/database";
-import type { PixNaFila } from "@barchop/types";
+import type { AntesDoPix, PixNaFila } from "@barchop/types";
 import { PADRAO_UUID } from "../lib/padroes";
 import { pagamentoAguardando, serializarPagamentoPix, voltarAoQueEra } from "../lib/pix";
 import { operadorDoToken } from "../plugins/auth";
@@ -43,14 +43,23 @@ export function registrarRotasSuportePix(app: App): void {
               take: 1,
               select: { nome: true, email: true },
             },
+            assinatura: { select: { testeTerminaEm: true } },
           },
         },
       },
     });
     const pagamentos: PixNaFila[] = aguardando.map(({ barbearia, ...pagamento }) => {
       const { copiaECola: _semCodigo, ...resto } = serializarPagamentoPix(pagamento, null);
-      const { barbeiros, ...dados } = barbearia;
-      return { ...resto, barbearia: dados, dono: barbeiros[0] ?? null };
+      const { barbeiros, assinatura, ...dados } = barbearia;
+      const antes: AntesDoPix = {
+        situacao: pagamento.antesSituacao as AntesDoPix["situacao"],
+        plano: pagamento.antesPlano as AntesDoPix["plano"],
+        forma: pagamento.antesForma as AntesDoPix["forma"],
+        periodoTerminaEm: pagamento.antesPeriodoTerminaEm?.toISOString() ?? null,
+        testeTerminaEm:
+          pagamento.antesSituacao === "teste" ? (assinatura?.testeTerminaEm?.toISOString() ?? null) : null,
+      };
+      return { ...resto, barbearia: dados, dono: barbeiros[0] ?? null, antes };
     });
     return { pagamentos };
   });

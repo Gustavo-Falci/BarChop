@@ -3031,11 +3031,23 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         const dono = equipe().find((m) => m.papel === "dono");
         return estado.pagamentosPix!
           .filter((p) => p.situacao === "aguardando")
-          .map(({ copiaECola: _semCodigo, ...p }) => ({
-            ...p,
-            barbearia: { id: estado.perfil.id, nome: estado.perfil.nome, slug: estado.perfil.slug },
-            dono: dono ? { nome: dono.nome, email: dono.email ?? null } : null,
-          }));
+          .map(({ copiaECola: _semCodigo, ...p }) => {
+            // Pagamento semeado sem o "Já paguei" do dublê: o retrato é a
+            // assinatura de agora.
+            const retrato = antesDoPix.get(p.id) ?? estado.assinatura!;
+            return {
+              ...p,
+              barbearia: { id: estado.perfil.id, nome: estado.perfil.nome, slug: estado.perfil.slug },
+              dono: dono ? { nome: dono.nome, email: dono.email ?? null } : null,
+              antes: {
+                situacao: retrato.situacao,
+                plano: retrato.plano,
+                forma: retrato.forma,
+                periodoTerminaEm: retrato.periodoTerminaEm,
+                testeTerminaEm: retrato.situacao === "teste" ? retrato.testeTerminaEm : null,
+              },
+            };
+          });
       },
       async confirmarPix(id: string) {
         const pagamento = pixAguardando(id, false);

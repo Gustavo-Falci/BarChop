@@ -120,6 +120,8 @@ describe("o dublê do Pix do BarChop", () => {
 
     const fila = await api.suporte.pixNaFila();
     expect(fila.map((p) => p.id)).toEqual([pago.id]);
+    // O retrato de antes do Pix: é pra ele que a recusa volta.
+    expect(fila[0].antes).toMatchObject({ situacao: "teste", forma: "cartao", testeTerminaEm: expect.any(String) });
 
     await api.suporte.recusarPix(pago.id, "Não achei");
     const depois = await api.barbeiro.assinatura();

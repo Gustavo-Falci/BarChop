@@ -17,7 +17,18 @@ const ABAS = [
 // Sair e as abas Pedidos / Avisos / Números, no lugar do botão "Avisos" da fila e do
 // voltar dos avisos. Fora do shell do painel: a sessão aqui é a do
 // suporte, que não tem barbearia.
-export function CascaDoSuporte({ aoSair, children }: { aoSair: () => void; children: ReactNode }) {
+//
+// `abertos` (só a fila sabe): os pedidos esperando decisão, Pix e troca
+// de link, no selo da aba Pedidos. O leitor de tela ouve "2 abertos".
+export function CascaDoSuporte({
+  aoSair,
+  abertos,
+  children,
+}: {
+  aoSair: () => void;
+  abertos?: number;
+  children: ReactNode;
+}) {
   const caminho = usePathname();
 
   return (
@@ -40,6 +51,15 @@ export function CascaDoSuporte({ aoSair, children }: { aoSair: () => void; child
             aria-current={caminho === href ? "page" : undefined}
           >
             {rotulo}
+            {href === "/painel/suporte" && abertos ? (
+              <>
+                {" "}
+                <span className={estilos.contador}>
+                  {abertos}{" "}
+                  <span className={estilos.somenteLeitor}>{abertos === 1 ? "aberto" : "abertos"}</span>
+                </span>
+              </>
+            ) : null}
           </Link>
         ))}
       </nav>

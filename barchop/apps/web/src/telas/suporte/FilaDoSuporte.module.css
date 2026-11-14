@@ -78,6 +78,93 @@
   font-weight: 600;
 }
 
+/* Pix (canvas Pix-Suporte): o nome à esquerda, o selo à direita. */
+.topoComSelo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.topoComSelo .topo {
+  min-width: 0;
+}
+
+/* O que procurar no extrato: o valor exato, grande, e o identificador
+   (alguns bancos mostram o txid no extrato). */
+.extrato {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--raio-md);
+  background: var(--cor-paper-soft);
+  text-align: center;
+}
+
+.valor {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-weight: 700;
+  font-size: var(--texto-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.identificador {
+  font-family: ui-monospace, monospace;
+  font-size: var(--texto-sm);
+}
+
+.dados {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0;
+  font-size: var(--texto-sm);
+}
+
+.dados dt {
+  color: var(--cor-ink-soft);
+}
+
+.dados dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* A decisão tomada: no lugar dos botões, sem desfazer (a API não volta
+   uma conferência). */
+.resultado {
+  padding: 12px;
+  border-radius: var(--raio-md);
+  font-size: var(--texto-sm);
+}
+
+.resultado:focus {
+  outline: none;
+}
+
+.resultado:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+}
+
+.confirmado {
+  background: var(--cor-ok-fundo);
+}
+
+.confirmado strong {
+  color: var(--cor-ok);
+}
+
+.recusado {
+  background: var(--cor-erro-fundo);
+}
+
+.recusado strong {
+  color: var(--cor-erro);
+}
+
 .motivo {
   display: grid;
   gap: 2px;

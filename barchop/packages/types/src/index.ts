@@ -660,10 +660,22 @@ export interface PagamentoPix {
 }
 
 // GET /suporte/pix — os aguardando, com a barbearia e o dono, pra o
-// Suporte achar no extrato. Sem o copia e cola.
+// Suporte achar no extrato. Sem o copia e cola. `antes` é o retrato da
+// assinatura antes do Pix: é pra ele que a recusa volta.
 export interface PixNaFila extends Omit<PagamentoPix, "copiaECola"> {
   barbearia: { id: string; nome: string; slug: string };
   dono: { nome: string; email: string | null } | null;
+  antes: AntesDoPix;
+}
+
+export interface AntesDoPix {
+  situacao: SituacaoDaAssinatura;
+  plano: IdDoPlano;
+  forma: FormaDePagarOBarChop;
+  periodoTerminaEm: string | null;
+  // O Pix não mexe no teste: a recusa volta pra ele com o mesmo fim
+  // (que pode já ter passado, e aí vale o Grátis).
+  testeTerminaEm: string | null;
 }
 
 export interface UsoNoTeste {

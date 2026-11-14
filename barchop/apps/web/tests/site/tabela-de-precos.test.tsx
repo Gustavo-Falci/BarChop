@@ -39,7 +39,7 @@ describe("tabela de preços do site", () => {
     const essencial = plano("Essencial");
     expect(essencial).toHaveTextContent(reais(precoDoPlano("essencial", "anual", 1)));
     expect(essencial).toHaveTextContent(`+ ${reais(1500)} por profissional a mais`);
-    expect(essencial).toHaveTextContent("Até 3 profissionais");
+    expect(essencial).toHaveTextContent("Até 2 profissionais");
 
     const completo = plano("Completo");
     expect(completo).toHaveTextContent(reais(precoDoPlano("completo", "anual", 1)));

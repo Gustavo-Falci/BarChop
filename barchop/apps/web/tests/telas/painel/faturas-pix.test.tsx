@@ -55,7 +55,7 @@ function noPix(fim: string, parcial: Partial<ResumoDaAssinatura> = {}): ResumoDa
     testeTerminaEm: null,
     diasDeTesteRestantes: null,
     periodoTerminaEm: fim,
-    limiteDeProfissionais: new Date(fim) > AGORA ? 3 : 1,
+    limiteDeProfissionais: new Date(fim) > AGORA ? 2 : 1,
     forma: "pix",
     ...parcial,
   });

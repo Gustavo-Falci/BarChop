@@ -81,18 +81,17 @@ describe("na equipe", () => {
     await app.close();
   });
 
-  it("no Essencial, até 3; o 4º é recusado com o convite do Completo", async () => {
+  it("no Essencial, até 2; o 3º é recusado com o convite do Completo", async () => {
     const app = buildApp();
     const { token, barbeariaId } = await criarBarbeariaComToken(app);
     await definirPlano(barbeariaId, "ativa", "essencial");
 
     expect((await incluir(app, token)).statusCode).toBe(201);
-    expect((await incluir(app, token)).statusCode).toBe(201);
-    const quarto = await incluir(app, token);
+    const terceiro = await incluir(app, token);
 
-    expect(quarto.statusCode).toBe(422);
-    expect(quarto.json().erro).toBe("limite_do_plano");
-    expect(quarto.json().mensagem).toMatch(/completo/i);
+    expect(terceiro.statusCode).toBe(422);
+    expect(terceiro.json().erro).toBe("limite_do_plano");
+    expect(terceiro.json().mensagem).toMatch(/completo/i);
     await app.close();
   });
 

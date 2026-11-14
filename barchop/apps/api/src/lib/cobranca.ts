@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import {
   CICLOS,
   PLANOS,
+  limiteDeProfissionais,
   precosDoCiclo,
   type Ciclo,
   type IdDoPlano,
@@ -505,7 +506,7 @@ export function configuracaoSemDescida(
   const doCompleto = idDoProduto("completo");
   const quantidadeNaTroca = temQuantidadeNaTroca(padrao);
   return {
-    name: "BarChop — sem descida (mais de 3 profissionais)",
+    name: `BarChop — sem descida (mais de ${limiteDeProfissionais("essencial")} profissionais)`,
     metadata: MARCA_SEM_DESCIDA,
     business_profile: {
       ...(perfil.headline ? { headline: perfil.headline } : {}),

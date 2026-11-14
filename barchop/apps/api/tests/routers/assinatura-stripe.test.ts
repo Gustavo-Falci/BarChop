@@ -207,19 +207,19 @@ describe("POST /barbearias/me/assinatura/portal", () => {
     const { app, cobranca } = montar();
     const { token, barbeariaId } = await criarBarbeariaComToken(app);
     await prisma.assinatura.update({ where: { barbeariaId }, data: { stripeCustomerId: "cus_9" } });
-    // O dono e mais 3: 4 profissionais, um a mais que o limite do Essencial.
-    for (const nome of ["p1", "p2", "p3"]) await criarMembroComToken(app, barbeariaId, "profissional", nome);
+    // O dono e mais 2: 3 profissionais, um a mais que o limite do Essencial.
+    for (const nome of ["p1", "p2"]) await criarMembroComToken(app, barbeariaId, "profissional", nome);
 
     expect((await portal(app, token)).statusCode).toBe(200);
     expect(cobranca.portais[0].semDescida).toBe(true);
     await app.close();
   });
 
-  it("no limite do Essencial (3), a descida continua no Portal; a recepção não conta", async () => {
+  it("no limite do Essencial (2), a descida continua no Portal; a recepção não conta", async () => {
     const { app, cobranca } = montar();
     const { token, barbeariaId } = await criarBarbeariaComToken(app);
     await prisma.assinatura.update({ where: { barbeariaId }, data: { stripeCustomerId: "cus_9" } });
-    for (const nome of ["p1", "p2"]) await criarMembroComToken(app, barbeariaId, "profissional", nome);
+    for (const nome of ["p1"]) await criarMembroComToken(app, barbeariaId, "profissional", nome);
     await criarMembroComToken(app, barbeariaId, "recepcao", "r");
 
     expect((await portal(app, token)).statusCode).toBe(200);

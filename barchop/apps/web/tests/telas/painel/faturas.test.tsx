@@ -54,7 +54,7 @@ const PAGA: Partial<ResumoDaAssinatura> = {
   planoEfetivo: "essencial",
   diasDeTesteRestantes: null,
   periodoTerminaEm: "2026-11-28T14:11:00Z",
-  limiteDeProfissionais: 3,
+  limiteDeProfissionais: 2,
   temPortal: true,
   usoNoTeste: null,
 };
@@ -169,25 +169,27 @@ describe("Faturas sem plano pago: etapa Plano", () => {
   });
 
   it("o + e o − recalculam; o Essencial para no limite e convida pro Completo", async () => {
-    montar(resumo());
-    expect(await preco()).toBe("R$ 59,90/mês");
+    montar(resumo({ profissionais: 1 }));
+    expect(await preco()).toBe("R$ 44,90/mês");
 
     await userEvent.click(screen.getByRole("button", { name: "Mais um profissional" }));
 
-    expect(await preco()).toBe("R$ 74,90/mês");
-    expect(screen.getByText("2 × R$ 15,00")).toBeInTheDocument();
+    expect(await preco()).toBe("R$ 59,90/mês");
+    expect(screen.getByText("1 × R$ 15,00")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Mais um profissional" })).toBeDisabled();
-    expect(screen.getByText(/O Essencial vai até 3 profissionais/)).toBeInTheDocument();
+    expect(screen.getByText(/O Essencial vai até 2 profissionais/)).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("radio", { name: /Completo/ }));
 
-    expect(await preco()).toBe("R$ 94,90/mês");
+    expect(await preco()).toBe("R$ 74,90/mês");
     expect(screen.getByRole("button", { name: "Mais um profissional" })).toBeEnabled();
   });
 
   it("não deixa assinar para menos gente que a equipe", async () => {
+    // No Completo: no Essencial, 2 já é o limite e a dica é a dele.
     montar(resumo());
     await screen.findByTestId("preco-do-plano");
+    await userEvent.click(screen.getByRole("radio", { name: /Completo/ }));
 
     expect(screen.getByRole("button", { name: "Menos um profissional" })).toBeDisabled();
     expect(screen.getByText(/Sua equipe tem 2 profissionais/)).toBeInTheDocument();
@@ -244,7 +246,7 @@ describe("Faturas sem plano pago: etapa Plano", () => {
     const tabela = await screen.findByRole("table", { name: "Comparar planos" });
     const profissionais = within(tabela).getByRole("row", { name: /^Profissionais/ });
     expect(profissionais).toHaveTextContent("1");
-    expect(profissionais).toHaveTextContent("Até 3");
+    expect(profissionais).toHaveTextContent("Até 2");
     expect(profissionais).toHaveTextContent("Sem limite");
     const porMes = within(tabela).getByRole("row", { name: /^Por mês/ });
     expect(texto(porMes)).toContain("R$ 0,00");

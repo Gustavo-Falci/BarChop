@@ -64,7 +64,7 @@ async function noPix(sufixo = "um", fim = FIM, situacaoDoPagamento = "confirmado
 }
 
 async function sino(barbeiroId: string) {
-  return prisma.notificacao.findMany({ where: { barbeiroId }, orderBy: { criadoEm: "asc" } });
+  return prisma.notificacao.findMany({ where: { barbeiroId }, orderBy: { criadaEm: "asc" } });
 }
 
 describe("o trabalho diário do Pix do BarChop", () => {
@@ -147,7 +147,8 @@ describe("o vencimento", () => {
     const { barbeariaId, barbeiroId } = await noPix();
     const canal = canalDeMemoria();
 
-    // No dia do fim, às 8h, ainda vale (acaba às 11:43).
+    // No dia do fim, às 8h, ainda vale (acaba às 11:43): é o aviso de
+    // renovar (a varredura não rodou antes), não o vencimento.
     await varrer(AS_8H("2026-12-15"), canal);
     expect((await prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } })).situacao).toBe("ativa");
 
@@ -160,12 +161,24 @@ describe("o vencimento", () => {
       plano: "essencial",
       periodoTerminaEm: new Date(FIM),
     });
-    // O aviso dos 5 dias (perdido, a varredura não rodou) não sai junto: só o do vencimento.
+    const avisos = await sino(barbeiroId);
+    expect(avisos.map((a) => a.titulo)).toEqual([expect.stringMatching(/vence em 15\/12/), expect.stringMatching(/Grátis/)]);
+    expect(canal.enviadas.map((e) => e.assunto)).toEqual([
+      expect.stringMatching(/vence em 15\/12/),
+      expect.stringMatching(/Grátis/),
+    ]);
+  });
+
+  it("vencido antes da primeira varredura: só o aviso do vencimento, sem o de renovar junto", async () => {
+    const { barbeiroId } = await noPix();
+    const canal = canalDeMemoria();
+
+    await varrer(AS_8H("2026-12-16"), canal);
+
     const avisos = await sino(barbeiroId);
     expect(avisos).toHaveLength(1);
     expect(avisos[0].titulo).toMatch(/Grátis/);
     expect(canal.enviadas).toHaveLength(1);
-    expect(canal.enviadas[0].assunto).toMatch(/Grátis/);
   });
 
   it("cartão não é com ele: a Stripe é quem diz", async () => {

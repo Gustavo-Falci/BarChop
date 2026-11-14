@@ -162,6 +162,13 @@ describe("fila do suporte", () => {
     expect(sessaoDoSuporte.ler()).toBeNull();
   });
 
+  it("o título é Pedidos: a fila tem Pix e troca de link", async () => {
+    sessaoDoSuporte.gravar("jwt-falso-suporte");
+    montar();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Pedidos" })).toBeInTheDocument();
+  });
+
   it("sair limpa só a sessão do suporte", async () => {
     sessaoDoSuporte.gravar("jwt-falso-suporte");
     sessaoDoBarbeiro.gravar("jwt-do-barbeiro");
@@ -172,5 +179,150 @@ describe("fila do suporte", () => {
     expect(sessaoDoSuporte.ler()).toBeNull();
     expect(sessaoDoBarbeiro.ler()).toBe("jwt-do-barbeiro");
     expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/painel/suporte/entrar");
+  });
+});
+
+// O Pix do BarChop, PR 3 (canvas Pix-Suporte): o dono tocou "Já paguei",
+// o plano já vale, e o Suporte procura no extrato o valor e o
+// identificador. "Achei o Pix" confirma; "Não achei" pede a resposta e a
+// assinatura volta ao que era antes. O Pix vem antes das trocas de link.
+describe("fila do suporte com Pix", () => {
+  const ESSENCIAL = { plano: "essencial", ciclo: "mensal", profissionais: 1 } as const;
+
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/suporte" });
+    sessaoDoSuporte.gravar("jwt-falso-suporte");
+  });
+
+  // O dublê com um Pix aguardando, pelo mesmo "Já paguei" do dono: a
+  // recusa volta de verdade ao teste.
+  async function montarComPix(semente: SementeFalsa = { solicitacoesDeLink: [PEDIDO_DA_NAVALHA] }) {
+    const falso = criarApiClientFalso({ pixLigado: true, ...semente });
+    const pago = await falso.barbeiro.jaPagueiOPix(ESSENCIAL);
+    render(
+      <ProvedorDoSuporte valor={falso.suporte}>
+        <FilaDoSuporte />
+      </ProvedorDoSuporte>
+    );
+    return { falso, pago };
+  }
+
+  function pixDa() {
+    return screen.getByRole("article", { name: /^Pix da/ });
+  }
+
+  function abaPedidos() {
+    return within(screen.getByRole("navigation", { name: "Áreas do suporte" })).getByRole("link", {
+      name: /^Pedidos/,
+    });
+  }
+
+  it("o Pix vem antes das trocas de link, e a aba Pedidos conta os abertos", async () => {
+    await montarComPix();
+
+    const pedidos = await screen.findAllByRole("article");
+    expect(pedidos.map((p) => p.getAttribute("aria-label"))).toEqual([
+      expect.stringMatching(/^Pix da GR Barber/),
+      expect.stringMatching(/^Pedido da Navalha/),
+    ]);
+    expect(abaPedidos()).toHaveAccessibleName("Pedidos 2 abertos");
+  });
+
+  it("o cartão: valor e identificador pra procurar no extrato, plano, período, o antes e o dono", async () => {
+    const { pago } = await montarComPix();
+
+    await screen.findAllByRole("article");
+    const pix = pixDa();
+    expect(within(pix).getByRole("heading", { level: 2, name: "GR Barber" })).toBeInTheDocument();
+    expect(within(pix).getByText(/^Já paguei em \d\d\/\d\d\/\d{4}/)).toBeInTheDocument();
+    expect(within(pix).getByText("Procure no extrato")).toBeInTheDocument();
+    expect(within(pix).getByText(/^R\$\s44,90$/)).toBeInTheDocument();
+    expect(within(pix).getByText(`identificador ${pago.identificador}`)).toBeInTheDocument();
+    expect(texto(pix, "Plano")).toBe("Essencial mensal · 1 profissional");
+    expect(texto(pix, "Vale")).toMatch(/^\d\d\/\d\d a \d\d\/\d\d$/);
+    // A barbearia do dublê está no teste: a recusa volta pra ele.
+    expect(texto(pix, "Antes")).toMatch(/^Teste até \d\d\/\d\d$/);
+    expect(texto(pix, "Dono")).toMatch(/^Gustavo/);
+  });
+
+  it("Achei o Pix: confirma, o cartão diz que confirmou e a aba desconta", async () => {
+    const { falso, pago } = await montarComPix({});
+
+    await screen.findAllByRole("article");
+    expect(abaPedidos()).toHaveAccessibleName("Pedidos 1 aberto");
+    await userEvent.click(within(pixDa()).getByRole("button", { name: "Achei o Pix" }));
+
+    expect(await within(pixDa()).findByRole("status")).toHaveTextContent(/Pix confirmado\./);
+    expect(within(pixDa()).queryByRole("button", { name: "Achei o Pix" })).not.toBeInTheDocument();
+    expect(abaPedidos()).toHaveAccessibleName("Pedidos");
+    expect(falso.estado.pagamentosPix!.find((p) => p.id === pago.id)?.situacao).toBe("confirmado");
+  });
+
+  it("Não achei: resposta sugerida e editável, vazia não vai, e a recusa volta a assinatura ao teste", async () => {
+    const { falso, pago } = await montarComPix({});
+
+    await screen.findAllByRole("article");
+    await userEvent.click(within(pixDa()).getByRole("button", { name: "Não achei" }));
+    const resposta = within(pixDa()).getByRole("textbox", { name: "Resposta pro dono" });
+    // Onde o dono lê e o que a recusa faz, anunciados com o campo. Sem
+    // promessa de sino: os avisos são do PR 4.
+    expect(resposta).toHaveAccessibleDescription("Ele lê em Faturas. A barbearia volta pro teste na hora.");
+    expect((resposta as HTMLTextAreaElement).value).toMatch(/^Não achamos um Pix de R\$\s44,90/);
+
+    await userEvent.clear(resposta);
+    await userEvent.click(within(pixDa()).getByRole("button", { name: "Confirmar recusa" }));
+    expect(await within(pixDa()).findByText(/escreva a resposta/i)).toBeInTheDocument();
+
+    await userEvent.type(resposta, "Não achamos o Pix.");
+    await userEvent.click(within(pixDa()).getByRole("button", { name: "Confirmar recusa" }));
+
+    expect(await within(pixDa()).findByRole("status")).toHaveTextContent(/Pix recusado\./);
+    expect(falso.estado.pagamentosPix!.find((p) => p.id === pago.id)).toMatchObject({
+      situacao: "recusado",
+      resposta: "Não achamos o Pix.",
+    });
+    expect(await falso.barbeiro.assinatura()).toMatchObject({ situacao: "teste", forma: "cartao" });
+  });
+
+  it("Pix já decidido (outro operador, ou o dono desfez): sai da fila", async () => {
+    const { falso, pago } = await montarComPix();
+
+    await screen.findAllByRole("article");
+    await falso.barbeiro.desfazerOPix(pago.id);
+    await userEvent.click(within(pixDa()).getByRole("button", { name: "Achei o Pix" }));
+
+    await waitFor(() => expect(screen.queryByRole("article", { name: /^Pix da/ })).not.toBeInTheDocument());
+    expect(screen.getByRole("article", { name: /^Pedido da Navalha/ })).toBeInTheDocument();
+  });
+
+  it("a lista do Pix falhando não esconde as trocas de link", async () => {
+    const falso = criarApiClientFalso({ solicitacoesDeLink: [PEDIDO_DA_NAVALHA] });
+    falso.suporte.pixNaFila = async () => {
+      throw new ErroDaApi(500, "erro_interno", "");
+    };
+    render(
+      <ProvedorDoSuporte valor={falso.suporte}>
+        <FilaDoSuporte />
+      </ProvedorDoSuporte>
+    );
+
+    expect(await screen.findByRole("article", { name: /^Pedido da Navalha/ })).toBeInTheDocument();
+    expect(screen.getByText("Não foi possível carregar os Pix agora.")).toBeInTheDocument();
+  });
+
+  it("401 na lista do Pix encerra a sessão do suporte", async () => {
+    const falso = criarApiClientFalso();
+    falso.suporte.pixNaFila = async () => {
+      throw new ErroDaApi(401, "nao_autenticado", "");
+    };
+    render(
+      <ProvedorDoSuporte valor={falso.suporte}>
+        <FilaDoSuporte />
+      </ProvedorDoSuporte>
+    );
+
+    await waitFor(() => expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/painel/suporte/entrar"));
+    expect(sessaoDoSuporte.ler()).toBeNull();
   });
 });

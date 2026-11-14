@@ -117,7 +117,7 @@ describe("caminho entre as telas do suporte", () => {
       </ProvedorDoSuporte>
     );
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Pedidos de troca de link" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Pedidos" })).toBeInTheDocument();
     expect(barraComSair()).toHaveTextContent(/BarChop.*Suporte/);
     expect(within(abas()).getByRole("link", { name: "Pedidos" })).toHaveAttribute("aria-current", "page");
     const avisos = within(abas()).getByRole("link", { name: "Avisos" });

@@ -1,5 +1,5 @@
 import { PLANOS } from "@barchop/formato";
-import type { ResumoDaAssinatura } from "@barchop/types";
+import type { CicloDoPlano, IdDoPlano, ResumoDaAssinatura } from "@barchop/types";
 
 // O que a faixa do topo e a tela do plano dizem da assinatura, num
 // lugar só: as duas não podem contar histórias diferentes.
@@ -32,6 +32,11 @@ export function emLista(nomes: string[]): string {
 
 export function nomeDoPlano(resumo: Pick<ResumoDaAssinatura, "plano">): string {
   return PLANOS[resumo.plano].nome;
+}
+
+// "Essencial mensal": o pedido de um Pix, em Faturas e no Suporte.
+export function nomeComCiclo(plano: IdDoPlano, ciclo: CicloDoPlano): string {
+  return `${PLANOS[plano].nome} ${ciclo === "anual" ? "anual" : "mensal"}`;
 }
 
 // A frase da cobrança de quem tem plano pago: cancelada não anuncia

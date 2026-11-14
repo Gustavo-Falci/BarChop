@@ -11,6 +11,7 @@ import { CodigoQr } from "../../componentes/CodigoQr";
 import {
   DIAS_DO_AVISO_DO_PIX,
   diaEMes,
+  nomeComCiclo,
   periodoDoCiclo,
   profissionais,
   type EstadoDoPix,
@@ -38,10 +39,6 @@ const DIA_E_HORA = new Intl.DateTimeFormat("pt-BR", {
 
 function diaEHora(instante: string): string {
   return DIA_E_HORA.format(new Date(instante));
-}
-
-function nomeComCiclo(plano: PedidoDeAssinatura["plano"], ciclo: PedidoDeAssinatura["ciclo"]): string {
-  return `${PLANOS[plano].nome} ${ciclo === "anual" ? "anual" : "mensal"}`;
 }
 
 // "Essencial mensal · 2 profissionais · vale de 15/11 a 15/12". Começa

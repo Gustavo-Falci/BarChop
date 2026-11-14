@@ -243,7 +243,7 @@ describe("fila do suporte com Pix", () => {
     expect(texto(pix, "Vale")).toMatch(/^\d\d\/\d\d a \d\d\/\d\d$/);
     // A barbearia do dublê está no teste: a recusa volta pra ele.
     expect(texto(pix, "Antes")).toMatch(/^Teste até \d\d\/\d\d$/);
-    expect(texto(pix, "Dono")).toMatch(/^Gustavo/);
+    expect(texto(pix, "Dono")).toMatch(/^Rafael · /);
   });
 
   it("Achei o Pix: confirma, o cartão diz que confirmou e a aba desconta", async () => {

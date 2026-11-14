@@ -110,8 +110,15 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
 ### PR 5 — Diferença de profissional no meio do período
 - Equipe passa dos `profissionais_contratados` num período Pix: Faturas mostra "Pix da diferença" (extra × dias que faltam ÷ dias do período, arredondado pra cima no centavo), mesmo fluxo de "Já paguei". Enquanto não paga, o limite do link segue o contratado (como `foraDoLink`). Canvas antes.
 
+### Depois (sem data) — Pix confirmado sozinho
+Pergunta do dono 14/11: "não tem como o sistema saber se ele pagou o Pix?". Hoje não: o QR é estático, na chave de pessoa física do dono, e nenhum banco avisa o BarChop; quem confirma é o Suporte, olhando o extrato. Decisão: **fica manual enquanto o volume for pequeno** (poucos Pix por mês, sem taxa).
+- Caminho quando o volume crescer: **cobrança pelo Asaas** (a integração já existe para as barbearias receberem dos clientes: `conexao_de_pagamento`, provedor `asaas`). A API cria a cobrança Pix, mostra o QR **dinâmico** dele no lugar do BR Code próprio, e o webhook de pagamento recebido confirma o `pagamento_pix` sozinho (o mesmo efeito do "Achei o Pix").
+- Mantém: "Já paguei" vale na hora; a fila do Suporte vira só exceção (Pix que o webhook não confirmou em X horas).
+- Custos e decisões a tomar no começo: taxa por Pix recebido; o dinheiro cai na conta do Asaas (transferir pro banco); conta do BarChop no Asaas (CPF ou CNPJ); o que acontece com os aguardando do QR estático na virada.
+- Alternativas descartadas por ora: API Pix do banco do dono (em geral só PJ, certificado e cadastro na API) e ler o extrato por Open Finance (complexo demais pro tamanho de hoje).
+
 ## Riscos
 
 - **"Vale na hora" é confiança**: quem toca "Já paguei" sem pagar ganha dias até o Suporte recusar. Mitigação: um aguardando por vez, e a fila do Suporte em ordem de chegada. Medir depois do primeiro mês.
-- **Chave errada na variável** = dinheiro na conta errada. O recebedor (nome e chave mascarada) aparece na tela pra o barbeiro conferir; conferir em produção com um Pix de R$ 1,00 antes de anunciar (o dono).
+- **Chave errada na variável** = dinheiro na conta errada. O recebedor (nome e chave mascarada) aparece na tela pra o barbeiro conferir; conferir em produção com um Pix de R$ 1,00 antes de anunciar (o dono). **Formato da chave** (14/11, em produção): o BR Code leva a `PIX_CHAVE` como está. Celular sem `+55` (11 dígitos) o banco lê como CPF e recusa com "indisponibilidade temporária"; o certo é `+55DDDNUMERO`. Ideia de PR pequeno: a API avisar no log quando a chave for só dígitos.
 - BR Code inválido em algum banco: testar o QR em 2–3 apps de banco na conferência do PR 2.

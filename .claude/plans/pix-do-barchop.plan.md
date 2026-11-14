@@ -100,6 +100,12 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
 
 ### PR 4 — Avisos e vencimento (cron diário)
 - Trabalho na fila (como `ciclos-por-link`): 5 dias antes do fim de um período Pix sem próximo pago → notificação + e-mail (uma vez: coluna `avisado_em` no pagamento); vencido → `situacao = 'gratis'` + notificação + e-mail. Recusa e confirmação também avisam o dono (notificação; e-mail na recusa).
+- **Feito 13/11 (branch `pix-do-barchop-avisos`), só API.** `src/lib/pix-avisos.ts`, trabalho `pix-do-barchop` às 8h de São Paulo; migration `20261113220000_pix_avisado_em` (**migrate deploy antes da API**). Detalhes:
+  - O dia do aviso é o que Faturas promete: dia de São Paulo de (fim − 5 dias) ≤ hoje. O período pago no teste termina no meio da tarde (fim do teste), não à meia-noite: teste com 14:43 UTC.
+  - Vencido mantém `forma = 'pix'`, o plano e o fim (Faturas mostra "vencido" com o QR do próximo). Vencido antes da primeira varredura avisa só do vencimento.
+  - Relê dentro da transação: um "Já paguei" da renovação no meio não vence nem avisa. Sino e marca na transação; e-mail depois do commit, falha no log.
+  - Roda mesmo sem as `PIX_*` (os Pix que existem precisam vencer). Link no e-mail só com `URL_DO_PAINEL`.
+  - Um aguardando que venceu ainda volta ao retrato na recusa (o `voltarAoQueEra` confere forma e fim, que o vencimento não muda).
 
 ### PR 5 — Diferença de profissional no meio do período
 - Equipe passa dos `profissionais_contratados` num período Pix: Faturas mostra "Pix da diferença" (extra × dias que faltam ÷ dias do período, arredondado pra cima no centavo), mesmo fluxo de "Já paguei". Enquanto não paga, o limite do link segue o contratado (como `foraDoLink`). Canvas antes.

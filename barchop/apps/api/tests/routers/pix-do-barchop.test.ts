@@ -515,6 +515,36 @@ describe("o Suporte confere o Pix", () => {
     await app.close();
   });
 
+  it("GET /suporte/pix: o retrato de antes, pra o Suporte saber o que a recusa faz", async () => {
+    const { app } = montar();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    const { testeTerminaEm } = await prisma.assinatura.findUniqueOrThrow({ where: { barbeariaId } });
+    const primeiro = (await jaPaguei(app, token)).json();
+    const suporte = await tokenDoSuporte(app);
+
+    // No teste: a recusa volta pro teste, com o mesmo fim (o Pix não mexe nele).
+    const noTeste = (await app.inject({ method: "GET", url: "/suporte/pix", headers: auth(suporte) })).json();
+    expect(noTeste.pagamentos[0].antes).toEqual({
+      situacao: "teste",
+      plano: "gratis",
+      forma: "cartao",
+      periodoTerminaEm: null,
+      testeTerminaEm: testeTerminaEm!.toISOString(),
+    });
+
+    // Renovação: a recusa volta pro Pix que já valia, até o fim dele.
+    await app.inject({ method: "POST", url: `/suporte/pix/${primeiro.id}/confirmar`, headers: auth(suporte) });
+    await jaPaguei(app, token, { plano: "completo", ciclo: "mensal", profissionais: 1 });
+    const naRenovacao = (await app.inject({ method: "GET", url: "/suporte/pix", headers: auth(suporte) })).json();
+    expect(naRenovacao.pagamentos[0].antes).toMatchObject({
+      situacao: "ativa",
+      plano: "essencial",
+      forma: "pix",
+      periodoTerminaEm: primeiro.periodoTerminaEm,
+    });
+    await app.close();
+  });
+
   it("sem token do suporte, 401; o token do dono não abre", async () => {
     const { app } = montar();
     const { token } = await criarBarbeariaComToken(app);

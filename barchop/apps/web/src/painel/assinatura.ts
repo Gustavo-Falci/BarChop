@@ -16,6 +16,22 @@ export function diaEMes(instante: string): string {
   return DIA_E_MES.format(new Date(instante));
 }
 
+const DIA_MES_E_ANO = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: "America/Sao_Paulo",
+});
+
+// As pontas de um período, como "15/11" e "15/12". Se o ano muda (o
+// anual, ou dezembro a janeiro), as duas levam o ano: "27/11 a 27/11"
+// não diria nada.
+export function pontasDoPeriodo(inicio: string, fim: string): [string, string] {
+  const [deInicio, deFim] = [DIA_MES_E_ANO.format(new Date(inicio)), DIA_MES_E_ANO.format(new Date(fim))];
+  if (deInicio.slice(-4) === deFim.slice(-4)) return [diaEMes(inicio), diaEMes(fim)];
+  return [deInicio, deFim];
+}
+
 export function diasQueFaltam(dias: number): string {
   return dias === 1 ? "falta 1 dia" : `faltam ${dias} dias`;
 }

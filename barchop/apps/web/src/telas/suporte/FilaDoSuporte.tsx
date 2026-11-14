@@ -9,7 +9,7 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Chip } from "../../componentes/Chip";
-import { diaEMes, nomeComCiclo, profissionais } from "../../painel/assinatura";
+import { diaEMes, nomeComCiclo, pontasDoPeriodo, profissionais } from "../../painel/assinatura";
 import { antesDoPix } from "../../suporte/antesDoPix";
 import { CascaDoSuporte } from "../../suporte/CascaDoSuporte";
 import { useApiDoSuporte, type ApiDoSuporte } from "../../suporte/ProvedorDoSuporte";
@@ -241,9 +241,7 @@ function PixParaConferir({
           {nomeComCiclo(pagamento.plano, pagamento.ciclo)} · {profissionais(pagamento.profissionais)}
         </dd>
         <dt>Vale</dt>
-        <dd>
-          {diaEMes(pagamento.periodoComecaEm)} a {diaEMes(pagamento.periodoTerminaEm)}
-        </dd>
+        <dd>{pontasDoPeriodo(pagamento.periodoComecaEm, pagamento.periodoTerminaEm).join(" a ")}</dd>
         <dt>Antes</dt>
         <dd>{antes.rotulo}</dd>
         <dt>Dono</dt>

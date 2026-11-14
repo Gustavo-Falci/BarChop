@@ -197,9 +197,12 @@ describe("fila do suporte com Pix", () => {
 
   // O dublê com um Pix aguardando, pelo mesmo "Já paguei" do dono: a
   // recusa volta de verdade ao teste.
-  async function montarComPix(semente: SementeFalsa = { solicitacoesDeLink: [PEDIDO_DA_NAVALHA] }) {
+  async function montarComPix(
+    semente: SementeFalsa = { solicitacoesDeLink: [PEDIDO_DA_NAVALHA] },
+    pedido: { plano: "essencial" | "completo"; ciclo: "mensal" | "anual"; profissionais: number } = ESSENCIAL
+  ) {
     const falso = criarApiClientFalso({ pixLigado: true, ...semente });
-    const pago = await falso.barbeiro.jaPagueiOPix(ESSENCIAL);
+    const pago = await falso.barbeiro.jaPagueiOPix(pedido);
     render(
       <ProvedorDoSuporte valor={falso.suporte}>
         <FilaDoSuporte />
@@ -244,6 +247,14 @@ describe("fila do suporte com Pix", () => {
     // A barbearia do dublê está no teste: a recusa volta pra ele.
     expect(texto(pix, "Antes")).toMatch(/^Teste até \d\d\/\d\d$/);
     expect(texto(pix, "Dono")).toMatch(/^Rafael · /);
+  });
+
+  it("Pix anual: o período leva o ano, senão \"27/11 a 27/11\" não diz nada", async () => {
+    await montarComPix({}, { plano: "completo", ciclo: "anual", profissionais: 1 });
+
+    await screen.findAllByRole("article");
+    expect(texto(pixDa(), "Plano")).toBe("Completo anual · 1 profissional");
+    expect(texto(pixDa(), "Vale")).toMatch(/^\d\d\/\d\d\/(\d{4}) a \d\d\/\d\d\/(?!\1)\d{4}$/);
   });
 
   it("Achei o Pix: confirma, o cartão diz que confirmou e a aba desconta", async () => {

@@ -13,6 +13,7 @@ import {
   diaEMes,
   nomeComCiclo,
   periodoDoCiclo,
+  pontasDoPeriodo,
   profissionais,
   type EstadoDoPix,
 } from "../../painel/assinatura";
@@ -48,11 +49,11 @@ export function descricaoDoPix(
   periodo: { periodoComecaEm: string; periodoTerminaEm: string },
   agora: Date
 ): string {
-  const comeca = diaEMes(periodo.periodoComecaEm);
+  const [comeca, termina] = pontasDoPeriodo(periodo.periodoComecaEm, periodo.periodoTerminaEm);
   const vale =
-    comeca === diaEMes(agora.toISOString())
-      ? `vale de hoje, ${comeca}, a ${diaEMes(periodo.periodoTerminaEm)}`
-      : `vale de ${comeca} a ${diaEMes(periodo.periodoTerminaEm)}`;
+    diaEMes(periodo.periodoComecaEm) === diaEMes(agora.toISOString())
+      ? `vale de hoje, ${comeca}, a ${termina}`
+      : `vale de ${comeca} a ${termina}`;
   return `${nomeComCiclo(pedido.plano, pedido.ciclo)} · ${profissionais(pedido.profissionais)} · ${vale}`;
 }
 
@@ -394,7 +395,7 @@ function Aguardando({ pagamento, agora }: { pagamento: PagamentoPix; agora: Date
         </dd>
         <dt>Vale</dt>
         <dd>
-          {diaEMes(pagamento.periodoComecaEm)} a {diaEMes(pagamento.periodoTerminaEm)} ·{" "}
+          {pontasDoPeriodo(pagamento.periodoComecaEm, pagamento.periodoTerminaEm).join(" a ")} ·{" "}
           {profissionais(pagamento.profissionais)}
         </dd>
       </dl>
@@ -558,7 +559,7 @@ function ListaDePagamentos({ pagamentos }: { pagamentos: PagamentoPix[] | null }
               <span className={estilos.quando}>
                 <strong>{diaEMes(p.criadoEm)} · Pix</strong>
                 <span className={estilos.apoio}>
-                  {nomeComCiclo(p.plano, p.ciclo)} · {diaEMes(p.periodoComecaEm)} a {diaEMes(p.periodoTerminaEm)}
+                  {nomeComCiclo(p.plano, p.ciclo)} · {pontasDoPeriodo(p.periodoComecaEm, p.periodoTerminaEm).join(" a ")}
                 </span>
               </span>
               <span className={estilos.valorDaCobranca}>{formatarReais(p.valorCentavos)}</span>

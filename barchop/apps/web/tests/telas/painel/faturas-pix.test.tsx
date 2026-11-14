@@ -295,7 +295,7 @@ describe("Faturas: o plano pago por Pix (Pix-Aguardando, confirmado)", () => {
 
     const pix = await screen.findByRole("region", { name: "Pague por Pix" });
     expect(screen.queryByRole("radio", { name: /Cartão/ })).toBeNull();
-    expect(within(pix).getByText("Completo mensal · 2 profissionais · vale de 01/12 a 01/01")).toBeInTheDocument();
+    expect(within(pix).getByText("Completo mensal · 2 profissionais · vale de 01/12/2026 a 01/01/2027")).toBeInTheDocument();
 
     await usuario.click(screen.getByRole("button", { name: "← Voltar ao plano" }));
     expect(await screen.findByRole("region", { name: "Essencial mensal" })).toBeInTheDocument();

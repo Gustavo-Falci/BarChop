@@ -22,6 +22,9 @@ const SLUGS_RESERVADOS: ReadonlySet<string> = new Set([
   // site de marketing
   "blog", "precos", "planos", "gratis", "funcionalidades", "comparar",
   "sobre", "metodologia", "termos", "privacidade", "contato",
+  // a antiga pasta dos arquivos da home: links velhos em /home/… iam
+  // pra home.barchop.com.br (#335); hoje eles moram em /assets
+  "home",
   // a marca
   "barchop",
 ]);

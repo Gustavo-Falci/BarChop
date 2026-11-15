@@ -64,6 +64,11 @@ describe("slugReservado", () => {
     }
   });
 
+  it("reserva home, a antiga pasta dos arquivos da home", () => {
+    // Em /home/cadeira.glb, o proxy levava pra home.barchop.com.br (#335).
+    expect(slugReservado("home")).toBe(true);
+  });
+
   it("libera o slug de uma barbearia comum", () => {
     expect(slugReservado("gr-barber")).toBe(false);
     expect(slugReservado("barbearia-do-ze")).toBe(false);

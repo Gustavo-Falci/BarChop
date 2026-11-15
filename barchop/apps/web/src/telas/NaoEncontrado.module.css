@@ -1,0 +1,146 @@
+/* O 404 (canvas "Página não encontrada", aprovado 15/11). */
+
+.rotulo {
+  margin: 0;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--cor-muted);
+}
+
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+}
+
+.titulo {
+  font-size: var(--texto-xl);
+}
+
+/* Site: a largura do cabeçalho e do rodapé, o texto na largura de leitura. */
+.site {
+  flex: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: 120px var(--espaco-lg);
+}
+
+.texto {
+  display: grid;
+  gap: var(--espaco-md);
+  max-width: 560px;
+}
+
+.tituloDoSite {
+  font-size: var(--texto-display);
+}
+
+.endereco {
+  color: var(--cor-ink);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-md) var(--espaco-lg);
+  padding-top: var(--espaco-md);
+}
+
+.linkDeTexto {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--cor-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 640px) {
+  /* Na mesma vertical do cabeçalho e do rodapé do site. */
+  .site {
+    padding-block: var(--espaco-xxl);
+  }
+
+  .tituloDoSite {
+    font-size: var(--texto-xl);
+  }
+}
+
+/* A tela inteira, sem o shell de ninguém: o rodapé (ou o pé) fica no fim
+   mesmo com pouco texto. */
+.telaInteira {
+  display: flex;
+  flex-direction: column;
+  /* `dvh`: no celular a barra do navegador entra e sai. */
+  min-height: 100dvh;
+}
+
+.barbearia {
+  display: grid;
+  align-content: center;
+  gap: var(--espaco-md);
+  flex: 1;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  padding: var(--espaco-xxl) var(--espaco-lg);
+}
+
+.pe {
+  display: grid;
+  justify-items: start;
+  gap: var(--espaco-xs);
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  padding: var(--espaco-lg);
+  border-top: var(--borda-padrao) solid var(--cor-line);
+}
+
+.feitaCom {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--cor-ink-soft);
+}
+
+.conheca {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--cor-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.painel {
+  display: grid;
+  align-content: start;
+  gap: var(--espaco-md);
+  flex: 1;
+  width: 100%;
+  max-width: 420px;
+  margin-inline: auto;
+  padding: var(--espaco-xxl) var(--espaco-md);
+}
+
+.voltar {
+  display: grid;
+  padding-top: var(--espaco-md);
+}
+
+.conheca:focus-visible,
+.linkDeTexto:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}

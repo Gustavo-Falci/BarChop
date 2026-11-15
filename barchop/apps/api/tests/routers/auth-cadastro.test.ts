@@ -69,7 +69,10 @@ describe("POST /auth/cadastro/codigo", () => {
     await app.close();
   });
 
-  it("e-mail de convite pendente também conta como tomado", async () => {
+  it("e-mail de convite nunca aceito recebe o código: o convite não prende o e-mail de ninguém", async () => {
+    // Auditoria de 15/11, SEC-011: qualquer dono convidava o e-mail de um
+    // terceiro, e enquanto o convite existisse o terceiro não conseguia
+    // criar a própria barbearia. Quem prova o e-mail passa por cima.
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
     await prisma.barbeiro.create({
@@ -78,7 +81,44 @@ describe("POST /auth/cadastro/codigo", () => {
 
     await pedirCodigo(app, "convidado@exemplo.com");
 
-    expect(enviadasPara(app, "convidado@exemplo.com")[0].texto).not.toMatch(/\b\d{6}\b/);
+    expect(enviadasPara(app, "convidado@exemplo.com")[0].texto).toMatch(/\b\d{6}\b/);
+
+    await app.close();
+  });
+
+  it("convite já aceito é conta: recebe o aviso, sem código", async () => {
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+    await prisma.barbeiro.create({
+      data: {
+        barbeariaId: um.barbeariaId,
+        nome: "Aceitou",
+        email: "aceitou@exemplo.com",
+        papel: "profissional",
+        senhaHash: "scrypt$qualquer$coisa",
+      },
+    });
+
+    await pedirCodigo(app, "aceitou@exemplo.com");
+
+    expect(enviadasPara(app, "aceitou@exemplo.com")[0].texto).not.toMatch(/\b\d{6}\b/);
+
+    await app.close();
+  });
+
+  it("livre ou tomado, o trabalho no banco é o mesmo", async () => {
+    // SEC-021: o código só era emitido (uma transação no banco) no ramo
+    // do e-mail livre, e o relógio podia dizer o que o corpo esconde. O
+    // do e-mail tomado é emitido e não vai pra ninguém.
+    const app = buildApp();
+    await criarBarbeariaComToken(app, "um");
+
+    await pedirCodigo(app, "livre@exemplo.com");
+    await pedirCodigo(app, "um@exemplo.com");
+
+    for (const destino of ["livre@exemplo.com", "um@exemplo.com"]) {
+      expect(await prisma.codigoVerificacao.count({ where: { destino, finalidade: "cadastro_dono" } })).toBe(1);
+    }
 
     await app.close();
   });
@@ -193,6 +233,53 @@ describe("POST /auth/signup com o código do e-mail", () => {
 
     expect(tomado.statusCode).toBe(409);
     expect(outro.statusCode).toBe(201);
+
+    await app.close();
+  });
+
+  it("quem prova o e-mail cria a barbearia mesmo com convite pendente, e o convite morre", async () => {
+    // SEC-011. O membro convidado continua na equipe de quem convidou
+    // (pode ter agenda marcada), só sem o e-mail: o endereço passou a
+    // ser a conta de quem o provou, e o código do convite deixa de valer.
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+    const convidado = await prisma.barbeiro.create({
+      data: { barbeariaId: um.barbeariaId, nome: "Convidado", email: EMAIL, papel: "profissional" },
+    });
+    const convite = await emitirCodigo({ finalidade: "convite_profissional", destino: EMAIL, barbeariaId: null });
+
+    await pedirCodigo(app);
+    const resposta = await cadastrar(app, { ...corpo(), codigo: codigoEnviadoPara(app, EMAIL) });
+
+    expect(resposta.statusCode).toBe(201);
+    expect(resposta.json().barbeiro.papel).toBe("dono");
+    const antigo = await prisma.barbeiro.findUniqueOrThrow({ where: { id: convidado.id } });
+    expect(antigo.email).toBeNull();
+    expect(antigo.barbeariaId).toBe(um.barbeariaId);
+
+    const aceite = await app.inject({
+      method: "POST",
+      url: "/auth/convite/aceitar",
+      payload: { email: EMAIL, codigo: convite, senha: "outra-senha-123" },
+    });
+    expect(aceite.statusCode).toBe(422);
+    const dono = await prisma.barbeiro.findUniqueOrThrow({ where: { email: EMAIL } });
+    expect(dono.barbeariaId).not.toBe(um.barbeariaId);
+
+    await app.close();
+  });
+
+  it("o código emitido pra e-mail que já tem conta não cadastra de novo", async () => {
+    // O código do ramo "tomado" (SEC-021) nunca sai do servidor. Mesmo
+    // que alguém o acertasse, o e-mail é único: 409, e nada nasce.
+    const app = buildApp();
+    await criarBarbeariaComToken(app, "um");
+    const codigo = await emitirCodigo({ finalidade: "cadastro_dono", destino: "um@exemplo.com", barbeariaId: null });
+
+    const resposta = await cadastrar(app, { ...corpo("outra-barbearia", "um@exemplo.com"), codigo });
+
+    expect(resposta.statusCode).toBe(409);
+    expect(await prisma.barbearia.count()).toBe(1);
 
     await app.close();
   });

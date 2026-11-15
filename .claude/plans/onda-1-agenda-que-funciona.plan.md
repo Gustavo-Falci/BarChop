@@ -4,7 +4,41 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-14, noite — Essencial até 2 e home igual ao protótipo no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-15 — llms.txt, slug home e 404 de verdade no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `fdbce42`, #353). Nada aberto; só `main`, local e remota (`home-sobras` e `pagina-nao-encontrada` apagadas com autorização).
+- **Produção = `main` até o #353**, deploys do dono em 15/11, conferidos.
+- **`criar-precos` rodado pelo dono na VM** (modo real): os 4 preços "já está certo"; o Portal "sem descida" foi renomeado pra "mais de 2 profissionais" (`bpc_1URCCv2Lldv3THCmy92C3kbo`). Nada mais a fazer na Stripe pelo #349.
+- **#352 — sobras da home:**
+  - `/llms.txt` (`src/site/llms.ts` + `app/llms.txt/route.ts`): páginas, planos e preços lidos de `planos.ts`; 200 em utf-8 no site e no www, 404 no host da barbearia. Lighthouse: llms-txt ok.
+  - slug `home` reservado (`packages/formato/src/slug.ts`), depois de conferir o banco de produção (0 linhas nas três tabelas). `/home` não vai mais pra `home.barchop.com.br`.
+- **#353 — página não encontrada com 404 de verdade** (canvas "Página não encontrada", aprovado pelo dono em 15/11):
+  - antes, endereço reservado (`/blog`, `/home`, `/wp-login.php`) e barbearia que não existe respondiam **200** (soft 404): o layout de `/[slug]` nunca chamava `notFound()`;
+  - `procurarBarbearia` (`src/fluxo/slugAtual.ts`) separa `nao_existe` (não pode ser slug, ou a API diz 404) de `sem_resposta` (API fora, lenta ou com erro: segue 200 e a tela explica). Só o primeiro vira `notFound()`;
+  - `app/not-found.tsx` com três versões, escolhidas pelos cabeçalhos do proxy (`src/tenant/naoEncontrado.ts`): **site** (cabeçalho e rodapé de sempre), **barbearia** (tema do aparelho, "Conheça o BarChop" no pé), **painel** (sem links do site, "Voltar ao painel");
+  - aba sem `<title>` próprio: fica "BarChop" (o `<title>` no not-found disputava com o do layout raiz).
+  - Conferido em produção: 404 em `/blog`, `/home`, `/wp-login.php`, barbearia inexistente (`/` e `/agendar`), `/painel/agendaa`, todas com `noindex`; 200 em `/`, `/precos`, `/llms.txt`, `jesus-barber`, `/painel/entrar`; `www/<slug>` segue com 308 pro host da barbearia.
+- **Testes:** web 2006, `tsc` e `eslint` limpos.
+
+**Ao retomar:**
+1. **Pix de verdade da `jesus-barber`** (prazo era 15/11, 14:43 UTC): o dono ainda não disse se pagou.
+   - Se pagou: no extrato, conferir o valor e o identificador (fecha o (d)); depois "Achei o Pix" no Suporte.
+   - Se não: perguntar se ela segue paga (nova data) ou cai.
+2. **`barbearia-teste`:** o período termina 16/11, 13:18 UTC, sem Stripe. Se precisar seguir paga, mudar a data por SQL (gotchas de 14/11, abaixo).
+3. **PR 5**, a diferença de profissional no meio do período: confirmar com o dono se é **proporcional** ao começar. Canvas antes.
+4. **Home:** reler o contador por volta de 12/12. A volta ao topo vista uma vez em www (14/11) não se repetiu; o dono navega com "reduzir movimento", então nunca vê o Lenis. Só investigar se ele relatar.
+5. Os da lista de 06/11: testes reais opcionais, onda D, G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas.
+   - **24/11:** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho.
+   - A página de Preços ainda diz "só cartão": rever quando o Pix for oferecido na venda.
+
+**Gotchas de 15/11:**
+- **Conferir como em produção, local:** `NEXT_PUBLIC_URL_DO_SITE=https://barchop.com.br NEXT_PUBLIC_API_URL=https://api.barchop.com.br npx next build`, copiar `public` e `.next/static` pro `.next/standalone/apps/web/`, `PORT=3100 … node server.js` e `curl -H "Host: <host>"`. O build falha com `EBUSY` se o servidor anterior ainda estiver de pé: derrubar antes (`netstat -ano | grep ":3100 "` + `taskkill //PID n //T //F`).
+- No navegador, o localhost não lê a API de produção: a página de uma barbearia que existe mostra "Não foi possível abrir esta página". O status certo se confere por curl.
+- O `extraHttpHeaders` com `Host` do DevTools quebra a navegação (`ERR_INVALID_ARGUMENT`): no localhost a versão sai pelo caminho (`/nao-existe-xyz`, `/painel/…`).
+- `not-found.tsx` não exporta `metadata`; um `<title>` dentro dele concorre com o do layout raiz.
+
+## RETOMAR AQUI (2026-11-14, noite — Essencial até 2 e home igual ao protótipo no ar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `19bd84b`, #350). Nada aberto; só `main`, local e remota (`essencial-ate-2` e `home-botoes-do-prototipo` apagadas com autorização).

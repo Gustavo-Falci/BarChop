@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import { criarBarbeariaComToken, comCodigo } from "../helpers/barbearia";
 import { definirSenhaComCodigo } from "../helpers/cliente";
@@ -81,6 +82,75 @@ describe("limite de tentativas de login", () => {
       const resposta = await loginDoBarbeiro(app, variacao);
       expect(resposta.statusCode).toBe(429);
     }
+  });
+
+  it("inundar o login com outros e-mails não devolve o orçamento da conta", async () => {
+    // SEC-002. O contador por conta era um LRU de 5.000 chaves em
+    // memória e rodava ANTES do contador por IP: 5.000 e-mails
+    // distintos, de um IP só, despejavam a chave da conta-alvo e o
+    // bloqueio dela sumia no meio da janela. Agora o IP estourado não
+    // grava chave nenhuma, e o contador por conta mora no banco.
+    const app = buildApp();
+    await criarBarbeariaComToken(app);
+    const de = (ip: string) => (email: string, senha = "errada12") =>
+      app.inject({ method: "POST", url: "/auth/login", payload: { email, senha }, remoteAddress: ip });
+    const quemChuta = de("198.51.100.10");
+    const quemInunda = de("203.0.113.7");
+
+    for (let i = 0; i < MAX_POR_CONTA; i += 1) await quemChuta("um@exemplo.com");
+    expect((await quemChuta("um@exemplo.com", SENHA)).statusCode).toBe(429);
+
+    for (let i = 0; i < 5000; i += 1) await quemInunda(`inundacao-${i}@exemplo.com`);
+
+    expect((await quemChuta("um@exemplo.com", SENHA)).statusCode).toBe(429);
+    await app.close();
+  }, 120_000);
+
+  it("o bloqueio da conta sobrevive a um reinício da API", async () => {
+    // Em memória, reiniciar o processo zerava todos os contadores: um
+    // deploy no meio de um ataque devolvia as tentativas.
+    const antes = buildApp();
+    await criarBarbeariaComToken(antes);
+    await gastarOrcamento(antes, "um@exemplo.com");
+    await antes.close();
+
+    const depois = buildApp();
+    const resposta = await loginDoBarbeiro(depois, "um@exemplo.com", SENHA);
+
+    expect(resposta.statusCode).toBe(429);
+    await depois.close();
+  });
+
+  it("IP estourado não gasta o orçamento de conta nenhuma", async () => {
+    // O contador por IP roda primeiro. Senão, um IP já bloqueado
+    // continuaria fechando a conta dos outros a cada pedido recusado.
+    const app = buildApp();
+    await criarBarbeariaComToken(app);
+    const MAX_POR_IP = 100;
+    const doIp = (email: string, senha = "errada12") =>
+      app.inject({ method: "POST", url: "/auth/login", payload: { email, senha }, remoteAddress: "203.0.113.7" });
+
+    for (let i = 0; i < MAX_POR_IP; i += 1) await doIp(`qualquer-${i}@exemplo.com`);
+    // Já bloqueado pelo IP: estes não podem contar pra conta-alvo.
+    for (let i = 0; i < MAX_POR_CONTA + 5; i += 1) {
+      expect((await doIp("um@exemplo.com")).statusCode).toBe(429);
+    }
+
+    expect((await loginDoBarbeiro(app, "um@exemplo.com", SENHA)).statusCode).toBe(200);
+    await app.close();
+  }, 60_000);
+
+  it("o contador da conta não guarda o e-mail em texto", async () => {
+    // A chave leva e-mail ou telefone de quem tentou — inclusive de quem
+    // nunca foi cliente. No banco fica só o resumo dela.
+    const app = buildApp();
+    await loginDoBarbeiro(app, "alguem@exemplo.com");
+
+    const linhas = await prisma.contadorDeLimite.findMany();
+
+    expect(linhas.length).toBeGreaterThan(0);
+    expect(JSON.stringify(linhas)).not.toContain("alguem");
+    await app.close();
   });
 
   it("o limite é da conta, não da API: outro e-mail continua entrando", async () => {

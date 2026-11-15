@@ -121,4 +121,39 @@ describe("códigos de verificação", () => {
 
     expect(resultados.filter(Boolean)).toHaveLength(1);
   });
+
+  it("chutes simultâneos não passam do teto: o certo, chegando depois deles, é recusado", async () => {
+    // SEC-018. Antes, a tentativa só era gasta DEPOIS de comparar: todos
+    // os pedidos simultâneos liam a mesma contagem, comparavam, e o teto
+    // de 5 virava "quantos couberem numa rajada". Agora a tentativa é
+    // reservada antes da comparação, e só 5 reservas existem.
+    const a = await alvo();
+    const codigo = await emitirCodigo(a, AGORA);
+    const RAJADA = 60;
+
+    const resultados = await Promise.all([
+      ...Array.from({ length: RAJADA }, () => consumirCodigo(a, errado(codigo), AGORA)),
+      consumirCodigo(a, codigo, AGORA),
+    ]);
+
+    expect(resultados.at(-1)).toBe(false);
+    const linha = await prisma.codigoVerificacao.findFirstOrThrow({
+      where: { destino: a.destino, barbeariaId: a.barbeariaId },
+      orderBy: { criadoEm: "desc" },
+    });
+    expect(linha.tentativas).toBe(MAX_TENTATIVAS);
+    expect(linha.usadoEm).toBeNull();
+  });
+
+  it("acertar também gasta a tentativa, e o código certo na quinta ainda passa", async () => {
+    // A reserva vem antes da comparação, então o acerto conta como
+    // tentativa. Não pode custar o caso legítimo de errar quatro vezes.
+    const a = await alvo();
+    const codigo = await emitirCodigo(a, AGORA);
+    for (let i = 0; i < MAX_TENTATIVAS - 1; i += 1) {
+      expect(await consumirCodigo(a, errado(codigo), AGORA)).toBe(false);
+    }
+
+    expect(await consumirCodigo(a, codigo, AGORA)).toBe(true);
+  });
 });

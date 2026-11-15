@@ -1,5 +1,6 @@
 import { prisma } from "@barchop/database";
 import { normalizarEmail } from "@barchop/formato";
+import { registrarAuditoria } from "../lib/auditoria";
 import { numerosDoSite } from "../lib/contagem-do-site";
 import { ErroHttp } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
@@ -24,6 +25,12 @@ const corpoLogin = {
     senha: { type: "string", minLength: 1, maxLength: 200 },
   },
 } as const;
+
+const DATA_E_HORA = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "America/Sao_Paulo",
+});
 
 export function registrarRotasLoginDoSuporte(app: App, limites: LimitesDeAuth): void {
   app.post(
@@ -55,6 +62,30 @@ export function registrarRotasLoginDoSuporte(app: App, limites: LimitesDeAuth): 
       );
 
       const token = assinarSessao(app, { tipo: "suporte", operadorId: autorizado.id });
+
+      // Cada entrada fica na trilha, com o IP, e avisa o operador por
+      // e-mail: é assim que o dono da conta descobre uma entrada que não
+      // foi dele (auditoria de 15/11, SEC-008). A trilha é aguardada — a
+      // sessão não nasce sem registro. O e-mail não: provedor fora do ar
+      // não pode trancar o Suporte do lado de fora.
+      await registrarAuditoria(prisma, {
+        ator: { tipo: "suporte", id: autorizado.id },
+        acao: "suporte.login",
+        ip: request.ip,
+      });
+      if (app.canal.destinos.includes("email")) {
+        void app.canal
+          .enviar({
+            para: autorizado.email,
+            assunto: "Novo acesso ao Suporte do BarChop",
+            texto:
+              `Alguém entrou no Suporte do BarChop com a sua conta em ${DATA_E_HORA.format(new Date())} ` +
+              `(horário de Brasília), do endereço ${request.ip}. ` +
+              "Se foi você, não precisa fazer nada. Se não foi, troque a senha agora e avise o responsável pela plataforma.",
+          })
+          .catch((erro: unknown) => request.log.error({ erro }, "falha ao avisar o acesso ao suporte"));
+      }
+
       return {
         token,
         operador: { id: autorizado.id, nome: autorizado.nome, email: autorizado.email },
@@ -137,7 +168,19 @@ export function registrarRotasSuporte(app: App): void {
       const { operadorId } = operadorDoToken(request);
       const decidido = await prisma.$transaction(async (tx) => {
         const pedido = await pedidoPendente(tx, request.params.id);
+        const { slug: de } = await tx.barbearia.findUniqueOrThrow({
+          where: { id: pedido.barbeariaId },
+          select: { slug: true },
+        });
         await trocarSlug(tx, pedido.barbeariaId, pedido.slugPedido);
+        await registrarAuditoria(tx, {
+          ator: { tipo: "suporte", id: operadorId },
+          acao: "suporte.link.aprovar",
+          alvo: { tipo: "solicitacao_troca_link", id: pedido.id },
+          barbeariaId: pedido.barbeariaId,
+          detalhe: { de, para: pedido.slugPedido },
+          ip: request.ip,
+        });
         return tx.solicitacaoTrocaLink.update({
           where: { id: pedido.id },
           data: { status: "aprovada", decididoEm: new Date(), decididoPor: operadorId },
@@ -154,6 +197,14 @@ export function registrarRotasSuporte(app: App): void {
       const { operadorId } = operadorDoToken(request);
       const decidido = await prisma.$transaction(async (tx) => {
         const pedido = await pedidoPendente(tx, request.params.id);
+        await registrarAuditoria(tx, {
+          ator: { tipo: "suporte", id: operadorId },
+          acao: "suporte.link.recusar",
+          alvo: { tipo: "solicitacao_troca_link", id: pedido.id },
+          barbeariaId: pedido.barbeariaId,
+          detalhe: { pedido: pedido.slugPedido },
+          ip: request.ip,
+        });
         return tx.solicitacaoTrocaLink.update({
           where: { id: pedido.id },
           data: {

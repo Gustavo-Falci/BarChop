@@ -117,6 +117,12 @@ export function registrarAuth(app: App): void {
 // cedo evitou retrofitar tratamento de 401 e novo login nas telas.
 const VALIDADE_DA_SESSAO = "7d";
 
+// A do Suporte é curta: a conta confirma pagamentos, troca links e fala
+// com todos os donos, e o token mora no navegador. Sete dias era tempo
+// demais pra um token roubado valer (auditoria de 15/11, SEC-008). Duas
+// horas cobrem uma rodada de conferência; depois, entra de novo.
+const VALIDADE_DA_SESSAO_DO_SUPORTE = "2h";
+
 // O único jeito de assinar uma identidade (painel, cliente, suporte).
 // Os tokens que não são identidade levam o próprio `exp` no payload
 // (lib/lembrete.ts, lib/conta-do-agendamento.ts).
@@ -124,7 +130,8 @@ export function assinarSessao(
   app: Pick<App, "jwt">,
   payload: PayloadBarbeiro | PayloadCliente | PayloadSuporte
 ): string {
-  return app.jwt.sign(payload, { expiresIn: VALIDADE_DA_SESSAO });
+  const validade = payload.tipo === "suporte" ? VALIDADE_DA_SESSAO_DO_SUPORTE : VALIDADE_DA_SESSAO;
+  return app.jwt.sign(payload, { expiresIn: validade });
 }
 
 // Token emitido antes da última troca de senha não vale mais. O `iat`

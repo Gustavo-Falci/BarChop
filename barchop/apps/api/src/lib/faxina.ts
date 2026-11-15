@@ -1,3 +1,4 @@
+import { apagarAuditoriaAntiga } from "./auditoria";
 import { apagarContadoresVencidos } from "./contador-de-limite";
 import type { Fila } from "./fila";
 import type { LogDoWebhook } from "./webhook-dos-planos";
@@ -26,6 +27,13 @@ export async function fazerFaxina({ log, agora = new Date() }: DepsDaFaxina): Pr
     log.info({ contadores }, "faxina: contadores de limite vencidos apagados");
   } catch (erro) {
     log.warn({ erro }, "faxina: falha ao apagar contadores de limite");
+  }
+
+  try {
+    const auditoria = await apagarAuditoriaAntiga(agora);
+    log.info({ auditoria }, "faxina: linhas antigas da trilha de auditoria apagadas");
+  } catch (erro) {
+    log.warn({ erro }, "faxina: falha ao apagar a trilha de auditoria antiga");
   }
 }
 

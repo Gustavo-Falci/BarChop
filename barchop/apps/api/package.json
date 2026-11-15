@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "criar-suporte": "tsx --env-file-if-exists=.env scripts/criar-suporte.ts",
+    "titular": "tsx --env-file-if-exists=.env scripts/titular.ts",
     "criar-precos": "tsx --env-file-if-exists=.env scripts/criar-precos-no-stripe.ts"
   },
   "dependencies": {

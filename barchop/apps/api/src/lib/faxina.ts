@@ -1,5 +1,7 @@
 import { apagarAuditoriaAntiga } from "./auditoria";
+import { apagarCodigosVelhos } from "./codigos";
 import { apagarContadoresVencidos } from "./contador-de-limite";
+import { cifrarCpfsEmClaro } from "./cpf";
 import type { Fila } from "./fila";
 import type { LogDoWebhook } from "./webhook-dos-planos";
 
@@ -34,6 +36,20 @@ export async function fazerFaxina({ log, agora = new Date() }: DepsDaFaxina): Pr
     log.info({ auditoria }, "faxina: linhas antigas da trilha de auditoria apagadas");
   } catch (erro) {
     log.warn({ erro }, "faxina: falha ao apagar a trilha de auditoria antiga");
+  }
+
+  try {
+    const codigos = await apagarCodigosVelhos(agora);
+    log.info({ codigos }, "faxina: códigos de verificação usados ou vencidos apagados");
+  } catch (erro) {
+    log.warn({ erro }, "faxina: falha ao apagar códigos de verificação");
+  }
+
+  try {
+    const cpfs = await cifrarCpfsEmClaro();
+    log.info({ cpfs }, "faxina: CPFs em claro cifrados");
+  } catch (erro) {
+    log.warn({ erro }, "faxina: falha ao cifrar CPFs em claro");
   }
 }
 

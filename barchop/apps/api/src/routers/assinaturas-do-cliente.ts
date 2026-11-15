@@ -3,6 +3,7 @@ import type { FastifyBaseLogger } from "fastify";
 import { Prisma, prisma } from "@barchop/database";
 import { normalizarCpf, usosRestantes, type CicloDoCliente, type SituacaoDoAssinante } from "@barchop/formato";
 import type { AssinaturaNaConta, AssinaturaOnlineCriada, MinhasAssinaturas, PagamentoConferido } from "@barchop/types";
+import { cpfParaGravar, lerCpf } from "../lib/cpf";
 import { naoEncontrado } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "../lib/horas";
@@ -208,7 +209,7 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
       const provedor = app.provedores.daConexao(conexao);
       const cliente = await prisma.cliente.findUniqueOrThrow({
         where: { id: clienteId },
-        select: { id: true, nome: true, email: true, telefone: true, cpf: true },
+        select: { id: true, nome: true, email: true, telefone: true, cpf: true, cpfCifrado: true },
       });
 
       // A InfinitePay (plano pagamentos-online-infinitepay, PR 4): sem
@@ -281,9 +282,10 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
         return reply.code(201).send({ assinatura, linkDaFatura: link?.url ?? null });
       }
 
+      const cpfGuardado = lerCpf(cliente);
       let cpf: string | null = null;
       if (provedor.pedeCpf) {
-        cpf = cliente.cpf;
+        cpf = cpfGuardado;
         if (request.body.cpf !== undefined) {
           cpf = normalizarCpf(request.body.cpf);
           if (cpf === null) throw new ErroDeNegocio("o CPF não confere: confira os números", "cpf_invalido");
@@ -329,7 +331,9 @@ export function registrarRotasAssinaturasDoCliente(app: App): void {
             WHERE id = ${conexao.id}::uuid AND desconectada_em IS NULL AND modo = ${app.provedores.modoAceito}
             FOR SHARE`;
           if (ligada.length === 0) throw indisponivel();
-          if (cpf !== null && cpf !== cliente.cpf) await tx.cliente.update({ where: { id: cliente.id }, data: { cpf } });
+          if (cpf !== null && (cpf !== cpfGuardado || cliente.cpf !== null)) {
+            await tx.cliente.update({ where: { id: cliente.id }, data: cpfParaGravar(cpf) });
+          }
           const emTeste = plano.diasDeTeste > 0;
           return tx.assinaturaDoCliente.create({
             data: {

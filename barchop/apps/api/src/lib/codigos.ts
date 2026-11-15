@@ -161,3 +161,18 @@ export async function consumirCodigo(
   });
   return marcado.count === 1;
 }
+
+// A faxina diária (lib/faxina.ts): código usado ou vencido há mais de um
+// dia não serve pra mais nada, e a linha guarda o e-mail ou o telefone
+// de quem pediu — inclusive de quem só digitou um endereço e nunca virou
+// cliente (auditoria de 15/11, SEC-009). O dia de folga é a janela em
+// que a linha ainda ajuda a apurar um abuso.
+const FOLGA_DOS_CODIGOS_MS = 24 * 60 * 60 * 1000;
+
+export async function apagarCodigosVelhos(agora: Date = new Date()): Promise<number> {
+  const corte = new Date(agora.getTime() - FOLGA_DOS_CODIGOS_MS);
+  const { count } = await prisma.codigoVerificacao.deleteMany({
+    where: { OR: [{ usadoEm: { lt: corte } }, { expiraEm: { lt: corte } }] },
+  });
+  return count;
+}

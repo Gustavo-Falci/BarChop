@@ -3,6 +3,7 @@ import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import type { CanalDeMemoria, Mensagem } from "../../src/lib/canal";
 import { dataParaDate, horaParaDate } from "../../src/lib/horas";
+import { normalizarTelefoneObrigatorio } from "../../src/lib/telefone";
 import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
 import { criarClienteComToken } from "../helpers/cliente";
 import type { App } from "../../src/tipos";
@@ -118,7 +119,7 @@ describe("contato de cadastro que já tem conta (SEC-013)", () => {
     }
     const cliente = await prisma.cliente.findUniqueOrThrow({ where: { id: c.clienteId } });
     expect(cliente.email).toBe("joao@exemplo.com");
-    expect(cliente.telefone).toBe("11999998888");
+    expect(cliente.telefone).toBe(normalizarTelefoneObrigatorio(TELEFONE));
     expect(enviadas(c.app)).toHaveLength(0);
     await c.app.close();
   });

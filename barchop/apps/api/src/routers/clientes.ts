@@ -8,9 +8,10 @@ import {
   apenasDigitos,
   normalizarTelefoneObrigatorio,
 } from "../lib/telefone";
+import { avisarTrocaDeContato, type ContatoTrocado } from "../lib/aviso-de-contato";
 import { garantirMembroDaDivisao } from "../lib/caixa";
 import { ErroHttp } from "../lib/erro-http";
-import { membroDoToken } from "../plugins/auth";
+import { agendaVisivel, membroDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
 const corpoNovoCliente = {
@@ -266,7 +267,12 @@ export function registrarRotasClientes(app: App): void {
             // Redundante hoje, já que o cliente pertence a uma barbearia
             // só. Fica porque é barato e porque o dia em que um cliente
             // circular entre barbearias, o histórico não vaza junto.
-            where: { barbeariaId },
+            //
+            // `agendaVisivel`: o profissional vê só os atendimentos dele,
+            // como na agenda — o cadastro mostrava o que ela escondia
+            // (auditoria de 15/11, SEC-014). O cadastro em si continua
+            // aparecendo: o walk-in chega pra ele.
+            where: { barbeariaId, ...agendaVisivel(request) },
             orderBy: [{ data: "desc" }, { horaInicio: "desc" }],
             take: 50,
             include: {
@@ -303,6 +309,41 @@ export function registrarRotasClientes(app: App): void {
         if (profissionalId !== null) await garantirMembroDaDivisao(prisma, barbeariaId, profissionalId);
       }
 
+      // E-mail e telefone são o login do cliente e o destino do código
+      // de redefinir a senha. Em cadastro que já tem conta, trocar um
+      // deles é trocar quem entra: profissional e recepção punham um
+      // e-mail próprio, pediam o código e entravam como o cliente
+      // (auditoria de 15/11, SEC-013). Agora só o dono troca, e o e-mail
+      // de antes é avisado. Cadastro sem conta segue aberto à equipe — é
+      // o balcão anotando o contato de quem ainda não entrou.
+      //
+      // Compara com o que está gravado, e não só "veio no corpo": a tela
+      // manda o formulário inteiro, e contato igual não é troca.
+      const emailNovo = email !== undefined ? normalizarEmail(email) : undefined;
+      const telefoneNovo = telefone !== undefined ? normalizarTelefoneObrigatorio(telefone) : undefined;
+      const trocados: ContatoTrocado[] = [];
+      let emailAnterior: string | null = null;
+      if (emailNovo !== undefined || telefoneNovo !== undefined) {
+        // findFirstOrThrow com a barbearia no where: cliente de outra
+        // barbearia é 404 aqui também.
+        const atual = await prisma.cliente.findFirstOrThrow({
+          where: { id: request.params.id, barbeariaId },
+          select: { senhaHash: true, email: true, telefone: true },
+        });
+        if (atual.senhaHash) {
+          if (emailNovo !== undefined && emailNovo !== atual.email) trocados.push("email");
+          if (telefoneNovo !== undefined && telefoneNovo !== atual.telefone) trocados.push("telefone");
+          emailAnterior = atual.email;
+        }
+        if (trocados.length > 0 && membroDoToken(request).papel !== "dono") {
+          throw new ErroHttp(
+            403,
+            "cliente_com_conta",
+            "Esse cliente já tem conta: só o dono da barbearia troca o e-mail e o telefone dele."
+          );
+        }
+      }
+
       const cliente = await prisma.cliente.update({
         // barbeariaId no mesmo where da escrita: cliente de outra
         // barbearia vira P2025 -> 404, nunca uma edição silenciosa.
@@ -317,14 +358,20 @@ export function registrarRotasClientes(app: App): void {
           // barbearia e do barbeiro, `Cliente.telefone` é NOT NULL no
           // schema, e o corpo desta rota não aceita null — quem entrega
           // isso ao compilador é o retorno `string` do wrapper.
-          ...(telefone !== undefined
-            ? { telefone: normalizarTelefoneObrigatorio(telefone) }
-            : {}),
+          ...(telefoneNovo !== undefined ? { telefone: telefoneNovo } : {}),
           // `email` tem tratamento próprio porque passa pela
           // normalização — e porque `null` aqui significa "limpar", não
           // "não mexer".
-          ...(email !== undefined ? { email: normalizarEmail(email) } : {}),
+          ...(emailNovo !== undefined ? { email: emailNovo } : {}),
         },
+      });
+
+      await avisarTrocaDeContato({
+        canal: app.canal,
+        log: request.log,
+        barbeariaId,
+        emailAnterior,
+        trocados,
       });
 
       return serializarCliente(cliente);

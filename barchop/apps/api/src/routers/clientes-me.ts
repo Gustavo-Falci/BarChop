@@ -2,6 +2,7 @@ import { prisma } from "@barchop/database";
 import { clienteDoToken } from "../plugins/auth";
 import { normalizarEmail } from "@barchop/formato";
 import { criarAgendamento, INCLUDE_AGENDAMENTO } from "../lib/agendamento";
+import { avisarTrocaDeContato } from "../lib/aviso-de-contato";
 import {
   garantirAlteravel,
   garantirFuturo,
@@ -97,6 +98,16 @@ export function registrarRotasClientesMe(app: App): void {
   app.patch("/clientes/me", { schema: { body: corpoPatch } }, async (request) => {
     const { clienteId } = clienteDoToken(request);
     const { nome, email } = request.body;
+    const emailNovo = email !== undefined ? normalizarEmail(email) : undefined;
+
+    // O e-mail de antes da troca, pro aviso lá embaixo.
+    const anterior =
+      emailNovo !== undefined
+        ? await prisma.cliente.findUniqueOrThrow({
+            where: { id: clienteId },
+            select: { email: true, barbeariaId: true },
+          })
+        : null;
 
     const cliente = await prisma.cliente.update({
       where: { id: clienteId },
@@ -106,9 +117,23 @@ export function registrarRotasClientesMe(app: App): void {
         // normalização — e porque `null` aqui significa "limpar", não
         // "não mexer". `!== undefined` distingue "campo ausente" (não
         // mexe) de "campo presente" (grava, mesmo que seja null).
-        ...(email !== undefined ? { email: normalizarEmail(email) } : {}),
+        ...(emailNovo !== undefined ? { email: emailNovo } : {}),
       },
     });
+
+    // O e-mail é o login e o destino do código de redefinir a senha:
+    // quem pega uma sessão aberta e troca o e-mail fica com a conta. O
+    // aviso no endereço antigo é o que deixa o dono dela perceber
+    // (auditoria de 15/11, SEC-013).
+    if (anterior && emailNovo !== anterior.email) {
+      await avisarTrocaDeContato({
+        canal: app.canal,
+        log: request.log,
+        barbeariaId: anterior.barbeariaId,
+        emailAnterior: anterior.email,
+        trocados: ["email"],
+      });
+    }
 
     return { cliente: serializarCliente(cliente) };
   });

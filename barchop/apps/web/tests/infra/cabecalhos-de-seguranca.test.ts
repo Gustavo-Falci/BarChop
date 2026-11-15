@@ -72,7 +72,7 @@ describe("cabeçalhos de segurança do web", () => {
 
 describe("next.config", () => {
   it("põe os cabeçalhos em todas as rotas", async () => {
-    const regras = await nextConfig.headers();
+    const regras = (await nextConfig.headers?.()) ?? [];
 
     expect(regras).toHaveLength(1);
     expect(regras[0].source).toBe("/:path*");

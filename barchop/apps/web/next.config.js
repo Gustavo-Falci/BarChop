@@ -1,4 +1,5 @@
 const path = require("path");
+const { cabecalhosDeSeguranca } = require("./cabecalhos-de-seguranca");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -8,6 +9,19 @@ const nextConfig = {
   // monorepo porque os @barchop/* moram fora de apps/web — com a raiz
   // padrão eles ficariam de fora. Por isso o server.js sai em
   // .next/standalone/apps/web/, e o .next/static vai copiado ao lado.
+  // Sem o `X-Powered-By: Next.js`: quem varre a internet atrás de uma
+  // versão vulnerável não precisa da nossa ajuda (SEC-022).
+  poweredByHeader: false,
+  // Os cabeçalhos de segurança em todas as rotas, estáticos inclusive
+  // (SEC-003). A regra mora em cabecalhos-de-seguranca.js, testada.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: cabecalhosDeSeguranca(process.env.NEXT_PUBLIC_URL_DO_SITE),
+      },
+    ];
+  },
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
   // Os pacotes internos publicam TypeScript cru (main aponta pro

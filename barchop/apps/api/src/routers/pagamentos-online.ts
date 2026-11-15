@@ -18,6 +18,7 @@ import {
   type NomeDoProvedor,
   type ProvedorRecorrente,
 } from "../lib/provedores";
+import { chaveSecretaDeProducaoDaStripe } from "../lib/provedores/stripe";
 import { membroDoToken, type Membro } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -276,6 +277,19 @@ export function registrarRotasPagamentosOnline(app: App): void {
           mensagem = `${nome.o} não tem chave ${nome.teste}, e aqui só vale a ${nome.teste}`;
         }
         throw new ErroDeNegocio(mensagem, "modo_errado");
+      }
+      // Na Stripe de verdade, só a chave restrita. A secreta (`sk_live_`)
+      // pode tudo na conta de quem vende — saques inclusive —, e o que o
+      // BarChop faz cabe nas permissões de uma restrita. Guardar a
+      // secreta era dar a quem um dia lesse o banco e a chave de cifra a
+      // conta inteira de cada vendedor (auditoria de 15/11, SEC-007). As
+      // que já estavam conectadas continuam valendo até a próxima troca.
+      // A de teste não move dinheiro: vale qualquer uma.
+      if (escolhido === "stripe" && chaveSecretaDeProducaoDaStripe(chave)) {
+        throw new ErroDeNegocio(
+          "esta é a chave secreta da Stripe, que pode tudo na sua conta: crie uma chave restrita (começa com rk_live_) e cole ela aqui",
+          "chave_sem_restricao"
+        );
       }
       if (escolhido === "infinitepay") {
         const tag = lerTag(request.body.tag);

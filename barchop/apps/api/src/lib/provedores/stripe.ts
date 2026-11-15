@@ -30,6 +30,11 @@ export function modoDaChaveDaStripe(chave: string): ModoDoProvedor | null {
   return null;
 }
 
+// A secreta de produção: a que a conexão recusa (routers/pagamentos-online.ts).
+export function chaveSecretaDeProducaoDaStripe(chave: string): boolean {
+  return /^sk_live_/.test(chave);
+}
+
 // O prazo de cada pedido, bem abaixo dos 15 s da transação do
 // desconectar (como o do Asaas). Sem novas tentativas da biblioteca: com
 // elas, o prazo de um pedido viraria o de vários.

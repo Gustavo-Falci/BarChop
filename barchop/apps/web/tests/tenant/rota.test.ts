@@ -110,6 +110,11 @@ describe("decidirRota", () => {
       expect(decidir("www.barchop.com.br", "/Nao_E_Slug")).toEqual({ tipo: "seguir" });
     });
 
+    it("o /llms.txt fica pro site: o ponto não passa no formato de slug", () => {
+      expect(decidir("barchop.com.br", "/llms.txt")).toEqual({ tipo: "seguir" });
+      expect(decidir("www.barchop.com.br", "/llms.txt")).toEqual({ tipo: "seguir" });
+    });
+
     it("monta o redirect pela config, nunca pelo host que chegou", () => {
       // Atrás do Caddy o host pode vir com a porta interna; quem manda
       // é o endereço configurado.

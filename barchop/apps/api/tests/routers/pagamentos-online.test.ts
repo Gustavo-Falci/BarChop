@@ -257,6 +257,25 @@ describe("a Stripe", () => {
     expect(await prisma.conexaoDePagamento.count()).toBe(0);
   });
 
+  it("em produção só vale a chave restrita: a secreta é recusada, sem ser guardada", async () => {
+    // Auditoria de 15/11, SEC-007. A `sk_live_` pode tudo na conta de
+    // quem vende; a tela, os Termos e a Privacidade já falam em chave
+    // restrita (`rk_live_`), mas a API aceitava as duas. Guardada aqui,
+    // ela vale a conta inteira do vendedor pra quem um dia ler o banco e
+    // a chave de cifra.
+    const c = await cenario({ modoAceito: "real" });
+
+    const secreta = await conectarStripe(c, c.dono.token, "sk_live_chave-secreta-1234");
+    const restrita = await conectarStripe(c, c.dono.token, "rk_live_chave-restrita-5678");
+
+    expect(secreta.statusCode).toBe(422);
+    expect(secreta.json().erro).toBe("chave_sem_restricao");
+    expect(secreta.json().mensagem).toContain("rk_live_");
+    expect(secreta.body).not.toContain("sk_live_chave-secreta-1234");
+    expect(restrita.statusCode).toBe(200);
+    expect(await prisma.conexaoDePagamento.count()).toBe(1);
+  });
+
   it("trocar a chave da mesma conta mantém o webhook e o segredo", async () => {
     const c = await cenario();
     await conectarStripe(c, c.dono.token);

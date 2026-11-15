@@ -5,7 +5,7 @@ import { ErroHttp } from "../lib/erro-http";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_EMAIL, PADRAO_UUID } from "../lib/padroes";
-import { conferirSenha, obterHashDescartavel } from "../lib/senha";
+import { conferirSenha, obterHashDescartavel, regravarSeMaisFraco } from "../lib/senha";
 import { trocarSlug } from "../lib/slug";
 import { assinarSessao, operadorDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
@@ -44,6 +44,15 @@ export function registrarRotasLoginDoSuporte(app: App, limites: LimitesDeAuth): 
       if (!autorizado || !confere) {
         return reply.code(401).send({ erro: "credenciais_invalidas" });
       }
+
+      // A senha conferiu: se o hash guardado é do custo antigo, migra
+      // agora (lib/senha.ts). As sessões abertas não caem.
+      await regravarSeMaisFraco(
+        autorizado.senhaHash,
+        request.body.senha,
+        (senhaHash) => prisma.operadorSuporte.update({ where: { id: autorizado.id }, data: { senhaHash } }),
+        request.log
+      );
 
       const token = assinarSessao(app, { tipo: "suporte", operadorId: autorizado.id });
       return {

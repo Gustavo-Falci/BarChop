@@ -2,6 +2,7 @@ import fastifyJwt from "@fastify/jwt";
 import type { FastifyRequest } from "fastify";
 import { prisma, type PapelMembro } from "@barchop/database";
 import { ErroHttp } from "../lib/erro-http";
+import { segredoDoServidor } from "../lib/segredos";
 import type { App } from "../tipos";
 
 // As duas identidades da plataforma. O `tipo` é o que separa uma da
@@ -97,10 +98,8 @@ declare module "@fastify/jwt" {
 }
 
 export function registrarAuth(app: App): void {
-  const segredo = process.env.JWT_SECRET;
-  if (!segredo) {
-    throw new Error("JWT_SECRET não definido — veja apps/api/.env.example");
-  }
+  // Ausente ou curto, lança aqui e a API não sobe (lib/segredos.ts).
+  const segredo = segredoDoServidor();
 
   // Sem `expiresIn` padrão, de propósito: desde o fast-jwt 6 ele
   // SOBRESCREVE o `exp` que vem no payload, e o link do lembrete e a

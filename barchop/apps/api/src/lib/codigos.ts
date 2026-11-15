@@ -1,5 +1,6 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { prisma, type Prisma } from "@barchop/database";
+import { chaveDosCodigos, segredoDoServidor } from "./segredos";
 
 // O código de verificação que vai pro telefone (cliente) ou pro e-mail
 // (barbeiro) e volta pra provar posse do destino — no primeiro acesso e
@@ -45,16 +46,34 @@ export const MAX_TENTATIVAS = 5;
 // vive dez minutos e tem só um milhão de valores, então o que protege é
 // o segredo — sem ele, o hash vazado num backup não se testa offline. E
 // é rápido, o que importa numa rota que qualquer um chama.
+//
+// A chave é derivada do segredo com rótulo próprio (lib/segredos.ts), e
+// não o JWT_SECRET cru: a chave que assina os tokens não faz mais nada.
 function hashDoCodigo(codigo: string): string {
-  const segredo = process.env.JWT_SECRET;
-  if (!segredo) throw new Error("JWT_SECRET não definido");
-  return createHmac("sha256", segredo).update(codigo).digest("hex");
+  return createHmac("sha256", chaveDosCodigos()).update(codigo).digest("hex");
+}
+
+// Até 15/11 o HMAC era feito com o próprio JWT_SECRET. Os códigos que
+// estavam no ar na troca — o convite da equipe vive 7 dias — foram
+// gravados assim e continuam valendo. Nada novo é gravado com ela:
+// passada uma semana do deploy, este ramo não tem mais o que conferir e
+// pode sair.
+function hashDoCodigoComAChaveAntiga(codigo: string): string {
+  return createHmac("sha256", segredoDoServidor()).update(codigo).digest("hex");
+}
+
+function iguais(calculadoEmHex: string, guardado: Buffer): boolean {
+  const calculado = Buffer.from(calculadoEmHex, "hex");
+  return calculado.length === guardado.length && timingSafeEqual(calculado, guardado);
 }
 
 function confere(codigo: string, hash: string): boolean {
-  const calculado = Buffer.from(hashDoCodigo(codigo), "hex");
   const guardado = Buffer.from(hash, "hex");
-  return calculado.length === guardado.length && timingSafeEqual(calculado, guardado);
+  // As duas comparações sempre, sem atalho: o tempo não diz com qual
+  // chave o código foi gravado.
+  const comANova = iguais(hashDoCodigo(codigo), guardado);
+  const comAAntiga = iguais(hashDoCodigoComAChaveAntiga(codigo), guardado);
+  return comANova || comAAntiga;
 }
 
 function ondeEstaOAlvo(alvo: AlvoDoCodigo) {

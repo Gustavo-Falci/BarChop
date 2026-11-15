@@ -317,6 +317,29 @@ describe("limite de pedido de código", () => {
     expect(bloqueado.statusCode).toBe(429);
     expect(bloqueado.json().erro).toBe("tentativas_excedidas");
   });
+
+  it("o teto é do destino, não do link: trocar de barbearia não renova", async () => {
+    // Auditoria de 15/11, SEC-012: com o link da barbearia na chave, quem
+    // cadastrasse várias barbearias mandava 3 mensagens por barbearia pro
+    // mesmo e-mail, sem fim.
+    const app = buildApp();
+    const um = await criarBarbeariaComToken(app, "um");
+    const dois = await criarBarbeariaComToken(app, "dois");
+
+    function pedir(slug: string) {
+      return app.inject({
+        method: "POST",
+        url: `/barbearias/${slug}/auth/cliente/codigo`,
+        payload: { email: "vitima@exemplo.com" },
+      });
+    }
+
+    for (let pedido = 0; pedido < MAX_CODIGO_POR_TELEFONE; pedido += 1) {
+      expect((await pedir(um.slug)).statusCode).toBe(202);
+    }
+
+    expect((await pedir(dois.slug)).statusCode).toBe(429);
+  });
 });
 
 describe("limite de definir senha", () => {

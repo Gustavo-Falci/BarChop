@@ -118,7 +118,8 @@ describe("POST /equipe", () => {
 
     const enviadas = enviadasPara(app, "ana@exemplo.com");
     expect(enviadas).toHaveLength(1);
-    expect(enviadas[0].assunto).toMatch(/convite/i);
+    // Assunto fixo, sem o nome da barbearia (SEC-012).
+    expect(enviadas[0].assunto).toBe("Convite para uma equipe no BarChop");
     expect(enviadas[0].texto).toMatch(/\b\d{6}\b/);
     expect(enviadas[0].texto).toContain("Barbearia um");
     await app.close();

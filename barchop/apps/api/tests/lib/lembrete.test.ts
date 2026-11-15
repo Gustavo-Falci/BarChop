@@ -72,7 +72,10 @@ describe("enviarLembrete", () => {
     expect(canal.enviadas).toHaveLength(1);
     const [mensagem] = canal.enviadas;
     expect(mensagem!.para).toBe("joao@exemplo.com");
-    expect(mensagem!.assunto).toContain("Barbearia um");
+    // Assunto fixo, sem texto de terceiro (SEC-012); a barbearia vai no
+    // corpo.
+    expect(mensagem!.assunto).toBe("Lembrete do seu horário");
+    expect(mensagem!.texto).toContain("Barbearia um");
     expect(mensagem!.texto).toContain("10:00");
     expect(mensagem!.texto).toContain("Barbeiro um");
     expect(mensagem!.texto).toContain("Corte");

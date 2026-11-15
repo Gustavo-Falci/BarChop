@@ -116,8 +116,12 @@ describe("POST /auth/cadastro/codigo", () => {
     await pedirCodigo(app, "livre@exemplo.com");
     await pedirCodigo(app, "um@exemplo.com");
 
+    // `usadoEm: null`: o código com que o ajudante criou a barbearia "um"
+    // já foi gasto e não entra na conta.
     for (const destino of ["livre@exemplo.com", "um@exemplo.com"]) {
-      expect(await prisma.codigoVerificacao.count({ where: { destino, finalidade: "cadastro_dono" } })).toBe(1);
+      expect(
+        await prisma.codigoVerificacao.count({ where: { destino, finalidade: "cadastro_dono", usadoEm: null } })
+      ).toBe(1);
     }
 
     await app.close();

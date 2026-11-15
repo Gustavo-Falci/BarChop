@@ -39,10 +39,10 @@ const JANELA_POR_CONTA = 10 * MINUTO;
 const MAX_POR_IP = 100;
 const JANELA_POR_IP = 5 * MINUTO;
 
-// Criar barbearia é raro — uma vez por cliente da plataforma. Este
-// limite é também o que estreita a sondagem de e-mails que o 409 do
-// signup permite (dívida conhecida): sondar em série deixou de ser
-// grátis, mesmo que o 409 continue respondendo.
+// Criar barbearia é raro — uma vez por cliente da plataforma. O 409 do
+// signup já não serve pra sondar e-mails: desde a Onda 1 (F3) ele só
+// vem depois de um código que só chega a e-mail sem conta, e o pedido
+// do código responde igual nos dois casos (routers/auth.ts).
 const MAX_SIGNUP_BARBEIRO = 5;
 
 const JANELA_SIGNUP = 60 * MINUTO;

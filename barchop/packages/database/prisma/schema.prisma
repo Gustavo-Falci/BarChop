@@ -931,3 +931,19 @@ model ContagemDoSite {
   @@id([dia, evento])
   @@map("contagem_do_site")
 }
+
+// Contadores de limite por conta (SEC-002): quantas vezes uma conta foi
+// tentada na janela corrente. No banco, e não em memória, porque um LRU
+// se despeja inundando e um deploy o zera. `chave` é o SHA-256 da chave
+// do contador — ela leva e-mail ou telefone, e aqui não fica o texto.
+// Quem escreve é apps/api/src/lib/contador-de-limite.ts; a faxina diária
+// apaga as linhas vencidas.
+model ContadorDeLimite {
+  chave    String   @id @db.Char(64)
+  contagem Int
+  // O fim da janela corrente.
+  expiraEm DateTime @map("expira_em") @db.Timestamptz
+
+  @@index([expiraEm], map: "contador_de_limite_expira_em_idx")
+  @@map("contador_de_limite")
+}

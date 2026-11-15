@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { normalizarEmail, normalizarTelefone } from "@barchop/formato";
+import { contarNaJanela } from "./contador-de-limite";
 import { ErroHttp } from "./erro-http";
 import type { App } from "../tipos";
 
@@ -18,7 +19,7 @@ const MINUTO = 60 * 1000;
 // Contador por conta. É o que importa: o alvo de quem adivinha senha é
 // UM cadastro. A chave não leva o IP de propósito — com o IP dentro
 // dela, trocar de saída renovaria o orçamento, que é exatamente o que
-// um ataque distribuído faz.
+// um ataque distribuído faz. Mora no banco (ver `contadorDaConta`).
 //
 // 10 em 10 minutos: quem erra a senha duas ou três vezes não percebe o
 // limite, e quem adivinha fica em uma tentativa por minuto. Não é
@@ -162,7 +163,30 @@ function contador(app: App, limite: Limite) {
   };
 }
 
-// Os prefixos de chave importam: sem eles uma tentativa de login
+// O contador por conta (ou por destino de mensagem): mora no banco
+// (lib/contador-de-limite.ts), e não no LRU do plugin. Em memória, quem
+// inundasse a rota com 5.000 chaves novas despejava a da conta bloqueada
+// e ganhava as tentativas de volta; e um deploy zerava todas (auditoria
+// de 15/11, SEC-002).
+//
+// Custa uma escrita no banco por tentativa. É pouco perto do scrypt que
+// vem logo depois, e só chega aqui quem passou pelo contador por IP.
+function contadorDaConta(limite: Limite) {
+  return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    if (limite.isenta?.(request)) return;
+    const { contagem, ttl } = await contarNaJanela(limite.chave(request), limite.janela);
+    if (contagem <= limite.max) return;
+    reply.header("retry-after", Math.ceil(ttl / 1000));
+    throw excedido(ttl);
+  };
+}
+
+// A ORDEM dentro de cada lista importa: o contador por IP vem primeiro.
+// Com o por conta na frente, um IP já bloqueado continuava gastando o
+// orçamento das contas a cada pedido recusado — de graça, fechava a
+// conta dos outros e enchia o contador de chaves.
+//
+// Os prefixos de chave também importam: sem eles uma tentativa de login
 // gastaria o orçamento do signup do mesmo IP, e um limite explicaria o
 // bloqueio do outro.
 export function limitesDeAuth(app: App) {
@@ -174,23 +198,23 @@ export function limitesDeAuth(app: App) {
 
   return {
     loginDoBarbeiro: [
-      contador(app, {
+      porIpNoLogin,
+      contadorDaConta({
         max: MAX_POR_CONTA,
         janela: JANELA_POR_CONTA,
         chave: (request) => `login-barbeiro:${chaveDoEmail(request.body)}`,
       }),
-      porIpNoLogin,
     ],
 
     // O login do suporte (bloco F4): os mesmos orçamentos do login do
     // painel, em chaves próprias.
     loginDoSuporte: [
-      contador(app, {
+      porIpNoLogin,
+      contadorDaConta({
         max: MAX_POR_CONTA,
         janela: JANELA_POR_CONTA,
         chave: (request) => `login-suporte:${chaveDoEmail(request.body)}`,
       }),
-      porIpNoLogin,
     ],
 
     signupDoBarbeiro: [
@@ -202,26 +226,26 @@ export function limitesDeAuth(app: App) {
     ],
 
     loginDoCliente: [
-      contador(app, {
+      porIpNoLogin,
+      contadorDaConta({
         max: MAX_POR_CONTA,
         janela: JANELA_POR_CONTA,
         chave: (request) =>
           `login-cliente:${slugDaRota(request)}:${chaveDoCliente(request.body)}`,
       }),
-      porIpNoLogin,
     ],
 
     codigoDoCliente: [
       contador(app, {
+        max: MAX_CODIGO_POR_IP,
+        janela: JANELA_SIGNUP,
+        chave: (request) => `codigo-cliente-ip:${request.ip}`,
+      }),
+      contadorDaConta({
         max: MAX_CODIGO_POR_TELEFONE,
         janela: JANELA_CODIGO_POR_TELEFONE,
         chave: (request) =>
           `codigo-cliente:${slugDaRota(request)}:${chaveDoCliente(request.body)}`,
-      }),
-      contador(app, {
-        max: MAX_CODIGO_POR_IP,
-        janela: JANELA_SIGNUP,
-        chave: (request) => `codigo-cliente-ip:${request.ip}`,
       }),
     ],
 
@@ -233,48 +257,48 @@ export function limitesDeAuth(app: App) {
     // a senha, em chaves próprias — um não gasta o do outro.
     codigoDoCadastro: [
       contador(app, {
-        max: MAX_CODIGO_POR_TELEFONE,
-        janela: JANELA_CODIGO_POR_TELEFONE,
-        chave: (request) => `codigo-cadastro:${chaveDoEmail(request.body)}`,
-      }),
-      contador(app, {
         max: MAX_CODIGO_POR_IP,
         janela: JANELA_SIGNUP,
         chave: (request) => `codigo-cadastro-ip:${request.ip}`,
+      }),
+      contadorDaConta({
+        max: MAX_CODIGO_POR_TELEFONE,
+        janela: JANELA_CODIGO_POR_TELEFONE,
+        chave: (request) => `codigo-cadastro:${chaveDoEmail(request.body)}`,
       }),
     ],
 
     codigoDoBarbeiro: [
       contador(app, {
-        max: MAX_CODIGO_POR_TELEFONE,
-        janela: JANELA_CODIGO_POR_TELEFONE,
-        chave: (request) => `codigo-barbeiro:${chaveDoEmail(request.body)}`,
-      }),
-      contador(app, {
         max: MAX_CODIGO_POR_IP,
         janela: JANELA_SIGNUP,
         chave: (request) => `codigo-barbeiro-ip:${request.ip}`,
       }),
+      contadorDaConta({
+        max: MAX_CODIGO_POR_TELEFONE,
+        janela: JANELA_CODIGO_POR_TELEFONE,
+        chave: (request) => `codigo-barbeiro:${chaveDoEmail(request.body)}`,
+      }),
     ],
 
     senhaDoBarbeiro: [
-      contador(app, {
+      porIpNoLogin,
+      contadorDaConta({
         max: MAX_POR_CONTA,
         janela: JANELA_POR_CONTA,
         chave: (request) => `senha-barbeiro:${chaveDoEmail(request.body)}`,
       }),
-      porIpNoLogin,
     ],
 
     // Aceitar o convite também é um login por outro caminho, e o código
     // dele vive 7 dias: sem teto por conta, quem chuta teria uma semana.
     conviteDoBarbeiro: [
-      contador(app, {
+      porIpNoLogin,
+      contadorDaConta({
         max: MAX_POR_CONTA,
         janela: JANELA_POR_CONTA,
         chave: (request) => `convite-barbeiro:${chaveDoEmail(request.body)}`,
       }),
-      porIpNoLogin,
     ],
 
     // Definir a senha confere um código: é um login por outro caminho, e
@@ -282,13 +306,13 @@ export function limitesDeAuth(app: App) {
     // código segura quem chuta UM código; este segura quem chuta muitos,
     // pedindo códigos novos entre um e outro.
     senhaDoCliente: [
-      contador(app, {
+      porIpNoLogin,
+      contadorDaConta({
         max: MAX_POR_CONTA,
         janela: JANELA_POR_CONTA,
         chave: (request) =>
           `senha-cliente:${slugDaRota(request)}:${chaveDoCliente(request.body)}`,
       }),
-      porIpNoLogin,
     ],
   };
 }
@@ -311,6 +335,15 @@ const JANELA_AGENDAR = 60 * MINUTO;
 // é alguém recarregando sem parar, não um cliente olhando a agenda.
 const MAX_PROXIMOS_POR_IP = 60;
 
+// A disponibilidade (auditoria de 15/11, SEC-004): as duas rotas mais
+// caras da página pública estavam sem limite, e a API roda numa VM de
+// 1 CPU. O dia custa uma consulta por profissional; trocar de dia na
+// tela é uma chamada, e 120 por minuto é um salão inteiro atrás do
+// mesmo Wi-Fi olhando a agenda. O mês repete a conta por dia do mês e a
+// tela pede um por vez: 40 por minuto já é folga.
+const MAX_DISPONIBILIDADE_POR_IP = 120;
+const MAX_DISPONIBILIDADE_DO_MES_POR_IP = 40;
+
 // O aviso de visita da home (home nova, marco 1): a home avisa uma vez
 // por aba. 20 por minuto cobre um escritório inteiro atrás do mesmo NAT
 // e segura quem tenta inflar a conta.
@@ -328,17 +361,18 @@ function emailDoLembrete(corpo: unknown): string | null {
 
 export function limitesPublicos(app: App) {
   return {
+    // O IP primeiro, como nos de auth (ver `limitesDeAuth`).
     agendar: [
-      contador(app, {
-        max: MAX_AGENDAR_POR_EMAIL,
-        janela: JANELA_AGENDAR,
-        chave: (request) => `agendar-email:${emailDoLembrete(request.body)}`,
-        isenta: (request) => !emailDoLembrete(request.body),
-      }),
       contador(app, {
         max: MAX_AGENDAR_POR_IP,
         janela: JANELA_AGENDAR,
         chave: (request) => `agendar-ip:${request.ip}`,
+      }),
+      contadorDaConta({
+        max: MAX_AGENDAR_POR_EMAIL,
+        janela: JANELA_AGENDAR,
+        chave: (request) => `agendar-email:${emailDoLembrete(request.body)}`,
+        isenta: (request) => !emailDoLembrete(request.body),
       }),
     ],
     proximosHorarios: [
@@ -346,6 +380,20 @@ export function limitesPublicos(app: App) {
         max: MAX_PROXIMOS_POR_IP,
         janela: MINUTO,
         chave: (request) => `proximos-ip:${request.ip}`,
+      }),
+    ],
+    disponibilidade: [
+      contador(app, {
+        max: MAX_DISPONIBILIDADE_POR_IP,
+        janela: MINUTO,
+        chave: (request) => `disponibilidade-ip:${request.ip}`,
+      }),
+    ],
+    disponibilidadeDoMes: [
+      contador(app, {
+        max: MAX_DISPONIBILIDADE_DO_MES_POR_IP,
+        janela: MINUTO,
+        chave: (request) => `disponibilidade-mes-ip:${request.ip}`,
       }),
     ],
     visita: [

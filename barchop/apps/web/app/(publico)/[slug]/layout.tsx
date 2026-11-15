@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { ProvedorDaApi } from "../../../src/api/ProvedorDaApi";
 import { BarraDaBarbearia } from "../../../src/fluxo/BarraDaBarbearia";
@@ -9,7 +9,7 @@ import { cssDaAparencia, scriptDoModo } from "../../../src/fluxo/aparenciaDaPagi
 import { OuvinteDaPrevia } from "../../../src/fluxo/OuvinteDaPrevia";
 import { EntradaDaTela } from "../../../src/movimento/EntradaDaTela";
 import { ID_DA_PUBLICADA } from "../../../src/fluxo/previa";
-import { barbeariaDoLayout } from "../../../src/fluxo/slugAtual";
+import { procurarBarbearia } from "../../../src/fluxo/slugAtual";
 import { destinoDoSlugAntigo } from "../../../src/tenant/endereco";
 import { ProvedorDoHost } from "../../../src/tenant/ProvedorDoHost";
 import { CABECALHO_DA_BARBEARIA, CABECALHO_DO_CAMINHO } from "../../../src/tenant/rota";
@@ -51,7 +51,12 @@ export default async function LayoutDaBarbearia({
   const cabecalhos = await headers();
   const barbeariaDoHost = cabecalhos.get(CABECALHO_DA_BARBEARIA);
 
-  const barbearia = await barbeariaDoLayout(slug);
+  // Só a barbearia que não existe (ou o nome que não pode ser uma) vira
+  // 404 de verdade, no app/not-found.tsx. API sem resposta segue: a tela
+  // abre e explica.
+  const procurada = await procurarBarbearia(slug);
+  if (procurada.tipo === "nao_existe") notFound();
+  const barbearia = procurada.tipo === "achada" ? procurada : null;
   const destino =
     barbearia &&
     destinoDoSlugAntigo({

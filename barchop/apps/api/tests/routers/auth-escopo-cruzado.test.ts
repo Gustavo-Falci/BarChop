@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app";
+import { assinarSessao } from "../../src/plugins/auth";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
 import { decodificarPayload } from "../helpers/decodificar-token";
 
@@ -19,7 +20,7 @@ describe("tipo do token", () => {
     // buildApp, e o registro do Fastify é assíncrono.
     await app.ready();
 
-    const tokenDeCliente = app.jwt.sign({
+    const tokenDeCliente = assinarSessao(app, {
       tipo: "cliente",
       clienteId: "00000000-0000-4000-8000-000000000000",
       barbeariaId,
@@ -43,7 +44,7 @@ describe("tipo do token", () => {
     // O `as never` é o ponto do teste: este payload não é mais válido
     // pelo tipo, e o que se mede é o que acontece com um token que já
     // estava na mão de alguém quando a fase subiu.
-    const tokenAntigo = app.jwt.sign({ barbeiroId, barbeariaId } as never);
+    const tokenAntigo = app.jwt.sign({ barbeiroId, barbeariaId } as never, { expiresIn: "7d" });
 
     const resposta = await app.inject({
       method: "GET",

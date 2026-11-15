@@ -102,11 +102,30 @@ export function registrarAuth(app: App): void {
     throw new Error("JWT_SECRET não definido — veja apps/api/.env.example");
   }
 
-  // Token com prazo. Com o hook lendo o banco a revogação já é
-  // imediata; a expiração é defesa em profundidade contra token
-  // roubado. Decidir agora evita retrofitar tratamento de 401 e novo
-  // login nas telas depois que elas assumirem token eterno.
-  app.register(fastifyJwt, { secret: segredo, sign: { expiresIn: "7d" } });
+  // Sem `expiresIn` padrão, de propósito: desde o fast-jwt 6 ele
+  // SOBRESCREVE o `exp` que vem no payload, e o link do lembrete e a
+  // prova do "Criar conta" passariam a valer 7 dias em vez de até o
+  // horário e de 1 hora. O prazo da sessão mora no `assinarSessao`.
+  //
+  // `requiredClaims` fecha o outro lado: token sem `exp` não passa em
+  // nenhuma verificação. Quem assinar uma sessão por fora do
+  // `assinarSessao` ganha um 401 no primeiro teste, não um token eterno.
+  app.register(fastifyJwt, { secret: segredo, verify: { requiredClaims: ["exp"] } });
+}
+
+// Token com prazo. Com o hook lendo o banco a revogação já é imediata;
+// a expiração é defesa em profundidade contra token roubado. Decidir
+// cedo evitou retrofitar tratamento de 401 e novo login nas telas.
+const VALIDADE_DA_SESSAO = "7d";
+
+// O único jeito de assinar uma identidade (painel, cliente, suporte).
+// Os tokens que não são identidade levam o próprio `exp` no payload
+// (lib/lembrete.ts, lib/conta-do-agendamento.ts).
+export function assinarSessao(
+  app: Pick<App, "jwt">,
+  payload: PayloadBarbeiro | PayloadCliente | PayloadSuporte
+): string {
+  return app.jwt.sign(payload, { expiresIn: VALIDADE_DA_SESSAO });
 }
 
 // Token emitido antes da última troca de senha não vale mais. O `iat`

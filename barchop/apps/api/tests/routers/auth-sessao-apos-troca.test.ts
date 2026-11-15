@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
+import { assinarSessao } from "../../src/plugins/auth";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
 import { criarClienteComToken, definirSenhaComCodigo } from "../helpers/cliente";
 import { decodificarPayload } from "../helpers/decodificar-token";
@@ -19,7 +20,7 @@ describe("trocar a senha derruba as sessões abertas", () => {
     const { clienteId } = await criarClienteComToken(app, barbearia.slug);
 
     const iatAntigo = umMinutoAtras();
-    const antigo = app.jwt.sign({
+    const antigo = assinarSessao(app, {
       tipo: "cliente",
       clienteId,
       barbeariaId: barbearia.barbeariaId,
@@ -55,7 +56,7 @@ describe("trocar a senha derruba as sessões abertas", () => {
     const app = buildApp();
     const barbearia = await criarBarbeariaComToken(app);
 
-    const antigo = app.jwt.sign({
+    const antigo = assinarSessao(app, {
       tipo: "barbeiro",
       barbeiroId: barbearia.barbeiroId,
       barbeariaId: barbearia.barbeariaId,
@@ -87,7 +88,7 @@ describe("trocar a senha derruba as sessões abertas", () => {
       data: { senhaAlteradaEm: new Date() },
     });
 
-    const recemEmitido = app.jwt.sign({
+    const recemEmitido = assinarSessao(app, {
       tipo: "barbeiro",
       barbeiroId: barbearia.barbeiroId,
       barbeariaId: barbearia.barbeariaId,
@@ -108,7 +109,7 @@ describe("trocar a senha derruba as sessões abertas", () => {
     const app = buildApp();
     const barbearia = await criarBarbeariaComToken(app);
 
-    const antigo = app.jwt.sign({
+    const antigo = assinarSessao(app, {
       tipo: "barbeiro",
       barbeiroId: barbearia.barbeiroId,
       barbeariaId: barbearia.barbeariaId,

@@ -39,6 +39,7 @@ import {
 } from "../lib/serializar";
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
+import { contarEnvioNaoProvado } from "../lib/envios-nao-provados";
 import { agendaVisivel, clienteDaRequisicao, membroDoToken } from "../plugins/auth";
 import type { LimitesPublicos } from "../lib/limites";
 import { notificarAgendamento } from "../lib/notificacoes";
@@ -650,6 +651,9 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
       );
 
       await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
+      // O e-mail digitado aqui ninguém provou, e o lembrete vai pra ele:
+      // entra na conta diária dos envios a destino não provado.
+      if (agendamento.emailLembrete) await contarEnvioNaoProvado(request.log);
 
       // O link do horário (06/11): o mesmo do lembrete, entregue na tela
       // de sucesso a quem acabou de marcar. Sem ele, quem agenda sem
@@ -700,7 +704,8 @@ async function avisarRemarcado(
   void app.canal
     .enviar({
       para: email,
-      assunto: `Seu horário mudou na ${novo.barbearia.nome}`,
+      // Fixo: assunto não leva texto de terceiro (lib/texto-de-email.ts).
+      assunto: "Seu horário mudou",
       texto: textoDoRemarcado(novo, de),
     })
     .catch((erro: unknown) => log.error({ erro, agendamentoId: novoId }, "falha ao avisar o remarcado"));

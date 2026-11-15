@@ -2,6 +2,8 @@ import type { FastifyRequest } from "fastify";
 import { prisma } from "@barchop/database";
 import type { App } from "../tipos";
 import { emitirCodigo } from "./codigos";
+import { contarEnvioNaoProvado } from "./envios-nao-provados";
+import { nomeParaEmail } from "./texto-de-email";
 
 // O convite pra equipe (Onda 1, A4): o código de 7 dias por e-mail. Sai
 // ao incluir, no reenvio e, com o plano pago, quando o membro que
@@ -35,14 +37,20 @@ export async function enviarConvite(
     ? ` Abra ${painel}/painel/convite?email=${encodeURIComponent(membro.email)} para começar.`
     : "";
 
+  // O e-mail do convidado é qualquer endereço que o dono digitar, e o
+  // nome da barbearia é texto livre dele: assunto fixo e nome limpo, só
+  // no corpo (auditoria de 15/11, SEC-012).
+  const nome = nomeParaEmail(barbearia.nome);
   void app.canal
     .enviar({
       para: membro.email,
-      assunto: `Convite para a equipe da ${barbearia.nome} no BarChop`,
+      assunto: "Convite para uma equipe no BarChop",
       texto:
-        `${barbearia.nome} convidou você para a equipe no BarChop. ` +
+        `${nome} convidou você para a equipe no BarChop. ` +
         `Seu código de convite é ${codigo}. Vale 7 dias: use-o para ` +
-        `definir sua senha e entrar no painel.${link}`,
+        `definir sua senha e entrar no painel.${link} ` +
+        "Se você não conhece essa barbearia, ignore este e-mail.",
     })
     .catch((erro: unknown) => request.log.error({ erro }, "falha ao enviar o convite"));
+  await contarEnvioNaoProvado(request.log);
 }

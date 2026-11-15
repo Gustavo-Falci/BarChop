@@ -12,6 +12,8 @@ import {
   regravarSeMaisFraco,
 } from "../lib/senha";
 import { serializarCliente } from "../lib/serializar";
+import { contarEnvioNaoProvado } from "../lib/envios-nao-provados";
+import { nomeParaEmail } from "../lib/texto-de-email";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
 import { assinarSessao } from "../plugins/auth";
 import type { App } from "../tipos";
@@ -183,13 +185,21 @@ export function registrarRotasAuthCliente(
 
       // O nome da barbearia na mensagem: sem ele, é um código solto no
       // WhatsApp, igual ao de um golpe pedindo "me passa o código".
+      //
+      // Só no corpo, e limpo: o destino é qualquer endereço digitado, e o
+      // nome é texto livre de quem cadastrou a barbearia. No assunto ele
+      // era a isca pronta ("Seu banco: confirme em …"), assinada pelo
+      // BarChop (auditoria de 15/11, SEC-012).
+      const nome = nomeParaEmail(barbearia.nome);
       await app.canal.enviar({
         para: destino.valor,
-        assunto: `${barbearia.nome}: seu código de acesso`,
+        assunto: "Seu código de acesso",
         texto:
-          `${barbearia.nome}: seu código de acesso é ${codigo}. ` +
-          "Vale 10 minutos. Não passe este código pra ninguém.",
+          `${nome}: seu código de acesso é ${codigo}. ` +
+          "Vale 10 minutos. Não passe este código pra ninguém. " +
+          "Se não foi você que pediu, ignore esta mensagem.",
       });
+      await contarEnvioNaoProvado(request.log);
 
       return reply.code(202).send({ enviado: true });
     }

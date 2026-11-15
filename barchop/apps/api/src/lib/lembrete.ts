@@ -1,4 +1,5 @@
 import { prisma } from "@barchop/database";
+import { nomeParaEmail, primeiroNomeParaEmail } from "./texto-de-email";
 import type { PayloadLembrete } from "../plugins/auth";
 import type { App } from "../tipos";
 import type { CanalDeMensagem } from "./canal";
@@ -175,18 +176,29 @@ interface AgendamentoDoLembrete {
 }
 
 export function textoDoLembrete(agendamento: AgendamentoDoLembrete, url: string | undefined): string {
-  const servicos = agendamento.servicos.map((s) => s.servico.nome).join(" + ");
-  const primeiroNome = agendamento.cliente.nome.split(" ")[0];
+  // Todo nome aqui é texto de quem cadastrou, e o e-mail pode ir pra um
+  // endereço que ninguém provou: passam por `nomeParaEmail`
+  // (lib/texto-de-email.ts). O único link do texto é o do sistema.
+  const { servicos, primeiroNome, barbearia, barbeiro } = nomesDoAgendamento(agendamento);
   const acao = url
     ? `Confirme sua presença ou cancele por aqui: ${url}`
     : "Se não puder ir, avise a barbearia.";
   return (
     `Olá, ${primeiroNome}! Passando pra lembrar do seu horário na ` +
-    `${agendamento.barbearia.nome}: ${DIA_DA_SEMANA.format(agendamento.data)}, ` +
+    `${barbearia}: ${DIA_DA_SEMANA.format(agendamento.data)}, ` +
     `às ${dateParaHora(agendamento.horaInicio)}, ` +
-    `com ${agendamento.barbeiro.nome} (${servicos}).\n\n` +
+    `com ${barbeiro} (${servicos}).\n\n` +
     acao
   );
+}
+
+function nomesDoAgendamento(agendamento: AgendamentoDoLembrete) {
+  return {
+    servicos: agendamento.servicos.map((s) => nomeParaEmail(s.servico.nome, "serviço")).join(" + "),
+    primeiroNome: primeiroNomeParaEmail(agendamento.cliente.nome),
+    barbearia: nomeParaEmail(agendamento.barbearia.nome),
+    barbeiro: nomeParaEmail(agendamento.barbeiro.nome, "a equipe"),
+  };
 }
 
 // O e-mail de quando o painel remarca (arrastar e reordenar, PR 5): o
@@ -196,13 +208,12 @@ export function textoDoRemarcado(
   agendamento: AgendamentoDoLembrete,
   de: { data: Date; horaInicio: Date }
 ): string {
-  const servicos = agendamento.servicos.map((s) => s.servico.nome).join(" + ");
-  const primeiroNome = agendamento.cliente.nome.split(" ")[0];
+  const { servicos, primeiroNome, barbearia, barbeiro } = nomesDoAgendamento(agendamento);
   return (
-    `Olá, ${primeiroNome}! A ${agendamento.barbearia.nome} mudou o seu horário.\n\n` +
+    `Olá, ${primeiroNome}! A ${barbearia} mudou o seu horário.\n\n` +
     `Era: ${DIA_DA_SEMANA.format(de.data)}, às ${dateParaHora(de.horaInicio)}.\n` +
     `Agora: ${DIA_DA_SEMANA.format(agendamento.data)}, às ${dateParaHora(agendamento.horaInicio)}, ` +
-    `com ${agendamento.barbeiro.nome} (${servicos}).\n\n` +
+    `com ${barbeiro} (${servicos}).\n\n` +
     "Se o novo horário não der, fale com a barbearia."
   );
 }
@@ -263,7 +274,9 @@ export async function enviarLembrete(
   try {
     await canal.enviar({
       para: email,
-      assunto: `Lembrete: seu horário na ${agendamento.barbearia.nome}`,
+      // Fixo, sem o nome da barbearia: assunto não leva texto de
+      // terceiro (lib/texto-de-email.ts).
+      assunto: "Lembrete do seu horário",
       texto: textoDoLembrete(agendamento, url),
     });
   } catch (erro) {

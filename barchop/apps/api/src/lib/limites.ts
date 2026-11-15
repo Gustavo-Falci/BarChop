@@ -244,8 +244,12 @@ export function limitesDeAuth(app: App) {
       contadorDaConta({
         max: MAX_CODIGO_POR_TELEFONE,
         janela: JANELA_CODIGO_POR_TELEFONE,
-        chave: (request) =>
-          `codigo-cliente:${slugDaRota(request)}:${chaveDoCliente(request.body)}`,
+        // Sem o link da barbearia na chave, ao contrário do login e da
+        // senha: aqui o que se protege é a caixa de entrada de alguém, e
+        // ela é uma só. Com o link, quem cadastrasse várias barbearias
+        // mandava 3 mensagens por barbearia pro mesmo destino (auditoria
+        // de 15/11, SEC-012).
+        chave: (request) => `codigo-cliente:${chaveDoCliente(request.body)}`,
       }),
     ],
 

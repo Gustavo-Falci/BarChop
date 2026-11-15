@@ -1,5 +1,6 @@
 import { prisma } from "@barchop/database";
 import type { CanalDeMensagem } from "./canal";
+import { nomeParaEmail } from "./texto-de-email";
 
 // O aviso de que o e-mail ou o telefone de uma conta de cliente mudou
 // (auditoria de 15/11, SEC-013). Os dois são o login e o destino do
@@ -38,7 +39,7 @@ export async function avisarTrocaDeContato(aviso: Aviso): Promise<void> {
       select: { nome: true },
     });
     const oQue = trocados.map((t) => NOMES[t]).join(" e o ");
-    const onde = barbearia ? ` na ${barbearia.nome}` : "";
+    const onde = barbearia ? ` na ${nomeParaEmail(barbearia.nome)}` : "";
 
     await canal.enviar({
       para: emailAnterior,

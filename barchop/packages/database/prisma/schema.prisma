@@ -458,6 +458,10 @@ model Cliente {
   // Só os 11 dígitos. O Asaas exige pra cobrar a assinatura online
   // (migration 20261028120000_mensalidade_online); nulo até o checkout.
   cpf             String?   @db.VarChar(11)
+  // O CPF cifrado com a CHAVE_DE_CIFRA (apps/api/src/lib/cpf.ts). É aqui
+  // que todo CPF novo é gravado; `cpf`, em claro, só guarda o que ainda
+  // não passou pela faxina (migration 20261115200000_cpf_cifrado).
+  cpfCifrado      Bytes?    @map("cpf_cifrado")
 
   barbearia    Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos Agendamento[]

@@ -107,6 +107,31 @@ describe("api pública", () => {
     expect(cabecalhos[2].Authorization).toBe("Bearer token-do-painel");
   });
 
+  it("com comToken, o agendamento pelo link vai com o token do cliente logado", async () => {
+    // A API só põe o horário num cadastro com senha pra quem manda o
+    // token do dono dele (SEC-001). Sem comToken, o token fica em casa:
+    // rota pública não precisa dele.
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({ id: "a1" }, 201));
+    const api = criarApiClient({
+      baseUrl: "https://api.exemplo.br",
+      fetch: fetchFalso as unknown as typeof globalThis.fetch,
+      obterToken: () => "token-do-cliente",
+    });
+    const novo = {
+      servicoIds: ["s1"],
+      data: "2026-09-10",
+      horaInicio: "09:00",
+      cliente: { nome: "João", telefone: "(11) 99999-8888" },
+    };
+
+    await api.publico.agendar("gr-barber", novo);
+    await api.publico.agendar("gr-barber", novo, { comToken: true });
+
+    const cabecalhos = fetchFalso.mock.calls.map((chamada) => (chamada[1]?.headers ?? {}) as Record<string, string>);
+    expect(cabecalhos[0].Authorization).toBeUndefined();
+    expect(cabecalhos[1].Authorization).toBe("Bearer token-do-cliente");
+  });
+
   it("pede o mapa do mês pro calendário", async () => {
     const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) =>
       respostaJson({ dias: { "2026-09-10": true, "2026-09-11": false } })

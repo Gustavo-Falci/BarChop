@@ -23,11 +23,15 @@ function marcarPublico(
   app: App,
   agenda: Agenda,
   cliente: { nome: string; telefone: string; email?: string },
-  horaInicio = "10:00"
+  horaInicio = "10:00",
+  // Quem tem conta agenda logado: cadastro com senha só recebe horário
+  // pelo link com o token do dono (SEC-001).
+  token?: string
 ) {
   return app.inject({
     method: "POST",
     url: `/barbearias/${agenda.slug}/agendamentos`,
+    headers: token ? auth(token) : {},
     payload: { servicoIds: [agenda.servico.id], data: QUINTA, horaInicio, cliente },
   });
 }
@@ -142,11 +146,13 @@ describe("e-mail do lembrete na página pública", () => {
     const agenda = await prepararAgenda(app);
     const cliente = await criarClienteComToken(app, agenda.slug, "11955554444");
     const original = (
-      await marcarPublico(app, agenda, {
-        nome: "Ana",
-        telefone: "11955554444",
-        email: "ana@exemplo.com",
-      })
+      await marcarPublico(
+        app,
+        agenda,
+        { nome: "Ana", telefone: "11955554444", email: "ana@exemplo.com" },
+        "10:00",
+        cliente.token
+      )
     ).json();
 
     const resposta = await app.inject({

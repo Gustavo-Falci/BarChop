@@ -39,7 +39,7 @@ import {
 } from "../lib/serializar";
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
-import { agendaVisivel, membroDoToken } from "../plugins/auth";
+import { agendaVisivel, clienteDaRequisicao, membroDoToken } from "../plugins/auth";
 import type { LimitesPublicos } from "../lib/limites";
 import { notificarAgendamento } from "../lib/notificacoes";
 import type { App } from "../tipos";
@@ -559,6 +559,11 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
       // cliente nenhum.
       garantirFuturo(resto.data, resto.horaInicio);
 
+      // Quem está logado, ou null — nunca 401: a rota é pública, e token
+      // torto vale como token nenhum. Fora da transação: lê o banco pela
+      // conexão comum e não precisa segurar a trava da agenda.
+      const clienteLogado = await clienteDaRequisicao(request);
+
       // Mesmo motivo da rota do walk-in: impasse concorrente não pode
       // sair como 500.
       const agendamento = await comRetryDeDeadlock(() =>
@@ -581,6 +586,27 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
               data: resto.data,
               horaInicio: resto.horaInicio,
             });
+          }
+
+          // Cadastro com senha só recebe horário de quem entrou nele
+          // (auditoria de 15/11, SEC-001). O telefone nunca é provado
+          // — no piloto o código só sai por e-mail —, então ele sozinho
+          // não diz de quem é a conta: quem criasse a conta primeiro com
+          // o número de outra pessoa passava a ver e a cancelar, na
+          // própria conta, o que ela marcasse por aqui. Dentro da
+          // transação, e antes do upsert: nada é criado na recusa.
+          //
+          // Revelar que o telefone tem conta é o mesmo que o
+          // `telefone_ja_cadastrado` da criação de conta já revela.
+          const comConta = await tx.cliente.findUnique({
+            where: { barbeariaId_telefone: { barbeariaId: barbearia.id, telefone } },
+            select: { id: true, senhaHash: true },
+          });
+          if (comConta?.senhaHash && comConta.id !== clienteLogado) {
+            throw new ErroDeNegocio(
+              "Esse telefone já tem conta nesta barbearia. Entre para agendar.",
+              "telefone_com_conta"
+            );
           }
 
           // Telefone já cadastrado nesta barbearia reaproveita o

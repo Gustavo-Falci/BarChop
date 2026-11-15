@@ -51,6 +51,7 @@ export type {
   FiltroDoDia,
   FiltroDoMes,
   OpcoesDaDisponibilidade,
+  OpcoesDeAgendar,
   DefinicaoDeSenhaDoCliente,
 } from "./publico";
 

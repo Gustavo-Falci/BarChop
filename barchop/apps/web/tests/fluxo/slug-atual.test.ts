@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { APARENCIA_PADRAO } from "@barchop/formato";
-import { barbeariaDoLayout, slugAtual } from "../../src/fluxo/slugAtual";
+import { barbeariaDoLayout, procurarBarbearia, slugAtual } from "../../src/fluxo/slugAtual";
 
 function fetchQueResponde(status: number, corpo: unknown): typeof fetch {
   return async () =>
@@ -40,6 +40,51 @@ describe("barbeariaDoLayout", () => {
 
   it("falha da API: null, e a página segue", async () => {
     expect(await barbeariaDoLayout("barbearia-do-gu", fetchQueResponde(500, {}))).toBeNull();
+  });
+});
+
+// O 404 de verdade (canvas "Página não encontrada", 15/11): o layout só
+// responde 404 quando sabe que a barbearia não existe. API fora do ar não
+// é "não existe": a página abre e a tela explica.
+describe("procurarBarbearia", () => {
+  it("achou: o slug atual e a aparência", async () => {
+    const achado = await procurarBarbearia("barbearia-do-gu", fetchQueResponde(200, PERFIL));
+
+    expect(achado).toEqual({ tipo: "achada", slug: "barbearia-do-gu", aparencia: APARENCIA_PADRAO });
+  });
+
+  it("a API diz 404: não existe", async () => {
+    const achado = await procurarBarbearia(
+      "sumiu",
+      fetchQueResponde(404, { erro: "nao_encontrado", mensagem: "barbearia não encontrada" })
+    );
+
+    expect(achado).toEqual({ tipo: "nao_existe" });
+  });
+
+  it.each(["blog", "home", "wp-login.php", "Barbearia-Do-Gu"])(
+    "%s não pode ser link de barbearia: não existe, sem perguntar à API",
+    async (slug) => {
+      let chamadas = 0;
+      const achado = await procurarBarbearia(slug, async () => {
+        chamadas++;
+        return new Response("{}", { status: 200 });
+      });
+
+      expect(chamadas).toBe(0);
+      expect(achado).toEqual({ tipo: "nao_existe" });
+    }
+  );
+
+  it("API com erro ou fora do ar: sem resposta, nunca 'não existe'", async () => {
+    expect(await procurarBarbearia("barbearia-do-gu", fetchQueResponde(500, {}))).toEqual({
+      tipo: "sem_resposta",
+    });
+    expect(
+      await procurarBarbearia("barbearia-do-gu", async () => {
+        throw new TypeError("fetch failed");
+      })
+    ).toEqual({ tipo: "sem_resposta" });
   });
 });
 

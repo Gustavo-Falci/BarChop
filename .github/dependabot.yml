@@ -1,0 +1,61 @@
+# Atualizações de dependência (auditoria de segurança de 15/11, SEC-016).
+# O Dependabot abre o PR; quem mergeia é o dono, depois do CI verde.
+#
+# Isto cobre as atualizações de versão. Os ALERTAS e as correções de
+# segurança automáticas são uma chave do repositório, ligada à mão:
+# Settings → Advanced Security → Dependabot alerts e security updates.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /barchop
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      # As pequenas vêm juntas, num PR por semana; as grandes (major)
+      # vêm sozinhas, porque cada uma pede leitura do que mudou.
+      producao:
+        dependency-type: production
+        update-types: [minor, patch]
+      desenvolvimento:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Sao_Paulo
+    commit-message:
+      prefix: chore(ci)
+
+  # As imagens base dos Dockerfiles estão presas por digest: é o
+  # Dependabot que propõe o digest novo quando a imagem é reconstruída.
+  - package-ecosystem: docker
+    directories:
+      - /barchop/infra
+      - /barchop/infra/caddy
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Sao_Paulo
+    commit-message:
+      prefix: chore(infra)
+
+  - package-ecosystem: docker-compose
+    directory: /barchop/infra
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Sao_Paulo
+    commit-message:
+      prefix: chore(infra)

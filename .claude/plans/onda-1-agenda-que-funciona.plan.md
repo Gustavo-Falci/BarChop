@@ -4,7 +4,37 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-15 — llms.txt, slug home e 404 de verdade no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-15, noite — correções da auditoria de segurança prontas, nada enviado) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `46c4a4d`, #354). **Produção = `main` até o #353**, sem mudança desde a manhã de 15/11.
+- **Auditoria de segurança do sistema** feita em 15/11 e, a pedido do dono, as correções escritas no mesmo dia.
+  - Estão em **14 branches locais empilhados** `seguranca-*`, a partir da `main` `46c4a4d`; a ponta, `seguranca-csp`, contém tudo (28 commits). **Nada foi enviado ao GitHub**: os branches só existem na máquina do dono.
+  - Ordem da pilha: `seguranca-dependencias` → `-limites` → `-cabecalhos` → `-telefone-do-cliente` → `-senhas-e-segredos` → `-contas` → `-emails` → `-pagamentos` → `-suporte` → `-lgpd` → `-imagens` → `-ci` → `-infra` → `-csp`.
+  - Validado na ponta: API 1704 testes, web 2027, `tsc` do monorepo, `eslint` de `apps` e `packages`, build da API e `next build`. Os branches do meio só tiveram testes dirigidos.
+  - **O detalhe não fica neste repositório, que é público:** os achados, o que cada branch resolve e o que ficou pendente estão na memória do Claude Code (`auditoria-seguranca-15-11`) e no relatório local do dono. Ao subir os PRs, os títulos e as descrições passam a ser públicos: mergear e publicar em seguida, sem deixar correção parada à vista.
+- **Trazem mudança de infra e de operação**, com passo a passo no `barchop/infra/README.md` desses branches: três migrations novas, CI e Dependabot (`.github/`), imagens Docker presas por digest, backup cifrado fora da VM, papel do banco sem superusuário, comando `node dist/titular.js` pros pedidos de titulares (LGPD), registros de DNS a criar.
+- **Não validado** (sem Docker na máquina de desenvolvimento e sem push): o workflow do GitHub Actions, a montagem das imagens, o envio do backup pro bucket, o `compose.yaml` e o Caddyfile no Docker.
+
+**Ao retomar:**
+1. **Pilha de segurança:** o dono decide quando subir. Um PR por vez, na ordem acima (`gh pr create`, `gh pr merge N --merge`, depois `gh pr edit <próximo> --base main`).
+   - **Antes de publicar na VM:** o `JWT_SECRET` precisa ter 32 caracteres ou mais, senão a API não sobe; rodar `docker compose config`; montar e validar o Caddy antes do `up` (`docker compose build caddy && docker compose run --rm caddy caddy validate --config /etc/caddy/Caddyfile`).
+   - **Só o dono faz, fora do código:** no GitHub, ligar os alertas do Dependabot e a varredura de segredos e proteger a `main` exigindo os jobs do CI; na Cloudflare, os registros de CAA e o DMARC; na OCI, o bucket privado de backup e o par de chaves; na VM, o roteiro do papel do banco e a cópia da `CHAVE_DE_CIFRA` fora dela.
+   - **Ficou pra depois, por pedir tela (canvas antes) ou decisão:** segundo fator no Suporte, confirmação do e-mail novo na troca de e-mail, sessão por cookie no lugar do token no navegador, a política de script passar de relatório a valer, o texto da política de privacidade.
+2. **Pix de verdade da `jesus-barber`** (prazo era 15/11, 14:43 UTC): o dono ainda não disse se pagou.
+   - Se pagou: no extrato, conferir o valor e o identificador (fecha o (d)); depois "Achei o Pix" no Suporte.
+   - Se não: perguntar se ela segue paga (nova data) ou cai.
+3. **`barbearia-teste`:** o período termina 16/11, 13:18 UTC, sem Stripe. Se precisar seguir paga, mudar a data por SQL (gotchas de 14/11, abaixo).
+4. **PR 5**, a diferença de profissional no meio do período: confirmar com o dono se é **proporcional** ao começar. Canvas antes.
+5. **Home:** reler o contador por volta de 12/12.
+6. Os da lista de 06/11: testes reais opcionais, onda D, G3, a primeira conta real da InfinitePay, o standby do marco 4 e do Asaas. **24/11:** olhar no sandbox do Asaas se o cartão guardado cobrou sozinho. A página de Preços ainda diz "só cartão".
+
+**Gotchas de 15/11 (noite):**
+- A suíte completa da API leva uns 10 minutos e a do web 1; rodar as duas inteiras antes de dar um branch por pronto — um teste de outra tela quebrou e só a suíte inteira mostrou.
+- Script temporário que lê o banco de teste carrega o `apps/api/.env.test` com `dotenv`: o `--env-file` do Node tropeça no BOM do arquivo, e o Prisma cai sozinho no `.env` de desenvolvimento.
+- O `pnpm audit` puro acusa falha alta só nas ferramentas do Expo (`apps/mobile`, não publicado): no CI quem decide é `scripts/auditar-dependencias.mjs`.
+
+## RETOMAR AQUI (2026-11-15 — llms.txt, slug home e 404 de verdade no ar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `fdbce42`, #353). Nada aberto; só `main`, local e remota (`home-sobras` e `pagina-nao-encontrada` apagadas com autorização).

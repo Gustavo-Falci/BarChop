@@ -11,7 +11,7 @@ montadas na própria VM. Só o Caddy abre porta (80 e 443).
 | `api` | `api.barchop.com.br` |
 | `web` | raiz, `www`, `painel.` e `<slug>.barchop.com.br` |
 | `caddy` | TLS (raiz + coringa por DNS-01 na Cloudflare) e proxy |
-| `backup` | `pg_dump` diário no volume `backups`, guarda `BACKUP_DIAS` |
+| `backup` | `pg_dump` diário no volume `backups`, guarda `BACKUP_DIAS`; cópia cifrada pra fora da VM, se configurada |
 
 ## Antes da primeira subida
 
@@ -88,8 +88,9 @@ docker compose exec api node dist/titular.js apagar <link> <telefone-ou-e-mail> 
 docker compose exec api node dist/titular.js encerrar-barbearia <link> --confirmar <link>
 ```
 
-O que foi apagado continua nos backups até eles vencerem (14 dias, ver
-Backup).
+O que foi apagado continua nos backups até eles vencerem: `BACKUP_DIAS`
+no disco da VM (14) e o prazo da regra de ciclo de vida no bucket de
+fora (ver Backup).
 
 ## Atualizar
 
@@ -117,8 +118,93 @@ docker compose exec backup sh -c 'pg_restore --clean --if-exists -d "$PGDATABASE
 docker compose start api
 ```
 
-O backup fica no mesmo disco da VM: protege de erro e de migração
-ruim, não da perda do disco. Copiar pro bucket fica pra depois.
+O backup do volume fica no mesmo disco da VM: protege de erro e de
+migração ruim, não da perda do disco. Pra isso existe a cópia de fora.
+
+### Cópia fora da VM, cifrada
+
+Desligada até as variáveis `BACKUP_*` do `.env` serem preenchidas. Com
+elas, cada backup diário é cifrado com o `age` e mandado pra um bucket.
+Uma vez só:
+
+1. **Par de chaves do `age`**, gerado FORA da VM (no seu computador):
+   `age-keygen -o barchop-backup.key`. O arquivo é a chave privada, a
+   única coisa que abre os backups: guardar no gerenciador de senhas e
+   em mais um lugar. A linha `# public key: age1...` é a que vai no
+   `.env` da VM, em `BACKUP_CHAVE_PUBLICA`. A VM só sabe cifrar.
+2. **Bucket novo e PRIVADO** no Object Storage (`barchop-backups`), sem
+   leitura pública — nunca o `barchop-imagens`. Ligar o versionamento e
+   uma regra de ciclo de vida que apague os objetos com mais de 30 dias:
+   é o bucket que apaga os antigos, não a VM.
+3. **Customer Secret Key** de um usuário que só escreve nesse bucket
+   (política com `OBJECT_CREATE` e `OBJECT_INSPECT`, sem apagar). Quem
+   tomar a VM não consegue apagar os backups de fora.
+4. Preencher `BACKUP_*` no `.env` e subir: `docker compose up -d --build backup`.
+5. Conferir na hora, sem esperar o dia seguinte:
+
+```bash
+docker compose run --rm -e BACKUP_UMA_VEZ=1 backup
+# "backup ok: ..." e "cópia fora da VM ok: ... em barchop-backups"
+```
+
+Abrir um backup de fora (no seu computador, com a chave privada):
+
+```bash
+age --decrypt -i barchop-backup.key -o barchop.dump barchop-<data>.dump.age
+pg_restore --list barchop.dump | head    # tem que listar as tabelas
+```
+
+**Ensaiar a restauração** num banco vazio depois de configurar, e de
+tempos em tempos: backup que nunca foi restaurado não é backup.
+
+Uma cópia que falha aparece no log, e só lá — olhar de vez em quando:
+`docker compose logs backup | grep -i falhou`.
+
+### O que o backup do banco não tem
+
+As chaves de pagamento das barbearias e os CPFs estão no banco
+**cifrados** com a `CHAVE_DE_CIFRA` do `api.env`. Sem ela o backup
+restaura, mas esses campos não abrem nunca mais. Guardar fora da VM,
+no gerenciador de senhas: a `CHAVE_DE_CIFRA`, o `JWT_SECRET` e o resto
+do `api.env` e do `.env`.
+
+## Papel do banco
+
+A API e a migração devem conectar com um papel **sem superusuário**
+(`barchop_app`). O `POSTGRES_USER` é o superusuário que a imagem cria,
+e fica só pro backup e pra manutenção. Enquanto `APP_DB_USER` estiver
+vazio no `.env`, a conexão continua pelo superusuário, como era.
+
+Trocar, uma vez só, com um backup feito antes
+(`docker compose run --rm -e BACKUP_UMA_VEZ=1 backup`):
+
+```bash
+cd ~/BarChop/barchop/infra
+SENHA_DO_APP=$(openssl rand -hex 24)
+
+docker compose stop api
+# O roteiro cria o papel e passa pra ele tudo o que é da aplicação. Não
+# mexe em dado nenhum; no fim lista o que sobrou com outro dono — tem
+# que vir "(0 rows)".
+docker compose exec -T postgres sh -c \
+  'psql -X -v ON_ERROR_STOP=1 -v senha="$1" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f -' \
+  sh "$SENHA_DO_APP" < banco/papel-da-aplicacao.sql
+
+# No .env: APP_DB_USER=barchop_app e APP_DB_PASSWORD=<a senha gerada>.
+nano .env
+unset SENHA_DO_APP
+
+docker compose up -d
+docker compose logs migrar   # "No pending migrations to apply" ou as aplicadas
+curl -I https://api.barchop.com.br/health
+```
+
+Voltar atrás é esvaziar `APP_DB_USER` e `APP_DB_PASSWORD` no `.env` e
+dar `docker compose up -d`: o superusuário continua alcançando tudo.
+
+Uma migration futura que precise de uma extensão nova do Postgres tem
+que ser instalada antes pelo superusuário (`CREATE EXTENSION`): o papel
+da aplicação só instala as extensões marcadas como confiáveis.
 
 ## Logs
 

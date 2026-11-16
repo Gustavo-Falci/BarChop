@@ -198,7 +198,13 @@ describe("a confirmação com o profissional", () => {
     await userEvent.click(await screen.findByRole("button", { name: /confirmar agendamento/i }));
 
     await waitFor(() =>
-      expect(agendar).toHaveBeenCalledWith("gr-barber", expect.objectContaining({ barbeiroId: "bb2" }))
+      // O terceiro argumento é da SEC-001: sem cliente logado, o horário
+      // vai sem o token da conta.
+      expect(agendar).toHaveBeenCalledWith(
+        "gr-barber",
+        expect.objectContaining({ barbeiroId: "bb2" }),
+        { comToken: false }
+      )
     );
   });
 

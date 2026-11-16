@@ -206,6 +206,45 @@ Uma migration futura que precise de uma extensão nova do Postgres tem
 que ser instalada antes pelo superusuário (`CREATE EXTENSION`): o papel
 da aplicação só instala as extensões marcadas como confiáveis.
 
+## DNS: quem pode emitir certificado e quem pode mandar e-mail
+
+Dois registros na zona `barchop.com.br` da Cloudflare (auditoria de
+segurança de 15/11, SEC-019). Não dependem de deploy.
+
+**CAA** — diz quais autoridades podem emitir certificado pro domínio.
+Sem ele, qualquer uma pode. O Caddy emite pela Let's Encrypt e, se ela
+falhar, tenta a ZeroSSL (que emite como Sectigo): entram as duas, pra
+não perder a reserva. Na raiz (`@`), tipo CAA:
+
+| Flags | Tag | Valor |
+|---|---|---|
+| 0 | `issue` | `letsencrypt.org` |
+| 0 | `issuewild` | `letsencrypt.org` |
+| 0 | `issue` | `sectigo.com` |
+| 0 | `issuewild` | `sectigo.com` |
+| 0 | `iodef` | `mailto:<e-mail que você lê>` |
+
+Conferir depois: `dig +short CAA barchop.com.br`, e na próxima
+renovação `docker compose logs caddy | grep -i "certificate obtained"`.
+Se um dia trocar de autoridade ou de provedor de DNS, o CAA muda junto
+— senão a renovação falha.
+
+**DMARC** — hoje é `v=DMARC1; p=none;`: quem recebe um e-mail falso em
+nome do BarChop entrega do mesmo jeito, e ninguém fica sabendo. Subir
+em dois passos, no TXT `_dmarc`:
+
+1. Ligar os relatórios (Cloudflare → Email → DMARC Management, que
+   acrescenta o `rua=` sozinho) e conferir num e-mail de verdade
+   mandado pelo sistema — o código de verificação serve — que o
+   cabeçalho `Authentication-Results` traz `dmarc=pass`. Então:
+   `v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:<o da Cloudflare>`
+2. Depois de umas três semanas de relatório sem envio legítimo
+   reprovado, trocar `p=quarantine` por `p=reject`.
+
+A raiz já tem `v=spf1 -all` (ninguém manda e-mail como
+`@barchop.com.br` fora do serviço de envio, que usa o subdomínio
+`send.`): não mexer.
+
 ## Logs
 
 ```bash

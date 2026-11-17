@@ -1,7 +1,7 @@
 import { PADRAO_SLUG, slugReservado } from "@barchop/formato";
 
 // Cada barbearia no próprio host, `<slug>.barchop.com.br` (ADR-0002); o
-// painel em `painel.`; a raiz e o `www` ficam pro site. As páginas
+// painel em `painel.`; a raiz fica pro site, e o `www` redireciona pra ela. As páginas
 // continuam em `app/(publico)/[slug]`: o host da barbearia reescreve pra
 // elas, e por isso o `/[slug]` segue funcionando sozinho em
 // desenvolvimento, sem site configurado.
@@ -76,7 +76,17 @@ export function decidirRota(
     if (eDoPainel(caminho)) {
       return { tipo: "redirecionar", url: url(SUBDOMINIO_DO_PAINEL, caminho), status: 308 };
     }
-    return levarProHostDaBarbearia();
+    const decisao = levarProHostDaBarbearia();
+    // O www não serve página: o buscador veria duas cópias do site. O
+    // painel e o slug antigo já saíram direto pro destino, num salto só.
+    if (decisao.tipo === "seguir" && host !== raiz) {
+      return {
+        tipo: "redirecionar",
+        url: `${site.protocolo}//${site.host}${caminho}${busca}`,
+        status: 308,
+      };
+    }
+    return decisao;
   }
 
   if (host === `${SUBDOMINIO_DO_PAINEL}.${raiz}`) {

@@ -35,6 +35,29 @@ function semOSlug(caminho: string, slug: string): string | null {
   return null;
 }
 
+// O endereço que o buscador deve guardar pra uma tela da barbearia: o
+// host próprio, o caminho sem o slug na frente e sem a query. No host
+// da barbearia a mesma tela chega por `/agendar` e `/gr-barber/agendar`,
+// com qualquer query (utm do Instagram, os serviços escolhidos).
+// Sem o site configurado não há host pra dizer; no link do lembrete,
+// noindex e com o token no caminho, não há o que apontar.
+export function canonicalDaBarbearia({
+  slug,
+  caminho,
+  site,
+}: {
+  slug: string;
+  // O que o navegador pediu, com a query — antes da reescrita do proxy.
+  caminho: string;
+  site: string | undefined;
+}): string | undefined {
+  if (!site) return undefined;
+  const [semQuery = "/"] = caminho.split("?");
+  const resto = semOSlug(semQuery, slug) ?? semQuery;
+  if (resto.startsWith("/lembrete/")) return undefined;
+  return `${enderecoDaBarbearia(slug, site)}${resto}`;
+}
+
 // As telas montam os caminhos com o slug na frente (`/gr-barber/agendar`),
 // que é o que vale em /[slug]. Pelo host da barbearia o slug já está no
 // host: o caminho sai limpo, e o proxy o reescreve de volta. Só quando o

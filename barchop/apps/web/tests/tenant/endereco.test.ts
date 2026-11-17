@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canonicalDaBarbearia,
   destinoDoSlugAntigo,
   enderecoDaBarbearia,
   enderecoNoSite,
@@ -125,5 +126,56 @@ describe("enderecoSemProtocolo", () => {
 
   it("deixa o caminho sem site como está", () => {
     expect(enderecoSemProtocolo("/gr-barber")).toBe("/gr-barber");
+  });
+});
+
+// O canonical diz ao buscador qual é o endereço da página. No host da
+// barbearia a mesma tela chega com e sem o slug na frente do caminho
+// (`/agendar` e `/gr-barber/agendar`) e com qualquer query: sem ele,
+// cada variação conta como uma cópia.
+describe("canonicalDaBarbearia", () => {
+  const site = "https://barchop.com.br";
+
+  it("a página da barbearia aponta pro host próprio", () => {
+    expect(canonicalDaBarbearia({ slug: "gr-barber", caminho: "/", site })).toBe(
+      "https://gr-barber.barchop.com.br/"
+    );
+  });
+
+  it("as outras telas apontam pro próprio caminho no host da barbearia", () => {
+    expect(canonicalDaBarbearia({ slug: "gr-barber", caminho: "/planos", site })).toBe(
+      "https://gr-barber.barchop.com.br/planos"
+    );
+  });
+
+  it("tira a query", () => {
+    expect(
+      canonicalDaBarbearia({ slug: "gr-barber", caminho: "/agendar/data?servicos=s1", site })
+    ).toBe("https://gr-barber.barchop.com.br/agendar/data");
+    expect(canonicalDaBarbearia({ slug: "gr-barber", caminho: "/?utm_source=insta", site })).toBe(
+      "https://gr-barber.barchop.com.br/"
+    );
+  });
+
+  it("tira o slug da frente do caminho", () => {
+    expect(canonicalDaBarbearia({ slug: "gr-barber", caminho: "/gr-barber", site })).toBe(
+      "https://gr-barber.barchop.com.br/"
+    );
+    expect(
+      canonicalDaBarbearia({ slug: "gr-barber", caminho: "/gr-barber/agendar?x=1", site })
+    ).toBe("https://gr-barber.barchop.com.br/agendar");
+  });
+
+  it("o link do lembrete não tem canonical: é noindex e leva o token", () => {
+    expect(
+      canonicalDaBarbearia({ slug: "gr-barber", caminho: "/lembrete/abc.def.ghi", site })
+    ).toBeUndefined();
+    expect(
+      canonicalDaBarbearia({ slug: "gr-barber", caminho: "/gr-barber/lembrete/abc", site })
+    ).toBeUndefined();
+  });
+
+  it("sem o site configurado, nada: relativo não diria o host", () => {
+    expect(canonicalDaBarbearia({ slug: "gr-barber", caminho: "/", site: undefined })).toBeUndefined();
   });
 });

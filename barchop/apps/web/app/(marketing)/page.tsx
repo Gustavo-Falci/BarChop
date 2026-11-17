@@ -8,6 +8,9 @@ const DESCRICAO =
 export const metadata: Metadata = {
   title: TITULO,
   description: DESCRICAO,
+  // O endereço da página pro buscador, o mesmo em todo host que a
+  // sirva. Relativo, como o url da prévia: o metadataBase completa.
+  alternates: { canonical: "/" },
   // A prévia de quem cola barchop.com.br no WhatsApp. O endereço
   // relativo vira inteiro pelo metadataBase do layout do site.
   openGraph: {

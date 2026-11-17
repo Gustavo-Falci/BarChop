@@ -8,6 +8,11 @@ vi.mock("next/font/local", () => ({
 
 import { metadata } from "../../app/(marketing)/page";
 import { metadata as metadataDoLayoutRaiz } from "../../app/layout";
+import { metadata as metadataDoGratis } from "../../app/(marketing)/(paginas)/gratis/page";
+import { metadata as metadataDosPrecos } from "../../app/(marketing)/(paginas)/precos/page";
+import { metadata as metadataDaPrivacidade } from "../../app/(marketing)/(paginas)/privacidade/page";
+import { metadata as metadataDosTermos } from "../../app/(marketing)/(paginas)/termos/page";
+import { paginasDoSitemap } from "../../src/site/rastreadores";
 
 // A home é a página que o buscador mostra pra quem procura agenda de
 // barbearia: título e descrição próprios, não os padrões do layout.
@@ -40,5 +45,30 @@ describe("layout raiz", () => {
     // Vale pra toda página sem descrição própria (o painel, por exemplo).
     expect(metadataDoLayoutRaiz.description).toMatch(/BarChop/);
     expect(metadataDoLayoutRaiz.description).toMatch(/barbearias/i);
+  });
+});
+
+// O canonical diz ao buscador qual é o endereço da página: o mesmo
+// conteúdo chega por outros hosts (o www antes do redirect, `gr.` e os
+// outros nomes reservados), e sem ele cada um conta como uma cópia. O
+// caminho é relativo: o metadataBase do layout do site o completa.
+describe("canonical das páginas do site", () => {
+  const PAGINAS = {
+    "/": metadata,
+    "/precos": metadataDosPrecos,
+    "/gratis": metadataDoGratis,
+    "/termos": metadataDosTermos,
+    "/privacidade": metadataDaPrivacidade,
+  };
+
+  it.each(Object.entries(PAGINAS))("%s aponta pra si mesma", (caminho, dados) => {
+    expect(dados.alternates?.canonical).toBe(caminho);
+  });
+
+  it("cobre as mesmas páginas do sitemap", () => {
+    const doSitemap = paginasDoSitemap("https://barchop.com.br").map(
+      ({ url }) => new URL(url).pathname
+    );
+    expect(Object.keys(PAGINAS).sort()).toEqual(doSitemap.sort());
   });
 });

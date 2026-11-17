@@ -1,5 +1,6 @@
 # Borda de produção (ADR-0002): cada barbearia em <slug>.barchop.com.br,
-# o painel em painel., o site na raiz e no www, a API em api.
+# o painel em painel., o site na raiz (o www redireciona pra ela, no
+# proxy.ts do web), a API em api.
 #
 # Os certificados saem pelo desafio DNS-01 na Cloudflare — o único que
 # emite coringa. O coringa não cobre a raiz: por isso barchop.com.br e

@@ -4,6 +4,7 @@ import { Termos } from "../../../../src/site/Termos";
 export const metadata: Metadata = {
   title: "Termos de uso — BarChop",
   description: "As regras de uso do BarChop, a agenda online para barbearias.",
+  alternates: { canonical: "/termos" },
 };
 
 export default function Pagina() {

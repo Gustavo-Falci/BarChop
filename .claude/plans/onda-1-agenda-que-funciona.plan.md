@@ -4,7 +4,34 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-15, noite — correções da auditoria de segurança prontas, nada enviado) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-17 — www redireciona pra raiz e canonical no site, no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `4c1d6cd`, #356). **Produção = `main` até o #356**, deploy do dono em 17/11, conferido.
+- **Auditoria de indexação (17/11):** o Googlebot já rastreava tudo — `robots.txt` libera o site e fecha só `/painel` e `/lembrete/`, o sitemap lista as 5 páginas, todas 200 sem `noindex`, `http` → `https` com 308. O que atrapalhava eram as cópias:
+  - `www.barchop.com.br` respondia **200** com o site inteiro;
+  - nenhuma página tinha canonical;
+  - `gr.barchop.com.br` (nome que não passa no formato de slug) mostra a home do site.
+- **#356 — `www` → raiz e canonical:**
+  - `src/tenant/rota.ts`: no `www`, o que seguiria pro site vira 308 pra raiz com caminho e query; painel e slug antigo vindos do `www` vão direto pro destino, num salto só. Sem mudança no Caddy (só o comentário do `Caddyfile`).
+  - `alternates.canonical` relativo nas 5 páginas (`/`, `/precos`, `/gratis`, `/termos`, `/privacidade`); o `metadataBase` do layout do site completa. Teste garante que a lista é a mesma do sitemap.
+  - Conferido em produção: `www/precos?x=1` → 308 `https://barchop.com.br/precos?x=1`; `www/painel` → 308 `https://painel.barchop.com.br/painel`; as 5 páginas e `gr.barchop.com.br` com canonical em `https://barchop.com.br/...`.
+  - Ficou de fora: `www/robots.txt`, `www/sitemap.xml` e `/_next/*` (fora do matcher do proxy) seguem 200 no `www`, não são cópia de página; ADRs 0002 e 0006 ainda falam do site "no www" (registro da época); canonical das páginas das barbearias.
+- **Pilha `seguranca-*` de 15/11 segue só no PC de casa:** este PC (trabalho) não tem os 14 branches nem a memória `auditoria-seguranca-15-11`. Ela parte da `main` `46c4a4d`; a `main` andou só com docs (#355) e o #356 (`rota.ts` e páginas do site) — conferir conflito ao subir.
+
+**Ao retomar:**
+1. **Google Search Console (só o dono):** verificar o domínio (registro TXT na Cloudflare), enviar `https://barchop.com.br/sitemap.xml` e, dias depois, olhar o relatório "Páginas" pra saber o que foi indexado.
+2. **Pilha de segurança** (no PC de casa): os passos do item 1 de 15/11, abaixo.
+3. **Pix de verdade da `jesus-barber`** e **`barbearia-teste`**: o dono ainda não disse como ficaram (itens 2 e 3 de 15/11, abaixo).
+4. **PR 5** (proporcional ao começar?), **home** (contador ~12/12) e a lista de 06/11 (**24/11**: sandbox do Asaas): como em 15/11.
+5. Opcionais de SEO: canonical nas páginas das barbearias; `gr.` e outros nomes fora do formato de slug redirecionarem pra raiz em vez de servir o site.
+
+**Gotchas de 17/11:**
+- Neste PC os testes da home não carregavam (`Failed to resolve import "lenis"`): o `node_modules` estava atrás do lockfile. `pnpm install --frozen-lockfile` na raiz do monorepo resolve sem mexer no lockfile.
+- A busca do Claude Code não é o Google: `site:barchop.com.br` vazio lá não diz nada sobre a indexação. Quem diz é o Search Console.
+- O repositório não tem CI rodando nos PRs (`statusCheckRollup` vazio): o CI vem na pilha de segurança.
+
+## RETOMAR AQUI (2026-11-15, noite — correções da auditoria de segurança prontas, nada enviado) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `46c4a4d`, #354). **Produção = `main` até o #353**, sem mudança desde a manhã de 15/11.

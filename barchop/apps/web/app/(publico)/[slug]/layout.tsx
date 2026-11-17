@@ -10,7 +10,7 @@ import { OuvinteDaPrevia } from "../../../src/fluxo/OuvinteDaPrevia";
 import { EntradaDaTela } from "../../../src/movimento/EntradaDaTela";
 import { ID_DA_PUBLICADA } from "../../../src/fluxo/previa";
 import { procurarBarbearia } from "../../../src/fluxo/slugAtual";
-import { destinoDoSlugAntigo } from "../../../src/tenant/endereco";
+import { canonicalDaBarbearia, destinoDoSlugAntigo } from "../../../src/tenant/endereco";
 import { ProvedorDoHost } from "../../../src/tenant/ProvedorDoHost";
 import { CABECALHO_DA_BARBEARIA, CABECALHO_DO_CAMINHO } from "../../../src/tenant/rota";
 import estilos from "./layout.module.css";
@@ -24,7 +24,15 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  return metadataDaBarbearia(slug);
+  const cabecalhos = await headers();
+  // Fora da busca à API: o canonical vale mesmo com ela fora do ar.
+  const canonical = canonicalDaBarbearia({
+    slug,
+    caminho: cabecalhos.get(CABECALHO_DO_CAMINHO) ?? `/${slug}`,
+    site: process.env.NEXT_PUBLIC_URL_DO_SITE,
+  });
+  const metadata = await metadataDaBarbearia(slug);
+  return canonical ? { ...metadata, alternates: { canonical } } : metadata;
 }
 
 // A barra da barbearia mora aqui, e não em cada tela, pelo mesmo motivo

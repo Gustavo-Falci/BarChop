@@ -107,12 +107,38 @@ describe("decidirRota", () => {
     it("a raiz, os reservados e o que não é slug ficam pro site", () => {
       expect(decidir("barchop.com.br", "/")).toEqual({ tipo: "seguir" });
       expect(decidir("barchop.com.br", "/precos")).toEqual({ tipo: "seguir" });
-      expect(decidir("www.barchop.com.br", "/Nao_E_Slug")).toEqual({ tipo: "seguir" });
+      expect(decidir("barchop.com.br", "/Nao_E_Slug")).toEqual({ tipo: "seguir" });
     });
 
     it("o /llms.txt fica pro site: o ponto não passa no formato de slug", () => {
       expect(decidir("barchop.com.br", "/llms.txt")).toEqual({ tipo: "seguir" });
-      expect(decidir("www.barchop.com.br", "/llms.txt")).toEqual({ tipo: "seguir" });
+    });
+
+    it("o www vai pra raiz, com o caminho e a query", () => {
+      // Uma cópia só do site pro buscador: o www não serve página.
+      expect(decidir("www.barchop.com.br", "/")).toEqual({
+        tipo: "redirecionar",
+        url: "https://barchop.com.br/",
+        status: 308,
+      });
+      expect(decidir("www.barchop.com.br", "/precos", "?plano=anual")).toEqual({
+        tipo: "redirecionar",
+        url: "https://barchop.com.br/precos?plano=anual",
+        status: 308,
+      });
+      expect(decidir("WWW.barchop.com.br", "/Nao_E_Slug")).toEqual({
+        tipo: "redirecionar",
+        url: "https://barchop.com.br/Nao_E_Slug",
+        status: 308,
+      });
+    });
+
+    it("o www vai direto pro painel, sem passar pela raiz", () => {
+      expect(decidir("www.barchop.com.br", "/painel/agenda")).toEqual({
+        tipo: "redirecionar",
+        url: "https://painel.barchop.com.br/painel/agenda",
+        status: 308,
+      });
     });
 
     it("monta o redirect pela config, nunca pelo host que chegou", () => {

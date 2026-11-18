@@ -783,6 +783,9 @@ describe("a quantidade na Stripe acompanha a equipe", () => {
   });
 });
 
+// Sem cobrança, a tela não mostra valor nem forma.
+const NAO_COBRA = { cobra: false, forma: null, valorCentavos: 0, cartaoFinal: null, ate: null };
+
 describe("GET /equipe/previa-da-inclusao", () => {
   function previa(app: App, token: string) {
     return app.inject({ method: "GET", url: "/equipe/previa-da-inclusao", headers: auth(token) });
@@ -799,7 +802,13 @@ describe("GET /equipe/previa-da-inclusao", () => {
     const resposta = await previa(app, dono.token);
 
     expect(resposta.statusCode).toBe(200);
-    expect(resposta.json()).toEqual({ cobra: true, valorCentavos: 1234, cartaoFinal: "4242" });
+    expect(resposta.json()).toEqual({
+      cobra: true,
+      forma: "cartao",
+      valorCentavos: 1234,
+      cartaoFinal: "4242",
+      ate: (await lerLinha(dono.barbeariaId)).periodoTerminaEm!.toISOString(),
+    });
     expect(cobranca.previas).toEqual([{ assinaturaId: "sub_1", pagos: 1, novo: 2 }]);
     await app.close();
   });
@@ -808,13 +817,13 @@ describe("GET /equipe/previa-da-inclusao", () => {
     const { app, cobranca } = montar();
     const dono = await criarBarbeariaComToken(app);
 
-    expect((await previa(app, dono.token)).json()).toEqual({ cobra: false, valorCentavos: 0, cartaoFinal: null });
+    expect((await previa(app, dono.token)).json()).toEqual(NAO_COBRA);
 
     const sub = assinaturaNaStripe(dono.barbeariaId, { quantidade: 2, chave: "completo_mensal" });
     cobranca.assinaturas.set(sub.id, sub);
     await webhook(app, "customer.subscription.created", eventoDaAssinatura(sub));
 
-    expect((await previa(app, dono.token)).json()).toEqual({ cobra: false, valorCentavos: 0, cartaoFinal: null });
+    expect((await previa(app, dono.token)).json()).toEqual(NAO_COBRA);
     expect(cobranca.previas).toEqual([]);
     await app.close();
   });

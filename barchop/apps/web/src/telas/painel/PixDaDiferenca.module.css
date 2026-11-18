@@ -1,0 +1,16 @@
+/* Uma coluna só, estreita: é um passo de pagar, lido no celular entre
+   um corte e outro (canvas aprovado em 18/11). */
+.pagina {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espaco-lg);
+  align-content: start;
+  max-width: 560px;
+}
+
+/* `--cor-ink-soft`: é texto de leitura, e o muted não passa 4.5:1. */
+.apoio {
+  margin: 0;
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}

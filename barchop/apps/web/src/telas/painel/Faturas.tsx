@@ -990,7 +990,9 @@ function PlanoAtual({ resumo }: { resumo: ResumoDaAssinatura }) {
   );
 }
 
-function BotaoDoPortal({ texto, variante }: { texto: string; variante?: "contorno" }) {
+// Exportado: a recusa do cartão no convite e no reativar (plano
+// profissional-novo-pago) leva ao mesmo Portal, pra trocar o cartão.
+export function BotaoDoPortal({ texto, variante }: { texto: string; variante?: "contorno" }) {
   const api = useApiDoPainel();
   const [abrindo, setAbrindo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);

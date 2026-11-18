@@ -305,6 +305,19 @@ export interface EstadoFalso {
   // Os usos do ciclo, por `${assinaturaId}:${servicoId}`. O dublê não
   // conta os atendimentos pelo plano: a semente diz quantos.
   usosNoCiclo?: Record<string, number>;
+  // Profissional novo no meio do período pago (plano
+  // profissional-novo-pago). Com semente, todo profissional a mais
+  // (convite ou reativar, fora a recepção) passa das vagas pagas: no
+  // cartão entra cobrando (ou 402 com `recusa`); no Pix, aguarda o Pix da
+  // diferença, de `valorCentavos` por pessoa até `ate`. Sem semente,
+  // incluir não cobra, como no teste e no Grátis.
+  vagaCobrada?: {
+    forma: "cartao" | "pix";
+    valorCentavos: number;
+    cartaoFinal: string | null;
+    ate: string;
+    recusa?: boolean;
+  };
 }
 
 const FIM_DO_TESTE_PADRAO = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
@@ -535,6 +548,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     pagamentoDoLink: semente.pagamentoDoLink ?? "pago",
     cpfDoCliente: semente.cpfDoCliente ?? null,
     usosNoCiclo: { ...(semente.usosNoCiclo ?? {}) },
+    vagaCobrada: semente.vagaCobrada ? { ...semente.vagaCobrada } : undefined,
   };
 
   // O pedido como o dono o vê: sem a barbearia, que é a dele.
@@ -727,6 +741,52 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     estado.perfil = {
       ...estado.perfil,
       barbeiros: estado.perfil.barbeiros.map((b) => (b.id === id ? { ...b, fotoUrl } : b)),
+    };
+  }
+
+  // A vaga a mais (plano profissional-novo-pago): a recepção não ocupa
+  // vaga; no cartão cobra na hora (ou recusa sem mudar nada); no Pix,
+  // quem entra aguarda o Pix da diferença.
+  function cobrarVaga(papel: PapelMembro): "entra" | "aguarda" {
+    const vaga = estado.vagaCobrada;
+    if (!vaga || papel === "recepcao") return "entra";
+    if (vaga.forma === "pix") return "aguarda";
+    if (vaga.recusa) {
+      throw new ErroDaApi(
+        402,
+        "cartao_recusado",
+        "o cartão recusou a cobrança: atualize o cartão em Gerenciar assinatura e tente de novo"
+      );
+    }
+    return "entra";
+  }
+
+  function aguardandoPagamento(): MembroDaEquipe[] {
+    return equipe().filter((m) => m.aguardaPagamento);
+  }
+
+  // A cotação do Pix da diferença, como a API: um QR pra todos que
+  // aguardam, de hoje até o fim do período pago.
+  function cotarDiferenca(): CotacaoDoPix {
+    exigirDono();
+    exigirPixLigado();
+    const vaga = estado.vagaCobrada;
+    const quantos = aguardandoPagamento().length;
+    if (!vaga || vaga.forma !== "pix") {
+      throw new ErroDaApi(409, "sem_pix_vigente", "o Pix da diferença é pra quem paga o período por Pix: este não está valendo");
+    }
+    if (quantos === 0) {
+      throw new ErroDaApi(409, "nada_a_pagar", "ninguém aguarda pagamento: a equipe cabe nas vagas pagas");
+    }
+    const valorCentavos = vaga.valorCentavos * quantos;
+    const identificador = `DIF${quantos}`;
+    return {
+      valorCentavos,
+      periodoComecaEm: inicioDoDiaEmSaoPaulo(new Date()).toISOString(),
+      periodoTerminaEm: vaga.ate,
+      identificador,
+      copiaECola: brCodeDoPix({ chave: "pix@exemplo.com", nome: "BarChop", cidade: "Sao Paulo", valorCentavos, identificador }),
+      recebedor: { nome: "BarChop", chaveMascarada: "p•••@exemplo.com" },
     };
   }
 
@@ -1818,6 +1878,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         if (equipe().some((m) => m.email === email)) {
           throw new ErroDaApi(409, "email_em_uso", "esse e-mail já tem conta no BarChop");
         }
+        const vaga = cobrarVaga(novo.papel);
         const membro: MembroDaEquipe = {
           id: `m${equipe().length + 1}`,
           nome: novo.nome,
@@ -1825,11 +1886,11 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           telefone: novo.telefone ?? null,
           papel: novo.papel,
           atende: novo.atende ?? novo.papel !== "recepcao",
-          ativo: true,
+          ativo: vaga === "entra",
           fotoUrl: null,
           convitePendente: true,
           podeVenderPlanos: false,
-          aguardaPagamento: false,
+          aguardaPagamento: vaga === "aguarda",
         };
         equipe().push(membro);
         return { ...membro };
@@ -1865,8 +1926,75 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
             }
           }
         }
+        // Quem aguarda entra quando paga, não por aqui; reativar ocupa
+        // uma vaga, como o convite.
+        if (alvo.aguardaPagamento && edicao.ativo === true) {
+          throw new ErroDaApi(
+            409,
+            "aguardando_pagamento",
+            "este membro aguarda o pagamento da vaga: ele entra quando o pagamento for feito"
+          );
+        }
+        if (!alvo.ativo && edicao.ativo === true && cobrarVaga(edicao.papel ?? alvo.papel) === "aguarda") {
+          Object.assign(alvo, edicao, { ativo: false, aguardaPagamento: true });
+          return { ...alvo };
+        }
         Object.assign(alvo, edicao);
         return { ...alvo };
+      },
+      async previaDaInclusao() {
+        exigirDono();
+        const vaga = estado.vagaCobrada;
+        if (!vaga) return { cobra: false, forma: null, valorCentavos: 0, cartaoFinal: null, ate: null };
+        return {
+          cobra: true,
+          forma: vaga.forma,
+          valorCentavos: vaga.valorCentavos,
+          cartaoFinal: vaga.forma === "cartao" ? vaga.cartaoFinal : null,
+          ate: vaga.ate,
+        };
+      },
+      async desistirDoMembro(id: string) {
+        exigirDono();
+        const alvo = membroOu404(id);
+        if (!alvo.aguardaPagamento) throw new ErroDaApi(404, "nao_encontrado", "recurso não encontrado");
+        // O convidado que nunca entrou some; quem já tinha conta segue
+        // inativo, com o histórico.
+        if (alvo.convitePendente) {
+          estado.equipe = equipe().filter((m) => m.id !== id);
+        } else {
+          alvo.aguardaPagamento = false;
+        }
+      },
+      async cotacaoDaDiferenca() {
+        return cotarDiferenca();
+      },
+      async jaPagueiADiferenca() {
+        const cotacao = cotarDiferenca();
+        if (estado.pagamentosPix!.some((p) => p.situacao === "aguardando")) {
+          throw new ErroDaApi(409, "pix_em_conferencia", "já há um Pix em conferência: espere o suporte ou desfaça");
+        }
+        const liberados = aguardandoPagamento();
+        for (const membro of liberados) Object.assign(membro, { ativo: true, aguardaPagamento: false });
+        const assinatura = estado.assinatura!;
+        const pagamento: PagamentoPix = {
+          id: `pix-${estado.pagamentosPix!.length + 1}`,
+          tipo: "diferenca",
+          identificador: cotacao.identificador,
+          plano: assinatura.plano === "gratis" ? "essencial" : assinatura.plano,
+          ciclo: assinatura.ciclo,
+          profissionais: equipe().filter((m) => m.ativo && m.papel !== "recepcao").length,
+          valorCentavos: cotacao.valorCentavos,
+          periodoComecaEm: cotacao.periodoComecaEm,
+          periodoTerminaEm: cotacao.periodoTerminaEm,
+          situacao: "aguardando",
+          resposta: null,
+          criadoEm: new Date().toISOString(),
+          decididoEm: null,
+          copiaECola: cotacao.copiaECola,
+        };
+        estado.pagamentosPix!.push(pagamento);
+        return { ...pagamento };
       },
       async reenviarConvite(id: string) {
         const alvo = membroOu404(id);

@@ -1,0 +1,19 @@
+/* O custo da vaga a mais, logo acima do botão que cobra: texto, sem
+   caixa (canvas aprovado em 18/11). */
+.custo {
+  display: grid;
+  gap: var(--espaco-xs);
+}
+
+.valor {
+  font-family: var(--fonte-display), system-ui, sans-serif;
+  font-size: var(--texto-xl);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* `--cor-ink-soft`: é texto de leitura, e o muted não passa 4.5:1. */
+.apoio {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}

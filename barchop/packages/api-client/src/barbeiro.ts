@@ -52,6 +52,7 @@ import type {
   ProvedorDePagamento,
   CotacaoDoPix,
   PagamentoPix,
+  PreviaDaInclusao,
 } from "@barchop/types";
 import type { Requisicao } from "./requisicao";
 
@@ -257,6 +258,20 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     atualizarMembro(id: string, edicao: EdicaoDoMembro): Promise<MembroDaEquipe> {
       return requisicao(`/equipe/${id}`, { metodo: "PATCH", corpo: edicao, comToken: true });
+    },
+
+    // Profissional novo no meio do período pago (plano
+    // profissional-novo-pago): quanto custa incluir mais um agora. No
+    // cartão, o convite e o reativar cobram na hora (402
+    // `cartao_recusado` se o banco recusar); no Pix, quem entra aguarda.
+    previaDaInclusao(): Promise<PreviaDaInclusao> {
+      return requisicao("/equipe/previa-da-inclusao", { comToken: true });
+    },
+
+    // "Desistir" de quem aguarda pagamento: o convidado que nunca entrou
+    // some; quem já tinha conta volta a inativo.
+    async desistirDoMembro(id: string): Promise<void> {
+      await requisicao(`/equipe/${id}/aguardando`, { metodo: "DELETE", comToken: true });
     },
 
     // A equipe inteira, na ordem da página: faltou ou sobrou alguém, 400.
@@ -702,6 +717,18 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     // os desfeitos.
     pagamentosDoPix(): Promise<PagamentoPix[]> {
       return requisicao("/barbearias/me/assinatura/pix/pagamentos", { comToken: true });
+    },
+
+    // O Pix da diferença: um QR pra todos que aguardam pagamento, até o
+    // fim do período já pago. 409 `nada_a_pagar` sem ninguém aguardando.
+    cotacaoDaDiferenca(): Promise<CotacaoDoPix> {
+      return requisicao("/barbearias/me/assinatura/pix/diferenca", { comToken: true });
+    },
+
+    // "Já paguei" da diferença: quem aguardava entra na hora e recebe o
+    // convite; o Suporte confere depois.
+    jaPagueiADiferenca(): Promise<PagamentoPix> {
+      return requisicao("/barbearias/me/assinatura/pix/diferenca", { metodo: "POST", comToken: true });
     },
 
     async enviarFotoDoMembro(id: string, arquivo: Blob): Promise<string> {

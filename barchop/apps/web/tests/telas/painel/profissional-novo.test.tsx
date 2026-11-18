@@ -56,7 +56,7 @@ describe("convidar com o plano pago no cartão", () => {
 
     expect(await screen.findByText("R$ 8,50 agora")).toBeInTheDocument();
     expect(screen.getByText(/no cartão final 4242, até 05\/12/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Enviar convite e cobrar R$ 8,50" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Enviar convite e cobrar R\$\s8,50$/ })).toBeInTheDocument();
   });
 
   it("a recepção não ocupa vaga: some o valor e o botão volta ao de sempre", async () => {
@@ -80,7 +80,7 @@ describe("convidar com o plano pago no cartão", () => {
     montarPainel(<CadastroDeMembro />, criarApiClientFalso({ vagaCobrada: CARTAO }));
     await preencherConvite();
 
-    await userEvent.click(await screen.findByRole("button", { name: "Enviar convite e cobrar R$ 8,50" }));
+    await userEvent.click(await screen.findByRole("button", { name: /^Enviar convite e cobrar R\$\s8,50$/ }));
 
     await waitFor(() => expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/equipe"));
   });
@@ -89,7 +89,7 @@ describe("convidar com o plano pago no cartão", () => {
     montarPainel(<CadastroDeMembro />, criarApiClientFalso({ vagaCobrada: { ...CARTAO, recusa: true } }));
     await preencherConvite();
 
-    await userEvent.click(await screen.findByRole("button", { name: "Enviar convite e cobrar R$ 8,50" }));
+    await userEvent.click(await screen.findByRole("button", { name: /^Enviar convite e cobrar R\$\s8,50$/ }));
 
     expect(
       await screen.findByText("O banco recusou o cartão final 4242. O convite não foi enviado e nada foi cobrado.")
@@ -128,7 +128,7 @@ describe("reativar com o plano pago", () => {
     montarPainel(<CadastroDeMembro />, falso);
 
     expect(await screen.findByText("R$ 8,50 agora")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Reativar e cobrar R$ 8,50" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Reativar e cobrar R\$\s8,50$/ }));
 
     await waitFor(() => expect(atualizar).toHaveBeenCalledWith("m9", { ativo: true }));
   });
@@ -136,7 +136,7 @@ describe("reativar com o plano pago", () => {
   it("cartão recusado: o aviso fica na situação e o membro segue inativo", async () => {
     montarPainel(<CadastroDeMembro />, comInativo({ ...CARTAO, recusa: true }));
 
-    await userEvent.click(await screen.findByRole("button", { name: "Reativar e cobrar R$ 8,50" }));
+    await userEvent.click(await screen.findByRole("button", { name: /^Reativar e cobrar R\$\s8,50$/ }));
 
     expect(
       await screen.findByText("O banco recusou o cartão final 4242. Marcos não foi reativado e nada foi cobrado.")
@@ -180,7 +180,7 @@ describe("a equipe com quem aguarda o Pix", () => {
     montarPainel(<ListaDaEquipe />, comAguardando(aguardando("m8", "Joana"), aguardando("m9", "Bruno")));
 
     expect(await screen.findByText("Joana e Bruno aguardam o Pix da diferença")).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole("button", { name: "Pagar R$ 17,00 no Pix" }));
+    await userEvent.click(await screen.findByRole("button", { name: /^Pagar R\$\s17,00 no Pix$/ }));
 
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/equipe/pix");
   });
@@ -204,7 +204,7 @@ describe("a equipe com quem aguarda o Pix", () => {
     const joana = (await screen.findByText("Joana")).closest("tr") as HTMLElement;
     expect(within(joana).getByText("Aguardando pagamento")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("radio", { name: /aguardam pagamento/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^aguardam pagamento/i }));
     expect(screen.queryByText("Rafael")).not.toBeInTheDocument();
     expect(screen.getByText("Joana")).toBeInTheDocument();
   });
@@ -228,9 +228,9 @@ describe("o Pix da diferença", () => {
     falso.estado.equipe!.push(aguardando("m8", "Joana"));
     montarPainel(<PixDaDiferenca />, falso);
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Pague a vaga da Joana" })).toBeInTheDocument();
-    expect(screen.getByTestId("valor-do-pix")).toHaveTextContent("R$ 8,50");
-    expect(screen.getByRole("img", { name: "QR do Pix de R$ 8,50" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Pague a vaga de Joana" })).toBeInTheDocument();
+    expect(await screen.findByTestId("valor-do-pix")).toHaveTextContent("R$ 8,50");
+    expect(screen.getByRole("img", { name: /^QR do Pix de R\$\s8,50$/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Pagar depois" })).toHaveAttribute("href", "/painel/equipe");
   });
 

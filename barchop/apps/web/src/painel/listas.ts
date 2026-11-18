@@ -85,9 +85,13 @@ export function resumoDoGrupo(servicos: ServicoSerializado[]): string {
 
 // Uma situação por membro, na ordem do que pesa mais: quem foi
 // desativado não entra, e um convite pendente dele não é pendência.
-export type SituacaoDoMembro = "ativo" | "convite" | "inativo";
+// `aguardando`: passou das vagas pagas no Pix e entra depois do Pix da
+// diferença (plano profissional-novo-pago). Fica inativo até lá, mas não
+// saiu: pede ação, como o convite.
+export type SituacaoDoMembro = "ativo" | "convite" | "inativo" | "aguardando";
 
 export function situacaoDoMembro(membro: MembroDaEquipe): SituacaoDoMembro {
+  if (membro.aguardaPagamento) return "aguardando";
   if (!membro.ativo) return "inativo";
   return membro.convitePendente ? "convite" : "ativo";
 }

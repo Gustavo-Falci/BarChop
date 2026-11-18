@@ -191,6 +191,23 @@ const PASSOS = [
   "Volte aqui e toque em Já paguei.",
 ];
 
+// Exportado: o Pix da diferença (plano profissional-novo-pago) mostra os
+// mesmos passos.
+export function PassosDoPix() {
+  return (
+    <ol className={estilos.passosDoPix}>
+      {PASSOS.map((passo, indice) => (
+        <li key={passo}>
+          <span className={estilos.numeroDoPasso} aria-hidden="true">
+            {indice + 1}
+          </span>
+          <span>{passo}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 // "Já paguei": o pedido vai pra fila do Suporte e o plano vale na hora.
 // A API recalcula o valor e o identificador; a tela só manda o pedido.
 export function JaPaguei({
@@ -227,18 +244,7 @@ export function JaPaguei({
 
   return (
     <>
-      {comPassos ? (
-        <ol className={estilos.passosDoPix}>
-          {PASSOS.map((passo, indice) => (
-            <li key={passo}>
-              <span className={estilos.numeroDoPasso} aria-hidden="true">
-                {indice + 1}
-              </span>
-              <span>{passo}</span>
-            </li>
-          ))}
-        </ol>
-      ) : null}
+      {comPassos ? <PassosDoPix /> : null}
       {erro ? <Aviso>{erro}</Aviso> : null}
       <Botao onClick={pagar} carregando={pagando}>
         Já paguei

@@ -1,5 +1,6 @@
 import { Prisma, prisma, type PapelMembro } from "@barchop/database";
 import { normalizarEmail, valorDaDiferenca } from "@barchop/formato";
+import type { PreviaDaInclusao } from "@barchop/types";
 import {
   ajustarQuantidade,
   cobrarInclusao,
@@ -304,20 +305,23 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
   // custa a vaga a mais agora. No cartão, o que a Stripe cobra e em qual
   // cartão; no Pix, o Pix da diferença. Sem plano pago, ou dentro das
   // vagas pagas, não cobra nada.
-  app.get("/equipe/previa-da-inclusao", { onRequest: exigirPapel("dono") }, async (request) => {
+  // `forma` e `ate` (o fim do período pago) são o que a tela escreve
+  // junto do valor: "no cartão final 4242, até 05/12".
+  app.get("/equipe/previa-da-inclusao", { onRequest: exigirPapel("dono") }, async (request): Promise<PreviaDaInclusao> => {
     const agora = new Date();
-    const inclusao = await planejarInclusao(prisma, request.user.barbeariaId, agora);
-    if (!inclusaoCobra(inclusao)) return { cobra: false, valorCentavos: 0, cartaoFinal: null };
+    const { barbeariaId } = request.user;
+    const inclusao = await planejarInclusao(prisma, barbeariaId, agora);
+    if (!inclusaoCobra(inclusao)) return { cobra: false, forma: null, valorCentavos: 0, cartaoFinal: null, ate: null };
     if (inclusao.forma === "pix") {
       const extras = inclusao.novo - inclusao.pagos;
       const valorCentavos = valorDaDiferenca({ plano: inclusao.plano, ciclo: inclusao.ciclo, extras, agora, fim: inclusao.fim });
-      return { cobra: true, valorCentavos, cartaoFinal: null };
+      return { cobra: true, forma: "pix", valorCentavos, cartaoFinal: null, ate: inclusao.fim.toISOString() };
     }
-    const previa = await app.cobranca.previaDaInclusao(inclusao.assinaturaId, {
-      pagos: inclusao.pagos,
-      novo: inclusao.novo,
-    });
-    return { cobra: true, ...previa };
+    const [previa, linha] = await Promise.all([
+      app.cobranca.previaDaInclusao(inclusao.assinaturaId, { pagos: inclusao.pagos, novo: inclusao.novo }),
+      prisma.assinatura.findUnique({ where: { barbeariaId }, select: { periodoTerminaEm: true } }),
+    ]);
+    return { cobra: true, forma: "cartao", ...previa, ate: linha?.periodoTerminaEm?.toISOString() ?? null };
   });
 
   // A lista inteira, de uma vez (lib/ordem.ts), com os inativos e os

@@ -66,6 +66,7 @@ const membro = (
   fotoUrl: null,
   convitePendente: false,
   podeVenderPlanos: false,
+  aguardaPagamento: false,
   ...extra,
 });
 

@@ -140,6 +140,53 @@ describe("na equipe", () => {
     await app.close();
   });
 
+  // Plano profissional-novo-pago, PR 1: o membro aguardando pagamento
+  // (inativo até pagar) já conta, porque é por ele que se paga.
+  it("quem aguarda pagamento ocupa a vaga", async () => {
+    const app = buildApp();
+    const { token, barbeariaId } = await criarBarbeariaComToken(app);
+    await prisma.barbeiro.create({
+      data: { barbeariaId, nome: "Aguardando", email: "aguardando@exemplo.com", ativo: false, aguardaPagamento: true },
+    });
+    await definirPlano(barbeariaId, "ativa", "essencial");
+
+    const terceiro = await incluir(app, token);
+
+    expect(terceiro.statusCode).toBe(422);
+    expect(terceiro.json().erro).toBe("limite_do_plano");
+    await app.close();
+  });
+
+  it("a equipe marca quem aguarda pagamento, e o resumo da assinatura o conta", async () => {
+    const app = buildApp();
+    const { token, barbeariaId, barbeiroId } = await criarBarbeariaComToken(app);
+    const aguardando = await prisma.barbeiro.create({
+      data: { barbeariaId, nome: "Aguardando", email: "aguardando@exemplo.com", ativo: false, aguardaPagamento: true },
+    });
+    await definirPlano(barbeariaId, "ativa", "completo");
+
+    const equipe = (await app.inject({ method: "GET", url: "/equipe", headers: auth(token) })).json().membros;
+    const resumo = (await app.inject({ method: "GET", url: "/barbearias/me/assinatura", headers: auth(token) })).json();
+
+    expect(equipe.find((m: { id: string }) => m.id === aguardando.id)).toMatchObject({
+      ativo: false,
+      aguardaPagamento: true,
+    });
+    expect(equipe.find((m: { id: string }) => m.id === barbeiroId)).toMatchObject({ aguardaPagamento: false });
+    expect(resumo.profissionais).toBe(2);
+    await app.close();
+  });
+
+  it("o banco não aceita membro ativo e aguardando ao mesmo tempo", async () => {
+    const { barbeariaId } = await criarBarbeariaComToken(buildApp());
+
+    await expect(
+      prisma.barbeiro.create({
+        data: { barbeariaId, nome: "Os dois", email: "os-dois@exemplo.com", ativo: true, aguardaPagamento: true },
+      })
+    ).rejects.toThrow(/barbeiro_aguarda_pagamento_inativo_check/);
+  });
+
   it("mudanças que não aumentam a conta passam, mesmo acima do limite", async () => {
     const app = buildApp();
     const { token, barbeariaId } = await criarBarbeariaComToken(app);

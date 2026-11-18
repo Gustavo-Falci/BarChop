@@ -98,6 +98,7 @@ describe("mudar horário pelo detalhe", () => {
       fotoUrl: null,
       convitePendente: false,
       podeVenderPlanos: false,
+      aguardaPagamento: false,
     });
     montarPainel(<DetalheDoAgendamento />, dono);
 

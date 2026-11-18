@@ -30,7 +30,7 @@ function marcado(id: string, horaInicio: string, horaFim: string, extra: { statu
 }
 
 function membro(id: string, nome: string, papel: MembroDaEquipe["papel"]): MembroDaEquipe {
-  return { id, nome, email: null, telefone: null, papel, atende: true, ativo: true, fotoUrl: null, convitePendente: false, podeVenderPlanos: false };
+  return { id, nome, email: null, telefone: null, papel, atende: true, ativo: true, fotoUrl: null, convitePendente: false, podeVenderPlanos: false, aguardaPagamento: false };
 }
 
 function semear(agendamentos = [marcado("a1", "11:00", "11:30")]) {

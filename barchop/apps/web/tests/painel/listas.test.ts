@@ -134,6 +134,7 @@ describe("situação do membro", () => {
     fotoUrl: null,
     convitePendente,
     podeVenderPlanos: false,
+    aguardaPagamento: false,
   });
 
   it("ativo que já entrou", () => {

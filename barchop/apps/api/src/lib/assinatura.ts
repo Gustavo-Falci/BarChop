@@ -34,12 +34,18 @@ export function diasDeTesteRestantes(testeTerminaEm: Date, agora: Date): number 
 
 // Quem conta no limite e no preço: membro ativo que é dono ou
 // profissional. A recepção não conta (decisão do dono, 13/10/2026).
+// Quem aguarda pagamento também conta: inativo até pagar, mas é por ele
+// que se paga (plano profissional-novo-pago).
 export function contarProfissionais(
   barbeariaId: string,
   db: Prisma.TransactionClient = prisma
 ): Promise<number> {
   return db.barbeiro.count({
-    where: { barbeariaId, ativo: true, papel: { in: ["dono", "profissional"] } },
+    where: {
+      barbeariaId,
+      OR: [{ ativo: true }, { aguardaPagamento: true }],
+      papel: { in: ["dono", "profissional"] },
+    },
   });
 }
 

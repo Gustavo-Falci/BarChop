@@ -49,6 +49,7 @@ describe("dublê — divisão e profissional do cliente", () => {
     fotoUrl: null,
     convitePendente: false,
     podeVenderPlanos: false,
+    aguardaPagamento: false,
   });
 
   function semear(papel: "dono" | "profissional" = "dono") {

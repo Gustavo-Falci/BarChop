@@ -152,6 +152,7 @@ describe("o profissional do cliente", () => {
     fotoUrl: null,
     convitePendente: false,
     podeVenderPlanos: false,
+    aguardaPagamento: false,
   });
 
   function semearComEquipe(papel: "dono" | "profissional", donos: Record<string, string> = { c1: "bb0" }) {

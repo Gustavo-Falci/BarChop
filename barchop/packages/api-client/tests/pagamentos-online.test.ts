@@ -141,6 +141,7 @@ const dono: MembroDaEquipe = {
   fotoUrl: null,
   convitePendente: false,
   podeVenderPlanos: false,
+  aguardaPagamento: false,
 };
 const lucas: MembroDaEquipe = { ...dono, id: "bb2", nome: "Lucas", papel: "profissional", podeVenderPlanos: true };
 

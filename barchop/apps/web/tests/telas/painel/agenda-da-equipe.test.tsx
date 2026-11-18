@@ -38,6 +38,7 @@ function semear(papel?: "dono" | "profissional" | "recepcao") {
     fotoUrl: null,
     convitePendente: false,
     podeVenderPlanos: false,
+    aguardaPagamento: false,
   });
   return falso;
 }
@@ -297,6 +298,7 @@ describe("semana por profissional", () => {
       fotoUrl: null,
       convitePendente: false,
       podeVenderPlanos: false,
+      aguardaPagamento: false,
     });
     // Pausa só do Rafael, na terça das 14 às 15.
     falso.estado.jornadas!.bb1 = [0, 1, 2, 3, 4, 5, 6].map((diaSemana) => ({
@@ -406,6 +408,7 @@ describe("semana por profissional", () => {
         fotoUrl: null,
         convitePendente: false,
         podeVenderPlanos: false,
+        aguardaPagamento: false,
       });
       return falso;
     }

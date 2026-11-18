@@ -62,6 +62,7 @@ describe("pausas da equipe em Horários", () => {
       fotoUrl: null,
       convitePendente: false,
       podeVenderPlanos: false,
+      aguardaPagamento: false,
     });
     montarPainel(<HorariosDaBarbearia />, falso);
 

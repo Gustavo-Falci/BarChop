@@ -542,6 +542,9 @@ export interface MembroDaEquipe {
   // O dono liberou o membro pra vender planos ao cliente (Onda 2,
   // marco 3). O dono vende sem ela.
   podeVenderPlanos: boolean;
+  // Incluído ou reativado acima do contratado, inativo até o pagamento
+  // (plano profissional-novo-pago).
+  aguardaPagamento: boolean;
 }
 
 // GET /barbearias/me/ocupacao?data= (painel v2, marco 4). Minutos de

@@ -45,6 +45,7 @@ const ANA = {
   fotoUrl: null,
   convitePendente: true,
   podeVenderPlanos: false,
+  aguardaPagamento: false,
 };
 
 describe("api da equipe", () => {

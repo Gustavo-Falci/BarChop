@@ -6,6 +6,7 @@ import {
   fimDoPeriodoDoPix,
   inicioDoDiaEmSaoPaulo,
   planoEfetivo,
+  valorDaDiferenca,
 } from "../src";
 
 // O Pix do BarChop (plano pix-do-barchop, PR 1): o BR Code estático com
@@ -119,6 +120,57 @@ describe("período do Pix", () => {
   it("começar no meio do dia (fim do teste) mantém a hora", () => {
     expect(fimDoPeriodoDoPix(new Date("2026-11-15T14:43:00Z"), "mensal").toISOString()).toBe(
       "2026-12-15T14:43:00.000Z"
+    );
+  });
+});
+
+// Profissional novo no meio do período pago no Pix (plano
+// profissional-novo-pago, PR 1): o extra do ciclo pelos dias que faltam,
+// contando hoje inteiro, sobre 30 dias (mensal) ou 365 (anual).
+describe("valorDaDiferenca", () => {
+  // 18/11, 10:00 em SP. O dia começa em 18/11 03:00 UTC.
+  const agora = new Date("2026-11-18T13:00:00Z");
+  const daqui = (dias: number) => new Date(Date.parse("2026-11-18T03:00:00Z") + dias * 24 * 60 * 60 * 1000);
+
+  it("metade do mês: metade do extra", () => {
+    expect(valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 1, agora, fim: daqui(15) })).toBe(1000);
+    expect(valorDaDiferenca({ plano: "essencial", ciclo: "mensal", extras: 1, agora, fim: daqui(15) })).toBe(750);
+  });
+
+  it("o período inteiro: o extra cheio", () => {
+    expect(valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 1, agora, fim: daqui(30) })).toBe(2000);
+  });
+
+  it("cada profissional a mais soma um extra", () => {
+    expect(valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 2, agora, fim: daqui(15) })).toBe(2000);
+  });
+
+  it("hoje conta inteiro, e o centavo arredonda pra cima", () => {
+    // Termina hoje às 23:00 em SP: falta 1 dia; 2000 / 30 = 66,67.
+    const hojeANoite = new Date("2026-11-19T02:00:00Z");
+    expect(valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 1, agora, fim: hojeANoite })).toBe(67);
+  });
+
+  it("anual: o extra do ano sobre 365 dias", () => {
+    // 20000 × 100 / 365 = 5479,45.
+    expect(valorDaDiferenca({ plano: "completo", ciclo: "anual", extras: 1, agora, fim: daqui(100) })).toBe(5480);
+  });
+
+  it("fim no meio do dia (o do teste) conta o dia", () => {
+    const meioDoDia = new Date(daqui(2).getTime() + 11 * 60 * 60 * 1000);
+    expect(valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 1, agora, fim: meioDoDia })).toBe(200);
+  });
+
+  it("período já acabado não cobra nada", () => {
+    expect(valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 1, agora, fim: daqui(0) })).toBe(0);
+  });
+
+  it("extras precisa ser um inteiro a partir de 1", () => {
+    expect(() => valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 0, agora, fim: daqui(15) })).toThrow(
+      RangeError
+    );
+    expect(() => valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 1.5, agora, fim: daqui(15) })).toThrow(
+      RangeError
     );
   });
 });

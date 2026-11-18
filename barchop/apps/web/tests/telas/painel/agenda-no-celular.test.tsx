@@ -41,6 +41,7 @@ function semear(papel?: "dono" | "profissional" | "recepcao") {
     fotoUrl: null,
     convitePendente: false,
     podeVenderPlanos: false,
+    aguardaPagamento: false,
   });
   return falso;
 }

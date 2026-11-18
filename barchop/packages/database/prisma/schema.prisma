@@ -203,6 +203,9 @@ model PagamentoPix {
   antesForma             String    @map("antes_forma") @db.VarChar(10)
   antesPeriodoTerminaEm  DateTime? @map("antes_periodo_termina_em") @db.Timestamptz
   antesProfissionais     Int?      @map("antes_profissionais") @db.SmallInt
+  // `periodo` (paga um período) ou `diferenca` (profissional novo no
+  // meio do período; plano profissional-novo-pago). CHECK na migration.
+  tipo                   String    @default("periodo") @db.VarChar(10)
 
   barbearia Barbearia        @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   operador  OperadorSuporte? @relation(fields: [decididoPor], references: [id], onDelete: SetNull)
@@ -337,6 +340,11 @@ model Barbeiro {
   // O dono libera o membro pra vender planos ao cliente; o dono vende
   // sem ela (migration 20261026120000_planos_de_assinatura).
   podeVenderPlanos Boolean     @default(false) @map("pode_vender_planos")
+  // Incluído ou reativado acima do contratado, à espera do pagamento
+  // (plano profissional-novo-pago): fica inativo até pagar, mas já conta
+  // no plano. CHECK: nunca ativo e aguardando juntos (migration
+  // 20261118120000_profissional_aguardando).
+  aguardaPagamento Boolean     @default(false) @map("aguarda_pagamento")
 
   barbearia             Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   agendamentos          Agendamento[]

@@ -28,6 +28,7 @@ const gustavo: MembroDaEquipe = {
   fotoUrl: null,
   convitePendente: false,
   podeVenderPlanos: true,
+  aguardaPagamento: false,
 };
 
 const daCasa: PlanoDoPainel = {

@@ -227,6 +227,7 @@ function serializarMembro(membro: {
   fotoChave: string | null;
   senhaHash: string | null;
   podeVenderPlanos: boolean;
+  aguardaPagamento: boolean;
 },
 urlDaImagem: (chave: string) => string
 ) {
@@ -241,6 +242,7 @@ urlDaImagem: (chave: string) => string
     fotoUrl: membro.fotoChave ? urlDaImagem(membro.fotoChave) : null,
     convitePendente: membro.senhaHash === null,
     podeVenderPlanos: membro.podeVenderPlanos,
+    aguardaPagamento: membro.aguardaPagamento,
   };
 }
 

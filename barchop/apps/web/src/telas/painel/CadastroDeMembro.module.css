@@ -143,3 +143,11 @@
     flex: 1;
   }
 }
+
+/* A recusa do cartão (plano profissional-novo-pago): o aviso e o
+   caminho pra trocar o cartão, juntos. */
+.recusa {
+  display: grid;
+  gap: var(--espaco-sm);
+  justify-items: start;
+}

@@ -6,7 +6,7 @@ import type { ErroDaApi } from "@barchop/api-client";
 import { normalizarTelefoneObrigatorio, TelefoneInvalido } from "@barchop/formato";
 import type { PapelMembro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
-import { Botao } from "../../componentes/Botao";
+import { Botao, BotaoLink } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Campo } from "../../componentes/Campo";
 import { Chip } from "../../componentes/Chip";
@@ -25,6 +25,8 @@ import estilos from "./CadastroDeMembro.module.css";
 import { Abas } from "../../componentes/Abas";
 import { Carregando } from "../../componentes/Carregando";
 import { SeletorEmPilulas } from "../../componentes/SeletorEmPilulas";
+import { BotaoDoPortal } from "./Faturas";
+import { CustoDaVaga, rotuloQueCobra, textoDaRecusa, usePreviaDaInclusao } from "./VagaCobrada";
 
 // Os limites ESPELHAM o schema de apps/api/src/routers/equipe.ts — o
 // que passar daqui e a API recusar volta como 400 de ajv, numa frase
@@ -67,6 +69,9 @@ export function CadastroDeMembro() {
   // Não existe GET /equipe/:id: a lista basta, e traz os inativos.
   const equipe = useRequisicao(() => api.barbeiro.equipe(), []);
   const atual = id ? equipe.dados?.find((m) => m.id === id) : undefined;
+  // Quanto custa mais um profissional agora (plano profissional-novo-pago):
+  // o convite e o reativar dizem o valor antes de cobrar.
+  const previa = usePreviaDaInclusao(true);
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -94,6 +99,10 @@ export function CadastroDeMembro() {
   // O Reenviar e o Desativar giram sozinhos: com o Salvar na barra, os
   // dois ficam na tela juntos, e um `salvando` só girava os três.
   const [mexendo, setMexendo] = useState(false);
+  // O cartão recusou a vaga a mais: o aviso fica junto do botão que
+  // tentou, com o caminho pra trocar o cartão.
+  const [recusaNoConvite, setRecusaNoConvite] = useState<string | undefined>();
+  const [recusaNaSituacao, setRecusaNaSituacao] = useState<string | undefined>();
 
   // Sincronizado durante a renderização, como em CadastroDeServico (o
   // comentário longo de lá explica por que não `useEffect` nem booleano).
@@ -180,30 +189,37 @@ export function CadastroDeMembro() {
   async function salvar() {
     setAviso(undefined);
     setConfirmacao(undefined);
+    setRecusaNoConvite(undefined);
     const validado = validar();
     if (!validado) return;
 
     setSalvando(true);
     try {
       if (!id) {
-        await api.barbeiro.convidarMembro({
+        const convidado = await api.barbeiro.convidarMembro({
           nome: nome.trim(),
           email: email.trim(),
           papel,
           atende,
           ...(validado.telefone ? { telefone: validado.telefone } : {}),
         });
-        router.push("/painel/equipe");
+        // No Pix, o convidado aguarda: o próximo passo é pagar.
+        router.push(convidado.aguardaPagamento ? "/painel/equipe/pix" : "/painel/equipe");
         return;
       }
 
-      await api.barbeiro.atualizarMembro(id, {
+      const salvo = await api.barbeiro.atualizarMembro(id, {
         nome: nome.trim(),
         telefone: validado.telefone,
         papel,
         atende,
         podeVenderPlanos: podeVender,
       });
+      // Saiu da recepção no Pix: passou das vagas pagas e aguarda.
+      if (salvo.aguardaPagamento) {
+        router.push("/painel/equipe/pix");
+        return;
+      }
 
       // O próprio dono mudou de papel: a barra e as guardas leem o perfil
       // da sessão, que precisa ser relido. Navega ANTES de reler: com o
@@ -220,6 +236,8 @@ export function CadastroDeMembro() {
       const falha = causa as ErroDaApi;
       if (falha.codigo === "email_em_uso") {
         setErro({ email: "Esse e-mail já tem conta no BarChop." });
+      } else if (falha.codigo === "cartao_recusado" && !id) {
+        setRecusaNoConvite(textoDaRecusa(previa, "O convite não foi enviado"));
       } else if (falha.codigo === "ultimo_dono") {
         setAviso(
           "A barbearia precisa de pelo menos um dono ativo. Promova outra pessoa antes de sair desse papel."
@@ -237,18 +255,28 @@ export function CadastroDeMembro() {
     setAvisoDaSituacao(undefined);
     setConfirmacao(undefined);
     setCancelarAssinaturas(undefined);
+    setRecusaNaSituacao(undefined);
     setMexendo(true);
     try {
-      await api.barbeiro.atualizarMembro(
+      const salvo = await api.barbeiro.atualizarMembro(
         id,
         comCancelamento ? { ativo: false, cancelarAssinaturas: true } : { ativo: !atual.ativo }
       );
+      // Reativou no Pix: aguarda o Pix da diferença.
+      if (salvo.aguardaPagamento) {
+        router.push("/painel/equipe/pix");
+        return;
+      }
       // Desativar a si mesmo (com outro dono ativo) encerra a própria
       // sessão — o recarregar descobre isso e sai.
       if (id === perfil.id) await recarregarPerfil();
       equipe.recarregar();
     } catch (causa) {
       const falha = causa as ErroDaApi;
+      if (falha.codigo === "cartao_recusado") {
+        setRecusaNaSituacao(textoDaRecusa(previa, `${atual.nome} não foi reativado`));
+        return;
+      }
       if (falha.codigo === "assinaturas_ativas") {
         // A contagem vem na frase da API ("tem 3 assinantes nos planos
         // que vende"); sem ela, a frase fica sem o número.
@@ -270,6 +298,21 @@ export function CadastroDeMembro() {
     }
   }
 
+  // Desistir de quem aguarda pagamento: o convidado que nunca entrou
+  // some, e quem já tinha conta volta a inativo. Os dois voltam à lista.
+  async function desistir() {
+    if (!id) return;
+    setAvisoDaSituacao(undefined);
+    setMexendo(true);
+    try {
+      await api.barbeiro.desistirDoMembro(id);
+      router.push("/painel/equipe");
+    } catch (causa) {
+      setAvisoDaSituacao((causa as ErroDaApi).mensagem || "Não foi possível desistir agora.");
+      setMexendo(false);
+    }
+  }
+
   async function reenviar() {
     if (!id || !atual) return;
     setAvisoDaSituacao(undefined);
@@ -286,6 +329,10 @@ export function CadastroDeMembro() {
   }
 
   const selo = atual ? SELO_DA_SITUACAO[situacaoDoMembro(atual)] : undefined;
+  // A recepção não ocupa vaga: convidar ou reativar a recepção não cobra.
+  const custoDoConvite = papel !== "recepcao" ? previa : null;
+  const custoDoReativar =
+    atual && !atual.ativo && !atual.aguardaPagamento && atual.papel !== "recepcao" ? previa : null;
 
   // Os dados do membro: o formulário do convite e a aba Dados da edição.
   // Seções com título e o conteúdo num cartão (redesenho dos detalhes,
@@ -429,9 +476,16 @@ export function CadastroDeMembro() {
       {atual ? null : (
         <>
           {aviso ? <Aviso>{aviso}</Aviso> : null}
+          {recusaNoConvite ? (
+            <div className={estilos.recusa}>
+              <Aviso>{recusaNoConvite}</Aviso>
+              <BotaoDoPortal texto="Atualizar cartão" variante="contorno" />
+            </div>
+          ) : null}
+          {custoDoConvite ? <CustoDaVaga previa={custoDoConvite} contexto="Mais 1 profissional" /> : null}
           <div className={estilos.acoes}>
             <Botao type="submit" carregando={salvando}>
-              Enviar convite
+              {rotuloQueCobra("Enviar convite", custoDoConvite)}
             </Botao>
           </div>
         </>
@@ -510,10 +564,21 @@ export function CadastroDeMembro() {
                         </p>
                       ) : null}
                       <p className={estilos.efeito}>
-                        {atual.ativo
-                          ? "Desativar: para de receber agendamentos e perde o acesso ao painel. Dá pra reativar depois."
-                          : "Não recebe agendamentos nem entra no painel. Reativar devolve os dois."}
+                        {atual.aguardaPagamento
+                          ? "Aguarda o Pix da diferença: entra na equipe depois do Já paguei. Desistir tira o convite de quem nunca entrou; quem já tinha conta volta a inativo."
+                          : atual.ativo
+                            ? "Desativar: para de receber agendamentos e perde o acesso ao painel. Dá pra reativar depois."
+                            : "Não recebe agendamentos nem entra no painel. Reativar devolve os dois."}
                       </p>
+                      {recusaNaSituacao ? (
+                        <div className={estilos.recusa}>
+                          <Aviso>{recusaNaSituacao}</Aviso>
+                          <BotaoDoPortal texto="Atualizar cartão" variante="contorno" />
+                        </div>
+                      ) : null}
+                      {custoDoReativar ? (
+                        <CustoDaVaga previa={custoDoReativar} contexto="Volta como mais 1 profissional" />
+                      ) : null}
                       {avisoDaSituacao ? <Aviso>{avisoDaSituacao}</Aviso> : null}
                       {cancelarAssinaturas ? (
                         <Aviso tom="atencao">
@@ -544,14 +609,23 @@ export function CadastroDeMembro() {
                             Reenviar convite
                           </Botao>
                         ) : null}
-                        <Botao
-                          type="button"
-                          variante="contorno"
-                          carregando={mexendo}
-                          onClick={() => alternarAtivo()}
-                        >
-                          {atual.ativo ? "Desativar" : "Reativar"}
-                        </Botao>
+                        {atual.aguardaPagamento ? (
+                          <>
+                            <BotaoLink href="/painel/equipe/pix">Pagar no Pix</BotaoLink>
+                            <Botao type="button" variante="contorno" carregando={mexendo} onClick={desistir}>
+                              Desistir
+                            </Botao>
+                          </>
+                        ) : (
+                          <Botao
+                            type="button"
+                            variante={custoDoReativar ? undefined : "contorno"}
+                            carregando={mexendo}
+                            onClick={() => alternarAtivo()}
+                          >
+                            {atual.ativo ? "Desativar" : rotuloQueCobra("Reativar", custoDoReativar)}
+                          </Botao>
+                        )}
                       </div>
                     </div>
                   </section>

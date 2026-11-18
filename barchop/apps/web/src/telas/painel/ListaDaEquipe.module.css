@@ -33,3 +33,27 @@ tr:hover .abrir {
   color: var(--cor-ink);
 }
 
+
+/* Quem aguarda o Pix da diferença: a faixa âmbar de ação, acima da
+   lista (canvas aprovado em 18/11). Quebra o botão pra baixo no
+   celular. */
+.faixa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaco-md);
+  padding: var(--espaco-md) 20px;
+  background: var(--cor-atencao-fundo);
+  border-radius: var(--raio-lg);
+}
+
+.textoDaFaixa {
+  flex: 999 1 320px;
+  display: grid;
+  gap: 2px;
+}
+
+.apoioDaFaixa {
+  color: var(--cor-ink-soft);
+  font-size: var(--texto-sm);
+}

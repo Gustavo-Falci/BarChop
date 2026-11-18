@@ -149,6 +149,10 @@ describe("situação do membro", () => {
     // Convite de quem foi desativado não é pendência: ele não entra.
     expect(situacaoDoMembro(membro(false, true))).toBe("inativo");
   });
+
+  it("quem aguarda o pagamento da vaga não é inativo nem convite (profissional-novo-pago)", () => {
+    expect(situacaoDoMembro({ ...membro(false, true), aguardaPagamento: true })).toBe("aguardando");
+  });
 });
 
 // Arrastar e reordenar, PR 4: a ordem que o dono escolhe.

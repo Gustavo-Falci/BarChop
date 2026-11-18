@@ -665,6 +665,18 @@ export interface PagamentoPix {
   copiaECola: string | null;
 }
 
+// GET /equipe/previa-da-inclusao (plano profissional-novo-pago): quanto
+// custa agora mais um profissional. No cartão, a Stripe cobra na hora no
+// `cartaoFinal`; no Pix, quem entra aguarda o Pix da diferença. `ate` é o
+// fim do período pago. Sem cobrança, `forma` e `ate` nulos.
+export interface PreviaDaInclusao {
+  cobra: boolean;
+  forma: FormaDePagarOBarChop | null;
+  valorCentavos: number;
+  cartaoFinal: string | null;
+  ate: string | null;
+}
+
 // GET /suporte/pix — os aguardando, com a barbearia e o dono, pra o
 // Suporte achar no extrato. Sem o copia e cola. `antes` é o retrato da
 // assinatura antes do Pix: é pra ele que a recusa volta.

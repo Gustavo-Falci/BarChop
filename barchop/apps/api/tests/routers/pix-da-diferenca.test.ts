@@ -313,8 +313,10 @@ describe("o Pix do período e quem aguarda", () => {
 
     expect(resposta.json()).toEqual({
       cobra: true,
+      forma: "pix",
       valorCentavos: valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 1, agora: new Date(), fim: dono.fim }),
       cartaoFinal: null,
+      ate: dono.fim.toISOString(),
     });
     await app.close();
   });

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatarReais } from "@barchop/formato";
 import type { MembroDaEquipe, PapelMembro } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
@@ -16,6 +17,7 @@ import { BotaoDeMudarOrdem } from "./BotaoDeMudarOrdem";
 import estilos from "./ListaDaEquipe.module.css";
 import { OrdemDaEquipe } from "./MudarOrdem";
 import { Carregando } from "../../componentes/Carregando";
+import { emLista } from "../../painel/assinatura";
 
 export const ROTULO_DO_PAPEL: Record<PapelMembro, string> = {
   dono: "Dono",
@@ -33,16 +35,18 @@ export const SELO_DA_SITUACAO: Record<
   ativo: { rotulo: "Ativo", tom: "ok" },
   convite: { rotulo: "Convite pendente", tom: "atencao" },
   inativo: { rotulo: "Inativo", tom: "neutro" },
+  aguardando: { rotulo: "Aguardando pagamento", tom: "atencao" },
 };
 
 // "Atendem" é quem aparece na agenda pro cliente marcar: ativo e com
 // `atende`. As outras duas pílulas são as situações que pedem ação.
-type Filtro = "todos" | "atendem" | "convites" | "inativos";
+type Filtro = "todos" | "atendem" | "convites" | "aguardando" | "inativos";
 
 const NO_FILTRO: Record<Filtro, (membro: MembroDaEquipe) => boolean> = {
   todos: () => true,
   atendem: (membro) => membro.ativo && membro.atende,
   convites: (membro) => situacaoDoMembro(membro) === "convite",
+  aguardando: (membro) => situacaoDoMembro(membro) === "aguardando",
   inativos: (membro) => situacaoDoMembro(membro) === "inativo",
 };
 
@@ -92,10 +96,33 @@ export function ListaDaEquipe() {
   const atendem = contar("atendem");
   const listados = todos.filter(NO_FILTRO[filtro]);
   const comTelefone = todos.some((membro) => membro.telefone);
+  const aguardam = todos.filter(NO_FILTRO.aguardando);
 
   async function salvarOrdem(ids: string[]) {
     setEquipeSalva(await api.barbeiro.salvarOrdemDaEquipe(ids));
   }
+
+  // Desistir de quem aguarda pagamento (plano profissional-novo-pago):
+  // a linha sai ou volta a inativo, sem abrir o cadastro.
+  async function desistir(id: string) {
+    await api.barbeiro.desistirDoMembro(id);
+    setEquipeSalva(null);
+    equipe.recarregar();
+  }
+
+  const desistirDe = (membro: MembroDaEquipe) => (
+    <Botao
+      variante="fantasma"
+      aria-label={`Desistir de incluir ${membro.nome}`}
+      onClick={(evento) => {
+        // A linha inteira abre o membro: o clique aqui não é dela.
+        evento.stopPropagation();
+        void desistir(membro.id);
+      }}
+    >
+      Desistir
+    </Botao>
+  );
 
   return (
     <div className={estilos.pagina}>
@@ -110,6 +137,8 @@ export function ListaDaEquipe() {
         }
         acao={<Botao onClick={convidar}>+ Convidar membro</Botao>}
       />
+
+      {aguardam.length > 0 ? <FaixaDoPix aguardam={aguardam} aoPagar={() => router.push("/painel/equipe/pix")} /> : null}
 
       {/* Mesma guarda de ListaDeServicos: sem ela a tabela pintaria o
           estado vazio no primeiro paint. */}
@@ -134,6 +163,11 @@ export function ListaDaEquipe() {
               // Âmbar quando há algum: é gente que ainda não consegue
               // entrar, e o reenvio do convite está a um clique.
               { valor: "convites", rotulo: "Convites pendentes", contagem: contar("convites"), tom: "atencao" },
+              // Só com alguém aguardando: é um estado de passagem, e um
+              // "Aguardam pagamento 0" seria ruído em toda equipe.
+              ...(aguardam.length > 0
+                ? [{ valor: "aguardando" as const, rotulo: "Aguardam pagamento", contagem: aguardam.length, tom: "atencao" as const }]
+                : []),
               { valor: "inativos", rotulo: "Inativos", contagem: contar("inativos") },
             ]}
           />
@@ -158,7 +192,8 @@ export function ListaDaEquipe() {
             }
             aoAbrir={(id) => router.push(`/painel/equipe/${id}`)}
             linhas={listados.map((membro) => {
-              const selo = SELO_DA_SITUACAO[situacaoDoMembro(membro)];
+              const situacaoDele = situacaoDoMembro(membro);
+              const selo = SELO_DA_SITUACAO[situacaoDele];
               const situacao = (
                 <Chip key="situacao" tom={selo.tom} tamanho="pequeno">
                   {selo.rotulo}
@@ -179,6 +214,7 @@ export function ListaDaEquipe() {
                     ...(membro.telefone ? [membro.telefone] : []),
                   ],
                   valor: situacao,
+                  ...(situacaoDele === "aguardando" ? { acoes: desistirDe(membro) } : {}),
                 },
                 celulas: [
                   // Nome e e-mail juntos, dentro do botão da linha: o
@@ -192,9 +228,15 @@ export function ListaDaEquipe() {
                   ...(comTelefone ? [membro.telefone ?? "—"] : []),
                   membro.atende ? "Sim" : "Não",
                   situacao,
-                  <span className={estilos.abrir} key="abrir">
-                    <IconeAbrir />
-                  </span>,
+                  situacaoDele === "aguardando" ? (
+                    <span className={estilos.abrir} key="abrir">
+                      {desistirDe(membro)}
+                    </span>
+                  ) : (
+                    <span className={estilos.abrir} key="abrir">
+                      <IconeAbrir />
+                    </span>
+                  ),
                 ],
               };
             })}
@@ -202,5 +244,30 @@ export function ListaDaEquipe() {
         </>
       )}
     </div>
+  );
+}
+
+// Quem aguarda o Pix da diferença (canvas aprovado em 18/11): um Pix só
+// paga todos, então um botão só, com o valor da cotação.
+function FaixaDoPix({ aguardam, aoPagar }: { aguardam: MembroDaEquipe[]; aoPagar: () => void }) {
+  const api = useApiDoPainel();
+  const quantos = aguardam.length;
+  const cotacao = useRequisicao(() => api.barbeiro.cotacaoDaDiferenca(), [quantos]);
+  const valor = cotacao.dados ? formatarReais(cotacao.dados.valorCentavos) : null;
+  const um = quantos === 1;
+  return (
+    <section className={estilos.faixa} aria-labelledby="quem-aguarda">
+      <div className={estilos.textoDaFaixa}>
+        <strong id="quem-aguarda">
+          {emLista(aguardam.map((m) => m.nome))} {um ? "aguarda" : "aguardam"} o Pix da diferença
+        </strong>
+        <span className={estilos.apoioDaFaixa}>
+          {um
+            ? "Recebe o convite depois do Já paguei."
+            : "Um Pix só paga todos. Recebem o convite depois do Já paguei."}
+        </span>
+      </div>
+      <Botao onClick={aoPagar}>{valor ? `Pagar ${valor} no Pix` : "Pagar no Pix"}</Botao>
+    </section>
   );
 }

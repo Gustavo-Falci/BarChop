@@ -24,6 +24,7 @@ const RAFAEL: MembroDaEquipe = {
   fotoUrl: null,
   convitePendente: false,
   podeVenderPlanos: false,
+  aguardaPagamento: false,
 };
 
 const CONTA: ContaDePagamentoOnline = {

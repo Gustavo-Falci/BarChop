@@ -63,6 +63,7 @@ export {
   crc16DoPix,
   fimDoPeriodoDoPix,
   inicioDoDiaEmSaoPaulo,
+  valorDaDiferenca,
   type DadosDoBrCode,
   type SituacaoDoPix,
 } from "./pix";

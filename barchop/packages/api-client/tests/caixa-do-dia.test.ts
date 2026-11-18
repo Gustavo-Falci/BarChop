@@ -58,6 +58,7 @@ describe("dublê — caixa do dia", () => {
       fotoUrl: null,
       convitePendente: false,
       podeVenderPlanos: false,
+      aguardaPagamento: false,
     });
     const agendamento = (id: string, horaInicio: string, barbeiro: { id: string; nome: string }) => ({
       id,

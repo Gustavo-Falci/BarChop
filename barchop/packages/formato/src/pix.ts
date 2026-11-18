@@ -1,4 +1,4 @@
-import type { Ciclo } from "./planos";
+import { precosDoCiclo, type Ciclo, type IdDoPlano } from "./planos";
 
 // O Pix do BarChop (plano pix-do-barchop): o BR Code estático com o
 // valor exato, gerado pelo próprio BarChop na chave do BarChop, e o
@@ -93,6 +93,27 @@ const UM_DIA = 24 * 60 * 60 * 1000;
 export function inicioDoDiaEmSaoPaulo(agora: Date): Date {
   const local = agora.getTime() - FUSO_DE_SAO_PAULO;
   return new Date(Math.floor(local / UM_DIA) * UM_DIA + FUSO_DE_SAO_PAULO);
+}
+
+// O Pix da diferença (plano profissional-novo-pago): profissional novo
+// no meio do período pago paga o extra do ciclo pelos dias que faltam
+// até o fim, contando hoje inteiro, sobre 30 dias (mensal) ou 365
+// (anual). Centavo arredondado pra cima. Período acabado: nada.
+const DIAS_DO_CICLO: Record<Ciclo, number> = { mensal: 30, anual: 365 };
+
+export function valorDaDiferenca(pedido: {
+  plano: Exclude<IdDoPlano, "gratis">;
+  ciclo: Ciclo;
+  extras: number;
+  agora: Date;
+  fim: Date;
+}): number {
+  const { plano, ciclo, extras, agora, fim } = pedido;
+  if (!Number.isInteger(extras) || extras < 1) {
+    throw new RangeError(`extras deve ser um inteiro a partir de 1: ${extras}`);
+  }
+  const dias = Math.max(0, Math.ceil((fim.getTime() - inicioDoDiaEmSaoPaulo(agora).getTime()) / UM_DIA));
+  return Math.ceil((precosDoCiclo(plano, ciclo).extra * extras * dias) / DIAS_DO_CICLO[ciclo]);
 }
 
 // O fim do período pago: um mês (ou doze) depois do início, no relógio

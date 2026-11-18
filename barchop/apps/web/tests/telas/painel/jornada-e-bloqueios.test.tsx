@@ -28,6 +28,7 @@ function comAna(semente: Parameters<typeof criarApiClientFalso>[0] = {}) {
     fotoUrl: null,
     convitePendente: false,
     podeVenderPlanos: false,
+    aguardaPagamento: false,
   });
   return falso;
 }

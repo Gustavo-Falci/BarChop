@@ -32,6 +32,7 @@ function semear(papel?: "dono" | "profissional" | "recepcao") {
       fotoUrl: null,
       convitePendente: false,
       podeVenderPlanos: false,
+      aguardaPagamento: false,
     },
     {
       id: "m3",
@@ -44,6 +45,7 @@ function semear(papel?: "dono" | "profissional" | "recepcao") {
       fotoUrl: null,
       convitePendente: true,
       podeVenderPlanos: false,
+      aguardaPagamento: false,
     }
   );
   return falso;

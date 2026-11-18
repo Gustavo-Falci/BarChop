@@ -73,6 +73,7 @@ function comAna(falso: ReturnType<typeof criarApiClientFalso>) {
     fotoUrl: null,
     convitePendente: false,
     podeVenderPlanos: false,
+    aguardaPagamento: false,
   });
   return falso;
 }

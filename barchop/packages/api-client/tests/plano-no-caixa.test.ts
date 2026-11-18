@@ -18,6 +18,7 @@ const membro = (id: string, nome: string, papel: "dono" | "profissional"): Membr
   fotoUrl: null,
   convitePendente: false,
   podeVenderPlanos: papel === "profissional",
+  aguardaPagamento: false,
 });
 
 // Da casa: corte sem limite, R$ 25,00 pra quem atende.

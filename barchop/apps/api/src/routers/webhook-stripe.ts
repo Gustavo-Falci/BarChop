@@ -85,6 +85,17 @@ async function ehRepetida(
   return VIVAS.includes(situacaoDaStripe(gravada.status));
 }
 
+function mesmoPeriodo(
+  linha: { stripeSubscriptionId: string | null; periodoTerminaEm: Date | null },
+  assinatura: AssinaturaNaCobranca
+): boolean {
+  return (
+    linha.stripeSubscriptionId === assinatura.id &&
+    linha.periodoTerminaEm !== null &&
+    linha.periodoTerminaEm.getTime() === assinatura.periodoTerminaEm?.getTime()
+  );
+}
+
 async function aplicar(
   tx: Prisma.TransactionClient,
   assinatura: AssinaturaNaCobranca,
@@ -124,7 +135,12 @@ async function aplicar(
       ciclo: plano.ciclo,
       stripeCustomerId: assinatura.customerId,
       stripeSubscriptionId: assinatura.id,
-      profissionaisContratados: assinatura.quantidade,
+      // As vagas pagas no período (plano profissional-novo-pago): quem
+      // saiu desce a quantidade na Stripe sem crédito, mas a vaga segue
+      // paga até a virada. No mesmo período, só sobem.
+      profissionaisContratados: mesmoPeriodo(linha, assinatura)
+        ? Math.max(linha.profissionaisContratados ?? 0, assinatura.quantidade)
+        : assinatura.quantidade,
       periodoTerminaEm: assinatura.periodoTerminaEm,
       // Cancelada de vez, a data em que ia acabar já passou: a Stripe
       // ainda a mostra, mas não diz mais nada.

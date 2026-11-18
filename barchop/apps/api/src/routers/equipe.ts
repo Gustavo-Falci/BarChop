@@ -1,7 +1,15 @@
 import type { FastifyRequest } from "fastify";
-import { Prisma, prisma } from "@barchop/database";
+import { Prisma, prisma, type PapelMembro } from "@barchop/database";
 import { normalizarEmail } from "@barchop/formato";
-import { garantirVagaNoPlano, sincronizarQuantidade } from "../lib/assinatura";
+import {
+  ajustarQuantidade,
+  cobrarInclusao,
+  garantirVagaNoPlano,
+  inclusaoCobra,
+  liberarMembro,
+  planejarInclusao,
+  type InclusaoNoCartao,
+} from "../lib/assinatura";
 import { emitirCodigo } from "../lib/codigos";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { INCLUIR_PAUSAS } from "../lib/disponibilidade";
@@ -309,6 +317,13 @@ function contaNoPlano(membro: { ativo?: boolean; papel?: string }): boolean {
   return membro.ativo === true && (membro.papel === "dono" || membro.papel === "profissional");
 }
 
+// O membro antes do PATCH, pra voltar se a cobrança não passar.
+interface Antes {
+  ativo: boolean;
+  papel: PapelMembro;
+  aguardaPagamento: boolean;
+}
+
 export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
   // Todos os papéis leem: a recepção marca pra qualquer profissional e
   // precisa da lista; o profissional vê os colegas na agenda.
@@ -325,6 +340,16 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
   }
 
   app.get("/equipe", async (request) => listaDaEquipe(request.user.barbeariaId));
+
+  // Antes de incluir ou reativar (plano profissional-novo-pago): quanto
+  // o cartão paga agora pela vaga a mais, e em qual cartão. Sem cartão,
+  // ou dentro das vagas pagas, não cobra nada.
+  app.get("/equipe/previa-da-inclusao", { onRequest: exigirPapel("dono") }, async (request) => {
+    const inclusao = await planejarInclusao(prisma, request.user.barbeariaId);
+    if (!inclusaoCobra(inclusao)) return { cobra: false, valorCentavos: 0, cartaoFinal: null };
+    const previa = await app.cobranca.previaDaInclusao(inclusao.assinaturaId, inclusao);
+    return { cobra: true, ...previa };
+  });
 
   // A lista inteira, de uma vez (lib/ordem.ts), com os inativos e os
   // convites pendentes junto: todo membro tem lugar na ordem.
@@ -358,9 +383,13 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
 
       const { barbeariaId } = request.user;
       let membro;
+      let inclusao: InclusaoNoCartao | null = null;
       try {
         membro = await prisma.$transaction(async (tx) => {
-          if (contaNoPlano({ ativo: true, papel })) await garantirVagaNoPlano(tx, barbeariaId, new Date());
+          if (contaNoPlano({ ativo: true, papel })) {
+            await garantirVagaNoPlano(tx, barbeariaId, new Date());
+            inclusao = await planejarInclusao(tx, barbeariaId);
+          }
           return tx.barbeiro.create({
             data: {
               barbeariaId,
@@ -370,6 +399,10 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
               // A recepção não atende por padrão; o dono diz se atende.
               atende: atende ?? papel !== "recepcao",
               ...(telefone !== undefined ? { telefone: normalizarTelefone(telefone) } : {}),
+              // Passa das vagas pagas no cartão: espera a cobrança, já
+              // contando no plano (dois convites ao mesmo tempo não
+              // cobram a mesma vaga).
+              ...(inclusaoCobra(inclusao) ? { ativo: false, aguardaPagamento: true } : {}),
             },
           });
         });
@@ -383,10 +416,23 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         throw erro;
       }
 
-      await enviarConvite(app, request, { email, barbeariaId: membro.barbeariaId });
-      // Com plano pago, a quantidade na Stripe acompanha a equipe.
-      await sincronizarQuantidade(app.cobranca, barbeariaId, request.log);
+      // Gravadas dentro da transação: o TS não acompanha.
+      const cobrada = inclusao as InclusaoNoCartao | null;
+      if (inclusaoCobra(cobrada)) {
+        // Fora da transação: é rede. Não pagou, o membro some.
+        try {
+          await cobrarInclusao(app.cobranca, cobrada, request.log);
+        } catch (erro) {
+          await prisma.barbeiro.delete({ where: { id: membro.id } });
+          throw erro;
+        }
+        membro = await liberarMembro(barbeariaId, membro.id, cobrada);
+      } else if (cobrada) {
+        // Dentro das vagas pagas: a Stripe só acompanha, sem cobrar.
+        await ajustarQuantidade(app.cobranca, barbeariaId, request.log);
+      }
 
+      await enviarConvite(app, request, { email, barbeariaId: membro.barbeariaId });
       return reply.code(201).send(serializarMembro(membro, app.armazenamento.urlPublica));
     }
   );
@@ -419,6 +465,8 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         await cancelarNoProvedor(app.provedores, online);
       }
 
+      let inclusao: InclusaoNoCartao | null = null;
+      let antes: Antes | null = null;
       const membro = await prisma.$transaction(async (tx) => {
         if (tiraUmDono(request.body)) {
           // A linha da barbearia é o cadeado: dois donos se rebaixando ao
@@ -452,17 +500,26 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
           }
         }
 
+        antes = await tx.barbeiro.findFirst({
+          where: { id, barbeariaId },
+          select: { ativo: true, papel: true, aguardaPagamento: true },
+        });
+        // Quem aguarda pagamento entra quando paga (plano
+        // profissional-novo-pago), não por aqui.
+        if (antes?.aguardaPagamento && request.body.ativo === true) {
+          throw new ErroHttp(
+            409,
+            "aguardando_pagamento",
+            "este membro aguarda o pagamento da vaga: ele entra quando o pagamento for feito"
+          );
+        }
+
         // Reativar ou tirar da recepção: o membro passa a contar no
-        // limite do plano.
-        if (request.body.ativo === true || (request.body.papel !== undefined && request.body.papel !== "recepcao")) {
-          const atual = await tx.barbeiro.findFirst({
-            where: { id, barbeariaId },
-            select: { ativo: true, papel: true },
-          });
-          const depois = { ativo: request.body.ativo ?? atual?.ativo, papel: request.body.papel ?? atual?.papel };
-          if (atual && !contaNoPlano(atual) && contaNoPlano(depois)) {
-            await garantirVagaNoPlano(tx, barbeariaId, new Date());
-          }
+        // limite do plano e, no cartão, pode passar das vagas pagas.
+        const depois = { ativo: request.body.ativo ?? antes?.ativo, papel: request.body.papel ?? antes?.papel };
+        if (antes && !contaNoPlano(antes) && contaNoPlano(depois)) {
+          await garantirVagaNoPlano(tx, barbeariaId, new Date());
+          inclusao = await planejarInclusao(tx, barbeariaId);
         }
 
         // Desativar quem vende com assinantes vivos (decisão 6 do plano
@@ -491,11 +548,33 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
 
         // barbeariaId no MESMO where da escrita: membro de outra
         // barbearia vira P2025, que o tratador central devolve como 404.
-        return tx.barbeiro.update({ where: { id, barbeariaId }, data });
+        // Passa das vagas pagas: espera a cobrança, como no convite.
+        const aguardar = inclusaoCobra(inclusao) ? { ativo: false, aguardaPagamento: true } : {};
+        return tx.barbeiro.update({ where: { id, barbeariaId }, data: { ...data, ...aguardar } });
       });
 
-      // Reativar, desativar ou trocar de papel muda a conta do plano.
-      await sincronizarQuantidade(app.cobranca, barbeariaId, request.log);
+      // Gravadas dentro da transação: o TS não acompanha.
+      const cobrada = inclusao as InclusaoNoCartao | null;
+      const anterior = antes as Antes | null;
+      if (inclusaoCobra(cobrada) && anterior) {
+        // Não pagou: volta ao que era.
+        try {
+          await cobrarInclusao(app.cobranca, cobrada, request.log);
+        } catch (erro) {
+          await prisma.barbeiro.update({
+            where: { id, barbeariaId },
+            data: { ativo: anterior.ativo, papel: anterior.papel, aguardaPagamento: false },
+          });
+          throw erro;
+        }
+        return serializarMembro(await liberarMembro(barbeariaId, id, cobrada), app.armazenamento.urlPublica);
+      }
+
+      // Entrou dentro das vagas pagas, ou saiu: a Stripe acompanha, sem
+      // cobrar nem devolver.
+      if (anterior && contaNoPlano(anterior) !== contaNoPlano(membro)) {
+        await ajustarQuantidade(app.cobranca, barbeariaId, request.log);
+      }
       return serializarMembro(membro, app.armazenamento.urlPublica);
     }
   );

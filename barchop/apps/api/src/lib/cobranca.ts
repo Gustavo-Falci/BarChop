@@ -154,6 +154,58 @@ export interface PortalAberto {
   semDescida: boolean;
 }
 
+// `pagos` = vagas já pagas no período (assinatura.profissionaisContratados);
+// `novo` = a equipe depois da mudança.
+export interface PedidoDeQuantidade {
+  pagos: number;
+  novo: number;
+}
+
+export interface PreviaDaInclusao {
+  valorCentavos: number;
+  cartaoFinal: string | null;
+}
+
+// O cartão recusou a cobrança na hora (ou o banco pediu uma confirmação
+// que a API não tem como fazer): a Stripe não aplicou a mudança.
+export class CartaoRecusado extends Error {
+  constructor() {
+    super("o cartão recusou a cobrança: atualize o cartão em Gerenciar assinatura e tente de novo");
+    this.name = "CartaoRecusado";
+  }
+}
+
+export interface PassoDaQuantidade {
+  quantidade: number;
+  cobrar: boolean;
+}
+
+// O que vai à Stripe. Ela calcula o proporcional a partir da quantidade
+// que tem agora (`atual`), que desce na hora sem crédito: se ainda há
+// vaga paga sobrando, primeiro sobe até ela sem cobrar, e só cobra o que
+// passar das pagas.
+export function passosDaQuantidade({ atual, pagos, novo }: PedidoDeQuantidade & { atual: number }): PassoDaQuantidade[] {
+  if (novo === atual) return [];
+  if (novo <= pagos) return [{ quantidade: novo, cobrar: false }];
+  return [...(atual < pagos ? [{ quantidade: pagos, cobrar: false }] : []), { quantidade: novo, cobrar: true }];
+}
+
+// A prévia da Stripe parte da quantidade atual; a parte das vagas já
+// pagas sai. O preço do profissional a mais é o mesmo pra cada um (o
+// degrau acima do primeiro), então a conta é proporcional.
+export function previaProporcional(
+  valorCentavos: number,
+  { atual, pagos, novo }: PedidoDeQuantidade & { atual: number }
+): number {
+  const novas = novo - Math.max(pagos, atual);
+  if (novas <= 0 || novo <= atual) return 0;
+  return Math.round((valorCentavos * novas) / (novo - atual));
+}
+
+function recusaDoCartao(erro: unknown): boolean {
+  return erro instanceof Stripe.errors.StripeCardError || (erro as { statusCode?: number })?.statusCode === 402;
+}
+
 export interface Cobranca {
   nome: string;
   // Sem o segredo do webhook, a rota responde 503: em desenvolvimento dá
@@ -165,7 +217,13 @@ export interface Cobranca {
   // limite do Essencial). Devolve se deu: sem a configuração na Stripe
   // (o script criar-precos não rodou), abre o Portal padrão.
   criarPortal(dados: { customerId: string; urlDeVolta: string; semDescida: boolean }): Promise<PortalAberto>;
-  atualizarQuantidade(assinaturaId: string, profissionais: number): Promise<void>;
+  // A quantidade de profissionais (plano profissional-novo-pago): passar
+  // das vagas pagas no período cobra na hora a diferença; o resto só
+  // muda a quantidade, sem cobrar nem devolver. Cartão recusado lança
+  // CartaoRecusado e deixa a Stripe como estava.
+  mudarQuantidade(assinaturaId: string, pedido: PedidoDeQuantidade): Promise<void>;
+  // Quanto o `mudarQuantidade` cobraria agora, e o final do cartão.
+  previaDaInclusao(assinaturaId: string, pedido: PedidoDeQuantidade): Promise<PreviaDaInclusao>;
   lerAssinatura(assinaturaId: string): Promise<AssinaturaNaCobranca>;
   // Uma segunda assinatura da mesma barbearia (dois Checkouts antes do
   // webhook): cancela na hora e devolve o que ela já cobrou. Repetir a
@@ -231,7 +289,11 @@ export interface CobrancaDeMemoria extends Cobranca {
   clientes: { id: string; email: string | null; nome: string; barbeariaId: string }[];
   checkouts: PedidoDeCheckout[];
   portais: { customerId: string; urlDeVolta: string; semDescida: boolean }[];
-  quantidades: { assinaturaId: string; profissionais: number }[];
+  quantidades: ({ assinaturaId: string } & PedidoDeQuantidade)[];
+  // Recusa só o que cobraria (passar das vagas pagas).
+  recusarCartao: boolean;
+  previa: PreviaDaInclusao;
+  previas: ({ assinaturaId: string } & PedidoDeQuantidade)[];
   // O que a "Stripe" diz de cada assinatura quando o webhook relê.
   assinaturas: Map<string, AssinaturaNaCobranca>;
   falharQuantidade: boolean;
@@ -250,6 +312,9 @@ export function cobrancaDeMemoria(): CobrancaDeMemoria {
     checkouts: [],
     portais: [],
     quantidades: [],
+    recusarCartao: false,
+    previa: { valorCentavos: 0, cartaoFinal: null },
+    previas: [],
     assinaturas: new Map(),
     falharQuantidade: false,
     cancelamentos: [],
@@ -269,9 +334,14 @@ export function cobrancaDeMemoria(): CobrancaDeMemoria {
       cobranca.portais.push(dados);
       return { url: `https://billing.stripe.test/${cobranca.portais.length}`, semDescida: dados.semDescida };
     },
-    async atualizarQuantidade(assinaturaId, profissionais) {
+    async mudarQuantidade(assinaturaId, pedido) {
       if (cobranca.falharQuantidade) throw new Error("Stripe fora do ar (teste)");
-      cobranca.quantidades.push({ assinaturaId, profissionais });
+      if (cobranca.recusarCartao && pedido.novo > pedido.pagos) throw new CartaoRecusado();
+      cobranca.quantidades.push({ assinaturaId, ...pedido });
+    },
+    async previaDaInclusao(assinaturaId, pedido) {
+      cobranca.previas.push({ assinaturaId, ...pedido });
+      return cobranca.previa;
     },
     async lerAssinatura(assinaturaId) {
       const assinatura = cobranca.assinaturas.get(assinaturaId);
@@ -352,11 +422,59 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
       });
       return { url: sessao.url, semDescida: configuracao !== null };
     },
-    async atualizarQuantidade(assinaturaId, profissionais) {
+    async mudarQuantidade(assinaturaId, pedido) {
       const assinatura = await stripe.subscriptions.retrieve(assinaturaId);
-      const item = assinatura.items.data[0];
-      // Cobrança proporcional (o padrão da Stripe) na próxima fatura.
-      await stripe.subscriptions.update(assinaturaId, { items: [{ id: item.id, quantity: profissionais }] });
+      const item = assinatura.items.data[0]!;
+      const atual = item.quantity ?? 1;
+      const passos = passosDaQuantidade({ atual, ...pedido });
+      for (const [indice, passo] of passos.entries()) {
+        try {
+          await stripe.subscriptions.update(assinaturaId, {
+            items: [{ id: item.id, quantity: passo.quantidade }],
+            // Cobrar: a fatura do proporcional sai e é paga agora; se o
+            // cartão recusa, a Stripe não aplica a mudança. O resto não
+            // cobra nem devolve (decisão do dono, 18/11).
+            ...(passo.cobrar
+              ? { proration_behavior: "always_invoice" as const, payment_behavior: "error_if_incomplete" as const }
+              : { proration_behavior: "none" as const }),
+          });
+        } catch (erro) {
+          // Um passo sem cobrança já subiu a quantidade: volta, sem cobrar.
+          if (indice > 0) {
+            await stripe.subscriptions.update(assinaturaId, {
+              items: [{ id: item.id, quantity: atual }],
+              proration_behavior: "none",
+            });
+          }
+          if (passo.cobrar && recusaDoCartao(erro)) throw new CartaoRecusado();
+          throw erro;
+        }
+      }
+    },
+    async previaDaInclusao(assinaturaId, pedido) {
+      const assinatura = await stripe.subscriptions.retrieve(assinaturaId, {
+        expand: ["default_payment_method", "customer.invoice_settings.default_payment_method"],
+      });
+      const item = assinatura.items.data[0]!;
+      const atual = item.quantity ?? 1;
+      const previa = await stripe.invoices.createPreview({
+        customer: idDe(assinatura.customer as string | { id: string })!,
+        subscription: assinaturaId,
+        subscription_details: {
+          items: [{ id: item.id, quantity: pedido.novo }],
+          proration_behavior: "always_invoice",
+        },
+      });
+      const daAssinatura = assinatura.default_payment_method as Stripe.PaymentMethod | null;
+      const cliente = assinatura.customer as Stripe.Customer | Stripe.DeletedCustomer;
+      const doCliente =
+        "invoice_settings" in cliente
+          ? (cliente.invoice_settings.default_payment_method as Stripe.PaymentMethod | null)
+          : null;
+      return {
+        valorCentavos: previaProporcional(previa.amount_due, { atual, ...pedido }),
+        cartaoFinal: daAssinatura?.card?.last4 ?? doCliente?.card?.last4 ?? null,
+      };
     },
     async lerAssinatura(assinaturaId) {
       const assinatura = await stripe.subscriptions.retrieve(assinaturaId);
@@ -455,7 +573,8 @@ function cobrancaDesligada(): Cobranca {
     criarCliente: async () => desligada(),
     criarCheckout: async () => desligada(),
     criarPortal: async () => desligada(),
-    atualizarQuantidade: async () => desligada(),
+    mudarQuantidade: async () => desligada(),
+    previaDaInclusao: async () => desligada(),
     lerAssinatura: async () => desligada(),
     cancelarRepetida: async () => desligada(),
     listarFaturas: async () => desligada(),

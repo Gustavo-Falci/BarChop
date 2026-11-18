@@ -70,6 +70,7 @@ O cartão usa o mesmo estado por alguns segundos: cria o membro aguardando, cobr
   3. deu certo: libera, grava `profissionaisContratados` e manda o convite; recusou: apaga o novo (ou desmarca o reativado) e devolve o 402.
 - Cartão `em_atraso` → `409 fatura_em_atraso` ("pague a fatura aberta antes de incluir alguém").
 - **Descida** (`sincronizarQuantidade`): `proration_behavior: "none"`. A Stripe só usa o número novo na próxima fatura, sem crédito.
+- **Vagas pagas no período** (achado ao fazer, 18/11): `profissionaisContratados` passa a ser as vagas já pagas no período. Quem sai desce a quantidade na Stripe sem crédito, mas a vaga segue paga: trocar um profissional no mesmo período não cobra de novo. O webhook só abaixa esse número na virada do período (mesma assinatura e mesmo `periodoTerminaEm` → o maior dos dois). Na Stripe, com vaga paga sobrando, sobe primeiro até ela sem cobrar e só cobra o que passar (`passosDaQuantidade`); a prévia desconta a parte já paga (`previaProporcional`). Rota da prévia: `GET /equipe/previa-da-inclusao`.
 - **Webhook:** conferir que a fatura de proporcional (`billing_reason: subscription_update`) não mexe em `periodoTerminaEm` nem dispara aviso de renovação.
 - **Validate:** `cobranca.test.ts` (parâmetros da subida e da descida); `equipe.test.ts` com dublê aceitando, recusando e lançando no meio.
 

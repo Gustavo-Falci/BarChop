@@ -126,9 +126,9 @@ pnpm lint
 
 ## Acceptance
 
-- [ ] Cartão: incluir ou reativar cobra na hora; recusa → nada muda e a tela explica
-- [ ] Pix: o membro novo fica aguardando até o "Já paguei" da diferença; recusa → aguardando de novo
-- [ ] Tirar alguém não gera crédito nem devolução
-- [ ] Termos, Preços, Faturas e `llms.txt` dizem a regra nova
+- [ ] Cartão: incluir ou reativar cobra na hora; recusa → nada muda e a tela explica (testes verdes; falta conferir com a Stripe em produção)
+- [x] Pix: o membro novo fica aguardando até o "Já paguei" da diferença; recusa → aguardando de novo
+- [x] Tirar alguém não gera crédito nem devolução
+- [x] Termos, Preços, Faturas e `llms.txt` dizem a regra nova
 - [x] Canvas da Equipe e de Faturas aprovado antes do PR 4
-- [ ] Testes afetados, `tsc` e lint verdes
+- [x] Testes afetados, `tsc` e lint verdes

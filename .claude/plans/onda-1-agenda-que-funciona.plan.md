@@ -4,7 +4,59 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-17 — www redireciona pra raiz e canonical no site e nas barbearias, no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-18 — profissional novo no plano pago, completo e no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `7770cd9`, #365). **Produção = `main` até o #365**, deploy do dono em 18/11.
+- **Frente "profissional novo no meio do período pago"** (`.claude/plans/profissional-novo-pago.plan.md`) **completa**, PRs #360 a #365. Resolve o item 4 de 17/11 ("PR 5, proporcional ao começar?"): é proporcional e cobra na hora. Regra do dono (18/11):
+  - **cartão:** a Stripe cobra na hora os dias que faltam; se o cartão recusa, a inclusão não acontece;
+  - **Pix:** quem passa das vagas pagas fica "aguardando pagamento" até o "Já paguei" do Pix da diferença; a recusa do Suporte, ou o "Ainda não paguei", devolve a pessoa a aguardar;
+  - **tirar alguém** não devolve nem dá crédito: a próxima cobrança vem com um a menos.
+- **Os PRs:**
+  - **#360:** base e migration `20261118120000_profissional_aguardando`.
+  - **#361:** cartão.
+  - **#362:** Pix da diferença, migration `20261118180000_pix_liberados`.
+  - **#363 (4a):**
+    - Equipe: custo da vaga antes do botão ("Enviar convite e cobrar R$ X"), recusa com "Atualizar cartão", faixa e filtro "Aguardam pagamento", "Desistir";
+    - página `/painel/equipe/pix`.
+  - **#364 (4b):**
+    - Faturas: "Diferença · N profissional(is)" na fatura do cartão; Pix da diferença no topo; tipo no histórico do Pix;
+    - Suporte: chip "Pix · Diferença", linha "Libera N" e a recusa da diferença.
+  - **#365:** Termos, Preços, Faturas e `llms.txt` com a regra.
+  - Canvas aprovado: https://claude.ai/artifact/A2RuFZRsfYDYCNBhnbUo8m.
+- **Conferido de fora em 18/11:**
+  - `/llms.txt` e `/precos` com o texto novo;
+  - as rotas novas da API (`/equipe/previa-da-inclusao`, `/barbearias/me/assinatura/pix/diferenca`, `DELETE /equipe/:id/aguardando`) respondem 401, e uma rota inexistente responde 404;
+  - `painel.barchop.com.br/painel/equipe/pix` responde 200.
+  - **Não conferido:** as migrations (precisa de login) e a cobrança de verdade.
+
+**Ao retomar:**
+1. **Conferir com cartão** (barbearia de teste, plano pago no cartão):
+   - convidar um profissional: o botão diz "Enviar convite e cobrar R$ X", e a cobrança sai nesse valor;
+   - Faturas mostra a fatura como "Diferença · 1 profissional";
+   - com um cartão recusado: o aviso "O banco recusou…" aparece, e a equipe não muda.
+   - No Pix: o convidado fica "Aguardando pagamento", o Pix da diferença aparece em Faturas e na Equipe, e na fila do Suporte como "Pix · Diferença".
+   - Se a Equipe ou Faturas não abrirem, as migrations não rodaram.
+2. **Preços e Termos ainda dizem "só cartão"**:
+   - Preços: a pergunta "Aceita Pix ou boleto?" responde "só cartão de crédito";
+   - Termos: "O pagamento é no cartão de crédito, pela Stripe";
+   - mas o Pix do BarChop está ligado em produção desde 14/11, e Faturas já fala do Pix.
+   - Corrigir os dois textos (com teste); a regra do profissional novo já cita o Pix.
+3. **Checklist do plano do profissional novo:** fechar o item do cartão depois do passo 1.
+4. **Como em 17/11:**
+   - Search Console (só o dono);
+   - pilha `seguranca-*` (PC de casa; agora também conferir conflito com os #360 a #365);
+   - Pix de verdade da `jesus-barber` e da `barbearia-teste`;
+   - home (contador ~12/12);
+   - lista de 06/11 (24/11: sandbox do Asaas).
+
+**Gotchas de 18/11:**
+- O teste "duas pessoas, no plural" (`profissional-novo.test.tsx`) passou do 1 s do `findBy` uma vez, com 28 arquivos de teste rodando juntos; sozinho passa. Se voltar a falhar, é carga, não bug: a tela espera a equipe e depois a cotação.
+- O teste do "Vale" na fila do Suporte dependia da data de hoje (o período do dublê cruza o ano perto de dezembro); corrigido no #364 pra aceitar o ano.
+- A semente `equipe` do dublê **substitui** a equipe padrão, que tem o dono logado: sem ele o painel não monta (tela vazia). Pra somar alguém, `falso.estado.equipe!.push(...)` antes do `render`.
+- O hook GateGuard bloqueia o primeiro Write/Edit de cada arquivo até dizer quem importa, a API afetada e o pedido do dono; depois é só repetir a chamada.
+
+## RETOMAR AQUI (2026-11-17 — www redireciona pra raiz e canonical no site e nas barbearias, no ar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `de935d6`, #358). **Produção = `main` até o #358**, deploy do dono em 17/11, conferido.

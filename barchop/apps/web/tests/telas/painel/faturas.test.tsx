@@ -427,6 +427,18 @@ describe("Faturas com plano pago", () => {
     expect(resposta).toHaveTextContent(/Durante o teste, trocar de plano não cobra nada/);
   });
 
+  // Plano profissional-novo-pago, PR 5.
+  it("as perguntas explicam o profissional novo no meio do período", async () => {
+    montar(resumo(PAGA));
+
+    const pergunta = await screen.findByText("Incluí um profissional no meio do mês, quanto pago?");
+    const resposta = pergunta.nextElementSibling as HTMLElement;
+    expect(resposta).toHaveTextContent(/Só os dias que faltam pra ele no período/);
+    expect(resposta).toHaveTextContent(/No cartão, a cobrança sai na hora/);
+    expect(resposta).toHaveTextContent(/no Pix, ele entra depois do Pix da diferença/);
+    expect(resposta).toHaveTextContent(/não devolve o período em curso/);
+  });
+
   it("cancelada no Portal: diz até quando vale, sem anunciar cobrança", async () => {
     montar(resumo({ ...PAGA, cancelaEm: "2026-11-28T14:11:00Z" }));
 

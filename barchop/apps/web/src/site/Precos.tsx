@@ -16,6 +16,7 @@ const COMO_FUNCIONA = [
   "O pagamento é no cartão de crédito, pela Stripe. O BarChop não vê nem guarda os dados do cartão.",
   "O plano se renova sozinho, todo mês ou todo ano. No anual você paga 10 meses e leva 12.",
   "Subiu de plano no meio do período: paga na hora só a diferença pelos dias que faltam. Desceu: a mudança vale no fim do período já pago.",
+  "Incluiu um profissional no meio do período: paga na hora só os dias que faltam pra ele. Tirou um: o período em curso não é devolvido, e a próxima cobrança já vem com um a menos.",
   "Cancele quando quiser, sem multa. O plano vale até o fim do período pago; depois, a barbearia volta para o Grátis.",
   "Se a cobrança falhar, a Stripe tenta de novo nos dias seguintes, e tudo continua funcionando enquanto isso.",
 ];
@@ -36,7 +37,7 @@ const PERGUNTAS = [
     pergunta: "Quanto fica com mais profissionais?",
     resposta: `O preço do plano já inclui 1 profissional. Cada um a mais soma ${formatarReais(
       precosDoCiclo("essencial", "mensal").extra
-    )} por mês no Essencial e ${formatarReais(precosDoCiclo("completo", "mensal").extra)} no Completo.`,
+    )} por mês no Essencial e ${formatarReais(precosDoCiclo("completo", "mensal").extra)} no Completo. Incluir no meio do período cobra na hora só os dias que faltam; tirar não devolve o período em curso.`,
   },
   {
     pergunta: `E se a equipe passar de ${LIMITE_DO_ESSENCIAL} profissionais?`,

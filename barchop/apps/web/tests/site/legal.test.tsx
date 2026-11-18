@@ -91,6 +91,18 @@ describe("termos de uso", () => {
     expect(within(cobranca).getByRole("link", { name: /preços/i })).toHaveAttribute("href", "/precos");
   });
 
+  // Plano profissional-novo-pago, PR 5: incluir no meio do período cobra
+  // na hora (no cartão) ou depois do Pix da diferença; tirar não devolve.
+  it("incluir um profissional cobra os dias que faltam; tirar não devolve", () => {
+    render(<Termos />);
+    const cobranca = screen.getByRole("region", { name: /cobrança/i });
+    expect(cobranca).toHaveTextContent(/cobra na hora o valor proporcional aos dias que faltam/);
+    expect(cobranca).toHaveTextContent(/no cartão, na hora da inclusão/);
+    expect(cobranca).toHaveTextContent(/depois do Pix da diferença/);
+    expect(cobranca).toHaveTextContent(/Tirar um profissional não devolve o período em curso/);
+    expect(cobranca).not.toHaveTextContent(/soma o valor proporcional na cobrança/);
+  });
+
   // Marco 3 da Onda 2: a barbearia vende planos ao cliente, e o dinheiro
   // vai direto pra conta de quem vende no Asaas. O BarChop não é parte
   // da venda.

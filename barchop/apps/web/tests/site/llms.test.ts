@@ -38,6 +38,13 @@ describe("llms.txt", () => {
     expect(texto).toContain(`${DIAS_DE_TESTE} dias`);
   });
 
+  // Plano profissional-novo-pago, PR 5: a mesma regra dos Termos e de Preços.
+  it("diz o que custa incluir ou tirar um profissional no meio do período", () => {
+    expect(texto).toContain(
+      "Incluir um profissional no meio do período cobra na hora só os dias que faltam; tirar um não devolve o período em curso, e a próxima cobrança já vem com um a menos."
+    );
+  });
+
   it("sem o site configurado, os links ficam relativos", () => {
     // Desenvolvimento: não há endereço inteiro pra dar.
     const local = textoDoLlms(undefined);

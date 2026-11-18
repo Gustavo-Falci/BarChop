@@ -9,6 +9,8 @@ import {
   configuracaoSemDescida,
   fimDoTesteNaCobranca,
   modoDaChave,
+  passosDaQuantidade,
+  previaProporcional,
   planoDaChave,
   precosParaStripe,
   produtosComPrecosNovos,
@@ -371,5 +373,48 @@ describe("situacaoDaFatura", () => {
 
   it("rascunho ainda não é fatura pro dono", () => {
     expect(situacaoDaFatura("draft", 0)).toBeNull();
+  });
+});
+
+// Profissional novo no cartão (plano profissional-novo-pago, PR 2): o
+// que vai à Stripe. `pagos` = vagas pagas no período; `atual` = a
+// quantidade na Stripe agora (desce na hora, sem crédito).
+describe("passosDaQuantidade", () => {
+  it("passar das vagas pagas cobra na hora, sem passar do pedido", () => {
+    expect(passosDaQuantidade({ atual: 1, pagos: 1, novo: 2 })).toEqual([{ quantidade: 2, cobrar: true }]);
+  });
+
+  it("dentro das vagas pagas só sobe a quantidade, sem cobrar", () => {
+    expect(passosDaQuantidade({ atual: 1, pagos: 2, novo: 2 })).toEqual([{ quantidade: 2, cobrar: false }]);
+  });
+
+  it("com vaga paga sobrando, primeiro sobe até ela sem cobrar, depois cobra só o resto", () => {
+    expect(passosDaQuantidade({ atual: 1, pagos: 2, novo: 3 })).toEqual([
+      { quantidade: 2, cobrar: false },
+      { quantidade: 3, cobrar: true },
+    ]);
+  });
+
+  it("descer não cobra nem devolve", () => {
+    expect(passosDaQuantidade({ atual: 2, pagos: 2, novo: 1 })).toEqual([{ quantidade: 1, cobrar: false }]);
+  });
+
+  it("igual à Stripe: nada a fazer", () => {
+    expect(passosDaQuantidade({ atual: 2, pagos: 2, novo: 2 })).toEqual([]);
+  });
+});
+
+describe("previaProporcional", () => {
+  it("a prévia da Stripe parte da quantidade atual: tira a parte das vagas já pagas", () => {
+    // Stripe em 1, 2 pagas, pedido de 3: a prévia de 1 → 3 cobra 2 vagas; só 1 é nova.
+    expect(previaProporcional(2000, { atual: 1, pagos: 2, novo: 3 })).toBe(1000);
+  });
+
+  it("sem vaga paga sobrando, a prévia é o valor", () => {
+    expect(previaProporcional(1234, { atual: 1, pagos: 1, novo: 2 })).toBe(1234);
+  });
+
+  it("nada a cobrar: zero", () => {
+    expect(previaProporcional(500, { atual: 1, pagos: 2, novo: 2 })).toBe(0);
   });
 });

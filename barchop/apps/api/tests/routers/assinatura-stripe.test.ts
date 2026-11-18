@@ -8,6 +8,7 @@ import {
   type AssinaturaNaCobranca,
   type CobrancaDeMemoria,
 } from "../../src/lib/cobranca";
+import type { CanalDeMemoria } from "../../src/lib/canal";
 import type { App } from "../../src/tipos";
 import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
 
@@ -564,36 +565,169 @@ describe("POST /stripe/webhook", () => {
   });
 });
 
+// Profissional novo com o plano pago no cartão (plano
+// profissional-novo-pago, PR 2): passar das vagas já pagas no período
+// cobra na hora, e se o cartão recusa, nada muda. Tirar alguém não
+// devolve: a vaga segue paga até o fim do período, e a próxima fatura já
+// vem com menos. `profissionaisContratados` = vagas pagas no período.
 describe("a quantidade na Stripe acompanha a equipe", () => {
-  async function assinada(app: App, cobranca: CobrancaDeMemoria) {
+  async function assinada(app: App, cobranca: CobrancaDeMemoria, extra: Partial<AssinaturaNaCobranca> = {}) {
     const dono = await criarBarbeariaComToken(app);
-    const sub = assinaturaNaStripe(dono.barbeariaId, { quantidade: 1, chave: "completo_mensal" });
+    const sub = assinaturaNaStripe(dono.barbeariaId, { quantidade: 1, chave: "completo_mensal", ...extra });
     cobranca.assinaturas.set(sub.id, sub);
     await webhook(app, "customer.subscription.created", eventoDaAssinatura(sub));
     return dono;
   }
 
-  it("incluir um profissional aumenta; desativar diminui", async () => {
+  function incluir(app: App, token: string, nome = "Ana", papel = "profissional") {
+    return app.inject({
+      method: "POST",
+      url: "/equipe",
+      headers: auth(token),
+      payload: { nome, email: `${nome.toLowerCase()}@exemplo.com`, papel },
+    });
+  }
+
+  function mudar(app: App, token: string, id: string, corpo: Record<string, unknown>) {
+    return app.inject({ method: "PATCH", url: `/equipe/${id}`, headers: auth(token), payload: corpo });
+  }
+
+  function convitesPara(app: App, email: string) {
+    return (app.canal as CanalDeMemoria).enviadas.filter((m) => m.para === email);
+  }
+
+  it("incluir acima das vagas pagas cobra na hora e libera o profissional", async () => {
     const { app, cobranca } = montar();
     const dono = await assinada(app, cobranca);
 
-    const incluido = await app.inject({
-      method: "POST",
-      url: "/equipe",
-      headers: auth(dono.token),
-      payload: { nome: "Ana", email: "ana@exemplo.com", papel: "profissional" },
-    });
-    await app.inject({
-      method: "PATCH",
-      url: `/equipe/${incluido.json().id}`,
-      headers: auth(dono.token),
-      payload: { ativo: false },
+    const resposta = await incluir(app, dono.token);
+
+    expect(resposta.statusCode).toBe(201);
+    expect(resposta.json()).toMatchObject({ ativo: true, aguardaPagamento: false });
+    expect(cobranca.quantidades).toEqual([{ assinaturaId: "sub_1", pagos: 1, novo: 2 }]);
+    expect((await lerLinha(dono.barbeariaId)).profissionaisContratados).toBe(2);
+    expect(convitesPara(app, "ana@exemplo.com")).toHaveLength(1);
+    await app.close();
+  });
+
+  it("cartão recusado: a inclusão não acontece e nada fica pendurado", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca);
+    cobranca.recusarCartao = true;
+
+    const resposta = await incluir(app, dono.token);
+
+    expect(resposta.statusCode).toBe(402);
+    expect(resposta.json().erro).toBe("cartao_recusado");
+    expect(resposta.json().mensagem).toMatch(/cartão/i);
+    expect(await prisma.barbeiro.count({ where: { barbeariaId: dono.barbeariaId } })).toBe(1);
+    expect((await lerLinha(dono.barbeariaId)).profissionaisContratados).toBe(1);
+    expect(convitesPara(app, "ana@exemplo.com")).toHaveLength(0);
+    await app.close();
+  });
+
+  it("a Stripe fora do ar também não deixa a inclusão pela metade", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca);
+    cobranca.falharQuantidade = true;
+
+    const resposta = await incluir(app, dono.token);
+
+    expect(resposta.statusCode).toBe(503);
+    expect(resposta.json().erro).toBe("cobranca_indisponivel");
+    expect(await prisma.barbeiro.count({ where: { barbeariaId: dono.barbeariaId } })).toBe(1);
+    await app.close();
+  });
+
+  it("desativar não devolve: a vaga segue paga e a Stripe já desce pra próxima fatura", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca);
+    const ana = (await incluir(app, dono.token)).json();
+
+    await mudar(app, dono.token, ana.id, { ativo: false });
+
+    expect(cobranca.quantidades.at(-1)).toEqual({ assinaturaId: "sub_1", pagos: 2, novo: 1 });
+    expect((await lerLinha(dono.barbeariaId)).profissionaisContratados).toBe(2);
+    await app.close();
+  });
+
+  it("trocar um profissional no mesmo período não cobra a vaga de novo", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca);
+    const ana = (await incluir(app, dono.token)).json();
+    await mudar(app, dono.token, ana.id, { ativo: false });
+    cobranca.recusarCartao = true;
+
+    const bia = await incluir(app, dono.token, "Bia");
+
+    expect(bia.statusCode).toBe(201);
+    expect(bia.json()).toMatchObject({ ativo: true, aguardaPagamento: false });
+    expect(cobranca.quantidades.at(-1)).toEqual({ assinaturaId: "sub_1", pagos: 2, novo: 2 });
+    await app.close();
+  });
+
+  it("reativar acima das vagas pagas cobra; recusado, segue inativo", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca);
+    const saiu = await criarMembroComToken(app, dono.barbeariaId, "profissional", "p");
+    await prisma.barbeiro.update({ where: { id: saiu.barbeiroId }, data: { ativo: false } });
+    cobranca.recusarCartao = true;
+
+    const recusado = await mudar(app, dono.token, saiu.barbeiroId, { ativo: true });
+    expect(recusado.statusCode).toBe(402);
+    expect(await prisma.barbeiro.findUniqueOrThrow({ where: { id: saiu.barbeiroId } })).toMatchObject({
+      ativo: false,
+      aguardaPagamento: false,
     });
 
-    expect(cobranca.quantidades).toEqual([
-      { assinaturaId: "sub_1", profissionais: 2 },
-      { assinaturaId: "sub_1", profissionais: 1 },
-    ]);
+    cobranca.recusarCartao = false;
+    const reativado = await mudar(app, dono.token, saiu.barbeiroId, { ativo: true });
+    expect(reativado.statusCode).toBe(200);
+    expect(reativado.json()).toMatchObject({ ativo: true, aguardaPagamento: false });
+    expect(cobranca.quantidades.at(-1)).toEqual({ assinaturaId: "sub_1", pagos: 1, novo: 2 });
+    await app.close();
+  });
+
+  it("a recepção que passa a profissional acima das vagas pagas cobra; recusado, segue recepção", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca);
+    const recepcao = await criarMembroComToken(app, dono.barbeariaId, "recepcao", "r");
+    cobranca.recusarCartao = true;
+
+    const resposta = await mudar(app, dono.token, recepcao.barbeiroId, { papel: "profissional" });
+
+    expect(resposta.statusCode).toBe(402);
+    expect(await prisma.barbeiro.findUniqueOrThrow({ where: { id: recepcao.barbeiroId } })).toMatchObject({
+      papel: "recepcao",
+      ativo: true,
+      aguardaPagamento: false,
+    });
+    await app.close();
+  });
+
+  it("com a fatura em atraso, incluir é recusado até pagar", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca, { status: "past_due" });
+
+    const resposta = await incluir(app, dono.token);
+
+    expect(resposta.statusCode).toBe(409);
+    expect(resposta.json().erro).toBe("fatura_em_atraso");
+    expect(cobranca.quantidades).toEqual([]);
+    await app.close();
+  });
+
+  it("quem aguarda pagamento não é liberado pelo PATCH", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca);
+    const aguardando = await prisma.barbeiro.create({
+      data: { barbeariaId: dono.barbeariaId, nome: "Caio", email: "caio@exemplo.com", ativo: false, aguardaPagamento: true },
+    });
+
+    const resposta = await mudar(app, dono.token, aguardando.id, { ativo: true });
+
+    expect(resposta.statusCode).toBe(409);
+    expect(resposta.json().erro).toBe("aguardando_pagamento");
     await app.close();
   });
 
@@ -601,12 +735,7 @@ describe("a quantidade na Stripe acompanha a equipe", () => {
     const { app, cobranca } = montar();
     const dono = await assinada(app, cobranca);
 
-    await app.inject({
-      method: "POST",
-      url: "/equipe",
-      headers: auth(dono.token),
-      payload: { nome: "Bia", email: "bia@exemplo.com", papel: "recepcao" },
-    });
+    await incluir(app, dono.token, "Bia", "recepcao");
 
     expect(cobranca.quantidades).toEqual([]);
     await app.close();
@@ -616,31 +745,86 @@ describe("a quantidade na Stripe acompanha a equipe", () => {
     const { app, cobranca } = montar();
     const { token } = await criarBarbeariaComToken(app);
 
-    await app.inject({
-      method: "POST",
-      url: "/equipe",
-      headers: auth(token),
-      payload: { nome: "Ana", email: "ana@exemplo.com", papel: "profissional" },
-    });
+    await incluir(app, token);
 
     expect(cobranca.quantidades).toEqual([]);
     await app.close();
   });
 
-  it("a Stripe fora do ar não desfaz a mudança na equipe", async () => {
+  it("a Stripe fora do ar não desfaz uma desativação", async () => {
     const { app, cobranca } = montar();
     const dono = await assinada(app, cobranca);
+    const ana = (await incluir(app, dono.token)).json();
     cobranca.falharQuantidade = true;
 
-    const resposta = await app.inject({
-      method: "POST",
-      url: "/equipe",
-      headers: auth(dono.token),
-      payload: { nome: "Ana", email: "ana@exemplo.com", papel: "profissional" },
-    });
+    const resposta = await mudar(app, dono.token, ana.id, { ativo: false });
 
-    expect(resposta.statusCode).toBe(201);
-    expect(await prisma.barbeiro.count({ where: { barbeariaId: dono.barbeariaId } })).toBe(2);
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json().ativo).toBe(false);
+    await app.close();
+  });
+
+  it("o webhook no mesmo período não tira as vagas pagas; no período novo, segue a Stripe", async () => {
+    const { app, cobranca } = montar();
+    const dono = await assinada(app, cobranca);
+    const ana = (await incluir(app, dono.token)).json();
+    await mudar(app, dono.token, ana.id, { ativo: false });
+
+    const mesmoPeriodo = assinaturaNaStripe(dono.barbeariaId, { quantidade: 1, chave: "completo_mensal" });
+    cobranca.assinaturas.set("sub_1", mesmoPeriodo);
+    await webhook(app, "customer.subscription.updated", eventoDaAssinatura(mesmoPeriodo));
+    expect((await lerLinha(dono.barbeariaId)).profissionaisContratados).toBe(2);
+
+    const periodoNovo = { ...mesmoPeriodo, periodoTerminaEm: new Date("2027-01-01T12:00:00Z") };
+    cobranca.assinaturas.set("sub_1", periodoNovo);
+    await webhook(app, "customer.subscription.updated", eventoDaAssinatura(periodoNovo));
+    expect((await lerLinha(dono.barbeariaId)).profissionaisContratados).toBe(1);
+    await app.close();
+  });
+});
+
+describe("GET /equipe/previa-da-inclusao", () => {
+  function previa(app: App, token: string) {
+    return app.inject({ method: "GET", url: "/equipe/previa-da-inclusao", headers: auth(token) });
+  }
+
+  it("no cartão, acima das vagas pagas: quanto cobra agora e em qual cartão", async () => {
+    const { app, cobranca } = montar();
+    const dono = await criarBarbeariaComToken(app);
+    const sub = assinaturaNaStripe(dono.barbeariaId, { quantidade: 1, chave: "completo_mensal" });
+    cobranca.assinaturas.set(sub.id, sub);
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(sub));
+    cobranca.previa = { valorCentavos: 1234, cartaoFinal: "4242" };
+
+    const resposta = await previa(app, dono.token);
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toEqual({ cobra: true, valorCentavos: 1234, cartaoFinal: "4242" });
+    expect(cobranca.previas).toEqual([{ assinaturaId: "sub_1", pagos: 1, novo: 2 }]);
+    await app.close();
+  });
+
+  it("dentro das vagas pagas, ou sem cartão, não cobra nada", async () => {
+    const { app, cobranca } = montar();
+    const dono = await criarBarbeariaComToken(app);
+
+    expect((await previa(app, dono.token)).json()).toEqual({ cobra: false, valorCentavos: 0, cartaoFinal: null });
+
+    const sub = assinaturaNaStripe(dono.barbeariaId, { quantidade: 2, chave: "completo_mensal" });
+    cobranca.assinaturas.set(sub.id, sub);
+    await webhook(app, "customer.subscription.created", eventoDaAssinatura(sub));
+
+    expect((await previa(app, dono.token)).json()).toEqual({ cobra: false, valorCentavos: 0, cartaoFinal: null });
+    expect(cobranca.previas).toEqual([]);
+    await app.close();
+  });
+
+  it("só o dono vê", async () => {
+    const { app } = montar();
+    const dono = await criarBarbeariaComToken(app);
+    const profissional = await criarMembroComToken(app, dono.barbeariaId, "profissional", "p");
+
+    expect((await previa(app, profissional.token)).statusCode).toBe(403);
     await app.close();
   });
 });

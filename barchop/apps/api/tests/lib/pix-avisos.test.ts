@@ -102,6 +102,37 @@ describe("o aviso 5 dias antes", () => {
     expect((await prisma.pagamentoPix.findUniqueOrThrow({ where: { id: pagamento.id } })).avisadoEm).not.toBeNull();
   });
 
+  // Plano profissional-novo-pago, PR 3: o Pix da diferença termina junto
+  // com o período, mas não é o pagamento do período.
+  it("o Pix da diferença (mesmo fim, mais novo) não faz o aviso sair de novo", async () => {
+    const { barbeiroId, barbeariaId } = await noPix();
+    const canal = canalDeMemoria();
+    await varrer(AS_8H("2026-12-10"), canal);
+    await prisma.pagamentoPix.create({
+      data: {
+        barbeariaId,
+        tipo: "diferenca",
+        identificador: "DIFERE",
+        plano: "essencial",
+        ciclo: "mensal",
+        profissionais: 2,
+        valorCentavos: 250,
+        periodoComecaEm: new Date("2026-12-10T03:00:00.000Z"),
+        periodoTerminaEm: new Date(FIM),
+        situacao: "confirmado",
+        antesSituacao: "ativa",
+        antesPlano: "essencial",
+        antesCiclo: "mensal",
+        antesForma: "pix",
+      },
+    });
+
+    await varrer(AS_8H("2026-12-11"), canal);
+
+    expect(await sino(barbeiroId)).toHaveLength(1);
+    expect(canal.enviadas).toHaveLength(1);
+  });
+
   it("sem URL_DO_PAINEL, o e-mail sai sem link (nunca um localhost)", async () => {
     await noPix();
     const canal = canalDeMemoria();

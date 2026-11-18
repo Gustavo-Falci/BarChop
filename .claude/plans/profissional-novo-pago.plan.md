@@ -81,6 +81,7 @@ O cartão usa o mesmo estado por alguns segundos: cria o membro aguardando, cobr
 - **Recusa do Suporte e "Ainda não paguei"** do tipo `diferenca`: `voltarAoQueEra` desce os contratados, e os liberados por este Pix voltam a aguardar (`ativo = false`). Quem já tinha entrado perde o acesso na hora (o token é recusado).
 - **Renovação:** o Pix do período seguinte já conta os aguardando, e pagar a renovação os libera.
 - **Desistir:** `DELETE /equipe/:id/aguardando`, só para quem está aguardando.
+- **Feito em 18/11, com o que apareceu no caminho:** (a) migration `20261118180000_pix_liberados` (`pagamento_pix.liberados`): a recusa volta a aguardar exatamente quem aquele Pix liberou, e quem já saiu fica de fora; (b) renovação **adiantada** com alguém aguardando → `409 diferenca_pendente` (senão as vagas do período seguinte apagariam a diferença do período de agora); um período que começa hoje (Pix vencido) libera quem aguarda; (c) a varredura de avisos filtra `tipo = periodo` (o Pix da diferença tem o mesmo fim e faria o aviso sair de novo); (d) `enviarConvite` foi pra `lib/convite.ts`; (e) Desistir apaga só quem nunca entrou (sem senha e sem agendamento); (f) a prévia da inclusão no Pix devolve o valor da diferença.
 - **Validate:** `pix-do-barchop.test.ts` (cotação, "Já paguei" libera, recusa bloqueia de novo, desfazer, renovação libera, 409 com outro aguardando).
 
 ### PR 4 — Telas (web) — **canvas antes**

@@ -120,6 +120,7 @@ describe("o aviso 5 dias antes", () => {
         periodoComecaEm: new Date("2026-12-10T03:00:00.000Z"),
         periodoTerminaEm: new Date(FIM),
         situacao: "confirmado",
+        decididoEm: new Date("2026-12-10T12:00:00.000Z"),
         antesSituacao: "ativa",
         antesPlano: "essencial",
         antesCiclo: "mensal",

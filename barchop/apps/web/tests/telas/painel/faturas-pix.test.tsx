@@ -64,6 +64,7 @@ function noPix(fim: string, parcial: Partial<ResumoDaAssinatura> = {}): ResumoDa
 function pagamento(parcial: Partial<PagamentoPix> = {}): PagamentoPix {
   return {
     id: "pix-1",
+    tipo: "periodo",
     identificador: "K7Q2MX",
     plano: "essencial",
     ciclo: "mensal",

@@ -291,15 +291,31 @@ describe("o Pix do período e quem aguarda", () => {
     await app.close();
   });
 
-  it("a renovação paga adiantada não libera: o período de agora ainda deve a diferença", async () => {
+  it("com alguém aguardando, a renovação adiantada pede a diferença antes", async () => {
     const app = montar();
     const dono = await noPix(app);
     const ana = (await incluir(app, dono.token)).json();
 
     const resposta = await jaPaguei(app, dono.token, 2);
 
-    expect(resposta.statusCode).toBe(201);
+    expect(resposta.statusCode).toBe(409);
+    expect(resposta.json().erro).toBe("diferenca_pendente");
     expect(await membro(ana.id)).toMatchObject({ ativo: false, aguardaPagamento: true });
+    expect((await lerLinha(dono.barbeariaId)).profissionaisContratados).toBe(1);
+    await app.close();
+  });
+
+  it("a prévia da inclusão no Pix é o Pix da diferença", async () => {
+    const app = montar();
+    const dono = await noPix(app);
+
+    const resposta = await app.inject({ method: "GET", url: "/equipe/previa-da-inclusao", headers: auth(dono.token) });
+
+    expect(resposta.json()).toEqual({
+      cobra: true,
+      valorCentavos: valorDaDiferenca({ plano: "completo", ciclo: "mensal", extras: 1, agora: new Date(), fim: dono.fim }),
+      cartaoFinal: null,
+    });
     await app.close();
   });
 });

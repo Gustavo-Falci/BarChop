@@ -311,6 +311,7 @@ describe("POST /barbearias/me/assinatura/pix (Já paguei)", () => {
     expect(resposta.statusCode).toBe(201);
     expect(resposta.json()).toEqual({
       id: expect.any(String),
+      tipo: "periodo",
       identificador: cotacao.identificador,
       plano: "essencial",
       ciclo: "mensal",

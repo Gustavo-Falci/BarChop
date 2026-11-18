@@ -1653,6 +1653,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         }
         const pagamento: PagamentoPix = {
           id: `pix-${estado.pagamentosPix!.length + 1}`,
+          tipo: "periodo",
           identificador: cotacao.identificador,
           plano: pedido.plano,
           ciclo: pedido.ciclo,

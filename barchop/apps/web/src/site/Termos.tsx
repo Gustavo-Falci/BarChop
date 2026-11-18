@@ -51,8 +51,10 @@ export function Termos() {
           </li>
           <li>
             O valor dos planos pagos depende de quantos profissionais atendem: o dono e os profissionais da
-            equipe. A recepção não conta. Incluir um profissional com o plano pago soma o valor proporcional na
-            cobrança.
+            equipe. A recepção não conta. Incluir um profissional com o plano pago cobra na hora o valor
+            proporcional aos dias que faltam: no cartão, na hora da inclusão; no Pix, o profissional passa a valer
+            depois do Pix da diferença. Tirar um profissional não devolve o período em curso: a próxima cobrança já
+            vem com um a menos.
           </li>
           <li>
             O pagamento é no cartão de crédito, pela Stripe, que processa a cobrança. O BarChop não vê nem guarda

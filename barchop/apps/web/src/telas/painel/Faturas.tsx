@@ -1039,6 +1039,12 @@ const PERGUNTAS: { pergunta: string; resposta: string }[] = [
       "Subiu de plano: paga na hora só a diferença pelos dias que faltam no período, e o plano novo já vale. Desceu de plano ou trocou o anual pelo mensal: a mudança vale no fim do período já pago, sem cobrança a mais. Durante o teste, trocar de plano não cobra nada.",
   },
   {
+    // Plano profissional-novo-pago: a mesma regra dos Termos e de Preços.
+    pergunta: "Incluí um profissional no meio do mês, quanto pago?",
+    resposta:
+      "Só os dias que faltam pra ele no período. No cartão, a cobrança sai na hora, ao enviar o convite; no Pix, ele entra depois do Pix da diferença. Tirar um profissional não devolve o período em curso: a próxima cobrança já vem com um a menos.",
+  },
+  {
     pergunta: "Qual a diferença entre mensal e anual?",
     resposta: "No anual você paga 10 meses e leva 12: dois meses grátis, cobrados de uma vez.",
   },

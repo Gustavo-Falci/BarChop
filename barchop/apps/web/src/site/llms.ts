@@ -84,6 +84,8 @@ export function textoDoLlms(urlDoSite: string | undefined): string {
     "",
     ...IDS_DOS_PLANOS.map(linhaDoPlano),
     "",
+    "Incluir um profissional no meio do período cobra na hora só os dias que faltam; tirar um não devolve o período em curso, e a próxima cobrança já vem com um a menos.",
+    "",
     // "Optional" é a palavra do formato: o que dá pra pular.
     "## Optional",
     "",

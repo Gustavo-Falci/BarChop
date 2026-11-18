@@ -12,7 +12,7 @@ import {
   type SituacaoDaAssinatura,
 } from "@barchop/formato";
 import type { ResumoDaAssinatura, UsoNoTeste } from "@barchop/types";
-import type { Cobranca } from "./cobranca";
+import { CartaoRecusado, type Cobranca } from "./cobranca";
 import { ErroHttp } from "./erro-http";
 import { ErroDeNegocio } from "./erro-negocio";
 
@@ -283,32 +283,93 @@ export async function resumoDaAssinatura(
   };
 }
 
-interface LogDeAviso {
+interface Log {
   warn(objeto: object, mensagem: string): void;
+  error(objeto: object, mensagem: string): void;
 }
 
-// Depois que a equipe muda (e a transação gravou): com plano pago, a
-// quantidade na Stripe acompanha os profissionais contados, para cima e
-// para baixo, nunca abaixo de 1 — cobrança proporcional na próxima
-// fatura. Se a Stripe falhar, a mudança na equipe fica: o aviso vai pro
-// log, e o `profissionaisContratados` do webhook mostra a diferença.
-export async function sincronizarQuantidade(
-  cobranca: Cobranca,
-  barbeariaId: string,
-  log: LogDeAviso
-): Promise<void> {
+// Profissional novo com o plano pago no cartão (plano
+// profissional-novo-pago). `pagos` = vagas pagas no período
+// (`profissionaisContratados`: só sobe no período; o webhook o abaixa na
+// virada); `novo` = a equipe com quem entra.
+export interface InclusaoNoCartao {
+  assinaturaId: string;
+  pagos: number;
+  novo: number;
+}
+
+// Dentro da transação de quem inclui, depois do garantirVagaNoPlano (a
+// linha da barbearia já travada): com cartão vivo, o pedido pra Stripe.
+// Com a fatura em atraso, recusa: pague antes de crescer. Sem cartão
+// (teste, Grátis, Pix), null.
+export async function planejarInclusao(
+  db: Prisma.TransactionClient,
+  barbeariaId: string
+): Promise<InclusaoNoCartao | null> {
+  const linha = await db.assinatura.findUnique({
+    where: { barbeariaId },
+    select: { situacao: true, stripeSubscriptionId: true, profissionaisContratados: true },
+  });
+  if (!linha?.stripeSubscriptionId || (linha.situacao !== "ativa" && linha.situacao !== "em_atraso")) return null;
+  if (linha.situacao === "em_atraso") {
+    throw new ErroHttp(409, "fatura_em_atraso", "a assinatura tem uma fatura em atraso: pague em Faturas antes de incluir alguém");
+  }
+  const novo = (await contarProfissionais(barbeariaId, db)) + 1;
+  return { assinaturaId: linha.stripeSubscriptionId, pagos: linha.profissionaisContratados ?? 1, novo };
+}
+
+export function inclusaoCobra(inclusao: InclusaoNoCartao | null): inclusao is InclusaoNoCartao {
+  return inclusao !== null && inclusao.novo > inclusao.pagos;
+}
+
+// Cobra a inclusão na hora. Cartão recusado: 402, com o que fazer. A
+// Stripe fora do ar: 503. Em nenhum dos dois a Stripe mudou; quem chamou
+// desfaz o membro que aguardava.
+export async function cobrarInclusao(cobranca: Cobranca, inclusao: InclusaoNoCartao, log: Log): Promise<void> {
+  try {
+    await cobranca.mudarQuantidade(inclusao.assinaturaId, inclusao);
+  } catch (erro) {
+    if (erro instanceof CartaoRecusado) throw new ErroHttp(402, "cartao_recusado", erro.message);
+    log.error({ err: erro, ...inclusao }, "não consegui cobrar a inclusão na Stripe");
+    throw new ErroHttp(503, "cobranca_indisponivel", "não deu pra cobrar no cartão agora: tente de novo em alguns minutos");
+  }
+}
+
+// Pago: o membro entra e as vagas pagas sobem. Na mesma transação, com a
+// linha da assinatura travada (o webhook pode estar gravando ao mesmo
+// tempo).
+export function liberarMembro(barbeariaId: string, membroId: string, inclusao: InclusaoNoCartao) {
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM assinatura WHERE barbearia_id = ${barbeariaId}::uuid FOR UPDATE`;
+    const linha = await tx.assinatura.findUniqueOrThrow({ where: { barbeariaId }, select: { profissionaisContratados: true } });
+    await tx.assinatura.update({
+      where: { barbeariaId },
+      data: { profissionaisContratados: Math.max(linha.profissionaisContratados ?? 0, inclusao.novo) },
+    });
+    return tx.barbeiro.update({ where: { id: membroId, barbeariaId }, data: { ativo: true, aguardaPagamento: false } });
+  });
+}
+
+// Inclusão dentro das vagas pagas, ou alguém que saiu: a quantidade na
+// Stripe acompanha a equipe (nunca abaixo de 1), sem cobrar nem
+// devolver; a próxima fatura já vem com ela. As vagas pagas não mudam.
+// Se a Stripe falhar, a mudança na equipe fica e o aviso vai pro log.
+export async function ajustarQuantidade(cobranca: Cobranca, barbeariaId: string, log: Log): Promise<void> {
   const linha = await prisma.assinatura.findUnique({
     where: { barbeariaId },
     select: { situacao: true, stripeSubscriptionId: true, profissionaisContratados: true },
   });
   if (!linha?.stripeSubscriptionId || (linha.situacao !== "ativa" && linha.situacao !== "em_atraso")) return;
 
-  const profissionais = Math.max(1, await contarProfissionais(barbeariaId));
-  if (profissionais === linha.profissionaisContratados) return;
+  const novo = Math.max(1, await contarProfissionais(barbeariaId));
+  const pagos = linha.profissionaisContratados ?? novo;
+  if (novo > pagos) {
+    log.warn({ barbeariaId, novo, pagos }, "equipe acima das vagas pagas sem cobrança: quantidade não mexida");
+    return;
+  }
   try {
-    await cobranca.atualizarQuantidade(linha.stripeSubscriptionId, profissionais);
-    await prisma.assinatura.update({ where: { barbeariaId }, data: { profissionaisContratados: profissionais } });
+    await cobranca.mudarQuantidade(linha.stripeSubscriptionId, { pagos, novo });
   } catch (erro) {
-    log.warn({ err: erro, barbeariaId, profissionais }, "não consegui atualizar a quantidade na Stripe");
+    log.warn({ err: erro, barbeariaId, novo }, "não consegui atualizar a quantidade na Stripe");
   }
 }

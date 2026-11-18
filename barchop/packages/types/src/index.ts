@@ -648,6 +648,9 @@ export interface CotacaoDoPix {
 // null com o Pix desligado.
 export interface PagamentoPix {
   id: string;
+  // `periodo` paga um período; `diferenca`, o profissional novo até o
+  // fim do período já pago (plano profissional-novo-pago).
+  tipo: "periodo" | "diferenca";
   identificador: string;
   plano: Exclude<IdDoPlano, "gratis">;
   ciclo: CicloDoPlano;

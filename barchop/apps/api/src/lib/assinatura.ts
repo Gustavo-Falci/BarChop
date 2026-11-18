@@ -293,32 +293,77 @@ interface Log {
 // (`profissionaisContratados`: só sobe no período; o webhook o abaixa na
 // virada); `novo` = a equipe com quem entra.
 export interface InclusaoNoCartao {
+  forma: "cartao";
   assinaturaId: string;
   pagos: number;
   novo: number;
 }
 
-// Dentro da transação de quem inclui, depois do garantirVagaNoPlano (a
-// linha da barbearia já travada): com cartão vivo, o pedido pra Stripe.
-// Com a fatura em atraso, recusa: pague antes de crescer. Sem cartão
-// (teste, Grátis, Pix), null.
-export async function planejarInclusao(
-  db: Prisma.TransactionClient,
-  barbeariaId: string
-): Promise<InclusaoNoCartao | null> {
-  const linha = await db.assinatura.findUnique({
-    where: { barbeariaId },
-    select: { situacao: true, stripeSubscriptionId: true, profissionaisContratados: true },
-  });
-  if (!linha?.stripeSubscriptionId || (linha.situacao !== "ativa" && linha.situacao !== "em_atraso")) return null;
-  if (linha.situacao === "em_atraso") {
-    throw new ErroHttp(409, "fatura_em_atraso", "a assinatura tem uma fatura em atraso: pague em Faturas antes de incluir alguém");
-  }
-  const novo = (await contarProfissionais(barbeariaId, db)) + 1;
-  return { assinaturaId: linha.stripeSubscriptionId, pagos: linha.profissionaisContratados ?? 1, novo };
+// No Pix vigente, quem passa das vagas pagas espera o Pix da diferença
+// (valorDaDiferenca até `fim`).
+export interface InclusaoNoPix {
+  forma: "pix";
+  plano: Exclude<IdDoPlano, "gratis">;
+  ciclo: Ciclo;
+  fim: Date;
+  pagos: number;
+  novo: number;
 }
 
-export function inclusaoCobra(inclusao: InclusaoNoCartao | null): inclusao is InclusaoNoCartao {
+export type Inclusao = InclusaoNoCartao | InclusaoNoPix;
+
+// Dentro da transação de quem inclui, depois do garantirVagaNoPlano (a
+// linha da barbearia já travada): com cartão vivo, o pedido pra Stripe;
+// com Pix vigente, as vagas pagas no período. Com a fatura do cartão em
+// atraso, recusa: pague antes de crescer. Sem plano pago (teste, Grátis,
+// Pix vencido), null.
+export async function planejarInclusao(
+  db: Prisma.TransactionClient,
+  barbeariaId: string,
+  agora: Date = new Date()
+): Promise<Inclusao | null> {
+  const linha = await db.assinatura.findUnique({
+    where: { barbeariaId },
+    select: {
+      situacao: true,
+      forma: true,
+      plano: true,
+      ciclo: true,
+      periodoTerminaEm: true,
+      stripeSubscriptionId: true,
+      profissionaisContratados: true,
+    },
+  });
+  if (!linha) return null;
+  const novo = (await contarProfissionais(barbeariaId, db)) + 1;
+  const pagos = linha.profissionaisContratados ?? 1;
+
+  if (linha.stripeSubscriptionId && (linha.situacao === "ativa" || linha.situacao === "em_atraso")) {
+    if (linha.situacao === "em_atraso") {
+      throw new ErroHttp(409, "fatura_em_atraso", "a assinatura tem uma fatura em atraso: pague em Faturas antes de incluir alguém");
+    }
+    return { forma: "cartao", assinaturaId: linha.stripeSubscriptionId, pagos, novo };
+  }
+  const pixVigente =
+    linha.forma === "pix" &&
+    linha.situacao === "ativa" &&
+    linha.plano !== "gratis" &&
+    linha.periodoTerminaEm !== null &&
+    agora < linha.periodoTerminaEm;
+  if (pixVigente) {
+    return {
+      forma: "pix",
+      plano: linha.plano as Exclude<IdDoPlano, "gratis">,
+      ciclo: linha.ciclo as Ciclo,
+      fim: linha.periodoTerminaEm!,
+      pagos,
+      novo,
+    };
+  }
+  return null;
+}
+
+export function inclusaoCobra<T extends Inclusao>(inclusao: T | null): inclusao is T {
   return inclusao !== null && inclusao.novo > inclusao.pagos;
 }
 
@@ -327,10 +372,10 @@ export function inclusaoCobra(inclusao: InclusaoNoCartao | null): inclusao is In
 // desfaz o membro que aguardava.
 export async function cobrarInclusao(cobranca: Cobranca, inclusao: InclusaoNoCartao, log: Log): Promise<void> {
   try {
-    await cobranca.mudarQuantidade(inclusao.assinaturaId, inclusao);
+    await cobranca.mudarQuantidade(inclusao.assinaturaId, { pagos: inclusao.pagos, novo: inclusao.novo });
   } catch (erro) {
     if (erro instanceof CartaoRecusado) throw new ErroHttp(402, "cartao_recusado", erro.message);
-    log.error({ err: erro, ...inclusao }, "não consegui cobrar a inclusão na Stripe");
+    log.error({ err: erro, assinaturaId: inclusao.assinaturaId, novo: inclusao.novo }, "não consegui cobrar a inclusão na Stripe");
     throw new ErroHttp(503, "cobranca_indisponivel", "não deu pra cobrar no cartão agora: tente de novo em alguns minutos");
   }
 }
@@ -338,7 +383,7 @@ export async function cobrarInclusao(cobranca: Cobranca, inclusao: InclusaoNoCar
 // Pago: o membro entra e as vagas pagas sobem. Na mesma transação, com a
 // linha da assinatura travada (o webhook pode estar gravando ao mesmo
 // tempo).
-export function liberarMembro(barbeariaId: string, membroId: string, inclusao: InclusaoNoCartao) {
+export function liberarMembro(barbeariaId: string, membroId: string, inclusao: Inclusao) {
   return prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM assinatura WHERE barbearia_id = ${barbeariaId}::uuid FOR UPDATE`;
     const linha = await tx.assinatura.findUniqueOrThrow({ where: { barbeariaId }, select: { profissionaisContratados: true } });

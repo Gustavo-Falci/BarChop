@@ -1,6 +1,5 @@
-import type { FastifyRequest } from "fastify";
 import { Prisma, prisma, type PapelMembro } from "@barchop/database";
-import { normalizarEmail } from "@barchop/formato";
+import { normalizarEmail, valorDaDiferenca } from "@barchop/formato";
 import {
   ajustarQuantidade,
   cobrarInclusao,
@@ -8,9 +7,9 @@ import {
   inclusaoCobra,
   liberarMembro,
   planejarInclusao,
-  type InclusaoNoCartao,
+  type Inclusao,
 } from "../lib/assinatura";
-import { emitirCodigo } from "../lib/codigos";
+import { enviarConvite } from "../lib/convite";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
 import { INCLUIR_PAUSAS } from "../lib/disponibilidade";
 import { ErroDeNegocio } from "../lib/erro-negocio";
@@ -265,46 +264,6 @@ function exigirCanalDeEmail(app: App): void {
   }
 }
 
-// O envio não é aguardado, como no /auth/codigo: uma falha do provedor
-// fica no log, e o dono reenvia pela própria equipe.
-async function enviarConvite(
-  app: App,
-  request: FastifyRequest,
-  membro: { email: string; barbeariaId: string }
-): Promise<void> {
-  const barbearia = await prisma.barbearia.findUniqueOrThrow({
-    where: { id: membro.barbeariaId },
-    select: { nome: true },
-  });
-  // barbeariaId nulo, como no esqueci-a-senha: o e-mail do membro é
-  // único na plataforma, e o aceite não sabe a barbearia antes de provar
-  // o código.
-  const codigo = await emitirCodigo({
-    finalidade: "convite_profissional",
-    destino: membro.email,
-    barbeariaId: null,
-  });
-
-  // O link só sai com URL_DO_PAINEL configurada: sem ela não há
-  // endereço certo a apontar, e um link pra lugar nenhum é pior que o
-  // código sozinho. O e-mail vai na query pra a tela já chegar com ele.
-  const painel = process.env.URL_DO_PAINEL?.replace(/\/+$/, "");
-  const link = painel
-    ? ` Abra ${painel}/painel/convite?email=${encodeURIComponent(membro.email)} para começar.`
-    : "";
-
-  void app.canal
-    .enviar({
-      para: membro.email,
-      assunto: `Convite para a equipe da ${barbearia.nome} no BarChop`,
-      texto:
-        `${barbearia.nome} convidou você para a equipe no BarChop. ` +
-        `Seu código de convite é ${codigo}. Vale 7 dias: use-o para ` +
-        `definir sua senha e entrar no painel.${link}`,
-    })
-    .catch((erro: unknown) => request.log.error({ erro }, "falha ao enviar o convite"));
-}
-
 // O papel que sai de "dono" ou o dono desativado: as duas mudanças que
 // podem deixar a barbearia sem ninguém pra configurá-la.
 function tiraUmDono(corpo: { papel?: string; ativo?: boolean }): boolean {
@@ -342,12 +301,22 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
   app.get("/equipe", async (request) => listaDaEquipe(request.user.barbeariaId));
 
   // Antes de incluir ou reativar (plano profissional-novo-pago): quanto
-  // o cartão paga agora pela vaga a mais, e em qual cartão. Sem cartão,
-  // ou dentro das vagas pagas, não cobra nada.
+  // custa a vaga a mais agora. No cartão, o que a Stripe cobra e em qual
+  // cartão; no Pix, o Pix da diferença. Sem plano pago, ou dentro das
+  // vagas pagas, não cobra nada.
   app.get("/equipe/previa-da-inclusao", { onRequest: exigirPapel("dono") }, async (request) => {
-    const inclusao = await planejarInclusao(prisma, request.user.barbeariaId);
+    const agora = new Date();
+    const inclusao = await planejarInclusao(prisma, request.user.barbeariaId, agora);
     if (!inclusaoCobra(inclusao)) return { cobra: false, valorCentavos: 0, cartaoFinal: null };
-    const previa = await app.cobranca.previaDaInclusao(inclusao.assinaturaId, inclusao);
+    if (inclusao.forma === "pix") {
+      const extras = inclusao.novo - inclusao.pagos;
+      const valorCentavos = valorDaDiferenca({ plano: inclusao.plano, ciclo: inclusao.ciclo, extras, agora, fim: inclusao.fim });
+      return { cobra: true, valorCentavos, cartaoFinal: null };
+    }
+    const previa = await app.cobranca.previaDaInclusao(inclusao.assinaturaId, {
+      pagos: inclusao.pagos,
+      novo: inclusao.novo,
+    });
     return { cobra: true, ...previa };
   });
 
@@ -383,7 +352,7 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
 
       const { barbeariaId } = request.user;
       let membro;
-      let inclusao: InclusaoNoCartao | null = null;
+      let inclusao: Inclusao | null = null;
       try {
         membro = await prisma.$transaction(async (tx) => {
           if (contaNoPlano({ ativo: true, papel })) {
@@ -417,19 +386,26 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
       }
 
       // Gravadas dentro da transação: o TS não acompanha.
-      const cobrada = inclusao as InclusaoNoCartao | null;
-      if (inclusaoCobra(cobrada)) {
-        // Fora da transação: é rede. Não pagou, o membro some.
-        try {
-          await cobrarInclusao(app.cobranca, cobrada, request.log);
-        } catch (erro) {
-          await prisma.barbeiro.delete({ where: { id: membro.id } });
-          throw erro;
+      const cobrada = inclusao as Inclusao | null;
+      // No Pix, quem passa das vagas pagas espera o Pix da diferença: sem
+      // convite até pagar (o "Já paguei" libera e convida).
+      if (cobrada?.forma === "pix" && inclusaoCobra(cobrada)) {
+        return reply.code(201).send(serializarMembro(membro, app.armazenamento.urlPublica));
+      }
+      if (cobrada?.forma === "cartao") {
+        if (inclusaoCobra(cobrada)) {
+          // Fora da transação: é rede. Não pagou, o membro some.
+          try {
+            await cobrarInclusao(app.cobranca, cobrada, request.log);
+          } catch (erro) {
+            await prisma.barbeiro.delete({ where: { id: membro.id } });
+            throw erro;
+          }
+          membro = await liberarMembro(barbeariaId, membro.id, cobrada);
+        } else {
+          // Dentro das vagas pagas: a Stripe só acompanha, sem cobrar.
+          await ajustarQuantidade(app.cobranca, barbeariaId, request.log);
         }
-        membro = await liberarMembro(barbeariaId, membro.id, cobrada);
-      } else if (cobrada) {
-        // Dentro das vagas pagas: a Stripe só acompanha, sem cobrar.
-        await ajustarQuantidade(app.cobranca, barbeariaId, request.log);
       }
 
       await enviarConvite(app, request, { email, barbeariaId: membro.barbeariaId });
@@ -465,7 +441,7 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         await cancelarNoProvedor(app.provedores, online);
       }
 
-      let inclusao: InclusaoNoCartao | null = null;
+      let inclusao: Inclusao | null = null;
       let antes: Antes | null = null;
       const membro = await prisma.$transaction(async (tx) => {
         if (tiraUmDono(request.body)) {
@@ -554,9 +530,13 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
       });
 
       // Gravadas dentro da transação: o TS não acompanha.
-      const cobrada = inclusao as InclusaoNoCartao | null;
+      const cobrada = inclusao as Inclusao | null;
       const anterior = antes as Antes | null;
-      if (inclusaoCobra(cobrada) && anterior) {
+      // No Pix, espera o Pix da diferença, como no convite.
+      if (cobrada?.forma === "pix" && inclusaoCobra(cobrada)) {
+        return serializarMembro(membro, app.armazenamento.urlPublica);
+      }
+      if (cobrada?.forma === "cartao" && inclusaoCobra(cobrada) && anterior) {
         // Não pagou: volta ao que era.
         try {
           await cobrarInclusao(app.cobranca, cobrada, request.log);
@@ -576,6 +556,31 @@ export function registrarRotasEquipe(app: App, limites: LimitesDaEquipe): void {
         await ajustarQuantidade(app.cobranca, barbeariaId, request.log);
       }
       return serializarMembro(membro, app.armazenamento.urlPublica);
+    }
+  );
+
+  // "Desistir" de quem aguarda pagamento (plano profissional-novo-pago):
+  // o novo que nunca entrou some; quem já tinha conta (estava sendo
+  // reativado) só deixa de aguardar e segue inativo, com o histórico.
+  app.delete(
+    "/equipe/:id/aguardando",
+    { schema: { params: paramsComId }, onRequest: exigirPapel("dono") },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { barbeariaId } = request.user;
+      await prisma.$transaction(async (tx) => {
+        const membro = await tx.barbeiro.findFirst({
+          where: { id, barbeariaId, aguardaPagamento: true },
+          select: { senhaHash: true, _count: { select: { agendamentos: true } } },
+        });
+        if (!membro) throw naoEncontrado();
+        if (membro.senhaHash === null && membro._count.agendamentos === 0) {
+          await tx.barbeiro.delete({ where: { id } });
+        } else {
+          await tx.barbeiro.update({ where: { id }, data: { aguardaPagamento: false } });
+        }
+      });
+      return reply.code(204).send();
     }
   );
 

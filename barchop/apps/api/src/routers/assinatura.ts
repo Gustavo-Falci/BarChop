@@ -1,12 +1,16 @@
+import type { FastifyRequest } from "fastify";
 import { Prisma, prisma } from "@barchop/database";
 import { CICLOS, limiteDeProfissionais } from "@barchop/formato";
 import { conferirPedidoDoPlano, contarProfissionais, resumoDaAssinatura } from "../lib/assinatura";
 import { fimDoTesteNaCobranca } from "../lib/cobranca";
 import { ErroHttp, conflito } from "../lib/erro-http";
 import { PADRAO_UUID } from "../lib/padroes";
+import { enviarConvite } from "../lib/convite";
 import {
   cotar,
+  cotarDiferenca,
   exigirPix,
+  liberarAguardando,
   pagamentoAguardando,
   pixVigente,
   resumoDoPix,
@@ -47,6 +51,24 @@ const DATA_CURTA = new Intl.DateTimeFormat("pt-BR", {
   month: "2-digit",
   timeZone: "America/Sao_Paulo",
 });
+
+interface Liberado {
+  email: string | null;
+  senhaHash: string | null;
+}
+
+// Quem entrou pelo Pix e ainda não tem senha recebe o convite agora (o
+// convite não saiu enquanto aguardava). Depois do commit, como na equipe.
+async function convidarLiberados(
+  app: App,
+  request: FastifyRequest,
+  barbeariaId: string,
+  liberados: Liberado[]
+): Promise<void> {
+  for (const membro of liberados) {
+    if (membro.senhaHash === null && membro.email) await enviarConvite(app, request, { email: membro.email, barbeariaId });
+  }
+}
 
 function emConferencia(): ErroHttp {
   return new ErroHttp(409, "pix_em_conferencia", "já há um Pix em conferência: espere o suporte ou desfaça");
@@ -143,6 +165,7 @@ export function registrarRotasAssinatura(app: App): void {
       const { barbeariaId } = request.user;
       const pedido = request.body;
       const agora = new Date();
+      const convidar: Liberado[] = [];
       try {
         const pagamento = await prisma.$transaction(async (tx) => {
           // A linha da assinatura travada: dois "Já paguei" ao mesmo
@@ -152,6 +175,18 @@ export function registrarRotasAssinatura(app: App): void {
             throw emConferencia();
           }
           const { cotacao, linha } = await cotar(tx, config, barbeariaId, pedido, agora);
+          // Quem aguarda pagamento (plano profissional-novo-pago): um
+          // período que começa agora o libera; a renovação adiantada não
+          // paga o período de agora, então a diferença vem antes.
+          const comecaAgora = cotacao.periodoComecaEm.getTime() <= agora.getTime();
+          if (!comecaAgora && (await tx.barbeiro.count({ where: { barbeariaId, aguardaPagamento: true } })) > 0) {
+            throw new ErroHttp(
+              409,
+              "diferenca_pendente",
+              "há profissional aguardando o Pix da diferença: pague a diferença antes de renovar"
+            );
+          }
+          const liberados = comecaAgora ? await liberarAguardando(tx, barbeariaId) : [];
           const criado = await tx.pagamentoPix.create({
             data: {
               barbeariaId,
@@ -168,8 +203,10 @@ export function registrarRotasAssinatura(app: App): void {
               antesForma: linha.forma,
               antesPeriodoTerminaEm: linha.periodoTerminaEm,
               antesProfissionais: linha.profissionaisContratados,
+              liberados: liberados.map((m) => m.id),
             },
           });
+          convidar.push(...liberados);
           // A assinatura do cartão, se havia, já morreu (o 409 do cotar
           // garante): o id sai, o cliente na Stripe fica. O fim do teste
           // nunca muda.
@@ -188,6 +225,7 @@ export function registrarRotasAssinatura(app: App): void {
           });
           return criado;
         });
+        await convidarLiberados(app, request, barbeariaId, convidar);
         return reply.code(201).send(serializarPagamentoPix(pagamento, config));
       } catch (erro) {
         // O índice parcial: outro "Já paguei" passou na frente, ou (raro)
@@ -202,6 +240,64 @@ export function registrarRotasAssinatura(app: App): void {
       }
     }
   );
+
+  // O Pix da diferença (plano profissional-novo-pago): quem passou das
+  // vagas pagas no Pix vigente aguarda; o QR cobra o extra deles até o
+  // fim do período já pago.
+  app.get("/barbearias/me/assinatura/pix/diferenca", { onRequest: exigirPapel("dono") }, async (request) => {
+    const config = exigirPix(app.pix);
+    const { cotacao } = await cotarDiferenca(prisma, config, request.user.barbeariaId, new Date());
+    return serializarCotacao(config, cotacao);
+  });
+
+  // "Já paguei" da diferença: quem aguardava entra na hora (com convite)
+  // e as vagas pagas sobem, à espera da conferência do Suporte, como o
+  // Pix do período. A recusa volta tudo, e quem entrou volta a aguardar.
+  app.post("/barbearias/me/assinatura/pix/diferenca", { onRequest: exigirPapel("dono") }, async (request, reply) => {
+    const config = exigirPix(app.pix);
+    const { barbeariaId } = request.user;
+    const agora = new Date();
+    const convidar: Liberado[] = [];
+    try {
+      const pagamento = await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM assinatura WHERE barbearia_id = ${barbeariaId}::uuid FOR UPDATE`;
+        if (await tx.pagamentoPix.findFirst({ where: { barbeariaId, situacao: "aguardando" } })) {
+          throw emConferencia();
+        }
+        const { cotacao, linha, profissionais } = await cotarDiferenca(tx, config, barbeariaId, agora);
+        const liberados = await liberarAguardando(tx, barbeariaId);
+        convidar.push(...liberados);
+        const criado = await tx.pagamentoPix.create({
+          data: {
+            barbeariaId,
+            tipo: "diferenca",
+            identificador: cotacao.identificador,
+            plano: linha.plano,
+            ciclo: linha.ciclo,
+            profissionais,
+            valorCentavos: cotacao.valorCentavos,
+            periodoComecaEm: cotacao.periodoComecaEm,
+            periodoTerminaEm: cotacao.periodoTerminaEm,
+            antesSituacao: linha.situacao,
+            antesPlano: linha.plano,
+            antesCiclo: linha.ciclo,
+            antesForma: linha.forma,
+            antesPeriodoTerminaEm: linha.periodoTerminaEm,
+            antesProfissionais: linha.profissionaisContratados,
+            liberados: liberados.map((m) => m.id),
+          },
+        });
+        await tx.assinatura.update({ where: { barbeariaId }, data: { profissionaisContratados: profissionais } });
+        return criado;
+      });
+      await convidarLiberados(app, request, barbeariaId, convidar);
+      return reply.code(201).send(serializarPagamentoPix(pagamento, config));
+    } catch (erro) {
+      // O índice parcial: outro "Já paguei" passou na frente.
+      if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") throw emConferencia();
+      throw erro;
+    }
+  });
 
   // "Ainda não paguei": desfaz o aguardando e volta ao que era antes.
   app.post(

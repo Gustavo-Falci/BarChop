@@ -7,10 +7,11 @@ import {
   inicioDoDiaEmSaoPaulo,
   normalizarCpf,
   precoDoPlano,
+  valorDaDiferenca,
   type Ciclo,
 } from "@barchop/formato";
 import type { CotacaoDoPix, PagamentoPix, ResumoDaAssinatura, SituacaoDoPix } from "@barchop/types";
-import { conferirPedidoDoPlano } from "./assinatura";
+import { conferirPedidoDoPlano, contarProfissionais } from "./assinatura";
 import { ErroHttp } from "./erro-http";
 
 // O Pix do BarChop (plano pix-do-barchop, PR 1). Sem integração com
@@ -179,6 +180,60 @@ export async function cotar(
   };
 }
 
+// O Pix da diferença (plano profissional-novo-pago): com o Pix vigente,
+// os membros que aguardam pagamento passaram das vagas pagas; o extra
+// deles, de hoje até o fim do período já pago.
+export async function cotarDiferenca(
+  db: Prisma.TransactionClient,
+  config: ConfigDoPix,
+  barbeariaId: string,
+  agora: Date
+) {
+  const linha = await db.assinatura.findUniqueOrThrow({ where: { barbeariaId } });
+  if (!pixVigente(linha, agora) || linha.plano === "gratis") {
+    throw new ErroHttp(409, "sem_pix_vigente", "o Pix da diferença é pra quem paga o período por Pix: este não está valendo");
+  }
+  const pagos = linha.profissionaisContratados ?? 1;
+  const profissionais = await contarProfissionais(barbeariaId, db);
+  if (profissionais <= pagos) {
+    throw new ErroHttp(409, "nada_a_pagar", "ninguém aguarda pagamento: a equipe cabe nas vagas pagas");
+  }
+  const plano = linha.plano as PedidoDoPix["plano"];
+  const ciclo = linha.ciclo as Ciclo;
+  const periodoComecaEm = inicioDoDiaEmSaoPaulo(agora);
+  const periodoTerminaEm = linha.periodoTerminaEm!;
+  return {
+    linha,
+    profissionais,
+    cotacao: {
+      valorCentavos: valorDaDiferenca({ plano, ciclo, extras: profissionais - pagos, agora, fim: periodoTerminaEm }),
+      periodoComecaEm,
+      periodoTerminaEm,
+      identificador: identificadorDoPix(config.segredo, barbeariaId, periodoComecaEm, { plano, ciclo, profissionais }),
+    },
+  };
+}
+
+// O "Já paguei" que cobre agora (a diferença, ou um período que começa
+// hoje) libera quem aguardava pagamento: entram na hora, como o plano.
+// Devolve quem entrou, pra guardar no pagamento e convidar quem ainda
+// não tem senha.
+export async function liberarAguardando(
+  tx: Prisma.TransactionClient,
+  barbeariaId: string
+): Promise<{ id: string; email: string | null; senhaHash: string | null }[]> {
+  const aguardando = await tx.barbeiro.findMany({
+    where: { barbeariaId, aguardaPagamento: true },
+    select: { id: true, email: true, senhaHash: true },
+  });
+  if (aguardando.length === 0) return [];
+  await tx.barbeiro.updateMany({
+    where: { id: { in: aguardando.map((m) => m.id) } },
+    data: { ativo: true, aguardaPagamento: false },
+  });
+  return aguardando;
+}
+
 export function serializarCotacao(config: ConfigDoPix, cotacao: Cotacao): CotacaoDoPix {
   return {
     valorCentavos: cotacao.valorCentavos,
@@ -194,6 +249,7 @@ export function serializarCotacao(config: ConfigDoPix, cotacao: Cotacao): Cotaca
 export function serializarPagamentoPix(linha: LinhaDoPix, config: ConfigDoPix | null): PagamentoPix {
   return {
     id: linha.id,
+    tipo: linha.tipo as PagamentoPix["tipo"],
     identificador: linha.identificador,
     plano: linha.plano as PagamentoPix["plano"],
     ciclo: linha.ciclo as Ciclo,
@@ -248,6 +304,13 @@ export async function voltarAoQueEra(tx: Prisma.TransactionClient, pagamento: Li
       profissionaisContratados: pagamento.antesProfissionais,
     },
   });
+  // Quem este Pix liberou volta a aguardar; quem já saiu fica de fora.
+  if (pagamento.liberados.length > 0) {
+    await tx.barbeiro.updateMany({
+      where: { id: { in: pagamento.liberados }, barbeariaId: pagamento.barbeariaId, ativo: true },
+      data: { ativo: false, aguardaPagamento: true },
+    });
+  }
 }
 
 // O Pix no resumo da assinatura: o aguardando (o plano já vale) e a

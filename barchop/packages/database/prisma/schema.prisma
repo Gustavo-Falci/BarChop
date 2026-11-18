@@ -206,6 +206,9 @@ model PagamentoPix {
   // `periodo` (paga um período) ou `diferenca` (profissional novo no
   // meio do período; plano profissional-novo-pago). CHECK na migration.
   tipo                   String    @default("periodo") @db.VarChar(10)
+  // Os membros que este Pix liberou (aguardavam pagamento): a recusa os
+  // volta a aguardar (migration 20261118180000_pix_liberados).
+  liberados              String[]  @default([]) @db.Uuid
 
   barbearia Barbearia        @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)
   operador  OperadorSuporte? @relation(fields: [decididoPor], references: [id], onDelete: SetNull)

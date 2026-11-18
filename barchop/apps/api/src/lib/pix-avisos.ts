@@ -169,7 +169,8 @@ async function avisarDaRenovacao(
       return false;
     }
     const pagamento = await tx.pagamentoPix.findFirst({
-      where: { barbeariaId, periodoTerminaEm: fim, situacao: { in: ["aguardando", "confirmado"] } },
+      // O Pix da diferença termina junto, mas não é o do período.
+      where: { barbeariaId, tipo: "periodo", periodoTerminaEm: fim, situacao: { in: ["aguardando", "confirmado"] } },
       orderBy: { criadoEm: "desc" },
       select: { id: true },
     });

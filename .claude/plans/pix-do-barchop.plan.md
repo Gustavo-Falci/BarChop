@@ -108,6 +108,7 @@ Hoje Faturas só assina por cartão (Checkout da Stripe); Pix e boleto aparecem 
   - Um aguardando que venceu ainda volta ao retrato na recusa (o `voltarAoQueEra` confere forma e fim, que o vencimento não muda).
 
 ### PR 5 — Diferença de profissional no meio do período
+- **Substituído em 18/11** por `.claude/plans/profissional-novo-pago.plan.md` (o dono decidiu: cartão cobra na hora, Pix bloqueia o profissional até pagar, tirar alguém não devolve). O texto abaixo é histórico.
 - Equipe passa dos `profissionais_contratados` num período Pix: Faturas mostra "Pix da diferença" (extra × dias que faltam ÷ dias do período, arredondado pra cima no centavo), mesmo fluxo de "Já paguei". Enquanto não paga, o limite do link segue o contratado (como `foraDoLink`). Canvas antes.
 
 ### Depois (sem data) — Pix confirmado sozinho

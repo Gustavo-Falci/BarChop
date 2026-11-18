@@ -67,6 +67,7 @@ function fatura(parcial: Partial<FaturaDaAssinatura> = {}): FaturaDaAssinatura {
     valorCentavos: 4490,
     situacao: "paga",
     pdfUrl: "https://pay.stripe.test/in_1.pdf",
+    profissionaisIncluidos: null,
     paginaUrl: "https://pay.stripe.test/in_1",
     ...parcial,
   };
@@ -341,6 +342,22 @@ describe("Faturas com plano pago", () => {
     const falhou = await cobranca(/BARCHOP-0002/);
     expect(falhou).toHaveTextContent("Não paga");
     expect(within(falhou).queryByRole("link", { name: /PDF/ })).not.toBeInTheDocument();
+  });
+
+  // Plano profissional-novo-pago, PR 4b (canvas Faturas-diferenca): a
+  // fatura da inclusão no meio do período diz que é a diferença.
+  it("a fatura da inclusão diz que é a diferença, e de quantos profissionais", async () => {
+    montar(resumo(PAGA), {
+      faturas: [
+        fatura({ id: "in_3", numero: "BARCHOP-0003", valorCentavos: 850, profissionaisIncluidos: 1 }),
+        fatura({ id: "in_4", numero: "BARCHOP-0004", valorCentavos: 1700, profissionaisIncluidos: 2 }),
+        fatura(),
+      ],
+    });
+
+    expect(await cobranca(/BARCHOP-0003/)).toHaveTextContent("Diferença · 1 profissional");
+    expect(await cobranca(/BARCHOP-0004/)).toHaveTextContent("Diferença · 2 profissionais");
+    expect(await cobranca(/BARCHOP-0001/)).not.toHaveTextContent("Diferença");
   });
 
   it("fatura reembolsada diz quanto voltou, e o PDF continua lá", async () => {

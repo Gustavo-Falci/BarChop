@@ -11,6 +11,7 @@ import {
   modoDaChave,
   passosDaQuantidade,
   previaProporcional,
+  profissionaisIncluidos,
   planoDaChave,
   precosParaStripe,
   produtosComPrecosNovos,
@@ -416,5 +417,39 @@ describe("previaProporcional", () => {
 
   it("nada a cobrar: zero", () => {
     expect(previaProporcional(500, { atual: 1, pagos: 2, novo: 2 })).toBe(0);
+  });
+});
+
+// O tipo da fatura em Faturas (plano profissional-novo-pago, PR 4b): a
+// inclusão no meio do período sai como uma fatura de "subscription_update"
+// com duas linhas de proração (o tempo que sobrou da quantidade velha,
+// negativo, e o da nova, positivo). A diferença das quantidades é quantos
+// entraram; troca de plano (mesma quantidade) e renovação não contam.
+describe("profissionaisIncluidos", () => {
+  const sobra = (quantidade: number) => ({ valorCentavos: -1000 * quantidade, quantidade, proracao: true });
+  const resto = (quantidade: number) => ({ valorCentavos: 1000 * quantidade, quantidade, proracao: true });
+
+  it("a fatura da inclusão: quantos entraram", () => {
+    expect(profissionaisIncluidos("subscription_update", [sobra(2), resto(3)])).toBe(1);
+    expect(profissionaisIncluidos("subscription_update", [sobra(1), resto(3)])).toBe(2);
+  });
+
+  it("renovação e primeira cobrança não são diferença", () => {
+    expect(profissionaisIncluidos("subscription_cycle", [{ valorCentavos: 4490, quantidade: 2, proracao: false }])).toBeNull();
+    expect(profissionaisIncluidos("subscription_create", [{ valorCentavos: 4490, quantidade: 2, proracao: false }])).toBeNull();
+    expect(profissionaisIncluidos(null, [])).toBeNull();
+  });
+
+  it("troca de plano com a mesma equipe não é diferença", () => {
+    const troca = [
+      { valorCentavos: -2000, quantidade: 2, proracao: true },
+      { valorCentavos: 3500, quantidade: 2, proracao: true },
+    ];
+    expect(profissionaisIncluidos("subscription_update", troca)).toBeNull();
+  });
+
+  it("menos profissionais, ou sem linha de proração: não é diferença", () => {
+    expect(profissionaisIncluidos("subscription_update", [sobra(3), resto(2)])).toBeNull();
+    expect(profissionaisIncluidos("subscription_update", [{ valorCentavos: 500, quantidade: 1, proracao: false }])).toBeNull();
   });
 });

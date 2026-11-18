@@ -264,6 +264,37 @@ describe("POST /barbearias/me/assinatura/pix/diferenca (Já paguei)", () => {
   });
 });
 
+// Faturas e Suporte (PR 4b): o Pix diz quantos profissionais liberou, e
+// a fila mostra as vagas pagas de antes, pra onde a recusa volta.
+describe("quantos o Pix da diferença libera", () => {
+  it("em Pagamentos e na fila do Suporte, com as vagas de antes", async () => {
+    const app = montar();
+    const dono = await noPix(app);
+    await incluir(app, dono.token, "Ana");
+    await incluir(app, dono.token, "Bia");
+
+    const pix = (await pagarDiferenca(app, dono.token)).json();
+    expect(pix).toMatchObject({ tipo: "diferenca", profissionais: 3, liberados: 2 });
+
+    const pagamentos = await app.inject({
+      method: "GET",
+      url: "/barbearias/me/assinatura/pix/pagamentos",
+      headers: auth(dono.token),
+    });
+    expect(pagamentos.json()[0]).toMatchObject({ id: pix.id, liberados: 2 });
+
+    const suporte = await tokenDoSuporte(app);
+    const fila = await app.inject({ method: "GET", url: "/suporte/pix", headers: auth(suporte) });
+    const naFila = fila.json().pagamentos.find((p: { id: string }) => p.id === pix.id);
+    expect(naFila).toMatchObject({
+      tipo: "diferenca",
+      liberados: 2,
+      antes: { profissionais: 1, periodoTerminaEm: dono.fim.toISOString() },
+    });
+    await app.close();
+  });
+});
+
 describe("o Pix do período e quem aguarda", () => {
   function jaPaguei(app: App, token: string, profissionais: number) {
     return app.inject({

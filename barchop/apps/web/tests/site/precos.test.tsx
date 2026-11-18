@@ -23,6 +23,17 @@ describe("página de preços", () => {
     expect(secao).toHaveTextContent(/cancel/i);
     expect(secao).toHaveTextContent(/só a diferença/);
     expect(secao).toHaveTextContent(/nada é apagado/i);
+    // Plano profissional-novo-pago, PR 5.
+    expect(secao).toHaveTextContent(/Incluiu um profissional no meio do período: paga na hora só os dias que faltam/);
+    expect(secao).toHaveTextContent(/Tirou um: o período em curso não é devolvido/);
+  });
+
+  it("a pergunta de mais profissionais diz o que acontece no meio do período", () => {
+    render(<Precos />);
+    const pergunta = screen.getByText("Quanto fica com mais profissionais?");
+    const resposta = pergunta.closest("details")!;
+    expect(resposta).toHaveTextContent(/no meio do período cobra na hora só os dias que faltam/);
+    expect(resposta).toHaveTextContent(/tirar não devolve o período em curso/);
   });
 
   it("as perguntas abrem ao tocar, e o convite leva ao cadastro", () => {

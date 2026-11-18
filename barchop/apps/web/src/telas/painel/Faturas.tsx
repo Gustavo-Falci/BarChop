@@ -929,6 +929,10 @@ function ListaDeFaturas() {
               <span className={estilos.quando}>
                 {diaEMes(fatura.emitidaEm)}
                 {fatura.numero ? ` · ${fatura.numero}` : ""}
+                {/* A da inclusão no meio do período (plano profissional-novo-pago). */}
+                {fatura.profissionaisIncluidos ? (
+                  <span className={estilos.apoio}>Diferença · {profissionais(fatura.profissionaisIncluidos)}</span>
+                ) : null}
               </span>
               <span className={estilos.valorDaCobranca}>{formatarReais(fatura.valorCentavos)}</span>
               <span>

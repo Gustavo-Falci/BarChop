@@ -324,6 +324,8 @@ describe("POST /barbearias/me/assinatura/pix (Já paguei)", () => {
       criadoEm: expect.any(String),
       decididoEm: null,
       copiaECola: cotacao.copiaECola,
+      // Ninguém aguardava pagamento: não liberou ninguém.
+      liberados: 0,
     });
 
     const linha = await lerLinha(barbeariaId);
@@ -533,6 +535,8 @@ describe("o Suporte confere o Pix", () => {
       forma: "cartao",
       periodoTerminaEm: null,
       testeTerminaEm: testeTerminaEm!.toISOString(),
+      // No teste não há vagas pagas.
+      profissionais: null,
     });
 
     // Renovação: a recusa volta pro Pix que já valia, até o fim dele.

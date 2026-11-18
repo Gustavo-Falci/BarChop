@@ -65,6 +65,7 @@ export function registrarRotasSuportePix(app: App): void {
         periodoTerminaEm: pagamento.antesPeriodoTerminaEm?.toISOString() ?? null,
         testeTerminaEm:
           pagamento.antesSituacao === "teste" ? (assinatura?.testeTerminaEm?.toISOString() ?? null) : null,
+        profissionais: pagamento.antesProfissionais,
       };
       return { ...resto, barbearia: dados, dono: barbeiros[0] ?? null, antes };
     });

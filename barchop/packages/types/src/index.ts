@@ -663,6 +663,9 @@ export interface PagamentoPix {
   criadoEm: string;
   decididoEm: string | null;
   copiaECola: string | null;
+  // Quantos profissionais o "Já paguei" liberou (quem aguardava o Pix):
+  // na diferença, os que ela paga; no período, os que entraram junto.
+  liberados: number;
 }
 
 // GET /equipe/previa-da-inclusao (plano profissional-novo-pago): quanto
@@ -694,6 +697,9 @@ export interface AntesDoPix {
   // O Pix não mexe no teste: a recusa volta pra ele com o mesmo fim
   // (que pode já ter passado, e aí vale o Grátis).
   testeTerminaEm: string | null;
+  // As vagas pagas antes: é a elas que a recusa da diferença volta.
+  // Null nos Pix gravados antes da coluna existir.
+  profissionais: number | null;
 }
 
 export interface UsoNoTeste {
@@ -720,6 +726,10 @@ export interface FaturaDaAssinatura {
   // O PDF e a página da fatura na Stripe; nulos enquanto ela não fecha.
   pdfUrl: string | null;
   paginaUrl: string | null;
+  // A fatura da inclusão no meio do período (plano
+  // profissional-novo-pago): quantos profissionais entraram. Null nas
+  // outras (mensalidade, troca de plano).
+  profissionaisIncluidos: number | null;
 }
 
 // O caixa do dia (Onda 2, marco 2). Dinheiro em centavos inteiros; as

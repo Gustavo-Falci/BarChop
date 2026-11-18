@@ -3,13 +3,15 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { ErroDaApi, type PedidoDeAssinatura } from "@barchop/api-client";
 import { PLANOS, formatarReais, limiteDeProfissionais, precoDoPlano } from "@barchop/formato";
-import type { CotacaoDoPix, PagamentoPix, ResumoDaAssinatura, SituacaoDoPix } from "@barchop/types";
+import type { CotacaoDoPix, MembroDaEquipe, PagamentoPix, ResumoDaAssinatura, SituacaoDoPix } from "@barchop/types";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
 import { Chip } from "../../componentes/Chip";
 import { CodigoQr } from "../../componentes/CodigoQr";
+import { useRequisicao } from "../../api/useRequisicao";
 import {
   DIAS_DO_AVISO_DO_PIX,
+  emLista,
   diaEMes,
   nomeComCiclo,
   periodoDoCiclo,
@@ -334,6 +336,8 @@ export function PlanoNoPix({
 
   return (
     <div className={estilos.noPix}>
+      {/* Um Pix em conferência por vez: com um aguardando, a diferença espera. */}
+      {estado !== "aguardando" ? <DiferencaPendente plano={PLANOS[plano].nome} /> : null}
       {estado === "aguardando" ? (
         <Aguardando pagamento={resumo.pix.aguardando!} agora={agora} />
       ) : estado === "pago" ? (
@@ -563,9 +567,14 @@ function ListaDePagamentos({ pagamentos }: { pagamentos: PagamentoPix[] | null }
           return (
             <li key={p.id} className={estilos.linhaDaCobranca}>
               <span className={estilos.quando}>
-                <strong>{diaEMes(p.criadoEm)} · Pix</strong>
+                <strong>
+                  {diaEMes(p.criadoEm)} · Pix · {p.tipo === "diferenca" ? "Diferença" : "Período"}
+                </strong>
                 <span className={estilos.apoio}>
-                  {nomeComCiclo(p.plano, p.ciclo)} · {pontasDoPeriodo(p.periodoComecaEm, p.periodoTerminaEm).join(" a ")}
+                  {p.tipo === "diferenca"
+                    ? profissionais(p.liberados)
+                    : `${nomeComCiclo(p.plano, p.ciclo)} · ${profissionais(p.profissionais)}`}{" "}
+                  · {pontasDoPeriodo(p.periodoComecaEm, p.periodoTerminaEm).join(" a ")}
                 </span>
               </span>
               <span className={estilos.valorDaCobranca}>{formatarReais(p.valorCentavos)}</span>
@@ -578,6 +587,104 @@ function ListaDePagamentos({ pagamentos }: { pagamentos: PagamentoPix[] | null }
           );
         })}
       </ul>
+    </section>
+  );
+}
+
+// O Pix da diferença (plano profissional-novo-pago): quem passou das
+// vagas pagas no Pix aguarda; um QR só paga todos, de hoje até o fim do
+// período pago. O mesmo na Equipe (/painel/equipe/pix) e no topo de
+// Faturas. Sem ninguém aguardando, ou sem cotação (Pix em conferência,
+// Pix desligado), não há o que pagar.
+export function useDiferenca() {
+  const api = useApiDoPainel();
+  const equipe = useRequisicao(() => api.barbeiro.equipe(), []);
+  const aguardam = equipe.dados ? equipe.dados.filter((m) => m.aguardaPagamento) : null;
+  const quantos = aguardam?.length ?? 0;
+  const cotacao = useRequisicao(
+    () => (quantos > 0 ? api.barbeiro.cotacaoDaDiferenca() : Promise.resolve(null)),
+    [quantos]
+  );
+  return { equipe, aguardam, cotacao };
+}
+
+// O QR, os passos e o "Já paguei" da diferença. `aoPagar` decide pra
+// onde ir depois: a Equipe volta pra lista; Faturas relê a assinatura.
+export function PagarADiferenca({
+  aguardam,
+  cotacao,
+  plano,
+  comPassos = false,
+  aoPagar,
+}: {
+  aguardam: MembroDaEquipe[];
+  cotacao: CotacaoDoPix;
+  plano?: string;
+  comPassos?: boolean;
+  aoPagar: () => void;
+}) {
+  const api = useApiDoPainel();
+  const [pagando, setPagando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const nomes = emLista(aguardam.map((m) => m.nome));
+  const um = aguardam.length === 1;
+  const periodo = pontasDoPeriodo(cotacao.periodoComecaEm, cotacao.periodoTerminaEm).join(" a ");
+
+  async function pagar() {
+    setPagando(true);
+    setErro(null);
+    try {
+      await api.barbeiro.jaPagueiADiferenca();
+      aoPagar();
+    } catch (causa) {
+      setPagando(false);
+      setErro(
+        causa instanceof ErroDaApi
+          ? `Não deu para registrar o pagamento: ${causa.message}.`
+          : "Não deu para registrar o pagamento. Tente de novo."
+      );
+    }
+  }
+
+  return (
+    <PixParaPagar
+      valorCentavos={cotacao.valorCentavos}
+      descricao={`${profissionais(aguardam.length)} a mais${plano ? ` no ${plano}` : ""}, de ${periodo}`}
+      copiaECola={cotacao.copiaECola}
+      recebedor={cotacao.recebedor}
+    >
+      {comPassos ? <PassosDoPix /> : null}
+      {erro ? <Aviso>{erro}</Aviso> : null}
+      <Botao onClick={pagar} carregando={pagando}>
+        Já paguei
+      </Botao>
+      <p className={estilos.apoio}>
+        {um ? `${nomes} entra na hora e recebe o convite por e-mail.` : `${nomes} entram na hora e recebem o convite por e-mail.`}{" "}
+        O suporte do BarChop confere o Pix no extrato; se não achar, {um ? "volta" : "voltam"} a aguardar e nada é apagado.
+      </p>
+    </PixParaPagar>
+  );
+}
+
+// No topo de Faturas (canvas Faturas-diferenca): o que falta pagar.
+function DiferencaPendente({ plano }: { plano: string }) {
+  const id = useId();
+  const { recarregar } = useAssinatura();
+  const { aguardam, cotacao } = useDiferenca();
+  if (!aguardam || aguardam.length === 0 || !cotacao.dados) return null;
+  const nomes = emLista(aguardam.map((m) => m.nome));
+  return (
+    <section className={estilos.cartao} aria-labelledby={id}>
+      <div>
+        <p className={estilos.subtitulo}>Falta pagar</p>
+        <h2 id={id} className={`${estilos.nomeDoPlano} ${estilos.nomeNoPix}`}>
+          Pix da diferença
+        </h2>
+      </div>
+      <p className={estilos.fraseDoPix}>
+        {nomes} {aguardam.length === 1 ? "entra" : "entram"} na equipe depois deste Pix.
+      </p>
+      <PagarADiferenca aguardam={aguardam} cotacao={cotacao.dados} plano={plano} aoPagar={recarregar} />
     </section>
   );
 }

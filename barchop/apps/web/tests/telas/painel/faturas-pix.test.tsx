@@ -82,8 +82,11 @@ function pagamento(parcial: Partial<PagamentoPix> = {}): PagamentoPix {
   };
 }
 
-function montar(assinatura: ResumoDaAssinatura, semente: SementeFalsa = {}) {
+// `aguardam`: quem aguarda o Pix da diferença, somado à equipe do dublê
+// (que já tem o dono logado).
+function montar(assinatura: ResumoDaAssinatura, semente: SementeFalsa = {}, aguardam: MembroDaEquipe[] = []) {
   const falso = criarApiClientFalso({ pixLigado: true, ...semente, assinatura });
+  falso.estado.equipe!.push(...aguardam);
   render(
     <ProvedorDoPainel valor={{ barbeiro: falso.barbeiro, publico: falso.publico }}>
       <SessaoDoPainel>
@@ -373,12 +376,11 @@ describe("Faturas: o Pix da diferença", () => {
     montar(noPix(FIM), {
       pagamentosPix: [PERIODO],
       vagaCobrada: VAGA_NO_PIX,
-      equipe: [aguardando("m8", "Rafael"), aguardando("m9", "Bruno")],
-    });
+    }, [aguardando("m8", "Joana"), aguardando("m9", "Bruno")]);
 
     const diferenca = await screen.findByRole("region", { name: "Pix da diferença" });
     expect(within(diferenca).getByText("Falta pagar")).toBeInTheDocument();
-    expect(within(diferenca).getByText("Rafael e Bruno entram na equipe depois deste Pix.")).toBeInTheDocument();
+    expect(within(diferenca).getByText("Joana e Bruno entram na equipe depois deste Pix.")).toBeInTheDocument();
     expect(await within(diferenca).findByTestId("valor-do-pix")).toHaveTextContent(/^R\$\s17,00$/);
     expect(within(diferenca).getByText("2 profissionais a mais no Essencial, de 10/11 a 05/12")).toBeInTheDocument();
     expect(within(diferenca).getByRole("img", { name: /^QR do Pix de R\$\s17,00$/ })).toBeInTheDocument();
@@ -391,11 +393,10 @@ describe("Faturas: o Pix da diferença", () => {
     const falso = montar(noPix(FIM), {
       pagamentosPix: [PERIODO],
       vagaCobrada: VAGA_NO_PIX,
-      equipe: [aguardando("m8", "Rafael")],
-    });
+    }, [aguardando("m8", "Joana")]);
 
     const diferenca = await screen.findByRole("region", { name: "Pix da diferença" });
-    expect(within(diferenca).getByText("Rafael entra na equipe depois deste Pix.")).toBeInTheDocument();
+    expect(within(diferenca).getByText("Joana entra na equipe depois deste Pix.")).toBeInTheDocument();
     await userEvent.click(await within(diferenca).findByRole("button", { name: "Já paguei" }));
 
     expect(await screen.findByText("Aguardando conferência")).toBeInTheDocument();
@@ -412,8 +413,10 @@ describe("Faturas: o Pix da diferença", () => {
   });
 
   it("o histórico diz o tipo de cada Pix", async () => {
+    // Na ordem em que foram pagos: a lista vem do mais novo.
     montar(noPix(FIM), {
       pagamentosPix: [
+        PERIODO,
         pagamento({
           id: "pix-2",
           tipo: "diferenca",
@@ -424,7 +427,6 @@ describe("Faturas: o Pix da diferença", () => {
           periodoComecaEm: "2026-11-08T03:00:00.000Z",
           periodoTerminaEm: FIM,
         }),
-        PERIODO,
       ],
     });
 

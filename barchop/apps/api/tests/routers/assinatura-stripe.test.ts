@@ -257,6 +257,7 @@ describe("GET /barbearias/me/assinatura/faturas", () => {
       valorCentavos: 3490,
       situacao: "paga" as const,
       pdfUrl: "https://pay.stripe.test/in_1.pdf",
+      profissionaisIncluidos: null,
       paginaUrl: "https://pay.stripe.test/in_1",
     };
     cobranca.faturas.set("cus_9", [fatura]);

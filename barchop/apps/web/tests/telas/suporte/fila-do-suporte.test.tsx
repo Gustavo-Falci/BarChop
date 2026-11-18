@@ -246,7 +246,9 @@ describe("fila do suporte com Pix", () => {
     expect(within(pix).getByText(/^R\$\s44,90$/)).toBeInTheDocument();
     expect(within(pix).getByText(`identificador ${pago.identificador}`)).toBeInTheDocument();
     expect(texto(pix, "Plano")).toBe("Essencial mensal · 1 profissional");
-    expect(texto(pix, "Vale")).toMatch(/^\d\d\/\d\d a \d\d\/\d\d$/);
+    // Perto do fim do ano o período cruza o ano e leva o ano (o teste
+    // do dublê acaba em dias reais, então isto depende da data de hoje).
+    expect(texto(pix, "Vale")).toMatch(/^\d\d\/\d\d(\/\d{4})? a \d\d\/\d\d(\/\d{4})?$/);
     // A barbearia do dublê está no teste: a recusa volta pra ele.
     expect(texto(pix, "Antes")).toMatch(/^Teste até \d\d\/\d\d$/);
     expect(texto(pix, "Dono")).toMatch(/^Rafael · /);
@@ -361,7 +363,7 @@ describe("fila do suporte com o Pix da diferença", () => {
       pixLigado: true,
       vagaCobrada: { forma: "pix", valorCentavos: 850, cartaoFinal: null, ate: FIM },
     });
-    await falso.barbeiro.convidarMembro({ nome: "Rafael", email: "rafael@exemplo.com", papel: "profissional", atende: true });
+    await falso.barbeiro.convidarMembro({ nome: "Joana", email: "joana@exemplo.com", papel: "profissional", atende: true });
     await falso.barbeiro.convidarMembro({ nome: "Bruno", email: "bruno@exemplo.com", papel: "profissional", atende: true });
     const pago = await falso.barbeiro.jaPagueiADiferenca();
     render(

@@ -1,5 +1,5 @@
 import { PLANOS, planoEfetivo } from "@barchop/formato";
-import type { AntesDoPix } from "@barchop/types";
+import type { AntesDoPix, PixNaFila } from "@barchop/types";
 import { diaEMes, pontasDoPeriodo } from "../painel/assinatura";
 
 export interface OQueEraAntes {
@@ -64,5 +64,25 @@ export function antesDoPix(antes: AntesDoPix, agora: Date = new Date()): OQueEra
     rotulo: `${nome} no cartão`,
     naRecusa: `A barbearia volta pro ${nome} no cartão.`,
     depoisDaRecusa: `A barbearia voltou pro ${nome} no cartão.`,
+  };
+}
+
+// O Pix da diferença (plano profissional-novo-pago, PR 4b; canvas
+// Suporte-fila): a recusa volta às vagas pagas de antes e quem foi
+// liberado volta a aguardar. O plano e o período não mudam.
+export function antesDaDiferenca(
+  pagamento: Pick<PixNaFila, "antes" | "profissionais" | "liberados" | "periodoTerminaEm">,
+  agora: Date = new Date()
+): OQueEraAntes {
+  // Pix gravado antes da coluna: as vagas de agora menos as liberadas.
+  const vagas = pagamento.antes.profissionais ?? pagamento.profissionais - pagamento.liberados;
+  const ate = pontasDoPeriodo(agora.toISOString(), pagamento.periodoTerminaEm)[1];
+  const pagos = vagas === 1 ? "1 profissional pago" : `${vagas} profissionais pagos`;
+  const um = pagamento.liberados === 1;
+  const quem = um ? "o liberado" : `os ${pagamento.liberados} liberados`;
+  return {
+    rotulo: `${pagos} até ${ate}`,
+    naRecusa: `As vagas voltam a ${vagas} e ${quem} ${um ? "volta" : "voltam"} a aguardar. Os agendamentos já marcados ficam.`,
+    depoisDaRecusa: `As vagas voltaram a ${vagas} e ${quem} ${um ? "voltou" : "voltaram"} a aguardar.`,
   };
 }

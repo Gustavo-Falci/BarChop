@@ -10,7 +10,7 @@ import { Botao } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Chip } from "../../componentes/Chip";
 import { diaEMes, nomeComCiclo, pontasDoPeriodo, profissionais } from "../../painel/assinatura";
-import { antesDoPix } from "../../suporte/antesDoPix";
+import { antesDaDiferenca, antesDoPix } from "../../suporte/antesDoPix";
 import { CascaDoSuporte } from "../../suporte/CascaDoSuporte";
 import { useApiDoSuporte, type ApiDoSuporte } from "../../suporte/ProvedorDoSuporte";
 import { sessaoDoSuporte } from "../../sessao/armazenamento";
@@ -163,7 +163,8 @@ function PixParaConferir({
 }) {
   const idDaResposta = useId();
   const valor = formatarReais(pagamento.valorCentavos);
-  const antes = antesDoPix(pagamento.antes);
+  const diferenca = pagamento.tipo === "diferenca";
+  const antes = diferenca ? antesDaDiferenca(pagamento) : antesDoPix(pagamento.antes);
   const nome = pagamento.barbearia.nome;
   const [etapa, setEtapa] = useState<EtapaDoPix>("decidindo");
   // A resposta já vem escrita, pra o caso comum; o Suporte ajusta.
@@ -225,7 +226,7 @@ function PixParaConferir({
           <p className={estilos.apoio}>Já paguei em {FORMATADOR.format(new Date(pagamento.criadoEm))}</p>
         </div>
         <Chip tom="neutro" tamanho="pequeno">
-          Pix
+          {diferenca ? "Pix · Diferença" : "Pix · Período"}
         </Chip>
       </div>
 
@@ -240,6 +241,15 @@ function PixParaConferir({
         <dd>
           {nomeComCiclo(pagamento.plano, pagamento.ciclo)} · {profissionais(pagamento.profissionais)}
         </dd>
+        {/* Quem entrou com o "Já paguei" e volta a aguardar se o Pix não aparecer. */}
+        {diferenca ? (
+          <>
+            <dt>Libera</dt>
+            <dd>
+              {profissionais(pagamento.liberados)} {pagamento.liberados === 1 ? "que aguardava" : "que aguardavam"}
+            </dd>
+          </>
+        ) : null}
         <dt>Vale</dt>
         <dd>{pontasDoPeriodo(pagamento.periodoComecaEm, pagamento.periodoTerminaEm).join(" a ")}</dd>
         <dt>Antes</dt>

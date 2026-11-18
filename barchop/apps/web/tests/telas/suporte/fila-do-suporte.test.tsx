@@ -239,11 +239,16 @@ describe("fila do suporte com Pix", () => {
     const pix = pixDa();
     expect(within(pix).getByRole("heading", { level: 2, name: "GR Barber" })).toBeInTheDocument();
     expect(within(pix).getByText(/^Já paguei em \d\d\/\d\d\/\d{4}/)).toBeInTheDocument();
+    // O tipo do Pix (plano profissional-novo-pago, PR 4b).
+    expect(within(pix).getByText("Pix · Período")).toBeInTheDocument();
+    expect(within(pix).queryByText("Libera")).toBeNull();
     expect(within(pix).getByText("Procure no extrato")).toBeInTheDocument();
     expect(within(pix).getByText(/^R\$\s44,90$/)).toBeInTheDocument();
     expect(within(pix).getByText(`identificador ${pago.identificador}`)).toBeInTheDocument();
     expect(texto(pix, "Plano")).toBe("Essencial mensal · 1 profissional");
-    expect(texto(pix, "Vale")).toMatch(/^\d\d\/\d\d a \d\d\/\d\d$/);
+    // Perto do fim do ano o período cruza o ano e leva o ano (o teste
+    // do dublê acaba em dias reais, então isto depende da data de hoje).
+    expect(texto(pix, "Vale")).toMatch(/^\d\d\/\d\d(\/\d{4})? a \d\d\/\d\d(\/\d{4})?$/);
     // A barbearia do dublê está no teste: a recusa volta pra ele.
     expect(texto(pix, "Antes")).toMatch(/^Teste até \d\d\/\d\d$/);
     expect(texto(pix, "Dono")).toMatch(/^Rafael · /);
@@ -338,5 +343,70 @@ describe("fila do suporte com Pix", () => {
 
     await waitFor(() => expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/painel/suporte/entrar"));
     expect(sessaoDoSuporte.ler()).toBeNull();
+  });
+});
+
+// Profissional novo no Pix (plano profissional-novo-pago, PR 4b; canvas
+// Suporte-fila): o Pix da diferença diz o tipo, quantos profissionais
+// libera e as vagas pagas de antes, pra onde a recusa volta.
+describe("fila do suporte com o Pix da diferença", () => {
+  const FIM = "2026-12-05T15:00:00.000Z";
+
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/suporte" });
+    sessaoDoSuporte.gravar("jwt-falso-suporte");
+  });
+
+  async function montarComDiferenca() {
+    const falso = criarApiClientFalso({
+      pixLigado: true,
+      vagaCobrada: { forma: "pix", valorCentavos: 850, cartaoFinal: null, ate: FIM },
+    });
+    await falso.barbeiro.convidarMembro({ nome: "Joana", email: "joana@exemplo.com", papel: "profissional", atende: true });
+    await falso.barbeiro.convidarMembro({ nome: "Bruno", email: "bruno@exemplo.com", papel: "profissional", atende: true });
+    const pago = await falso.barbeiro.jaPagueiADiferenca();
+    render(
+      <ProvedorDoSuporte valor={falso.suporte}>
+        <FilaDoSuporte />
+      </ProvedorDoSuporte>
+    );
+    const antes = pago.profissionais - 2;
+    return { falso, pago, antes };
+  }
+
+  function pixDa() {
+    return screen.getByRole("article", { name: /^Pix da/ });
+  }
+
+  it("o tipo, quantos libera e as vagas pagas de antes", async () => {
+    const { antes } = await montarComDiferenca();
+
+    await screen.findAllByRole("article");
+    const pix = pixDa();
+    expect(within(pix).getByText("Pix · Diferença")).toBeInTheDocument();
+    expect(within(pix).getByText(/^R\$\s17,00$/)).toBeInTheDocument();
+    expect(texto(pix, "Libera")).toBe("2 profissionais que aguardavam");
+    expect(texto(pix, "Antes")).toBe(
+      antes === 1 ? "1 profissional pago até 05/12" : `${antes} profissionais pagos até 05/12`
+    );
+  });
+
+  it("Não achei: as vagas voltam e os liberados voltam a aguardar", async () => {
+    const usuario = userEvent.setup();
+    const { antes } = await montarComDiferenca();
+
+    await screen.findAllByRole("article");
+    await usuario.click(within(pixDa()).getByRole("button", { name: "Não achei" }));
+    expect(
+      within(pixDa()).getByText(
+        `Ele lê em Faturas. As vagas voltam a ${antes} e os 2 liberados voltam a aguardar. Os agendamentos já marcados ficam.`
+      )
+    ).toBeInTheDocument();
+
+    await usuario.click(within(pixDa()).getByRole("button", { name: "Confirmar recusa" }));
+    expect(await within(pixDa()).findByRole("status")).toHaveTextContent(
+      `Pix recusado. As vagas voltaram a ${antes} e os 2 liberados voltaram a aguardar.`
+    );
   });
 });

@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, type SementeFalsa } from "@barchop/api-client";
-import type { PagamentoPix, ResumoDaAssinatura } from "@barchop/types";
+import type { MembroDaEquipe, PagamentoPix, ResumoDaAssinatura } from "@barchop/types";
 import { FaixaDaAssinatura } from "../../../src/painel/FaixaDaAssinatura";
 import { ProvedorDaAssinatura } from "../../../src/painel/ProvedorDaAssinatura";
 import { ProvedorDoPainel } from "../../../src/painel/ProvedorDoPainel";
@@ -77,12 +77,16 @@ function pagamento(parcial: Partial<PagamentoPix> = {}): PagamentoPix {
     criadoEm: "2026-11-01T14:32:00.000Z",
     decididoEm: "2026-11-01T18:00:00.000Z",
     copiaECola: "00020126-codigo-de-exemplo",
+    liberados: 0,
     ...parcial,
   };
 }
 
-function montar(assinatura: ResumoDaAssinatura, semente: SementeFalsa = {}) {
+// `aguardam`: quem aguarda o Pix da diferença, somado à equipe do dublê
+// (que já tem o dono logado).
+function montar(assinatura: ResumoDaAssinatura, semente: SementeFalsa = {}, aguardam: MembroDaEquipe[] = []) {
   const falso = criarApiClientFalso({ pixLigado: true, ...semente, assinatura });
+  falso.estado.equipe!.push(...aguardam);
   render(
     <ProvedorDoPainel valor={{ barbeiro: falso.barbeiro, publico: falso.publico }}>
       <SessaoDoPainel>
@@ -278,8 +282,9 @@ describe("Faturas: o plano pago por Pix (Pix-Aguardando, confirmado)", () => {
 
     const lista = await screen.findByRole("list", { name: "Pagamentos" });
     const linha = within(lista).getByRole("listitem");
-    expect(linha).toHaveTextContent("01/11 · Pix");
-    expect(linha).toHaveTextContent("Essencial mensal · 01/11 a 01/12");
+    // O tipo do Pix (plano profissional-novo-pago, PR 4b): período ou diferença.
+    expect(linha).toHaveTextContent("01/11 · Pix · Período");
+    expect(linha).toHaveTextContent("Essencial mensal · 2 profissionais · 01/11 a 01/12");
     expect(texto(linha)).toContain("R$ 59,90");
     expect(linha).toHaveTextContent("Pago");
     // Nenhuma faixa: em dia não pede nada.
@@ -338,5 +343,99 @@ describe("Faturas: o próximo Pix (Pix-Renovar)", () => {
     const voltar = await screen.findByRole("region", { name: "Voltar pro Essencial" });
     expect(await within(voltar).findByText("Essencial mensal · 2 profissionais · vale de hoje, 10/11, a 10/12")).toBeInTheDocument();
     expect(screen.getByText(/Nada foi apagado/)).toBeInTheDocument();
+  });
+});
+
+// Profissional novo no Pix (plano profissional-novo-pago, PR 4b; canvas
+// Faturas-diferenca): quem passou das vagas pagas aguarda, e o Pix da
+// diferença fica no topo de Faturas, com o mesmo QR da Equipe. O
+// histórico diz o tipo de cada Pix.
+describe("Faturas: o Pix da diferença", () => {
+  const FIM = "2026-12-05T15:00:00.000Z";
+  const VAGA_NO_PIX = { forma: "pix" as const, valorCentavos: 850, cartaoFinal: null, ate: FIM };
+
+  function aguardando(id: string, nome: string): MembroDaEquipe {
+    return {
+      id,
+      nome,
+      email: `${id}@gr.com`,
+      telefone: null,
+      papel: "profissional",
+      atende: true,
+      ativo: false,
+      fotoUrl: null,
+      convitePendente: true,
+      podeVenderPlanos: false,
+      aguardaPagamento: true,
+    };
+  }
+
+  const PERIODO = pagamento({ periodoComecaEm: "2026-11-05T03:00:00.000Z", periodoTerminaEm: FIM });
+
+  it("quem aguarda: o Pix da diferença no topo, com os nomes, o valor e o QR", async () => {
+    montar(noPix(FIM), {
+      pagamentosPix: [PERIODO],
+      vagaCobrada: VAGA_NO_PIX,
+    }, [aguardando("m8", "Joana"), aguardando("m9", "Bruno")]);
+
+    const diferenca = await screen.findByRole("region", { name: "Pix da diferença" });
+    expect(within(diferenca).getByText("Falta pagar")).toBeInTheDocument();
+    expect(within(diferenca).getByText("Joana e Bruno entram na equipe depois deste Pix.")).toBeInTheDocument();
+    expect(await within(diferenca).findByTestId("valor-do-pix")).toHaveTextContent(/^R\$\s17,00$/);
+    expect(within(diferenca).getByText("2 profissionais a mais no Essencial, de 10/11 a 05/12")).toBeInTheDocument();
+    expect(within(diferenca).getByRole("img", { name: /^QR do Pix de R\$\s17,00$/ })).toBeInTheDocument();
+    // No topo: antes do plano que vale.
+    const plano = screen.getByRole("region", { name: "Essencial mensal" });
+    expect(diferenca.compareDocumentPosition(plano) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("Já paguei: eles entram, e a diferença vai pra conferência", async () => {
+    const falso = montar(noPix(FIM), {
+      pagamentosPix: [PERIODO],
+      vagaCobrada: VAGA_NO_PIX,
+    }, [aguardando("m8", "Joana")]);
+
+    const diferenca = await screen.findByRole("region", { name: "Pix da diferença" });
+    expect(within(diferenca).getByText("Joana entra na equipe depois deste Pix.")).toBeInTheDocument();
+    await userEvent.click(await within(diferenca).findByRole("button", { name: "Já paguei" }));
+
+    expect(await screen.findByText("Aguardando conferência")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Pix da diferença" })).toBeNull();
+    expect((await falso.barbeiro.equipe()).find((m) => m.id === "m8")).toMatchObject({ ativo: true });
+  });
+
+  it("ninguém aguardando: nada de diferença", async () => {
+    montar(noPix(FIM), { pagamentosPix: [PERIODO], vagaCobrada: VAGA_NO_PIX });
+
+    expect(await screen.findByRole("region", { name: "Essencial mensal" })).toBeInTheDocument();
+    await screen.findByRole("list", { name: "Pagamentos" });
+    expect(screen.queryByRole("region", { name: "Pix da diferença" })).toBeNull();
+  });
+
+  it("o histórico diz o tipo de cada Pix", async () => {
+    // Na ordem em que foram pagos: a lista vem do mais novo.
+    montar(noPix(FIM), {
+      pagamentosPix: [
+        PERIODO,
+        pagamento({
+          id: "pix-2",
+          tipo: "diferenca",
+          profissionais: 3,
+          liberados: 1,
+          valorCentavos: 1200,
+          criadoEm: "2026-11-08T14:00:00.000Z",
+          periodoComecaEm: "2026-11-08T03:00:00.000Z",
+          periodoTerminaEm: FIM,
+        }),
+      ],
+    });
+
+    const lista = await screen.findByRole("list", { name: "Pagamentos" });
+    const [diferenca, periodo] = within(lista).getAllByRole("listitem");
+    expect(diferenca).toHaveTextContent("08/11 · Pix · Diferença");
+    expect(diferenca).toHaveTextContent("1 profissional · 08/11 a 05/12");
+    expect(diferenca).not.toHaveTextContent("Essencial mensal");
+    expect(periodo).toHaveTextContent("01/11 · Pix · Período");
+    expect(periodo).toHaveTextContent("Essencial mensal · 2 profissionais · 05/11 a 05/12");
   });
 });

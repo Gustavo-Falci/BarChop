@@ -262,6 +262,7 @@ export function serializarPagamentoPix(linha: LinhaDoPix, config: ConfigDoPix | 
     criadoEm: linha.criadoEm.toISOString(),
     decididoEm: linha.decididoEm?.toISOString() ?? null,
     copiaECola: config ? copiaEColaDoPix(config, linha) : null,
+    liberados: linha.liberados.length,
   };
 }
 

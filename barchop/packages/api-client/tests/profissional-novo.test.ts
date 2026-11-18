@@ -127,7 +127,14 @@ describe("o dublê do profissional novo", () => {
     for (const id of [rafael.id, bruno.id]) {
       expect(equipe.find((m) => m.id === id)).toMatchObject({ ativo: true, aguardaPagamento: false });
     }
-    expect((await falso.barbeiro.pagamentosDoPix())[0]).toMatchObject({ tipo: "diferenca" });
+    expect((await falso.barbeiro.pagamentosDoPix())[0]).toMatchObject({ tipo: "diferenca", liberados: 2 });
+    expect(pagamento.liberados).toBe(2);
+    // Na fila do Suporte (PR 4b): quantos libera e as vagas pagas de antes.
+    expect((await falso.suporte.pixNaFila())[0]).toMatchObject({
+      tipo: "diferenca",
+      liberados: 2,
+      antes: { profissionais: pagamento.profissionais - 2 },
+    });
   });
 
   it("sem ninguém aguardando, a cotação da diferença é 409 nada_a_pagar", async () => {

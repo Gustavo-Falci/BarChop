@@ -1726,6 +1726,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           criadoEm: new Date().toISOString(),
           decididoEm: null,
           copiaECola: cotacao.copiaECola,
+          liberados: 0,
         };
         estado.pagamentosPix!.push(pagamento);
         antesDoPix.set(pagamento.id, { ...estado.assinatura! });
@@ -1992,6 +1993,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           criadoEm: new Date().toISOString(),
           decididoEm: null,
           copiaECola: cotacao.copiaECola,
+          liberados: liberados.length,
         };
         estado.pagamentosPix!.push(pagamento);
         return { ...pagamento };
@@ -3177,6 +3179,9 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
                 forma: retrato.forma,
                 periodoTerminaEm: retrato.periodoTerminaEm,
                 testeTerminaEm: retrato.situacao === "teste" ? retrato.testeTerminaEm : null,
+                // A diferença volta às vagas de antes dela; o dublê não
+                // guarda vagas pagas, então tira os liberados.
+                profissionais: p.tipo === "diferenca" ? p.profissionais - p.liberados : null,
               },
             };
           });

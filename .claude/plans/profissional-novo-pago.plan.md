@@ -90,6 +90,9 @@ O cartão usa o mesmo estado por alguns segundos: cria o membro aguardando, cobr
 - **Faturas:** a diferença pendente aparece no topo, com o mesmo QR. O histórico mostra o tipo ("Diferença · 1 profissional").
 - **Suporte:** a fila mostra o tipo e quantos profissionais o Pix libera.
 - **Validate:** testes das telas (Vitest + Testing Library), seguindo `docs/UI_UX_DESIGN_GUIDELINES.md`.
+- **Andamento (18/11):** canvas aprovado (https://claude.ai/artifact/A2RuFZRsfYDYCNBhnbUo8m). Dividido em dois:
+  - **4a = #363** (Equipe: convite/reativar no cartão e no Pix, recusa, faixa e filtro "Aguardam pagamento", "Desistir", tela `/painel/equipe/pix`). Aguarda "pode mergear".
+  - **4b** (falta): Faturas (diferença pendente no topo + tipo no histórico) e Suporte (chip "Pix · Diferença" + "Libera N"). Precisa na API: `liberados` no PixNaFila e `tipo` da fatura (billing_reason).
 
 ### PR 5 — Texto público (site)
 - **Termos:** "Incluir um profissional com o plano pago cobra na hora o valor proporcional aos dias que faltam: no cartão, na hora da inclusão; no Pix, o profissional passa a valer depois do Pix da diferença. Tirar um profissional não devolve o período em curso: a próxima cobrança já vem com um a menos."
@@ -127,5 +130,5 @@ pnpm lint
 - [ ] Pix: o membro novo fica aguardando até o "Já paguei" da diferença; recusa → aguardando de novo
 - [ ] Tirar alguém não gera crédito nem devolução
 - [ ] Termos, Preços, Faturas e `llms.txt` dizem a regra nova
-- [ ] Canvas da Equipe e de Faturas aprovado antes do PR 4
+- [x] Canvas da Equipe e de Faturas aprovado antes do PR 4
 - [ ] Testes afetados, `tsc` e lint verdes

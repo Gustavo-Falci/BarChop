@@ -99,6 +99,31 @@ export function situacaoComReembolso(
   return devolvidoCentavos >= pagoCentavos ? "reembolsada" : "reembolsada_em_parte";
 }
 
+// Uma linha da fatura, no que importa pra saber se é a da inclusão.
+export interface LinhaDaFatura {
+  valorCentavos: number;
+  quantidade: number | null;
+  proracao: boolean;
+}
+
+// A fatura da inclusão no meio do período (plano profissional-novo-pago):
+// o `always_invoice` sai como "subscription_update", com a sobra da
+// quantidade velha (negativa) e o resto da nova (positiva). A diferença
+// é quantos entraram. Troca de plano com a mesma equipe dá zero, e
+// renovação nem é "subscription_update": as duas ficam null.
+export function profissionaisIncluidos(motivo: string | null, linhas: LinhaDaFatura[]): number | null {
+  if (motivo !== "subscription_update") return null;
+  let novos = 0;
+  let velhos = 0;
+  for (const linha of linhas) {
+    if (!linha.proracao) continue;
+    if (linha.valorCentavos > 0) novos += linha.quantidade ?? 0;
+    else if (linha.valorCentavos < 0) velhos += linha.quantidade ?? 0;
+  }
+  const incluidos = novos - velhos;
+  return incluidos > 0 ? incluidos : null;
+}
+
 // As últimas faturas bastam: o histórico inteiro fica no Portal.
 const FATURAS_NA_TELA = 24;
 
@@ -550,6 +575,15 @@ export function cobrancaDaStripe(opcoes: { chave: string; segredoDoWebhook?: str
             situacao,
             pdfUrl: fatura.invoice_pdf ?? null,
             paginaUrl: fatura.hosted_invoice_url ?? null,
+            // As linhas vêm na lista (as primeiras 10): a da inclusão tem 2.
+            profissionaisIncluidos: profissionaisIncluidos(
+              fatura.billing_reason,
+              fatura.lines.data.map((linha) => ({
+                valorCentavos: linha.amount,
+                quantidade: linha.quantity,
+                proracao: linha.parent?.subscription_item_details?.proration ?? false,
+              }))
+            ),
           },
         ];
       });

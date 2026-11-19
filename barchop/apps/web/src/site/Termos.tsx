@@ -57,12 +57,16 @@ export function Termos() {
             vem com um a menos.
           </li>
           <li>
-            O pagamento é no cartão de crédito, pela Stripe, que processa a cobrança. O BarChop não vê nem guarda
-            os dados do cartão.
+            O pagamento é no cartão de crédito, pela Stripe, que processa a cobrança, ou por Pix, na chave do
+            BarChop, com o QR gerado no painel. O BarChop não vê nem guarda os dados do cartão. No Pix, o plano vale
+            na hora do &quot;Já paguei&quot;, e o suporte confere o pagamento; se o Pix não for encontrado, a
+            assinatura volta ao que era antes.
           </li>
           <li>
-            O plano se renova sozinho ao fim de cada período, mensal ou anual, com a cobrança adiantada do período
-            seguinte. Quem assina durante o teste só é cobrado quando o teste acaba.
+            No cartão, o plano se renova sozinho ao fim de cada período, mensal ou anual, com a cobrança adiantada
+            do período seguinte, e quem assina durante o teste só é cobrado quando o teste acaba. No Pix, cada
+            período é um Pix novo: avisamos 5 dias antes do fim, e o Pix pago durante o teste começa a valer quando
+            o teste acaba.
           </li>
           <li>
             Subir de plano no meio do período: paga-se na hora só a diferença pelos dias que faltam. Descer de
@@ -77,11 +81,12 @@ export function Termos() {
             valor é devolvido (direito de arrependimento, art. 49 do Código de Defesa do Consumidor).
           </li>
           <li>
-            Se a cobrança falhar, a Stripe tenta cobrar de novo nos dias seguintes, e o BarChop continua
+            Se a cobrança no cartão falhar, a Stripe tenta cobrar de novo nos dias seguintes, e o BarChop continua
             funcionando enquanto isso. Se ela não conseguir, a assinatura é cancelada.
           </li>
           <li>
-            Sem plano pago (no fim do teste, depois de cancelar ou quando a cobrança não passa), a barbearia vai
+            Sem plano pago (no fim do teste, depois de cancelar, quando a cobrança não passa ou quando o período do
+            Pix acaba sem um Pix novo), a barbearia vai
             para o Grátis: nada é apagado, mas só 1 profissional aparece no link de agendamento.
           </li>
         </ul>

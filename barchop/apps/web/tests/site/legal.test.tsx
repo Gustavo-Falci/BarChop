@@ -91,6 +91,19 @@ describe("termos de uso", () => {
     expect(within(cobranca).getByRole("link", { name: /preços/i })).toHaveAttribute("href", "/precos");
   });
 
+  // O Pix do BarChop está ligado em produção desde 14/11: os Termos dizem
+  // as duas formas, e o que só vale pro cartão diz que é do cartão.
+  it("o pagamento é no cartão ou por Pix, e o Pix não renova sozinho", () => {
+    render(<Termos />);
+    const cobranca = screen.getByRole("region", { name: /cobrança/i });
+    expect(cobranca).toHaveTextContent(/no cartão de crédito, pela Stripe, que processa a cobrança, ou por Pix/);
+    expect(cobranca).toHaveTextContent(/o suporte confere o pagamento/);
+    expect(cobranca).toHaveTextContent(/No cartão, o plano se renova sozinho/);
+    expect(cobranca).toHaveTextContent(/No Pix, cada período é um Pix novo/);
+    expect(cobranca).toHaveTextContent(/Se a cobrança no cartão falhar/);
+    expect(cobranca).toHaveTextContent(/quando o período do Pix acaba sem um Pix novo/);
+  });
+
   // Plano profissional-novo-pago, PR 5: incluir no meio do período cobra
   // na hora (no cartão) ou depois do Pix da diferença; tirar não devolve.
   it("incluir um profissional cobra os dias que faltam; tirar não devolve", () => {

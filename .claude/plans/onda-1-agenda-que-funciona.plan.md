@@ -4,7 +4,32 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-18 — profissional novo no plano pago, completo e no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-19 — Preços e Termos com cartão e Pix, no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `4df7241`, #367). **Produção = `main` até o #367**, deploy do dono em 19/11.
+- **#367 — Preços e Termos dizem cartão ou Pix** (item 2 de 18/11, feito):
+  - pagamento no cartão pela Stripe ou por Pix, com o QR gerado no painel;
+  - no cartão o plano renova sozinho; no Pix cada período é um Pix novo, com aviso 5 dias antes do fim;
+  - "Se a cobrança no cartão falhar, a Stripe tenta de novo";
+  - assinar no teste: no cartão a 1ª cobrança vem no fim do teste; no Pix o período pago começa no fim do teste;
+  - Preços: "Aceita Pix ou boleto?" responde "Pix, sim (…) Boleto ainda não."; "Preciso de cartão para testar?" diz que o plano pago é no cartão ou no Pix;
+  - Termos: o "Já paguei" vale na hora e o suporte confere; se o Pix não for encontrado, a assinatura volta ao que era antes; a barbearia vai pro Grátis quando o período do Pix acaba sem Pix novo;
+  - vigência dos Termos mantida em 31/10/2026, como no #365.
+  - Conferido de fora em 19/11: `/precos` e `/termos` com o texto novo, sem "só cartão".
+
+**Ao retomar:**
+1. **Conferir com cartão** (o 1 de 18/11, logo abaixo): **adiado pelo dono em 19/11**. Ainda vale: as migrations `20261118120000_profissional_aguardando` e `20261118180000_pix_liberados` só se confirmam abrindo Equipe e Faturas logado como dono.
+2. **Checklist do plano do profissional novo:** fechar o item do cartão depois do passo 1.
+3. **Como em 18/11 (item 4):**
+   - Search Console (só o dono);
+   - pilha `seguranca-*` (PC de casa; conferir conflito com os #360 a #367);
+   - Pix de verdade da `jesus-barber` e da `barbearia-teste`;
+   - home (contador ~12/12);
+   - lista de 06/11 (24/11: sandbox do Asaas).
+4. **Sem o dono:** o próximo item da Onda 1 (agenda), pelo plano abaixo.
+
+## RETOMAR AQUI (2026-11-18 — profissional novo no plano pago, completo e no ar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `7770cd9`, #365). **Produção = `main` até o #365**, deploy do dono em 18/11.

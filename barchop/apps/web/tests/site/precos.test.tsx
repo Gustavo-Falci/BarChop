@@ -36,6 +36,24 @@ describe("página de preços", () => {
     expect(resposta).toHaveTextContent(/tirar não devolve o período em curso/);
   });
 
+  // O Pix do BarChop está ligado em produção desde 14/11: a página não
+  // pode mais dizer "só cartão", e o que só vale pro cartão (renovar
+  // sozinho, a Stripe tentar de novo) diz que é do cartão.
+  it("diz que aceita cartão e Pix, e o que muda no Pix", () => {
+    render(<Precos />);
+    const secao = screen.getByRole("region", { name: "Como a cobrança funciona" });
+    expect(secao).toHaveTextContent(/no cartão de crédito, pela Stripe, ou por Pix/);
+    expect(secao).toHaveTextContent(/No cartão, o plano se renova sozinho/);
+    expect(secao).toHaveTextContent(/No Pix, cada período é um Pix novo/);
+    expect(secao).toHaveTextContent(/Se a cobrança no cartão falhar/);
+    expect(secao).toHaveTextContent(/no Pix, o período pago começa quando ele acaba/);
+
+    const pergunta = screen.getByText("Aceita Pix ou boleto?").closest("details")!;
+    expect(pergunta).toHaveTextContent(/Pix, sim/);
+    expect(pergunta).toHaveTextContent(/Boleto ainda não/);
+    expect(document.body.textContent).not.toMatch(/só cartão/i);
+  });
+
   it("as perguntas abrem ao tocar, e o convite leva ao cadastro", () => {
     render(<Precos />);
     const perguntas = screen.getByRole("region", { name: "Perguntas frequentes" });

@@ -12,13 +12,13 @@ import { Revelar } from "./Revelar";
 const COMO_FUNCIONA = [
   `Toda barbearia começa com ${DIAS_DE_TESTE} dias de tudo liberado, sem cartão.`,
   "Depois do teste, escolha um plano pago ou fique no Grátis. Se não escolher, a barbearia vai para o Grátis e nada é apagado.",
-  "Assinou durante o teste? A 1ª cobrança é só quando ele acaba.",
-  "O pagamento é no cartão de crédito, pela Stripe. O BarChop não vê nem guarda os dados do cartão.",
-  "O plano se renova sozinho, todo mês ou todo ano. No anual você paga 10 meses e leva 12.",
+  "Assinou durante o teste? No cartão, a 1ª cobrança é só quando ele acaba; no Pix, o período pago começa quando ele acaba, sem perder dias.",
+  "O pagamento é no cartão de crédito, pela Stripe, ou por Pix, com o QR gerado no painel. O BarChop não vê nem guarda os dados do cartão.",
+  "No cartão, o plano se renova sozinho, todo mês ou todo ano. No Pix, cada período é um Pix novo, e avisamos 5 dias antes do fim. No anual você paga 10 meses e leva 12.",
   "Subiu de plano no meio do período: paga na hora só a diferença pelos dias que faltam. Desceu: a mudança vale no fim do período já pago.",
   "Incluiu um profissional no meio do período: paga na hora só os dias que faltam pra ele. Tirou um: o período em curso não é devolvido, e a próxima cobrança já vem com um a menos.",
   "Cancele quando quiser, sem multa. O plano vale até o fim do período pago; depois, a barbearia volta para o Grátis.",
-  "Se a cobrança falhar, a Stripe tenta de novo nos dias seguintes, e tudo continua funcionando enquanto isso.",
+  "Se a cobrança no cartão falhar, a Stripe tenta de novo nos dias seguintes, e tudo continua funcionando enquanto isso.",
 ];
 
 const LIMITE_DO_ESSENCIAL = limiteDeProfissionais("essencial");
@@ -26,7 +26,7 @@ const LIMITE_DO_ESSENCIAL = limiteDeProfissionais("essencial");
 const PERGUNTAS = [
   {
     pergunta: "Preciso de cartão para testar?",
-    resposta: `Não. Os ${DIAS_DE_TESTE} dias de teste são sem cartão. Você só informa o cartão se escolher um plano pago.`,
+    resposta: `Não. Os ${DIAS_DE_TESTE} dias de teste são sem cartão. Para assinar um plano pago, você escolhe entre cartão e Pix.`,
   },
   {
     pergunta: "Quem conta como profissional?",
@@ -50,7 +50,8 @@ const PERGUNTAS = [
   },
   {
     pergunta: "Aceita Pix ou boleto?",
-    resposta: "Por enquanto, só cartão de crédito. Pix e boleto chegam em breve.",
+    resposta:
+      "Pix, sim: em Faturas, no painel, o BarChop gera o QR com o valor certo, o plano vale na hora e o suporte confere o pagamento. O Pix não renova sozinho: cada período é um Pix novo, e avisamos 5 dias antes do fim. Boleto ainda não.",
   },
 ];
 

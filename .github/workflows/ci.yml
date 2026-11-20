@@ -1,0 +1,126 @@
+# Tipos, lint, testes e dependências a cada PR e a cada push na main
+# (auditoria de segurança de 15/11, SEC-016). Antes disto nada rodava
+# fora da máquina de quem escreveu.
+#
+# Pra valer como trava, a main precisa exigir estes jobs: Settings →
+# Branches → regra da `main` → "Require status checks to pass".
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # Toda segunda: falha de dependência aparece mesmo sem PR aberto.
+  schedule:
+    - cron: "0 10 * * 1"
+
+# O token do job só lê o repositório. Nenhum segredo é usado aqui: PR de
+# fork e do Dependabot rodam igual.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: barchop
+
+jobs:
+  verificar:
+    name: Tipos, lint e testes
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    services:
+      # A mesma versão da produção (infra/compose.yaml). Banco descartável:
+      # nasce e morre com o job.
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: barchop
+          POSTGRES_PASSWORD: barchop
+          POSTGRES_DB: barchop_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U barchop -d barchop_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # A versão do pnpm vem do packageManager do package.json.
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: barchop/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: barchop/pnpm-lock.yaml
+
+      - name: Instalar
+        run: pnpm install --frozen-lockfile
+
+      - name: Gerar o cliente do Prisma
+        run: pnpm --filter @barchop/database build
+
+      - name: Tipos
+        run: pnpm type-check
+
+      # Só o que é do produto: o barchop-prototipo é rascunho de tela.
+      - name: Lint
+        run: pnpm exec eslint apps packages
+
+      # O mesmo arquivo que a suíte lê na máquina de quem desenvolve
+      # (apps/api/.env.test.example). Valores só deste job: o banco é o
+      # serviço acima e o segredo não assina nada fora daqui.
+      - name: Ambiente de teste da API
+        run: |
+          printf '%s\n' \
+            'DATABASE_URL="postgresql://barchop:barchop@localhost:5432/barchop_test?schema=public"' \
+            'JWT_SECRET="segredo-so-do-ci-nao-vale-em-lugar-nenhum"' \
+            > apps/api/.env.test
+
+      - name: Testes dos pacotes
+        run: pnpm --filter "./packages/*" test
+
+      - name: Testes do web
+        run: pnpm --filter @barchop/web test
+
+      - name: Testes da API
+        run: pnpm --filter @barchop/api test
+
+  dependencias:
+    name: Dependências com falha conhecida
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: barchop/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: barchop/pnpm-lock.yaml
+
+      # Sem node_modules o `pnpm audit` devolve os avisos sem caminho, e o
+      # script não consegue separar o que é só do apps/mobile. Os scripts
+      # de instalação não rodam: aqui só interessa a árvore.
+      - name: Instalar
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Auditar
+        run: node scripts/auditar-dependencias.mjs

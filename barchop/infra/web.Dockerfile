@@ -3,7 +3,7 @@
 # Imagem do web (Next standalone, ver apps/web/next.config.js).
 # Contexto: a pasta barchop/ (ver infra/compose.yaml e .dockerignore).
 
-FROM node:22-bookworm-slim AS build
+FROM node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee AS build
 # A mesma versão do packageManager do package.json da raiz.
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 WORKDIR /app
@@ -32,7 +32,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
 # baixa nada do Google Fonts.
 RUN pnpm --filter @barchop/web build
 
-FROM node:22-bookworm-slim AS web
+FROM node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee AS web
 ENV NODE_ENV=production \
   NEXT_TELEMETRY_DISABLED=1 \
   HOSTNAME=0.0.0.0 \

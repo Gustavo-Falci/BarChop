@@ -8,7 +8,7 @@
 // job ficaria vermelho pra sempre, e job sempre vermelho ninguém lê.
 // Aqui o aviso só do mobile é listado, mas não derruba.
 //
-// Uso (de barchop/): node scripts/auditar-dependencias.mjs
+// Uso (de barchop/, depois do `pnpm install`): node scripts/auditar-dependencias.mjs
 import { spawnSync } from "node:child_process";
 
 const GRAVES = new Set(["high", "critical"]);
@@ -71,7 +71,13 @@ if (derrubam.length > 0) {
   console.error("\nNo que vai pra produção:");
   for (const aviso of derrubam) {
     console.error(linha(aviso));
-    const caminhos = aviso.findings.flatMap((achado) => achado.paths).filter((caminho) => !DO_MOBILE.test(caminho));
+    const todos = aviso.findings.flatMap((achado) => achado.paths);
+    if (todos.length === 0) {
+      // Acontece quando não há node_modules: sem caminho, conta.
+      console.error("      (sem caminho: rode depois do `pnpm install` pra saber de quem é)");
+      continue;
+    }
+    const caminhos = todos.filter((caminho) => !DO_MOBILE.test(caminho));
     for (const caminho of caminhos.slice(0, 5)) console.error(`      ${caminho}`);
   }
   process.exit(1);

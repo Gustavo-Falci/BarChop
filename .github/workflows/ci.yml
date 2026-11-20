@@ -113,7 +113,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
+          cache-dependency-path: barchop/pnpm-lock.yaml
 
-      # Lê só o lockfile: não precisa instalar nada.
+      # Sem node_modules o `pnpm audit` devolve os avisos sem caminho, e o
+      # script não consegue separar o que é só do apps/mobile. Os scripts
+      # de instalação não rodam: aqui só interessa a árvore.
+      - name: Instalar
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       - name: Auditar
         run: node scripts/auditar-dependencias.mjs

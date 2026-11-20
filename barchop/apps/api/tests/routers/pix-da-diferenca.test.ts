@@ -262,6 +262,71 @@ describe("POST /barbearias/me/assinatura/pix/diferenca (Já paguei)", () => {
     expect(await membro(ana.id)).toMatchObject({ ativo: false, aguardaPagamento: false });
     await app.close();
   });
+
+  // Auditoria de segurança de 15/11, SEC-005: o teto de recusas vale
+  // também aqui. Sem ele, o dono declarava a diferença, era recusado e
+  // declarava de novo, com o profissional novo trabalhando sem pagar.
+  it("depois de duas recusas em 30 dias: 409 pix_recusado_demais, e ninguém entra", async () => {
+    const app = montar();
+    const dono = await noPix(app);
+    const ana = (await incluir(app, dono.token)).json();
+    const suporte = await tokenDoSuporte(app);
+    for (let vez = 0; vez < 2; vez += 1) {
+      const pix = await pagarDiferenca(app, dono.token);
+      expect(pix.statusCode).toBe(201);
+      const recusa = await app.inject({
+        method: "POST",
+        url: `/suporte/pix/${pix.json().id}/recusar`,
+        headers: auth(suporte),
+        payload: { resposta: "Não achei o Pix no extrato." },
+      });
+      expect(recusa.statusCode).toBe(200);
+    }
+    const convitesAntes = convitesPara(app, "ana@exemplo.com").length;
+
+    const terceiro = await pagarDiferenca(app, dono.token);
+
+    expect(terceiro.statusCode).toBe(409);
+    expect(terceiro.json().erro).toBe("pix_recusado_demais");
+    expect(await membro(ana.id)).toMatchObject({ ativo: false, aguardaPagamento: true });
+    expect(await lerLinha(dono.barbeariaId)).toMatchObject({ profissionaisContratados: 1 });
+    expect(await prisma.pagamentoPix.count({ where: { barbeariaId: dono.barbeariaId, situacao: "aguardando" } })).toBe(0);
+    expect(convitesPara(app, "ana@exemplo.com")).toHaveLength(convitesAntes);
+    await app.close();
+  });
+
+  it("recusa do Pix do período também conta pro teto da diferença", async () => {
+    const app = montar();
+    const dono = await noPix(app);
+    await incluir(app, dono.token);
+    const agora = new Date();
+    for (let vez = 0; vez < 2; vez += 1) {
+      await prisma.pagamentoPix.create({
+        data: {
+          barbeariaId: dono.barbeariaId,
+          identificador: `RECUSADO${vez}`,
+          plano: "completo",
+          ciclo: "mensal",
+          profissionais: 1,
+          valorCentavos: 100,
+          periodoComecaEm: agora,
+          periodoTerminaEm: dono.fim,
+          situacao: "recusado",
+          decididoEm: agora,
+          antesSituacao: "ativa",
+          antesPlano: "completo",
+          antesCiclo: "mensal",
+          antesForma: "pix",
+        },
+      });
+    }
+
+    const resposta = await pagarDiferenca(app, dono.token);
+
+    expect(resposta.statusCode).toBe(409);
+    expect(resposta.json().erro).toBe("pix_recusado_demais");
+    await app.close();
+  });
 });
 
 // Faturas e Suporte (PR 4b): o Pix diz quantos profissionais liberou, e

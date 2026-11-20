@@ -5,14 +5,15 @@ import { buildApp } from "../../src/app";
 import type { App } from "../../src/tipos";
 import { auth, criarMembroComToken } from "../helpers/barbearia";
 import { prepararAgenda } from "../helpers/agenda";
+import { blocoDoPng, blocoDoWebp, exif, jpeg, png, webp } from "../helpers/imagens";
 
 // Capa da barbearia e foto do profissional (Onda 1, bloco E2). O arquivo
 // passa pela API: ela confere o tipo pelos bytes e o tamanho, guarda, e
 // grava a CHAVE — o cliente nunca manda URL nenhuma.
 
-const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 1)]);
-const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(64, 2)]);
-const WEBP = Buffer.concat([Buffer.from("RIFF"), Buffer.alloc(4), Buffer.from("WEBP"), Buffer.alloc(64, 3)]);
+const PNG = png();
+const JPEG = jpeg();
+const WEBP = webp();
 
 async function multipart(arquivo: Buffer | null, nome = "imagem.png", tipo = "image/png") {
   const form = new FormData();
@@ -364,6 +365,73 @@ describe("foto do serviço", () => {
     expect(resposta.statusCode).toBe(204);
     expect((await publicoDoServico(app, agenda)).fotoUrl).toBeNull();
     expect((await app.inject({ method: "GET", url: caminho(nova) })).statusCode).toBe(404);
+  });
+});
+
+// Auditoria de segurança de 15/11, SEC-020. As imagens vão pra um bucket
+// de leitura pública, e foto de celular leva no EXIF as coordenadas de
+// onde foi tirada. A tela regrava a imagem no navegador, o que tira o
+// EXIF — mas quem chama a API direto pulava a tela.
+describe("metadados das imagens", () => {
+  const SEGREDO = "GPS -23.5505,-46.6333";
+
+  async function guardado(app: App, url: string): Promise<Buffer> {
+    const servido = await app.inject({ method: "GET", url: caminho(url) });
+    expect(servido.statusCode).toBe(200);
+    return servido.rawPayload;
+  }
+
+  it("as quatro rotas guardam a imagem sem EXIF, XMP nem texto embutido", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const comExif = jpeg([exif(6, SEGREDO)]);
+    const comTexto = png([blocoDoPng("tEXt", Buffer.from(`Comment\0${SEGREDO}`, "latin1"))]);
+    const webpComExif = webp([
+      blocoDoWebp("VP8X", Buffer.from([0x08, 0, 0, 0, 1, 0, 0, 1, 0, 0])),
+      blocoDoWebp("VP8 ", Buffer.alloc(32, 3)),
+      blocoDoWebp("EXIF", Buffer.from(SEGREDO, "latin1")),
+    ]);
+
+    const capa = await enviar(app, "/barbearias/me/capa", agenda.token, comExif);
+    const logo = await enviar(app, "/barbearias/me/logo?formato=redonda", agenda.token, comTexto);
+    const foto = await enviar(app, `/equipe/${agenda.barbeiroId}/foto`, agenda.token, comExif);
+    const servico = await enviar(app, `/servicos/${agenda.servico.id}/foto`, agenda.token, webpComExif);
+
+    for (const url of [capa.json().capaUrl, logo.json().logoUrl, foto.json().fotoUrl, servico.json().fotoUrl]) {
+      expect((await guardado(app, url)).toString("latin1")).not.toContain(SEGREDO);
+    }
+    // O PNG volta exatamente como seria sem o texto.
+    expect((await guardado(app, logo.json().logoUrl)).equals(png())).toBe(true);
+    await app.close();
+  });
+
+  it("a orientação fica: foto tirada com o celular em pé não aparece deitada", async () => {
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+
+    const resposta = await enviar(app, `/equipe/${agenda.barbeiroId}/foto`, agenda.token, jpeg([exif(6, SEGREDO)]));
+
+    const bytes = await guardado(app, resposta.json().fotoUrl);
+    const tiff = bytes.subarray(bytes.indexOf(Buffer.from("Exif\0\0", "latin1")) + 6);
+    expect(tiff.readUInt16LE(10)).toBe(0x0112);
+    expect(tiff.readUInt16LE(18)).toBe(6);
+    await app.close();
+  });
+
+  it("começo de imagem com o resto quebrado é 422, e nada é guardado", async () => {
+    // Só os primeiros bytes certos bastavam: qualquer coisa ia pro bucket
+    // com cara de imagem.
+    const app = buildApp();
+    const agenda = await prepararAgenda(app);
+    const soOComeco = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 1)]);
+
+    const resposta = await enviar(app, "/barbearias/me/capa", agenda.token, soOComeco);
+
+    expect(resposta.statusCode).toBe(422);
+    expect(resposta.json().erro).toBe("tipo_de_imagem_invalido");
+    const publico = (await app.inject({ method: "GET", url: `/barbearias/${agenda.slug}` })).json();
+    expect(publico.capaUrl).toBeNull();
+    await app.close();
   });
 });
 

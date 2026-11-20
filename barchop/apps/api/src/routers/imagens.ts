@@ -6,6 +6,7 @@ import { marcarAreas } from "../lib/areas";
 import { EXTENSAO_DO_TIPO, tipoPelosBytes } from "../lib/armazenamento";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { ErroHttp, naoEncontrado } from "../lib/erro-http";
+import { ImagemInvalida, semMetadados } from "../lib/metadados-de-imagem";
 import { PADRAO_UUID } from "../lib/padroes";
 import { exigirPapel } from "../plugins/auth";
 import type { App } from "../tipos";
@@ -66,7 +67,19 @@ async function lerImagem(request: FastifyRequest, limite: number) {
   if (!tipo) {
     throw new ErroDeNegocio("só png, jpeg ou webp", "tipo_de_imagem_invalido");
   }
-  return { bytes, tipo };
+  // O que vai pro bucket nunca leva os metadados que vieram no arquivo
+  // (EXIF com as coordenadas da foto, XMP, textos): ver
+  // lib/metadados-de-imagem.ts. Arquivo que tem o começo de imagem e o
+  // resto fora do formato cai aqui, com o mesmo erro de quem manda outra
+  // coisa.
+  try {
+    return { bytes: semMetadados(bytes, tipo), tipo };
+  } catch (erro) {
+    if (erro instanceof ImagemInvalida) {
+      throw new ErroDeNegocio("a imagem está corrompida ou não é png, jpeg ou webp", "tipo_de_imagem_invalido");
+    }
+    throw erro;
+  }
 }
 
 // Apagar o arquivo antigo é melhor-esforço: o banco já aponta pro novo, e

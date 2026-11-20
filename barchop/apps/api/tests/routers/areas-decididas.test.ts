@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app";
 import type { App } from "../../src/tipos";
 import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
+import { png } from "../helpers/imagens";
 
 // Painel v2, marco 2: as Configurações mostram "X de N decididas". Uma
 // área conta como decidida quando foi SALVA pelo menos uma vez, mesmo
@@ -9,7 +10,7 @@ import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/ba
 // é o "eu olhei e é isso mesmo". A API marca na hora do salvar; a tela
 // só lê.
 
-const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(64, 1)]);
+const PNG = png();
 
 async function areas(app: App, token: string): Promise<string[]> {
   const resposta = await app.inject({ method: "GET", url: "/barbearias/me", headers: auth(token) });

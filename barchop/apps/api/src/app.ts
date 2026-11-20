@@ -133,7 +133,7 @@ export function buildApp(
     ajv: { customOptions: { removeAdditional: false } },
     // O padrão do Fastify é 100 caracteres por parâmetro de rota, e o
     // token do link do lembrete (um JWT) passa de 200: sem isto, 414.
-    maxParamLength: 512,
+    routerOptions: { maxParamLength: 512 },
   }).withTypeProvider<JsonSchemaToTsProvider>();
 
   // Qualquer origem só fora de produção e sem ORIGENS_PERMITIDAS (dev

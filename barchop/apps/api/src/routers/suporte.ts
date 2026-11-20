@@ -7,7 +7,7 @@ import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_EMAIL, PADRAO_UUID } from "../lib/padroes";
 import { conferirSenha, obterHashDescartavel } from "../lib/senha";
 import { trocarSlug } from "../lib/slug";
-import { operadorDoToken } from "../plugins/auth";
+import { assinarSessao, operadorDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 import { serializarSolicitacao } from "./solicitacao-de-link";
 
@@ -45,7 +45,7 @@ export function registrarRotasLoginDoSuporte(app: App, limites: LimitesDeAuth): 
         return reply.code(401).send({ erro: "credenciais_invalidas" });
       }
 
-      const token = app.jwt.sign({ tipo: "suporte", operadorId: autorizado.id });
+      const token = assinarSessao(app, { tipo: "suporte", operadorId: autorizado.id });
       return {
         token,
         operador: { id: autorizado.id, nome: autorizado.nome, email: autorizado.email },

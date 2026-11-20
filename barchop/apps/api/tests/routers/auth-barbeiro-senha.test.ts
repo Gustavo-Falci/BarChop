@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app";
 import type { CanalDeMemoria } from "../../src/lib/canal";
+import { assinarSessao } from "../../src/plugins/auth";
 import type { App } from "../../src/tipos";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
 
@@ -97,7 +98,7 @@ describe("POST /auth/senha", () => {
   it("derruba a sessão que estava aberta", async () => {
     const app = buildApp();
     const barbearia = await criarBarbeariaComToken(app, "um");
-    const antigo = app.jwt.sign({
+    const antigo = assinarSessao(app, {
       tipo: "barbeiro",
       barbeiroId: barbearia.barbeiroId,
       barbeariaId: barbearia.barbeariaId,

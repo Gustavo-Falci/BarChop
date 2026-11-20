@@ -12,6 +12,7 @@ import {
 } from "../lib/senha";
 import { serializarCliente } from "../lib/serializar";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
+import { assinarSessao } from "../plugins/auth";
 import type { App } from "../tipos";
 
 const paramsSlug = {
@@ -260,7 +261,7 @@ export function registrarRotasAuthCliente(
             })
           : null;
         if (juntado) {
-          const token = app.jwt.sign({
+          const token = assinarSessao(app, {
             tipo: "cliente",
             clienteId: juntado.id,
             barbeariaId: barbearia.id,
@@ -301,7 +302,7 @@ export function registrarRotasAuthCliente(
             },
           });
 
-      const token = app.jwt.sign({
+      const token = assinarSessao(app, {
         tipo: "cliente",
         clienteId: cliente.id,
         barbeariaId: barbearia.id,
@@ -363,7 +364,7 @@ export function registrarRotasAuthCliente(
         return reply.code(401).send({ erro: "credenciais_invalidas" });
       }
 
-      const token = app.jwt.sign({
+      const token = assinarSessao(app, {
         tipo: "cliente",
         clienteId: autorizado.id,
         barbeariaId: barbearia.id,

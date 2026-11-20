@@ -3,6 +3,7 @@ import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
 import type { App } from "../../src/tipos";
 import { comCodigo } from "../helpers/barbearia";
+import { decodificarPayload } from "../helpers/decodificar-token";
 
 const CADASTRO = {
   barbearia: { nome: "Barbearia do Gu", slug: "barbearia-do-gu" },
@@ -155,9 +156,9 @@ describe("GET /me", () => {
     // separa "assinatura confere" de "token ainda vale".
     //
     // O `exp` vai no payload, e não como `expiresIn: "-1s"`: o fast-jwt
-    // recusa expiresIn negativo já na construção do assinante, mas
-    // respeita o `exp` que vier pronto no payload em vez de recalcular
-    // a partir do expiresIn do plugin.
+    // recusa expiresIn negativo já na construção do assinante, e
+    // respeita o `exp` que vier pronto no payload quando ninguém passa
+    // expiresIn (o plugin não tem prazo padrão: ver plugins/auth.ts).
     const payloadExpirado = {
       tipo: "barbeiro" as const,
       barbeiroId: cadastro.barbeiro.id,
@@ -175,6 +176,44 @@ describe("GET /me", () => {
     expect(resposta.statusCode).toBe(401);
     expect(resposta.json()).toEqual({ erro: "nao_autenticado" });
 
+    await app.close();
+  });
+
+  it("a sessão vale 7 dias, e o prazo sai do assinarSessao", async () => {
+    // O prazo deixou de ser padrão do plugin (o fast-jwt 6 faria ele
+    // sobrescrever o `exp` do link do lembrete). Este teste é o que avisa
+    // se uma rota de login voltar a assinar sem prazo.
+    const app = buildApp();
+    const token = await cadastrarEObterToken(app);
+
+    const { iat, exp } = decodificarPayload(token) as { iat: number; exp: number };
+
+    expect(exp - iat).toBe(7 * 24 * 60 * 60);
+    await app.close();
+  });
+
+  it("recusa token sem prazo, mesmo com a assinatura certa", async () => {
+    // Token eterno não existe na plataforma: quem assinar por fora do
+    // assinarSessao e esquecer o `exp` leva 401, não uma sessão sem fim.
+    const app = buildApp();
+    const cadastro = await cadastrar(app);
+    await app.ready();
+
+    const semPrazo = app.jwt.sign({
+      tipo: "barbeiro",
+      barbeiroId: cadastro.barbeiro.id,
+      barbeariaId: cadastro.barbearia.id,
+    });
+    expect(decodificarPayload(semPrazo).exp).toBeUndefined();
+
+    const resposta = await app.inject({
+      method: "GET",
+      url: "/me",
+      headers: { authorization: `Bearer ${semPrazo}` },
+    });
+
+    expect(resposta.statusCode).toBe(401);
+    expect(resposta.json()).toEqual({ erro: "nao_autenticado" });
     await app.close();
   });
 });

@@ -12,6 +12,7 @@ import {
   gerarHashSenha,
   obterHashDescartavel,
 } from "../lib/senha";
+import { assinarSessao } from "../plugins/auth";
 import type { App } from "../tipos";
 
 const corpoSignup = {
@@ -127,7 +128,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
       await contar("cadastro", { log: request.log });
       if (request.body.origem === "home") await contar("cadastro_da_home", { log: request.log });
 
-      const token = app.jwt.sign({
+      const token = assinarSessao(app, {
         tipo: "barbeiro",
         barbeiroId: criado.barbeiro.id,
         barbeariaId: criado.barbearia.id,
@@ -207,7 +208,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         return reply.code(401).send({ erro: "credenciais_invalidas" });
       }
 
-      const token = app.jwt.sign({
+      const token = assinarSessao(app, {
         tipo: "barbeiro",
         barbeiroId: autorizado.id,
         barbeariaId: autorizado.barbeariaId,
@@ -375,7 +376,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         include: { barbearia: true },
       });
 
-      const token = app.jwt.sign({
+      const token = assinarSessao(app, {
         tipo: "barbeiro",
         barbeiroId: atualizado.id,
         barbeariaId: atualizado.barbeariaId,
@@ -432,7 +433,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         where: { id: membro.barbeariaId },
       });
 
-      const token = app.jwt.sign({
+      const token = assinarSessao(app, {
         tipo: "barbeiro",
         barbeiroId: membro.id,
         barbeariaId: membro.barbeariaId,

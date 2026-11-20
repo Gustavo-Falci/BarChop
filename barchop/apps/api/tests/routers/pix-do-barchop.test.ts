@@ -909,3 +909,79 @@ describe("o webhook da Stripe com a assinatura em Pix", () => {
     await app.close();
   });
 });
+
+// Auditoria de segurança de 15/11, SEC-005. O "Já paguei" libera o plano
+// na hora, e a recusa do Suporte só desfaz. Sem teto, o dono declarava de
+// novo depois de cada recusa e usava o plano pago sem pagar, pelo tempo
+// que a conferência levasse.
+describe("teto de recusas do Pix", () => {
+  async function recusado(app: App, token: string, suporte: string) {
+    const pago = await jaPaguei(app, token);
+    expect(pago.statusCode).toBe(201);
+    expect((await decidir(app, suporte, pago.json().id, "recusar")).statusCode).toBe(200);
+    return pago.json().id as string;
+  }
+
+  it("depois de duas recusas em 30 dias, o Já paguei não libera mais nada", async () => {
+    const { app } = montar();
+    const dono = await criarBarbeariaComToken(app);
+    const suporte = await tokenDoSuporte(app);
+    await recusado(app, dono.token, suporte);
+    await recusado(app, dono.token, suporte);
+    const antes = await lerLinha(dono.barbeariaId);
+
+    const terceiro = await jaPaguei(app, dono.token);
+
+    expect(terceiro.statusCode).toBe(409);
+    expect(terceiro.json().erro).toBe("pix_recusado_demais");
+    // A mensagem é o texto que a tela mostra: diz o que fazer.
+    expect(terceiro.json().mensagem).toMatch(/suporte/i);
+    const depois = await lerLinha(dono.barbeariaId);
+    expect(depois.situacao).toBe(antes.situacao);
+    expect(depois.plano).toBe(antes.plano);
+    expect(await prisma.pagamentoPix.count({ where: { barbeariaId: dono.barbeariaId, situacao: "aguardando" } })).toBe(0);
+    await app.close();
+  });
+
+  it("uma recusa só não fecha: quem errou o valor paga de novo", async () => {
+    const { app } = montar();
+    const dono = await criarBarbeariaComToken(app);
+    const suporte = await tokenDoSuporte(app);
+    await recusado(app, dono.token, suporte);
+
+    expect((await jaPaguei(app, dono.token)).statusCode).toBe(201);
+    await app.close();
+  });
+
+  it("recusa de mais de 30 dias não conta, nem a de outra barbearia", async () => {
+    const { app } = montar();
+    const dono = await criarBarbeariaComToken(app, "um");
+    const outra = await criarBarbeariaComToken(app, "dois");
+    const suporte = await tokenDoSuporte(app);
+    const antigo = await recusado(app, dono.token, suporte);
+    await prisma.pagamentoPix.update({
+      where: { id: antigo },
+      data: { decididoEm: new Date(Date.now() - 31 * DIA) },
+    });
+    await recusado(app, dono.token, suporte);
+    await recusado(app, outra.token, suporte);
+    await recusado(app, outra.token, suporte);
+
+    expect((await jaPaguei(app, dono.token)).statusCode).toBe(201);
+    expect((await jaPaguei(app, outra.token)).statusCode).toBe(409);
+    await app.close();
+  });
+
+  it("desfazer pelo próprio dono não é recusa", async () => {
+    const { app } = montar();
+    const dono = await criarBarbeariaComToken(app);
+    for (let vez = 0; vez < 3; vez += 1) {
+      const pago = await jaPaguei(app, dono.token);
+      expect(pago.statusCode).toBe(201);
+      expect((await desfazer(app, dono.token, pago.json().id)).statusCode).toBeLessThan(300);
+    }
+
+    expect((await jaPaguei(app, dono.token)).statusCode).toBe(201);
+    await app.close();
+  });
+});

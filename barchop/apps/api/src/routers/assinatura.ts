@@ -74,6 +74,39 @@ function emConferencia(): ErroHttp {
   return new ErroHttp(409, "pix_em_conferencia", "já há um Pix em conferência: espere o suporte ou desfaça");
 }
 
+// O "Já paguei" libera o plano na hora e a recusa do Suporte só desfaz.
+// Sem teto, dava pra declarar de novo depois de cada recusa e usar o
+// plano pago sem pagar, pelo tempo que a conferência levasse (auditoria
+// de 15/11, SEC-005). Duas recusas em 30 dias fecham o Pix da barbearia
+// até o Suporte ser procurado: uma só não fecha, porque quem errou o
+// valor precisa conseguir pagar de novo. O cartão continua aberto.
+//
+// Só a recusa do Suporte conta. O "desfazer" do próprio dono não: é ele
+// corrigindo o pedido antes de alguém conferir.
+const MAX_RECUSAS_DO_PIX = 2;
+const JANELA_DAS_RECUSAS_MS = 30 * 24 * 60 * 60 * 1000;
+
+async function garantirPoucasRecusas(
+  tx: Prisma.TransactionClient,
+  barbeariaId: string,
+  agora: Date
+): Promise<void> {
+  const recusas = await tx.pagamentoPix.count({
+    where: {
+      barbeariaId,
+      situacao: "recusado",
+      decididoEm: { gt: new Date(agora.getTime() - JANELA_DAS_RECUSAS_MS) },
+    },
+  });
+  if (recusas >= MAX_RECUSAS_DO_PIX) {
+    throw new ErroHttp(
+      409,
+      "pix_recusado_demais",
+      "O Suporte não achou os seus últimos Pix. Para pagar por Pix de novo, fale com o Suporte do BarChop."
+    );
+  }
+}
+
 // Pra onde a Stripe devolve o dono. Em desenvolvimento, o `pnpm dev` do web.
 function telaDeFaturas(): string {
   const painel = (process.env.URL_DO_PAINEL ?? "http://localhost:3000").replace(/\/+$/, "");
@@ -174,6 +207,7 @@ export function registrarRotasAssinatura(app: App): void {
           if (await tx.pagamentoPix.findFirst({ where: { barbeariaId, situacao: "aguardando" } })) {
             throw emConferencia();
           }
+          await garantirPoucasRecusas(tx, barbeariaId, agora);
           const { cotacao, linha } = await cotar(tx, config, barbeariaId, pedido, agora);
           // Quem aguarda pagamento (plano profissional-novo-pago): um
           // período que começa agora o libera; a renovação adiantada não
@@ -264,6 +298,9 @@ export function registrarRotasAssinatura(app: App): void {
         if (await tx.pagamentoPix.findFirst({ where: { barbeariaId, situacao: "aguardando" } })) {
           throw emConferencia();
         }
+        // O mesmo teto do Pix do período, e contando as recusas dos dois
+        // tipos: aqui o "Já paguei" libera gente na hora (SEC-005).
+        await garantirPoucasRecusas(tx, barbeariaId, agora);
         const { cotacao, linha, profissionais } = await cotarDiferenca(tx, config, barbeariaId, agora);
         const liberados = await liberarAguardando(tx, barbeariaId);
         convidar.push(...liberados);

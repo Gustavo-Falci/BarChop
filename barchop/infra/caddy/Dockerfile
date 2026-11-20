@@ -7,8 +7,8 @@
 # novo na hora, e um módulo trocado na origem entrava no binário que
 # segura o certificado de todo mundo. Quem propõe digest novo é o
 # Dependabot (.github/dependabot.yml); a versão do módulo sobe à mão.
-FROM caddy:2-builder@sha256:6350162b3889ca32600b3c699c61572fa0eb3ad6b2a51874f19b158a7df77511 AS build
+FROM caddy:2-builder@sha256:aef223d1f943bc12a29a9e0a0a73983aa19a36672daede7507da4201a6b1016a AS build
 RUN xcaddy build --with github.com/caddy-dns/cloudflare@v0.2.4
 
-FROM caddy:2@sha256:4e2425f6009577e7c651010f16679c28f7d12df3e7b1914f941a7a3370746b3c
+FROM caddy:2@sha256:4851e54a46b206517c574821bb5cc67f170d2156041e9fbc4c9193b45e84a75b
 COPY --from=build /usr/bin/caddy /usr/bin/caddy

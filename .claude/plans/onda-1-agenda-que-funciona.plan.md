@@ -4,7 +4,41 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-19 — Preços e Termos com cartão e Pix, no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-20 — correções de segurança #369 a #379 mergeadas, deploy pendente) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `ec514d4`, #379). **Produção = `main` até o #367**: os #369 a #379 estão mergeados e **ainda não foram pro ar**.
+- Trabalho do outro PC (#356 a #368) conferido contra a pilha `seguranca-*`: um conflito em `routers/equipe.ts` (resolvido em `lib/convite.ts`), o teto de recusas aplicado também ao Pix da diferença e as migrations da pilha renomeadas pra depois das de 18/11.
+- **Mergeados em 20/11** (11 PRs, um por vez, cada um validado sozinho: tipos, eslint, suítes da API, web e api-client, build da API e `next build`):
+  - #369 dependências (Next 16.4.6, Fastify 5.12.8, `@fastify/jwt` 10);
+  - #370 limites por conta no banco;
+  - #371 cabeçalhos de segurança no web e na API, `security.txt`;
+  - #372 horário pelo link em conta com senha;
+  - #373 scrypt, `JWT_SECRET` e chave dos códigos;
+  - #374 contato de cliente com conta, histórico por papel, convite pendente;
+  - #375 e-mails;
+  - #376 Pix e Stripe;
+  - #377 suporte;
+  - #378 LGPD (faxina dos códigos, CPF cifrado, comandos do titular);
+  - #379 imagens.
+- **Pilha que falta** (5 branches locais, empilhados sobre a `main`, nada enviado): `seguranca-ci`, `seguranca-infra`, `seguranca-csp`, `seguranca-sessao-api`, `seguranca-sessao-web`. Um PR por vez, nessa ordem.
+
+**Deploy dos #369 a #379 (só o dono), nesta ordem:**
+1. Na VM, antes de tudo: `JWT_SECRET` com 32 caracteres ou mais (`awk -F= '/^JWT_SECRET=/{print length($2)}' infra/api.env`). Com menos, a API não sobe.
+2. `migrate deploy` com as 3 migrations novas, que só acrescentam: `20261120120000_contador_de_limite`, `20261120130000_auditoria`, `20261120140000_cpf_cifrado`.
+3. API e web **juntas** (o #372 precisa das duas).
+4. Caddyfile mudou (#371): validar e recarregar o Caddy.
+5. Esperado depois: a sessão do suporte cai pra 2h; chave secreta da Stripe (`sk_live_`) deixa de ser aceita em conexão nova; o link dos avisos do suporte só aponta pros sites do BarChop; HSTS com `includeSubDomains` vale pra todo `*.barchop.com.br`.
+6. Conferir de fora: health 200, cabeçalhos de segurança em `curl -I` do site e da API, `/.well-known/security.txt`.
+
+**Ao retomar:**
+1. Deploy acima (dono) e conferência.
+2. Pilha restante: PR 12 `seguranca-ci` em diante, um por vez. Antes do 15 (`seguranca-sessao-api`): conferir `URL_DO_PAINEL` (https) e `URL_DAS_BARBEARIAS` (https com `{slug}`) no `infra/api.env`, senão a API não sobe. O 16 (`seguranca-sessao-web`) vai depois do 15 no ar; todo mundo entra de novo uma vez.
+3. Itens que pedem tela (canvas antes) ou decisão do dono: login do suporte, troca de e-mail do cliente, fluxo do Pix depois de uma recusa, CSP completa, texto da política de privacidade.
+4. Só o dono, fora do código: GitHub (alertas do Dependabot, secret scanning, proteção da `main`), Cloudflare (CAA, DMARC), OCI (bucket de backup), cópia da `CHAVE_DE_CIFRA`.
+5. Como em 19/11: conferir com cartão (adiado), Search Console, Pix de verdade da `jesus-barber`, home (contador ~12/12), 24/11 sandbox do Asaas.
+
+## RETOMAR AQUI (2026-11-19 — Preços e Termos com cartão e Pix, no ar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `4df7241`, #367). **Produção = `main` até o #367**, deploy do dono em 19/11.

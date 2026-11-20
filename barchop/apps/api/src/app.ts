@@ -5,6 +5,7 @@ import Fastify from "fastify";
 import type { JsonSchemaToTsProvider } from "@fastify/type-provider-json-schema-to-ts";
 import { armazenamentoPadrao, type Armazenamento } from "./lib/armazenamento";
 import { confiancaNoProxy, origemPermitida, origensPermitidas, proxiesConfiaveis } from "./lib/borda";
+import { conferirAmbienteDaSessao } from "./lib/sessao-por-cookie";
 import { canalDoAmbiente, type CanalDeMensagem } from "./lib/canal";
 import { cobrancaDoAmbiente, type Cobranca } from "./lib/cobranca";
 import { avisarDaChaveDoPix, pixDoAmbiente, type ConfigDoPix } from "./lib/pix";
@@ -106,6 +107,7 @@ export function buildApp(
   // Lidas antes do Fastify: valor torto, ou ausente em produção, lança
   // aqui e a API não sobe (lib/borda.ts).
   const origens = origensPermitidas(ambiente);
+  conferirAmbienteDaSessao(ambiente);
   const app = Fastify({
     // Só com o Caddy na frente (G1): ver lib/borda.ts.
     trustProxy: confiancaNoProxy(proxiesConfiaveis(ambiente)),

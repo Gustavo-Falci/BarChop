@@ -173,6 +173,23 @@ export function apagarSessao(reply: FastifyReply, tipo: TipoDeSessao, slug?: str
   acrescentar(reply, serializar(nomeDoCookie(tipo, slug), "", 0));
 }
 
-export function slugValido(texto: string | undefined): texto is string {
-  return !!texto && FORMATO_DO_SLUG.test(texto);
+// Na subida, junto das origens (app.ts). Sem saber o host do painel e o
+// das barbearias, a amarração por origem cairia no modo de
+// desenvolvimento em silêncio: o cookie do painel valeria vindo da
+// página de qualquer barbearia, sem Secure. Em produção, melhor a API
+// não subir.
+export function conferirAmbienteDaSessao(env: Record<string, string | undefined>): void {
+  if (env.NODE_ENV !== "production") return;
+  if (!env.URL_DO_PAINEL?.startsWith("https://")) {
+    throw new Error(
+      "URL_DO_PAINEL ausente ou sem https em produção: a sessão por cookie precisa saber o endereço do painel"
+    );
+  }
+  const barbearias = env.URL_DAS_BARBEARIAS;
+  if (!barbearias?.startsWith("https://") || !barbearias.includes("{slug}")) {
+    throw new Error(
+      "URL_DAS_BARBEARIAS ausente, sem https ou sem {slug} em produção: a sessão do cliente precisa do endereço de cada barbearia"
+    );
+  }
 }
+

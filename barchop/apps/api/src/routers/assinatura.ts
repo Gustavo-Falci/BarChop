@@ -298,6 +298,9 @@ export function registrarRotasAssinatura(app: App): void {
         if (await tx.pagamentoPix.findFirst({ where: { barbeariaId, situacao: "aguardando" } })) {
           throw emConferencia();
         }
+        // O mesmo teto do Pix do período, e contando as recusas dos dois
+        // tipos: aqui o "Já paguei" libera gente na hora (SEC-005).
+        await garantirPoucasRecusas(tx, barbeariaId, agora);
         const { cotacao, linha, profissionais } = await cotarDiferenca(tx, config, barbeariaId, agora);
         const liberados = await liberarAguardando(tx, barbeariaId);
         convidar.push(...liberados);

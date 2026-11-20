@@ -68,7 +68,7 @@ async function contaPorEmail(app: App, slug: string, email = EMAIL) {
 }
 
 describe("código do cliente por e-mail", () => {
-  it("manda o código pro e-mail normalizado, com assunto em nome da barbearia", async () => {
+  it("manda o código pro e-mail normalizado, com a barbearia no corpo e assunto fixo", async () => {
     const app = buildApp({ canal: canalSoDeEmail() });
     const { slug } = await criarBarbeariaComToken(app);
 
@@ -77,7 +77,32 @@ describe("código do cliente por e-mail", () => {
     expect(resposta.statusCode).toBe(202);
     const [mensagem] = enviadas(app);
     expect(mensagem.para).toBe(EMAIL);
-    expect(mensagem.assunto).toContain("Barbearia um");
+    // O assunto não leva texto de terceiro (SEC-012); o nome da
+    // barbearia vai no corpo, que é onde o código faz sentido.
+    expect(mensagem.assunto).toBe("Seu código de acesso");
+    expect(mensagem.texto).toContain("Barbearia um");
+    expect(mensagem.texto).toMatch(/\b\d{6}\b/);
+    expect(mensagem.texto).toMatch(/se não foi você/i);
+    await app.close();
+  });
+
+  it("nome de barbearia com endereço web não vira link nem assunto", async () => {
+    // Auditoria de 15/11, SEC-012: alguém cadastra a barbearia "Seu
+    // banco: confirme em https://…" e pede códigos pros e-mails das
+    // vítimas. A mensagem chegava assinada pelo domínio do BarChop, com a
+    // isca no assunto.
+    const app = buildApp({ canal: canalSoDeEmail() });
+    const { slug, barbeariaId } = await criarBarbeariaComToken(app);
+    await prisma.barbearia.update({
+      where: { id: barbeariaId },
+      data: { nome: "Seu banco: confirme em https://isca.example.com/login" },
+    });
+
+    await pedirCodigo(app, slug, { email: EMAIL });
+
+    const [mensagem] = enviadas(app);
+    expect(mensagem.assunto).toBe("Seu código de acesso");
+    expect(mensagem.texto).not.toMatch(/https?:|isca\.example/i);
     expect(mensagem.texto).toMatch(/\b\d{6}\b/);
     await app.close();
   });

@@ -6,6 +6,7 @@ import { agoraNaBarbearia, dataParaDate, dateParaData, somarDias } from "./horas
 import { confirmarPagamentoDoLink, criarLinkNaInfinitePay, linkParaGravar } from "./links-do-ciclo";
 import { notificarQuemVende } from "./notificacoes";
 import { marcarAtrasadas } from "./planos-do-cliente";
+import { nomeParaEmail, primeiroNomeParaEmail } from "./texto-de-email";
 import { ErroDoProvedor, type FabricaDeProvedores } from "./provedores";
 import type { LogDoWebhook } from "./webhook-dos-planos";
 
@@ -53,7 +54,7 @@ function dataCurta(data: string): string {
   return `${dia}/${mes}/${ano}`;
 }
 
-const primeiroNome = (nome: string) => nome.split(" ")[0];
+const primeiroNome = primeiroNomeParaEmail;
 
 function quemVende(assinatura: AssinaturaDaVarredura) {
   return { barbeariaId: assinatura.barbeariaId, vendedorId: assinatura.plano.vendedorId };
@@ -187,9 +188,9 @@ async function enviarLink(assinatura: AssinaturaDaVarredura, link: LinkGravado, 
   try {
     await deps.canal.enviar({
       para: cliente.email,
-      assunto: `Mensalidade do plano ${plano.nome} na ${barbearia.nome}`,
+      assunto: `Mensalidade do plano ${nomeParaEmail(plano.nome, "de assinatura")} na ${nomeParaEmail(barbearia.nome)}`,
       texto:
-        `Olá, ${primeiroNome(cliente.nome)}! A mensalidade do plano ${plano.nome} (${formatarReais(link.valorCentavos)}) ` +
+        `Olá, ${primeiroNome(cliente.nome)}! A mensalidade do plano ${nomeParaEmail(plano.nome, "de assinatura")} (${formatarReais(link.valorCentavos)}) ` +
         `vence em ${dataCurta(dateParaData(link.vencimento))}. Pague por Pix ou cartão neste link: ${link.url}\n\n` +
         `O link vale até ${dataCurta(dateParaData(link.validoAte))}. O plano não renova sozinho: a cada mensalidade chega um link novo.`,
     });
@@ -241,9 +242,9 @@ async function reenviarNoAtraso(assinatura: AssinaturaDaVarredura, vencimento: s
   try {
     await deps.canal.enviar({
       para: cliente.email,
-      assunto: `Mensalidade em atraso: plano ${plano.nome}`,
+      assunto: `Mensalidade em atraso: plano ${nomeParaEmail(plano.nome, "de assinatura")}`,
       texto:
-        `Olá, ${primeiroNome(cliente.nome)}! A mensalidade do plano ${plano.nome} na ${barbearia.nome} venceu em ` +
+        `Olá, ${primeiroNome(cliente.nome)}! A mensalidade do plano ${nomeParaEmail(plano.nome, "de assinatura")} na ${nomeParaEmail(barbearia.nome)} venceu em ` +
         `${dataCurta(vencimento)} e ainda não foi paga. Pague por este link até ${dataCurta(dateParaData(link.validoAte))}, ` +
         `ou a assinatura será cancelada: ${link.url}`,
     });
@@ -289,9 +290,9 @@ async function cancelarPorFaltaDePagamento(
   try {
     await deps.canal.enviar({
       para: cliente.email,
-      assunto: `Assinatura cancelada: plano ${plano.nome}`,
+      assunto: `Assinatura cancelada: plano ${nomeParaEmail(plano.nome, "de assinatura")}`,
       texto:
-        `Olá, ${primeiroNome(cliente.nome)}! Sua assinatura do plano ${plano.nome} na ${barbearia.nome} foi cancelada ` +
+        `Olá, ${primeiroNome(cliente.nome)}! Sua assinatura do plano ${nomeParaEmail(plano.nome, "de assinatura")} na ${nomeParaEmail(barbearia.nome)} foi cancelada ` +
         `porque a mensalidade não foi paga. Para voltar, é só assinar de novo na página da barbearia.`,
     });
   } catch (erro) {

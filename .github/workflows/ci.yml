@@ -55,7 +55,7 @@ jobs:
           persist-credentials: false
 
       # A versão do pnpm vem do packageManager do package.json.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: barchop/package.json
 
@@ -106,7 +106,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: barchop/package.json
 

@@ -13,7 +13,12 @@ name: barchop
 
 # A senha do banco vai crua na URL: gerar com `openssl rand -hex 24`
 # (só hexadecimal, nada pra escapar).
-x-url-do-banco: &url-do-banco "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public"
+#
+# QUEM conecta: o papel da aplicação (APP_DB_USER), que não é
+# superusuário. Sem ele definido, cai no POSTGRES_USER, como era antes
+# — e o POSTGRES_USER é o superusuário que a imagem cria. O papel nasce
+# uma vez, à mão: infra/README.md, "Papel do banco".
+x-url-do-banco: &url-do-banco "postgresql://${APP_DB_USER:-${POSTGRES_USER}}:${APP_DB_PASSWORD:-${POSTGRES_PASSWORD}}@postgres:5432/${POSTGRES_DB}?schema=public"
 
 # Sem limite, o log de cada contêiner cresce até encher o disco.
 x-log: &log
@@ -111,7 +116,10 @@ services:
     logging: *log
 
   backup:
-    image: postgres:18
+    # O Postgres mais o `age` e o `rclone`, pra cópia cifrada de fora da
+    # VM (backup/Dockerfile). Continua com o superusuário: o pg_dump lê
+    # tudo, e este serviço não recebe nada de fora.
+    build: backup
     restart: unless-stopped
     entrypoint: ["sh", "/backup.sh"]
     environment:
@@ -120,6 +128,13 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGDATABASE: ${POSTGRES_DB}
       BACKUP_DIAS: ${BACKUP_DIAS:-14}
+      # A cópia de fora da VM: desligada enquanto o bucket estiver vazio.
+      BACKUP_CHAVE_PUBLICA: ${BACKUP_CHAVE_PUBLICA:-}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT:-}
+      BACKUP_S3_REGIAO: ${BACKUP_S3_REGIAO:-}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_CHAVE_DE_ACESSO: ${BACKUP_S3_CHAVE_DE_ACESSO:-}
+      BACKUP_S3_SEGREDO: ${BACKUP_S3_SEGREDO:-}
     volumes:
       - ./backup/backup.sh:/backup.sh:ro
       - backups:/backups

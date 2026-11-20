@@ -96,6 +96,27 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         // teve continua dela. Lança aqui dentro de propósito — o rollback
         // devolve o código, e o dono só escolhe outro link.
         await garantirSlugLivre(tx, barbearia.slug, null);
+
+        // Convite nunca aceito não prende o e-mail de ninguém (auditoria
+        // de 15/11, SEC-011): qualquer dono convidava o endereço de um
+        // terceiro, e o terceiro não conseguia mais criar a própria
+        // barbearia. Quem chegou aqui provou o e-mail: o convite perde o
+        // endereço e o código dele deixa de valer. O membro convidado
+        // continua na equipe de quem convidou — pode ter agenda marcada —
+        // e o dono de lá convida de novo, com outro e-mail, se quiser.
+        // Conta com senha não entra: o create de baixo bate no e-mail
+        // único e vira 409.
+        const convites = await tx.barbeiro.updateMany({
+          where: { email, senhaHash: null },
+          data: { email: null },
+        });
+        if (convites.count > 0) {
+          await tx.codigoVerificacao.updateMany({
+            where: { finalidade: "convite_profissional", destino: email, usadoEm: null },
+            data: { usadoEm: new Date() },
+          });
+        }
+
         // Nasce com a assinatura em teste (Onda 2): 14 dias com tudo
         // liberado, sem cartão.
         const novaBarbearia = await tx.barbearia.create({
@@ -272,9 +293,10 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
   // jeito.
   // O código do cadastro do dono. Responde igual com o e-mail livre ou
   // tomado: é o que fecha a sondagem que o 409 do signup permitia. Livre
-  // recebe o código; tomado (conta ou convite pendente) recebe um aviso
-  // pra entrar ou recuperar a senha — e código nenhum, então nenhum
-  // código digitado cadastra de novo um e-mail que já existe.
+  // (ou só convidado, sem ter aceitado) recebe o código; quem já tem
+  // conta recebe um aviso pra entrar ou recuperar a senha — e o código
+  // dele não sai do servidor, então nenhum código digitado cadastra de
+  // novo um e-mail que já existe.
   app.post(
     "/auth/cadastro/codigo",
     { schema: { body: corpoCodigo }, preHandler: limites.codigoDoCadastro },
@@ -283,10 +305,24 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
 
       const existente = await prisma.barbeiro.findUnique({
         where: { email },
-        select: { id: true },
+        select: { senhaHash: true },
+      });
+      // Conta é quem já definiu a senha. Convite nunca aceito não é: o
+      // dono do e-mail recebe o código e, provando o endereço, cria a
+      // própria barbearia por cima do convite (ver o signup).
+      const temConta = Boolean(existente?.senhaHash);
+
+      // Emitido nos dois ramos, pra que os dois façam o mesmo trabalho no
+      // banco e o relógio não diga qual foi (auditoria de 15/11,
+      // SEC-021). O do e-mail com conta não vai pra ninguém, e não
+      // cadastra nada mesmo que alguém o acerte: o e-mail é único.
+      const codigo = await emitirCodigo({
+        finalidade: "cadastro_dono",
+        destino: email,
+        barbeariaId: null,
       });
 
-      const mensagem = existente
+      const mensagem = temConta
         ? {
             para: email,
             assunto: "Você já tem uma conta no BarChop",
@@ -298,11 +334,8 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
             para: email,
             assunto: "Seu código para criar a barbearia no BarChop",
             texto:
-              `BarChop: seu código pra criar a barbearia é ${await emitirCodigo({
-                finalidade: "cadastro_dono",
-                destino: email,
-                barbeariaId: null,
-              })}. Vale 10 minutos. Se não foi você que pediu, ignore este e-mail.`,
+              `BarChop: seu código pra criar a barbearia é ${codigo}. ` +
+              "Vale 10 minutos. Se não foi você que pediu, ignore este e-mail.",
           };
 
       // Sem esperar o envio: o tempo de resposta não pode dizer qual dos

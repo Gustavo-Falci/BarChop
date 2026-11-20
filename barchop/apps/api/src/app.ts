@@ -145,8 +145,14 @@ export function buildApp(
   // local). Com a lista, origem de fora fica sem o cabeçalho e o
   // navegador barra a resposta. O app mobile não manda Origin, então
   // não precisa estar nela.
+  //
+  // `credentials`: a sessão do navegador vai em cookie (SEC-003,
+  // lib/sessao-por-cookie.ts), e sem este cabeçalho o navegador não
+  // entrega a resposta de um fetch com `credentials: "include"`. Só a
+  // origem da lista recebe os dois; nunca o coringa `*`.
   app.register(cors, {
     origin: (origem, responder) => responder(null, !!origem && origemPermitida(origens, origem)),
+    credentials: true,
   });
 
   registrarTratamentoDeErros(app);

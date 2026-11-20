@@ -13,6 +13,7 @@ import {
   obterHashDescartavel,
   regravarSeMaisFraco,
 } from "../lib/senha";
+import { apagarSessao, gravarSessao } from "../lib/sessao-por-cookie";
 import { assinarSessao } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -52,6 +53,14 @@ const corpoSignup = {
 } as const;
 
 export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
+  // O "Sair" do painel. O cookie é httpOnly: só a API consegue apagá-lo.
+  // Sem exigir sessão, pra que um token já vencido também saia do
+  // navegador; o pior que um site de fora consegue é deslogar alguém.
+  app.post("/auth/sair", async (_request, reply) => {
+    apagarSessao(reply, "painel");
+    return reply.code(204).send();
+  });
+
   app.post(
     "/auth/signup",
     { schema: { body: corpoSignup }, preHandler: limites.signupDoBarbeiro },
@@ -155,6 +164,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         barbeiroId: criado.barbeiro.id,
         barbeariaId: criado.barbearia.id,
       });
+      gravarSessao(request, reply, "painel", token);
 
       // Campos listados um a um, nunca spread do registro: é o que
       // garante que senhaHash não escape.
@@ -244,6 +254,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         barbeiroId: autorizado.id,
         barbeariaId: autorizado.barbeariaId,
       });
+      gravarSessao(request, reply, "painel", token);
 
       return reply.code(200).send({
         token,
@@ -424,6 +435,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         barbeiroId: atualizado.id,
         barbeariaId: atualizado.barbeariaId,
       });
+      gravarSessao(request, reply, "painel", token);
 
       // O mesmo formato do login: a tela grava a sessão do mesmo jeito.
       return reply.code(200).send({
@@ -481,6 +493,7 @@ export function registrarRotasAuth(app: App, limites: LimitesDeAuth): void {
         barbeiroId: membro.id,
         barbeariaId: membro.barbeariaId,
       });
+      gravarSessao(request, reply, "painel", token);
 
       // O formato do login, com o papel: o painel decide o que mostrar
       // a partir dele desde a primeira tela.

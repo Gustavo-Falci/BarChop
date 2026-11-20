@@ -1,8 +1,9 @@
 import fastifyJwt from "@fastify/jwt";
-import type { FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from "fastify";
 import { prisma, type PapelMembro } from "@barchop/database";
 import { ErroHttp } from "../lib/erro-http";
 import { segredoDoServidor } from "../lib/segredos";
+import { apagarSessao, tokenDoPedido, type TipoDeSessao, type TokenDoPedido } from "../lib/sessao-por-cookie";
 import type { App } from "../tipos";
 
 // As duas identidades da plataforma. O `tipo` é o que separa uma da
@@ -148,20 +149,66 @@ function emitidoAntesDaTroca(
   return payload.iat < Math.floor(senhaAlteradaEm.getTime() / 1000);
 }
 
-// Hook onRequest das rotas protegidas. Token ausente ou inválido faz o
-// jwtVerify lançar com statusCode 401, que o tratador de erros repassa.
-export async function autenticar(request: FastifyRequest): Promise<void> {
-  // O retorno do jwtVerify, e não o request.user: `user` está declarado
+type QualquerSessao = PayloadBarbeiro | PayloadCliente | PayloadSuporte;
+
+// O 401 de toda recusa. O cookie recusado sai apagado na mesma resposta:
+// sem isso o navegador o mandaria de novo em cada chamada, e cada uma
+// custaria uma verificação à toa.
+function recusar(
+  reply: FastifyReply | undefined,
+  tipo: TipoDeSessao,
+  pedido: TokenDoPedido | null,
+  motivo: string
+): never {
+  if (reply && pedido?.via === "cookie") apagarSessao(reply, tipo, pedido.slug);
+  throw Object.assign(new Error(motivo), { statusCode: 401 });
+}
+
+// O token do pedido (cabeçalho ou cookie, lib/sessao-por-cookie.ts),
+// verificado. O `request.user` é posto aqui, como o jwtVerify fazia: as
+// rotas do painel leem `request.user.barbeariaId` direto.
+function verificarSessao(
+  request: FastifyRequest,
+  reply: FastifyReply | undefined,
+  tipo: TipoDeSessao
+): { payload: QualquerSessao; pedido: TokenDoPedido } {
+  const pedido = tokenDoPedido(request, tipo);
+  if (!pedido) recusar(reply, tipo, pedido, "pedido sem sessão");
+  let payload: QualquerSessao;
+  try {
+    payload = request.server.jwt.verify<QualquerSessao>(pedido.token);
+  } catch {
+    // O erro do verificador não tem statusCode e viraria 500.
+    recusar(reply, tipo, pedido, "token inválido ou vencido");
+  }
+  (request as { user: unknown }).user = payload;
+  return { payload, pedido };
+}
+
+// O mesmo, pros ganchos que nunca recusam: sessão que não confere é só
+// sessão nenhuma.
+function sessaoOpcional(request: FastifyRequest, tipo: TipoDeSessao): QualquerSessao | null {
+  const pedido = tokenDoPedido(request, tipo);
+  if (!pedido) return null;
+  try {
+    return request.server.jwt.verify<QualquerSessao>(pedido.token);
+  } catch {
+    return null;
+  }
+}
+
+// Hook onRequest das rotas protegidas. Sem sessão, ou sessão que não
+// confere: 401, que o tratador de erros repassa.
+export async function autenticar(request: FastifyRequest, reply?: FastifyReply): Promise<void> {
+  // O payload devolvido, e não o request.user: `user` está declarado
   // como PayloadBarbeiro, então `request.user.tipo` teria o tipo
   // literal "barbeiro" e o compilador trataria a comparação abaixo como
   // sempre falsa — a checagem funcionaria em runtime e pareceria código
   // morto pra quem refatorasse depois.
-  const payload = await request.jwtVerify<PayloadBarbeiro | PayloadCliente>();
+  const { payload, pedido } = verificarSessao(request, reply, "painel");
 
   if (payload.tipo !== "barbeiro") {
-    throw Object.assign(new Error("token não é de barbeiro"), {
-      statusCode: 401,
-    });
+    recusar(reply, "painel", pedido, "token não é de barbeiro");
   }
 
   // Verificar a assinatura não basta: desativar um barbeiro não tiraria
@@ -173,15 +220,11 @@ export async function autenticar(request: FastifyRequest): Promise<void> {
   });
 
   if (!barbeiro?.ativo) {
-    throw Object.assign(new Error("barbeiro inativo ou inexistente"), {
-      statusCode: 401,
-    });
+    recusar(reply, "painel", pedido, "barbeiro inativo ou inexistente");
   }
 
   if (emitidoAntesDaTroca(payload, barbeiro.senhaAlteradaEm)) {
-    throw Object.assign(new Error("token anterior à troca de senha"), {
-      statusCode: 401,
-    });
+    recusar(reply, "painel", pedido, "token anterior à troca de senha");
   }
 
   // O papel vem do banco, não do token: a consulta já está paga, e
@@ -202,15 +245,8 @@ export async function autenticar(request: FastifyRequest): Promise<void> {
 // troca de senha, a resposta é a do cliente. Mostrar a mais não abre
 // brecha: o POST do cliente aplica as regras de novo.
 export async function ehMembroDaBarbearia(request: FastifyRequest, barbeariaId: string): Promise<boolean> {
-  if (!request.headers.authorization) return false;
-
-  let payload: PayloadBarbeiro | PayloadCliente | PayloadSuporte;
-  try {
-    payload = await request.jwtVerify<PayloadBarbeiro | PayloadCliente | PayloadSuporte>();
-  } catch {
-    return false;
-  }
-  if (payload.tipo !== "barbeiro" || payload.barbeariaId !== barbeariaId) return false;
+  const payload = sessaoOpcional(request, "painel");
+  if (!payload || payload.tipo !== "barbeiro" || payload.barbeariaId !== barbeariaId) return false;
 
   const barbeiro = await prisma.barbeiro.findUnique({
     where: { id: payload.barbeiroId },
@@ -228,11 +264,12 @@ export async function ehMembroDaBarbearia(request: FastifyRequest, barbeariaId: 
 // torto, de outro tipo, de cliente apagado ou anterior à troca de
 // senha, a resposta é a de quem não está logado.
 export async function clienteDaRequisicao(request: FastifyRequest): Promise<string | null> {
-  if (!request.headers.authorization) return null;
+  const pedido = tokenDoPedido(request, "cliente");
+  if (!pedido) return null;
 
-  let payload: PayloadBarbeiro | PayloadCliente | PayloadSuporte;
+  let payload: QualquerSessao;
   try {
-    payload = await request.jwtVerify<PayloadBarbeiro | PayloadCliente | PayloadSuporte>();
+    payload = request.server.jwt.verify<QualquerSessao>(pedido.token);
   } catch {
     return null;
   }
@@ -240,9 +277,13 @@ export async function clienteDaRequisicao(request: FastifyRequest): Promise<stri
 
   const cliente = await prisma.cliente.findUnique({
     where: { id: payload.clienteId },
-    select: { senhaAlteradaEm: true },
+    select: { senhaAlteradaEm: true, barbearia: { select: { slug: true } } },
   });
-  return cliente && !emitidoAntesDaTroca(payload, cliente.senhaAlteradaEm) ? payload.clienteId : null;
+  if (!cliente || emitidoAntesDaTroca(payload, cliente.senhaAlteradaEm)) return null;
+  // O cookie escolhido pelo cabeçalho tem que ser mesmo da barbearia
+  // dele (ver o autenticarCliente).
+  if (pedido.via === "cookie" && cliente.barbearia.slug !== pedido.slug) return null;
+  return payload.clienteId;
 }
 
 // Lê o membro que o hook decorou — espelho do clienteDoToken.
@@ -278,28 +319,31 @@ export function agendaVisivel(request: FastifyRequest): { barbeiroId?: string } 
 // Hook onRequest do escopo do cliente. Espelho do `autenticar`: recusa
 // o tipo que não é o seu antes de tocar no banco, e consulta o cadastro
 // pra que apagar um cliente invalide o token na hora, não em sete dias.
-export async function autenticarCliente(request: FastifyRequest): Promise<void> {
-  const payload = await request.jwtVerify<PayloadBarbeiro | PayloadCliente>();
+export async function autenticarCliente(request: FastifyRequest, reply?: FastifyReply): Promise<void> {
+  const { payload, pedido } = verificarSessao(request, reply, "cliente");
 
   if (payload.tipo !== "cliente") {
-    throw Object.assign(new Error("token não é de cliente"), {
-      statusCode: 401,
-    });
+    recusar(reply, "cliente", pedido, "token não é de cliente");
   }
 
   const cliente = await prisma.cliente.findUnique({
     where: { id: payload.clienteId },
-    select: { id: true, senhaAlteradaEm: true },
+    select: { id: true, senhaAlteradaEm: true, barbearia: { select: { slug: true } } },
   });
 
   if (!cliente) {
-    throw Object.assign(new Error("cliente inexistente"), { statusCode: 401 });
+    recusar(reply, "cliente", pedido, "cliente inexistente");
   }
 
   if (emitidoAntesDaTroca(payload, cliente.senhaAlteradaEm)) {
-    throw Object.assign(new Error("token anterior à troca de senha"), {
-      statusCode: 401,
-    });
+    recusar(reply, "cliente", pedido, "token anterior à troca de senha");
+  }
+
+  // O cabeçalho só escolhe o cookie; quem diz de qual barbearia é a
+  // sessão é o token. Os dois discordam quando a barbearia trocou de
+  // link e outra pegou o antigo: o cookie velho não vale na página nova.
+  if (pedido.via === "cookie" && cliente.barbearia.slug !== pedido.slug) {
+    recusar(reply, "cliente", pedido, "sessão de outra barbearia");
   }
 
   request.cliente = payload;
@@ -322,11 +366,11 @@ export function clienteDoToken(request: FastifyRequest): PayloadCliente {
 // Hook do escopo do suporte (bloco F4), irmão do do cliente e pelo mesmo
 // motivo: identidade diferente, escopo diferente. Conta desativada ou
 // token anterior à troca de senha param de valer na hora.
-export async function autenticarSuporte(request: FastifyRequest): Promise<void> {
-  const payload = await request.jwtVerify<PayloadSuporte | PayloadBarbeiro | PayloadCliente>();
+export async function autenticarSuporte(request: FastifyRequest, reply?: FastifyReply): Promise<void> {
+  const { payload, pedido } = verificarSessao(request, reply, "suporte");
 
   if (payload.tipo !== "suporte") {
-    throw Object.assign(new Error("token não é do suporte"), { statusCode: 401 });
+    recusar(reply, "suporte", pedido, "token não é do suporte");
   }
 
   const operador = await prisma.operadorSuporte.findUnique({
@@ -335,11 +379,11 @@ export async function autenticarSuporte(request: FastifyRequest): Promise<void> 
   });
 
   if (!operador?.ativo) {
-    throw Object.assign(new Error("operador inativo ou inexistente"), { statusCode: 401 });
+    recusar(reply, "suporte", pedido, "operador inativo ou inexistente");
   }
 
   if (emitidoAntesDaTroca(payload, operador.senhaAlteradaEm)) {
-    throw Object.assign(new Error("token anterior à troca de senha"), { statusCode: 401 });
+    recusar(reply, "suporte", pedido, "token anterior à troca de senha");
   }
 
   request.operador = payload;

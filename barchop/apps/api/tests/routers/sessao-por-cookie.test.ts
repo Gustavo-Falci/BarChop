@@ -133,7 +133,7 @@ describe("sessão do painel por cookie", () => {
     await app.close();
   });
 
-  it("o Novo agendamento do painel reconhece o membro pelo cookie", async () => {
+  it("rota pública com o cookie do painel responde normalmente", async () => {
     const app = buildApp();
     const { slug } = await criarBarbeariaComToken(app);
     const cookie = parDo(cookiesDa(await loginDoPainel(app, PAINEL))[0]);

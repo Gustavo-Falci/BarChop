@@ -20,6 +20,7 @@ const TABELAS = [
   "aviso",
   "contagem_do_site",
   "contador_de_limite",
+  "auditoria",
   "solicitacao_troca_link",
   "operador_suporte",
   "slug_antigo",

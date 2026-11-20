@@ -1,6 +1,7 @@
 import { prisma } from "@barchop/database";
 import type { AntesDoPix, PixNaFila } from "@barchop/types";
 import { PLANOS, formatarReais } from "@barchop/formato";
+import { registrarAuditoria } from "../lib/auditoria";
 import { notificarDonos } from "../lib/notificacoes";
 import { PADRAO_UUID } from "../lib/padroes";
 import { pagamentoAguardando, serializarPagamentoPix, voltarAoQueEra } from "../lib/pix";
@@ -82,6 +83,14 @@ export function registrarRotasSuportePix(app: App): void {
         where: { id: pagamento.id },
         data: { situacao: "confirmado", decididoEm: new Date(), decididoPor: operadorId },
       });
+      await registrarAuditoria(tx, {
+        ator: { tipo: "suporte", id: operadorId },
+        acao: "suporte.pix.confirmar",
+        alvo: { tipo: "pagamento_pix", id: pagamento.id },
+        barbeariaId: pagamento.barbeariaId,
+        detalhe: { tipo: pagamento.tipo, valorCentavos: pagamento.valorCentavos, plano: pagamento.plano, ciclo: pagamento.ciclo },
+        ip: request.ip,
+      });
       // Só no sino: o plano já valia desde o "Já paguei".
       await notificarDonos(tx, pagamento.barbeariaId, {
         titulo: "Pix confirmado",
@@ -106,6 +115,14 @@ export function registrarRotasSuportePix(app: App): void {
         const recusado = await tx.pagamentoPix.update({
           where: { id: pagamento.id },
           data: { situacao: "recusado", resposta, decididoEm: new Date(), decididoPor: operadorId },
+        });
+        await registrarAuditoria(tx, {
+          ator: { tipo: "suporte", id: operadorId },
+          acao: "suporte.pix.recusar",
+          alvo: { tipo: "pagamento_pix", id: pagamento.id },
+          barbeariaId: pagamento.barbeariaId,
+          detalhe: { tipo: pagamento.tipo, valorCentavos: pagamento.valorCentavos, plano: pagamento.plano, ciclo: pagamento.ciclo },
+          ip: request.ip,
         });
         // O texto do sino tem 500 caracteres, e a resposta também: ela
         // inteira vai no e-mail e em Faturas; o sino só aponta.

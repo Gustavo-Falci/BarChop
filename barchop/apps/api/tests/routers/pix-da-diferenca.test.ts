@@ -29,8 +29,8 @@ function montar(): App {
 }
 
 // Completo mensal no Pix, 1 vaga paga, 15 dias pela frente.
-async function noPix(app: App, contratados = 1) {
-  const dono = await criarBarbeariaComToken(app);
+async function noPix(app: App, contratados = 1, sufixo = "um") {
+  const dono = await criarBarbeariaComToken(app, sufixo);
   const fim = new Date(Date.now() + 15 * DIA);
   await prisma.assinatura.update({
     where: { barbeariaId: dono.barbeariaId },
@@ -459,6 +459,35 @@ describe("DELETE /equipe/:id/aguardando (Desistir)", () => {
     });
 
     expect(resposta.statusCode).toBe(404);
+    await app.close();
+  });
+});
+
+// Auditoria de segurança de 15/11, SEC-008: a decisão do Suporte fica na
+// trilha, e a linha diz se era o Pix do período ou o da diferença.
+describe("trilha de auditoria do Pix da diferença", () => {
+  it("confirmar e recusar registram o tipo do Pix", async () => {
+    const app = montar();
+    const suporte = await tokenDoSuporte(app);
+    const um = await noPix(app);
+    await incluir(app, um.token);
+    const confirmado = (await pagarDiferenca(app, um.token)).json();
+    const dois = await noPix(app, 1, "dois");
+    await incluir(app, dois.token, "Bia");
+    const recusado = (await pagarDiferenca(app, dois.token)).json();
+
+    await app.inject({ method: "POST", url: `/suporte/pix/${confirmado.id}/confirmar`, headers: auth(suporte) });
+    await app.inject({
+      method: "POST",
+      url: `/suporte/pix/${recusado.id}/recusar`,
+      headers: auth(suporte),
+      payload: { resposta: "Não achei o Pix no extrato." },
+    });
+
+    const linhaConfirmada = await prisma.auditoria.findFirstOrThrow({ where: { acao: "suporte.pix.confirmar" } });
+    const linhaRecusada = await prisma.auditoria.findFirstOrThrow({ where: { acao: "suporte.pix.recusar" } });
+    expect(linhaConfirmada).toMatchObject({ alvoId: confirmado.id, detalhe: { tipo: "diferenca" } });
+    expect(linhaRecusada).toMatchObject({ alvoId: recusado.id, detalhe: { tipo: "diferenca" } });
     await app.close();
   });
 });

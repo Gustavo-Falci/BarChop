@@ -1,4 +1,7 @@
 import { prisma } from "@barchop/database";
+import { registrarAuditoria } from "../lib/auditoria";
+import { origemPermitida, origensPermitidas } from "../lib/borda";
+import { ErroDeNegocio } from "../lib/erro-negocio";
 import { operadorDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -36,12 +39,38 @@ function serializarAviso(
   };
 }
 
+// O https de fora só vale pros sites do próprio BarChop — os mesmos que
+// podem chamar a API (ORIGENS_PERMITIDAS, lib/borda.ts). O aviso cai no
+// sino de todos os membros de todas as barbearias, e o painel abre o
+// link no clique: com qualquer https valendo, uma conta de suporte
+// tomada virava phishing em massa com a cara do painel (auditoria de
+// 15/11, SEC-008). Sem a variável, fora de produção, qualquer https (dev
+// local); em produção a API não sobe sem ela.
+function linkDeCasa(link: string, origens: ReturnType<typeof origensPermitidas>): boolean {
+  if (link.startsWith("/")) return true;
+  try {
+    // `origin` do URL já resolvido: "https://barchop.com.br@isca.com" e
+    // "https://barchop.com.br.isca.com" mostram aqui o host de verdade.
+    return origemPermitida(origens, new URL(link).origin);
+  } catch {
+    return false;
+  }
+}
+
 export function registrarRotasAvisos(app: App): void {
+  const origens = origensPermitidas(process.env);
+
   app.post("/suporte/avisos", { schema: { body: corpoAviso } }, async (request, reply) => {
     const { operadorId } = operadorDoToken(request);
     const titulo = request.body.titulo.trim();
     const texto = request.body.texto.trim();
     const link = request.body.link ?? null;
+    if (link !== null && !linkDeCasa(link, origens)) {
+      throw new ErroDeNegocio(
+        "o link do aviso só pode levar pra dentro do painel ou pra um site do BarChop",
+        "link_de_fora"
+      );
+    }
 
     // Aviso e cópias numa transação: aviso publicado pela metade não
     // existe. Quem entra na equipe depois não recebe os antigos.
@@ -57,6 +86,13 @@ export function registrarRotasAvisos(app: App): void {
           link,
           avisoId: aviso.id,
         })),
+      });
+      await registrarAuditoria(tx, {
+        ator: { tipo: "suporte", id: operadorId },
+        acao: "suporte.aviso.publicar",
+        alvo: { tipo: "aviso", id: aviso.id },
+        detalhe: { titulo, link, destinatarios: count },
+        ip: request.ip,
       });
       return { aviso, destinatarios: count };
     });

@@ -947,3 +947,28 @@ model ContadorDeLimite {
   @@index([expiraEm], map: "contador_de_limite_expira_em_idx")
   @@map("contador_de_limite")
 }
+
+// Trilha de auditoria (auditoria de segurança de 15/11, SEC-008 e
+// SEC-009): quem fez o quê, em quê, quando e de onde. Uma linha por
+// ação; só acrescenta. Sem relação com as outras tabelas, de propósito —
+// a linha sobrevive à exclusão do que descreve. `detalhe` nunca leva
+// senha, token, código nem dado de cliente final. A faxina apaga o que
+// passou de dois anos.
+model Auditoria {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  criadoEm    DateTime @default(now()) @map("criado_em") @db.Timestamptz
+  // "suporte", "sistema" (comando de operação) ou "dono".
+  atorTipo    String   @map("ator_tipo") @db.VarChar(20)
+  atorId      String?  @map("ator_id") @db.Uuid
+  acao        String   @db.VarChar(60)
+  alvoTipo    String?  @map("alvo_tipo") @db.VarChar(40)
+  alvoId      String?  @map("alvo_id") @db.Uuid
+  barbeariaId String?  @map("barbearia_id") @db.Uuid
+  detalhe     Json?
+  ip          String?  @db.VarChar(45)
+
+  @@index([criadoEm])
+  @@index([atorId, criadoEm])
+  @@index([barbeariaId, criadoEm])
+  @@map("auditoria")
+}

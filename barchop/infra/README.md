@@ -67,6 +67,30 @@ docker compose exec -e SENHA_DO_SUPORTE api node dist/criar-suporte.js "Nome" su
 unset SENHA_DO_SUPORTE
 ```
 
+## Pedidos de titulares e encerramento (LGPD)
+
+Não há tela nem rota pra isto: quem atende é o responsável pela
+plataforma, depois de conferir a identidade de quem pede. Cada comando
+deixa uma linha na tabela `auditoria`.
+
+```bash
+# Cópia dos dados de um cliente de uma barbearia (JSON). O arquivo tem
+# dado pessoal: entregue por canal seguro e apague depois.
+docker compose exec -T api node dist/titular.js exportar <link> <telefone-ou-e-mail> > dados.json
+
+# Exclusão a pedido: esvazia o cadastro (nome, telefone, e-mail, CPF,
+# senha). Os horários e pagamentos ficam, de ninguém. Não tem volta.
+docker compose exec api node dist/titular.js apagar <link> <telefone-ou-e-mail> --confirmar
+
+# Encerrar uma barbearia: apaga tudo dela, do banco e das imagens. Não
+# tem volta. Recusa se houver cobrança viva na Stripe ou no Asaas —
+# cancele lá antes.
+docker compose exec api node dist/titular.js encerrar-barbearia <link> --confirmar <link>
+```
+
+O que foi apagado continua nos backups até eles vencerem (14 dias, ver
+Backup).
+
 ## Atualizar
 
 ```bash

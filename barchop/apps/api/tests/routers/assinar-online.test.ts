@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
+import { lerCpf } from "../../src/lib/cpf";
 import { agoraNaBarbearia, dataParaDate, somarDias } from "../../src/lib/horas";
 import { provedoresDeMemoria, recorrente, type Provedor } from "../../src/lib/provedores";
 import { auth, criarBarbeariaComToken, criarMembroComToken } from "../helpers/barbearia";
@@ -117,7 +118,24 @@ describe("assinar", () => {
       }),
     ]);
     expect(gravada).toMatchObject({ conexaoId: c.casa.id, idExterno: c.provedores.pedidosDeAssinatura[0]!.id });
-    expect((await prisma.cliente.findUniqueOrThrow({ where: { id: c.cliente.clienteId } })).cpf).toBe(CPF);
+    // O CPF fica guardado cifrado, nunca em claro (auditoria de 15/11,
+    // SEC-009): em claro ele ia junto em todo backup do banco.
+    const cadastro = await prisma.cliente.findUniqueOrThrow({ where: { id: c.cliente.clienteId } });
+    expect(cadastro.cpf).toBeNull();
+    expect(Buffer.from(cadastro.cpfCifrado!).toString("latin1")).not.toContain(CPF);
+    expect(lerCpf(cadastro)).toBe(CPF);
+    await c.app.close();
+  });
+
+  it("o CPF cifrado da primeira assinatura serve pra próxima, sem digitar de novo", async () => {
+    const c = await cenario();
+    expect((await assinar(c, c.daCasa.id)).statusCode).toBe(201);
+    await prisma.assinaturaDoCliente.deleteMany();
+
+    const segunda = await assinar(c, c.daCasa.id, {});
+
+    expect(segunda.statusCode).toBe(201);
+    expect(c.provedores.clientes.at(-1)!.cpfCnpj).toBe(CPF);
     await c.app.close();
   });
 

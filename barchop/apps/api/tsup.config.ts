@@ -12,6 +12,8 @@ export default defineConfig({
   entry: {
     server: "src/server.ts",
     "criar-suporte": "scripts/criar-suporte.ts",
+    // Os direitos do titular e o encerramento (LGPD): `node dist/titular.js`.
+    titular: "scripts/titular.ts",
     // Os preços da Stripe (ADR-0010): `node dist/criar-precos-no-stripe.js`.
     "criar-precos-no-stripe": "scripts/criar-precos-no-stripe.ts",
   },

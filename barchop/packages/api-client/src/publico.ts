@@ -31,6 +31,11 @@ export interface OpcoesDaDisponibilidade {
   comToken?: boolean;
 }
 
+// `comToken`: quem agenda logado (ver `agendar`).
+export interface OpcoesDeAgendar {
+  comToken?: boolean;
+}
+
 export interface FiltroDoMes {
   barbeiroId?: string;
   mes: string; // "YYYY-MM"
@@ -112,13 +117,18 @@ export function criarApiPublica(requisicao: Requisicao) {
       return resposta.dias;
     },
 
+    // `comToken`: o cliente logado. A API só anexa o horário a um
+    // cadastro com senha quando o pedido vem com o token do dono dele;
+    // sem conta naquele telefone, o token não faz diferença.
     agendar(
       slug: string,
-      novo: NovoAgendamentoPublicoInput
+      novo: NovoAgendamentoPublicoInput,
+      opcoes: OpcoesDeAgendar = {}
     ): Promise<AgendamentoCriado> {
       return requisicao(`/barbearias/${slug}/agendamentos`, {
         metodo: "POST",
         corpo: novo,
+        comToken: opcoes.comToken,
       });
     },
 

@@ -89,6 +89,9 @@ describe("lembrete agendado", () => {
       await app.inject({
         method: "POST",
         url: `/barbearias/${agenda.slug}/agendamentos`,
+        // Logado: cadastro com senha só recebe horário pelo link com o
+        // token do dono (SEC-001).
+        headers: auth(cliente.token),
         payload: {
           servicoIds: [agenda.servico.id],
           data: QUINTA,

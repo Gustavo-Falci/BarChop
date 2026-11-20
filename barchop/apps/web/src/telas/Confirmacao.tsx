@@ -204,15 +204,22 @@ export function Confirmacao({ agora }: { agora?: Date } = {}) {
         linkDoHorario?: string | null;
         tokenDaConta?: string;
       } = cliente
-        ? await api.publico.agendar(slug, {
-            // Ausente é "qualquer um": a API escolhe e devolve quem.
-            barbeiroId: profissional,
-            servicoIds,
-            data: diaConfirmado,
-            horaInicio: horaConfirmada,
-            // Logada, sem campo: o lembrete vai pro e-mail do cadastro.
-            cliente: email.trim() && !conta ? { ...cliente, email: email.trim() } : cliente,
-          })
+        ? await api.publico.agendar(
+            slug,
+            {
+              // Ausente é "qualquer um": a API escolhe e devolve quem.
+              barbeiroId: profissional,
+              servicoIds,
+              data: diaConfirmado,
+              horaInicio: horaConfirmada,
+              // Logada, sem campo: o lembrete vai pro e-mail do cadastro.
+              cliente: email.trim() && !conta ? { ...cliente, email: email.trim() } : cliente,
+            },
+            // Logada, o token vai junto: a API só põe o horário num
+            // cadastro com senha pra quem prova que é o dono dele — o
+            // telefone sozinho não prova (SEC-001).
+            { comToken: Boolean(conta) }
+          )
         : await api.cliente.remarcar(remarcar as string, {
             data: diaConfirmado,
             horaInicio: horaConfirmada,

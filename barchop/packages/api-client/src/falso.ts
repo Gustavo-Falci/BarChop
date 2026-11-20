@@ -124,6 +124,7 @@ import type {
   FiltroDoDia,
   FiltroDoMes,
   OpcoesDaDisponibilidade,
+  OpcoesDeAgendar,
   DefinicaoDeSenhaDoCliente,
 } from "./publico";
 
@@ -1557,7 +1558,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         exigirSlug(slug);
         return estado.diasComVaga;
       },
-      async agendar(slug: string, novo: NovoAgendamentoPublicoInput) {
+      async agendar(slug: string, novo: NovoAgendamentoPublicoInput, _opcoes?: OpcoesDeAgendar) {
         exigirSlug(slug);
         // O mesmo PADRAO_EMAIL da API, que responde 400 pelo schema.
         const email = novo.cliente.email;

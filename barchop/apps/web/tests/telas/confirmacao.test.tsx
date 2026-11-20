@@ -116,6 +116,8 @@ describe("confirmação", () => {
         nome: "João Silva",
         telefone: "(11) 99999-8888",
       });
+      // Sem conta, sem token: não há sessão nenhuma pra mandar.
+      expect(agendar.mock.calls[0][2]).toEqual({ comToken: false });
       // Os dados pessoais somem assim que deixam de ser necessários.
       expect(lerDadosDoCliente()).toBeNull();
     });
@@ -213,6 +215,20 @@ describe("confirmação", () => {
         nome: "João Silva",
         telefone: "(11) 99999-8888",
       });
+    });
+
+    it("logado, manda o token: é ele que prova de quem é a conta", async () => {
+      // A API só põe o horário num cadastro com senha quando o pedido
+      // vem com o token do dono (SEC-001). O telefone sozinho não prova.
+      const falso = criarApiClientFalso();
+      const agendar = vi.spyOn(falso.publico, "agendar");
+      montar(falso);
+      await screen.findByText("João Silva");
+
+      await userEvent.click(await botaoConfirmar());
+
+      await screen.findByText(/agendamento confirmado/i);
+      expect(agendar.mock.calls[0][2]).toEqual({ comToken: true });
     });
 
     it("'outra pessoa' troca o cartão pelo formulário sem sair da tela", async () => {

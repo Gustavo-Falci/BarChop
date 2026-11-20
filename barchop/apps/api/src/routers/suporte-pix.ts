@@ -88,7 +88,7 @@ export function registrarRotasSuportePix(app: App): void {
         acao: "suporte.pix.confirmar",
         alvo: { tipo: "pagamento_pix", id: pagamento.id },
         barbeariaId: pagamento.barbeariaId,
-        detalhe: { valorCentavos: pagamento.valorCentavos, plano: pagamento.plano, ciclo: pagamento.ciclo },
+        detalhe: { tipo: pagamento.tipo, valorCentavos: pagamento.valorCentavos, plano: pagamento.plano, ciclo: pagamento.ciclo },
         ip: request.ip,
       });
       // Só no sino: o plano já valia desde o "Já paguei".
@@ -121,7 +121,7 @@ export function registrarRotasSuportePix(app: App): void {
           acao: "suporte.pix.recusar",
           alvo: { tipo: "pagamento_pix", id: pagamento.id },
           barbeariaId: pagamento.barbeariaId,
-          detalhe: { valorCentavos: pagamento.valorCentavos, plano: pagamento.plano, ciclo: pagamento.ciclo },
+          detalhe: { tipo: pagamento.tipo, valorCentavos: pagamento.valorCentavos, plano: pagamento.plano, ciclo: pagamento.ciclo },
           ip: request.ip,
         });
         // O texto do sino tem 500 caracteres, e a resposta também: ela

@@ -3,6 +3,7 @@ import { buildApp } from "./app";
 import { filaDoPgBoss, urlDoPg } from "./lib/fila";
 import { enderecoDasBarbearias } from "./lib/endereco";
 import { registrarCiclosPorLink } from "./lib/ciclos-por-link";
+import { registrarFaxina } from "./lib/faxina";
 import { registrarPixDoBarChop } from "./lib/pix-avisos";
 import { criarLinkDoLembrete, registrarLembrete } from "./lib/lembrete";
 
@@ -59,6 +60,9 @@ async function main(): Promise<void> {
   // antes do fim e o vencimento. Roda mesmo sem as PIX_*: os Pix que já
   // existem precisam vencer.
   await registrarPixDoBarChop(app.fila, { canal: app.canal, log: app.log, urlDoPainel: process.env.URL_DO_PAINEL });
+  // A faxina diária (3h30 de São Paulo): apaga o que já venceu e não
+  // serve mais pra nada, como os contadores de limite.
+  await registrarFaxina(app.fila, { log: app.log });
 
   for (const sinal of ["SIGINT", "SIGTERM"] as const) {
     process.once(sinal, () => {

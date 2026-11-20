@@ -118,15 +118,20 @@ export async function consumirCodigo(
   });
   if (!ativo) return false;
 
-  if (!confere(codigo, ativo.codigoHash)) {
-    // Predicado no próprio update: duas tentativas erradas simultâneas
-    // não podem, as duas, ler 4 e gravar 5.
-    await db.codigoVerificacao.updateMany({
-      where: { id: ativo.id, tentativas: { lt: MAX_TENTATIVAS } },
-      data: { tentativas: { increment: 1 } },
-    });
-    return false;
-  }
+  // A tentativa é gasta ANTES de comparar, com o teto no predicado do
+  // próprio update. Comparar primeiro e gastar depois deixava uma rajada
+  // de pedidos simultâneos ler a mesma contagem e comparar todos: o teto
+  // de 5 virava o tamanho da rajada (auditoria de 15/11, SEC-018). Aqui
+  // só MAX_TENTATIVAS updates encontram a linha abaixo do teto, e quem
+  // não reservou não compara. O acerto também gasta a dele, o que não
+  // muda nada: o código acertado deixa de valer logo abaixo.
+  const reservada = await db.codigoVerificacao.updateMany({
+    where: { id: ativo.id, usadoEm: null, tentativas: { lt: MAX_TENTATIVAS } },
+    data: { tentativas: { increment: 1 } },
+  });
+  if (reservada.count !== 1) return false;
+
+  if (!confere(codigo, ativo.codigoHash)) return false;
 
   // Marcar usado com `usadoEm: null` no predicado é o que decide a
   // corrida entre dois consumos do mesmo código: só um update encontra a

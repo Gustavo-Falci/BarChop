@@ -76,6 +76,65 @@ describe("limite dos próximos horários", () => {
   });
 });
 
+// SEC-004: as duas rotas mais caras da página pública estavam sem limite
+// nenhum, ao lado dos próximos horários, que já tinha. Numa VM de 1 CPU,
+// um laço pedindo o mês inteiro parava a API de todas as barbearias.
+describe("limite da disponibilidade", () => {
+  const MAX_DISPONIBILIDADE_POR_IP = 120;
+  const MAX_DISPONIBILIDADE_DO_MES_POR_IP = 40;
+
+  it("recusa o dia seguinte ao limite do IP", async () => {
+    const app = buildApp();
+    const chamar = () =>
+      app.inject({
+        method: "GET",
+        url: `/barbearias/nao-existe/disponibilidade?data=${QUINTA}&servicoIds=${ID}`,
+      });
+
+    const antes = await repetir(MAX_DISPONIBILIDADE_POR_IP, chamar);
+    const bloqueado = await chamar();
+
+    expect(antes).not.toContain(429);
+    expect(bloqueado.statusCode).toBe(429);
+    expect(bloqueado.json().erro).toBe("tentativas_excedidas");
+    await app.close();
+  });
+
+  it("recusa o mês seguinte ao limite do IP, que é mais apertado", async () => {
+    const app = buildApp();
+    const chamar = () =>
+      app.inject({
+        method: "GET",
+        url: `/barbearias/nao-existe/disponibilidade/mes?mes=${QUINTA.slice(0, 7)}&servicoIds=${ID}`,
+      });
+
+    const antes = await repetir(MAX_DISPONIBILIDADE_DO_MES_POR_IP, chamar);
+    const bloqueado = await chamar();
+
+    expect(antes).not.toContain(429);
+    expect(bloqueado.statusCode).toBe(429);
+    await app.close();
+  });
+
+  it("o dia e o mês têm orçamentos separados", async () => {
+    const app = buildApp();
+    await repetir(MAX_DISPONIBILIDADE_DO_MES_POR_IP + 1, () =>
+      app.inject({
+        method: "GET",
+        url: `/barbearias/nao-existe/disponibilidade/mes?mes=${QUINTA.slice(0, 7)}&servicoIds=${ID}`,
+      })
+    );
+
+    const doDia = await app.inject({
+      method: "GET",
+      url: `/barbearias/nao-existe/disponibilidade?data=${QUINTA}&servicoIds=${ID}`,
+    });
+
+    expect(doDia.statusCode).not.toBe(429);
+    await app.close();
+  });
+});
+
 describe("limite de convites da equipe", () => {
   it("convidar e reenviar dividem um orçamento por barbearia", async () => {
     const app = buildApp();

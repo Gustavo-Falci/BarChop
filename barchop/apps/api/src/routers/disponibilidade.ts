@@ -200,7 +200,7 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
 
   app.get(
     "/barbearias/:slug/disponibilidade",
-    { schema: { params: paramsSlug, querystring: filtroDia } },
+    { schema: { params: paramsSlug, querystring: filtroDia }, preHandler: limites.disponibilidade },
     async (request) => {
       const { barbeiroId, data, servicoIds, duracaoMinutos } = request.query;
       const barbearia = await barbeariaComRegras(request, request.params.slug, request.query.remarcar);
@@ -241,7 +241,7 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
 
   app.get(
     "/barbearias/:slug/disponibilidade/mes",
-    { schema: { params: paramsSlug, querystring: filtroMes } },
+    { schema: { params: paramsSlug, querystring: filtroMes }, preHandler: limites.disponibilidadeDoMes },
     async (request) => {
       const { barbeiroId, mes, servicoIds, duracaoMinutos } = request.query;
       const barbearia = await barbeariaComRegras(request, request.params.slug, request.query.remarcar);

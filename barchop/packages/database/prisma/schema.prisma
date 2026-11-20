@@ -460,7 +460,7 @@ model Cliente {
   cpf             String?   @db.VarChar(11)
   // O CPF cifrado com a CHAVE_DE_CIFRA (apps/api/src/lib/cpf.ts). É aqui
   // que todo CPF novo é gravado; `cpf`, em claro, só guarda o que ainda
-  // não passou pela faxina (migration 20261115200000_cpf_cifrado).
+  // não passou pela faxina (migration 20261120140000_cpf_cifrado).
   cpfCifrado      Bytes?    @map("cpf_cifrado")
 
   barbearia    Barbearia             @relation(fields: [barbeariaId], references: [id], onDelete: Cascade)

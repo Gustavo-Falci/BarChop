@@ -9,6 +9,7 @@ import {
   conferirSenha,
   gerarHashSenha,
   obterHashDescartavel,
+  regravarSeMaisFraco,
 } from "../lib/senha";
 import { serializarCliente } from "../lib/serializar";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
@@ -363,6 +364,15 @@ export function registrarRotasAuthCliente(
       if (!autorizado || !senhaConfere) {
         return reply.code(401).send({ erro: "credenciais_invalidas" });
       }
+
+      // A senha conferiu: se o hash guardado é do custo antigo, migra
+      // agora (lib/senha.ts). As sessões abertas não caem.
+      await regravarSeMaisFraco(
+        hashParaConferir,
+        senha,
+        (senhaHash) => prisma.cliente.update({ where: { id: autorizado.id }, data: { senhaHash } }),
+        request.log
+      );
 
       const token = assinarSessao(app, {
         tipo: "cliente",

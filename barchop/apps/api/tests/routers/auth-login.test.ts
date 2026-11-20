@@ -1,3 +1,4 @@
+import { randomBytes, scryptSync } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
@@ -167,9 +168,72 @@ describe("POST /auth/login", () => {
     const descartavel = await obterHashDescartavel();
     const partes = descartavel.split("$");
 
-    expect(partes).toHaveLength(3);
+    // scrypt$<parâmetros>$<salt>$<hash>, o formato desde 15/11.
+    expect(partes).toHaveLength(4);
     expect(partes[0]).toBe("scrypt");
-    expect(Buffer.from(partes[2], "base64")).toHaveLength(64);
+    expect(Buffer.from(partes[3], "base64")).toHaveLength(64);
     expect(await conferirSenha("qualquer-senha", descartavel)).toBe(false);
+  });
+
+  it("o login que dá certo regrava o hash do formato antigo, sem derrubar a sessão", async () => {
+    // SEC-015: o custo do scrypt subiu, e é no login certo — único
+    // instante com a senha em texto na mão — que o hash antigo migra.
+    // Ninguém redefine senha, e o token emitido antes continua valendo:
+    // a senha não mudou.
+    const app = buildApp();
+    await cadastrar(app);
+    const entrar = () =>
+      app.inject({
+        method: "POST",
+        url: "/auth/login",
+        payload: { email: CADASTRO.barbeiro.email, senha: CADASTRO.barbeiro.senha },
+      });
+    const anterior = (await entrar()).json().token as string;
+    const salt = randomBytes(16);
+    const antigo = `scrypt$${salt.toString("base64")}$${scryptSync(CADASTRO.barbeiro.senha, salt, 64).toString("base64")}`;
+    await prisma.barbeiro.update({
+      where: { email: CADASTRO.barbeiro.email },
+      data: { senhaHash: antigo },
+    });
+
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: { email: CADASTRO.barbeiro.email, senha: CADASTRO.barbeiro.senha },
+    });
+
+    expect(resposta.statusCode).toBe(200);
+    const { senhaHash, senhaAlteradaEm } = await prisma.barbeiro.findUniqueOrThrow({
+      where: { email: CADASTRO.barbeiro.email },
+    });
+    expect(senhaHash).not.toBe(antigo);
+    expect(senhaHash!.split("$")).toHaveLength(4);
+    expect(await conferirSenha(CADASTRO.barbeiro.senha, senhaHash!)).toBe(true);
+    expect(senhaAlteradaEm).toBeNull();
+    const comOAnterior = await app.inject({
+      method: "GET",
+      url: "/me",
+      headers: { authorization: `Bearer ${anterior}` },
+    });
+    expect(comOAnterior.statusCode).toBe(200);
+    await app.close();
+  });
+
+  it("senha errada não regrava nada", async () => {
+    const app = buildApp();
+    await cadastrar(app);
+    const salt = randomBytes(16);
+    const antigo = `scrypt$${salt.toString("base64")}$${scryptSync(CADASTRO.barbeiro.senha, salt, 64).toString("base64")}`;
+    await prisma.barbeiro.update({ where: { email: CADASTRO.barbeiro.email }, data: { senhaHash: antigo } });
+
+    const resposta = await app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: { email: CADASTRO.barbeiro.email, senha: "senha-errada-123" },
+    });
+
+    expect(resposta.statusCode).toBe(401);
+    expect((await prisma.barbeiro.findUniqueOrThrow({ where: { email: CADASTRO.barbeiro.email } })).senhaHash).toBe(antigo);
+    await app.close();
   });
 });

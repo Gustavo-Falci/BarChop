@@ -1634,6 +1634,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
         };
         return { token: "jwt-falso-cliente", cliente: estado.cliente };
       },
+      async sairCliente(_slug: string): Promise<void> {},
+
       async loginCliente(slug: string, _credenciais: CredenciaisDoCliente) {
         exigirSlug(slug);
         return { token: "jwt-falso-cliente", cliente: estado.cliente };
@@ -1660,6 +1662,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           },
         };
       },
+      async sair(): Promise<void> {},
+
       async login() {
         return sessaoDoBarbeiro;
       },
@@ -3140,6 +3144,8 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     },
 
     suporte: {
+      async sair(): Promise<void> {},
+
       async login(email: string, senha: string): Promise<SessaoSuporte> {
         if (email.trim().toLowerCase() !== EMAIL_DO_SUPORTE_FALSO || senha !== SENHA_DO_SUPORTE_FALSA) {
           throw new ErroDaApi(401, "credenciais_invalidas", "");

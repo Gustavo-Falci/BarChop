@@ -214,7 +214,7 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
   return {
     // Sem token: não existe sessão ainda.
     signup(nova: NovaBarbearia): Promise<SessaoBarbeiro> {
-      return requisicao("/auth/signup", { metodo: "POST", corpo: nova });
+      return requisicao("/auth/signup", { metodo: "POST", corpo: nova, abreSessao: true });
     },
 
     // Sem token. Responde igual com o e-mail livre ou já cadastrado: o
@@ -224,7 +224,12 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
     },
 
     login(credenciais: CredenciaisDoBarbeiro): Promise<SessaoBarbeiro> {
-      return requisicao("/auth/login", { metodo: "POST", corpo: credenciais });
+      return requisicao("/auth/login", { metodo: "POST", corpo: credenciais, abreSessao: true });
+    },
+
+    // O "Sair": só a API apaga o cookie httpOnly da sessão (SEC-003).
+    sair(): Promise<void> {
+      return requisicao("/auth/sair", { metodo: "POST", comToken: true });
     },
 
     // Sem token, como o login. Responde igual tendo ou não conta: não há
@@ -235,13 +240,13 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
 
     // Mesmo formato de sessão do login: quem redefine já sai logado.
     redefinirSenha(redefinicao: RedefinicaoDeSenha): Promise<SessaoBarbeiro> {
-      return requisicao("/auth/senha", { metodo: "POST", corpo: redefinicao });
+      return requisicao("/auth/senha", { metodo: "POST", corpo: redefinicao, abreSessao: true });
     },
 
     // Sem token: o convidado ainda não tem sessão. Mesmo formato de
     // sessão do login — quem aceita já sai logado.
     aceitarConvite(aceite: AceiteDoConvite): Promise<SessaoBarbeiro> {
-      return requisicao("/auth/convite/aceitar", { metodo: "POST", corpo: aceite });
+      return requisicao("/auth/convite/aceitar", { metodo: "POST", corpo: aceite, abreSessao: true });
     },
 
     // Todos os papéis leem; só o dono muda (as três de baixo).

@@ -52,9 +52,10 @@ export function AvisosDoSuporte() {
   const [enviando, setEnviando] = useState(false);
 
   const sair = useCallback(() => {
+    void api.sair().catch(() => {});
     sessaoDoSuporte.limpar();
     router.replace(ENTRAR);
-  }, [router]);
+  }, [api, router]);
 
   useEffect(() => {
     if (!sessaoDoSuporte.ler()) {

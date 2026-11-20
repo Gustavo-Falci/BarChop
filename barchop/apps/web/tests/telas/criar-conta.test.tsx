@@ -134,7 +134,7 @@ describe("criar conta", () => {
     await confirmarCodigo();
 
     expect(await screen.findByRole("heading", { level: 1, name: "Conta criada" })).toBeInTheDocument();
-    expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente");
+    expect(sessaoDoCliente("gr-barber").ler()).toBe("cookie");
     expect(pedidos).toEqual([
       {
         email: "maria@exemplo.com",

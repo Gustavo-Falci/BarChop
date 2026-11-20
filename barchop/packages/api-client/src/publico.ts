@@ -188,7 +188,13 @@ export function criarApiPublica(requisicao: Requisicao) {
       return requisicao(`/barbearias/${slug}/auth/cliente/senha`, {
         metodo: "POST",
         corpo: definicao,
+        abreSessao: true,
       });
+    },
+
+    // O "Sair" e o "Não é você?": apaga o cookie desta barbearia (SEC-003).
+    sairCliente(slug: string): Promise<void> {
+      return requisicao(`/barbearias/${slug}/auth/cliente/sair`, { metodo: "POST", comToken: true });
     },
 
     loginCliente(
@@ -198,6 +204,7 @@ export function criarApiPublica(requisicao: Requisicao) {
       return requisicao(`/barbearias/${slug}/auth/cliente/login`, {
         metodo: "POST",
         corpo: credenciais,
+        abreSessao: true,
       });
     },
   };

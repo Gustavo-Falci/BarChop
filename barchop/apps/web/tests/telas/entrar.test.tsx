@@ -54,7 +54,7 @@ describe("entrar", () => {
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
     await waitFor(() =>
-      expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
+      expect(sessaoDoCliente("gr-barber").ler()).toBe("cookie")
     );
     // Normalizado antes de sair: a API busca pelo e-mail em minúsculas.
     expect(tentativas).toEqual([{ email: EMAIL, senha: "segredo123" }]);
@@ -329,7 +329,7 @@ describe("entrar — esqueci a senha", () => {
     await userEvent.click(screen.getByRole("button", { name: "Salvar e entrar" }));
 
     await waitFor(() =>
-      expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-falso-cliente")
+      expect(sessaoDoCliente("gr-barber").ler()).toBe("cookie")
     );
     expect(definicoes).toEqual([
       {

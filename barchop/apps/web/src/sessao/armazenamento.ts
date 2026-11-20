@@ -1,11 +1,14 @@
-// Duas identidades, dois tokens. Os escopos da API recusam o token um
+// Duas identidades, duas sessões. Os escopos da API recusam o token um
 // do outro (autenticar rejeita payload de cliente e vice-versa), então
 // guardar na mesma chave faria a primeira tela que misturasse as duas
 // receber 401 sem explicação.
 //
-// localStorage é legível por XSS. A alternativa — cookie httpOnly posto
-// por route handler do Next — obrigaria a proxiar a API inteira, e está
-// registrada como dívida na spec desta fase.
+// O token não mora mais aqui: localStorage é legível por qualquer script
+// da página (auditoria de 15/11, SEC-003). Ele vai no cookie httpOnly que
+// a própria API põe no login, e o fetch leva junto (cliente-da-api.ts).
+// O que fica aqui é só uma marca de que há sessão, pra a tela decidir
+// entre o login e o carregamento sem perguntar à API. A marca não vale
+// nada fora deste navegador: quem autentica é o cookie.
 export interface Sessao {
   ler(): string | null;
   gravar(token: string): void;
@@ -43,12 +46,35 @@ function sessaoNaChave(chave: string): Sessao {
   };
 }
 
-export const sessaoDoBarbeiro = sessaoNaChave("sessao.barbeiro");
+export const MARCA_DE_SESSAO = "cookie";
 
-// Por barbearia, porque o login do cliente é por barbearia: o token que
+// A sessão que vive no cookie. `gravar` recebe o token do login, como
+// sempre, mas guarda só a marca. Um token de verdade guardado aqui é de
+// antes do cookie: sai na primeira leitura, e a pessoa entra de novo.
+function sessaoNoCookie(chave: string): Sessao {
+  const base = sessaoNaChave(chave);
+  return {
+    ler() {
+      const valor = base.ler();
+      if (valor === null || valor === MARCA_DE_SESSAO) return valor;
+      window.localStorage.removeItem(chave);
+      return null;
+    },
+    gravar() {
+      base.gravar(MARCA_DE_SESSAO);
+    },
+    limpar() {
+      base.limpar();
+    },
+  };
+}
+
+export const sessaoDoBarbeiro = sessaoNoCookie("sessao.barbeiro");
+
+// Por barbearia, porque o login do cliente é por barbearia: a sessão que
 // vale em /barbearias/gr-barber não vale na de ninguém mais.
 export function sessaoDoCliente(slug: string): Sessao {
-  return sessaoNaChave(`sessao.cliente.${slug}`);
+  return sessaoNoCookie(`sessao.cliente.${slug}`);
 }
 
 // O slug não vem do GET /me, que devolve só barbeariaId — ele chega no
@@ -59,7 +85,7 @@ export const sessaoDaBarbearia = sessaoNaChave("sessao.barbearia");
 // O suporte da plataforma (Onda 1, F4d): conta própria, fora de qualquer
 // equipe. Chave à parte: sair do suporte não derruba o painel, e um
 // token de um nunca vai nas chamadas do outro.
-export const sessaoDoSuporte = sessaoNaChave("sessao.suporte");
+export const sessaoDoSuporte = sessaoNoCookie("sessao.suporte");
 
 // Uma função e não duas chamadas soltas: um logout que esquecesse o
 // slug deixaria lixo que a próxima sessão leria como se fosse dela.

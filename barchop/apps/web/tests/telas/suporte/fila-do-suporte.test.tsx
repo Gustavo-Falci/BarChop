@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { criarApiClientFalso, ErroDaApi } from "@barchop/api-client";
 import type { SementeFalsa } from "@barchop/api-client";
 import { sessaoDoBarbeiro, sessaoDoSuporte } from "../../../src/sessao/armazenamento";
@@ -172,12 +172,15 @@ describe("fila do suporte", () => {
   it("sair limpa só a sessão do suporte", async () => {
     sessaoDoSuporte.gravar("jwt-falso-suporte");
     sessaoDoBarbeiro.gravar("jwt-do-barbeiro");
-    montar();
+    const falso = montar();
+    const sairNaApi = vi.spyOn(falso.suporte, "sair");
 
     await userEvent.click(await screen.findByRole("button", { name: /sair/i }));
 
+    // O cookie é httpOnly: só a API consegue apagá-lo (SEC-003).
+    expect(sairNaApi).toHaveBeenCalledOnce();
     expect(sessaoDoSuporte.ler()).toBeNull();
-    expect(sessaoDoBarbeiro.ler()).toBe("jwt-do-barbeiro");
+    expect(sessaoDoBarbeiro.ler()).toBe("cookie");
     expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/painel/suporte/entrar");
   });
 });

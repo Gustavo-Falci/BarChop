@@ -88,7 +88,7 @@ describe("cadastro do dono", () => {
     expect(pedidos).toEqual(["ze@barbearia.com"]);
     await digitarCodigo();
 
-    await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("jwt-falso-barbeiro"));
+    await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("cookie"));
     expect(sessaoDaBarbearia.ler()).toBe("barbearia-do-ze");
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
   });

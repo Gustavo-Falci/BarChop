@@ -112,16 +112,20 @@ describe("sessão do painel", () => {
 
     expect(await screen.findByText("Rafael")).toBeInTheDocument();
     expect(screen.getByText("slug: gr-barber")).toBeInTheDocument();
-    expect(sessaoDoBarbeiro.ler()).toBe("jwt");
+    expect(sessaoDoBarbeiro.ler()).toBe("cookie");
   });
 
-  it("sair limpa as duas chaves", async () => {
+  it("sair limpa as duas chaves e pede à API que apague o cookie", async () => {
     sessaoDoBarbeiro.gravar("jwt");
     sessaoDaBarbearia.gravar("gr-barber");
-    montar();
+    const falso = criarApiClientFalso();
+    const sairNaApi = vi.spyOn(falso.barbeiro, "sair");
+    montar(falso);
 
     await userEvent.click(await screen.findByRole("button", { name: "Sair" }));
 
+    // O cookie é httpOnly: só a API consegue apagá-lo (SEC-003).
+    expect(sairNaApi).toHaveBeenCalledOnce();
     expect(sessaoDoBarbeiro.ler()).toBeNull();
     expect(sessaoDaBarbearia.ler()).toBeNull();
     expect(navegacaoFalsa.replace).toHaveBeenCalledWith("/painel/entrar");

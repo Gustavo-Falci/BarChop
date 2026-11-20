@@ -15,7 +15,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3333";
 export function apiDoBarbeiro(fetchInjetado?: typeof globalThis.fetch) {
   return criarApiClient({
     baseUrl: BASE_URL,
-    obterToken: () => sessaoDoBarbeiro.ler(),
+    sessaoPorCookie: true,
     // Limpar aqui, e não em cada tela: o 401 chega de qualquer chamada,
     // e uma tela que esquecesse deixaria um token morto no navegador.
     aoExpirarSessao: () => sessaoDoBarbeiro.limpar(),
@@ -42,7 +42,8 @@ export function apiDoCliente(
 
   return criarApiClient({
     baseUrl: BASE_URL,
-    obterToken: () => sessao.ler(),
+    sessaoPorCookie: true,
+    barbeariaDaSessao: slug,
     aoExpirarSessao: () => sessao.limpar(),
     fetch: fetchInjetado,
   });
@@ -69,7 +70,7 @@ export function registrarSaidaDoPainel(sair: (() => void) | null): void {
 export function apiDoPainel(fetchInjetado?: typeof globalThis.fetch) {
   const client = criarApiClient({
     baseUrl: BASE_URL,
-    obterToken: () => sessaoDoBarbeiro.ler(),
+    sessaoPorCookie: true,
     // As duas chaves, e não só o token: um 401 no meio da sessão
     // termina a sessão do mesmo jeito que um "Sair" — e um logout que
     // esquecesse o slug deixaria lixo que a sessão seguinte leria como
@@ -91,7 +92,7 @@ export function apiDoPainel(fetchInjetado?: typeof globalThis.fetch) {
 export function apiDoSuporte(fetchInjetado?: typeof globalThis.fetch) {
   return criarApiClient({
     baseUrl: BASE_URL,
-    obterToken: () => sessaoDoSuporte.ler(),
+    sessaoPorCookie: true,
     aoExpirarSessao: () => sessaoDoSuporte.limpar(),
     fetch: fetchInjetado,
   }).suporte;

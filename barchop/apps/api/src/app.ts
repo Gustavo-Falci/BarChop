@@ -11,6 +11,7 @@ import { avisarDaChaveDoPix, pixDoAmbiente, type ConfigDoPix } from "./lib/pix";
 import { provedoresDoAmbiente, type FabricaDeProvedores } from "./lib/provedores";
 import { filaPadrao, type Fila } from "./lib/fila";
 import { limitesDaEquipe, limitesDeAuth, limitesPublicos } from "./lib/limites";
+import { registrarCabecalhosDeSeguranca } from "./plugins/cabecalhos";
 import { registrarTratamentoDeErros } from "./plugins/erros";
 import { autenticar, autenticarCliente, autenticarSuporte, registrarAuth } from "./plugins/auth";
 import { registrarRotasAssinatura } from "./routers/assinatura";
@@ -135,6 +136,9 @@ export function buildApp(
     // token do link do lembrete (um JWT) passa de 200: sem isto, 414.
     routerOptions: { maxParamLength: 512 },
   }).withTypeProvider<JsonSchemaToTsProvider>();
+
+  // Antes do CORS: ver plugins/cabecalhos.ts.
+  registrarCabecalhosDeSeguranca(app);
 
   // Qualquer origem só fora de produção e sem ORIGENS_PERMITIDAS (dev
   // local). Com a lista, origem de fora fica sem o cabeçalho e o

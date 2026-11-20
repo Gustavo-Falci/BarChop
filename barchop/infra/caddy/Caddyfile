@@ -38,5 +38,13 @@ api.barchop.com.br {
 
 barchop.com.br, *.barchop.com.br {
 	import log_sem_token
+
+	# O otimizador de imagens do Next: o app não usa next/image, e ele
+	# foi o alvo do aviso mais grave de 2026 (GHSA-2464-fhr4-w9xw). O que
+	# não é usado não responde. Os cabeçalhos de segurança saem do
+	# próprio web (apps/web/cabecalhos-de-seguranca.js) e da API.
+	@otimizador path /_next/image*
+	respond @otimizador 404
+
 	reverse_proxy web:3000
 }

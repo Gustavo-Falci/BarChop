@@ -25,6 +25,24 @@ updates:
       desenvolvimento:
         dependency-type: development
         update-types: [minor, patch]
+    # O React e o React Native andam com o SDK do Expo, que pede versões
+    # exatas (node_modules/expo/bundledNativeModules.json): o Expo 57 quer
+    # react 19.2.3 e react-native 0.86.3, e com o 0.88 o app não monta. E
+    # com o node-linker=hoisted (barchop/.npmrc) só há um React na raiz:
+    # o web usa o mesmo do mobile. Sobem juntos, à mão, ao trocar de SDK
+    # (`npx expo install --fix` no apps/mobile, e o web acompanha). Só a
+    # minor e a major ficam de fora: correção (patch) continua vindo.
+    ignore:
+      - dependency-name: react
+        update-types: [version-update:semver-minor, version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-minor, version-update:semver-major]
+      - dependency-name: react-native
+        update-types: [version-update:semver-minor, version-update:semver-major]
+      - dependency-name: "@types/react"
+        update-types: [version-update:semver-minor, version-update:semver-major]
+      - dependency-name: "@types/react-dom"
+        update-types: [version-update:semver-minor, version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /

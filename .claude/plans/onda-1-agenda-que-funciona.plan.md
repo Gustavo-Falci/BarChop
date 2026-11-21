@@ -4,7 +4,45 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-20 — correções de segurança #369 a #379 mergeadas, deploy pendente) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-21 — segurança e Dependabot no ar; Node 26 em espera) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `7797ace`, #400). **Produção = `main`**: o que pede deploy foi pro ar e foi conferido de fora.
+- **Segurança, completa e no ar (21/11):** deploy dos #369 a #379 e da pilha que faltava: #381 CI, #392 infra, #393 CSP em modo relatório, #394 sessão por cookie na API, #395 sessão por cookie no web. Conferido: health 200 com HSTS e CSP, migrations aplicadas, `security.txt`, login no navegador.
+- **Dependabot, um PR por vez (21/11):**
+  - CI e infra: #382, #383 e #386 (actions do CI), #385 (Caddy, sem deploy: imagem arm64 idêntica).
+  - Desenvolvimento, sem deploy: #388 (grupo desenvolvimento), #389 (type-provider 5, só tipos), #390 (TypeScript 6).
+  - API: #398 (`methods` do CORS) e #391 (`@fastify/cors` 11), com deploy da API. Preflight de PUT, PATCH e DELETE conferido de fora.
+  - Grupo produção #400 (`@aws-sdk/client-s3`, `@fastify/multipart`, `pg-boss` 12.38, `stripe` 23.1, `lenis`), com deploy da API e do web. Backup antes (`barchop-20261121T201454Z-antes-400.dump`); esquema do pg-boss foi para a versão 46, só acrescentando coisas; API healthy, site e painel 200.
+  - React fora do Dependabot: #396 e #399 fazem o Dependabot ignorar toda atualização de `react`, `react-dom` e `react-native`, porque o Expo 57 pede versões exatas (react 19.2.3, react-native 0.86.3). O Dependabot fechou sozinho o #387 e o #397, que traziam React. React sobe à mão, ao trocar de SDK do Expo.
+- **#384 (Node 22 → 26 nas imagens), em espera por decisão do dono.** Não mergear como veio:
+  - a imagem `node:26-bookworm-slim` não traz o `corepack` (o Node parou de distribuir no 25), e os dois Dockerfiles fazem `corepack enable`. O build quebraria na VM;
+  - o CI verde não prova nada aqui: ele não monta imagem e roda no Node 22.
+- **#384 conferido aqui no Node 26.13.1:** pnpm 9.0.0 instalado pelo npm, install, tipos, eslint, testes da API (1779) e dos pacotes, build da API e `next build` passam.
+- **Testes do web no Node 26:** falham porque o Node 25+ tem um `localStorage` global que, sem `--localstorage-file`, cobre o do jsdom. Com `NODE_OPTIONS=--no-experimental-webstorage` passam. O SSR do web não é afetado: todo uso passa por `typeof window`.
+- **Abertos, sem análise:** #401 turbo (grupo desenvolvimento), #402 jsdom 31, #403 tsup 9, #404 `@types/node` 26 (acompanha a decisão do Node).
+
+**Ao retomar:**
+1. Dono testa no navegador: editar e salvar no painel (PUT e PATCH), um DELETE de teste, enviar uma imagem (o multipart e o S3 subiram de versão no #400).
+2. Opcional na VM: `docker compose up -d --force-recreate backup`, pra o contêiner do backup usar a imagem nova.
+3. Node 26, quando o dono quiser:
+   1. PR próprio, ainda no Node 22, trocando `corepack enable && corepack prepare pnpm@9.0.0 --activate` por `npm install -g pnpm@9.0.0` nos dois Dockerfiles. Deploy e conferência sozinho.
+   2. Depois o Dependabot rebaseia o #384, que vira só a troca de imagem. Não empurrar commit no branch do Dependabot.
+   3. Decidir se o CI vai pro Node 26 junto. Se for, o web precisa do `--no-experimental-webstorage` nos testes.
+   4. Antes do deploy: montar as imagens na VM com tag de teste, fora do `docker compose build`, e marcar as atuais como `:node22` pra voltar.
+   5. O Node 22 recebe correções até abril de 2027: sem pressa.
+4. PRs #401 a #404 do Dependabot: analisar um por vez.
+5. Itens que pedem tela (canvas antes) ou decisão do dono: login do suporte com TOTP, confirmação do e-mail novo, CSP valendo de verdade, tirar o token do corpo do login.
+6. Só o dono, fora do código:
+   - GitHub: alertas do Dependabot, secret scanning, `main` exigindo os 2 checks;
+   - Cloudflare: CAA, DMARC;
+   - OCI: bucket do backup cifrado e chave age;
+   - VM: papel `barchop_app` no banco, e cópia da `CHAVE_DE_CIFRA` fora da VM (urgente).
+7. Como em 19/11: conferir com cartão (adiado), Search Console, Pix de verdade da `jesus-barber`, home (contador ~12/12), 24/11 sandbox do Asaas.
+
+**Nesta máquina:** `apps/mobile/node_modules/.bin/tsc` é sobra de antes do TS 6 e quebra `pnpm type-check` aqui (não no CI). Resolve apagando `apps/mobile/node_modules/.bin` ou com `pnpm install --force`.
+
+## RETOMAR AQUI (2026-11-20 — correções de segurança #369 a #379 mergeadas, deploy pendente) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `ec514d4`, #379). **Produção = `main` até o #367**: os #369 a #379 estão mergeados e **ainda não foram pro ar**.

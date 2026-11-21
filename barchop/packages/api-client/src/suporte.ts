@@ -18,7 +18,12 @@ export function criarApiSuporte(requisicao: Requisicao) {
   return {
     // Sem token: não existe sessão ainda.
     login(email: string, senha: string): Promise<SessaoSuporte> {
-      return requisicao("/suporte/login", { metodo: "POST", corpo: { email, senha } });
+      return requisicao("/suporte/login", { metodo: "POST", corpo: { email, senha }, abreSessao: true });
+    },
+
+    // Apaga só o cookie do suporte (SEC-003).
+    sair(): Promise<void> {
+      return requisicao("/suporte/sair", { metodo: "POST", comToken: true });
     },
 
     // Só os pendentes, do mais antigo pro mais novo.

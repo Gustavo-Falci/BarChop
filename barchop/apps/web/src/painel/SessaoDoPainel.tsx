@@ -65,9 +65,13 @@ export function SessaoDoPainel({ children }: { children: ReactNode }) {
   }, []);
 
   const sair = useCallback(() => {
+    // Só a API apaga o cookie httpOnly; sem esperar: a tela de entrar
+    // não depende disso, e o cookie de uma sessão já recusada a API
+    // apaga sozinha.
+    void api.barbeiro.sair().catch(() => {});
     encerrarSessaoDoBarbeiro();
     router.replace("/painel/entrar");
-  }, [router]);
+  }, [api, router]);
 
   // `apiDoPainel` monta o client de verdade uma vez, em `ProvedorDoPainel`,
   // sem router — um 401 que chegue de uma tela já montada (não da

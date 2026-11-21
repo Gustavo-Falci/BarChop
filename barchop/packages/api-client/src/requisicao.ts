@@ -5,6 +5,13 @@ export interface OpcoesDoClient {
   // Função, não valor: o token muda no meio da vida do client (login,
   // logout, expiração) e quem guarda é o app, não este pacote.
   obterToken?: () => string | null;
+  // No navegador, a sessão mora no cookie httpOnly que a API põe
+  // (auditoria de 15/11, SEC-003): o client só pede ao fetch que leve o
+  // cookie, e nunca manda Authorization. O app mobile segue no token.
+  sessaoPorCookie?: boolean;
+  // A sessão do cliente é por barbearia, um cookie pra cada uma: o
+  // cabeçalho diz à API qual delas ler.
+  barbeariaDaSessao?: string;
   aoExpirarSessao?: () => void;
   // Injetável pra o teste não precisar de rede nem de MSW.
   fetch?: typeof globalThis.fetch;
@@ -18,6 +25,10 @@ export interface OpcoesDaChamada {
   formulario?: FormData;
   query?: Record<string, string | string[] | undefined>;
   comToken?: boolean;
+  // A chamada que cria a sessão (login, cadastro, nova senha, convite):
+  // não manda sessão nenhuma, mas, com a sessão por cookie, precisa das
+  // credenciais pra o navegador guardar o cookie da resposta.
+  abreSessao?: boolean;
 }
 
 export type Requisicao = <T>(
@@ -57,7 +68,14 @@ export function criarRequisicao(opcoes: OpcoesDoClient): Requisicao {
 
     // Só onde a rota pede: mandar o token do barbeiro numa rota pública
     // não autentica nada e amplia o alcance de um token vazado.
-    if (chamada.comToken) {
+    // O mesmo vale pro cookie: só vai onde a rota pede.
+    let credenciais: "include" | "omit" | undefined;
+    if (opcoes.sessaoPorCookie) {
+      credenciais = chamada.comToken || chamada.abreSessao ? "include" : "omit";
+      if (chamada.comToken && opcoes.barbeariaDaSessao) {
+        cabecalhos["X-BarChop-Barbearia"] = opcoes.barbeariaDaSessao;
+      }
+    } else if (chamada.comToken) {
       const token = opcoes.obterToken?.();
       if (token) cabecalhos.Authorization = `Bearer ${token}`;
     }
@@ -67,6 +85,7 @@ export function criarRequisicao(opcoes: OpcoesDoClient): Requisicao {
       {
         method: chamada.metodo ?? "GET",
         headers: cabecalhos,
+        ...(credenciais ? { credentials: credenciais } : {}),
         ...(chamada.formulario !== undefined
           ? { body: chamada.formulario }
           : chamada.corpo !== undefined

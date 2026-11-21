@@ -88,6 +88,9 @@ export function useContaDoCliente(slug: string): {
   return {
     conta,
     esquecer: () => {
+      // Só a API apaga o cookie httpOnly. Falhar aqui não prende ninguém:
+      // a marca sai do navegador e a tela volta ao login do mesmo jeito.
+      void api.publico.sairCliente(slug).catch(() => {});
       sessaoDoCliente(slug).limpar();
       setConta(false);
     },

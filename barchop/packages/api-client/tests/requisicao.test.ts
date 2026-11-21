@@ -187,3 +187,68 @@ describe("criarRequisicao", () => {
     await expect(requisicao("/health")).resolves.toBeNull();
   });
 });
+
+// Auditoria de segurança de 15/11, SEC-003: no navegador, a sessão vai no
+// cookie httpOnly que a API põe. O client só precisa pedir ao fetch que
+// leve o cookie, e só onde a rota pede sessão: numa rota pública, o
+// cookie não autentica nada e só amplia o alcance dele.
+describe("sessão por cookie", () => {
+  function montar(opcoes: { barbeariaDaSessao?: string } = {}) {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({}));
+    const requisicao = criarRequisicao({
+      baseUrl: "https://api.exemplo.br",
+      sessaoPorCookie: true,
+      ...opcoes,
+      fetch: fetchFalso as unknown as typeof globalThis.fetch,
+    });
+    return { fetchFalso, requisicao };
+  }
+
+  it("leva o cookie só onde a rota pede sessão, e nunca um Authorization", async () => {
+    const { fetchFalso, requisicao } = montar();
+
+    await requisicao("/me", { comToken: true });
+    await requisicao("/barbearias/gr");
+
+    const [comSessao, publica] = fetchFalso.mock.calls.map((chamada) => chamada[1]);
+    expect(comSessao?.credentials).toBe("include");
+    expect(comSessao?.headers).not.toHaveProperty("Authorization");
+    expect(publica?.credentials).toBe("omit");
+  });
+
+  it("o login também leva credenciais: sem elas o navegador descarta o cookie da resposta", async () => {
+    const { fetchFalso, requisicao } = montar();
+
+    await requisicao("/auth/login", { metodo: "POST", corpo: {}, abreSessao: true });
+
+    const init = fetchFalso.mock.calls[0][1];
+    expect(init?.credentials).toBe("include");
+    expect(init?.headers).not.toHaveProperty("Authorization");
+  });
+
+  it("o cliente diz de qual barbearia é a sessão", async () => {
+    const { fetchFalso, requisicao } = montar({ barbeariaDaSessao: "gr-barber" });
+
+    await requisicao("/clientes/me", { comToken: true });
+    await requisicao("/barbearias/gr-barber");
+
+    const [comSessao, publica] = fetchFalso.mock.calls.map((chamada) => chamada[1]);
+    expect(comSessao?.headers).toMatchObject({ "X-BarChop-Barbearia": "gr-barber" });
+    expect(publica?.headers).not.toHaveProperty("X-BarChop-Barbearia");
+  });
+
+  it("sem sessão por cookie (app mobile), nada muda: Bearer e sem credenciais", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({}));
+    const requisicao = criarRequisicao({
+      baseUrl: "https://api.exemplo.br",
+      obterToken: () => "tok",
+      fetch: fetchFalso as unknown as typeof globalThis.fetch,
+    });
+
+    await requisicao("/me", { comToken: true });
+
+    const init = fetchFalso.mock.calls[0][1];
+    expect(init?.headers).toMatchObject({ Authorization: "Bearer tok" });
+    expect(init?.credentials).toBeUndefined();
+  });
+});

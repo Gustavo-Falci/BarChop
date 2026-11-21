@@ -70,9 +70,10 @@ export function NumerosDoSuporte() {
   const [aviso, setAviso] = useState<string | undefined>();
 
   const sair = useCallback(() => {
+    void api.sair().catch(() => {});
     sessaoDoSuporte.limpar();
     router.replace(ENTRAR);
-  }, [router]);
+  }, [api, router]);
 
   useEffect(() => {
     if (!sessaoDoSuporte.ler()) {

@@ -3,6 +3,7 @@ import {
   sessaoDoBarbeiro,
   sessaoDoCliente,
   sessaoDaBarbearia,
+  sessaoDoSuporte,
   encerrarSessaoDoBarbeiro,
 } from "../../src/sessao/armazenamento";
 
@@ -11,9 +12,26 @@ describe("armazenamento de sessão", () => {
     localStorage.clear();
   });
 
-  it("guarda e lê o token do barbeiro", () => {
+  // Auditoria de segurança de 15/11, SEC-003: o token mora no cookie
+  // httpOnly que a API põe; aqui fica só a marca de que há sessão.
+  it("o login grava só a marca de sessão, nunca o token", () => {
     sessaoDoBarbeiro.gravar("jwt-barbeiro");
-    expect(sessaoDoBarbeiro.ler()).toBe("jwt-barbeiro");
+    sessaoDoCliente("gr-barber").gravar("jwt-gr");
+
+    expect(sessaoDoBarbeiro.ler()).toBe("cookie");
+    const tudo = Object.values({ ...localStorage }).join(" ");
+    expect(tudo).not.toContain("jwt-barbeiro");
+    expect(tudo).not.toContain("jwt-gr");
+  });
+
+  it("token guardado antes do cookie sai na primeira leitura", () => {
+    localStorage.setItem("sessao.barbeiro", "eyJhbGciOiJIUzI1NiJ9.antigo.assinatura");
+    localStorage.setItem("sessao.suporte", "eyJhbGciOiJIUzI1NiJ9.antigo.assinatura");
+
+    expect(sessaoDoBarbeiro.ler()).toBeNull();
+    expect(localStorage.getItem("sessao.barbeiro")).toBeNull();
+    expect(sessaoDoSuporte.ler()).toBeNull();
+    expect(localStorage.getItem("sessao.suporte")).toBeNull();
   });
 
   it("guarda o token do cliente por barbearia", () => {
@@ -23,8 +41,8 @@ describe("armazenamento de sessão", () => {
     sessaoDoCliente("gr-barber").gravar("jwt-gr");
     sessaoDoCliente("outra").gravar("jwt-outra");
 
-    expect(sessaoDoCliente("gr-barber").ler()).toBe("jwt-gr");
-    expect(sessaoDoCliente("outra").ler()).toBe("jwt-outra");
+    expect(sessaoDoCliente("gr-barber").ler()).toBe("cookie");
+    expect(sessaoDoCliente("outra").ler()).toBe("cookie");
   });
 
   it("nunca mistura a identidade do barbeiro com a do cliente", () => {

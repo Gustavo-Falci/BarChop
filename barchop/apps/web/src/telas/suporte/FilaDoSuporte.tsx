@@ -49,9 +49,10 @@ export function FilaDoSuporte() {
   const [avisoDoPix, setAvisoDoPix] = useState<string | undefined>();
 
   const sair = useCallback(() => {
+    void api.sair().catch(() => {});
     sessaoDoSuporte.limpar();
     router.replace(ENTRAR);
-  }, [router]);
+  }, [api, router]);
 
   // A guarda no efeito, e nada renderiza antes das listas chegarem: o
   // mesmo desenho do SessaoDoPainel. A sessão do painel não abre esta

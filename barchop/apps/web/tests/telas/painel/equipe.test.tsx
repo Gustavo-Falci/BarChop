@@ -438,7 +438,7 @@ describe("aceitar convite", () => {
     await userEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel"));
-    expect(sessaoDoBarbeiro.ler()).toBe("jwt-falso-convidado");
+    expect(sessaoDoBarbeiro.ler()).toBe("cookie");
     expect(sessaoDaBarbearia.ler()).toBe("gr-barber");
   });
 

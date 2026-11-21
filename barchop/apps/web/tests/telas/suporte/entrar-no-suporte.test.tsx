@@ -36,7 +36,7 @@ describe("entrar no suporte", () => {
     await userEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     await waitFor(() => expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel/suporte"));
-    expect(sessaoDoSuporte.ler()).toBe("jwt-falso-suporte");
+    expect(sessaoDoSuporte.ler()).toBe("cookie");
     // A sessão do painel é outra coisa: entrar no suporte não abre o painel.
     expect(sessaoDoBarbeiro.ler()).toBeNull();
   });

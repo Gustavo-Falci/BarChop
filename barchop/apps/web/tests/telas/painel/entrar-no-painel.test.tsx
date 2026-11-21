@@ -36,7 +36,7 @@ describe("entrar no painel", () => {
     await userEvent.type(screen.getByLabelText(/^senha/i), "segredo123");
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
 
-    await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("jwt-falso-barbeiro"));
+    await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("cookie"));
     // O slug é o que a tela de novo agendamento vai usar pra chamar a
     // disponibilidade, que é rota pública por slug.
     expect(sessaoDaBarbearia.ler()).toBe("gr-barber");
@@ -124,7 +124,7 @@ describe("entrar no painel", () => {
     await userEvent.type(screen.getByLabelText(/e-mail/i), "rafael@gr.com");
     await userEvent.type(screen.getByLabelText(/^senha/i), "segredo123{Enter}");
 
-    await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("jwt-falso-barbeiro"));
+    await waitFor(() => expect(sessaoDoBarbeiro.ler()).toBe("cookie"));
     expect(navegacaoFalsa.push).toHaveBeenCalledWith("/painel");
   });
 

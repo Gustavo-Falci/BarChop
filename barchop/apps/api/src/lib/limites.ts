@@ -353,6 +353,11 @@ const MAX_DISPONIBILIDADE_DO_MES_POR_IP = 40;
 // e segura quem tenta inflar a conta.
 const MAX_VISITAS_POR_IP = 20;
 
+// O relatório de CSP (auditoria de 15/11, SEC-003): uma página com a
+// regra errada manda um punhado por carregamento. 30 por minuto mostram
+// o problema sem deixar ninguém encher o log.
+const MAX_RELATORIOS_DE_CSP_POR_IP = 30;
+
 // Convidar e reenviar mandam e-mail pra qualquer endereço que o dono
 // digitar. 20 por dia montam uma equipe inteira com folga.
 const MAX_CONVITES_POR_BARBEARIA = 20;
@@ -405,6 +410,13 @@ export function limitesPublicos(app: App) {
         max: MAX_VISITAS_POR_IP,
         janela: MINUTO,
         chave: (request) => `visita-ip:${request.ip}`,
+      }),
+    ],
+    relatorioDeCsp: [
+      contador(app, {
+        max: MAX_RELATORIOS_DE_CSP_POR_IP,
+        janela: MINUTO,
+        chave: (request) => `csp-ip:${request.ip}`,
       }),
     ],
   };

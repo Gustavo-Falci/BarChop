@@ -18,7 +18,10 @@ const nextConfig = {
     return [
       {
         source: "/:path*",
-        headers: cabecalhosDeSeguranca(process.env.NEXT_PUBLIC_URL_DO_SITE),
+        headers: cabecalhosDeSeguranca(process.env.NEXT_PUBLIC_URL_DO_SITE, {
+          urlDaApi: process.env.NEXT_PUBLIC_API_URL,
+          producao: process.env.NODE_ENV === "production",
+        }),
       },
     ];
   },

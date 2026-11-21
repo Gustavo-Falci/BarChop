@@ -30,6 +30,7 @@ import { registrarRotasClientes } from "./routers/clientes";
 import { registrarRotasClientesMe } from "./routers/clientes-me";
 import { registrarRotasAssinaturasDoCliente } from "./routers/assinaturas-do-cliente";
 import { registrarRotasDisponibilidade } from "./routers/disponibilidade";
+import { registrarRotaRelatorioDeCsp } from "./routers/relatorio-de-csp";
 import { registrarRotasSite } from "./routers/site";
 import { registrarRotasBloqueios } from "./routers/bloqueios";
 import { registrarRotasOnboarding } from "./routers/onboarding";
@@ -213,6 +214,8 @@ export function buildApp(
     // O aviso de visita da home (linha de base da home nova): aberto, com
     // limite por IP pra ninguém inflar a conta.
     registrarRotasSite(abertas, limites);
+    // O que a política de conteúdo do web bloquearia (SEC-003).
+    registrarRotaRelatorioDeCsp(abertas, limites);
   });
   // Sem login: quem autoriza é o token do link do e-mail de lembrete.
   registrarRotasLembretes(app);

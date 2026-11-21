@@ -8,6 +8,7 @@ import type { LimitesDeAuth } from "../lib/limites";
 import { PADRAO_EMAIL, PADRAO_UUID } from "../lib/padroes";
 import { conferirSenha, obterHashDescartavel, regravarSeMaisFraco } from "../lib/senha";
 import { trocarSlug } from "../lib/slug";
+import { apagarSessao, gravarSessao } from "../lib/sessao-por-cookie";
 import { assinarSessao, operadorDoToken } from "../plugins/auth";
 import type { App } from "../tipos";
 import { serializarSolicitacao } from "./solicitacao-de-link";
@@ -33,6 +34,12 @@ const DATA_E_HORA = new Intl.DateTimeFormat("pt-BR", {
 });
 
 export function registrarRotasLoginDoSuporte(app: App, limites: LimitesDeAuth): void {
+  // Sair do suporte apaga só o cookie dele: o painel, se aberto, fica.
+  app.post("/suporte/sair", async (_request, reply) => {
+    apagarSessao(reply, "suporte");
+    return reply.code(204).send();
+  });
+
   app.post(
     "/suporte/login",
     { schema: { body: corpoLogin }, preHandler: limites.loginDoSuporte },
@@ -62,6 +69,7 @@ export function registrarRotasLoginDoSuporte(app: App, limites: LimitesDeAuth): 
       );
 
       const token = assinarSessao(app, { tipo: "suporte", operadorId: autorizado.id });
+      gravarSessao(request, reply, "suporte", token);
 
       // Cada entrada fica na trilha, com o IP, e avisa o operador por
       // e-mail: é assim que o dono da conta descobre uma entrada que não

@@ -15,6 +15,7 @@ import { serializarCliente } from "../lib/serializar";
 import { contarEnvioNaoProvado } from "../lib/envios-nao-provados";
 import { nomeParaEmail } from "../lib/texto-de-email";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
+import { apagarSessao, gravarSessao } from "../lib/sessao-por-cookie";
 import { assinarSessao } from "../plugins/auth";
 import type { App } from "../tipos";
 
@@ -144,6 +145,17 @@ export function registrarRotasAuthCliente(
   app: App,
   limites: LimitesDeAuth
 ): void {
+  // O "Sair" e o "Não é você?" do cliente: apaga o cookie desta
+  // barbearia, e só o dela. Sem exigir sessão, como o do painel.
+  app.post(
+    "/barbearias/:slug/auth/cliente/sair",
+    { schema: { params: paramsSlug } },
+    async (request, reply) => {
+      apagarSessao(reply, "cliente", request.params.slug);
+      return reply.code(204).send();
+    }
+  );
+
   // Primeiro acesso e esqueci a senha são, pro cliente, a mesma coisa:
   // provar que o telefone é dele e definir a senha. Esta rota manda o
   // código; a de baixo confere e define.
@@ -277,6 +289,7 @@ export function registrarRotasAuthCliente(
             clienteId: juntado.id,
             barbeariaId: barbearia.id,
           });
+          gravarSessao(request, reply, "cliente", token, request.params.slug);
           return reply.code(200).send({ token, cliente: serializarCliente(juntado) });
         }
         if (outro) {
@@ -318,6 +331,7 @@ export function registrarRotasAuthCliente(
         clienteId: cliente.id,
         barbeariaId: barbearia.id,
       });
+      gravarSessao(request, reply, "cliente", token, request.params.slug);
 
       return reply
         .code(existente ? 200 : 201)
@@ -389,6 +403,7 @@ export function registrarRotasAuthCliente(
         clienteId: autorizado.id,
         barbeariaId: barbearia.id,
       });
+      gravarSessao(request, reply, "cliente", token, request.params.slug);
 
       return reply.send({ token, cliente: serializarCliente(autorizado) });
     }

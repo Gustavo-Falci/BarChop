@@ -63,8 +63,8 @@ importers:
         specifier: ^11.2.2
         version: 11.2.2
       '@fastify/type-provider-json-schema-to-ts':
-        specifier: ^4.0.0
-        version: 4.0.1
+        specifier: ^5.0.1
+        version: 5.0.1
       fastify:
         specifier: ^5.12.8
         version: 5.12.8
@@ -1371,8 +1371,8 @@ packages:
   '@fastify/rate-limit@11.2.2':
     resolution: {integrity: sha512-Ynxk9BU82Y5Ux7NOk9NqyZpTMdFes8EY8quXrN6ePDsbtG4G9Afb3l9mD8Vw2nv0hXg0iFjV+gkdABReFPlShw==}
 
-  '@fastify/type-provider-json-schema-to-ts@4.0.1':
-    resolution: {integrity: sha512-+QS1iiRZMAqCcWX7Ck8zAVXb1WbjpffC2gOYxDGvF1wtLviblz7HtnjAX04bW6ZsgreZP0RktRPlEAzmEafEQw==}
+  '@fastify/type-provider-json-schema-to-ts@5.0.1':
+    resolution: {integrity: sha512-xsNGRD0W1KqxT0UF9fJ31xO0tkGQzZ88YRULnpDIK3RMUk/UQR3tRlTAW9HKU2FG4rW2li5MfN21FK4CT40NAQ==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -6123,7 +6123,7 @@ snapshots:
       ip-address: 10.7.6
       toad-cache: 3.7.4
 
-  '@fastify/type-provider-json-schema-to-ts@4.0.1':
+  '@fastify/type-provider-json-schema-to-ts@5.0.1':
     dependencies:
       json-schema-to-ts: 3.1.1
 
@@ -7986,7 +7986,7 @@ snapshots:
 
   json-schema-to-ts@3.1.1:
     dependencies:
-      '@babel/runtime': 7.29.7
+      '@babel/runtime': 7.29.15
       ts-algebra: 2.0.0
 
   json-schema-traverse@0.4.1: {}

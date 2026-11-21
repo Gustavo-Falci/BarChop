@@ -152,9 +152,14 @@ export function buildApp(
   // lib/sessao-por-cookie.ts), e sem este cabeçalho o navegador não
   // entrega a resposta de um fetch com `credentials: "include"`. Só a
   // origem da lista recebe os dois; nunca o coringa `*`.
+  //
+  // `methods` escrito aqui, e não herdado do plugin: o @fastify/cors 11
+  // baixou o padrão para GET, HEAD e POST, e o preflight do PUT, do PATCH
+  // e do DELETE que o painel manda deixaria de liberar a chamada.
   app.register(cors, {
     origin: (origem, responder) => responder(null, !!origem && origemPermitida(origens, origem)),
     credentials: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
   });
 
   registrarTratamentoDeErros(app);

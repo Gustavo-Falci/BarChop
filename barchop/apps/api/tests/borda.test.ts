@@ -7,11 +7,11 @@ import { comCodigo } from "./helpers/barbearia";
 
 const MAX_SIGNUP_BARBEIRO = 5;
 
-function preflight(app: ReturnType<typeof buildApp>, origem: string) {
+function preflight(app: ReturnType<typeof buildApp>, origem: string, metodo = "POST", url = "/auth/login") {
   return app.inject({
     method: "OPTIONS",
-    url: "/auth/login",
-    headers: { origin: origem, "access-control-request-method": "POST" },
+    url,
+    headers: { origin: origem, "access-control-request-method": metodo },
   });
 }
 
@@ -50,6 +50,20 @@ describe("CORS por lista", () => {
     const resposta = await preflight(app, "https://golpe.com");
 
     expect(resposta.headers["access-control-allow-origin"]).toBeUndefined();
+    await app.close();
+  });
+
+  // O painel edita e apaga com PUT, PATCH e DELETE, de outra origem: sem
+  // o método no Access-Control-Allow-Methods o navegador nem manda a
+  // chamada. O @fastify/cors 11 tirou os três do padrão.
+  it.each(["PUT", "PATCH", "DELETE"])("libera o %s no preflight", async (metodo) => {
+    const app = buildApp({ ambiente: { ORIGENS_PERMITIDAS: "https://*.barchop.com.br" } });
+
+    const resposta = await preflight(app, "https://gr-barber.barchop.com.br", metodo, "/clientes/1");
+    const metodos = String(resposta.headers["access-control-allow-methods"] ?? "").split(/,\s*/);
+
+    expect(resposta.statusCode).toBe(204);
+    expect(metodos).toContain(metodo);
     await app.close();
   });
 });

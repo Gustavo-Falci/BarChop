@@ -44,6 +44,12 @@ updates:
         update-types: [version-update:semver-minor, version-update:semver-major]
       - dependency-name: "@types/react-dom"
         update-types: [version-update:semver-minor, version-update:semver-major]
+      # Os tipos do Node andam com o Node que roda em produção (node:22
+      # nos Dockerfiles, 22 no CI). Com os do 26, o tsc aceitaria APIs que
+      # o 22 não tem. A major sobe junto com a troca de Node (PR #384), e
+      # aí este ignore sai. Minor e patch do 22 seguem no grupo.
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /

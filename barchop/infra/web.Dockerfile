@@ -3,7 +3,7 @@
 # Imagem do web (Next standalone, ver apps/web/next.config.js).
 # Contexto: a pasta barchop/ (ver infra/compose.yaml e .dockerignore).
 
-FROM node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee AS build
+FROM node:26-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1 AS build
 # A mesma versão do packageManager do package.json da raiz. Pelo npm e
 # não pelo corepack: o Node parou de trazer o corepack no 25.
 RUN npm install -g pnpm@9.0.0
@@ -33,7 +33,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
 # baixa nada do Google Fonts.
 RUN pnpm --filter @barchop/web build
 
-FROM node:22-bookworm-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee AS web
+FROM node:26-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1 AS web
 ENV NODE_ENV=production \
   NEXT_TELEMETRY_DISABLED=1 \
   HOSTNAME=0.0.0.0 \

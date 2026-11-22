@@ -572,7 +572,7 @@ export function registrarRotasAgendamentos(app: App): void {
           // Trava a linha antes de ler: dois salvar ao mesmo tempo não
           // somam o mesmo serviço duas vezes — o segundo lê o que o
           // primeiro gravou e não tem o que fazer.
-          await tx.$queryRaw`SELECT id FROM agendamento WHERE id = ${request.params.id}::uuid FOR UPDATE`;
+          await tx.$queryRaw`SELECT id FROM agendamento WHERE id = ${request.params.id}::uuid AND barbearia_id = ${barbeariaId}::uuid FOR UPDATE`;
           const mudanca = await prepararMudanca(tx, { barbeariaId, onde, servicoIds });
           if (!mudanca.previa.cabe && !aceitaSemTempo) return { semTempo: mudanca.previa };
           const mudou = await gravarMudanca(tx, mudanca);

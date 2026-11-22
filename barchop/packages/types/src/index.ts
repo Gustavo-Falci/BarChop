@@ -73,8 +73,9 @@ export interface ServicoDaMudanca {
   preco: string; // "45.00"
 }
 
-// GET /agendamentos/:id/servicos/previa: a conta sem gravar. Também vem
-// no corpo do 409 `sem_tempo`, em `previa`.
+// GET /agendamentos/:id/servicos/previa: a conta sem gravar. A API manda
+// a mesma prévia no corpo do 409 `sem_tempo`, mas o ErroDaApi só guarda
+// `erro` e `mensagem`: a tela que recebe `sem_tempo` pede a prévia de novo.
 export interface PreviaDaMudanca {
   cabe: boolean;
   previstoMinutos: number;

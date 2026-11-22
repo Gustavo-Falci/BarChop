@@ -128,6 +128,17 @@ describe("GET /agendamentos/:id/servicos/previa", () => {
     });
   });
 
+  it("um serviço só na query: tirar volta pra soma dos que ficam", async () => {
+    const c = await cenario();
+    await mudar(c, { servicoIds: [c.corte.id, c.sobrancelha.id] });
+
+    const resposta = await previa(c, [c.corte.id]);
+
+    expect(resposta.statusCode).toBe(200);
+    expect(resposta.json()).toMatchObject({ cabe: true, previstoMinutos: 45, horaFim: "10:45", totalDepois: "45.00" });
+    expect(resposta.json().saem.map((s: { nome: string }) => s.nome)).toEqual(["Sobrancelha"]);
+  });
+
   it("não grava nada", async () => {
     const c = await cenario();
 

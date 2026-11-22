@@ -314,9 +314,11 @@ export function duracaoDoAtendimento(
 
 // O encaixe não tem coluna: é o agendamento que dura menos que os
 // serviços dele (a duração congelada de cada um). Devolve a duração do
-// encaixe, ou null. Só o criarAgendamento grava o horaFim, e nada muda
-// os serviços depois — conferido em produção em 08/11/2026: nenhum
-// agendamento de antes passa por encaixe.
+// encaixe, ou null. Gravam o horaFim o criarAgendamento e o mudar
+// serviços (lib/servicos-do-agendamento.ts, 22/11/2026), que vira encaixe
+// de propósito quando os serviços novos não cabem na agenda. Conferido
+// em produção em 08/11/2026: nenhum agendamento de antes passa por
+// encaixe.
 export function duracaoDoEncaixe(agendamento: {
   horaInicio: Date;
   horaFim: Date;

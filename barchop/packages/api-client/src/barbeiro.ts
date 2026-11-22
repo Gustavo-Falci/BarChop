@@ -18,6 +18,8 @@ import type {
   MembroDaEquipe,
   ConferenciaDeHorario,
   HorarioConferido,
+  MudancaDeServicos,
+  PreviaDaMudanca,
   NovoAgendamentoBarbeiroInput,
   OcupacaoDoDia,
   CaixaDoDia,
@@ -819,6 +821,23 @@ export function criarApiBarbeiro(requisicao: Requisicao) {
       return requisicao(`/agendamentos/${id}/remarcar`, {
         metodo: "POST",
         corpo: remarcacao,
+        comToken: true,
+      });
+    },
+
+    // Mudar os serviços: a prévia (sem gravar) e o salvar. O salvar que
+    // não cabe, sem `aceitaSemTempo`, falha com 409 `sem_tempo`.
+    previaDosServicos(id: string, servicoIds: string[]): Promise<PreviaDaMudanca> {
+      return requisicao(`/agendamentos/${id}/servicos/previa`, {
+        query: { servicoIds },
+        comToken: true,
+      });
+    },
+
+    mudarServicos(id: string, mudanca: MudancaDeServicos): Promise<AgendamentoComCliente> {
+      return requisicao(`/agendamentos/${id}/servicos`, {
+        metodo: "PUT",
+        corpo: mudanca,
         comToken: true,
       });
     },

@@ -195,3 +195,82 @@ export function horarioCabe(
   });
   return indice === -1 ? null : { motivo: "ocupado", indice };
 }
+
+// Mudar os serviços de um agendamento que já existe (pedido do dono,
+// 22/11/2026). Até onde ele pode esticar: o primeiro compromisso do
+// profissional depois do fim de hoje — atendimento, pausa ou bloqueio
+// por horas —, senão o fechamento (23:59 quando a barbearia deixa
+// terminar depois de fechar). Nunca antes do fim de hoje: o que já cobre
+// esse fim (um bloqueio criado depois, um encaixe colado) só impede de
+// esticar. Dia fechado também não estica. `indice` é de quem limita,
+// pra frase "quando começa Fulano"; null quando é o expediente.
+export interface LimiteDepoisParams {
+  horarioFuncionamento: JanelaFuncionamento;
+  // Do profissional no dia, sem os cancelados e sem o próprio atendimento.
+  ocupados: IntervaloOcupado[];
+  horaFimAtual: string; // "HH:mm"
+  cabeAntesDeFechar?: boolean; // padrão true
+}
+
+export interface LimiteDepois {
+  limite: string; // "HH:mm"
+  indice: number | null;
+}
+
+export function limiteDepois(params: LimiteDepoisParams): LimiteDepois {
+  const { horarioFuncionamento, ocupados, horaFimAtual, cabeAntesDeFechar = true } = params;
+  const fimAtual = horaParaMinutos(horaFimAtual);
+
+  if (
+    horarioFuncionamento.fechado ||
+    !horarioFuncionamento.horaAbertura ||
+    !horarioFuncionamento.horaFechamento
+  ) {
+    return { limite: horaFimAtual, indice: null };
+  }
+
+  let limite = cabeAntesDeFechar
+    ? horaParaMinutos(horarioFuncionamento.horaFechamento)
+    : MINUTOS_NO_DIA - 1;
+  let indice: number | null = null;
+  ocupados.forEach((ocupado, i) => {
+    if (horaParaMinutos(ocupado.horaFim) <= fimAtual) return;
+    const comeca = Math.max(horaParaMinutos(ocupado.horaInicio), fimAtual);
+    if (comeca < limite || (comeca === limite && indice === null)) {
+      limite = comeca;
+      indice = i;
+    }
+  });
+
+  if (limite < fimAtual) return { limite: horaFimAtual, indice: null };
+  return { limite: minutosParaHora(limite), indice };
+}
+
+// A duração depois da mudança: a de hoje (que já conta o encaixe) mais a
+// dos serviços novos. Tirar encurta pra soma dos que ficam; se já era
+// encaixe, fica a menor das duas.
+export function duracaoDaMudanca(params: {
+  duracaoAtual: number;
+  somaQueFica: number;
+  somaNova: number;
+}): number {
+  return Math.min(params.duracaoAtual, params.somaQueFica) + params.somaNova;
+}
+
+// Cabe quando o previsto termina até o limite; senão o fim estica até o
+// limite e o agendamento vira encaixe (dura menos que os serviços).
+// `terminaPrevisto` é só pra frase: depois da meia-noite dá a volta.
+export function fimDaMudanca(params: {
+  horaInicio: string;
+  previstoMinutos: number;
+  limite: string;
+}): { cabe: boolean; horaFim: string; terminaPrevisto: string } {
+  const fimPrevisto = horaParaMinutos(params.horaInicio) + params.previstoMinutos;
+  const limite = horaParaMinutos(params.limite);
+  const cabe = fimPrevisto <= limite;
+  return {
+    cabe,
+    horaFim: minutosParaHora(cabe ? fimPrevisto : limite),
+    terminaPrevisto: minutosParaHora(fimPrevisto % MINUTOS_NO_DIA),
+  };
+}

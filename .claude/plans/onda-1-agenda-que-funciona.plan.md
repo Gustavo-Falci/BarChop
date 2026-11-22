@@ -4,10 +4,29 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-21, noite — fila do Dependabot vazia; Node 26 em espera) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-21, fim — sobram 3 majors do Dependabot e o Node 26) — vale mais que as seções abaixo
 
 **Estado:**
-- **`main` = merge deste PR de docs** (antes `99bbfb1`, #406). **Produção = código do `7797ace` (#400)**: o que entrou depois não pede deploy (só ferramentas de desenvolvimento, config do Dependabot e docs).
+- **`main` = merge deste PR de docs** (antes `0d78a49`, #408). **Produção = código do `7797ace` (#400)**. Só o #408 pede deploy (da API), sem urgência.
+- **Depois do #407, o Dependabot abriu #408 a #412** (a fila liberou vaga):
+  - #409 grupo desenvolvimento: `@types/node` 22.20.5 (o ignore do #406 funcionou: veio o 22, não o 26) e `@testing-library/user-event` 14.6.13. No lock, `next`, `sharp`, `stripe`, `vite` e `vitest` só mudaram de chave (o peer `@types/node`), mesma versão. Sem deploy.
+  - #408 grupo produção: `@aws-sdk/client-s3` 3.1172.0 (+ `bowser` 2.15.1). Novidades só de replicação do S3, que o BarChop não usa; o uso é `apps/api/src/lib/armazenamento.ts` (upload pra OCI, `endpoint` + `forcePathStyle`). **Deploy da API NÃO feito**: vai no próximo (`docker compose build api && docker compose up -d api`, sem migration); depois, enviar uma imagem no painel.
+- **Abertos, sem análise, todos major:**
+  - #410 vitest 4 → 5: só testes; o mais simples.
+  - #411 prisma 5 → 7: duas majors de uma vez, cliente e migrations. O mais arriscado: sessão própria.
+  - #412 expo 57 → 58: amarra as versões exatas de React (ver o `ignore` no `dependabot.yml`); React sobe à mão com o mobile e o web. Sessão própria.
+  - #384 Node 26: em espera (passos no RETOMAR AQUI de 21/11).
+- **Branches:** só `main`, os 4 do Dependabot dos PRs abertos e `origin/midia-instagram` (NÃO mergeado, não tocar). Os mergeados foram apagados.
+
+**Ao retomar (fim de 21/11):**
+1. #410, depois #411 e #412, um por vez.
+2. Deploy da API do #408 quando houver o próximo deploy, e o teste de imagem.
+3. O resto continua como abaixo (de 21/11, noite, e de 21/11).
+
+## RETOMAR AQUI (2026-11-21, noite — fila do Dependabot vazia; Node 26 em espera) — histórico
+
+**Estado:**
+- **`main` = merge do PR de docs #407** (antes `99bbfb1`, #406). **Produção = código do `7797ace` (#400)**: o que entrou depois não pede deploy (só ferramentas de desenvolvimento, config do Dependabot e docs).
 - **Dependabot, fim da fila (21/11, noite), um por vez:**
   - #401 turbo 2.11.13 (grupo desenvolvimento): só scripts da raiz; Dockerfiles e CI não usam o turbo.
   - #402 jsdom 31: só testes do web (2080 passam no CI e aqui). O jsdom 31 pede Node `^22.22.2 || ^24.15.0 || >=26`.

@@ -34,7 +34,7 @@ barchop/
 ## Setup inicial
 
 ```bash
-corepack enable  # garante a versão certa do pnpm
+npm install -g pnpm@9.0.0  # a do packageManager (o Node 25+ não traz o corepack)
 pnpm install
 pnpm dev          # roda mobile + web + api em paralelo via turbo
 ```

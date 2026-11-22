@@ -14,7 +14,7 @@
     "criar-precos": "tsx --env-file-if-exists=.env scripts/criar-precos-no-stripe.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1171.0",
+    "@aws-sdk/client-s3": "^3.1172.0",
     "@barchop/database": "workspace:*",
     "@barchop/formato": "workspace:*",
     "@barchop/scheduling": "workspace:*",

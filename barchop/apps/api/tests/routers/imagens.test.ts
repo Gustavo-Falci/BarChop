@@ -17,7 +17,7 @@ const WEBP = webp();
 
 async function multipart(arquivo: Buffer | null, nome = "imagem.png", tipo = "image/png") {
   const form = new FormData();
-  if (arquivo) form.append("arquivo", new Blob([arquivo], { type: tipo }), nome);
+  if (arquivo) form.append("arquivo", new Blob([new Uint8Array(arquivo)], { type: tipo }), nome);
   form.append("outro", "campo");
   const requisicao = new Request("http://exemplo", { method: "POST", body: form });
   return {

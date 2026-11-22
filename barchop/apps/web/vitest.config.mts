@@ -11,6 +11,9 @@ export default defineConfig({
     // as fixtures com offset -03:00 passariam nesta máquina e falhariam
     // em qualquer CI rodando em UTC.
     env: { TZ: "America/Sao_Paulo" },
+    // O Node 25+ tem um localStorage global que, sem --localstorage-file,
+    // cobre o do jsdom e quebra os testes que guardam coisa no navegador.
+    execArgv: ["--no-experimental-webstorage"],
     // Os pacotes internos publicam TypeScript cru (main aponta pro
     // src/index.ts). Sem isto o Vitest os trataria como JS pronto.
     server: { deps: { inline: [/@barchop\//] } },

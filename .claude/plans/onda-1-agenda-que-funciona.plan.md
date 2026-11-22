@@ -4,7 +4,27 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-21, fim — sobram 3 majors do Dependabot e o Node 26) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-22 — Node 26 no ar; sobram 3 majors do Dependabot) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `e848d10`, #416). **Produção = Node 26.13.1** (api, web e migrar), código do `6b3cd99` (#384). Nada pede deploy.
+- **Node 22 → 26, concluído em 22/11** (quatro PRs, um por vez, cada um conferido antes do próximo):
+  - #414: os dois Dockerfiles instalam o pnpm com `npm install -g pnpm@9.0.0` (a do `packageManager`), não mais com o `corepack`, que o Node parou de trazer no 25. O README do setup também. Deploy ainda no Node 22, junto com o #408 (`@aws-sdk/client-s3`), que estava pendente: painel salvando e upload de imagem conferidos pelo dono.
+  - #415: CI no Node 26 (os dois jobs). No `apps/web/vitest.config.mts`, `execArgv: ["--no-experimental-webstorage"]`: o Node 25+ tem um `localStorage` global que cobre o do jsdom, e sem a flag 1119 dos 2080 testes do web falham no 26. Com ela passam no 26 e no 24.
+  - #384 (Dependabot): só a troca do `FROM` para `node:26-bookworm-slim`. Antes do deploy, as imagens do Node 22 viraram `barchop-api:node22`, `barchop-web:node22` e `barchop-migrar:node22` na VM. Conferido: `node -v` = v26.13.1 na api e no web, api healthy, migrar `Exited (0)`, health 200 de fora, painel salvando e upload de imagem.
+  - #416: `@types/node` `^26.6.6` nos cinco pacotes (api, web, api-client, formato, scheduling). Os dois testes que montam multipart (`tests/routers/areas-decididas.test.ts` e `tests/routers/imagens.test.ts`) copiam o `Buffer` pra um `Uint8Array` antes do `Blob`. **O `ignore` da major do `@types/node` no `dependabot.yml` ficou**, só com o comentário pro 26: sem ele, o `@types/node` 27 chegaria em abril de 2027 com a produção ainda no 26. A próxima major sobe à mão, com a próxima troca de Node.
+- **Abertos, sem análise, todos major:** #410 vitest 4 → 5 (só testes, o mais simples); #411 prisma 5 → 7 (cliente e migrations, o mais arriscado: sessão própria); #412 expo 57 → 58 (amarra o React exato, ver o `ignore` no `dependabot.yml`: sessão própria).
+- **Branches:** só `main`, os 3 do Dependabot dos PRs abertos e `origin/midia-instagram` (NÃO mergeado, não tocar). Os mergeados foram apagados.
+- **`.gitignore` da raiz** ignora `.turbo/`: um cache do turbo rodado da raiz em 21/11 (análise do #390) ficava aparecendo como pendente.
+
+**Ao retomar:**
+1. Dono, na VM, quando quiser: `docker rmi barchop-api:node22 barchop-web:node22 barchop-migrar:node22` (as imagens de volta pro Node 22, que não fazem mais falta).
+2. #410, depois #411 e #412, um por vez.
+3. Continuam valendo do RETOMAR AQUI de 21/11 (mais abaixo): um DELETE de teste no painel; `docker compose up -d --force-recreate backup` na VM; os itens que pedem tela (canvas antes) ou decisão do dono (TOTP do suporte, confirmação do e-mail novo, CSP valendo, token fora do corpo do login); os só do dono fora do código (GitHub, Cloudflare, OCI, VM — a cópia da `CHAVE_DE_CIFRA` fora da VM é urgente); e os de 19/11.
+
+**Nesta máquina:** testar no Node 26 sem instalar: `npx -y node@26 ../../node_modules/vitest/vitest.mjs run` (de dentro do app). Docker não está instalado aqui: o build das imagens só se confere na VM. O `apps/mobile/node_modules/.bin/tsc` velho ainda quebra o `pnpm type-check` local do mobile (não no CI); os outros pacotes: `pnpm exec turbo run type-check --filter='!@barchop/mobile'`.
+
+## RETOMAR AQUI (2026-11-21, fim — sobram 3 majors do Dependabot e o Node 26) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `0d78a49`, #408). **Produção = código do `7797ace` (#400)**. Só o #408 pede deploy (da API), sem urgência.

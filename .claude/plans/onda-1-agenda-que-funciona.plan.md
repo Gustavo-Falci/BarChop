@@ -4,10 +4,28 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-21 — segurança e Dependabot no ar; Node 26 em espera) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-21, noite — fila do Dependabot vazia; Node 26 em espera) — vale mais que as seções abaixo
 
 **Estado:**
-- **`main` = merge deste PR de docs** (antes `7797ace`, #400). **Produção = `main`**: o que pede deploy foi pro ar e foi conferido de fora.
+- **`main` = merge deste PR de docs** (antes `99bbfb1`, #406). **Produção = código do `7797ace` (#400)**: o que entrou depois não pede deploy (só ferramentas de desenvolvimento, config do Dependabot e docs).
+- **Dependabot, fim da fila (21/11, noite), um por vez:**
+  - #401 turbo 2.11.13 (grupo desenvolvimento): só scripts da raiz; Dockerfiles e CI não usam o turbo.
+  - #402 jsdom 31: só testes do web (2080 passam no CI e aqui). O jsdom 31 pede Node `^22.22.2 || ^24.15.0 || >=26`.
+  - #403 tsup 9 (esbuild 0.28.2): o `dist/` da API saiu byte a byte igual ao do tsup 8 nos 4 arquivos (`server`, `criar-suporte`, `titular`, `criar-precos-no-stripe`). O próximo deploy da API usa o tsup novo sem mudar o código que roda.
+  - #404 `@types/node` 26: **fechado**. Produção roda no Node 22 e os tipos acompanham o Node que roda; o `tsc` da API ainda quebrava (`Buffer<ArrayBufferLike>` não é `BlobPart` em `tests/routers/areas-decididas.test.ts:113` e `tests/routers/imagens.test.ts:20`).
+  - #406: `.github/dependabot.yml` ignora a major do `@types/node` até a troca de Node. Minor e patch do 22 seguem no grupo.
+- **Aberto:** só o #384 (Node 26), em espera (passos abaixo, no RETOMAR AQUI de 21/11).
+
+**Ao retomar:**
+1. Os itens 1, 2, 5, 6 e 7 do RETOMAR AQUI de 21/11 (logo abaixo) continuam valendo: teste de PUT/PATCH/DELETE/imagem no navegador, backup recriado, telas que pedem canvas, itens só do dono.
+2. Node 26 (item 3 de 21/11), quando o dono quiser. Somar ao plano: tirar o `ignore` do `@types/node` no `dependabot.yml`, subir `@types/node` pra 26 nos 5 pacotes e, nos 2 testes acima, copiar o `Buffer` pra um `Uint8Array` antes de montar o `Blob`.
+
+**Nesta máquina:** Node atualizado 24.13.1 → 24.22.3 (`winget upgrade --id OpenJS.NodeJS.24`), por causa do jsdom 31. Terminal aberto antes disso ainda pode ver o Node velho.
+
+## RETOMAR AQUI (2026-11-21 — segurança e Dependabot no ar; Node 26 em espera) — histórico
+
+**Estado:**
+- **`main` = merge do PR de docs #405** (antes `7797ace`, #400). **Produção = `main`**: o que pede deploy foi pro ar e foi conferido de fora.
 - **Segurança, completa e no ar (21/11):** deploy dos #369 a #379 e da pilha que faltava: #381 CI, #392 infra, #393 CSP em modo relatório, #394 sessão por cookie na API, #395 sessão por cookie no web. Conferido: health 200 com HSTS e CSP, migrations aplicadas, `security.txt`, login no navegador.
 - **Dependabot, um PR por vez (21/11):**
   - CI e infra: #382, #383 e #386 (actions do CI), #385 (Caddy, sem deploy: imagem arm64 idêntica).

@@ -110,7 +110,7 @@ describe("áreas decididas das Configurações", () => {
     const app = buildApp();
     const um = await criarBarbeariaComToken(app, "um");
     const form = new FormData();
-    form.append("arquivo", new Blob([PNG], { type: "image/png" }), "capa.png");
+    form.append("arquivo", new Blob([new Uint8Array(PNG)], { type: "image/png" }), "capa.png");
     const requisicao = new Request("http://exemplo", { method: "POST", body: form });
 
     const resposta = await app.inject({

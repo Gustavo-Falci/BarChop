@@ -4,7 +4,39 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-22 — Node 26 no ar; sobram 5 PRs do Dependabot) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-22, noite — mudar os serviços de um agendamento no ar; sobram 5 PRs do Dependabot) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `587b1d6`, #421). **Produção = código do #421**, no Node 26.13.1: o dono fez o deploy da API e do web em 22/11 e disse que está tudo funcionando (não testou em produção). Nada pede deploy.
+- **Feature nova: mudar os serviços de um agendamento** (pedido do dono, 22/11). Canvas aprovado (página "servicos" do canvas do Claude Design), plano em `.claude/plans/mudar-servicos-do-agendamento.plan.md`, dois PRs com TDD:
+  - #420 (API):
+    - `GET /agendamentos/:id/servicos/previa` e `PUT /agendamentos/:id/servicos`. O corpo do PUT é a lista final; o que fica mantém preço e duração congelados.
+    - Cabe: o fim anda. Não cabe: 409 `sem_tempo` com a prévia, ou, com `aceitaSemTempo`, o fim estica até o próximo compromisso e vira encaixe.
+    - E-mail pro cliente ("Os serviços do seu horário mudaram") e, quando quem mudou não é quem atende, pro barbeiro do atendimento.
+    - A conta mora em `@barchop/scheduling` (`limiteDepois`, `duracaoDaMudanca`, `fimDaMudanca`).
+    - Sem migration: `periodo` é coluna gerada, e a EXCLUDE vale no UPDATE.
+  - #421 (web):
+    - Linha "Mudar serviços" no detalhe e a tela `telas/painel/ServicosDoAgendamento.tsx`, com a barra pela prévia e a confirmação na `Folha` (o "tem certeza?" quando vira encaixe).
+    - Volta pro detalhe com `?servicos=salvos&avisado=1`.
+  - Diferenças do canvas, ditas no PR: a barra de baixo é um cartão flutuante, e a linha do detalhe fica sem cartão.
+  - O `ErroDaApi` guarda só `erro` e `mensagem`: no `sem_tempo`, a tela pede a prévia de novo.
+- **Abertos, sem análise:**
+  - #417 grupo produção: `stripe` 23.1.0 → 23.2.0 (minor; pede deploy da API).
+  - Major: #410 vitest 4 → 5 (só testes, o mais simples); #418 `motion` 13 → 14 (animações do web); #411 prisma 5 → 7 (cliente e migrations, o mais arriscado: sessão própria); #412 expo 57 → 58 (amarra o React exato, ver o `ignore` no `dependabot.yml`: sessão própria).
+- **Branches:** só `main`, os 5 do Dependabot dos PRs abertos e `origin/midia-instagram` (NÃO mergeado, não tocar). Os da feature foram apagados com o ok do dono.
+
+**Ao retomar:**
+1. Dependabot, um por vez: #417 (minor), #410, #418, depois #411 e #412.
+2. Dono, na VM, quando quiser: `docker rmi barchop-api:node22 barchop-web:node22 barchop-migrar:node22`.
+3. Continuam valendo do RETOMAR AQUI de 21/11 (mais abaixo): um DELETE de teste no painel; `docker compose up -d --force-recreate backup` na VM; os itens que pedem tela (canvas antes) ou decisão do dono (TOTP do suporte, confirmação do e-mail novo, CSP valendo, token fora do corpo do login); os só do dono fora do código (GitHub, Cloudflare, OCI, VM — a cópia da `CHAVE_DE_CIFRA` fora da VM é urgente); e os de 19/11.
+
+**Nesta máquina:**
+- O repo NÃO usa Prettier: não rodar `prettier --write` (reformata o arquivo inteiro).
+- Conferência no navegador: `pnpm --filter @barchop/api exec tsx scripts/conferencia-visual.ts` (TRUNCA o banco `_test`) + `pnpm --filter web dev`, e entrar pelo login do painel com `gustavo@exemplo.com` / `senha-forte-123`. A sessão é cookie, não mais localStorage, então o "token do dono" que o script imprime não serve pro navegador.
+- O `next dev` reescreve o `apps/web/AGENTS.md`: devolver antes de commitar.
+- O resto do "Nesta máquina" de 22/11 (abaixo) continua valendo.
+
+## RETOMAR AQUI (2026-11-22 — Node 26 no ar; sobram 5 PRs do Dependabot) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `e848d10`, #416). **Produção = Node 26.13.1** (api, web e migrar), código do `6b3cd99` (#384). Nada pede deploy.

@@ -322,3 +322,80 @@ describe("detalhe do agendamento", () => {
     expect(screen.queryByText("no_show")).not.toBeInTheDocument();
   });
 });
+
+// Mudar os serviços (22/11/2026): a linha no bloco Serviços leva pra
+// tela nova; de volta, o aviso do que foi salvo.
+describe("detalhe do agendamento: mudar serviços", () => {
+  function comStatus(status: string, data = "2030-12-10") {
+    return criarApiClientFalso({
+      clientes: [
+        { id: "c1", nome: "Pedro Alves", telefone: "(11) 99999-0001", email: "pedro@exemplo.com", temConta: false },
+      ],
+      agendamentos: [
+        {
+          id: "a1",
+          clienteId: "c1",
+          data,
+          horaInicio: "09:00",
+          horaFim: "09:30",
+          status,
+          origem: "barbeiro",
+          observacoes: null,
+          servicos: [{ servicoId: "s1", nome: "Corte", precoNoMomento: "40.00", duracaoNoMomento: 30 }],
+        },
+      ],
+    });
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    navegacaoFalsa.redefinir({ pathname: "/painel/agendamentos/a1", params: { id: "a1" } });
+  });
+
+  it("de pé e sem pagamento: a linha leva pra tela de serviços", async () => {
+    montarPainel(<DetalheDoAgendamento />, comStatus("confirmado"));
+
+    expect(await screen.findByRole("link", { name: /mudar serviços/i })).toHaveAttribute(
+      "href",
+      "/painel/agendamentos/a1/servicos"
+    );
+  });
+
+  it("concluído sem pagamento também muda", async () => {
+    montarPainel(<DetalheDoAgendamento />, comStatus("concluido"));
+
+    expect(await screen.findByRole("link", { name: /mudar serviços/i })).toBeInTheDocument();
+  });
+
+  it("cancelado: sem a linha", async () => {
+    montarPainel(<DetalheDoAgendamento />, comStatus("cancelado"));
+    await screen.findByRole("heading", { level: 1, name: /Pedro Alves/ });
+    expect(screen.queryByRole("link", { name: /mudar serviços/i })).not.toBeInTheDocument();
+  });
+
+  it("de um dia que passou: sem a linha", async () => {
+    montarPainel(<DetalheDoAgendamento />, comStatus("confirmado", "2020-01-07"));
+    await screen.findByRole("heading", { level: 1, name: /Pedro Alves/ });
+    expect(screen.queryByRole("link", { name: /mudar serviços/i })).not.toBeInTheDocument();
+  });
+
+  it("com pagamento no caixa: sem a linha", async () => {
+    const falso = comStatus("confirmado");
+    await falso.barbeiro.registrarPagamento("a1", { forma: "pix" });
+    montarPainel(<DetalheDoAgendamento />, falso);
+
+    await screen.findByRole("heading", { level: 1, name: /Pedro Alves/ });
+    await waitFor(() => expect(screen.queryByRole("link", { name: /mudar serviços/i })).not.toBeInTheDocument());
+  });
+
+  it("de volta da tela: o aviso do que foi salvo, com o e-mail quando avisou", async () => {
+    navegacaoFalsa.redefinir({
+      pathname: "/painel/agendamentos/a1",
+      params: { id: "a1" },
+      query: { servicos: "salvos", avisado: "1" },
+    });
+    montarPainel(<DetalheDoAgendamento />, comStatus("confirmado"));
+
+    expect(await screen.findByText("Serviços salvos. Pedro recebe um e-mail com o novo total.")).toBeInTheDocument();
+  });
+});

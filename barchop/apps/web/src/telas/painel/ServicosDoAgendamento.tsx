@@ -51,8 +51,10 @@ function maiuscula(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-// O fim da frase "na sua agenda só tem tempo até as 09:40, ...".
-function quandoComeca(proximo: ProximoCompromisso): string {
+// O que vem depois do limite, no fim de "só tem tempo até as 09:40, ...".
+// Sem nada depois e o limite no próprio fim do horário, o dia está
+// fechado ou o horário já passa do expediente: não há "quando acaba".
+function depoisDoLimite(proximo: ProximoCompromisso, limite: string, horaFimAtual: string): string {
   switch (proximo.tipo) {
     case "atendimento":
       return `quando começa ${proximo.cliente}`;
@@ -61,7 +63,7 @@ function quandoComeca(proximo: ProximoCompromisso): string {
     case "bloqueio":
       return "quando começa um bloqueio";
     default:
-      return "quando acaba o expediente";
+      return emMinutos(limite) > emMinutos(horaFimAtual) ? "quando acaba o expediente" : "fora do expediente";
   }
 }
 
@@ -187,7 +189,7 @@ function Edicao({
         ? "Conferindo a agenda…"
         : previaPronta.cabe
           ? `Era ${duracaoAtual} min · ${emReais(totalAntes)} · termina às ${previaPronta.horaFim}`
-          : `Passa das ${previaPronta.limite}, ${quandoComeca(previaPronta.proximo)}: vira encaixe`;
+          : `Passa das ${previaPronta.limite}, ${depoisDoLimite(previaPronta.proximo, previaPronta.limite, agendamento.horaFim)}: vira encaixe`;
 
   return (
     <div className={estilos.pagina}>
@@ -425,7 +427,7 @@ function JanelaDaMudanca({
       ) : (
         <div className={estilos.semTempo}>
           <Aviso tom="atencao">
-            {`O tempo previsto pra concluir os serviços é de ${previa.previstoMinutos} min (até ${previa.terminaPrevisto}), e na ${agenda} só tem tempo até as ${previa.limite}, ${quandoComeca(previa.proximo)}. Tem certeza?`}
+            {`O tempo previsto pra concluir os serviços é de ${previa.previstoMinutos} min (até ${previa.terminaPrevisto}), e na ${agenda} só tem tempo até as ${previa.limite}, ${depoisDoLimite(previa.proximo, previa.limite, agendamento.horaFim)}. Tem certeza?`}
           </Aviso>
           <p className={estilos.apoio}>
             {`Na agenda ele fica como encaixe, das ${agendamento.horaInicio} às ${previa.horaFim}. O cliente paga os serviços inteiros.`}

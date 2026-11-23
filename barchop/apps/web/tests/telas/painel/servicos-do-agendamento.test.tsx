@@ -129,6 +129,16 @@ describe("mudar os serviços do agendamento", () => {
     expect(mudar).toHaveBeenCalledWith("a1", { servicoIds: ["s1", "s2"], aceitaSemTempo: true, avisarCliente: true });
   });
 
+  it("dia fechado ou depois do expediente: não estica, e a frase diz fora do expediente", async () => {
+    const falso = semear();
+    falso.estado.limitesDaMudanca!.a1 = { limite: "09:30", proximo: { tipo: "expediente" } };
+    montarPainel(<ServicosDoAgendamento />, falso);
+
+    await marcar(/sobrancelha/i);
+
+    expect(await screen.findByText("Passa das 09:30, fora do expediente: vira encaixe")).toBeInTheDocument();
+  });
+
   it("tirar: o tempo que sobra fica livre", async () => {
     const falso = semear({ servicos: [CORTE, SOBRANCELHA], horaFim: "09:40" });
     const mudar = espiarMudanca(falso);

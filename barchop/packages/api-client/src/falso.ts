@@ -57,6 +57,9 @@ import type {
   Notificacao,
   ConferenciaDeHorario,
   HorarioConferido,
+  MudancaDeServicos,
+  PreviaDaMudanca,
+  ProximoCompromisso,
   NovoAgendamentoBarbeiroInput,
   NovoAgendamentoPublicoInput,
   OcupacaoDoDia,
@@ -278,6 +281,10 @@ export interface EstadoFalso {
   // nenhum dia fechado e a divisão em 0 (quem atendeu fica com tudo).
   pagamentos?: PagamentoDoAgendamento[];
   diasFechados?: string[];
+  // Mudar os serviços (22/11/2026): até onde cada agendamento pode
+  // esticar, por id. O dublê não monta a agenda do dia; sem semente, o
+  // limite é o fim do expediente às 23:59.
+  limitesDaMudanca?: Record<string, { limite: string; proximo: ProximoCompromisso }>;
   divisao?: Omit<RegrasDeDivisao, "ativos">;
   // De quem cada cliente é, por id do cliente. Quem não aparece é de
   // ninguém, e passa a ser de quem o atender, como na API.
@@ -535,6 +542,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     pagamentosPix: (semente.pagamentosPix ?? []).map((p) => ({ ...p })),
     pagamentos: (semente.pagamentos ?? []).map(copiaDoPagamento),
     diasFechados: [...(semente.diasFechados ?? [])],
+    limitesDaMudanca: { ...(semente.limitesDaMudanca ?? {}) },
     divisao: {
       parteDaCasa: { ...(semente.divisao?.parteDaCasa ?? {}) },
       matriz: [...(semente.divisao?.matriz ?? [])],
@@ -1361,6 +1369,75 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     if (estado.diasFechados!.includes(data)) {
       throw new ErroDaApi(409, "dia_fechado", "o caixa deste dia está fechado: o dono precisa reabrir");
     }
+  }
+
+  // A mesma conta da API (lib/servicos-do-agendamento.ts e
+  // @barchop/scheduling), sobre o limite semeado.
+  function previaDaMudanca(id: string, servicoIds: string[]) {
+    if (servicoIds.length === 0 || servicoIds.length > 10 || new Set(servicoIds).size !== servicoIds.length) {
+      throw new ErroDaApi(400, "requisicao_invalida", "a lista de serviços precisa ter de 1 a 10, sem repetir");
+    }
+    const achado = estado.agendamentos.find((a) => a.id === id);
+    if (!achado || (estado.papel === "profissional" && achado.barbeiro.id !== perfilDoLogado().id)) {
+      throw new ErroDaApi(404, "nao_encontrado", "agendamento não encontrado");
+    }
+    if (estado.pagamentos!.some((p) => p.agendamentoId === id)) {
+      throw new ErroDaApi(409, "com_pagamento", "esse atendimento já tem pagamento no caixa");
+    }
+    if (!["pendente", "confirmado", "concluido"].includes(achado.status)) {
+      throw new ErroDaApi(422, "status_nao_permite", `agendamento ${achado.status} não pode ser alterado`);
+    }
+    if (achado.data < estado.hoje) {
+      throw new ErroDaApi(422, "agendamento_passado", "esse agendamento já passou");
+    }
+    exigirDiaAberto(achado.data);
+
+    const pedidos = new Set(servicoIds);
+    const ficam = achado.servicos.filter((s) => pedidos.has(s.servicoId));
+    const saem = achado.servicos.filter((s) => !pedidos.has(s.servicoId));
+    const novos = servicoIds
+      .filter((sid) => !achado.servicos.some((s) => s.servicoId === sid))
+      .map((sid) => {
+        const servico = estado.servicos.find((s) => s.id === sid);
+        if (!servico) throw new ErroDaApi(422, "servico_invalido", "serviço não encontrado nesta barbearia");
+        if (!servico.ativo) throw new ErroDaApi(422, "servico_inativo", `o serviço ${servico.nome} está inativo`);
+        if (!servicosDe(achado.barbeiro.id).includes(sid)) {
+          throw new ErroDaApi(422, "servico_fora_do_profissional", `${servico.nome} não é feito por esse profissional`);
+        }
+        return servico;
+      });
+
+    const minutos = (hora: string) => Number(hora.slice(0, 2)) * 60 + Number(hora.slice(3, 5));
+    const hora = (total: number) =>
+      `${String(Math.floor((total % 1440) / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+    const inicio = minutos(achado.horaInicio);
+    const somaQueFica = ficam.reduce((t, s) => t + s.duracaoNoMomento, 0);
+    const somaNova = novos.reduce((t, s) => t + s.duracaoMinutos, 0);
+    const previstoMinutos = Math.min(minutos(achado.horaFim) - inicio, somaQueFica) + somaNova;
+    const { limite, proximo } = estado.limitesDaMudanca![id] ?? { limite: "23:59", proximo: { tipo: "expediente" } };
+    const cabe = inicio + previstoMinutos <= minutos(limite);
+    const horaFim = cabe ? hora(inicio + previstoMinutos) : limite;
+    const duracaoDosServicos = somaQueFica + somaNova;
+    const centavos = (preco: string) => Math.round(Number(preco) * 100);
+    const reais = (total: number) => (total / 100).toFixed(2);
+
+    const previa: PreviaDaMudanca = {
+      cabe,
+      previstoMinutos,
+      terminaPrevisto: hora(inicio + previstoMinutos),
+      horaFim,
+      limite,
+      proximo,
+      duracaoDosServicos,
+      encaixe: minutos(horaFim) - inicio < duracaoDosServicos,
+      entram: novos.map((s) => ({ servicoId: s.id, nome: s.nome, duracaoMinutos: s.duracaoMinutos, preco: s.preco })),
+      saem: saem.map((s) => ({ servicoId: s.servicoId, nome: s.nome, duracaoMinutos: s.duracaoNoMomento, preco: s.precoNoMomento })),
+      totalAntes: reais(achado.servicos.reduce((t, s) => t + centavos(s.precoNoMomento), 0)),
+      totalDepois: reais(
+        ficam.reduce((t, s) => t + centavos(s.precoNoMomento), 0) + novos.reduce((t, s) => t + centavos(s.preco), 0)
+      ),
+    };
+    return { achado, previa, ficam, novos };
   }
 
   function agendamentoOu404(id: string) {
@@ -2481,6 +2558,21 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           antigo.status = statusAntigo;
           throw erro;
         }
+      },
+      async previaDosServicos(id: string, servicoIds: string[]): Promise<PreviaDaMudanca> {
+        return previaDaMudanca(id, servicoIds).previa;
+      },
+      async mudarServicos(id: string, mudanca: MudancaDeServicos): Promise<AgendamentoComCliente> {
+        const { achado, previa, ficam, novos } = previaDaMudanca(id, mudanca.servicoIds);
+        if (!previa.cabe && !mudanca.aceitaSemTempo) {
+          throw new ErroDaApi(409, "sem_tempo", "os serviços não cabem na agenda: confirme pra ficar como encaixe");
+        }
+        achado.servicos = [
+          ...ficam,
+          ...novos.map((s) => ({ servicoId: s.id, nome: s.nome, precoNoMomento: s.preco, duracaoNoMomento: s.duracaoMinutos })),
+        ];
+        achado.horaFim = previa.horaFim;
+        return comCliente(achado);
       },
       async atualizarAgendamento(id: string, edicao: EdicaoDoAgendamento) {
         const indice = estado.agendamentos.findIndex((a) => a.id === id);

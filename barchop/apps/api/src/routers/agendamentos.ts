@@ -37,6 +37,13 @@ import {
   serializarAgendamento,
   serializarAgendamentoComCliente,
 } from "../lib/serializar";
+import {
+  gravarMudanca,
+  prepararMudanca,
+  textoDosServicosMudados,
+  textoDosServicosMudadosProBarbeiro,
+  type PreviaDaMudanca,
+} from "../lib/servicos-do-agendamento";
 import { comRetryDeDeadlock } from "../lib/transacao";
 import { normalizarTelefoneObrigatorio } from "../lib/telefone";
 import { contarEnvioNaoProvado } from "../lib/envios-nao-provados";
@@ -104,6 +111,36 @@ const corpoRemarcar = {
     data: { type: "string", pattern: PADRAO_DATA },
     horaInicio: { type: "string", pattern: PADRAO_HORA },
     barbeiroId: { type: "string", pattern: PADRAO_UUID },
+    avisarCliente: { type: "boolean", default: true },
+  },
+} as const;
+
+// Mudar os serviços (22/11/2026): a lista final, sem repetido — o que já
+// estava e ficou mantém o preço combinado (lib/servicos-do-agendamento.ts).
+const ESQUEMA_SERVICOS_DA_MUDANCA = {
+  type: "array",
+  minItems: 1,
+  maxItems: 10,
+  uniqueItems: true,
+  items: { type: "string", pattern: PADRAO_UUID },
+} as const;
+
+const filtroPreviaDosServicos = {
+  type: "object",
+  additionalProperties: false,
+  required: ["servicoIds"],
+  properties: { servicoIds: ESQUEMA_SERVICOS_DA_MUDANCA },
+} as const;
+
+// `aceitaSemTempo` é o "Sim, adicionar mesmo assim" da tela: sem ele, o
+// que não cabe volta 409 com a prévia, e a tela pergunta de novo.
+const corpoMudarServicos = {
+  type: "object",
+  additionalProperties: false,
+  required: ["servicoIds"],
+  properties: {
+    servicoIds: ESQUEMA_SERVICOS_DA_MUDANCA,
+    aceitaSemTempo: { type: "boolean", default: false },
     avisarCliente: { type: "boolean", default: true },
   },
 } as const;
@@ -505,6 +542,72 @@ export function registrarRotasAgendamentos(app: App): void {
     }
   );
 
+  // A prévia de mudar os serviços: o tempo previsto, se cabe, até onde a
+  // agenda tem tempo e com quem bate. 200 nos dois casos, como o /cabe.
+  app.get(
+    "/agendamentos/:id/servicos/previa",
+    { schema: { params: paramsComId, querystring: filtroPreviaDosServicos } },
+    async (request) => {
+      const barbeariaId = request.user.barbeariaId;
+      const onde = { id: request.params.id, barbeariaId, ...agendaVisivel(request) };
+      const { previa } = await prepararMudanca(prisma, { barbeariaId, onde, servicoIds: request.query.servicoIds });
+      return previa;
+    }
+  );
+
+  // Mudar os serviços: a lista final. Cabe, o fim anda; não cabe, só com
+  // `aceitaSemTempo` — o fim estica até o próximo compromisso e vira
+  // encaixe. Sem notificação no sino (é do que o cliente faz sozinho).
+  app.put(
+    "/agendamentos/:id/servicos",
+    { schema: { params: paramsComId, body: corpoMudarServicos } },
+    async (request, reply) => {
+      const barbeariaId = request.user.barbeariaId;
+      const membro = membroDoToken(request);
+      const { servicoIds, aceitaSemTempo, avisarCliente } = request.body;
+      const onde = { id: request.params.id, barbeariaId, ...agendaVisivel(request) };
+
+      const resultado = await comRetryDeDeadlock(() =>
+        prisma.$transaction(async (tx) => {
+          // Trava a linha antes de ler: dois salvar ao mesmo tempo não
+          // somam o mesmo serviço duas vezes — o segundo lê o que o
+          // primeiro gravou e não tem o que fazer.
+          await tx.$queryRaw`SELECT id FROM agendamento WHERE id = ${request.params.id}::uuid AND barbearia_id = ${barbeariaId}::uuid FOR UPDATE`;
+          const mudanca = await prepararMudanca(tx, { barbeariaId, onde, servicoIds });
+          if (!mudanca.previa.cabe && !aceitaSemTempo) return { semTempo: mudanca.previa };
+          const mudou = await gravarMudanca(tx, mudanca);
+          const agendamento = await tx.agendamento.findUniqueOrThrow({
+            where: { id: mudanca.agendamento.id },
+            include: INCLUDE_AGENDAMENTO,
+          });
+          return { previa: mudanca.previa, mudou, agendamento };
+        })
+      );
+
+      if ("semTempo" in resultado) {
+        return reply.code(409).send({
+          erro: "sem_tempo",
+          mensagem: "os serviços não cabem na agenda: confirme pra ficar como encaixe",
+          previa: resultado.semTempo,
+        });
+      }
+
+      // Depois do commit, como no remarcar. O lembrete não muda: a hora de
+      // início é a mesma, e o texto lê os serviços na hora de enviar.
+      if (resultado.mudou) {
+        await avisarServicosMudados(app, request.log, {
+          agendamentoId: resultado.agendamento.id,
+          previa: resultado.previa,
+          servicoIds,
+          avisarCliente,
+          quemMudouId: membro.id,
+        });
+      }
+
+      return serializarAgendamentoComCliente(resultado.agendamento);
+    }
+  );
+
   // O botão "lembrar pelo WhatsApp": o wa.me do cliente com o mesmo texto
   // do e-mail, link de confirmar incluso. Montado aqui porque o link é
   // assinado pela API — o painel não tem o segredo.
@@ -684,6 +787,72 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
         .send({ ...serializarAgendamento(agendamento), linkDoHorario, tokenDaConta });
     }
   );
+}
+
+// Os e-mails de mudar os serviços. Pro cliente, quando a tela pediu e há
+// e-mail (o do lembrete, senão o do cadastro). Pro barbeiro do
+// atendimento, sempre que quem mudou foi outra pessoa e ele tem e-mail
+// (pedido do dono, 22/11/2026). Sem `await` no envio, como o remarcar.
+async function avisarServicosMudados(
+  app: App,
+  log: { error: (dados: object, mensagem: string) => void },
+  dados: {
+    agendamentoId: string;
+    previa: PreviaDaMudanca;
+    servicoIds: string[];
+    avisarCliente: boolean;
+    quemMudouId: string;
+  }
+): Promise<void> {
+  if (!app.canal.destinos.includes("email")) return;
+  const agendamento = await prisma.agendamento.findUniqueOrThrow({
+    where: { id: dados.agendamentoId },
+    include: {
+      servicos: { include: { servico: { select: { nome: true } } } },
+      cliente: { select: { nome: true, email: true } },
+      barbeiro: { select: { id: true, nome: true, email: true } },
+      barbearia: { select: { nome: true } },
+    },
+  });
+
+  // Na ordem da tela: a lista que veio no corpo.
+  const servicosAgora = [...agendamento.servicos]
+    .sort((a, b) => dados.servicoIds.indexOf(a.servicoId) - dados.servicoIds.indexOf(b.servicoId))
+    .map((servico) => servico.servico.nome);
+  const base = {
+    previa: dados.previa,
+    servicosAgora,
+    data: agendamento.data,
+    horaInicio: dateParaHora(agendamento.horaInicio),
+    cliente: agendamento.cliente.nome,
+    barbearia: agendamento.barbearia.nome,
+    barbeiro: agendamento.barbeiro.nome,
+  };
+  const falhou = (erro: unknown) =>
+    log.error({ erro, agendamentoId: dados.agendamentoId }, "falha ao avisar a mudança de serviços");
+
+  const emailDoCliente = agendamento.emailLembrete ?? agendamento.cliente.email;
+  if (dados.avisarCliente && emailDoCliente) {
+    void app.canal
+      .enviar({
+        para: emailDoCliente,
+        // Fixo: assunto não leva texto de terceiro (lib/texto-de-email.ts).
+        assunto: "Os serviços do seu horário mudaram",
+        texto: textoDosServicosMudados(base),
+      })
+      .catch(falhou);
+  }
+
+  if (dados.quemMudouId !== agendamento.barbeiro.id && agendamento.barbeiro.email) {
+    const quemMudou = await prisma.barbeiro.findUnique({ where: { id: dados.quemMudouId }, select: { nome: true } });
+    void app.canal
+      .enviar({
+        para: agendamento.barbeiro.email,
+        assunto: "Mudaram os serviços de um atendimento seu",
+        texto: textoDosServicosMudadosProBarbeiro({ ...base, quemMudou: quemMudou?.nome ?? "" }),
+      })
+      .catch(falhou);
+  }
 }
 
 // "Seu horário mudou" pro cliente, com o de antes e o de agora. Pro

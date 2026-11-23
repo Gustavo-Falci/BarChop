@@ -48,6 +48,51 @@ export type HorarioConferido =
   | { cabe: true }
   | { cabe: false; codigo: string; mensagem: string };
 
+// Mudar os serviços de um agendamento (22/11/2026). O corpo do PUT
+// /agendamentos/:id/servicos é a lista final, sem repetido, de 1 a 10.
+// `aceitaSemTempo` é o "adicionar mesmo assim": sem ele, o que não cabe
+// volta 409 `sem_tempo` com a prévia. `avisarCliente` assume true.
+export interface MudancaDeServicos {
+  servicoIds: string[];
+  aceitaSemTempo?: boolean;
+  avisarCliente?: boolean;
+}
+
+// Quem limita o fim do horário: o próximo atendimento (com o nome do
+// cliente, só pro painel), uma pausa, um bloqueio, ou o fim do expediente.
+export type ProximoCompromisso =
+  | { tipo: "atendimento"; cliente: string; horaInicio: string }
+  | { tipo: "pausa"; horaInicio: string }
+  | { tipo: "bloqueio"; horaInicio: string }
+  | { tipo: "expediente" };
+
+export interface ServicoDaMudanca {
+  servicoId: string;
+  nome: string;
+  duracaoMinutos: number;
+  preco: string; // "45.00"
+}
+
+// GET /agendamentos/:id/servicos/previa: a conta sem gravar. A API manda
+// a mesma prévia no corpo do 409 `sem_tempo`, mas o ErroDaApi só guarda
+// `erro` e `mensagem`: a tela que recebe `sem_tempo` pede a prévia de novo.
+export interface PreviaDaMudanca {
+  cabe: boolean;
+  previstoMinutos: number;
+  terminaPrevisto: string; // "HH:mm"
+  // O que o PUT grava: o previsto quando cabe, o limite quando não.
+  horaFim: string;
+  limite: string;
+  proximo: ProximoCompromisso;
+  // A soma dos serviços depois da mudança; durar menos que ela é encaixe.
+  duracaoDosServicos: number;
+  encaixe: boolean;
+  entram: ServicoDaMudanca[];
+  saem: ServicoDaMudanca[];
+  totalAntes: string;
+  totalDepois: string;
+}
+
 // Body de POST /barbearias/:slug/agendamentos — o cliente agendando pelo
 // link público, sem conta. O `barbeariaId` sai do slug, a `origem` é fixa
 // em "cliente", e o cliente é resolvido pelo telefone dentro daquela

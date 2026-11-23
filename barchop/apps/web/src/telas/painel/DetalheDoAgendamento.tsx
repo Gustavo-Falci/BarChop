@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import type { EdicaoDoAgendamento, ErroDaApi } from "@barchop/api-client";
 import { Aviso } from "../../componentes/Aviso";
 import { Botao } from "../../componentes/Botao";
@@ -13,7 +13,7 @@ import { formatarPreco } from "../../componentes/ItemDeServico";
 import { useRequisicao } from "../../api/useRequisicao";
 import { ehPassado, formatarDataComSemana } from "../../formato/datas";
 import { TOM_DO_STATUS, rotuloDoStatus } from "../../formato/status";
-import { IconeCheck, IconeConversa } from "../../painel/icones";
+import { IconeCheck, IconeConversa, IconeMais, IconeSeta } from "../../painel/icones";
 import { encaixeDe, textoDoEncaixe } from "../../painel/encaixe";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
@@ -120,6 +120,11 @@ export function DetalheDoAgendamento() {
   const equipe = useRequisicao(() => api.barbeiro.equipe(), []);
   const { perfil } = usePainel();
   const router = useRouter();
+  // De volta da tela de serviços (22/11/2026): `?servicos=salvos`, e
+  // `avisado=1` quando o cliente recebeu o e-mail.
+  const query = useSearchParams();
+  const servicosSalvos = query.get("servicos") === "salvos";
+  const clienteAvisado = query.get("avisado") === "1";
   // "Mudar horário" (arrastar e reordenar, PR 6).
   const [mudandoHorario, setMudandoHorario] = useState(false);
   // A folha do pagamento aberta, pelo título dela. Guardado na hora de
@@ -221,6 +226,13 @@ export function DetalheDoAgendamento() {
   const acoes = caixa.dados ? acoesComCaixa(atual.status, pago !== null, diaFechado) : (ACOES[atual.status] ?? []);
   const membros = (equipe.dados ?? []).filter((m) => m.ativo).map((m) => ({ id: m.id, nome: m.nome }));
   const noCaminho = CAMINHO.indexOf(atual.status as Status);
+  // Mudar os serviços: o que a API aceita — de hoje em diante, sem
+  // pagamento e de pé ou concluído (lib/servicos-do-agendamento.ts).
+  const podeMudarServicos =
+    ["pendente", "confirmado", "concluido"].includes(atual.status) &&
+    !ehPassado(atual.data) &&
+    !pago &&
+    !diaFechado;
 
   return (
     <div className={estilos.pagina}>
@@ -250,6 +262,11 @@ export function DetalheDoAgendamento() {
         }
       />
       {aviso ? <Aviso>{aviso}</Aviso> : null}
+      {servicosSalvos ? (
+        <Aviso tom="sucesso">
+          {`Serviços salvos.${clienteAvisado ? ` ${atual.cliente.nome.trim().split(/\s+/)[0]} recebe um e-mail com o novo total.` : ""}`}
+        </Aviso>
+      ) : null}
 
       {/* A faixa do próximo passo: onde o atendimento está e o que fazer
           agora. É o motivo de abrir esta tela, por isso vem antes dos
@@ -454,6 +471,16 @@ export function DetalheDoAgendamento() {
                 </li>
               ) : null}
             </ul>
+            {podeMudarServicos ? (
+              <Link className={estilos.mudarServicos} href={`/painel/agendamentos/${id}/servicos`}>
+                <IconeMais width={18} height={18} />
+                <span className={estilos.textoDaLinha}>
+                  <span className={estilos.rotuloDaLinha}>Mudar serviços</span>
+                  <span className={estilos.secundario}>Adicionar ou tirar. A agenda e o total acompanham.</span>
+                </span>
+                <IconeSeta width={18} height={18} />
+              </Link>
+            ) : null}
           </section>
 
           <section className={estilos.grupo} aria-labelledby={`${idDoCampo}-cliente`}>

@@ -1,5 +1,7 @@
 # Plan: Mudar os serviços de um agendamento (adicionar e tirar)
 
+**Status: CONCLUÍDO e no ar em 22/11/2026** — #420 (API, main `5ea16fc`) e #421 (web, main `587b1d6`), deploy feito pelo dono.
+
 **Origem**: pedido do dono, 22/11/2026 (o cliente na cadeira pede "faz a barba também").
 **Canvas**: página "Mudar serviços do agendamento" (pranchas `Srv-*`) no canvas do painel, aprovada em 22/11.
 **Complexity**: Medium, 2 PRs (API, web).

@@ -31,7 +31,7 @@ services:
   postgres:
     # A mesma versão maior do desenvolvimento. Do 18 em diante o volume
     # monta em /var/lib/postgresql, não mais em .../data.
-    image: postgres:18
+    image: postgres:19
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?defina em infra/.env}

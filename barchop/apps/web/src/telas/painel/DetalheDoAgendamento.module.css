@@ -549,3 +549,38 @@
     transition: none;
   }
 }
+
+/* "Mudar serviços" (22/11/2026): a linha que leva pra tela de serviços,
+   no pé do grupo, separada da lista por um fio. */
+.mudarServicos {
+  display: flex;
+  align-items: center;
+  gap: var(--espaco-sm);
+  min-height: 56px;
+  padding-top: var(--espaco-sm);
+  border-top: var(--borda-hairline) solid var(--cor-line);
+  color: var(--cor-accent-text);
+  text-decoration: none;
+}
+
+.mudarServicos:hover .rotuloDaLinha {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mudarServicos:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm);
+}
+
+.textoDaLinha {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rotuloDaLinha {
+  font-weight: 600;
+}

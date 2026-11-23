@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { ErroDaApi } from "@barchop/api-client";
 import type { AgendamentoComCliente, PreviaDaMudanca, ProximoCompromisso, ServicoSerializado } from "@barchop/types";
@@ -8,11 +8,11 @@ import { Aviso } from "../../componentes/Aviso";
 import { Botao, BotaoLink } from "../../componentes/Botao";
 import { CabecalhoDaPagina } from "../../componentes/CabecalhoDaPagina";
 import { Carregando } from "../../componentes/Carregando";
+import { Folha } from "../../componentes/Folha";
 import { formatarPreco } from "../../componentes/ItemDeServico";
 import { useRequisicao } from "../../api/useRequisicao";
 import { ehPassado, formatarDataComSemana } from "../../formato/datas";
 import { rotuloDoStatus } from "../../formato/status";
-import { depoisDaSaida } from "../../movimento/depoisDaSaida";
 import { IconeCheck } from "../../painel/icones";
 import { useApiDoPainel } from "../../painel/ProvedorDoPainel";
 import { usePainel } from "../../painel/SessaoDoPainel";
@@ -344,17 +344,11 @@ function JanelaDaMudanca({
   aoMudarAAgenda: () => void;
   aoFechar: () => void;
 }) {
-  const janela = useRef<HTMLDialogElement>(null);
-  const titulo = useId();
   const temEmail = Boolean(agendamento.cliente.email);
   const nomeDoCliente = primeiroNome(agendamento.cliente.nome);
   const [avisar, setAvisar] = useState(true);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-
-  useEffect(() => {
-    janela.current?.showModal();
-  }, []);
 
   const soTira = previa.entram.length === 0;
   const soAdiciona = previa.saem.length === 0;
@@ -382,86 +376,83 @@ function JanelaDaMudanca({
   }
 
   return (
-    <dialog
-      ref={janela}
-      className={estilos.janela}
-      aria-labelledby={titulo}
-      onClose={(evento) => depoisDaSaida(evento.currentTarget, aoFechar)}
-    >
-      <h2 id={titulo} className={estilos.tituloDaJanela}>
-        {tituloDaJanela}
-      </h2>
+    // A folha do painel: sobe de baixo no celular (o desenho do canvas) e
+    // fica no meio da tela no computador.
+    <Folha titulo={tituloDaJanela} aoFechar={aoFechar}>
+      {(fechar) => (
+        <div className={estilos.conteudoDaJanela}>
+          <ul className={estilos.mudancas}>
+            {previa.saem.map((servico) => (
+              <li key={servico.servicoId} className={estilos.mudanca}>
+                <span className={estilos.sinalSai} aria-hidden="true">
+                  −
+                </span>
+                <span className={estilos.texto}>
+                  <span className={estilos.nome}>Tirar {servico.nome}</span>
+                  <span className={estilos.apoio}>{servico.duracaoMinutos} min</span>
+                </span>
+                <span className={estilos.preco}>− {formatarPreco(servico.preco)}</span>
+              </li>
+            ))}
+            {previa.entram.map((servico) => (
+              <li key={servico.servicoId} className={estilos.mudanca}>
+                <span className={estilos.sinalEntra} aria-hidden="true">
+                  +
+                </span>
+                <span className={estilos.texto}>
+                  <span className={estilos.nome}>{servico.nome}</span>
+                  <span className={estilos.apoio}>{servico.duracaoMinutos} min</span>
+                </span>
+                <span className={estilos.preco}>+ {formatarPreco(servico.preco)}</span>
+              </li>
+            ))}
+          </ul>
 
-      <ul className={estilos.mudancas}>
-        {previa.saem.map((servico) => (
-          <li key={servico.servicoId} className={estilos.mudanca}>
-            <span className={estilos.sinalSai} aria-hidden="true">
-              −
-            </span>
-            <span className={estilos.texto}>
-              <span className={estilos.nome}>Tirar {servico.nome}</span>
-              <span className={estilos.apoio}>{servico.duracaoMinutos} min</span>
-            </span>
-            <span className={estilos.preco}>− {formatarPreco(servico.preco)}</span>
-          </li>
-        ))}
-        {previa.entram.map((servico) => (
-          <li key={servico.servicoId} className={estilos.mudanca}>
-            <span className={estilos.sinalEntra} aria-hidden="true">
-              +
-            </span>
-            <span className={estilos.texto}>
-              <span className={estilos.nome}>{servico.nome}</span>
-              <span className={estilos.apoio}>{servico.duracaoMinutos} min</span>
-            </span>
-            <span className={estilos.preco}>+ {formatarPreco(servico.preco)}</span>
-          </li>
-        ))}
-      </ul>
+          {previa.cabe ? (
+            <p className={estilos.apoio}>
+              {`Termina às ${previa.horaFim}.`}
+              {sobra > 0 ? ` Os ${sobra} min que sobram ficam livres na agenda.` : ` Cabe na ${agenda}.`}
+            </p>
+          ) : (
+            <div className={estilos.semTempo}>
+              <Aviso tom="atencao">
+                {`O tempo previsto pra concluir os serviços é de ${previa.previstoMinutos} min (até ${previa.terminaPrevisto}), e na ${agenda} só tem tempo até as ${previa.limite}, ${depoisDoLimite(previa.proximo, previa.limite, agendamento.horaFim)}. Tem certeza?`}
+              </Aviso>
+              <p className={estilos.apoio}>
+                {`Na agenda ele fica como encaixe, das ${agendamento.horaInicio} às ${previa.horaFim}. O cliente paga os serviços inteiros.`}
+              </p>
+            </div>
+          )}
 
-      {previa.cabe ? (
-        <p className={estilos.apoio}>
-          {`Termina às ${previa.horaFim}.`}
-          {sobra > 0 ? ` Os ${sobra} min que sobram ficam livres na agenda.` : ` Cabe na ${agenda}.`}
-        </p>
-      ) : (
-        <div className={estilos.semTempo}>
-          <Aviso tom="atencao">
-            {`O tempo previsto pra concluir os serviços é de ${previa.previstoMinutos} min (até ${previa.terminaPrevisto}), e na ${agenda} só tem tempo até as ${previa.limite}, ${depoisDoLimite(previa.proximo, previa.limite, agendamento.horaFim)}. Tem certeza?`}
-          </Aviso>
-          <p className={estilos.apoio}>
-            {`Na agenda ele fica como encaixe, das ${agendamento.horaInicio} às ${previa.horaFim}. O cliente paga os serviços inteiros.`}
+          <p className={estilos.totalDaJanela}>
+            <span>Total</span>
+            <span>
+              {formatarPreco(previa.totalDepois)}
+              {previa.totalDepois !== previa.totalAntes ? ` (era ${formatarPreco(previa.totalAntes)})` : ""}
+            </span>
           </p>
+
+          {temEmail ? (
+            <label className={estilos.avisar}>
+              <input type="checkbox" checked={avisar} onChange={(evento) => setAvisar(evento.target.checked)} />
+              Avisar {nomeDoCliente} por e-mail
+            </label>
+          ) : (
+            <p className={estilos.apoio}>O cliente não tem e-mail: avise você pelo telefone.</p>
+          )}
+
+          {erro ? <Aviso>{erro}</Aviso> : null}
+
+          <div className={estilos.botoes}>
+            <Botao type="button" onClick={() => void confirmar()} carregando={enviando} disabled={conferindo}>
+              {previa.cabe ? "Confirmar" : "Sim, adicionar mesmo assim"}
+            </Botao>
+            <Botao type="button" variante="contorno" onClick={fechar}>
+              Voltar
+            </Botao>
+          </div>
         </div>
       )}
-
-      <p className={estilos.totalDaJanela}>
-        <span>Total</span>
-        <span>
-          {formatarPreco(previa.totalDepois)}
-          {previa.totalDepois !== previa.totalAntes ? ` (era ${formatarPreco(previa.totalAntes)})` : ""}
-        </span>
-      </p>
-
-      {temEmail ? (
-        <label className={estilos.avisar}>
-          <input type="checkbox" checked={avisar} onChange={(evento) => setAvisar(evento.target.checked)} />
-          Avisar {nomeDoCliente} por e-mail
-        </label>
-      ) : (
-        <p className={estilos.apoio}>O cliente não tem e-mail: avise você pelo telefone.</p>
-      )}
-
-      {erro ? <Aviso>{erro}</Aviso> : null}
-
-      <div className={estilos.botoes}>
-        <Botao type="button" onClick={() => void confirmar()} carregando={enviando} disabled={conferindo}>
-          {previa.cabe ? "Confirmar" : "Sim, adicionar mesmo assim"}
-        </Botao>
-        <Botao type="button" variante="contorno" onClick={() => janela.current?.close()}>
-          Voltar
-        </Botao>
-      </div>
-    </dialog>
+    </Folha>
   );
 }

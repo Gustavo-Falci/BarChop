@@ -227,8 +227,11 @@ export function DetalheDoAgendamento() {
   const membros = (equipe.dados ?? []).filter((m) => m.ativo).map((m) => ({ id: m.id, nome: m.nome }));
   const noCaminho = CAMINHO.indexOf(atual.status as Status);
   // Mudar os serviços: o que a API aceita — de hoje em diante, sem
-  // pagamento e de pé ou concluído (lib/servicos-do-agendamento.ts).
+  // pagamento e de pé ou concluído (lib/servicos-do-agendamento.ts). Só
+  // depois do caixa responder: com o pagamento ainda a caminho, a linha
+  // apareceria e sumiria num atendimento pago.
   const podeMudarServicos =
+    !caixa.carregando &&
     ["pendente", "confirmado", "concluido"].includes(atual.status) &&
     !ehPassado(atual.data) &&
     !pago &&

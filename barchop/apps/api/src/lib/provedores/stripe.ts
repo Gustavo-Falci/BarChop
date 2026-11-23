@@ -19,9 +19,11 @@ import {
 // A "cobrança" do BarChop é a fatura (`invoice`) da Stripe. A assinatura
 // nasce incompleta, com a primeira fatura aberta: o cliente paga na
 // página da fatura, e o cartão fica guardado para os ciclos seguintes.
-// Respostas e eventos na versão da biblioteca (2026-09-30.endive): nela a
-// fatura diz a assinatura em `parent.subscription_details` e o pagamento
-// em `payments`, e a charge não diz a fatura.
+// Respostas e eventos na versão da biblioteca (2026-11-18.endive desde o
+// stripe 23.2.0; as respostas gravadas nos testes são da 2026-09-30.endive,
+// mesma família): nela a fatura diz a assinatura em
+// `parent.subscription_details` e o pagamento em `payments`, e a charge não
+// diz a fatura.
 
 // A secreta (`sk_`) e a restrita (`rk_`); `_test_` é o modo teste.
 export function modoDaChaveDaStripe(chave: string): ModoDoProvedor | null {

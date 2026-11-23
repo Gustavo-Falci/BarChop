@@ -4,7 +4,29 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-22, noite — mudar os serviços de um agendamento no ar; sobram 5 PRs do Dependabot) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-23 — stripe 23.2 e client-s3 no ar; sobram 4 majors do Dependabot e o Postgres 19) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `06190a6`, #425). **Produção = API do #425 + web do #421**, no Node 26.13.1. O dono fez o deploy da API em 23/11. Nada pede deploy.
+- **Conferido pelo dono em produção (23/11):** o Node 26 e a função de mudar os serviços de um agendamento (#420/#421), tudo certo.
+- **Feito pelo dono na VM (até 23/11):** `docker rmi` das imagens `:node22`, `docker compose up -d --force-recreate backup` e a cópia da `CHAVE_DE_CIFRA` fora da VM.
+- **#425 (Dependabot, grupo produção), mergeado:**
+  - `stripe` 23.1.0 → 23.2.0. A versão da API passa de `2026-09-30.endive` para `2026-11-18.endive`. Nenhum `new Stripe(...)` fixa `apiVersion` (`provedores/stripe.ts`, `cobranca.ts` e `scripts/criar-precos-no-stripe.ts`), então vale a da biblioteca. Dentro da mesma família a Stripe só acrescenta. O formato dos eventos do webhook segue a versão do endpoint, não a da biblioteca.
+  - `@aws-sdk/client-s3` 3.1172.0 → 3.1173.0: só endpoints e outros serviços.
+  - Neste PR de docs, o comentário de `src/lib/provedores/stripe.ts` passa a dizer a versão nova. As respostas gravadas nos testes (`tests/lib/respostas-da-stripe/`) ficam na `2026-09-30.endive`.
+- **Abertos, sem análise:**
+  - #410 vitest 4 → 5 (só testes, o mais simples); #418 `motion` 13 → 14 (animações do web); #411 prisma 5 → 7 (cliente e migrations: sessão própria); #412 expo 57 → 58 (amarra o React exato, ver o `ignore` no `dependabot.yml`: sessão própria).
+  - **Novos: #423 e #424, `postgres` 18 → 19** (`infra/` e `infra/backup/`). É major do banco: a imagem 19 não lê o diretório de dados da 18. Precisa de dump/restore ou `pg_upgrade` na VM, com o dono. Sessão própria, o de maior risco. O `pg_dump` do backup tem de ser de versão ≥ à do servidor: os dois sobem juntos.
+- **Branches:** só `main`, os 6 do Dependabot dos PRs abertos e `origin/midia-instagram` (NÃO mergeado, não tocar).
+
+**Ao retomar:**
+1. Dependabot, um por vez: #410, #418, depois #411 e #412.
+2. #423/#424 (Postgres 19): sessão própria, com plano de migração dos dados e o dono na VM.
+3. Continuam valendo do RETOMAR AQUI de 21/11 (mais abaixo): um DELETE de teste no painel; os itens que pedem tela (canvas antes) ou decisão do dono (TOTP do suporte, confirmação do e-mail novo, CSP valendo, token fora do corpo do login); os só do dono fora do código (GitHub, Cloudflare, OCI; a `CHAVE_DE_CIFRA` já está copiada); e os de 19/11.
+
+**Nesta máquina:** o `node_modules` local ainda tem o `stripe` 23.1 e o `client-s3` 3.1172: rodar `pnpm install` (em `barchop/`) antes de testar a API. O resto do "Nesta máquina" de 22/11 continua valendo.
+
+## RETOMAR AQUI (2026-11-22, noite — mudar os serviços de um agendamento no ar; sobram 5 PRs do Dependabot) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `587b1d6`, #421). **Produção = código do #421**, no Node 26.13.1: o dono fez o deploy da API e do web em 22/11 e disse que está tudo funcionando (não testou em produção). Nada pede deploy.

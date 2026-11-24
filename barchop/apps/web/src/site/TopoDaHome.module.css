@@ -61,6 +61,22 @@
   opacity: var(--escuro, 1);
 }
 
+/* Preso, o topo tem 100svh, a tela com a barra do navegador à mostra. No
+   celular, a rolagem esconde a barra e a tela cresce até 100lvh: sem isto,
+   a diferença embaixo mostrava o papel do site numa faixa clara antes de a
+   névoa chegar. A camada escura desce essa diferença (só ela: o corte do
+   lado continua, e o canvas da cadeira é transparente). As seções de baixo
+   sobem por cima (z-index 1) e só entram com o escuro já em zero. Sem
+   data-vivo o topo não fica preso, e a faixa cobriria a seção seguinte. */
+.topo[data-vivo] {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+.topo[data-vivo] .fundo {
+  bottom: calc(100svh - 100lvh);
+}
+
 /* O sopro da grade da agenda: linhas de 10 horários e 5 colunas, só nos
    cantos (a máscara apaga o meio, onde fica a cadeira). */
 .grade {

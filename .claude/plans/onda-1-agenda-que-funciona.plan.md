@@ -4,7 +4,25 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-23 — stripe 23.2 e client-s3 no ar; sobram 4 majors do Dependabot e o Postgres 19) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-24 — faixa clara do topo no celular, vitest 5 e motion 14 na main; web pede deploy) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `7f529d6`, #418). **Produção = API do #425 + web do #421**, no Node 26.13.1. **O web pede deploy** (#427 e #418); a API não muda.
+- **#427, mergeado:** no celular, rolar um pouco a home mostrava uma faixa clara embaixo do topo antes de a névoa chegar. O topo preso tem `100svh`; o Chrome do Android esconde a barra ao rolar e a tela vai a `100lvh`. Com `data-vivo`, o `.fundo` desce `100lvh - 100svh` e o topo corta só na horizontal (`overflow-x: clip`). O canvas da cadeira é transparente, e as seções de baixo entram com `--escuro` já em zero (0,72 vs. 0,75). Só em `TopoDaHome.module.css`.
+- **#410, mergeado:** vitest 4 → 5. Só testes; CI verde depois do rebase, sem aviso de deprecação.
+- **#418, mergeado:** `motion` 13.5.1 → 14.14.0. A 14.0 só tirou APIs internas; as que o web usa (`m`, `LazyMotion`, `domAnimation`/`domMax`, `AnimatePresence`, `MotionConfig`, `MotionGlobalConfig`) não mudaram. A 14.7 mexeu na posição do que sai no `popLayout`, que só o `Estatistica.tsx` (números do Hoje) usa.
+- **Abertos:** #411 prisma 5 → 7 e #412 expo 57 → 58 (sessões próprias); #423/#424 Postgres 18 → 19 (sessão própria, com o dono na VM; ver 23/11).
+- **Branches:** só `main`, os 4 do Dependabot dos PRs abertos e `origin/midia-instagram` (NÃO mergeado, não tocar).
+
+**Ao retomar:**
+1. Dono: deploy do web e conferir no celular de verdade: (a) rolar um pouco a home, sem faixa clara embaixo; (b) no painel, cancelar um agendamento e ver o número do Hoje trocar subindo, sem pular.
+2. #411 (prisma 7) e #412 (expo 58), cada um em sessão própria.
+3. #423/#424 (Postgres 19): sessão própria, com plano de migração dos dados e o dono na VM.
+4. Continuam valendo os itens 3 de 23/11 e de 21/11.
+
+**Nesta máquina:** `pnpm install` já rodou com vitest 5 e motion 14. O Docker Desktop estava parado em 24/11 (sem banco local): subir antes de testar a API ou rodar a conferência visual.
+
+## RETOMAR AQUI (2026-11-23 — stripe 23.2 e client-s3 no ar; sobram 4 majors do Dependabot e o Postgres 19) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `06190a6`, #425). **Produção = API do #425 + web do #421**, no Node 26.13.1. O dono fez o deploy da API em 23/11. Nada pede deploy.

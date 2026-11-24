@@ -12,7 +12,7 @@
     "@barchop/config": "workspace:*",
     "@types/node": "^26.6.6",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.1.1"
   },
   "dependencies": {
     "@barchop/design-tokens": "workspace:*"

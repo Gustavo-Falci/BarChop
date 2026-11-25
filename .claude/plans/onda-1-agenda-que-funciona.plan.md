@@ -4,7 +4,30 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-24 — faixa clara do topo no celular, vitest 5 e motion 14 na main; web pede deploy) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-25 — Prisma 7 na main; API e migrar pedem deploy) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `5df35a8`, #429). **Produção = API do #425 + web da main de 24/11** (#427, #418), no Node 26. O dono fez o deploy do web e conferiu no celular em 25/11: a home não tem mais a faixa clara e o número do Hoje troca subindo.
+- **#429, mergeado: Prisma 5.22 → 7.10.1.** Substitui o #411 do Dependabot, que só subia a CLI e quebrava o CI. O #411 foi fechado com comentário.
+  - O cliente é gerado em `packages/database/src/generated/`, fora do git. Quem gera: o CI (`pnpm --filter @barchop/database build`), a imagem (`prisma generate`) e, ao trocar de máquina, `pnpm --filter @barchop/database generate`.
+  - A URL do banco mora no `packages/database/prisma.config.ts` (lê `process.env`; o `.env` entra pelo `dotenv/config`).
+  - Sem motor Rust: o cliente fala com o Postgres pelo `@prisma/adapter-pg`, com espera por conexão de 5 s.
+  - Os erros do banco chegam num formato novo e são lidos por `apps/api/src/lib/erro-do-banco.ts` (SQLSTATE e índice em `meta.driverAdapterError`). Mantidos: 409 `horario_ocupado` (23P01), 400 pro id fora de UUID (P2007), retry de deadlock (40P01, P2034) e 409 `identificador_repetido` do Pix (o P2002 não traz mais `meta.target`).
+  - O `package.json` da raiz tem um override `@prisma/config>effect ^3.22.1`: todo Prisma 7.x fixa o `effect` 3.20.0 (GHSA-7589-6fvf-x4pw, alto) e a auditoria do CI derrubava. Tirar quando o Prisma corrigir.
+  - Conferido local: imagens `api` e `migrar` montadas; `migrar` deu "No pending migrations to apply"; a `api` respondeu `/health` 200, uma rota com consulta ao banco respondeu 404 e o healthcheck ficou `healthy`.
+- **Abertos:** #412 expo 57 → 58 (sessão própria); #423/#424 Postgres 18 → 19 (sessão própria, com o dono na VM; ver 23/11).
+- **Branches:** `main`, os do Dependabot (`expo-58.0.26`, `postgres-19` e o `prisma-7.10.1` do #411 fechado, que o Dependabot apaga sozinho) e `origin/midia-instagram` (NÃO mergeado, não tocar).
+
+**Ao retomar:**
+1. Dono: deploy da API com o `migrar` (sem migração nova; o web não muda). Depois, conferir com curl que a API responde em produção.
+2. #412 (expo 58), em sessão própria.
+3. #423/#424 (Postgres 19): sessão própria, com plano de migração dos dados e o dono na VM.
+4. O npm já marca o Prisma 8 (RC) como `latest`: não subir antes de sair estável.
+5. Continuam valendo os itens 3 de 23/11 e de 21/11.
+
+**Nesta máquina:** em 25/11 o disco C: encheu e derrubou o Docker no meio do build (o dono liberou ~27 GB). Docker Desktop e o `barchop-postgres` ficaram ligados.
+
+## RETOMAR AQUI (2026-11-24 — faixa clara do topo no celular, vitest 5 e motion 14 na main; web pede deploy) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `7f529d6`, #418). **Produção = API do #425 + web do #421**, no Node 26.13.1. **O web pede deploy** (#427 e #418); a API não muda.

@@ -216,8 +216,9 @@ describe("tratamento de erros", () => {
   // A rota entra antes do prepararAgenda: o primeiro `inject` deixa o
   // Fastify pronto, e depois disso ele não aceita rota nova.
   async function rotaQueViolaAExclusao(app: ReturnType<typeof buildApp>, url: string) {
-    let agenda: Awaited<ReturnType<typeof prepararAgenda>> | undefined;
+    const pronta: { agenda?: Awaited<ReturnType<typeof prepararAgenda>> } = {};
     app.get(url, async () => {
+      const agenda = pronta.agenda;
       const linha = {
         barbeariaId: agenda!.barbeariaId,
         barbeiroId: agenda!.barbeiroId,
@@ -229,7 +230,7 @@ describe("tratamento de erros", () => {
       await prisma.agendamento.create({ data: linha });
       return prisma.agendamento.create({ data: linha });
     });
-    agenda = await prepararAgenda(app);
+    pronta.agenda = await prepararAgenda(app);
   }
 
   it("traduz a violação da sem_conflito_horario em 409", async () => {

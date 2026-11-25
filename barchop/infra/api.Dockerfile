@@ -1,12 +1,14 @@
 # syntax=docker/dockerfile:1
 #
 # Imagem da API (com o worker da fila, que roda no mesmo processo — ver
-# apps/api/src/server.ts) e da migração. Montada na própria VM (ARM):
-# o `prisma generate` daqui escolhe o motor da arquitetura da máquina.
+# apps/api/src/server.ts) e da migração. Montada na própria VM (ARM).
+# Desde o Prisma 7 não há motor nativo: o cliente fala com o banco pelo
+# driver `pg`, e o compilador de queries é wasm, igual em qualquer CPU.
 #
 # Contexto: a pasta barchop/ (ver infra/compose.yaml e .dockerignore).
 
-# Debian e não Alpine: o motor do Prisma é ligado à glibc e ao OpenSSL.
+# Debian e não Alpine, como sempre foi (o motor do Prisma 5 pedia glibc;
+# o 7 não pede mais, e trocar de base não é assunto desta imagem).
 # Node ≥ 22.12 porque o pg-boss é ESM e a API é CJS (require(esm)).
 FROM node:26-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1 AS base
 RUN apt-get update \

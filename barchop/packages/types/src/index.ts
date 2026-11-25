@@ -1,5 +1,5 @@
 // Os tipos de entidade (Barbearia, Agendamento, Servico...) agora
-// vêm do @prisma/client gerado — reexportados por @barchop/database.
+// vêm do cliente gerado pelo Prisma — reexportados por @barchop/database.
 // Esse pacote guarda só os DTOs que existem por causa da API, não
 // do banco: formatos de entrada/saída de endpoint, versões "seguras"
 // de uma entidade sem campos sensíveis, etc.

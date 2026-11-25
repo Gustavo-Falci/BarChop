@@ -22,3 +22,6 @@ web-build/
 
 # Saída do gerador do Design System (scripts/design-system/gerar.mts).
 /scripts/design-system/saida/
+
+# Cliente do Prisma 7, gerado pelo `prisma generate` (packages/database).
+/packages/database/src/generated/

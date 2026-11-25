@@ -2,16 +2,24 @@ import { describe, expect, it, vi } from "vitest";
 import { Prisma } from "@barchop/database";
 import { comRetryDeDeadlock } from "../../src/lib/transacao";
 
-// Formato medido contra o Postgres 18: o deadlock chega como
-// PrismaClientUnknownRequestError, com o SQLSTATE só dentro da mensagem
-// — o mesmo formato do 23P01 (ver o plano da fase 4).
+// Formato medido contra o Postgres 18 com o Prisma 7.10 (driver adapter,
+// ver lib/erro-do-banco.ts): o impasse chega como P2034 e o SQLSTATE fica
+// em `meta.driverAdapterError.cause.originalCode`.
+function erroDoBanco(codigoP: string, sqlstate: string, kind: string, mensagem: string) {
+  return new Prisma.PrismaClientKnownRequestError(`Database error. Code: \`${sqlstate}\``, {
+    code: codigoP,
+    clientVersion: Prisma.prismaVersion.client,
+    meta: {
+      driverAdapterError: {
+        name: "DriverAdapterError",
+        cause: { originalCode: sqlstate, originalMessage: mensagem, kind },
+      },
+    },
+  });
+}
+
 function erroDeDeadlock() {
-  return new Prisma.PrismaClientUnknownRequestError(
-    "Invalid `tx.agendamento.create()` invocation. Error occurred during " +
-      'query execution: ConnectorError(ConnectorError { kind: QueryError(' +
-      'PostgresError { code: "40P01", message: "impasse detectado" }) })',
-    { clientVersion: "5.22.0" }
-  );
+  return erroDoBanco("P2034", "40P01", "TransactionWriteConflict", "impasse detectado");
 }
 
 describe("comRetryDeDeadlock", () => {
@@ -51,10 +59,11 @@ describe("comRetryDeDeadlock", () => {
   });
 
   it("não repete erro que não é deadlock", async () => {
-    const violacaoDeExclusao = new Prisma.PrismaClientUnknownRequestError(
-      'PostgresError { code: "23P01", message: "viola a restrição de ' +
-        'exclusão sem_conflito_horario" }',
-      { clientVersion: "5.22.0" }
+    const violacaoDeExclusao = erroDoBanco(
+      "P2039",
+      "23P01",
+      "postgres",
+      'valor-chave conflitante viola a restrição de exclusão "sem_conflito_horario"'
     );
     const operacao = vi.fn().mockRejectedValue(violacaoDeExclusao);
 

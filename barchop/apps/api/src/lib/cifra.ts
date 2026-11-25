@@ -26,8 +26,10 @@ export function chaveDeCifra(env: Record<string, string | undefined> = process.e
 }
 
 // iv (12) | etiqueta (16) | texto cifrado: tudo o que o decifrar precisa
-// num campo só (`chave_cifrada`, BYTEA).
-export function cifrar(texto: string, chave: Buffer): Buffer {
+// num campo só (`chave_cifrada`, BYTEA). `Buffer<ArrayBuffer>` porque é
+// o que o Prisma 7 aceita numa coluna Bytes (`Uint8Array<ArrayBuffer>`);
+// o `Buffer` puro admitiria um SharedArrayBuffer por baixo.
+export function cifrar(texto: string, chave: Buffer): Buffer<ArrayBuffer> {
   const iv = randomBytes(IV);
   const cifra = createCipheriv("aes-256-gcm", chave, iv);
   const corpo = Buffer.concat([cifra.update(texto, "utf8"), cifra.final()]);

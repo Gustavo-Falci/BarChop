@@ -1,5 +1,6 @@
 import type { FastifyError } from "fastify";
 import { Prisma } from "@barchop/database";
+import { mensagemDoBanco, sqlstate } from "../lib/erro-do-banco";
 import { ErroHttp } from "../lib/erro-http";
 import type { App } from "../tipos";
 
@@ -45,10 +46,11 @@ export function registrarTratamentoDeErros(app: App): void {
       if (erro.code === "P2002") {
         return reply.code(409).send({ erro: "conflito" });
       }
-      // P2023: valor inconsistente pra coluna — na prática, um id que
-      // não é UUID. Erro de quem chamou, não bug nosso: 400. A mensagem
-      // crua traz nome de coluna e SQL, então não é repassada.
-      if (erro.code === "P2023") {
+      // P2007 (Prisma 7, SQLSTATE 22P02) e P2023: valor que a coluna não
+      // aceita — na prática, um id que não é UUID. Erro de quem chamou,
+      // não bug nosso: 400. A mensagem crua traz nome de coluna e SQL,
+      // então não é repassada.
+      if (erro.code === "P2007" || erro.code === "P2023") {
         return reply.code(400).send({ erro: "requisicao_invalida" });
       }
     }
@@ -58,10 +60,9 @@ export function registrarTratamentoDeErros(app: App): void {
     // validação por calcularHorariosDisponiveis, que roda antes, tem uma
     // janela entre a leitura e a escrita.
     //
-    // O Prisma 5.22 não tipa esse erro: ele chega como
-    // PrismaClientUnknownRequestError com `code` e `meta` undefined, e o
-    // SQLSTATE existe só dentro da mensagem (medido em 2026-09-02, ver o
-    // plano da fase 4). Daí a checagem por substring.
+    // O Prisma não tem código P próprio pra violação de EXCLUDE: no 7 ela
+    // chega como P2039, com o SQLSTATE e a mensagem do Postgres no `meta`
+    // (lib/erro-do-banco.ts).
     //
     // Os dois pedaços, e não só um: o `23P01` porque é o código do
     // Postgres e não é traduzido — a prosa da mensagem vem no idioma do
@@ -69,9 +70,8 @@ export function registrarTratamentoDeErros(app: App): void {
     // futura traria o mesmo código e viraria "horário ocupado" por
     // engano.
     if (
-      erro instanceof Prisma.PrismaClientUnknownRequestError &&
-      erro.message.includes("23P01") &&
-      erro.message.includes("sem_conflito_horario")
+      sqlstate(erro) === "23P01" &&
+      (mensagemDoBanco(erro) ?? "").includes("sem_conflito_horario")
     ) {
       // Mensagem nossa, nunca a do Postgres: a crua carrega o caminho do
       // arquivo que fez a query e os valores da chave em conflito, que

@@ -370,6 +370,40 @@ describe("POST /barbearias/me/assinatura/pix (Já paguei)", () => {
     await app.close();
   });
 
+  it("identificador igual ao de outro Pix em conferência: 409 identificador_repetido", async () => {
+    const { app } = montar();
+    const outra = await criarBarbeariaComToken(app, "outra");
+    const { token } = await criarBarbeariaComToken(app, "esta");
+    const { identificador } = (await cotar(app, token)).json();
+
+    // O raro de verdade: outra barbearia aguardando com o mesmo
+    // identificador. Quem distingue este 409 do pix_em_conferencia é o
+    // nome do índice no erro do banco (lib/erro-do-banco.ts).
+    const agora = new Date();
+    await prisma.pagamentoPix.create({
+      data: {
+        barbeariaId: outra.barbeariaId,
+        identificador,
+        plano: "essencial",
+        ciclo: "mensal",
+        profissionais: 1,
+        valorCentavos: 100,
+        periodoComecaEm: agora,
+        periodoTerminaEm: new Date(agora.getTime() + 30 * DIA),
+        antesSituacao: "teste",
+        antesPlano: "gratis",
+        antesCiclo: "mensal",
+        antesForma: "pix",
+      },
+    });
+
+    const resposta = await jaPaguei(app, token);
+
+    expect(resposta.statusCode).toBe(409);
+    expect(resposta.json().erro).toBe("identificador_repetido");
+    await app.close();
+  });
+
   it("sem as variáveis do Pix, 409 pix_desligado", async () => {
     const { app } = montar(null);
     const { token } = await criarBarbeariaComToken(app);

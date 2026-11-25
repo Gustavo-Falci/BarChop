@@ -1,10 +1,16 @@
+// Prisma 7: o cliente é gerado dentro do pacote (src/generated/, fora do
+// git) e fala com o banco pelo driver `pg` (ver src/index.ts). CommonJS
+// porque a API é CJS (apps/api/tsup.config.ts).
 generator client {
-  provider = "prisma-client-js"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
 }
 
+// A URL do banco mora no prisma.config.ts desde o Prisma 7.
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // A EXCLUDE USING gist (que trava conflito de horário) e a coluna

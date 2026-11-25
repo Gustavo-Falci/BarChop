@@ -7,6 +7,8 @@
 **/.turbo
 **/coverage
 **/.arquivos
+# O cliente do Prisma: a imagem gera o seu (`prisma generate`).
+packages/database/src/generated
 
 # Segredos e configuração local nunca entram na imagem.
 **/.env

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { prisma } from "@barchop/database";
 import { buildApp } from "../../src/app";
+import { mensagemDoBanco, sqlstate } from "../../src/lib/erro-do-banco";
 import { auth, criarBarbeariaComToken } from "../helpers/barbearia";
 import { QUINTA } from "../helpers/datas";
 import type { App } from "../../src/tipos";
@@ -228,7 +229,7 @@ describe("conflito de horário", () => {
     expect(await prisma.agendamento.count()).toBe(1);
 
     const recusado = resultados.find((r) => r.status === "rejected");
-    const erro = (recusado as PromiseRejectedResult).reason as Error;
+    const erro = (recusado as PromiseRejectedResult).reason as unknown;
 
     // O Postgres resolve isto de duas formas, e qual delas sai depende
     // de tempo — medido: em ~1 de cada 6 rodadas sai a segunda.
@@ -242,10 +243,14 @@ describe("conflito de horário", () => {
     // transação da outra; o Postgres mata uma das duas. É por causa
     // deste caminho que as rotas de criação repetem a transação uma vez
     // (`comRetryDeDeadlock`) — sem isso ele viraria 500.
+    //
+    // Lido do erro como o código de produção lê (lib/erro-do-banco.ts),
+    // e não da mensagem: no Prisma 7 o impasse chega como P2034, cuja
+    // mensagem não cita o 40P01.
     const violouAExclusao =
-      erro.message.includes("23P01") &&
-      erro.message.includes("sem_conflito_horario");
-    const deuImpasse = erro.message.includes("40P01");
+      sqlstate(erro) === "23P01" &&
+      (mensagemDoBanco(erro) ?? "").includes("sem_conflito_horario");
+    const deuImpasse = sqlstate(erro) === "40P01";
 
     expect(violouAExclusao || deuImpasse).toBe(true);
 

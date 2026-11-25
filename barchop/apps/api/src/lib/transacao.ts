@@ -1,4 +1,4 @@
-import { Prisma } from "@barchop/database";
+import { sqlstate } from "./erro-do-banco";
 
 // Dois inserts concorrentes no mesmo horário podem terminar de duas
 // formas, e qual delas sai depende de tempo: ou um deles bate na
@@ -8,14 +8,12 @@ import { Prisma } from "@barchop/database";
 // própria tupla antes de a constraint conferir a outra, e aí cada uma
 // passa a esperar a transação da outra.
 //
-// Sem tratar, o 40P01 chega no tratador como erro desconhecido e vira
-// 500 — dois clientes confirmando o mesmo horário no mesmo instante
-// receberiam "erro interno" em vez de "esse horário já está ocupado".
+// Sem tratar, o 40P01 (P2034 no Prisma 7) chega no tratador sem
+// tradução e vira 500 — dois clientes confirmando o mesmo horário no
+// mesmo instante receberiam "erro interno" em vez de "esse horário já
+// está ocupado".
 function ehDeadlock(erro: unknown): boolean {
-  return (
-    erro instanceof Prisma.PrismaClientUnknownRequestError &&
-    erro.message.includes("40P01")
-  );
+  return sqlstate(erro) === "40P01";
 }
 
 // Remédio padrão pra impasse: repetir. Uma vez só, e não em looping —

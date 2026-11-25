@@ -3,6 +3,7 @@ import { Prisma, prisma } from "@barchop/database";
 import { CICLOS, limiteDeProfissionais } from "@barchop/formato";
 import { conferirPedidoDoPlano, contarProfissionais, resumoDaAssinatura } from "../lib/assinatura";
 import { fimDoTesteNaCobranca } from "../lib/cobranca";
+import { indiceDaUnica } from "../lib/erro-do-banco";
 import { ErroHttp, conflito } from "../lib/erro-http";
 import { PADRAO_UUID } from "../lib/padroes";
 import { enviarConvite } from "../lib/convite";
@@ -263,9 +264,10 @@ export function registrarRotasAssinatura(app: App): void {
         return reply.code(201).send(serializarPagamentoPix(pagamento, config));
       } catch (erro) {
         // O índice parcial: outro "Já paguei" passou na frente, ou (raro)
-        // o identificador bateu com o de outro Pix em conferência.
+        // o identificador bateu com o de outro Pix em conferência. Qual
+        // dos dois índices, o erro do banco diz (lib/erro-do-banco.ts).
         if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
-          if (String(erro.meta?.target ?? "").includes("identificador")) {
+          if ((indiceDaUnica(erro) ?? "").includes("identificador")) {
             throw new ErroHttp(409, "identificador_repetido", "outro Pix em conferência tem o mesmo identificador: tente de novo em alguns minutos");
           }
           throw emConferencia();

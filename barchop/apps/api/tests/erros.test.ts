@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Prisma, prisma } from "@barchop/database";
+import { prisma } from "@barchop/database";
 import { buildApp } from "../src/app";
+import { prepararAgenda } from "./helpers/agenda";
 import { ErroDeNegocio } from "../src/lib/erro-negocio";
 import { conflito, naoEncontrado } from "../src/lib/erro-http";
 
@@ -185,12 +186,12 @@ describe("tratamento de erros", () => {
     await app.close();
   });
 
-  it("traduz P2023 do Prisma (id fora do formato UUID) pra 400", async () => {
+  it("traduz id fora do formato UUID pra 400", async () => {
     const app = buildApp();
     app.get("/teste-uuid-torto", async () => {
-      // O Postgres recusa "nao-e-uuid" numa coluna uuid e o Prisma lança
-      // P2023. Sem tratamento isso vira 500 — bug nosso — quando quem
-      // errou foi o chamador.
+      // O Postgres recusa "nao-e-uuid" numa coluna uuid (22P02) e o
+      // Prisma lança P2007 (era P2023 no Prisma 5). Sem tratamento isso
+      // vira 500 — bug nosso — quando quem errou foi o chamador.
       return prisma.servico.findUniqueOrThrow({ where: { id: "nao-e-uuid" } });
     });
 
@@ -207,22 +208,34 @@ describe("tratamento de erros", () => {
 
     await app.close();
   });
+  // A violação sai do banco de verdade: duas linhas no mesmo horário,
+  // gravadas direto, sem a checagem de disponibilidade que pegaria antes
+  // (essa é a janela que só a EXCLUDE fecha). O formato do erro mudou do
+  // Prisma 5 pro 7; montado à mão, o teste passaria com o formato errado.
+  //
+  // A rota entra antes do prepararAgenda: o primeiro `inject` deixa o
+  // Fastify pronto, e depois disso ele não aceita rota nova.
+  async function rotaQueViolaAExclusao(app: ReturnType<typeof buildApp>, url: string) {
+    const pronta: { agenda?: Awaited<ReturnType<typeof prepararAgenda>> } = {};
+    app.get(url, async () => {
+      const agenda = pronta.agenda;
+      const linha = {
+        barbeariaId: agenda!.barbeariaId,
+        barbeiroId: agenda!.barbeiroId,
+        clienteId: agenda!.cliente.id,
+        data: new Date(Date.UTC(2026, 8, 10)),
+        horaInicio: new Date(Date.UTC(1970, 0, 1, 10, 0)),
+        horaFim: new Date(Date.UTC(1970, 0, 1, 10, 45)),
+      };
+      await prisma.agendamento.create({ data: linha });
+      return prisma.agendamento.create({ data: linha });
+    });
+    pronta.agenda = await prepararAgenda(app);
+  }
+
   it("traduz a violação da sem_conflito_horario em 409", async () => {
     const app = buildApp();
-    app.get("/teste-23p01", async () => {
-      // Formato medido contra o Postgres 18 em 2026-09-02: o Prisma 5.22
-      // não tipa o 23P01. Ele chega como PrismaClientUnknownRequestError
-      // com `code` undefined, e o SQLSTATE só existe dentro da mensagem.
-      throw new Prisma.PrismaClientUnknownRequestError(
-        "Invalid `prisma.agendamento.create()` invocation in " +
-          "/caminho/absoluto/que/nao/pode/vazar.ts:45:32 " +
-          "Error occurred during query execution: " +
-          "ConnectorError(ConnectorError { kind: QueryError(PostgresError " +
-          '{ code: "23P01", message: "valor-chave conflitante viola a restrição de exclusão ' +
-          'sem_conflito_horario", severity: "ERRO" }), transient: false })',
-        { clientVersion: "5.22.0" }
-      );
-    });
+    await rotaQueViolaAExclusao(app, "/teste-23p01");
 
     const resposta = await app.inject({ method: "GET", url: "/teste-23p01" });
 
@@ -234,15 +247,7 @@ describe("tratamento de erros", () => {
 
   it("não vaza a mensagem crua do Postgres no 409 de conflito", async () => {
     const app = buildApp();
-    app.get("/teste-23p01-vazamento", async () => {
-      throw new Prisma.PrismaClientUnknownRequestError(
-        "Invalid `prisma.agendamento.create()` invocation in " +
-          "/caminho/absoluto/que/nao/pode/vazar.ts:45:32 " +
-          'ConnectorError(ConnectorError { kind: QueryError(PostgresError { code: "23P01", ' +
-          'message: "viola a restrição de exclusão sem_conflito_horario" }) })',
-        { clientVersion: "5.22.0" }
-      );
-    });
+    await rotaQueViolaAExclusao(app, "/teste-23p01-vazamento");
 
     const resposta = await app.inject({
       method: "GET",
@@ -253,26 +258,25 @@ describe("tratamento de erros", () => {
     // valores da chave em conflito — o id do barbeiro, a data e a hora
     // do agendamento alheio. É o oposto do que uma rota pública pode
     // devolver.
-    expect(resposta.body).not.toContain("ConnectorError");
-    expect(resposta.body).not.toContain("/caminho/absoluto");
+    expect(resposta.body).not.toContain("Invalid `prisma");
+    expect(resposta.body).not.toContain("erros.test");
     expect(resposta.body).not.toContain("23P01");
+    expect(resposta.body).not.toContain("sem_conflito_horario");
 
     await app.close();
   });
 
-  it("não confunde outro erro desconhecido do Prisma com conflito", async () => {
+  it("não confunde outro erro do banco com conflito", async () => {
     const app = buildApp();
-    app.get("/teste-desconhecido", async () => {
-      // Sem 23P01 na mensagem: continua sendo bug nosso, continua 500.
-      throw new Prisma.PrismaClientUnknownRequestError(
-        "Error occurred during query execution: conexão perdida",
-        { clientVersion: "5.22.0" }
-      );
+    app.get("/teste-outro-erro", async () => {
+      // Erro de verdade do Postgres (22012), sem a EXCLUDE no meio:
+      // continua sendo bug nosso, continua 500.
+      return prisma.$executeRawUnsafe("select 1/0");
     });
 
     const resposta = await app.inject({
       method: "GET",
-      url: "/teste-desconhecido",
+      url: "/teste-outro-erro",
     });
 
     expect(resposta.statusCode).toBe(500);

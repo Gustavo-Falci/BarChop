@@ -29,8 +29,10 @@ export default defineConfig({
   // já que lá não existe node_modules/@barchop com o TS cru.
   noExternal: [/^@barchop\//],
 
-  // ...menos o Prisma, que vem de dentro do @barchop/database.
-  // O client resolve os binários nativos do query engine em relação
-  // à própria pasta do pacote, então tem que continuar externo.
-  external: ["@prisma/client", ".prisma/client"],
+  // ...menos o que o @barchop/database usa por baixo. O cliente do
+  // Prisma 7 é gerado em TS dentro do pacote e entra no bundle; o
+  // runtime dele (@prisma/client/runtime, com o compilador de queries
+  // em wasm), o adapter e o driver `pg` ficam no node_modules, que a
+  // imagem leva inteiro (infra/api.Dockerfile).
+  external: ["@prisma/client", "@prisma/adapter-pg", "pg"],
 });

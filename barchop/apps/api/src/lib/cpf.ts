@@ -23,7 +23,7 @@ export function lerCpf(cliente: CpfGuardado): string | null {
 }
 
 // O `data` de um update: cifrado na coluna nova, e a antiga limpa.
-export function cpfParaGravar(cpf: string): { cpf: null; cpfCifrado: Buffer } {
+export function cpfParaGravar(cpf: string): { cpf: null; cpfCifrado: Buffer<ArrayBuffer> } {
   return { cpf: null, cpfCifrado: cifrar(cpf, chaveDeCifra()) };
 }
 

@@ -4,7 +4,27 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-25 — Prisma 7 na main; API e migrar pedem deploy) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-26 — Expo 58 e React 19.3 na main; web pede deploy) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `902c1b0`, #431). **Produção = API do #429 (Prisma 7, deploy do dono em 25/11, conferido por curl) + web da main de 24/11**, no Node 26. **O web pede deploy** (#431); a API não muda.
+- **#431, mergeado: Expo 57 → 58.** Substitui o #412 do Dependabot, que só subia o `expo` e deixava o React fora do par exigido. O #412 foi fechado com comentário. Plano: `.claude/plans/expo-58.plan.md`.
+  - Mobile: `expo` 58.0.26, `expo-status-bar` 58.0.5, `react` 19.3.0, `react-native` 0.88.1, `@types/react` ~19.3.3; `app.json` ganhou o plugin `expo-status-bar`.
+  - Web: `react`/`react-dom` 19.3.0 e tipos ~19.3 (um React só no monorepo).
+  - Lock: `@expo/dom-webview` 57 → 58.0.2 (peer opcional que ficava preso no lock antigo).
+  - `dependabot.yml`: comentário do `ignore` atualizado para o SDK 58, com o lembrete de conferir com `npx expo export`.
+  - Conferido local: `expo install --check`; `expo export` de android e ios; o renderer do RN 0.88.1 é o 19.3.0; tsc do mobile e do web, eslint, os 2097 testes do web e `next build`. No Chrome, com o build de produção: home, login, Hoje (cancelar atualiza os números), página pública e console limpo. CI verde.
+- **Postgres 19:** o Dependabot fechou sozinho o #424 (`infra/backup`) em 25/11 ("postgres is up-to-date"), mas `infra/backup/Dockerfile` continua `FROM postgres:18`. Só o #423 (`infra/compose.yaml`) segue aberto. Na migração, os dois sobem juntos, à mão se preciso: o `pg_dump` do backup tem de ser de versão ≥ à do servidor.
+- **Branches:** `main`, os do Dependabot (`postgres-19` do #423; `expo-58.0.26` e `prisma-7.10.1` dos PRs fechados, que o Dependabot apaga sozinho), `origin/expo-58` (mergeado) e `origin/midia-instagram` (NÃO mergeado, não tocar).
+
+**Ao retomar:**
+1. Dono: deploy só do web e conferir no celular a home e o painel Hoje.
+2. #423 (Postgres 19), em sessão própria, com plano de dump/restore ou `pg_upgrade` e o dono na VM; o backup sobe junto (ver acima).
+3. Pequeno: o comentário de `apps/api/scripts/conferencia-visual.ts` ainda manda gravar o token no localStorage. A sessão agora é cookie httpOnly: entrar pelo formulário. Corrigir num PR qualquer.
+4. O npm marca o Prisma 8 (RC) como `latest`: não subir antes de sair estável. O override do `effect` continua até o Prisma corrigir.
+5. Continuam valendo os itens 3 de 23/11 e de 21/11.
+
+## RETOMAR AQUI (2026-11-25 — Prisma 7 na main; API e migrar pedem deploy) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `5df35a8`, #429). **Produção = API do #425 + web da main de 24/11** (#427, #418), no Node 26. O dono fez o deploy do web e conferiu no celular em 25/11: a home não tem mais a faixa clara e o número do Hoje troca subindo.

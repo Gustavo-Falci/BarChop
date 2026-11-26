@@ -7,7 +7,7 @@
 ## RETOMAR AQUI (2026-11-26, fim do dia — Postgres 19 no ar, app fora do superusuário, bucket de backup pronto) — vale mais que as seções abaixo
 
 **Estado:**
-- **`main` = merge deste PR de docs** (antes `87e813b`, #439). **Produção = API do #429 + web da main 38df1b3** (deploy do dono e conferido no celular em 26/11), **no Postgres 19.0** e conectando como `barchop_app`. Nada pede deploy.
+- **`main` = merge deste PR de docs** (antes `869ac31`, #440). **Produção = API do #429 + web da main 38df1b3** (deploy do dono e conferido no celular em 26/11), **no Postgres 19.0** e conectando como `barchop_app`. Nada pede deploy.
 - **#438, mergeado e no ar: Postgres 18 → 19.0** (substitui o #423 do Dependabot, fechado com comentário).
   - `infra/compose.yaml`: `postgres:19` no volume novo `banco-19`. A imagem 19 se recusa a subir com os dados do 18 no volume, e num volume novo sobe vazia: cada versão maior tem o seu volume, e os dados passam por dump e restauração. `infra/backup/Dockerfile` e o CI também no 19.
   - `infra/banco/contar-linhas.sql` (novo) e o roteiro "Trocar a versão maior do Postgres" no `infra/README.md`, ensaiados aqui com o compose de verdade (ida, volta pro 18 e ida de novo).
@@ -20,17 +20,17 @@
   - Política raiz que deixa o Object Storage apagar pelo ciclo de vida (sem ela as regras eram recusadas).
   - Grupo `barchop-backup-escritor` com o usuário de backup; política que só deixa criar, listar e ler objetos nesse bucket (sem apagar); chave secreta do cliente gerada.
   - A política dá `OBJECT_READ` além do que o README diz (o `rclone` consulta o arquivo antes de gravar). Se o teste passar sem ele, tirar; se ficar, atualizar o README.
+- **Chaves guardadas fora da VM (dono, 26/11):** a chave de acesso e o segredo da chave secreta do cliente da OCI, e a `CHAVE_DE_CIFRA` do `api.env` (sem ela, as chaves de pagamento e os CPFs de um backup restaurado não abrem). Sem gerenciador de senhas, por escolha do dono. A senha do `barchop_app` não precisa ser guardada: se perder, o superusuário troca com `ALTER ROLE barchop_app PASSWORD '...'` e o `.env` é atualizado.
 - **Dependabot abriu:** #432 (caddy), #434 (grupo produção: `@aws-sdk/client-s3`, `@fastify/rate-limit`, `pg-boss`), #435 (`@testing-library/jest-dom` 8), #436 (`dotenv` 18), #437 (`eslint` 10).
 - **Branches:** `main`, os do Dependabot, `origin/expo-58` (mergeado) e `origin/midia-instagram` (NÃO mergeado, não tocar).
 - **Nesta máquina (PC do trabalho):** o banco de dev é o Postgres 17 nativo do Windows (serviço `postgresql-x64-17`, porta 5432), não o contêiner `barchop-postgres` (18, parado).
 
 **Ao retomar:**
-1. **No PC de casa, ligar a cópia do backup fora da VM** (a chave privada não nasce no PC do trabalho): par do `age` (`age-keygen`; a privada no gerenciador de senhas e num pendrive, nunca na VM); acrescentar no fim do `.env` da VM as `BACKUP_*` (a chave de acesso e o segredo lidos sem aparecer na tela); `docker compose up -d backup` e `docker compose run --rm -e BACKUP_UMA_VEZ=1 backup` até "cópia fora da VM ok"; ensaiar a restauração no PC. Roteiro em `infra/README.md`, "Cópia fora da VM, cifrada".
-2. Dono: conferir que a chave secreta da OCI e a senha do `barchop_app` estão no gerenciador de senhas (a da OCI não aparece de novo: se perdeu, gerar outra e apagar a antiga).
-3. Por volta de 03/12, se estável: `docker volume rm barchop_banco` e apagar os arquivos da troca em `~/` na VM (roteiro do README, "Limpeza"). Depois disso não volta pro 18.
-4. Dependabot, um por vez: #434 e #432 primeiro (menores); #436, #435 e #437 são majors (sessão própria cada).
-5. Opcional: backup do disco inteiro da VM pela OCI (política de backup do boot volume), conferindo a cota grátis antes.
-6. Continuam valendo os itens 4 e 5 de 26/11 (abaixo).
+1. **No PC de casa, ligar a cópia do backup fora da VM** (a chave privada não nasce no PC do trabalho): par do `age` (`age-keygen`; a privada em pelo menos dois lugares fora da VM, um deles um pendrive, nunca na VM); acrescentar no fim do `.env` da VM as `BACKUP_*` (a chave de acesso e o segredo lidos sem aparecer na tela); `docker compose up -d backup` e `docker compose run --rm -e BACKUP_UMA_VEZ=1 backup` até "cópia fora da VM ok"; ensaiar a restauração no PC. Roteiro em `infra/README.md`, "Cópia fora da VM, cifrada".
+2. Por volta de 03/12, se estável: `docker volume rm barchop_banco` e apagar os arquivos da troca em `~/` na VM (roteiro do README, "Limpeza"). Depois disso não volta pro 18.
+3. Dependabot, um por vez: #434 e #432 primeiro (menores); #436, #435 e #437 são majors (sessão própria cada).
+4. Opcional: backup do disco inteiro da VM pela OCI (política de backup do boot volume), conferindo a cota grátis antes.
+5. Continuam valendo os itens 4 e 5 de 26/11 (abaixo).
 
 ## RETOMAR AQUI (2026-11-26 — Expo 58 e React 19.3 na main; web pede deploy) — histórico
 

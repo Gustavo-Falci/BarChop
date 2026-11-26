@@ -78,13 +78,26 @@ jobs:
       - name: Lint
         run: pnpm exec eslint apps packages
 
+      # A suíte roda como em produção: com o papel da aplicação, que não é
+      # superusuário (auditoria de 15/11, SEC-010; infra/README.md, "Papel
+      # do banco"). O roteiro roda aqui no banco ainda vazio, pelo psql do
+      # próprio serviço: cria o papel e dá a ele o esquema public e o
+      # direito de criar esquema (o do pg-boss). As migrations, o pg-boss e
+      # o TRUNCATE entre os testes rodam depois, todos como ele — se algo
+      # passar a depender de superusuário, a suíte quebra aqui, não na VM.
+      - name: Papel da aplicação
+        run: |
+          docker exec -i ${{ job.services.postgres.id }} \
+            psql -X -q -v ON_ERROR_STOP=1 -v senha=papel-so-do-ci-nao-vale-em-lugar-nenhum \
+            -U barchop -d barchop_test -f - < infra/banco/papel-da-aplicacao.sql
+
       # O mesmo arquivo que a suíte lê na máquina de quem desenvolve
       # (apps/api/.env.test.example). Valores só deste job: o banco é o
       # serviço acima e o segredo não assina nada fora daqui.
       - name: Ambiente de teste da API
         run: |
           printf '%s\n' \
-            'DATABASE_URL="postgresql://barchop:barchop@localhost:5432/barchop_test?schema=public"' \
+            'DATABASE_URL="postgresql://barchop_app:papel-so-do-ci-nao-vale-em-lugar-nenhum@localhost:5432/barchop_test?schema=public"' \
             'JWT_SECRET="segredo-so-do-ci-nao-vale-em-lugar-nenhum"' \
             > apps/api/.env.test
 

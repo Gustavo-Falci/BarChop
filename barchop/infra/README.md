@@ -6,7 +6,7 @@ montadas na própria VM. Só o Caddy abre porta (80 e 443).
 
 | Serviço | O que é |
 |---|---|
-| `postgres` | Postgres 18, volume `banco` |
+| `postgres` | Postgres 19, volume `banco-19` |
 | `migrar` | `prisma migrate deploy` a cada `up`; a API espera ele terminar bem |
 | `api` | `api.barchop.com.br` |
 | `web` | raiz, `www`, `painel.` e `<slug>.barchop.com.br` |
@@ -101,6 +101,11 @@ cd barchop/infra && docker compose up -d --build
 
 A migração roda antes da API nova. Trocar `NEXT_PUBLIC_*` no `.env`
 pede o `--build`: elas são embutidas no JavaScript do web.
+
+**Se o `git pull` trouxer outra versão maior do Postgres** (a imagem
+`postgres:<n>` do `compose.yaml`), não dar o `up`: ir pra "Trocar a
+versão maior do Postgres". O `up` sobe o banco novo vazio, e a migração
+cria as tabelas sem dado nenhum.
 
 ## Backup
 
@@ -205,6 +210,129 @@ dar `docker compose up -d`: o superusuário continua alcançando tudo.
 Uma migration futura que precise de uma extensão nova do Postgres tem
 que ser instalada antes pelo superusuário (`CREATE EXTENSION`): o papel
 da aplicação só instala as extensões marcadas como confiáveis.
+
+## Trocar a versão maior do Postgres
+
+Cada versão maior tem o seu volume (`banco-19`, depois `banco-20`...),
+e os dados passam por dump e restauração. A imagem nova não abre os
+dados da velha: com eles no volume, ela se recusa a subir; num volume
+novo, sobe vazia. O volume velho fica guardado e é a volta atrás.
+
+Ensaiado de 18 pra 19 em 26/11 com o `compose.yaml` de verdade, numa
+cópia com barbearia, agendamentos, `pgboss` e o papel `barchop_app`:
+contagem igual, `migrar` sem pendência, backup, volta pro 18 e ida de
+novo sem perder linha.
+
+O site fica fora do passo 2 ao 7, uns 20 minutos. Fazer em horário
+vazio, **logo depois do merge** do PR que troca a versão: até a troca,
+o "Atualizar" de sempre sobe o banco novo vazio.
+
+```bash
+cd ~/BarChop/barchop/infra
+
+# 0. Espaço: o volume novo ocupa o mesmo que o velho, mais o dump.
+df -h /
+docker compose exec postgres sh -c 'psql -X -At -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "select pg_size_pretty(pg_database_size(current_database()))"'
+
+# 1. Um backup do jeito de sempre, ainda na versão velha (e a cópia de
+#    fora, se configurada).
+docker compose run --rm -e BACKUP_UMA_VEZ=1 backup
+
+# 2. Ninguém mais escreve no banco.
+docker compose stop api web backup
+
+# 3. Onde o repo estava, a contagem e o dump final, fora do volume. O
+#    umask deixa os arquivos só seus: o dump é o banco em claro.
+git -C ~/BarChop rev-parse HEAD > ~/antes-da-troca.txt
+umask 077
+docker compose exec -T postgres sh -c 'psql -X -At -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f -' \
+  < banco/contar-linhas.sql > ~/contagem-antes.txt
+docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" --format=custom' \
+  > ~/barchop-antes-da-troca.dump
+ls -lh ~/barchop-antes-da-troca.dump   # não pode ter 0 bytes
+
+# 4. Para o banco velho, traz a versão nova e sobe SÓ o banco, no volume
+#    novo, vazio.
+docker compose stop postgres
+cd ~/BarChop && git pull && cd barchop/infra
+docker compose up -d --wait postgres
+docker compose exec postgres postgres --version
+```
+
+Passo 5. **Com `APP_DB_USER` preenchido no `.env`** (ver "Papel do
+banco"), o papel nasce antes e de novo depois da restauração: ele não
+vai no dump, e o `--no-owner` faz tudo nascer do superusuário. A
+segunda rodada passa tudo pra ele e tem que terminar em "(0 rows)".
+Com `APP_DB_USER` vazio, só a restauração e o `ANALYZE`.
+
+```bash
+SENHA_DO_APP="$(grep '^APP_DB_PASSWORD=' .env | cut -d= -f2-)"
+papel() {
+  docker compose exec -T postgres sh -c \
+    'psql -X -v ON_ERROR_STOP=1 -v senha="$1" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f -' \
+    sh "$SENHA_DO_APP" < banco/papel-da-aplicacao.sql
+}
+
+papel
+docker compose exec -T postgres sh -c 'pg_restore --no-owner --exit-on-error -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+  < ~/barchop-antes-da-troca.dump && echo RESTAURADO
+papel                                  # "(0 rows)"
+unset SENHA_DO_APP
+
+# A restauração não traz as estatísticas do planejador.
+docker compose exec postgres sh -c 'psql -X -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c ANALYZE'
+```
+
+```bash
+# 6. Tem que dar IGUAL.
+docker compose exec -T postgres sh -c 'psql -X -At -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f -' \
+  < banco/contar-linhas.sql > ~/contagem-depois.txt
+diff ~/contagem-antes.txt ~/contagem-depois.txt && echo IGUAL
+
+# 7. O resto. O backup monta a imagem nova (o pg_dump da versão nova).
+docker compose build backup
+docker compose up -d
+docker compose logs migrar    # "No pending migrations to apply."
+curl -I https://api.barchop.com.br/health
+```
+
+Depois, entrar no painel e abrir a página pública: agenda de hoje,
+clientes e serviços têm que estar lá.
+
+**Se o passo 5 ou o 6 falhar**, o banco novo ficou pela metade. Jogar
+fora só ele e refazer do `up -d --wait postgres` do passo 4:
+
+```bash
+docker compose stop postgres && docker compose rm -f postgres
+docker volume rm barchop_banco-19
+```
+
+**Voltar pra versão velha**, enquanto o volume velho existir. Perde o
+que entrou no banco novo depois do passo 7:
+
+```bash
+docker compose stop api web backup postgres
+git -C ~/BarChop checkout "$(cat ~/antes-da-troca.txt)" -- barchop/infra/compose.yaml
+docker compose up -d
+```
+
+O `compose.yaml` da VM fica diferente da main até a troca ser refeita
+(`git -C ~/BarChop checkout HEAD -- barchop/infra/compose.yaml` e o
+roteiro de novo). O backup pode ficar na imagem nova: o `pg_dump` lê
+versões mais velhas.
+
+**Limpeza**, uns dias depois, com tudo certo:
+
+```bash
+docker volume rm barchop_banco
+rm ~/barchop-antes-da-troca.dump ~/contagem-antes.txt ~/contagem-depois.txt ~/antes-da-troca.txt
+```
+
+**A próxima troca** (19 → 20) é o mesmo roteiro. O PR muda a imagem e o
+volume no `compose.yaml` (`postgres:20`, `banco-20` no serviço e na
+lista de volumes), o `FROM` do `backup/Dockerfile`, o serviço do
+`.github/workflows/ci.yml` e este README (tabela do topo, nomes dos
+volumes acima).
 
 ## DNS: quem pode emitir certificado e quem pode mandar e-mail
 

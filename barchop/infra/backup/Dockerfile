@@ -5,7 +5,7 @@
 #
 # O roteiro continua montado por volume (compose.yaml): mexer nele não
 # pede montar a imagem de novo.
-FROM postgres:18
+FROM postgres:19
 RUN apt-get update \
   && apt-get install -y --no-install-recommends age rclone ca-certificates \
   && rm -rf /var/lib/apt/lists/*

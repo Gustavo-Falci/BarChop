@@ -31,14 +31,22 @@ services:
   postgres:
     # A mesma versão maior do desenvolvimento. Do 18 em diante o volume
     # monta em /var/lib/postgresql, não mais em .../data.
-    image: postgres:18
+    #
+    # Versão MAIOR (18 → 19 → ...): cada uma tem o seu volume, com o
+    # número no nome, e os dados passam por dump e restauração — roteiro
+    # em infra/README.md, "Trocar a versão maior do Postgres". Só trocar
+    # o número da imagem não serve: a imagem nova acha os dados da velha
+    # no volume e se recusa a subir (o banco cai, e a API junto). O volume
+    # da versão velha fica guardado pra voltar atrás. A versão menor
+    # (19.0 → 19.1) não pede nada.
+    image: postgres:19
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?defina em infra/.env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina em infra/.env}
       POSTGRES_DB: ${POSTGRES_DB:?defina em infra/.env}
     volumes:
-      - banco:/var/lib/postgresql
+      - banco-19:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -144,7 +152,9 @@ services:
     logging: *log
 
 volumes:
-  banco:
+  # O do Postgres 18 (`banco`) fica no disco, fora do compose, até ser
+  # apagado à mão (README, "Trocar a versão maior do Postgres").
+  banco-19:
   backups:
   caddy-dados:
   caddy-config:

@@ -37,7 +37,7 @@ jobs:
       # A mesma versão da produção (infra/compose.yaml). Banco descartável:
       # nasce e morre com o job.
       postgres:
-        image: postgres:18
+        image: postgres:19
         env:
           POSTGRES_USER: barchop
           POSTGRES_PASSWORD: barchop

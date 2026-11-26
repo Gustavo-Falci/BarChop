@@ -5,8 +5,9 @@
 //
 // Uso (de barchop/):
 //   pnpm --filter @barchop/api exec tsx scripts/conferencia-visual.ts
-// Depois, `pnpm --filter web dev` e, no navegador em localhost:3000,
-// gravar no localStorage a chave `sessao.barbeiro` com o token impresso.
+// Depois, `pnpm --filter web dev` e, no navegador, entrar pelo formulário
+// de localhost:3000/painel/entrar com o e-mail e a senha do dono impressos.
+// A sessão é um cookie httpOnly: não há token pra colar no navegador.
 //
 // O banco é TRUNCADO a cada execução. Por isso o script lê o .env.test
 // por conta própria e recusa qualquer banco que não termine em `_test`:
@@ -63,7 +64,7 @@ async function main() {
   if (cadastro.statusCode !== 201) {
     throw new Error(`cadastro falhou: ${cadastro.statusCode} ${cadastro.body}`);
   }
-  const { token, barbearia, barbeiro } = cadastro.json();
+  const { barbearia, barbeiro } = cadastro.json();
 
   const membro = await prisma.barbeiro.create({
     data: {
@@ -323,7 +324,7 @@ async function main() {
   await app.listen({ port: 3333, host: "0.0.0.0" });
   console.log(`API de conferência em http://localhost:3333 (banco ${banco})`);
   console.log(`slug: ${barbearia.slug}`);
-  console.log(`token do dono (localStorage "sessao.barbeiro"): ${token}`);
+  console.log(`dono do painel (/painel/entrar): gustavo@exemplo.com / senha-forte-123`);
   console.log(`cliente da Minha conta: cliente@exemplo.com / senha-forte-123`);
   console.log(
     emailDoSuporte

@@ -26,16 +26,18 @@ updates:
         dependency-type: development
         update-types: [minor, patch]
     # O React e o React Native andam com o SDK do Expo, que pede versões
-    # exatas (node_modules/expo/bundledNativeModules.json): o Expo 57 quer
-    # react 19.2.3 e react-native 0.86.3, e com o 0.88 o app não monta. E
+    # exatas (node_modules/expo/bundledNativeModules.json): o Expo 58 quer
+    # react 19.3.0 e react-native 0.88.1 (o 57 queria 19.2.3 e 0.86.3). E
     # com o node-linker=hoisted (barchop/.npmrc) só há um React na raiz:
     # o web usa o mesmo do mobile. Sobem juntos, à mão, ao trocar de SDK
-    # (`npx expo install --fix` no apps/mobile, e o web acompanha).
+    # (`npx expo install --fix` no apps/mobile, e o web acompanha). O PR
+    # do Dependabot que sobe só o `expo` passa no CI, mas o CI não monta
+    # o app: conferir com `npx expo export` (foi assim no #412).
     #
     # Nem o patch passa: a versão é exata, e o renderer que o react-native
-    # traz embutido é o 19.2.3. O react 19.2.9 (PR #397) já sairia do que
-    # o Expo 57 aceita, até no 57.0.33. Os tipos não vão pro app: deles só
-    # a minor e a major ficam de fora.
+    # traz embutido é o 19.3.0. O react 19.3.1 (o `latest` do npm em
+    # 25/11) já sairia do que o Expo 58 aceita. Os tipos não vão pro app:
+    # deles só a minor e a major ficam de fora.
     ignore:
       - dependency-name: react
       - dependency-name: react-dom

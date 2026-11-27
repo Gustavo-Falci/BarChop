@@ -50,6 +50,10 @@ export async function metadataDaBarbearia(
         type: "website",
         locale: "pt_BR",
       },
+      // A logo como ícone da aba e da tela inicial do celular. Sem logo,
+      // nada: vale o app/icon.svg da raiz, o da BarChop. O endereço é o
+      // do bucket, absoluto — o proxy do host da barbearia não mexe nele.
+      ...(perfil.logoUrl ? { icons: { icon: perfil.logoUrl, apple: perfil.logoUrl } } : {}),
     };
   } catch {
     return {};

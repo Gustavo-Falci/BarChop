@@ -33,6 +33,25 @@ describe("metadata da barbearia", () => {
     expect(metadata.openGraph?.title).toBe("Barbearia do Gu");
   });
 
+  it("com logo, ela é o ícone da aba e o da tela inicial do celular", async () => {
+    const logo = "https://arquivos.exemplo/logos/b1.png";
+    const metadata = await metadataDaBarbearia(
+      "barbearia-do-gu",
+      fetchQueResponde(200, { ...PERFIL, logoUrl: logo, logoFormato: "redonda" })
+    );
+
+    expect(metadata.icons).toEqual({ icon: logo, apple: logo });
+  });
+
+  it("sem logo, não diz ícone nenhum: fica o da BarChop", async () => {
+    const metadata = await metadataDaBarbearia(
+      "barbearia-do-gu",
+      fetchQueResponde(200, { ...PERFIL, logoUrl: null, logoFormato: null })
+    );
+
+    expect(metadata.icons).toBeUndefined();
+  });
+
   it("descreve com a apresentação numa linha só, sem as quebras que o barbeiro digitou", async () => {
     const metadata = await metadataDaBarbearia(
       "barbearia-do-gu",

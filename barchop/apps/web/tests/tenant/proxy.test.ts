@@ -119,6 +119,13 @@ describe("o matcher do proxy", () => {
     expect(roda("/opengraph-image")).toBe(false);
   });
 
+  it("não roda nos ícones da aba, que no host da barbearia iriam pra /[slug] e dariam 404", () => {
+    // Em produção, jesus-barber.barchop.com.br/icon.svg era reescrito pra
+    // /jesus-barber/icon.svg: a aba mostrava o globo, sem ícone nenhum.
+    expect(roda("/icon.svg")).toBe(false);
+    expect(roda("/apple-icon.png")).toBe(false);
+  });
+
   it("não roda nos arquivos da home, em /assets", () => {
     expect(roda("/assets/home/cadeira.glb")).toBe(false);
     expect(roda("/assets/home/cadeira-celular-640.avif")).toBe(false);
@@ -142,6 +149,7 @@ describe("o matcher do proxy", () => {
 
   it("um slug que só começa parecido continua passando pelo proxy", () => {
     expect(roda("/opengraph-imagem")).toBe(true);
+    expect(roda("/icon-barber")).toBe(true);
     expect(roda("/opengraph-image-barber/agendar")).toBe(true);
   });
 });

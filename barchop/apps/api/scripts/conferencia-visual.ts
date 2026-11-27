@@ -134,6 +134,19 @@ async function main() {
   const barba = await prisma.servico.create({
     data: { barbeariaId: barbearia.id, nome: "Barba completa", duracaoMinutos: 20, preco: 25, categoria: "barba" },
   });
+  // Cabelo com 7 serviços, pra gaveta da página pública aparecer (a
+  // partir de 6, mostra 4 e guarda o resto atrás do "Ver mais").
+  for (const [nome, preco] of [
+    ["Degradê", 40],
+    ["Corte infantil", 25],
+    ["Platinado", 120],
+    ["Luzes", 90],
+    ["Pigmentação", 35],
+  ] as const) {
+    await prisma.servico.create({
+      data: { barbeariaId: barbearia.id, nome, duracaoMinutos: 30, preco, categoria: "cabelo" },
+    });
+  }
 
   // Agendamentos de hoje, no fuso da barbearia (o mesmo "hoje" da API):
   // um de manhã, que já passou, e três à noite, pros "ainda hoje".

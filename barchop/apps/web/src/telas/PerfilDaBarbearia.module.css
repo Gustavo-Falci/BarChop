@@ -434,10 +434,71 @@
   transform: translateX(3px);
 }
 
+/* A gaveta: os serviços guardados descem pra dentro da lista ao abrir. */
+.revelado {
+  animation: revelar 180ms ease-out;
+}
+
+@keyframes revelar {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* "Ver mais" como texto, não como botão cheio: é continuação da lista,
+   não uma ação que compete com o "Agendar agora". A seta vira ao abrir. */
+.verMais {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaco-xs);
+  min-height: 44px;
+  padding: 0 var(--espaco-xs);
+  margin-left: calc(var(--espaco-xs) * -1);
+  border: 0;
+  background: none;
+  color: var(--cor-ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.verMais::after {
+  content: "";
+  width: 0.45em;
+  height: 0.45em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.15em) rotate(45deg);
+  transition: transform 120ms ease;
+}
+
+.verMais[aria-expanded="true"]::after {
+  transform: translateY(0.1em) rotate(-135deg);
+}
+
+.verMais:hover {
+  text-decoration-thickness: 2px;
+}
+
+.verMais:focus-visible {
+  outline: 3px solid var(--cor-foco);
+  outline-offset: 2px;
+  border-radius: var(--raio-sm, 4px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .servico,
-  .seta {
+  .seta,
+  .verMais::after {
     transition: none;
+  }
+
+  .revelado {
+    animation: none;
   }
 }
 

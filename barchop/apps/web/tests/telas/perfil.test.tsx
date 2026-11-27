@@ -105,6 +105,106 @@ describe("perfil da barbearia", () => {
     });
   });
 
+  // Categoria comprida não empurra o resto da página pra baixo: a partir
+  // de 6 serviços, 4 aparecem e o resto fica guardado atrás do "Ver mais".
+  // Com 5, esconder 1 não economiza nada (o botão ocupa quase uma linha).
+  describe("gaveta dos serviços", () => {
+    const varios = (quantos: number, nome: string, categoria: ServicoSerializado["categoria"]) =>
+      Array.from({ length: quantos }, (_, i): ServicoSerializado => ({
+        id: `${nome}-${i + 1}`,
+        nome: `${nome} ${i + 1}`,
+        duracaoMinutos: 30,
+        preco: "40.00",
+        ativo: true,
+        categoria,
+        descricao: null,
+        fotoUrl: null,
+      }));
+    const servicosDe = (nome: string, dentro: HTMLElement = document.body) =>
+      within(dentro).queryAllByRole("link", { name: new RegExp(`^${nome} \\d`) });
+
+    it("até 5 serviços na categoria, todos aparecem e não há botão", async () => {
+      montar(criarApiClientFalso({ servicos: [...varios(4, "Corte", "cabelo"), ...varios(5, "Barba", "barba")] }));
+
+      await screen.findByRole("link", { name: /^Corte 1/ });
+      expect(servicosDe("Corte")).toHaveLength(4);
+      expect(servicosDe("Barba")).toHaveLength(5);
+      expect(screen.queryByRole("button", { name: /ver mais/i })).not.toBeInTheDocument();
+    });
+
+    it("com 7, mostra 4 e guarda 3; o Ver mais abre e o Ver menos fecha", async () => {
+      montar(criarApiClientFalso({ servicos: varios(7, "Corte", "cabelo") }));
+
+      await screen.findByRole("link", { name: /^Corte 1/ });
+      expect(servicosDe("Corte")).toHaveLength(4);
+      const botao = screen.getByRole("button", { name: "Ver mais 3 serviços" });
+      expect(botao).toHaveAttribute("aria-expanded", "false");
+
+      await userEvent.click(botao);
+      expect(servicosDe("Corte")).toHaveLength(7);
+      expect(botao).toHaveAccessibleName("Ver menos");
+      expect(botao).toHaveAttribute("aria-expanded", "true");
+      // Quem abriu pelo teclado continua de onde a lista cresceu.
+      expect(screen.getByRole("link", { name: /^Corte 5/ })).toHaveFocus();
+
+      await userEvent.click(botao);
+      expect(servicosDe("Corte")).toHaveLength(4);
+      expect(botao).toHaveAccessibleName("Ver mais 3 serviços");
+      expect(botao).toHaveFocus();
+    });
+
+    it("a contagem ao lado da categoria é sempre o total", async () => {
+      montar(criarApiClientFalso({ servicos: varios(7, "Corte", "cabelo") }));
+
+      const cabelo = await screen.findByRole("region", { name: "Cabelo" });
+      expect(within(cabelo).getByText("7 serviços")).toBeInTheDocument();
+      await userEvent.click(within(cabelo).getByRole("button", { name: /ver mais/i }));
+      expect(within(cabelo).getByText("7 serviços")).toBeInTheDocument();
+    });
+
+    it("cada categoria abre sozinha", async () => {
+      montar(criarApiClientFalso({ servicos: [...varios(6, "Corte", "cabelo"), ...varios(8, "Barba", "barba")] }));
+
+      const cabelo = await screen.findByRole("region", { name: "Cabelo" });
+      const barba = screen.getByRole("region", { name: "Barba" });
+      await userEvent.click(within(cabelo).getByRole("button", { name: "Ver mais 2 serviços" }));
+
+      expect(servicosDe("Corte", cabelo)).toHaveLength(6);
+      expect(servicosDe("Barba", barba)).toHaveLength(4);
+      expect(within(barba).getByRole("button", { name: "Ver mais 4 serviços" })).toHaveAttribute(
+        "aria-expanded",
+        "false"
+      );
+    });
+
+    it("nas abas também, e a categoria aberta segue aberta ao trocar de aba e voltar", async () => {
+      const falso = criarApiClientFalso({ servicos: [...varios(7, "Corte", "cabelo"), ...varios(2, "Barba", "barba")] });
+      await falso.barbeiro.salvarLayoutDosServicos("abas");
+      montar(falso);
+
+      const abas = await screen.findByRole("tablist", { name: /categorias/i });
+      expect(servicosDe("Corte")).toHaveLength(4);
+      await userEvent.click(screen.getByRole("button", { name: "Ver mais 3 serviços" }));
+      expect(servicosDe("Corte")).toHaveLength(7);
+
+      await userEvent.click(within(abas).getByRole("tab", { name: "Barba" }));
+      expect(screen.queryByRole("button", { name: /ver m/i })).not.toBeInTheDocument();
+      await userEvent.click(within(abas).getByRole("tab", { name: "Cabelo" }));
+
+      expect(servicosDe("Corte")).toHaveLength(7);
+      expect(screen.getByRole("button", { name: "Ver menos" })).toBeInTheDocument();
+    });
+
+    it("sem categoria nenhuma, a lista única tem a mesma gaveta", async () => {
+      montar(criarApiClientFalso({ servicos: varios(6, "Corte", null) }));
+
+      await screen.findByRole("link", { name: /^Corte 1/ });
+      expect(servicosDe("Corte")).toHaveLength(4);
+      await userEvent.click(screen.getByRole("button", { name: "Ver mais 2 serviços" }));
+      expect(servicosDe("Corte")).toHaveLength(6);
+    });
+  });
+
   it("leva pro primeiro passo do agendamento", async () => {
     montar();
     await waitFor(() => screen.getByRole("heading", { level: 1 }));

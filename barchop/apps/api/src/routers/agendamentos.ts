@@ -50,6 +50,7 @@ import { contarEnvioNaoProvado } from "../lib/envios-nao-provados";
 import { agendaVisivel, clienteDaRequisicao, membroDoToken } from "../plugins/auth";
 import type { LimitesPublicos } from "../lib/limites";
 import { notificarAgendamento } from "../lib/notificacoes";
+import { pedirConferenciaDaAgenda } from "../lib/agenda-cheia-avisos";
 import type { App } from "../tipos";
 
 // Sem `barbeariaId` e sem `origem`: os dois seriam forjáveis. O
@@ -283,6 +284,9 @@ export function registrarRotasAgendamentos(app: App): void {
 
       // Depois do commit, nunca dentro da transação (ver lib/lembrete.ts).
       await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
+      // A agenda cheia (plano agenda-cheia-dono): toda mudança de
+      // agendamento pede a conferência, depois do commit.
+      await pedirConferenciaDaAgenda({ fila: app.fila, log: request.log }, agendamento.barbeariaId);
 
       return reply.code(201).send(serializarAgendamentoComCliente(agendamento));
     }
@@ -437,6 +441,7 @@ export function registrarRotasAgendamentos(app: App): void {
       // impede o segundo.
       if (request.body.status !== undefined) {
         await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
+        await pedirConferenciaDaAgenda({ fila: app.fila, log: request.log }, agendamento.barbeariaId);
       }
 
       return serializarAgendamentoComCliente(agendamento);
@@ -536,6 +541,7 @@ export function registrarRotasAgendamentos(app: App): void {
 
       // Depois do commit, como na criação.
       await agendarLembrete({ fila: app.fila, log: request.log }, novo);
+      await pedirConferenciaDaAgenda({ fila: app.fila, log: request.log }, novo.barbeariaId);
       if (avisarCliente) await avisarRemarcado(app, request.log, novo.id, antigo);
 
       return reply.code(201).send(serializarAgendamentoComCliente(novo));
@@ -595,6 +601,7 @@ export function registrarRotasAgendamentos(app: App): void {
       // Depois do commit, como no remarcar. O lembrete não muda: a hora de
       // início é a mesma, e o texto lê os serviços na hora de enviar.
       if (resultado.mudou) {
+        await pedirConferenciaDaAgenda({ fila: app.fila, log: request.log }, resultado.agendamento.barbeariaId);
         await avisarServicosMudados(app, request.log, {
           agendamentoId: resultado.agendamento.id,
           previa: resultado.previa,
@@ -754,6 +761,7 @@ export function registrarRotasAgendamentosPublicas(app: App, limites: LimitesPub
       );
 
       await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
+      await pedirConferenciaDaAgenda({ fila: app.fila, log: request.log }, agendamento.barbeariaId);
       // O e-mail digitado aqui ninguém provou, e o lembrete vai pra ele:
       // entra na conta diária dos envios a destino não provado.
       if (agendamento.emailLembrete) await contarEnvioNaoProvado(request.log);

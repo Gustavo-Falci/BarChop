@@ -7,6 +7,7 @@ import { carregarRegras, garantirPrazoDoCliente } from "../lib/regras";
 import { dateParaData, dateParaHora } from "../lib/horas";
 import type { PayloadBarbeiro, PayloadCliente, PayloadLembrete } from "../plugins/auth";
 import { notificarAgendamento } from "../lib/notificacoes";
+import { pedirConferenciaDaAgenda } from "../lib/agenda-cheia-avisos";
 import type { App } from "../tipos";
 
 // O destino do link do e-mail de lembrete: confirmar presença ou
@@ -158,6 +159,8 @@ export function registrarRotasLembretes(app: App): void {
 
       const depois = await carregar(id);
       if (depois.status !== "cancelado") garantirAlteravel(depois);
+      // A agenda cheia (plano agenda-cheia-dono): vagou um horário.
+      await pedirConferenciaDaAgenda({ fila: app.fila, log: request.log }, depois.barbeariaId);
       return serializar(depois);
     }
   );

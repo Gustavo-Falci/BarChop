@@ -4,7 +4,30 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-26, fim do dia — Postgres 19 no ar, app fora do superusuário, bucket de backup pronto) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-27, fim do dia — agenda cheia, gaveta dos serviços e ícone da aba no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `8d22526`, #447). **Produção = main `8d22526`** (deploy do dono em 27/11, conferido). Nada pede deploy.
+- **Aviso de agenda cheia, completo e no ar** (PRD `.claude/prds/agenda-cheia.prd.md`, COMPLETE):
+  - #442, marco 1: `GET /barbearias/:slug/agenda-cheia` e o aviso na página pública ("Todos os horários estão reservados…", com WhatsApp, senão telefone, senão só a frase).
+  - #443, marco 2: sininho + e-mail pro dono quando a barbearia lota (1 por lotação, no máximo 1 por dia; conferência na fila depois de cada mudança de agendamento).
+  - #444, marco 3: o mesmo pro profissional cuja agenda lota. Se a barbearia inteira lota na mesma conferência, o dono que atende recebe só o aviso da barbearia. Migrações aplicadas pelo dono.
+  - #445: PRD marcado COMPLETE.
+- **#446, gaveta dos serviços (página pública):** categoria com 6 ou mais serviços mostra 4 e guarda o resto atrás de "Ver mais N serviços" / "Ver menos" (com 5, mostra os 5). Vale nas seções, nas abas e na lista sem categoria; cada categoria abre sozinha. Limite fixo, sem configuração na Aparência. Plano `.claude/plans/gaveta-dos-servicos.plan.md`. Dono testou: ok. A semente do `conferencia-visual.ts` agora tem 7 serviços em Cabelo.
+- **#447, ícone da aba:**
+  - Bug que estava em produção: no host da barbearia (`jesus-barber.barchop.com.br`) o `proxy.ts` reescrevia `/icon.svg` e `/apple-icon.png` pra `/[slug]/…` → 404, e a aba mostrava o globo. Agora os dois ficam fora do `matcher`, como o `favicon.ico`.
+  - Com logo, `metadataDaBarbearia` usa a logo como ícone da aba e da tela inicial do celular; sem logo (ou com a API fora), vale o `app/icon.svg` da BarChop. O ícone do metadata do segmento sobrescreve o ícone de arquivo da raiz (conferido no HTML). O painel segue com o ícone da BarChop.
+  - Conferido em produção: `/icon.svg` 200 no host da barbearia; a Jesus Barber mostra a logo dela (webp do bucket).
+- **Dependabot aberto:** #432 (caddy), #434 (grupo produção), #435 (`@testing-library/jest-dom` 8), #436 (`dotenv` 18), #437 (`eslint` 10).
+- **Branches:** `main`, os do Dependabot, `origin/expo-58` (mergeado) e `origin/midia-instagram` (NÃO mergeado, não tocar).
+- **Nesta máquina (PC do trabalho):** `barchop/apps/web/AGENTS.md` aparece modificado sempre que o `next dev` sobe (ele reescreve o arquivo); não entra em commit.
+
+**Ao retomar:**
+1. **Agenda cheia, questões abertas:** a lotação "parada" (o dono fecha um dia ou entra uma folga, sem agendamento mudar) não avisa hoje — decidir depois de ver em uso; validar com a Jesus Barber a regra do dono que atende; opcional, conferir em produção lotando a agenda de um profissional (sininho + e-mail dele, dono sem nada).
+2. **Ícone da aba, só se alguém reclamar:** a logo da Jesus Barber é webp, e o iPhone pode não aceitar webp no ícone da Tela de Início (gerar PNG); logo larga ("livre") fica pequena e a "redonda" não sai recortada na aba (ícone gerado, quadrado, recortado pelo formato).
+3. Continuam valendo os itens de 26/11, fim do dia (abaixo): cópia do backup fora da VM no PC de casa, limpeza do volume do Postgres 18 por volta de 03/12, Dependabot um por vez.
+
+## RETOMAR AQUI (2026-11-26, fim do dia — Postgres 19 no ar, app fora do superusuário, bucket de backup pronto) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `869ac31`, #440). **Produção = API do #429 + web da main 38df1b3** (deploy do dono e conferido no celular em 26/11), **no Postgres 19.0** e conectando como `barchop_app`. Nada pede deploy.

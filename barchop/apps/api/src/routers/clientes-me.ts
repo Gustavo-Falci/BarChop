@@ -16,6 +16,7 @@ import { comRetryDeDeadlock } from "../lib/transacao";
 import { PADRAO_DATA, PADRAO_EMAIL, PADRAO_HORA, PADRAO_UUID } from "../lib/padroes";
 import { serializarAgendamento, serializarCliente } from "../lib/serializar";
 import { notificarAgendamento } from "../lib/notificacoes";
+import { pedirConferenciaDaAgenda } from "../lib/agenda-cheia-avisos";
 import type { AgendamentoDoCliente } from "@barchop/types";
 import type { App } from "../tipos";
 
@@ -208,6 +209,9 @@ export function registrarRotasClientesMe(app: App): void {
         return atualizado;
       });
 
+      // A agenda cheia (plano agenda-cheia-dono): vagou um horário.
+      await pedirConferenciaDaAgenda({ fila: app.fila, log: request.log }, cancelado.barbeariaId);
+
       return { agendamento: serializarAgendamento(cancelado) };
     }
   );
@@ -296,6 +300,7 @@ export function registrarRotasClientesMe(app: App): void {
       // O agendamento novo ganha o seu; o do antigo se descarta ao reler
       // o status cancelado.
       await agendarLembrete({ fila: app.fila, log: request.log }, agendamento);
+      await pedirConferenciaDaAgenda({ fila: app.fila, log: request.log }, agendamento.barbeariaId);
 
       return reply.code(201).send({
         agendamento: serializarAgendamento(agendamento),

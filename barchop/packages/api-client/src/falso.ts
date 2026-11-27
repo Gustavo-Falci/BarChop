@@ -254,7 +254,7 @@ export interface EstadoFalso {
   proximosHorarios?: ProximosHorariosDoServico[];
   // A agenda cheia da página pública. Sem semente, não está: a conta é
   // da API (lib/agenda-cheia.ts), não do dublê.
-  agendaCheia?: boolean;
+  agendaCheia: boolean;
   // Os pedidos de troca do link de todas as barbearias, como o suporte
   // os vê. Os da barbearia do dublê (id do `perfil`) são os do dono.
   solicitacoesDeLink?: SolicitacaoNaFila[];

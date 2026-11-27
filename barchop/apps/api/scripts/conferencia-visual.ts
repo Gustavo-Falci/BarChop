@@ -321,6 +321,22 @@ async function main() {
     });
   }
 
+  // A agenda cheia (plano agenda-cheia-dono): a fila de memória não roda
+  // nada sozinha. Aqui ela roda a cada 2 s, e o e-mail aos donos sai no
+  // terminal, pra ver o sininho e o texto depois de lotar a agenda.
+  const { registrarAgendaCheia } = await import("../src/lib/agenda-cheia-avisos");
+  const fila = app.fila as import("../src/lib/fila").FilaDeMemoria;
+  await registrarAgendaCheia(fila, {
+    canal: {
+      nome: "terminal",
+      destinos: ["email"],
+      enviar: async (mensagem) => console.log(`\n[e-mail] ${mensagem.assunto}\n${mensagem.texto}\n`),
+    },
+    log: { warn: console.warn, error: console.error },
+    urlDoPainel: "http://localhost:3000",
+  });
+  setInterval(() => void fila.rodarVencidos(new Date()).catch(console.error), 2000).unref();
+
   await app.listen({ port: 3333, host: "0.0.0.0" });
   console.log(`API de conferência em http://localhost:3333 (banco ${banco})`);
   console.log(`slug: ${barbearia.slug}`);

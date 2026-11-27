@@ -76,6 +76,22 @@ describe("limite dos próximos horários", () => {
   });
 });
 
+// A agenda cheia: a mesma carga de página dos próximos horários, a mesma
+// régua.
+describe("limite da agenda cheia", () => {
+  it("recusa a chamada seguinte ao limite do IP", async () => {
+    const app = buildApp();
+    const chamar = () => app.inject({ method: "GET", url: "/barbearias/nao-existe/agenda-cheia" });
+
+    const antes = await repetir(MAX_PROXIMOS_POR_IP, chamar);
+    const bloqueado = await chamar();
+
+    expect(antes).not.toContain(429);
+    expect(bloqueado.statusCode).toBe(429);
+    await app.close();
+  });
+});
+
 // SEC-004: as duas rotas mais caras da página pública estavam sem limite
 // nenhum, ao lado dos próximos horários, que já tinha. Numa VM de 1 CPU,
 // um laço pedindo o mês inteiro parava a API de todas as barbearias.

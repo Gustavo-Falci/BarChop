@@ -391,6 +391,14 @@ export function limitesPublicos(app: App) {
         chave: (request) => `proximos-ip:${request.ip}`,
       }),
     ],
+    // A agenda cheia sai na mesma carga da página: a mesma régua.
+    agendaCheia: [
+      contador(app, {
+        max: MAX_PROXIMOS_POR_IP,
+        janela: MINUTO,
+        chave: (request) => `agenda-cheia-ip:${request.ip}`,
+      }),
+    ],
     disponibilidade: [
       contador(app, {
         max: MAX_DISPONIBILIDADE_POR_IP,

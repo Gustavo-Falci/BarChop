@@ -17,6 +17,7 @@ import { foraDoLink } from "../lib/assinatura";
 import { ErroDeNegocio } from "../lib/erro-negocio";
 import { agoraNaBarbearia, dataParaDate, dateParaData, dateParaHora } from "../lib/horas";
 import { proximosHorarios } from "../lib/proximos-horarios";
+import { agendaCheia } from "../lib/agenda-cheia";
 import { gradeDe, regrasDe, SELECT_REGRAS } from "../lib/regras";
 import { clienteDaRequisicao, ehMembroDaBarbearia } from "../plugins/auth";
 import {
@@ -194,6 +195,22 @@ export function registrarRotasDisponibilidade(app: App, limites: LimitesPublicos
           barbeariaId: barbearia.id,
           agora: agoraNaBarbearia(),
         }),
+      };
+    }
+  );
+
+  // Se o link já não oferece nenhum horário até o fim da janela
+  // (lib/agenda-cheia.ts): a página troca o "Agendar agora" pelo contato.
+  app.get(
+    "/barbearias/:slug/agenda-cheia",
+    { schema: { params: paramsSlug }, preHandler: limites.agendaCheia },
+    async (request) => {
+      const barbearia = await prisma.barbearia.findUniqueOrThrow({
+        where: { slug: request.params.slug },
+        select: { id: true },
+      });
+      return {
+        cheia: await agendaCheia(prisma, { barbeariaId: barbearia.id, agora: agoraNaBarbearia() }),
       };
     }
   );

@@ -288,3 +288,157 @@ describe("na fila", () => {
     expect(canal.enviadas).toHaveLength(1);
   });
 });
+
+// O aviso do profissional (plano agenda-cheia-profissional, marco 3): a
+// agenda dele lotou, mesmo com os colegas ainda com vaga. As mesmas regras
+// de repetição; o dono que atende, quando a barbearia toda lota, recebe só
+// o aviso da barbearia.
+describe("conferirAgendaCheia — a agenda do profissional", () => {
+  async function comRafa() {
+    const { app, agenda } = await preparar();
+    const rafa = await criarMembroComToken(app, agenda.barbeariaId, "profissional", "rafa");
+    return { app, agenda, rafaId: rafa.barbeiroId };
+  }
+
+  it("a agenda dele lotou e a barbearia tem vaga: sininho e e-mail só pra ele", async () => {
+    const { agenda, rafaId } = await comRafa();
+    await encher(agenda, { barbeiroId: rafaId });
+    const canal = canalDeMemoria();
+
+    await conferir(agenda, AGORA, canal, silencioso(), "https://painel.exemplo.com");
+
+    const ultimo = ddmm(diaMais(JANELA_CURTA));
+    const proximo = ddmm(diaMais(JANELA_CURTA + 1));
+    const [aviso, ...resto] = await sininhos(rafaId);
+    expect(resto).toHaveLength(0);
+    expect(aviso).toMatchObject({
+      tipo: "agendamento",
+      titulo: "Sua agenda está cheia",
+      texto: `Todos os seus horários até ${ultimo} estão reservados. O dia ${proximo} abre amanhã.`,
+      link: "/painel/agenda",
+    });
+    expect(await sininhos(agenda.barbeiroId)).toHaveLength(0);
+
+    expect(canal.enviadas).toHaveLength(1);
+    const [email] = canal.enviadas;
+    expect(email!.para).toBe("profissional-rafa@exemplo.com");
+    expect(email!.assunto).toBe("Sua agenda está cheia");
+    expect(email!.texto).toMatch(/^Olá, Membro!/);
+    expect(email!.texto).toContain(ultimo);
+    expect(email!.texto).toContain(`O dia ${proximo} abre amanhã`);
+    expect(email!.texto).toContain("https://painel.exemplo.com/painel/agenda");
+
+    const rafa = await prisma.barbeiro.findUniqueOrThrow({ where: { id: rafaId } });
+    expect(rafa.agendaCheiaDesde).toEqual(AGORA);
+    expect(dateParaData(rafa.agendaCheiaAvisadaEm!)).toBe(HOJE);
+    const barbearia = await prisma.barbearia.findUniqueOrThrow({ where: { id: agenda.barbeariaId } });
+    expect(barbearia.agendaCheiaDesde).toBeNull();
+  });
+
+  it("sem o endereço do painel, o e-mail diz onde fica a agenda, sem link", async () => {
+    const { agenda, rafaId } = await comRafa();
+    await encher(agenda, { barbeiroId: rafaId });
+    const canal = canalDeMemoria();
+
+    await conferir(agenda, AGORA, canal);
+
+    expect(canal.enviadas[0]!.texto).toContain("Sua agenda está no painel, em Agenda.");
+    expect(canal.enviadas[0]!.texto).not.toContain("http");
+  });
+
+  it("conferir de novo com a agenda dele ainda cheia não repete", async () => {
+    const { agenda, rafaId } = await comRafa();
+    await encher(agenda, { barbeiroId: rafaId });
+    const canal = canalDeMemoria();
+
+    await conferir(agenda, AGORA, canal);
+    await conferir(agenda, new Date(AGORA.getTime() + 60_000), canal);
+
+    expect(await sininhos(rafaId)).toHaveLength(1);
+    expect(canal.enviadas).toHaveLength(1);
+  });
+
+  it("vagou e lotou no mesmo dia: um aviso só; no dia seguinte, avisa de novo", async () => {
+    const { agenda, rafaId } = await comRafa();
+    // Um dia além da janela: amanhã a janela anda e a agenda dele segue cheia.
+    await encher(agenda, { barbeiroId: rafaId, dias: JANELA_CURTA + 2 });
+    const canal = canalDeMemoria();
+    await conferir(agenda, AGORA, canal);
+    const deAmanha = await prisma.agendamento.findFirstOrThrow({
+      where: { barbeiroId: rafaId, data: dataParaDate(diaMais(1)) },
+    });
+
+    await prisma.agendamento.update({ where: { id: deAmanha.id }, data: { status: "cancelado" } });
+    await conferir(agenda, new Date(AGORA.getTime() + 60_000), canal);
+    const vagou = await prisma.barbeiro.findUniqueOrThrow({ where: { id: rafaId } });
+    expect(vagou.agendaCheiaDesde).toBeNull();
+    await prisma.agendamento.update({ where: { id: deAmanha.id }, data: { status: "confirmado" } });
+    await conferir(agenda, new Date(AGORA.getTime() + 120_000), canal);
+    expect(await sininhos(rafaId)).toHaveLength(1);
+
+    await prisma.agendamento.update({ where: { id: deAmanha.id }, data: { status: "cancelado" } });
+    await conferir(agenda, new Date(AGORA.getTime() + 180_000), canal);
+    await prisma.agendamento.update({ where: { id: deAmanha.id }, data: { status: "confirmado" } });
+    await conferir(agenda, AMANHA, canal);
+
+    expect(await sininhos(rafaId)).toHaveLength(2);
+    expect(canal.enviadas).toHaveLength(2);
+  });
+
+  it("sem e-mail, recebe só o sininho", async () => {
+    const { agenda, rafaId } = await comRafa();
+    await prisma.barbeiro.update({ where: { id: rafaId }, data: { email: null } });
+    await encher(agenda, { barbeiroId: rafaId });
+    const canal = canalDeMemoria();
+
+    await conferir(agenda, AGORA, canal);
+
+    expect(await sininhos(rafaId)).toHaveLength(1);
+    expect(canal.enviadas).toHaveLength(0);
+  });
+
+  it("a barbearia lotou: o profissional recebe o dele, e o dono que atende só o da barbearia", async () => {
+    const { agenda, rafaId } = await comRafa();
+    await encher(agenda);
+    await encher(agenda, { barbeiroId: rafaId });
+    const canal = canalDeMemoria();
+
+    await conferir(agenda, AGORA, canal);
+
+    expect((await sininhos(agenda.barbeiroId)).map((n) => n.titulo)).toEqual(["Agenda cheia"]);
+    expect((await sininhos(rafaId)).map((n) => n.titulo)).toEqual(["Sua agenda está cheia"]);
+    expect(canal.enviadas.map((m) => [m.para, m.assunto]).sort()).toEqual([
+      ["profissional-rafa@exemplo.com", "Sua agenda está cheia"],
+      ["um@exemplo.com", "A agenda da sua barbearia está cheia"],
+    ]);
+    // A agenda do dono fica marcada: vagar a barbearia e lotar de novo só
+    // a dele, no mesmo dia, não avisa.
+    const dono = await prisma.barbeiro.findUniqueOrThrow({ where: { id: agenda.barbeiroId } });
+    expect(dono.agendaCheiaDesde).not.toBeNull();
+  });
+
+  it("só a agenda do dono que atende lotou: ele recebe o aviso de profissional", async () => {
+    const { agenda, rafaId } = await comRafa();
+    await encher(agenda);
+    const canal = canalDeMemoria();
+
+    await conferir(agenda, AGORA, canal);
+
+    expect((await sininhos(agenda.barbeiroId)).map((n) => n.titulo)).toEqual(["Sua agenda está cheia"]);
+    expect(await sininhos(rafaId)).toHaveLength(0);
+    expect(canal.enviadas.map((m) => [m.para, m.assunto])).toEqual([["um@exemplo.com", "Sua agenda está cheia"]]);
+  });
+
+  it("a limpeza das 00:05 apaga a marca do profissional que vagou, sem avisar", async () => {
+    const { agenda, rafaId } = await comRafa();
+    await encher(agenda, { barbeiroId: rafaId });
+    const canal = canalDeMemoria();
+    await conferir(agenda, AGORA, canal);
+
+    await limparAgendasQueVagaram({ canal, log: silencioso(), agora: AMANHA });
+
+    const rafa = await prisma.barbeiro.findUniqueOrThrow({ where: { id: rafaId } });
+    expect(rafa.agendaCheiaDesde).toBeNull();
+    expect(canal.enviadas).toHaveLength(1);
+  });
+});

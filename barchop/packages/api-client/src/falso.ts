@@ -252,6 +252,9 @@ export interface EstadoFalso {
   // Os próximos horários da página pública. Sem semente, cada serviço
   // ativo vem sem horário: calcular a agenda é da API, não do dublê.
   proximosHorarios?: ProximosHorariosDoServico[];
+  // A agenda cheia da página pública. Sem semente, não está: a conta é
+  // da API (lib/agenda-cheia.ts), não do dublê.
+  agendaCheia?: boolean;
   // Os pedidos de troca do link de todas as barbearias, como o suporte
   // os vê. Os da barbearia do dublê (id do `perfil`) são os do dono.
   solicitacoesDeLink?: SolicitacaoNaFila[];
@@ -527,6 +530,7 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
     lembretesVencidos: [...(semente.lembretesVencidos ?? [])],
     telefonesComHistorico: [...(semente.telefonesComHistorico ?? [])],
     proximosHorarios: semente.proximosHorarios,
+    agendaCheia: semente.agendaCheia ?? false,
     onboarding: { ...(semente.onboarding ?? {}) },
     solicitacoesDeLink: (semente.solicitacoesDeLink ?? []).map((s) => ({
       ...s,
@@ -1661,6 +1665,10 @@ export function criarApiClientFalso(semente: SementeFalsa = {}) {
           estado.proximosHorarios ??
           estado.servicos.filter((s) => s.ativo).map((s) => ({ servicoId: s.id, horarios: [] }))
         );
+      },
+      async agendaCheia(slug: string) {
+        exigirSlug(slug);
+        return estado.agendaCheia;
       },
       async lembrete(token: string) {
         return doLembrete(estado.agendamentos[indiceDoLembrete(token)]);

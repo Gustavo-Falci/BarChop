@@ -147,6 +147,13 @@ export function criarApiPublica(requisicao: Requisicao) {
       return resposta.servicos;
     },
 
+    // Se o link já não oferece nenhum horário até o fim da janela de
+    // agendamento: a página troca o "Agendar agora" pelo contato.
+    async agendaCheia(slug: string): Promise<boolean> {
+      const resposta = await requisicao<{ cheia: boolean }>(`/barbearias/${slug}/agenda-cheia`);
+      return resposta.cheia;
+    },
+
     // O link do e-mail de lembrete: sem login, quem autoriza é o token.
     // Ler é GET e agir é POST — a tela só age no clique, porque leitor
     // de e-mail abre links sozinho.

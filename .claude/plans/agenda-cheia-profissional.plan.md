@@ -99,7 +99,7 @@ npx eslint <arquivos tocados>
 | Migração no deploy | Baixa | Colunas anuláveis; `migrate deploy` antes de subir a API |
 
 ## Acceptance
-- [ ] All tasks complete
-- [ ] Validation passes
-- [ ] Patterns mirrored, not reinvented
-- [ ] PRD: marco 2 `complete`, marco 3 `in-progress` com este plano, questões do profissional sem e-mail e do dono que atende atualizadas
+- [x] All tasks complete
+- [x] Validation passes
+- [x] Patterns mirrored, not reinvented
+- [x] PRD: marco 2 `complete`, marco 3 `in-progress` com este plano (marco 3 `complete` depois do deploy de 27/11), questões do profissional sem e-mail e do dono que atende atualizadas

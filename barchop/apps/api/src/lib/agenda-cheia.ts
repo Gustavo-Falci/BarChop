@@ -20,15 +20,24 @@ export async function agendaCheia(
   db: ClientePrisma,
   params: { barbeariaId: string; agora: { data: string; hora: string } }
 ): Promise<boolean> {
+  return (await agendaCheiaAte(db, params)) !== null;
+}
+
+// A mesma conta, devolvendo o último dia cheio ("2026-12-04") pros
+// avisos do dono (lib/agenda-cheia-avisos.ts); null = não está cheia.
+export async function agendaCheiaAte(
+  db: ClientePrisma,
+  params: { barbeariaId: string; agora: { data: string; hora: string } }
+): Promise<string | null> {
   const { barbeariaId, agora } = params;
   const { servicos, doLink, regras, candidatosDe } = await oQueOLinkOferece(db, barbeariaId);
-  if (regras.janelaDias === null) return false;
+  if (regras.janelaDias === null) return null;
 
   const feitos = servicos
     .map((servico) => ({ ...servico, candidatos: candidatosDe(servico.id) }))
     .filter((servico) => servico.candidatos.length > 0)
     .sort((a, b) => a.duracaoMinutos - b.duracaoMinutos);
-  if (feitos.length === 0) return false;
+  if (feitos.length === 0) return null;
 
   // O último dia que o cliente ainda marca: hoje + janelaDias, como na
   // regraQueRecusa (@barchop/formato).
@@ -46,15 +55,15 @@ export async function agendaCheia(
       },
     }),
   ]);
-  if (reservados === 0) return false;
+  if (reservados === 0) return null;
 
   for (let i = 0; i <= regras.janelaDias; i++) {
     const data = new Date(primeiroDia.getTime() + i * UM_DIA);
     const chave = dateParaData(data);
     for (const servico of feitos) {
       const livres = servico.candidatos.flatMap((id) => horariosDoDia(id, data, servico.duracaoMinutos));
-      if (descartarPassados({ data: chave, horarios: livres, agora, regras }).length > 0) return false;
+      if (descartarPassados({ data: chave, horarios: livres, agora, regras }).length > 0) return null;
     }
   }
-  return true;
+  return dateParaData(ultimoDia);
 }

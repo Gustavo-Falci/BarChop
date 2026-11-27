@@ -101,7 +101,12 @@ model Barbearia {
   aceitaMesmoDia            Boolean   @default(true) @map("aceita_mesmo_dia")
   // Nula = sem limite.
   janelaDias                Int?      @map("janela_dias") @db.SmallInt
-  cabeAntesDeFechar         Boolean   @default(true) @map("cabe_antes_de_fechar")
+  // A lotação (plano agenda-cheia-dono): desde quando o link não oferece
+  // horário nenhum até o fim da janela (nula = tem horário), e o dia de
+  // São Paulo do último aviso aos donos (no máximo um por dia).
+  agendaCheiaDesde          DateTime? @map("agenda_cheia_desde") @db.Timestamptz
+  agendaCheiaAvisadaEm      DateTime? @map("agenda_cheia_avisada_em") @db.Date
+  cabeAntesDeFechar        Boolean   @default(true) @map("cabe_antes_de_fechar")
   // Além da grade, o link oferece o fim de um atendimento (08/11/2026).
   logoDepoisDoAnterior      Boolean   @default(false) @map("logo_depois_do_anterior")
   prazoRemarcarHoras        Int       @default(0) @map("prazo_remarcar_horas") @db.SmallInt

@@ -55,13 +55,13 @@ We'll know we're right when **o aviso aparece sempre que o link não oferece nen
 
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
-| 1 | Aviso na página pública | Com a barbearia cheia, a home mostra o aviso C e o botão de contato no lugar do "Agendar agora". O aviso sai sozinho quando volta a ter horário | in-progress | `.claude/plans/agenda-cheia-pagina.plan.md` |
-| 2 | Aviso pro dono | O dono recebe e-mail e aviso no sininho quando a barbearia lota, uma vez por lotação, no máximo uma por dia | pending | — |
+| 1 | Aviso na página pública | Com a barbearia cheia, a home mostra o aviso C e o botão de contato no lugar do "Agendar agora". O aviso sai sozinho quando volta a ter horário | complete | `.claude/plans/agenda-cheia-pagina.plan.md` (PR #442, no ar 27/11) |
+| 2 | Aviso pro dono | O dono recebe e-mail e aviso no sininho quando a barbearia lota, uma vez por lotação, no máximo uma por dia | in-progress | `.claude/plans/agenda-cheia-dono.plan.md` |
 | 3 | Aviso pro profissional | Cada profissional recebe e-mail e aviso no sininho quando a agenda dele lota, com a mesma regra de repetição | pending | — |
 
 ## Open Questions
-- [ ] Quanto tempo depois do agendamento que lotou o e-mail pode chegar: na hora, ou numa varredura periódica (ex.: até 1 hora)? TBD — decidir no /plan do marco 2, pelo custo de calcular a agenda.
-- [ ] A lotação que acontece "parada", sem ninguém agendar (o dono fecha um dia, uma folga entra), também avisa? Proposta: sim, a regra é o estado da agenda, não quem mexeu. Validar no /plan.
+- [x] Quanto tempo depois do agendamento que lotou o e-mail pode chegar? Na hora: a conferência roda na fila logo depois do agendamento (decisão do dono, 27/11).
+- [ ] A lotação que acontece "parada", sem ninguém agendar (o dono fecha um dia, uma folga entra), também avisa? Fora do marco 2: a conferência só roda quando um agendamento muda. Decidir depois de ver o aviso em uso.
 - [ ] Profissional sem e-mail cadastrado: recebe só o sininho? TBD — conferir no /plan se todo profissional tem e-mail.
 - [ ] O dono que também atende recebe os dois avisos (o da barbearia e o da agenda dele) no mesmo dia? Proposta: sim, dizem coisas diferentes. Validar com o dono.
 

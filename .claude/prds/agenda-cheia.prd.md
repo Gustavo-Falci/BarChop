@@ -57,7 +57,7 @@ We'll know we're right when **o aviso aparece sempre que o link não oferece nen
 |---|---|---|---|---|
 | 1 | Aviso na página pública | Com a barbearia cheia, a home mostra o aviso C e o botão de contato no lugar do "Agendar agora". O aviso sai sozinho quando volta a ter horário | complete | `.claude/plans/agenda-cheia-pagina.plan.md` (PR #442, no ar 27/11) |
 | 2 | Aviso pro dono | O dono recebe e-mail e aviso no sininho quando a barbearia lota, uma vez por lotação, no máximo uma por dia | complete | `.claude/plans/agenda-cheia-dono.plan.md` (PR #443, no ar 27/11) |
-| 3 | Aviso pro profissional | Cada profissional recebe e-mail e aviso no sininho quando a agenda dele lota, com a mesma regra de repetição | in-progress | `.claude/plans/agenda-cheia-profissional.plan.md` |
+| 3 | Aviso pro profissional | Cada profissional recebe e-mail e aviso no sininho quando a agenda dele lota, com a mesma regra de repetição | complete | `.claude/plans/agenda-cheia-profissional.plan.md` (PR #444, no ar 27/11) |
 
 ## Open Questions
 - [x] Quanto tempo depois do agendamento que lotou o e-mail pode chegar? Na hora: a conferência roda na fila logo depois do agendamento (decisão do dono, 27/11).
@@ -74,4 +74,4 @@ We'll know we're right when **o aviso aparece sempre que o link não oferece nen
 | O número exibido é o errado ou falta | Baixa | Médio | WhatsApp → telefone → sem número, nessa ordem, todos com dados que a API já valida |
 
 ---
-*Status: DRAFT — requirements only. Implementation planning pending via /plan.*
+*Status: COMPLETE — os três marcos no ar em 27/11.*

@@ -117,10 +117,15 @@ export async function prepararJanelaCurta(app: App, opcoes: { sufixo?: string } 
 // Ocupa a hora inteira de cada dia (direto no banco, sem passar pelas
 // regras do link). `exceto` deixa o fim de um dia livre (o atendimento
 // acaba antes das 10); `dias` passa da janela, pra quando o teste anda
-// o relógio.
+// o relógio; `barbeiroId` enche a agenda de outro profissional (o padrão
+// é o dono da agenda de teste).
 export async function encher(
   agenda: Agenda,
-  { exceto, dias = JANELA_CURTA + 1 }: { exceto?: { dia: Date; ate: string }; dias?: number } = {}
+  {
+    exceto,
+    dias = JANELA_CURTA + 1,
+    barbeiroId = agenda.barbeiroId,
+  }: { exceto?: { dia: Date; ate: string }; dias?: number; barbeiroId?: string } = {}
 ): Promise<{ id: string; data: Date }[]> {
   const criados: { id: string; data: Date }[] = [];
   for (const dia of diasDaJanela(dias)) {
@@ -129,7 +134,7 @@ export async function encher(
       await prisma.agendamento.create({
         data: {
           barbeariaId: agenda.barbeariaId,
-          barbeiroId: agenda.barbeiroId,
+          barbeiroId,
           clienteId: agenda.cliente.id,
           data: dia,
           horaInicio: hora("09:00"),

@@ -337,6 +337,11 @@ model Barbeiro {
   telefone         String?     @db.VarChar(20)
   ativo            Boolean     @default(true)
   papel            PapelMembro @default(profissional)
+  // A lotação da agenda dele (plano agenda-cheia-profissional): desde
+  // quando o link não oferece horário dele até o fim da janela (nula =
+  // tem horário), e o dia de São Paulo do último aviso (um por dia).
+  agendaCheiaDesde     DateTime? @map("agenda_cheia_desde") @db.Timestamptz
+  agendaCheiaAvisadaEm DateTime? @map("agenda_cheia_avisada_em") @db.Date
   // Aparece na agenda e no fluxo público. A recepção nasce com false.
   atende           Boolean     @default(true)
   // Chave da foto no armazenamento (bloco E2); a URL sai da config.

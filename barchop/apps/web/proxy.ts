@@ -57,7 +57,9 @@ export const config = {
   // Os arquivos de public/ moram em /assets (nome reservado pra slug):
   // em /home, a cadeira da home ia pra home.barchop.com.br e dava 404.
   // O /.well-known/ (security.txt) é do site inteiro, em qualquer host.
+  // Os ícones da aba (app/icon.svg, app/apple-icon.png) também: no host
+  // da barbearia iam pra /[slug]/icon.svg, 404, e a aba ficava sem ícone.
   matcher: [
-    "/((?!_next/|__next|\\.well-known/|favicon\\.ico$|robots\\.txt$|sitemap\\.xml$|opengraph-image$|opengraph-image-[a-z0-9]+$|assets/).*)",
+    "/((?!_next/|__next|\\.well-known/|favicon\\.ico$|icon\\.svg$|apple-icon\\.png$|robots\\.txt$|sitemap\\.xml$|opengraph-image$|opengraph-image-[a-z0-9]+$|assets/).*)",
   ],
 };

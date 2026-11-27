@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { apenasDigitos, normalizarAparencia } from "@barchop/formato";
 import { useParams, useRouter } from "next/navigation";
@@ -46,6 +46,19 @@ function contatoDaBarbearia(dados: { whatsapp: string | null; telefone: string |
   return null;
 }
 
+// A gaveta dos serviços: categoria comprida mostra os primeiros e guarda
+// o resto atrás do "Ver mais", pra não empurrar a página pra baixo.
+// Guardar só 1 não vale o botão, que ocupa quase a altura de um serviço:
+// com 5, os 5 aparecem; a partir de 6, aparecem 4.
+const LIMITE_VISIVEL = 4;
+const MINIMO_GUARDADO = 2;
+
+function dividirServicos<T>(servicos: readonly T[], aberta: boolean) {
+  const guardados = servicos.length - LIMITE_VISIVEL;
+  if (guardados < MINIMO_GUARDADO) return { mostrados: servicos, guardados: 0 };
+  return { mostrados: aberta ? servicos : servicos.slice(0, LIMITE_VISIVEL), guardados };
+}
+
 // `agora` é prop com padrão, como nas telas do fluxo: é o que deixa o
 // teste fixar "terça às dez" pra conferir o "aberto agora".
 export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
@@ -76,6 +89,36 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
   // abas (marco H). Null = a primeira.
   const [aba, setAba] = useState<string | null>(null);
   const idDasAbas = useId();
+  // As categorias com a gaveta aberta. Cada uma abre sozinha, e nas abas
+  // a escolha sobrevive à troca de aba.
+  const [abertas, setAbertas] = useState<ReadonlySet<string>>(() => new Set());
+  // Pra onde o foco vai depois do clique: abrir leva ao primeiro serviço
+  // que apareceu (quem vem do teclado segue de onde a lista cresceu);
+  // fechar deixa no botão e traz ele à vista, que a lista encolheu acima.
+  const focoPendente = useRef<{ lista: string; para: "revelado" | "botao" } | null>(null);
+  useEffect(() => {
+    const pendente = focoPendente.current;
+    if (!pendente) return;
+    focoPendente.current = null;
+    if (pendente.para === "revelado") {
+      const links = document.getElementById(pendente.lista)?.querySelectorAll<HTMLElement>(":scope > li > a");
+      links?.[LIMITE_VISIVEL]?.focus();
+      return;
+    }
+    const botao = document.getElementById(`${pendente.lista}-mais`);
+    botao?.focus();
+    // jsdom não tem scrollIntoView.
+    botao?.scrollIntoView?.({ block: "nearest" });
+  });
+  const alternarGaveta = (chave: string, lista: string, aberta: boolean) => {
+    focoPendente.current = { lista, para: aberta ? "botao" : "revelado" };
+    setAbertas((antes) => {
+      const depois = new Set(antes);
+      if (aberta) depois.delete(chave);
+      else depois.add(chave);
+      return depois;
+    });
+  };
   const proximosDe = new Map(
     (proximos.dados ?? []).map((item) => [item.servicoId, item.horarios])
   );
@@ -285,72 +328,97 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                   normalizarAparencia(dados?.aparencia).layoutDosServicos === "abas" &&
                   grupos.length > 1 &&
                   grupos.every((grupo) => grupo.titulo);
-                const listaDe = (grupo: (typeof grupos)[number]) => (
-                  <ul className={estilos.servicos}>
-                    {grupo.servicos.map((servico) => {
-                      const horariosDoServico = proximosDe.get(servico.id) ?? [];
-                      return (
-                        <li key={servico.id} className={estilos.cartaoDeServico}>
-                          {/* Link pro agendamento com este serviço já
-                            marcado — no passo de serviços, e não direto no
-                            de data: corte e barba juntos é combinação
-                            comum, e quem tocou no corte ainda pode somar a
-                            barba. Um <a> de verdade, que abre em outra aba
-                            se a pessoa quiser. */}
-                          <Link
-                            className={estilos.servico}
-                            href={noHost(caminhoDoPasso(slug, "servicos", {
-                              servicoIds: [servico.id],
-                            }))}
-                          >
-                            <span className={estilos.servicoNome}>
-                              {servico.nome}
-                              <span className={estilos.duracao}>
-                                {servico.duracaoMinutos} min
-                              </span>
-                            </span>
-                            <span className={estilos.valor}>
-                              {formatarPreco(servico.preco)}
-                            </span>
-                            <span className={estilos.seta} aria-hidden="true">
-                              →
-                            </span>
-                          </Link>
-                          {/* Os próximos horários, fora do link do serviço
-                            (link dentro de link não existe em HTML). Cada
-                            um leva direto à confirmação, com "qualquer
-                            um": a lista é a união de quem faz o serviço, e
-                            a confirmação já trata o horário que expirou no
-                            meio do caminho. */}
-                          {horariosDoServico.length > 0 ? (
-                            <div className={estilos.proximosLinha}>
-                              <span className={estilos.proximosRotulo}>Próximos:</span>
-                              <ul
-                                className={estilos.proximos}
-                                aria-label={`Próximos horários de ${servico.nome}`}
+                const listaDe = (grupo: (typeof grupos)[number]) => {
+                  // Sem categoria nenhuma e "Outros serviços" nunca
+                  // aparecem juntos: a chave "outros" serve aos dois.
+                  const chave = grupo.categoria ?? "outros";
+                  const idDaLista = `${idDasAbas}-servicos-${chave}`;
+                  const aberta = abertas.has(chave);
+                  const { mostrados, guardados } = dividirServicos(grupo.servicos, aberta);
+                  return (
+                    <>
+                      <ul id={idDaLista} className={estilos.servicos}>
+                        {mostrados.map((servico, indice) => {
+                          const horariosDoServico = proximosDe.get(servico.id) ?? [];
+                          return (
+                            <li
+                              key={servico.id}
+                              className={`${estilos.cartaoDeServico} ${indice >= LIMITE_VISIVEL ? estilos.revelado : ""}`}
+                            >
+                              {/* Link pro agendamento com este serviço já
+                                marcado — no passo de serviços, e não direto no
+                                de data: corte e barba juntos é combinação
+                                comum, e quem tocou no corte ainda pode somar a
+                                barba. Um <a> de verdade, que abre em outra aba
+                                se a pessoa quiser. */}
+                              <Link
+                                className={estilos.servico}
+                                href={noHost(caminhoDoPasso(slug, "servicos", {
+                                  servicoIds: [servico.id],
+                                }))}
                               >
-                                {horariosDoServico.map((horario) => (
-                                  <li key={`${horario.data} ${horario.horaInicio}`}>
-                                    <Link
-                                      className={estilos.proximo}
-                                      href={noHost(caminhoDoPasso(slug, "confirmar", {
-                                        servicoIds: [servico.id],
-                                        data: horario.data,
-                                        hora: horario.horaInicio,
-                                      }))}
-                                    >
-                                      {rotuloDoProximoHorario(horario.data, horario.horaInicio, agora)}
-                                    </Link>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                );
+                                <span className={estilos.servicoNome}>
+                                  {servico.nome}
+                                  <span className={estilos.duracao}>
+                                    {servico.duracaoMinutos} min
+                                  </span>
+                                </span>
+                                <span className={estilos.valor}>
+                                  {formatarPreco(servico.preco)}
+                                </span>
+                                <span className={estilos.seta} aria-hidden="true">
+                                  →
+                                </span>
+                              </Link>
+                              {/* Os próximos horários, fora do link do serviço
+                                (link dentro de link não existe em HTML). Cada
+                                um leva direto à confirmação, com "qualquer
+                                um": a lista é a união de quem faz o serviço, e
+                                a confirmação já trata o horário que expirou no
+                                meio do caminho. */}
+                              {horariosDoServico.length > 0 ? (
+                                <div className={estilos.proximosLinha}>
+                                  <span className={estilos.proximosRotulo}>Próximos:</span>
+                                  <ul
+                                    className={estilos.proximos}
+                                    aria-label={`Próximos horários de ${servico.nome}`}
+                                  >
+                                    {horariosDoServico.map((horario) => (
+                                      <li key={`${horario.data} ${horario.horaInicio}`}>
+                                        <Link
+                                          className={estilos.proximo}
+                                          href={noHost(caminhoDoPasso(slug, "confirmar", {
+                                            servicoIds: [servico.id],
+                                            data: horario.data,
+                                            hora: horario.horaInicio,
+                                          }))}
+                                        >
+                                          {rotuloDoProximoHorario(horario.data, horario.horaInicio, agora)}
+                                        </Link>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              ) : null}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {guardados > 0 ? (
+                        <button
+                          type="button"
+                          id={`${idDaLista}-mais`}
+                          className={estilos.verMais}
+                          aria-expanded={aberta}
+                          aria-controls={idDaLista}
+                          onClick={() => alternarGaveta(chave, idDaLista, aberta)}
+                        >
+                          {aberta ? "Ver menos" : `Ver mais ${guardados} serviços`}
+                        </button>
+                      ) : null}
+                    </>
+                  );
+                };
 
                 if (emAbas) {
                   const atual = grupos.find((grupo) => grupo.titulo === aba) ?? grupos[0]!;

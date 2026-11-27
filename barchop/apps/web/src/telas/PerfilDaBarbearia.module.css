@@ -293,6 +293,38 @@
 
    `max-width` em ch, e não em px: o limite de leitura confortável é
    contado em caracteres, e aqui o texto pode ter parágrafos. */
+/* A agenda cheia (variante C do PRD agenda-cheia): uma faixa só, no tom
+   de atenção do design system — que não depende da cor da marca da
+   Aparência, e passa 4,5:1 nos dois temas. O número herda a cor, com
+   sublinhado pra ler como link. */
+.agendaCheia {
+  display: grid;
+  gap: var(--espaco-xs);
+  padding: var(--espaco-md);
+  border-radius: var(--raio-md);
+  background: var(--cor-atencao-fundo);
+  color: var(--cor-atencao);
+}
+
+.agendaCheiaTitulo {
+  margin: 0;
+  font-family: var(--fonte-corpo);
+  font-size: var(--texto-md);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.agendaCheiaTexto {
+  margin: 0;
+  font-size: var(--texto-sm);
+}
+
+.agendaCheiaTexto a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 .sobre {
   margin: 0;
   max-width: 60ch;

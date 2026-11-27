@@ -23,6 +23,26 @@ describe("api pública — página rica", () => {
     expect(fetchFalso.mock.calls[0]![0]).toBe("https://api.exemplo.br/barbearias/gr-barber/proximos-horarios");
     expect(proximos).toEqual(lista);
   });
+
+  it("pergunta se a agenda está cheia e devolve o booleano", async () => {
+    const fetchFalso = vi.fn(async (_url: string, _init?: RequestInit) => respostaJson({ cheia: true }));
+    const api = criarApiClient({
+      baseUrl: "https://api.exemplo.br",
+      fetch: fetchFalso as unknown as typeof globalThis.fetch,
+    });
+
+    const cheia = await api.publico.agendaCheia("gr-barber");
+
+    expect(fetchFalso.mock.calls[0]![0]).toBe("https://api.exemplo.br/barbearias/gr-barber/agenda-cheia");
+    expect(cheia).toBe(true);
+  });
+});
+
+describe("dublê — agenda cheia", () => {
+  it("não está cheia sem semente; com a semente, está", async () => {
+    expect(await criarApiClientFalso().publico.agendaCheia("gr-barber")).toBe(false);
+    expect(await criarApiClientFalso({ agendaCheia: true }).publico.agendaCheia("gr-barber")).toBe(true);
+  });
 });
 
 describe("dublê — página rica", () => {

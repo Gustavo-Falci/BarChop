@@ -2,11 +2,11 @@
 
 import { useId, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
-import { normalizarAparencia } from "@barchop/formato";
+import { apenasDigitos, normalizarAparencia } from "@barchop/formato";
 import { useParams, useRouter } from "next/navigation";
 import { useApi } from "../api/ProvedorDaApi";
 import { useRequisicao } from "../api/useRequisicao";
-import { Botao } from "../componentes/Botao";
+import { Botao, BotaoLink } from "../componentes/Botao";
 import { LogoDaBarbearia } from "../componentes/LogoDaBarbearia";
 import { formatarPreco } from "../componentes/ItemDeServico";
 import { agruparPorCategoria } from "../fluxo/categorias";
@@ -22,6 +22,29 @@ import { IconeCamera, IconeConversa, IconeMapa } from "../painel/icones";
 import estilos from "./PerfilDaBarbearia.module.css";
 import { useNoHost } from "../tenant/ProvedorDoHost";
 import { Carregando } from "../componentes/Carregando";
+
+// O WhatsApp, montado do número que a API normalizou: o atalho da fachada
+// e o aviso de agenda cheia apontam pro mesmo lugar.
+function linkDoWhatsapp(whatsapp: string): string {
+  return `https://wa.me/55${apenasDigitos(whatsapp)}`;
+}
+
+// Por onde falar com a barbearia quando a agenda está cheia: o WhatsApp,
+// senão o telefone (ligar), senão nada.
+function contatoDaBarbearia(dados: { whatsapp: string | null; telefone: string | null }) {
+  if (dados.whatsapp) {
+    return { numero: dados.whatsapp, href: linkDoWhatsapp(dados.whatsapp), externo: true, acao: "Chamar no WhatsApp" };
+  }
+  if (dados.telefone) {
+    return {
+      numero: dados.telefone,
+      href: `tel:+55${apenasDigitos(dados.telefone)}`,
+      externo: false,
+      acao: "Ligar para a barbearia",
+    };
+  }
+  return null;
+}
 
 // `agora` é prop com padrão, como nas telas do fluxo: é o que deixa o
 // teste fixar "terça às dez" pra conferir o "aberto agora".
@@ -45,6 +68,10 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
   // Os próximos horários de cada serviço, em paralelo com as outras duas.
   // Se falhar, a página continua sem eles: são atalho, não conteúdo.
   const proximos = useRequisicao(() => api.publico.proximosHorarios(slug), [slug]);
+  // A agenda cheia (lib/agenda-cheia.ts da API), também em paralelo. Se
+  // falhar, a página segue como se tivesse horário: o "Agendar agora"
+  // continua levando à escolha, que diz a verdade dia a dia.
+  const cheia = useRequisicao(() => api.publico.agendaCheia(slug), [slug]);
   // A aba de categoria escolhida, quando a Aparência pôs os serviços em
   // abas (marco H). Null = a primeira.
   const [aba, setAba] = useState<string | null>(null);
@@ -80,6 +107,9 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
   // Serviço inativo não está na lista pública, e por isso some daqui
   // também — a equipe não anuncia o que a barbearia não oferece.
   const nomeDoServico = new Map((servicos.dados ?? []).map((s) => [s.id, s.nome]));
+
+  const estaCheia = cheia.dados === true;
+  const contato = dados ? contatoDaBarbearia(dados) : null;
 
   return (
     <>
@@ -169,7 +199,7 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
                   <li>
                     <a
                       className={estilos.atalho}
-                      href={`https://wa.me/55${dados.whatsapp.replace(/\D/g, "")}`}
+                      href={linkDoWhatsapp(dados.whatsapp)}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -204,6 +234,29 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
             o "Agendar agora" grudado no rodapé da tela, e não só no
             rodapé da coluna. */}
         <div className={estilos.principal}>
+          {/* A agenda cheia, antes de tudo: quem chegou pelo link precisa
+              saber logo que não há horário, e por onde falar com a
+              barbearia. Texto da variante C (PRD agenda-cheia). */}
+          {estaCheia ? (
+            <section className={estilos.agendaCheia} aria-labelledby={`${idDasAbas}-agenda-cheia`}>
+              <h2 id={`${idDasAbas}-agenda-cheia`} className={estilos.agendaCheiaTitulo}>
+                Todos os horários estão reservados.
+              </h2>
+              {contato ? (
+                <p className={estilos.agendaCheiaTexto}>
+                  Para mais informações, mande mensagem para a barbearia no número{" "}
+                  <a
+                    href={contato.href}
+                    {...(contato.externo ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  >
+                    {contato.numero}
+                  </a>
+                  .
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
           {/* Texto puro: ele é filho de um elemento React, que escapa por
             padrão. O `white-space: pre-line` do CSS é o que preserva as
             quebras de linha que o barbeiro digitou — a alternativa seria
@@ -453,15 +506,27 @@ export function PerfilDaBarbearia({ agora = new Date() }: { agora?: Date }) {
             a pessoa rola pra ler serviços e horários — e no fim da página
             assenta no próprio lugar. No desktop o CSS o sobe pro topo da
             coluna lateral com `order`, sem mudar o DOM. */}
-          <div className={estilos.acao}>
-            <Botao
-              onClick={() =>
-                router.push(noHost(caminhoDoPasso(slug, "servicos", { servicoIds: [] })))
-              }
-            >
-              Agendar agora
-            </Botao>
-          </div>
+          {/* Com a agenda cheia, o botão vira o contato (ou some, sem
+              contato): "Agendar agora" levaria a uma escolha sem horário. */}
+          {estaCheia ? (
+            contato ? (
+              <div className={estilos.acao}>
+                <BotaoLink href={contato.href} externo={contato.externo}>
+                  {contato.acao}
+                </BotaoLink>
+              </div>
+            ) : null
+          ) : (
+            <div className={estilos.acao}>
+              <Botao
+                onClick={() =>
+                  router.push(noHost(caminhoDoPasso(slug, "servicos", { servicoIds: [] })))
+                }
+              >
+                Agendar agora
+              </Botao>
+            </div>
+          )}
         </div>
       </main>
     </>

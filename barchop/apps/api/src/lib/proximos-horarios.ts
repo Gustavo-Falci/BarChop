@@ -18,21 +18,12 @@ const UM_DIA = 24 * 60 * 60 * 1000;
 // É a rota pública mais pesada e a página mais aberta do produto: o
 // período inteiro sai de uma consulta por tabela (`agendaDoPeriodo`), e
 // cada serviço para assim que junta os seus.
-export async function proximosHorarios(
-  db: ClientePrisma,
-  params: {
-    barbeariaId: string;
-    agora: { data: string; hora: string };
-    // Até onde procurar. Duas semanas cobrem a barbearia que abre poucos
-    // dias sem fazer a página carregar um mês de agenda.
-    dias?: number;
-    quantos?: number;
-  }
-): Promise<ProximosDoServico[]> {
-  const { barbeariaId, agora, dias = 14, quantos = 3 } = params;
-
+// O que o link oferece, antes de olhar a agenda: os serviços ativos, na
+// mesma lista e na mesma ordem da escolha de serviços pública, e quem
+// atende pelo link com os serviços que faz. Também a régua da agenda
+// cheia (lib/agenda-cheia.ts): as duas contas enxergam a mesma equipe.
+export async function oQueOLinkOferece(db: ClientePrisma, barbeariaId: string) {
   const [servicos, membros, regras, ocultos] = await Promise.all([
-    // A mesma lista e a mesma ordem da escolha de serviços pública.
     db.servico.findMany({
       where: { barbeariaId, ativo: true },
       orderBy: [{ ordem: "asc" }, { id: "asc" }],
@@ -47,6 +38,28 @@ export async function proximosHorarios(
     foraDoLink(db, barbeariaId, new Date()),
   ]);
   const doLink = membros.filter((membro) => !ocultos.includes(membro.id));
+  // Quem faz cada serviço: o "qualquer um".
+  const candidatosDe = (servicoId: string) =>
+    doLink
+      .filter((membro) => membro.servicos.some((s) => s.servicoId === servicoId))
+      .map((membro) => membro.id);
+  return { servicos, doLink, regras, candidatosDe };
+}
+
+export async function proximosHorarios(
+  db: ClientePrisma,
+  params: {
+    barbeariaId: string;
+    agora: { data: string; hora: string };
+    // Até onde procurar. Duas semanas cobrem a barbearia que abre poucos
+    // dias sem fazer a página carregar um mês de agenda.
+    dias?: number;
+    quantos?: number;
+  }
+): Promise<ProximosDoServico[]> {
+  const { barbeariaId, agora, dias = 14, quantos = 3 } = params;
+
+  const { servicos, doLink, regras, candidatosDe } = await oQueOLinkOferece(db, barbeariaId);
 
   const primeiroDia = dataParaDate(agora.data);
   const ultimoDia = new Date(primeiroDia.getTime() + (dias - 1) * UM_DIA);
@@ -59,9 +72,7 @@ export async function proximosHorarios(
   });
 
   return servicos.map((servico) => {
-    const candidatos = doLink
-      .filter((membro) => membro.servicos.some((s) => s.servicoId === servico.id))
-      .map((membro) => membro.id);
+    const candidatos = candidatosDe(servico.id);
 
     const horarios: ProximosDoServico["horarios"] = [];
     for (let i = 0; i < dias && horarios.length < quantos; i++) {

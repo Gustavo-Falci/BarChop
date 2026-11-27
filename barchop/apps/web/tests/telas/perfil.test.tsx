@@ -250,6 +250,72 @@ describe("perfil da barbearia", () => {
     );
   });
 
+  describe("agenda cheia", () => {
+    const TITULO = "Todos os horários estão reservados.";
+
+    it("mostra o aviso com o WhatsApp e troca o Agendar pelo WhatsApp", async () => {
+      const falso = criarApiClientFalso({ agendaCheia: true });
+      await falso.barbeiro.atualizarMinhaBarbearia({ whatsapp: "(11) 98888-7777" });
+      montar(falso);
+
+      const aviso = await screen.findByRole("region", { name: TITULO });
+      expect(aviso).toHaveTextContent("Para mais informações, mande mensagem para a barbearia no número (11) 98888-7777.");
+      expect(within(aviso).getByRole("link", { name: "(11) 98888-7777" })).toHaveAttribute(
+        "href",
+        "https://wa.me/5511988887777"
+      );
+      expect(screen.getByRole("link", { name: "Chamar no WhatsApp" })).toHaveAttribute(
+        "href",
+        "https://wa.me/5511988887777"
+      );
+      expect(screen.queryByRole("button", { name: "Agendar agora" })).not.toBeInTheDocument();
+    });
+
+    it("sem WhatsApp, o número é o telefone, com link de ligar", async () => {
+      // O perfil padrão do dublê tem telefone e não tem WhatsApp.
+      montar(criarApiClientFalso({ agendaCheia: true }));
+
+      const aviso = await screen.findByRole("region", { name: TITULO });
+      expect(within(aviso).getByRole("link", { name: "(11) 3333-4444" })).toHaveAttribute(
+        "href",
+        "tel:+551133334444"
+      );
+      expect(screen.getByRole("link", { name: "Ligar para a barbearia" })).toHaveAttribute(
+        "href",
+        "tel:+551133334444"
+      );
+      expect(screen.queryByRole("button", { name: "Agendar agora" })).not.toBeInTheDocument();
+    });
+
+    it("sem nenhum contato, só a frase, e nenhum botão", async () => {
+      const perfil = await criarApiClientFalso().publico.perfilDaBarbearia("gr-barber");
+      montar(criarApiClientFalso({ agendaCheia: true, perfil: { ...perfil, telefone: null, whatsapp: null } }));
+
+      const aviso = await screen.findByRole("region", { name: TITULO });
+      expect(aviso).not.toHaveTextContent("no número");
+      expect(screen.queryByRole("link", { name: /Chamar no WhatsApp|Ligar para a barbearia/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Agendar agora" })).not.toBeInTheDocument();
+    });
+
+    it("com horário, nada muda", async () => {
+      montar();
+
+      expect(await screen.findByRole("button", { name: "Agendar agora" })).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: TITULO })).not.toBeInTheDocument();
+    });
+
+    it("se a pergunta falhar, a página segue como se tivesse horário", async () => {
+      const falso = criarApiClientFalso({ agendaCheia: true });
+      falso.publico.agendaCheia = async () => {
+        throw new ErroDaApi(500, "erro_interno", "falhou");
+      };
+      montar(falso);
+
+      expect(await screen.findByRole("button", { name: "Agendar agora" })).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: TITULO })).not.toBeInTheDocument();
+    });
+  });
+
   it("com sessão, a página da barbearia leva aos agendamentos", async () => {
     localStorage.clear();
     sessaoDoCliente("gr-barber").gravar("token");

@@ -20,7 +20,7 @@ export interface Site {
 export type Decisao =
   | { tipo: "seguir"; barbearia?: string }
   | { tipo: "reescrever"; destino: string; barbearia: string }
-  | { tipo: "redirecionar"; url: string; status: 308 };
+  | { tipo: "redirecionar"; url: string; status: 307 | 308 };
 
 // Como o app fica sabendo, no servidor, que a página foi pedida pelo
 // host da barbearia — os links de lá não levam o slug na frente.
@@ -32,6 +32,7 @@ export const CABECALHO_DA_BARBEARIA = "x-barchop-barbearia";
 export const CABECALHO_DO_CAMINHO = "x-barchop-caminho";
 
 const SUBDOMINIO_DO_PAINEL = "painel";
+const SUBDOMINIO_DO_SUPORTE = "suporte";
 const FORMATO_DO_SLUG = new RegExp(PADRAO_SLUG);
 
 // Se o texto pode ser o link de uma barbearia: o formato que a API
@@ -101,9 +102,29 @@ export function decidirRota(
 
   if (!host.endsWith(`.${raiz}`)) return { tipo: "seguir" };
   const slug = host.slice(0, -(raiz.length + 1));
+
   // Um nível só, no formato do slug e fora dos reservados: `api.`,
-  // `a.b.` e `x.` não são barbearia nenhuma.
-  if (!eSlugDeBarbearia(slug)) return { tipo: "seguir" };
+  // `a.b.` e `x.` não são barbearia nenhuma. E não servem página: o app
+  // inteiro, painel incluído, abria ali, numa origem em que a API não
+  // grava o cookie da sessão (lib/sessao-por-cookie.ts da API). Em
+  // suporte.barchop.com.br o login passava e a fila voltava 401 (28/11).
+  if (!eSlugDeBarbearia(slug)) {
+    if (eDoPainel(caminho)) {
+      return { tipo: "redirecionar", url: url(SUBDOMINIO_DO_PAINEL, caminho), status: 308 };
+    }
+    // Quem digita suporte.barchop.com.br quer o suporte, que mora no
+    // painel. O resto do caminho não diz nada lá.
+    if (slug === SUBDOMINIO_DO_SUPORTE) {
+      return {
+        tipo: "redirecionar",
+        url: `${site.protocolo}//${SUBDOMINIO_DO_PAINEL}.${site.host}/painel/suporte`,
+        status: 308,
+      };
+    }
+    // Temporário: um destes nomes pode ganhar página própria um dia
+    // (`status.`, `ajuda.`), e um 308 ficaria guardado no navegador.
+    return { tipo: "redirecionar", url: `${site.protocolo}//${site.host}${caminho}${busca}`, status: 307 };
+  }
 
   if (eDoPainel(caminho)) {
     return { tipo: "redirecionar", url: url(SUBDOMINIO_DO_PAINEL, caminho), status: 308 };

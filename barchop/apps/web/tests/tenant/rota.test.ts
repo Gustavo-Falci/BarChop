@@ -187,10 +187,66 @@ describe("decidirRota", () => {
       expect(decidir("golpe-barchop.com.br", "/")).toEqual({ tipo: "seguir" });
     });
 
-    it("subdomínio reservado ou fora do padrão não vira barbearia", () => {
-      expect(decidir("api.barchop.com.br", "/")).toEqual({ tipo: "seguir" });
-      expect(decidir("a.b.barchop.com.br", "/")).toEqual({ tipo: "seguir" });
-      expect(decidir("x.barchop.com.br", "/")).toEqual({ tipo: "seguir" });
+  });
+
+  // Um subdomínio que não é barbearia nem o painel não serve página: antes
+  // ele servia o app inteiro, painel incluído, numa origem em que a API
+  // não grava o cookie da sessão. Em suporte.barchop.com.br o login
+  // passava e a fila devolvia 401 logo em seguida (28/11).
+  describe("nos subdomínios que não são barbearia", () => {
+    it("o suporte vai pro suporte no host do painel", () => {
+      expect(decidir("suporte.barchop.com.br", "/")).toEqual({
+        tipo: "redirecionar",
+        url: "https://painel.barchop.com.br/painel/suporte",
+        status: 308,
+      });
+      expect(decidir("Suporte.barchop.com.br", "/qualquer-coisa")).toEqual({
+        tipo: "redirecionar",
+        url: "https://painel.barchop.com.br/painel/suporte",
+        status: 308,
+      });
+    });
+
+    it("no suporte, um caminho do painel vai inteiro, com a query", () => {
+      expect(decidir("suporte.barchop.com.br", "/painel/suporte/entrar", "?de=favorito")).toEqual({
+        tipo: "redirecionar",
+        url: "https://painel.barchop.com.br/painel/suporte/entrar?de=favorito",
+        status: 308,
+      });
+    });
+
+    it("os outros reservados vão pro site, com o caminho e a query, num redirect temporário", () => {
+      expect(decidir("admin.barchop.com.br", "/precos", "?a=1")).toEqual({
+        tipo: "redirecionar",
+        url: "https://barchop.com.br/precos?a=1",
+        status: 307,
+      });
+      expect(decidir("api.barchop.com.br", "/")).toEqual({
+        tipo: "redirecionar",
+        url: "https://barchop.com.br/",
+        status: 307,
+      });
+    });
+
+    it("fora do formato de slug também vai pro site", () => {
+      expect(decidir("x.barchop.com.br", "/")).toEqual({
+        tipo: "redirecionar",
+        url: "https://barchop.com.br/",
+        status: 307,
+      });
+      expect(decidir("a.b.barchop.com.br", "/")).toEqual({
+        tipo: "redirecionar",
+        url: "https://barchop.com.br/",
+        status: 307,
+      });
+    });
+
+    it("um caminho do painel vai direto pro host do painel, sem passar pela raiz", () => {
+      expect(decidir("admin.barchop.com.br", "/painel/agenda")).toEqual({
+        tipo: "redirecionar",
+        url: "https://painel.barchop.com.br/painel/agenda",
+        status: 308,
+      });
     });
   });
 });

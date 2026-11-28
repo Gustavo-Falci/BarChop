@@ -4,7 +4,24 @@
 **Selected Milestone**: 1 — Onda 1 — Agenda que funciona (MVP + piloto)
 **Complexity**: Large
 
-## RETOMAR AQUI (2026-11-27, fim do dia — agenda cheia, gaveta dos serviços e ícone da aba no ar) — vale mais que as seções abaixo
+## RETOMAR AQUI (2026-11-28 — login do suporte consertado, #449 no ar) — vale mais que as seções abaixo
+
+**Estado:**
+- **`main` = merge deste PR de docs** (antes `3cd3b42`, #449). **Produção = main `3cd3b42`** (deploy do web pelo dono em 28/11, conferido: funcionou). Nada pede deploy.
+- **#449, login do suporte:** o dono entrava por `suporte.barchop.com.br`. A tela abria, o login respondia 200, a fila voltava 401 e a tela mandava de volta pro login.
+  - Causa: `suporte` é nome reservado, e o `decidirRota` (`apps/web/src/tenant/rota.ts`) deixava todo subdomínio reservado ou fora do formato servir o app inteiro. A API aceita a origem (`*.barchop.com.br` em `ORIGENS_PERMITIDAS`), mas só grava o cookie do painel e do suporte vindo de `URL_DO_PAINEL`. O login saía sem `set-cookie`.
+  - Agora: `suporte.` → `painel.<site>/painel/suporte` (308); caminho `/painel/...` de qualquer subdomínio que não é barbearia → host do painel (308); o resto → site na raiz, com caminho e query (307, porque um desses nomes pode ganhar página própria).
+  - Pista pra próxima vez: o `access-control-allow-origin` da resposta mostra de que origem o navegador chamou. Login 401 = credenciais; login 200 e fila 401 = cookie/origem.
+- **Senha do suporte trocada na VM (28/11)**, antes de se achar a causa (não era a senha). Não existe comando pra isso, só o `criar-suporte`: a troca foi à mão, com o hash scrypt gerado por `node -e` no contêiner `api` e o `update operador_suporte set senha_hash = …, senha_alterada_em = now()` pelo `psql` com `-v`. A senha nova está com o dono.
+- **Dependabot aberto:** #432 (caddy), #434 (grupo produção), #435 (`@testing-library/jest-dom` 8), #436 (`dotenv` 18), #437 (`eslint` 10).
+- **Branches:** `main`, os do Dependabot, `origin/expo-58` (mergeado) e `origin/midia-instagram` (NÃO mergeado, não tocar). O `suporte-pelo-host-do-painel` foi apagado com o ok do dono.
+
+**Ao retomar:**
+1. O suporte se entra por **`https://painel.barchop.com.br/painel/suporte/entrar`** (o `suporte.` agora redireciona pra lá).
+2. Opcional: um comando `trocar-senha-suporte`, irmão do `criar-suporte`, pra não depender do bloco à mão (oferecido, sem resposta do dono).
+3. Continuam valendo os itens de 27/11 (abaixo): questões abertas da agenda cheia, ícone da aba só se alguém reclamar, e os de 26/11 (cópia do backup fora da VM no PC de casa, limpeza do volume do Postgres 18 por volta de 03/12, Dependabot um por vez: #434 e #432 primeiro).
+
+## RETOMAR AQUI (2026-11-27, fim do dia — agenda cheia, gaveta dos serviços e ícone da aba no ar) — histórico
 
 **Estado:**
 - **`main` = merge deste PR de docs** (antes `8d22526`, #447). **Produção = main `8d22526`** (deploy do dono em 27/11, conferido). Nada pede deploy.
